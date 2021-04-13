@@ -12,7 +12,7 @@ SELECT base64(encode(''))
 (empty)
 
 query I
-SELECT base64(encode('aa'))
+SELECT base64(encode('a'))
 ----
 YQ==
 
@@ -53,9 +53,9 @@ SELECT from_base64(base64(encode('')))
 (empty)
 
 query I
-SELECT from_base64(base64(encode('aa')))
+SELECT from_base64(base64(encode('a')))
 ----
-aa
+a
 
 query I
 SELECT from_base64(base64(encode('ab')))

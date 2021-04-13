@@ -11,45 +11,45 @@ statement error
 SELECT STRING_AGG(1, 2, 3)
 
 statement error
-SELECT STRING_AGG(STRING_AGG('aa',','))
+SELECT STRING_AGG(STRING_AGG('a',','))
 
 # test string aggregation on scalar values
 query T
-SELECT STRING_AGG('aa',',')
+SELECT STRING_AGG('a',',')
 ----
-aa
+a
 
 # test string aggregation on scalar values
 query TTTT
-SELECT STRING_AGG('aa',','), STRING_AGG(NULL,','), STRING_AGG('aa',NULL), STRING_AGG(NULL,NULL)
+SELECT STRING_AGG('a',','), STRING_AGG(NULL,','), STRING_AGG('a',NULL), STRING_AGG(NULL,NULL)
 ----
-aa
+a
 NULL
 NULL
 NULL
 
-# test string aggregation on aa set of values
+# test string aggregation on a set of values
 statement ok
 CREATE TABLE strings(g INTEGER, x VARCHAR, y VARCHAR);
 
 statement ok
-INSERT INTO strings VALUES (1,'aa','/'), (1,'bb','-'), (2,'ii','/'), (2,NULL,'-'), (2,'jj','+'), (3,'p','/'), (4,'x','/'), (4,'y','-'), (4,'z','+')
+INSERT INTO strings VALUES (1,'a','/'), (1,'b','-'), (2,'i','/'), (2,NULL,'-'), (2,'j','+'), (3,'p','/'), (4,'x','/'), (4,'y','-'), (4,'z','+')
 
 query TT
 SELECT STRING_AGG(x,','), STRING_AGG(x,y) FROM strings
 ----
-aa,bb,ii,jj,p,x,y,z
-aa-bb/ii+jj/p/x-y+z
+a,b,i,j,p,x,y,z
+a-b/i+j/p/x-y+z
 
 query ITT
 SELECT g, STRING_AGG(x,','), STRING_AGG(x,y) FROM strings GROUP BY g ORDER BY g
 ----
 1
-aa,bb
-aa-bb
+a,b
+a-b
 2
-ii,jj
-ii+jj
+i,j
+i+j
 3
 p
 p
@@ -72,19 +72,19 @@ SELECT STRING_AGG(1, 2)
 
 # group concat is an alias for string_agg
 query T
-SELECT GROUP_CONCAT('aa', ',')
+SELECT GROUP_CONCAT('a', ',')
 ----
-aa
+a
 
 query T
-SELECT GROUP_CONCAT('aa')
+SELECT GROUP_CONCAT('a')
 ----
-aa
+a
 
 query TT
 SELECT g, GROUP_CONCAT(x) FROM strings GROUP BY g ORDER BY g
 ----
-1	aa,bb
-2	ii,jj
+1	a,b
+2	i,j
 3	p
 4	x,y,z

@@ -2,9 +2,9 @@
 # description: Test standard update behavior
 # group: [update]
 
-# create aa table
+# create a table
 statement ok con1
-CREATE TABLE test (aa INTEGER);
+CREATE TABLE test (a INTEGER);
 
 statement ok con1
 INSERT INTO test VALUES (3)
@@ -19,7 +19,7 @@ statement ok con1
 BEGIN TRANSACTION
 
 statement ok con1
-UPDATE test SET aa=1
+UPDATE test SET a=1
 
 # not seen yet by con2, only by con1
 query I con1
@@ -46,12 +46,12 @@ SELECT * FROM test
 ----
 1
 
-# now test aa rollback
+# now test a rollback
 statement ok con1
 BEGIN TRANSACTION
 
 statement ok con1
-UPDATE test SET aa=4
+UPDATE test SET a=4
 
 # not seen yet by con2, only by con1
 query I con1

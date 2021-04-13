@@ -33,7 +33,7 @@ select kurtosis (10) from range (5) where 1 == 0
 NULL
 
 statement ok
-create table aggr(kk int, v int, v2 int);
+create table aggr(k int, v int, v2 int);
 
 statement ok
 insert into aggr values
@@ -50,7 +50,7 @@ insert into aggr values
     (2, 30, 51);
 
 query III
-select kurtosis(kk), kurtosis(v), kurtosis(v2) from aggr;
+select kurtosis(k), kurtosis(v), kurtosis(v2) from aggr;
 ----
 11.000000	-1.961428	-1.445120
 

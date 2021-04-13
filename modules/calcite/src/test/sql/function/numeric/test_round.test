@@ -6,7 +6,7 @@ statement ok
 PRAGMA enable_verification
 
 statement ok
-CREATE TABLE roundme(aa DOUBLE, bb INTEGER)
+CREATE TABLE roundme(a DOUBLE, b INTEGER)
 
 statement ok
 INSERT INTO roundme VALUES (42.123456, 3)
@@ -42,17 +42,17 @@ select round(42::DOUBLE, -1), round(42::DOUBLE, -2), round(42::DOUBLE, -1000)
 40	0	0
 
 query R
-select round(aa, 1) from roundme
+select round(a, 1) from roundme
 ----
 42.100000
 
 query I
-select round(bb, 1) from roundme
+select round(b, 1) from roundme
 ----
 3
 
 query R
-select round(aa, bb) from roundme
+select round(a, b) from roundme
 ----
 42.123000
 

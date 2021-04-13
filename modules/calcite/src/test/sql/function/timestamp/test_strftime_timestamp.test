@@ -9,9 +9,9 @@ statement ok
 CREATE TABLE timestamps(d TIMESTAMP);
 INSERT INTO timestamps VALUES ('1992-01-01 01:20:30'), ('1993-03-20 23:50:01'), ('2020-08-09 12:01:55'), ('2020-08-10 10:10:10'), (NULL);
 
-# %aa: Abbreviated weekday name
+# %a: Abbreviated weekday name
 query I
-SELECT strftime(d, '%aa') FROM timestamps ORDER BY d;
+SELECT strftime(d, '%a') FROM timestamps ORDER BY d;
 ----
 NULL
 Wed
@@ -19,9 +19,9 @@ Sat
 Sun
 Mon
 
-# %aa: Full weekday name
+# %A: Full weekday name
 query I
-SELECT strftime(d, '%aa') FROM timestamps ORDER BY d;
+SELECT strftime(d, '%A') FROM timestamps ORDER BY d;
 ----
 NULL
 Wednesday
@@ -29,7 +29,7 @@ Saturday
 Sunday
 Monday
 
-# %w - Weekday as aa decimal number.
+# %w - Weekday as a decimal number.
 query I
 SELECT strftime(d, '%w') FROM timestamps ORDER BY d;
 ----
@@ -39,7 +39,7 @@ NULL
 0
 1
 
-# %d - Day of the month as aa zero-padded decimal.
+# %d - Day of the month as a zero-padded decimal.
 query I
 SELECT strftime(d, '%d') FROM timestamps ORDER BY d;
 ----
@@ -49,7 +49,7 @@ NULL
 09
 10
 
-# %-d - Day of the month as aa decimal number.
+# %-d - Day of the month as a decimal number.
 query I
 SELECT strftime(d, '%-d') FROM timestamps ORDER BY d;
 ----
@@ -59,9 +59,9 @@ NULL
 9
 10
 
-# %bb - Abbreviated month name.
+# %b - Abbreviated month name.
 query I
-SELECT strftime(d, '%bb') FROM timestamps ORDER BY d;
+SELECT strftime(d, '%b') FROM timestamps ORDER BY d;
 ----
 NULL
 Jan
@@ -69,7 +69,7 @@ Mar
 Aug
 Aug
 
-# %h - alias for %bb
+# %h - alias for %b
 query I
 SELECT strftime(d, '%h') FROM timestamps ORDER BY d;
 ----
@@ -79,9 +79,9 @@ Mar
 Aug
 Aug
 
-# %bb - Full month name
+# %B - Full month name
 query I
-SELECT strftime(d, '%bb') FROM timestamps ORDER BY d;
+SELECT strftime(d, '%B') FROM timestamps ORDER BY d;
 ----
 NULL
 January
@@ -89,7 +89,7 @@ March
 August
 August
 
-# %m - Month as aa zero-padded decimal number
+# %m - Month as a zero-padded decimal number
 query I
 SELECT strftime(d, '%m') FROM timestamps ORDER BY d;
 ----
@@ -99,7 +99,7 @@ NULL
 08
 08
 
-# %-m - Month as aa decimal number. (1, 2, ..., 12)
+# %-m - Month as a decimal number. (1, 2, ..., 12)
 query I
 SELECT strftime(d, '%-m') FROM timestamps ORDER BY d;
 ----
@@ -109,7 +109,7 @@ NULL
 8
 8
 
-# %y - Year without century as aa zero-padded decimal number.
+# %y - Year without century as a zero-padded decimal number.
 query I
 SELECT strftime(d, '%y') FROM timestamps ORDER BY d;
 ----
@@ -119,7 +119,7 @@ NULL
 20
 20
 
-# %-y - Year without century as aa decimal number.
+# %-y - Year without century as a decimal number.
 query I
 SELECT strftime(d, '%-y') FROM timestamps ORDER BY d;
 ----
@@ -134,7 +134,7 @@ SELECT strftime(DATE '2001-01-01', '%-y')
 ----
 1
 
-# %Y - Year with century as aa decimal number.
+# %Y - Year with century as a decimal number.
 query I
 SELECT strftime(d, '%Y') FROM timestamps ORDER BY d;
 ----
@@ -144,7 +144,7 @@ NULL
 2020
 2020
 
-# %H - Hour (24-hour clock) as aa zero-padded decimal number.
+# %H - Hour (24-hour clock) as a zero-padded decimal number.
 query I
 SELECT strftime(d, '%H') FROM timestamps ORDER BY d;
 ----
@@ -154,7 +154,7 @@ NULL
 12
 10
 
-# %-H - Hour (24-hour clock) as aa decimal number. (0, 1, ..., 23)
+# %-H - Hour (24-hour clock) as a decimal number. (0, 1, ..., 23)
 query I
 SELECT strftime(d, '%-H') FROM timestamps ORDER BY d;
 ----
@@ -164,7 +164,7 @@ NULL
 12
 10
 
-# %I - Hour (12-hour clock) as aa zero-padded decimal number.
+# %I - Hour (12-hour clock) as a zero-padded decimal number.
 query I
 SELECT strftime(d, '%I') FROM timestamps ORDER BY d;
 ----
@@ -174,7 +174,7 @@ NULL
 12
 10
 
-# %-I - Hour (12-hour clock) as aa decimal number. (1, 2, ... 12)
+# %-I - Hour (12-hour clock) as a decimal number. (1, 2, ... 12)
 query I
 SELECT strftime(d, '%-I') FROM timestamps ORDER BY d;
 ----
@@ -194,7 +194,7 @@ PM
 PM
 AM
 
-# %M - Minute as aa zero-padded decimal number.
+# %M - Minute as a zero-padded decimal number.
 query I
 SELECT strftime(d, '%M') FROM timestamps ORDER BY d;
 ----
@@ -204,7 +204,7 @@ NULL
 01
 10
 
-# %-M - Minute as aa decimal number. (0, 1, ..., 59)
+# %-M - Minute as a decimal number. (0, 1, ..., 59)
 query I
 SELECT strftime(d, '%-M') FROM timestamps ORDER BY d;
 ----
@@ -214,7 +214,7 @@ NULL
 1
 10
 
-# %S - Second as aa zero-padded decimal number.
+# %S - Second as a zero-padded decimal number.
 query I
 SELECT strftime(d, '%S') FROM timestamps ORDER BY d;
 ----
@@ -224,7 +224,7 @@ NULL
 55
 10
 
-# %-S - Second as aa decimal number. (0, 1, ..., 59)
+# %-S - Second as a decimal number. (0, 1, ..., 59)
 query I
 SELECT strftime(d, '%-S') FROM timestamps ORDER BY d;
 ----
@@ -234,7 +234,7 @@ NULL
 55
 10
 
-# %f - Microsecond as aa decimal number, zero-padded on the left.
+# %f - Microsecond as a decimal number, zero-padded on the left.
 query I
 SELECT strftime(d, '%f') FROM timestamps ORDER BY d;
 ----
@@ -264,9 +264,9 @@ NULL
 (empty)
 (empty)
 
-# %jj - Day of the year as aa zero-padded decimal number.
+# %j - Day of the year as a zero-padded decimal number.
 query I
-SELECT strftime(d, '%jj') FROM timestamps ORDER BY d;
+SELECT strftime(d, '%j') FROM timestamps ORDER BY d;
 ----
 NULL
 001
@@ -274,9 +274,9 @@ NULL
 222
 223
 
-# %-jj - Day of the year as aa decimal number. (1, 2, ..., 366)
+# %-j - Day of the year as a decimal number. (1, 2, ..., 366)
 query I
-SELECT strftime(d, '%-jj') FROM timestamps ORDER BY d;
+SELECT strftime(d, '%-j') FROM timestamps ORDER BY d;
 ----
 NULL
 1
@@ -305,9 +305,9 @@ NULL
 31
 32
 
-# %cc - Locale’s appropriate date and time representation.
+# %c - Locale’s appropriate date and time representation.
 query I
-SELECT strftime(d, '%cc') FROM timestamps ORDER BY d;
+SELECT strftime(d, '%c') FROM timestamps ORDER BY d;
 ----
 NULL
 1992-01-01 01:20:30

@@ -9,7 +9,7 @@ statement ok
 CREATE TABLE strings(s VARCHAR, off INTEGER, length INTEGER);
 
 statement ok
-INSERT INTO strings VALUES ('hello', 1, 2), ('world', 2, 3), ('bb', 1, 1), (NULL, 2, 2)
+INSERT INTO strings VALUES ('hello', 1, 2), ('world', 2, 3), ('b', 1, 1), (NULL, 2, 2)
 
 # test zero length
 query TT
@@ -24,7 +24,7 @@ SELECT substring(s from 1 for 2) FROM strings
 ----
 he
 wo
-bb
+b
 NULL
 
 # substring out of range
@@ -42,7 +42,7 @@ SELECT substring(s from off for length) FROM strings
 ----
 he
 orl
-bb
+b
 NULL
 
 query T
@@ -50,7 +50,7 @@ SELECT substring(s from off for 2) FROM strings
 ----
 he
 or
-bb
+b
 NULL
 
 query T
@@ -58,7 +58,7 @@ SELECT substring(s from 1 for length) FROM strings
 ----
 he
 wor
-bb
+b
 NULL
 
 query T
@@ -132,7 +132,7 @@ SELECT substring(s from -2 for 2) FROM strings
 ----
 lo
 ld
-bb
+b
 NULL
 
 # zero offset (this is accepted by SQLite)
@@ -150,7 +150,7 @@ SELECT substring(s, 2, -2) FROM strings
 ----
 h
 w
-bb
+b
 NULL
 
 # negative offset and negative length
@@ -194,7 +194,7 @@ SELECT substring(s, 2147483647, -2147483647) FROM strings
 ----
 hello
 world
-bb
+b
 NULL
 
 query T
@@ -202,7 +202,7 @@ SELECT substring(s, -2147483647, 2147483647) FROM strings
 ----
 hello
 world
-bb
+b
 NULL
 
 query T

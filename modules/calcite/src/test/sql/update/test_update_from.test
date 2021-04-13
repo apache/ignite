@@ -1,16 +1,16 @@
 # name: test/sql/update/test_update_from.test
-# description: Test updates that use aa from clause
+# description: Test updates that use a from clause
 # group: [update]
 
-# create aa table
+# create a table
 statement ok
-CREATE TABLE test (aa INTEGER);
+CREATE TABLE test (a INTEGER);
 
 statement ok
 INSERT INTO test VALUES (3)
 
 statement ok
-CREATE  TABLE src (aa INTEGER);
+CREATE  TABLE src (a INTEGER);
 
 statement ok
 INSERT INTO src VALUES (2)
@@ -27,7 +27,7 @@ SELECT * FROM src
 
 # test simple update
 statement ok
-UPDATE test SET aa=test.aa+s.aa FROM src s
+UPDATE test SET a=test.a+s.a FROM src s
 
 query I
 SELECT * FROM test
@@ -36,7 +36,7 @@ SELECT * FROM test
 
 # test self join via alias
 statement ok
-UPDATE test SET aa=test.aa+t.aa FROM test t
+UPDATE test SET a=test.a+t.a FROM test t
 
 query I
 SELECT * FROM test
@@ -45,7 +45,7 @@ SELECT * FROM test
 
 # test multiple tables
 statement ok
-UPDATE test SET aa=t.aa+s.aa FROM test t, src s
+UPDATE test SET a=t.a+s.a FROM test t, src s
 
 query I
 SELECT * FROM test
@@ -54,7 +54,7 @@ SELECT * FROM test
 
 # test subquery
 statement ok
-UPDATE test SET aa=s.q FROM (SELECT aa+1 as q FROM src) s
+UPDATE test SET a=s.q FROM (SELECT a+1 as q FROM src) s
 
 query I
 SELECT * FROM test
@@ -66,34 +66,34 @@ statement ok
 CREATE VIEW vt AS (SELECT 17 as v)
 
 statement ok
-UPDATE test SET aa=v FROM vt
+UPDATE test SET a=v FROM vt
 
 query I
 SELECT * FROM test
 ----
 17
 
-# with aa where clause on the from table
+# with a where clause on the from table
 statement ok
-UPDATE test SET aa=s.aa FROM src s WHERE s.aa = 2
+UPDATE test SET a=s.a FROM src s WHERE s.a = 2
 
 query I
 SELECT * FROM test
 ----
 2
 
-# with aa where clause that involves both tables
+# with a where clause that involves both tables
 statement ok
-UPDATE test t SET aa=1 FROM src s WHERE s.aa = t.aa
+UPDATE test t SET a=1 FROM src s WHERE s.a = t.a
 
 query I
 SELECT * FROM test
 ----
 1
 
-# with aa where clause that evaluates to false
+# with a where clause that evaluates to false
 statement ok
-UPDATE test t SET aa=9 FROM src s WHERE s.aa=t.aa
+UPDATE test t SET a=9 FROM src s WHERE s.a=t.a
 
 query I
 SELECT * FROM test
@@ -109,7 +109,7 @@ statement ok
 INSERT INTO src VALUES (7)
 
 statement ok
-UPDATE test SET aa=s.aa FROM src s
+UPDATE test SET a=s.a FROM src s
 
 query I
 SELECT * FROM test

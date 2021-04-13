@@ -6,19 +6,19 @@ statement ok
 PRAGMA enable_verification
 
 statement ok
-CREATE TABLE test (aa INTEGER, bb INTEGER);
+CREATE TABLE test (a INTEGER, b INTEGER);
 
 statement ok
 INSERT INTO test VALUES (11, 22), (12, 21), (13, 22);
 
 # ORDER BY index out of range
 statement error
-SELECT aa FROM test ORDER BY 2
+SELECT a FROM test ORDER BY 2
 
 # ORDER BY constant works, but does nothing
 # CONTROVERSIAL: works in SQLite but not in Postgres
 query I
-SELECT aa FROM test ORDER BY 'hello', aa
+SELECT a FROM test ORDER BY 'hello', a
 ----
 11
 12
@@ -26,11 +26,11 @@ SELECT aa FROM test ORDER BY 'hello', aa
 
 # ambiguous reference in union alias
 statement error
-SELECT aa AS kk, bb FROM test UNION SELECT aa, bb AS kk FROM test ORDER BY kk
+SELECT a AS k, b FROM test UNION SELECT a, b AS k FROM test ORDER BY k
 
 # but works if not ambiguous
 query II
-SELECT aa AS kk, bb FROM test UNION SELECT aa AS kk, bb FROM test ORDER BY kk
+SELECT a AS k, b FROM test UNION SELECT a AS k, b FROM test ORDER BY k
 ----
 11	22
 12	21
@@ -38,23 +38,23 @@ SELECT aa AS kk, bb FROM test UNION SELECT aa AS kk, bb FROM test ORDER BY kk
 
 # ambiguous reference in union parameter
 statement error
-SELECT aa % 2, bb FROM test UNION SELECT bb, aa % 2 AS kk ORDER BY aa % 2
+SELECT a % 2, b FROM test UNION SELECT b, a % 2 AS k ORDER BY a % 2
 
 # but works if not ambiguous
 query II
-SELECT aa % 2, bb FROM test UNION SELECT aa % 2 AS kk, bb FROM test ORDER BY aa % 2
+SELECT a % 2, b FROM test UNION SELECT a % 2 AS k, b FROM test ORDER BY a % 2
 ----
 0	21
 1	22
 
 # out of range order also happens for unions
 statement error
-SELECT aa % 2, bb FROM test UNION SELECT aa % 2 AS kk, bb FROM test ORDER BY 3
+SELECT a % 2, b FROM test UNION SELECT a % 2 AS k, b FROM test ORDER BY 3
 
 statement error
-SELECT aa % 2, bb FROM test UNION SELECT aa % 2 AS kk, bb FROM test ORDER BY -1
+SELECT a % 2, b FROM test UNION SELECT a % 2 AS k, b FROM test ORDER BY -1
 
 # and union itself fails if amount of entries is wrong
 statement error
-SELECT aa % 2, bb FROM test UNION SELECT aa % 2 AS kk FROM test ORDER BY -1
+SELECT a % 2, b FROM test UNION SELECT a % 2 AS k FROM test ORDER BY -1
 

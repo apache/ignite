@@ -1,42 +1,42 @@
 # name: test/sql/types/list/test_list_index.test
-# description: Test accessing list elements using aa list
+# description: Test accessing list elements using a list
 # group: [list]
 
 statement ok
 PRAGMA enable_verification
 
 query I
-SELECT aa[0] FROM (VALUES (LIST_VALUE())) tbl(aa)
+SELECT a[0] FROM (VALUES (LIST_VALUE())) tbl(a)
 ----
 NULL
 
 query I
-SELECT aa[0] FROM (VALUES (LIST_VALUE(NULL))) tbl(aa)
+SELECT a[0] FROM (VALUES (LIST_VALUE(NULL))) tbl(a)
 ----
 NULL
 
 query I
-SELECT aa[-1] FROM (VALUES (LIST_VALUE(NULL))) tbl(aa)
+SELECT a[-1] FROM (VALUES (LIST_VALUE(NULL))) tbl(a)
 ----
 NULL
 
 query I
-SELECT aa[NULL] FROM (VALUES (LIST_VALUE(42))) tbl(aa)
+SELECT a[NULL] FROM (VALUES (LIST_VALUE(42))) tbl(a)
 ----
 NULL
 
 query I
-SELECT aa[0] FROM (VALUES (LIST_VALUE(42))) tbl(aa)
+SELECT a[0] FROM (VALUES (LIST_VALUE(42))) tbl(a)
 ----
 42
 
 query I
-SELECT aa[0+1-1] FROM (VALUES (LIST_VALUE(42))) tbl(aa)
+SELECT a[0+1-1] FROM (VALUES (LIST_VALUE(42))) tbl(a)
 ----
 42
 
 query I
-SELECT aa[bb] FROM (VALUES (LIST_VALUE(42), 0)) tbl(aa, bb)
+SELECT a[b] FROM (VALUES (LIST_VALUE(42), 0)) tbl(a, b)
 ----
 42
 
@@ -53,10 +53,10 @@ SELECT LIST_VALUE(42)[0]
 
 # slicing: supported in parser but not yet in engine
 statement error
-SELECT aa[1:] FROM (VALUES (LIST_VALUE(42, 43, 44))) tbl(aa)
+SELECT a[1:] FROM (VALUES (LIST_VALUE(42, 43, 44))) tbl(a)
 
 statement error
-SELECT aa[:1] FROM (VALUES (LIST_VALUE(42, 43, 44))) tbl(aa)
+SELECT a[:1] FROM (VALUES (LIST_VALUE(42, 43, 44))) tbl(a)
 
 statement error
-SELECT aa[0:1] FROM (VALUES (LIST_VALUE(42, 43, 44))) tbl(aa)
+SELECT a[0:1] FROM (VALUES (LIST_VALUE(42, 43, 44))) tbl(a)

@@ -29,7 +29,7 @@ SELECT INSTR(s,'á') FROM strings
 0
 0
 
-# Test aa sentence with UTF-8
+# Test a sentence with UTF-8
 query I
 SELECT INSTR(s,'olá mundo') FROM strings
 ----
@@ -47,7 +47,7 @@ SELECT INSTR(s,'你好世界') FROM strings
 1
 0
 
-# Test aa substring of the haystack from the beginning
+# Test a substring of the haystack from the beginning
 query I
 SELECT instr(s,'two ñ thr') FROM strings
 ----
@@ -56,7 +56,7 @@ SELECT instr(s,'two ñ thr') FROM strings
 0
 1
 
-# Test aa single UTF8 substring of the haystack in the middle
+# Test a single UTF8 substring of the haystack in the middle
 query I
 SELECT instr(s,'ñ') FROM strings
 ----
@@ -65,7 +65,7 @@ SELECT instr(s,'ñ') FROM strings
 0
 5
 
-# Test aa multiple UTF8 substring of the haystack in the middle
+# Test a multiple UTF8 substring of the haystack in the middle
 query I
 SELECT instr(s,'₡ four 🦆 e') FROM strings
 ----
@@ -74,7 +74,7 @@ SELECT instr(s,'₡ four 🦆 e') FROM strings
 0
 13
 
-# Test aa substring of the haystack from the middle to the end
+# Test a substring of the haystack from the middle to the end
 query I
 SELECT instr(s,'🦆 end') FROM strings
 ----

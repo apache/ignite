@@ -3,21 +3,21 @@
 # group: [delete]
 
 statement ok con1
-CREATE TABLE aa(ii INTEGER);
+CREATE TABLE a(i INTEGER);
 
 # insert the values [0, 1, 2, .. 1022, 1023] repeatedly
 # however, make sure the order that we insert them is 
-loop ii 0 20
+loop i 0 20
 
 statement ok con1
-INSERT INTO aa SELECT * FROM range(0, 1024, 1);
+INSERT INTO a SELECT * FROM range(0, 1024, 1);
 
 endloop
 
 # verify the count
 
 query I con1
-SELECT COUNT(*) FROM aa
+SELECT COUNT(*) FROM a
 ----
 20480
 
@@ -27,11 +27,11 @@ SELECT COUNT(*) FROM aa
 # value = 0
 statement ok con1
 BEGIN TRANSACTION;
-DELETE FROM aa WHERE ii=0;
+DELETE FROM a WHERE i=0;
 
 # verify the deleted count
 query I con1
-SELECT COUNT(*) FROM aa
+SELECT COUNT(*) FROM a
 ----
 20460
 
@@ -40,18 +40,18 @@ ROLLBACK
 
 # verify the initial count
 query I con1
-SELECT COUNT(*) FROM aa
+SELECT COUNT(*) FROM a
 ----
 20480
 
 # value = 1
 statement ok con1
 BEGIN TRANSACTION;
-DELETE FROM aa WHERE ii=1;
+DELETE FROM a WHERE i=1;
 
 # verify the deleted count
 query I con1
-SELECT COUNT(*) FROM aa
+SELECT COUNT(*) FROM a
 ----
 20460
 
@@ -60,18 +60,18 @@ ROLLBACK
 
 # verify the initial count
 query I con1
-SELECT COUNT(*) FROM aa
+SELECT COUNT(*) FROM a
 ----
 20480
 
 # value = 1022
 statement ok con1
 BEGIN TRANSACTION;
-DELETE FROM aa WHERE ii=1022;
+DELETE FROM a WHERE i=1022;
 
 # verify the deleted count
 query I con1
-SELECT COUNT(*) FROM aa
+SELECT COUNT(*) FROM a
 ----
 20460
 
@@ -80,18 +80,18 @@ ROLLBACK
 
 # verify the initial count
 query I con1
-SELECT COUNT(*) FROM aa
+SELECT COUNT(*) FROM a
 ----
 20480
 
 # value = 1023
 statement ok con1
 BEGIN TRANSACTION;
-DELETE FROM aa WHERE ii=1023;
+DELETE FROM a WHERE i=1023;
 
 # verify the deleted count
 query I con1
-SELECT COUNT(*) FROM aa
+SELECT COUNT(*) FROM a
 ----
 20460
 
@@ -100,20 +100,20 @@ ROLLBACK
 
 # verify the initial count
 query I con1
-SELECT COUNT(*) FROM aa
+SELECT COUNT(*) FROM a
 ----
 20480
 
-# now, for every tested value, delete it in aa separate connection and verify the count
+# now, for every tested value, delete it in a separate connection and verify the count
 # con2 -> 0
 statement ok con2
 BEGIN TRANSACTION;
 
 statement ok con2
-DELETE FROM aa WHERE ii=0;
+DELETE FROM a WHERE i=0;
 
 query I con2
-SELECT COUNT(*) FROM aa;
+SELECT COUNT(*) FROM a;
 ----
 20460
 
@@ -122,10 +122,10 @@ statement ok con3
 BEGIN TRANSACTION;
 
 statement ok con3
-DELETE FROM aa WHERE ii=1;
+DELETE FROM a WHERE i=1;
 
 query I con3
-SELECT COUNT(*) FROM aa;
+SELECT COUNT(*) FROM a;
 ----
 20460
 
@@ -134,10 +134,10 @@ statement ok con4
 BEGIN TRANSACTION;
 
 statement ok con4
-DELETE FROM aa WHERE ii=1022;
+DELETE FROM a WHERE i=1022;
 
 query I con4
-SELECT COUNT(*) FROM aa;
+SELECT COUNT(*) FROM a;
 ----
 20460
 
@@ -146,16 +146,16 @@ statement ok con5
 BEGIN TRANSACTION;
 
 statement ok con5
-DELETE FROM aa WHERE ii=1023;
+DELETE FROM a WHERE i=1023;
 
 query I con5
-SELECT COUNT(*) FROM aa;
+SELECT COUNT(*) FROM a;
 ----
 20460
 
 # con1 still has the original count
 query I con1
-SELECT COUNT(*) FROM aa;
+SELECT COUNT(*) FROM a;
 ----
 20480
 
@@ -174,6 +174,6 @@ COMMIT
 
 # now the count is updated
 query I con1
-SELECT COUNT(*) FROM aa;
+SELECT COUNT(*) FROM a;
 ----
 20400

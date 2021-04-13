@@ -34,14 +34,14 @@ SELECT to_years(2), to_months(2), to_days(2), to_hours(2), to_minutes(2), to_sec
 
 # non-constant expression
 query I
-SELECT interval (ii) day from range(1, 4) tbl(ii);
+SELECT interval (i) day from range(1, 4) tbl(i);
 ----
 1 day
 2 days
 3 days
 
 query I
-SELECT interval (ii + 1) day from range(1, 4) tbl(ii);
+SELECT interval (i + 1) day from range(1, 4) tbl(i);
 ----
 2 days
 3 days

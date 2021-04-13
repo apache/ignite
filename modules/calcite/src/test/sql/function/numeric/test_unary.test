@@ -6,51 +6,51 @@ statement ok
 PRAGMA enable_verification
 
 statement ok
-CREATE TABLE test(ii INTEGER)
+CREATE TABLE test(i INTEGER)
 
 statement ok
 INSERT INTO test VALUES (2)
 
 query I
-SELECT ++-++-+ii FROM test
+SELECT ++-++-+i FROM test
 ----
 2
 
 # test simple unary operators
 query I
-SELECT +ii FROM test
+SELECT +i FROM test
 ----
 2
 
 query I
-SELECT -ii FROM test
+SELECT -i FROM test
 ----
 -2
 
 # we can also stack unary functions
 query I
-SELECT +++++++ii FROM test
+SELECT +++++++i FROM test
 ----
 2
 
 query I
-SELECT ++-++-+ii FROM test
+SELECT ++-++-+i FROM test
 ----
 2
 
 query I
-SELECT -+-+-+-+-ii FROM test
+SELECT -+-+-+-+-i FROM test
 ----
 -2
 
-# cannot apply these to aa string
+# cannot apply these to a string
 statement error
 SELECT +'hello'
 
 statement error
 SELECT -'hello'
 
-# cannot apply these to aa date either
+# cannot apply these to a date either
 statement ok
 CREATE TABLE dates(d DATE)
 

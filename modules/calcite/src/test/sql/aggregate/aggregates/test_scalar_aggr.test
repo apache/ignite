@@ -30,14 +30,14 @@ SELECT FIRST(NULL)
 NULL
 
 query III
-SELECT NULL as aa, NULL as bb, 1 as id UNION SELECT CAST('00:00:00' AS TIME) as aa, CAST('12:34:56' AS TIME) as bb, 2 as id ORDER BY 1
+SELECT NULL as a, NULL as b, 1 as id UNION SELECT CAST('00:00:00' AS TIME) as a, CAST('12:34:56' AS TIME) as b, 2 as id ORDER BY 1
 ----
 NULL	NULL	1
 00:00:00	12:34:56	2
 
-# test aggregates on aa set of values with scalar inputs
+# test aggregates on a set of values with scalar inputs
 statement ok
-CREATE TABLE integers(ii INTEGER);
+CREATE TABLE integers(i INTEGER);
 
 statement ok
 INSERT INTO integers VALUES (1), (2), (NULL)
@@ -52,7 +52,7 @@ SELECT COUNT(1), MIN(1), FIRST(1), MAX(1), SUM(1), STRING_AGG('hello', ',') FROM
 3
 hello,hello,hello
 
-# test aggregates on aa set of values with scalar NULL values as inputs
+# test aggregates on a set of values with scalar NULL values as inputs
 query IIIIIT
 SELECT COUNT(NULL), MIN(NULL), FIRST(NULL), MAX(NULL), SUM(NULL), STRING_AGG(NULL, NULL) FROM integers
 ----

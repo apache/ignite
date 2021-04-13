@@ -6,7 +6,7 @@ statement ok
 PRAGMA enable_verification
 
 query II
-select date '1992-01-01' + interval (ii) days, month(date '1992-01-01' + interval (ii) days) from range(0, 366) tbl(ii);
+select date '1992-01-01' + interval (i) days, month(date '1992-01-01' + interval (i) days) from range(0, 366) tbl(i);
 ----
 1992-01-01	1
 1992-01-02	1
@@ -376,7 +376,7 @@ select date '1992-01-01' + interval (ii) days, month(date '1992-01-01' + interva
 1992-12-31	12
 
 query II
-select date '1993-01-01' + interval (ii) days, month(date '1993-01-01' + interval (ii) days) from range(0, 366) tbl(ii);
+select date '1993-01-01' + interval (i) days, month(date '1993-01-01' + interval (i) days) from range(0, 366) tbl(i);
 ----
 1993-01-01	1
 1993-01-02	1

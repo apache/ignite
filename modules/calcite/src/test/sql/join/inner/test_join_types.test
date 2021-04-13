@@ -11,54 +11,54 @@ statement ok
 begin transaction
 
 statement ok
-create table aa as select ii::tinyint AS ii from range(1, 101, 1) t1(ii)
+create table a as select i::tinyint AS i from range(1, 101, 1) t1(i)
 
 # range joins
 query IR
-select count(*), sum(ii) from aa, (SELECT 100::tinyint AS jj) bb where ii < jj
+select count(*), sum(i) from a, (SELECT 100::tinyint AS j) b where i < j
 ----
 99	4950.000000
 
 query I
-select count(*) from aa, (SELECT 100::tinyint AS jj) bb where ii <= jj
+select count(*) from a, (SELECT 100::tinyint AS j) b where i <= j
 ----
 100
 
 query I
-select count(*) from aa, (SELECT 1::tinyint AS jj) bb where ii > jj
+select count(*) from a, (SELECT 1::tinyint AS j) b where i > j
 ----
 99
 
 query I
-select count(*) from aa, (SELECT 1::tinyint AS jj) bb where ii >= jj
+select count(*) from a, (SELECT 1::tinyint AS j) b where i >= j
 ----
 100
 
 # inequality join
 query I
-select count(*) from aa, (SELECT 1::tinyint AS jj) bb where ii <> jj
+select count(*) from a, (SELECT 1::tinyint AS j) b where i <> j
 ----
 99
 
 # equality join
 query I
-select count(*) from aa, (SELECT 1::tinyint AS jj) bb where ii = jj
+select count(*) from a, (SELECT 1::tinyint AS j) b where i = j
 ----
 1
 
 # no results on one side
 query I
-select count(*) from aa, (SELECT 1::tinyint AS jj) bb where ii > jj AND ii>1000
+select count(*) from a, (SELECT 1::tinyint AS j) b where i > j AND i>1000
 ----
 0
 
 query I
-select count(*) from aa, (SELECT 1::tinyint AS jj) bb where ii <> jj AND ii>1000
+select count(*) from a, (SELECT 1::tinyint AS j) b where i <> j AND i>1000
 ----
 0
 
 query I
-select count(*) from aa, (SELECT 1::tinyint AS jj) bb where ii = jj AND ii>1000
+select count(*) from a, (SELECT 1::tinyint AS j) b where i = j AND i>1000
 ----
 0
 
@@ -70,54 +70,54 @@ statement ok
 begin transaction
 
 statement ok
-create table aa as select ii::smallint AS ii from range(1, 101, 1) t1(ii)
+create table a as select i::smallint AS i from range(1, 101, 1) t1(i)
 
 # range joins
 query IR
-select count(*), sum(ii) from aa, (SELECT 100::smallint AS jj) bb where ii < jj
+select count(*), sum(i) from a, (SELECT 100::smallint AS j) b where i < j
 ----
 99	4950.000000
 
 query I
-select count(*) from aa, (SELECT 100::smallint AS jj) bb where ii <= jj
+select count(*) from a, (SELECT 100::smallint AS j) b where i <= j
 ----
 100
 
 query I
-select count(*) from aa, (SELECT 1::smallint AS jj) bb where ii > jj
+select count(*) from a, (SELECT 1::smallint AS j) b where i > j
 ----
 99
 
 query I
-select count(*) from aa, (SELECT 1::smallint AS jj) bb where ii >= jj
+select count(*) from a, (SELECT 1::smallint AS j) b where i >= j
 ----
 100
 
 # inequality join
 query I
-select count(*) from aa, (SELECT 1::smallint AS jj) bb where ii <> jj
+select count(*) from a, (SELECT 1::smallint AS j) b where i <> j
 ----
 99
 
 # equality join
 query I
-select count(*) from aa, (SELECT 1::smallint AS jj) bb where ii = jj
+select count(*) from a, (SELECT 1::smallint AS j) b where i = j
 ----
 1
 
 # no results on one side
 query I
-select count(*) from aa, (SELECT 1::smallint AS jj) bb where ii > jj AND ii>1000
+select count(*) from a, (SELECT 1::smallint AS j) b where i > j AND i>1000
 ----
 0
 
 query I
-select count(*) from aa, (SELECT 1::smallint AS jj) bb where ii <> jj AND ii>1000
+select count(*) from a, (SELECT 1::smallint AS j) b where i <> j AND i>1000
 ----
 0
 
 query I
-select count(*) from aa, (SELECT 1::smallint AS jj) bb where ii = jj AND ii>1000
+select count(*) from a, (SELECT 1::smallint AS j) b where i = j AND i>1000
 ----
 0
 
@@ -129,54 +129,54 @@ statement ok
 begin transaction
 
 statement ok
-create table aa as select ii::integer AS ii from range(1, 101, 1) t1(ii)
+create table a as select i::integer AS i from range(1, 101, 1) t1(i)
 
 # range joins
 query IR
-select count(*), sum(ii) from aa, (SELECT 100::integer AS jj) bb where ii < jj
+select count(*), sum(i) from a, (SELECT 100::integer AS j) b where i < j
 ----
 99	4950.000000
 
 query I
-select count(*) from aa, (SELECT 100::integer AS jj) bb where ii <= jj
+select count(*) from a, (SELECT 100::integer AS j) b where i <= j
 ----
 100
 
 query I
-select count(*) from aa, (SELECT 1::integer AS jj) bb where ii > jj
+select count(*) from a, (SELECT 1::integer AS j) b where i > j
 ----
 99
 
 query I
-select count(*) from aa, (SELECT 1::integer AS jj) bb where ii >= jj
+select count(*) from a, (SELECT 1::integer AS j) b where i >= j
 ----
 100
 
 # inequality join
 query I
-select count(*) from aa, (SELECT 1::integer AS jj) bb where ii <> jj
+select count(*) from a, (SELECT 1::integer AS j) b where i <> j
 ----
 99
 
 # equality join
 query I
-select count(*) from aa, (SELECT 1::integer AS jj) bb where ii = jj
+select count(*) from a, (SELECT 1::integer AS j) b where i = j
 ----
 1
 
 # no results on one side
 query I
-select count(*) from aa, (SELECT 1::integer AS jj) bb where ii > jj AND ii>1000
+select count(*) from a, (SELECT 1::integer AS j) b where i > j AND i>1000
 ----
 0
 
 query I
-select count(*) from aa, (SELECT 1::integer AS jj) bb where ii <> jj AND ii>1000
+select count(*) from a, (SELECT 1::integer AS j) b where i <> j AND i>1000
 ----
 0
 
 query I
-select count(*) from aa, (SELECT 1::integer AS jj) bb where ii = jj AND ii>1000
+select count(*) from a, (SELECT 1::integer AS j) b where i = j AND i>1000
 ----
 0
 
@@ -188,54 +188,54 @@ statement ok
 begin transaction
 
 statement ok
-create table aa as select ii::bigint AS ii from range(1, 101, 1) t1(ii)
+create table a as select i::bigint AS i from range(1, 101, 1) t1(i)
 
 # range joins
 query IR
-select count(*), sum(ii) from aa, (SELECT 100::bigint AS jj) bb where ii < jj
+select count(*), sum(i) from a, (SELECT 100::bigint AS j) b where i < j
 ----
 99	4950.000000
 
 query I
-select count(*) from aa, (SELECT 100::bigint AS jj) bb where ii <= jj
+select count(*) from a, (SELECT 100::bigint AS j) b where i <= j
 ----
 100
 
 query I
-select count(*) from aa, (SELECT 1::bigint AS jj) bb where ii > jj
+select count(*) from a, (SELECT 1::bigint AS j) b where i > j
 ----
 99
 
 query I
-select count(*) from aa, (SELECT 1::bigint AS jj) bb where ii >= jj
+select count(*) from a, (SELECT 1::bigint AS j) b where i >= j
 ----
 100
 
 # inequality join
 query I
-select count(*) from aa, (SELECT 1::bigint AS jj) bb where ii <> jj
+select count(*) from a, (SELECT 1::bigint AS j) b where i <> j
 ----
 99
 
 # equality join
 query I
-select count(*) from aa, (SELECT 1::bigint AS jj) bb where ii = jj
+select count(*) from a, (SELECT 1::bigint AS j) b where i = j
 ----
 1
 
 # no results on one side
 query I
-select count(*) from aa, (SELECT 1::bigint AS jj) bb where ii > jj AND ii>1000
+select count(*) from a, (SELECT 1::bigint AS j) b where i > j AND i>1000
 ----
 0
 
 query I
-select count(*) from aa, (SELECT 1::bigint AS jj) bb where ii <> jj AND ii>1000
+select count(*) from a, (SELECT 1::bigint AS j) b where i <> j AND i>1000
 ----
 0
 
 query I
-select count(*) from aa, (SELECT 1::bigint AS jj) bb where ii = jj AND ii>1000
+select count(*) from a, (SELECT 1::bigint AS j) b where i = j AND i>1000
 ----
 0
 
@@ -247,54 +247,54 @@ statement ok
 begin transaction
 
 statement ok
-create table aa as select ii::real AS ii from range(1, 101, 1) t1(ii)
+create table a as select i::real AS i from range(1, 101, 1) t1(i)
 
 # range joins
 query IR
-select count(*), sum(ii) from aa, (SELECT 100::real AS jj) bb where ii < jj
+select count(*), sum(i) from a, (SELECT 100::real AS j) b where i < j
 ----
 99	4950.000000
 
 query I
-select count(*) from aa, (SELECT 100::real AS jj) bb where ii <= jj
+select count(*) from a, (SELECT 100::real AS j) b where i <= j
 ----
 100
 
 query I
-select count(*) from aa, (SELECT 1::real AS jj) bb where ii > jj
+select count(*) from a, (SELECT 1::real AS j) b where i > j
 ----
 99
 
 query I
-select count(*) from aa, (SELECT 1::real AS jj) bb where ii >= jj
+select count(*) from a, (SELECT 1::real AS j) b where i >= j
 ----
 100
 
 # inequality join
 query I
-select count(*) from aa, (SELECT 1::real AS jj) bb where ii <> jj
+select count(*) from a, (SELECT 1::real AS j) b where i <> j
 ----
 99
 
 # equality join
 query I
-select count(*) from aa, (SELECT 1::real AS jj) bb where ii = jj
+select count(*) from a, (SELECT 1::real AS j) b where i = j
 ----
 1
 
 # no results on one side
 query I
-select count(*) from aa, (SELECT 1::real AS jj) bb where ii > jj AND ii>1000
+select count(*) from a, (SELECT 1::real AS j) b where i > j AND i>1000
 ----
 0
 
 query I
-select count(*) from aa, (SELECT 1::real AS jj) bb where ii <> jj AND ii>1000
+select count(*) from a, (SELECT 1::real AS j) b where i <> j AND i>1000
 ----
 0
 
 query I
-select count(*) from aa, (SELECT 1::real AS jj) bb where ii = jj AND ii>1000
+select count(*) from a, (SELECT 1::real AS j) b where i = j AND i>1000
 ----
 0
 
@@ -306,54 +306,54 @@ statement ok
 begin transaction
 
 statement ok
-create table aa as select ii::double AS ii from range(1, 101, 1) t1(ii)
+create table a as select i::double AS i from range(1, 101, 1) t1(i)
 
 # range joins
 query IR
-select count(*), sum(ii) from aa, (SELECT 100::double AS jj) bb where ii < jj
+select count(*), sum(i) from a, (SELECT 100::double AS j) b where i < j
 ----
 99	4950.000000
 
 query I
-select count(*) from aa, (SELECT 100::double AS jj) bb where ii <= jj
+select count(*) from a, (SELECT 100::double AS j) b where i <= j
 ----
 100
 
 query I
-select count(*) from aa, (SELECT 1::double AS jj) bb where ii > jj
+select count(*) from a, (SELECT 1::double AS j) b where i > j
 ----
 99
 
 query I
-select count(*) from aa, (SELECT 1::double AS jj) bb where ii >= jj
+select count(*) from a, (SELECT 1::double AS j) b where i >= j
 ----
 100
 
 # inequality join
 query I
-select count(*) from aa, (SELECT 1::double AS jj) bb where ii <> jj
+select count(*) from a, (SELECT 1::double AS j) b where i <> j
 ----
 99
 
 # equality join
 query I
-select count(*) from aa, (SELECT 1::double AS jj) bb where ii = jj
+select count(*) from a, (SELECT 1::double AS j) b where i = j
 ----
 1
 
 # no results on one side
 query I
-select count(*) from aa, (SELECT 1::double AS jj) bb where ii > jj AND ii>1000
+select count(*) from a, (SELECT 1::double AS j) b where i > j AND i>1000
 ----
 0
 
 query I
-select count(*) from aa, (SELECT 1::double AS jj) bb where ii <> jj AND ii>1000
+select count(*) from a, (SELECT 1::double AS j) b where i <> j AND i>1000
 ----
 0
 
 query I
-select count(*) from aa, (SELECT 1::double AS jj) bb where ii = jj AND ii>1000
+select count(*) from a, (SELECT 1::double AS j) b where i = j AND i>1000
 ----
 0
 
@@ -365,39 +365,39 @@ statement ok
 begin transaction
 
 statement ok
-create table aa (ii VARCHAR)
+create table a (i VARCHAR)
 
 statement ok
-insert into aa values ('aa'), ('bb'), ('cc'), ('d'), ('e'), ('f')
+insert into a values ('a'), ('b'), ('c'), ('d'), ('e'), ('f')
 
 # range joins
 query I
-select count(*) from aa, (SELECT 'f' AS jj) bb where ii < jj
+select count(*) from a, (SELECT 'f' AS j) b where i < j
 ----
 5
 
 query I
-select count(*) from aa, (SELECT 'f' AS jj) bb where ii <= jj
+select count(*) from a, (SELECT 'f' AS j) b where i <= j
 ----
 6
 
 query I
-select count(*) from aa, (SELECT 'aa' AS jj) bb where ii > jj
+select count(*) from a, (SELECT 'a' AS j) b where i > j
 ----
 5
 
 query I
-select count(*) from aa, (SELECT 'aa' AS jj) bb where ii >= jj
+select count(*) from a, (SELECT 'a' AS j) b where i >= j
 ----
 6
 
 query I
-select count(*) from aa, (SELECT 'aa' AS jj) bb where ii <> jj
+select count(*) from a, (SELECT 'a' AS j) b where i <> j
 ----
 5
 
 query I
-select count(*) from aa, (SELECT 'aa' AS jj) bb where ii = jj
+select count(*) from a, (SELECT 'a' AS j) b where i = j
 ----
 1
 

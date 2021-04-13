@@ -16,10 +16,10 @@ SELECT LIST_VALUE('hello')::VARCHAR
 [hello]
 
 query T
-SELECT l::VARChAR FROM (VALUES (LIST_VALUE('hello', 'world')), (LIST_VALUE('aa', 'bb', 'cc'))) t(l)
+SELECT l::VARChAR FROM (VALUES (LIST_VALUE('hello', 'world')), (LIST_VALUE('a', 'b', 'c'))) t(l)
 ----
 [hello, world]
-[aa, bb, cc]
+[a, b, c]
 
 statement ok
 CREATE TABLE list_data (g INTEGER, e INTEGER)
@@ -28,12 +28,12 @@ statement ok
 INSERT INTO list_data VALUES (1, 1), (1, 2), (2, 3), (2, 4), (2, 5), (3, 6), (5, NULL)
 
 query TTTTT
-SELECT LIST_VALUE(1, 2, 3, '4') aa, LIST_VALUE('aa','bb','cc') bb, LIST_VALUE(42, NULL) cc, LIST_VALUE(NULL, NULL, NULL) d, LIST_VALUE() e
+SELECT LIST_VALUE(1, 2, 3, '4') a, LIST_VALUE('a','b','c') b, LIST_VALUE(42, NULL) c, LIST_VALUE(NULL, NULL, NULL) d, LIST_VALUE() e
 ----
-[1, 2, 3, 4]	[aa, bb, cc]	[42, NULL]	[NULL, NULL, NULL]	[]
+[1, 2, 3, 4]	[a, b, c]	[42, NULL]	[NULL, NULL, NULL]	[]
 
 query T
-SELECT aa FROM (VALUES (LIST_VALUE(1, 2, 3, 4)), (LIST_VALUE()), (LIST_VALUE(NULL::INTEGER)), (LIST_VALUE(42))) lv(aa)
+SELECT a FROM (VALUES (LIST_VALUE(1, 2, 3, 4)), (LIST_VALUE()), (LIST_VALUE(NULL::INTEGER)), (LIST_VALUE(42))) lv(a)
 ----
 [1, 2, 3, 4]
 []
@@ -41,7 +41,7 @@ SELECT aa FROM (VALUES (LIST_VALUE(1, 2, 3, 4)), (LIST_VALUE()), (LIST_VALUE(NUL
 [42]
 
 query T
-SELECT aa FROM (VALUES (LIST_VALUE('hello', 'world')), (LIST_VALUE()), (LIST_VALUE(NULL::VARCHAR)), (LIST_VALUE('42'))) lv(aa)
+SELECT a FROM (VALUES (LIST_VALUE('hello', 'world')), (LIST_VALUE()), (LIST_VALUE(NULL::VARCHAR)), (LIST_VALUE('42'))) lv(a)
 ----
 [hello, world]
 []
@@ -49,12 +49,12 @@ SELECT aa FROM (VALUES (LIST_VALUE('hello', 'world')), (LIST_VALUE()), (LIST_VAL
 [42]
 
 query TTT
-SELECT * FROM (VALUES ((LIST_VALUE()), (LIST_VALUE(NULL)), LIST_VALUE(1, 2))) lv(aa)
+SELECT * FROM (VALUES ((LIST_VALUE()), (LIST_VALUE(NULL)), LIST_VALUE(1, 2))) lv(a)
 ----
 []	[NULL]	[1, 2]
 
 query T
-SELECT * FROM (VALUES (LIST_VALUE(1, 2)), (LIST_VALUE()), (LIST_VALUE(NULL::INTEGER))) lv(aa)
+SELECT * FROM (VALUES (LIST_VALUE(1, 2)), (LIST_VALUE()), (LIST_VALUE(NULL::INTEGER))) lv(a)
 ----
 [1, 2]
 []
@@ -79,7 +79,7 @@ NULL
 
 # empty list should not abort UNNEST
 query I
-SELECT UNNEST(aa) ua FROM (VALUES (LIST_VALUE(1, 2, 3, 4)), (LIST_VALUE()), (LIST_VALUE(NULL::INTEGER)), (LIST_VALUE(42))) lv(aa)
+SELECT UNNEST(a) ua FROM (VALUES (LIST_VALUE(1, 2, 3, 4)), (LIST_VALUE()), (LIST_VALUE(NULL::INTEGER)), (LIST_VALUE(42))) lv(a)
 ----
 1
 2
@@ -89,23 +89,23 @@ NULL
 42
 
 # TODO this should work but does not. its also kind of obscure
-# SELECT UNNEST(aa) ua FROM (VALUES (LIST_VALUE()), (LIST_VALUE(1, 2, 3, 4)), LIST_VALUE(NULL)), (LIST_VALUE(42))) lv(aa));
+# SELECT UNNEST(a) ua FROM (VALUES (LIST_VALUE()), (LIST_VALUE(1, 2, 3, 4)), LIST_VALUE(NULL)), (LIST_VALUE(42))) lv(a));
 # 1, 2, 3, 4, Value(), 42
 # list child type mismatch
 statement error
-SELECT * FROM (VALUES (LIST_VALUE(1, 2)), (LIST_VALUE()), (LIST_VALUE('aa'))) lv(aa)
+SELECT * FROM (VALUES (LIST_VALUE(1, 2)), (LIST_VALUE()), (LIST_VALUE('a'))) lv(a)
 
 # can't cast lists to stuff
 statement error
 SELECT CAST(LIST_VALUE(42) AS INTEGER)
 
-# can't add aa number to aa list
+# can't add a number to a list
 statement error
 SELECT LIST_VALUE(42) + 4
 
-# can't add aa number to aa list
+# can't add a number to a list
 statement error
-SELECT LIST_VALUE(42, 'aa')
+SELECT LIST_VALUE(42, 'a')
 
 # can have unnest anywhere
 query I

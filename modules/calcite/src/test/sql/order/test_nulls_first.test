@@ -6,59 +6,59 @@ statement ok
 PRAGMA enable_verification
 
 statement ok
-CREATE TABLE integers(ii INTEGER)
+CREATE TABLE integers(i INTEGER)
 
 statement ok
 INSERT INTO integers VALUES (1), (NULL)
 
 # default is NULLS FIRST
 query I
-SELECT * FROM integers ORDER BY ii
+SELECT * FROM integers ORDER BY i
 ----
 NULL
 1
 
 query I
-SELECT * FROM integers ORDER BY ii NULLS FIRST
+SELECT * FROM integers ORDER BY i NULLS FIRST
 ----
 NULL
 1
 
 query I
-SELECT * FROM integers ORDER BY ii NULLS LAST
+SELECT * FROM integers ORDER BY i NULLS LAST
 ----
 1
 NULL
 
 query II
-SELECT 10 AS jj, ii FROM integers ORDER BY jj, ii NULLS LAST
+SELECT 10 AS j, i FROM integers ORDER BY j, i NULLS LAST
 ----
 10	1
 10	NULL
 
-# multiple columns with aa mix
+# multiple columns with a mix
 statement ok
-CREATE TABLE test(ii INTEGER, jj INTEGER)
+CREATE TABLE test(i INTEGER, j INTEGER)
 
 statement ok
 INSERT INTO test VALUES (1, 1), (NULL, 1), (1, NULL)
 
 query II
-SELECT * FROM test ORDER BY ii NULLS FIRST, jj NULLS LAST
+SELECT * FROM test ORDER BY i NULLS FIRST, j NULLS LAST
 ----
 NULL	1
 1	1
 1	NULL
 
 query II
-SELECT * FROM test ORDER BY ii NULLS FIRST, jj NULLS FIRST
+SELECT * FROM test ORDER BY i NULLS FIRST, j NULLS FIRST
 ----
 NULL	1
 1	NULL
 1	1
 
 query II
-SELECT * FROM test ORDER BY ii NULLS LAST, jj NULLS FIRST
+SELECT * FROM test ORDER BY i NULLS LAST, j NULLS FIRST
 ----
 1	NULL
 1	1
@@ -66,14 +66,14 @@ NULL	1
 
 # now in window functions
 query III
-SELECT ii, jj, row_number() OVER (PARTITION BY ii ORDER BY jj NULLS FIRST) FROM test ORDER BY ii NULLS FIRST, jj NULLS FIRST;
+SELECT i, j, row_number() OVER (PARTITION BY i ORDER BY j NULLS FIRST) FROM test ORDER BY i NULLS FIRST, j NULLS FIRST;
 ----
 NULL	1	1
 1	NULL	1
 1	1	2
 
 query III
-SELECT ii, jj, row_number() OVER (PARTITION BY ii ORDER BY jj NULLS LAST) FROM test ORDER BY ii NULLS FIRST, jj NULLS FIRST;
+SELECT i, j, row_number() OVER (PARTITION BY i ORDER BY j NULLS LAST) FROM test ORDER BY i NULLS FIRST, j NULLS FIRST;
 ----
 NULL	1	1
 1	NULL	2
@@ -81,13 +81,13 @@ NULL	1	1
 
 # TOP N
 query II
-SELECT * FROM test ORDER BY ii NULLS FIRST, jj NULLS LAST LIMIT 2
+SELECT * FROM test ORDER BY i NULLS FIRST, j NULLS LAST LIMIT 2
 ----
 NULL	1
 1	1
 
 query II
-SELECT * FROM test ORDER BY ii NULLS LAST, jj NULLS LAST LIMIT 2
+SELECT * FROM test ORDER BY i NULLS LAST, j NULLS LAST LIMIT 2
 ----
 1	1
 1	NULL
@@ -95,7 +95,7 @@ SELECT * FROM test ORDER BY ii NULLS LAST, jj NULLS LAST LIMIT 2
 # Test NULLS FIRST/NULLS LAST PRAGMA
 # default is NULLS FIRST
 query I
-SELECT * FROM integers ORDER BY ii
+SELECT * FROM integers ORDER BY i
 ----
 NULL
 1
@@ -105,7 +105,7 @@ statement ok
 PRAGMA default_null_order='NULLS LAST'
 
 query I
-SELECT * FROM integers ORDER BY ii
+SELECT * FROM integers ORDER BY i
 ----
 1
 NULL

@@ -6,34 +6,34 @@ statement ok
 PRAGMA enable_verification
 
 statement ok
-SET aa = 42;
+SET a = 42;
 
 query I
-SELECT CURRENT_SETTING('aa');
+SELECT CURRENT_SETTING('a');
 ----
 42
 
 statement ok
-SET aa = 'asdf';
+SET a = 'asdf';
 
 query I
-SELECT CURRENT_SETTING('aa');
+SELECT CURRENT_SETTING('a');
 ----
 asdf
 
 statement ok
-SET bb = asdf;
+SET b = asdf;
 
 query I
-SELECT CURRENT_SETTING('bb');
+SELECT CURRENT_SETTING('b');
 ----
 asdf
 
 statement error
-SET aa = NULL;
+SET a = NULL;
 
 statement error
-RESET aa;
+RESET a;
 
 statement error
 RESET ALL;

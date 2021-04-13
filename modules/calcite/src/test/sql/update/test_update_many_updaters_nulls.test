@@ -19,9 +19,9 @@ PRAGMA enable_verification
 
 # this test contains five query connections (con1, con2, con3, con4, con5)
 # and one updating connection (updater)
-# create aa table, filled with 3 values (1), (2), (3)
+# create a table, filled with 3 values (1), (2), (3)
 statement ok con1
-CREATE TABLE test (aa INTEGER);
+CREATE TABLE test (a INTEGER);
 
 statement ok con1
 INSERT INTO test VALUES (1), (2), (3)
@@ -31,7 +31,7 @@ statement ok con1
 BEGIN TRANSACTION
 
 query I updater
-UPDATE test SET aa=NULL WHERE aa=1
+UPDATE test SET a=NULL WHERE a=1
 ----
 1
 
@@ -39,7 +39,7 @@ statement ok con2
 BEGIN TRANSACTION
 
 query I updater
-UPDATE test SET aa=NULL WHERE aa=2
+UPDATE test SET a=NULL WHERE a=2
 ----
 1
 
@@ -47,7 +47,7 @@ statement ok con3
 BEGIN TRANSACTION
 
 query I updater
-UPDATE test SET aa=NULL WHERE aa=3
+UPDATE test SET a=NULL WHERE a=3
 ----
 1
 
@@ -55,7 +55,7 @@ statement ok con4
 BEGIN TRANSACTION
 
 query I updater
-UPDATE test SET aa=99 WHERE aa IS NULL
+UPDATE test SET a=99 WHERE a IS NULL
 ----
 3
 
@@ -65,7 +65,7 @@ BEGIN TRANSACTION
 # now read the different states
 # con sees {1, 2, 3}
 query I con1
-SELECT * FROM test ORDER BY aa
+SELECT * FROM test ORDER BY a
 ----
 1
 2
@@ -73,7 +73,7 @@ SELECT * FROM test ORDER BY aa
 
 # con2 sees {NULL, 2, 3}
 query I con2
-SELECT * FROM test ORDER BY aa
+SELECT * FROM test ORDER BY a
 ----
 NULL
 2
@@ -81,7 +81,7 @@ NULL
 
 # con3 sees {NULL, NULL, 3}
 query I con3
-SELECT * FROM test ORDER BY aa
+SELECT * FROM test ORDER BY a
 ----
 NULL
 NULL
@@ -89,7 +89,7 @@ NULL
 
 # con4 sees {NULL, NULL, NULL}
 query I con4
-SELECT * FROM test ORDER BY aa
+SELECT * FROM test ORDER BY a
 ----
 NULL
 NULL
@@ -97,7 +97,7 @@ NULL
 
 # con5 sees {99, 99, 99}
 query I con5
-SELECT * FROM test ORDER BY aa
+SELECT * FROM test ORDER BY a
 ----
 99
 99
@@ -105,14 +105,14 @@ SELECT * FROM test ORDER BY aa
 
 # now verify that we get conflicts when we update values that have been updated AFTER we started
 statement error con1
-UPDATE test SET aa=99 WHERE aa=1
+UPDATE test SET a=99 WHERE a=1
 
 statement error con2
-UPDATE test SET aa=99 WHERE aa=2
+UPDATE test SET a=99 WHERE a=2
 
 statement error con3
-UPDATE test SET aa=99 WHERE aa=3
+UPDATE test SET a=99 WHERE a=3
 
 statement error con4
-UPDATE test SET aa=99 WHERE aa IS NULL
+UPDATE test SET a=99 WHERE a IS NULL
 

@@ -42,12 +42,12 @@ SELECT bool_and(True) FROM range(100);
 1
 
 query I
-SELECT bool_or(True) FROM range(100) tbl(ii) WHERE 1=0;
+SELECT bool_or(True) FROM range(100) tbl(i) WHERE 1=0;
 ----
 NULL
 
 query I
-SELECT bool_and(True) FROM range(100) tbl(ii) WHERE 1=0;
+SELECT bool_and(True) FROM range(100) tbl(i) WHERE 1=0;
 ----
 NULL
 

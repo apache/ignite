@@ -3,30 +3,30 @@
 # group: [delete]
 
 statement ok
-CREATE TABLE aa(ii INTEGER);
+CREATE TABLE a(i INTEGER);
 
 statement ok
-INSERT INTO aa VALUES (42);
+INSERT INTO a VALUES (42);
 
 query I
-SELECT COUNT(*) FROM aa;
+SELECT COUNT(*) FROM a;
 ----
 1
 
 # delete everything
 statement ok
-DELETE FROM aa;
+DELETE FROM a;
 
 query I
-SELECT COUNT(*) FROM aa;
+SELECT COUNT(*) FROM a;
 ----
 0
 
 statement ok
-INSERT INTO aa VALUES (42);
+INSERT INTO a VALUES (42);
 
 query I
-SELECT COUNT(*) FROM aa;
+SELECT COUNT(*) FROM a;
 ----
 1
 
@@ -35,10 +35,10 @@ statement ok
 BEGIN TRANSACTION
 
 statement ok
-DELETE FROM aa;
+DELETE FROM a;
 
 query I
-SELECT COUNT(*) FROM aa;
+SELECT COUNT(*) FROM a;
 ----
 0
 
@@ -46,7 +46,7 @@ statement ok
 ROLLBACK
 
 query I
-SELECT COUNT(*) FROM aa;
+SELECT COUNT(*) FROM a;
 ----
 1
 

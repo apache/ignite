@@ -7,7 +7,7 @@ PRAGMA enable_verification
 
 # "Early out prefix"
 query T
-SELECT prefix('abcd', 'aa')
+SELECT prefix('abcd', 'a')
 ----
 1
 
@@ -27,13 +27,13 @@ SELECT prefix('abcd', 'abcd')
 1
 
 query T
-SELECT prefix('abcd', 'bb')
+SELECT prefix('abcd', 'b')
 ----
 0
 
 # "Inlined string"
 query T
-SELECT prefix('abcdefgh', 'aa')
+SELECT prefix('abcdefgh', 'a')
 ----
 1
 
@@ -58,13 +58,13 @@ SELECT prefix('abcdefgh', 'abcde')
 1
 
 query T
-SELECT prefix('abcdefgh', 'bb')
+SELECT prefix('abcdefgh', 'b')
 ----
 0
 
 # Longer (non-inlined) strings
 query T
-SELECT prefix('abcdefghijklmnopqrstuvwxyz', 'aa')
+SELECT prefix('abcdefghijklmnopqrstuvwxyz', 'a')
 ----
 1
 
@@ -89,7 +89,7 @@ SELECT prefix('abcdefghijklmnopqrstuvwxyz', 'abcde')
 1
 
 query T
-SELECT prefix('abcdefghijklmnopqrstuvwxyz', 'bb')
+SELECT prefix('abcdefghijklmnopqrstuvwxyz', 'b')
 ----
 0
 
@@ -129,7 +129,7 @@ SELECT prefix('átomo', 'á')
 1
 
 query T
-SELECT prefix('átomo', 'aa')
+SELECT prefix('átomo', 'a')
 ----
 0
 
@@ -210,7 +210,7 @@ SELECT prefix('two ñ three ₡ four 🦆 end', 'two ñ three ₡ four 🦆 end'
 
 # test empty prefix removal
 statement ok
-INSERT INTO t0 VALUES ('aa'), ('bb'), ('d')
+INSERT INTO t0 VALUES ('a'), ('b'), ('d')
 
 query I
 SELECT COUNT(*) FROM t0 WHERE prefix(t0.c0, '');
@@ -218,13 +218,13 @@ SELECT COUNT(*) FROM t0 WHERE prefix(t0.c0, '');
 3
 
 query II
-SELECT c0, prefix(t0.c0, '') FROM t0 WHERE c0 <> 'bb' ORDER BY t0.c0;
+SELECT c0, prefix(t0.c0, '') FROM t0 WHERE c0 <> 'b' ORDER BY t0.c0;
 ----
-aa	1
+a	1
 d	1
 
 
-# now with aa NULL value
+# now with a NULL value
 statement ok
 INSERT INTO t0 VALUES (NULL)
 
@@ -234,8 +234,8 @@ SELECT COUNT(*) FROM t0 WHERE prefix(t0.c0, '');
 3
 
 query II
-SELECT c0, prefix(t0.c0, '') FROM t0 WHERE c0 IS NULL OR c0 <> 'bb' ORDER BY t0.c0;
+SELECT c0, prefix(t0.c0, '') FROM t0 WHERE c0 IS NULL OR c0 <> 'b' ORDER BY t0.c0;
 ----
 NULL	NULL
-aa	1
+a	1
 d	1

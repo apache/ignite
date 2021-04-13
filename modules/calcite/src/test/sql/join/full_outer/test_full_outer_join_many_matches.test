@@ -6,19 +6,19 @@ statement ok
 PRAGMA enable_verification
 
 statement ok
-CREATE TABLE integers AS SELECT aa ii, 1 jj FROM range(0, 2000, 1) t1(aa)
+CREATE TABLE integers AS SELECT a i, 1 j FROM range(0, 2000, 1) t1(a)
 
 statement ok
-CREATE TABLE integers2 AS SELECT aa kk, 2 l FROM range(2000, 4000, 1) t1(aa)
+CREATE TABLE integers2 AS SELECT a k, 2 l FROM range(2000, 4000, 1) t1(a)
 
 # equality join
 query IIII
-SELECT ii, jj, kk, l FROM integers FULL OUTER JOIN integers2 ON integers.ii=integers2.kk ORDER BY 1, 2, 3, 4
+SELECT i, j, k, l FROM integers FULL OUTER JOIN integers2 ON integers.i=integers2.k ORDER BY 1, 2, 3, 4
 ----
 16000 values hashing to 8b9eab043624ff470b00a981c1d588d9
 
 # range join
 query IIII
-SELECT ii, jj, kk, l FROM integers FULL OUTER JOIN integers2 ON integers.jj>integers2.l ORDER BY 1, 2, 3, 4
+SELECT i, j, k, l FROM integers FULL OUTER JOIN integers2 ON integers.j>integers2.l ORDER BY 1, 2, 3, 4
 ----
 16000 values hashing to 8b9eab043624ff470b00a981c1d588d9

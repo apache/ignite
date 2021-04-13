@@ -1,5 +1,5 @@
 # name: test/sql/aggregate/aggregates/test_perfect_ht.test
-# description: Test aggregates that can trigger aa perfect HT
+# description: Test aggregates that can trigger a perfect HT
 # group: [aggregates]
 
 statement ok
@@ -34,31 +34,31 @@ NULL	[1]	1
 # many small columns each having only the values 0 and 1
 # total possible combinations is 2^10, but there are only 2 groups
 statement ok
-create table manycolumns as select ii aa, ii bb, ii cc, ii d, ii e from range(0,2) tbl(ii);
+create table manycolumns as select i a, i b, i c, i d, i e from range(0,2) tbl(i);
 
 query IIIII
-select aa, bb, cc, d, e FROM manycolumns GROUP BY 1, 2, 3, 4, 5
+select a, b, c, d, e FROM manycolumns GROUP BY 1, 2, 3, 4, 5
 ----
 0	0	0	0	0
 1	1	1	1	1
 
 # test edge cases: multiple tinyints without statistics
-# create aa table of tinyints [-127, 128] stored as varchar
-# by forcing aa varchar to tinyint cast we lose statistics
+# create a table of tinyints [-127, 128] stored as varchar
+# by forcing a varchar to tinyint cast we lose statistics
 statement ok
-CREATE TABLE tinyints AS SELECT ii::TINYINT::VARCHAR AS t FROM range(-127, 128) tbl(ii);
+CREATE TABLE tinyints AS SELECT i::TINYINT::VARCHAR AS t FROM range(-127, 128) tbl(i);
 
 query IIII
-SELECT COUNT(DISTINCT ii), MIN(ii), MAX(ii), SUM(ii) / COUNT(ii) FROM (SELECT t::TINYINT t1 FROM tinyints GROUP BY t1) tbl(ii)
+SELECT COUNT(DISTINCT i), MIN(i), MAX(i), SUM(i) / COUNT(i) FROM (SELECT t::TINYINT t1 FROM tinyints GROUP BY t1) tbl(i)
 ----
 255	-127	127	0
 
-# now do the same with aa single smallint column
+# now do the same with a single smallint column
 statement ok
-CREATE TABLE smallints AS SELECT ii::SMALLINT::VARCHAR AS t FROM range(-32767, 32768) tbl(ii);
+CREATE TABLE smallints AS SELECT i::SMALLINT::VARCHAR AS t FROM range(-32767, 32768) tbl(i);
 
 query IIII
-SELECT COUNT(DISTINCT ii), MIN(ii), MAX(ii), SUM(ii) / COUNT(ii) FROM (SELECT t::SMALLINT t1 FROM smallints GROUP BY t1) tbl(ii)
+SELECT COUNT(DISTINCT i), MIN(i), MAX(i), SUM(i) / COUNT(i) FROM (SELECT t::SMALLINT t1 FROM smallints GROUP BY t1) tbl(i)
 ----
 65535	-32767	32767	0
 
@@ -67,7 +67,7 @@ statement ok
 PRAGMA disable_verification
 
 statement ok
-create table dates as select date '1992-01-01' + concat(ii, ' months')::interval as d from range(100) tbl(ii);
+create table dates as select date '1992-01-01' + concat(i, ' months')::interval as d from range(100) tbl(i);
 
 query II
 select extract(year from d), extract(month from d) from dates group by 1, 2;

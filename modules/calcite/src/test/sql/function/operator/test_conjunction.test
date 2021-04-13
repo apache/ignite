@@ -7,13 +7,13 @@ PRAGMA enable_verification
 
 # create table
 statement ok
-CREATE TABLE aa (ii integer, jj integer);
+CREATE TABLE a (i integer, j integer);
 
 statement ok
-INSERT INTO aa VALUES (3, 4), (4, 5), (5, 6)
+INSERT INTO a VALUES (3, 4), (4, 5), (5, 6)
 
 query II
-SELECT * FROM aa WHERE (ii > 3 AND jj < 5) OR (ii > 3 AND jj > 5)
+SELECT * FROM a WHERE (i > 3 AND j < 5) OR (i > 3 AND j > 5)
 ----
 5	6
 
@@ -100,91 +100,91 @@ SELECT false OR false
 
 # test single constant in conjunctions
 query T
-SELECT true AND ii>3 FROM aa ORDER BY ii
+SELECT true AND i>3 FROM a ORDER BY i
 ----
 0
 1
 1
 
 query T
-SELECT ii>3 AND true FROM aa ORDER BY ii
+SELECT i>3 AND true FROM a ORDER BY i
 ----
 0
 1
 1
 
 query T
-SELECT 2>3 AND ii>3 FROM aa ORDER BY ii
+SELECT 2>3 AND i>3 FROM a ORDER BY i
 ----
 0
 0
 0
 
 query T
-SELECT false AND ii>3 FROM aa ORDER BY ii
+SELECT false AND i>3 FROM a ORDER BY i
 ----
 0
 0
 0
 
 query T
-SELECT ii>3 AND false FROM aa ORDER BY ii
+SELECT i>3 AND false FROM a ORDER BY i
 ----
 0
 0
 0
 
 query T
-SELECT false OR ii>3 FROM aa ORDER BY ii
+SELECT false OR i>3 FROM a ORDER BY i
 ----
 0
 1
 1
 
 query T
-SELECT ii>3 OR false FROM aa ORDER BY ii
+SELECT i>3 OR false FROM a ORDER BY i
 ----
 0
 1
 1
 
 query T
-SELECT true OR ii>3 FROM aa ORDER BY ii
+SELECT true OR i>3 FROM a ORDER BY i
 ----
 1
 1
 1
 
 query T
-SELECT ii>3 OR true FROM aa ORDER BY ii
+SELECT i>3 OR true FROM a ORDER BY i
 ----
 1
 1
 1
 
 query T
-SELECT NULL OR ii>3 FROM aa ORDER BY ii
-----
-NULL
-1
-1
-
-query T
-SELECT ii>3 OR NULL FROM aa ORDER BY ii
+SELECT NULL OR i>3 FROM a ORDER BY i
 ----
 NULL
 1
 1
 
 query T
-SELECT NULL AND ii>3 FROM aa ORDER BY ii
+SELECT i>3 OR NULL FROM a ORDER BY i
+----
+NULL
+1
+1
+
+query T
+SELECT NULL AND i>3 FROM a ORDER BY i
 ----
 0
 NULL
 NULL
 
 query T
-SELECT ii>3 AND NULL FROM aa ORDER BY ii
+SELECT i>3 AND NULL FROM a ORDER BY i
 ----
 0
 NULL

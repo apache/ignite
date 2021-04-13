@@ -8,16 +8,16 @@ statement ok
 pragma enable_verification
 
 statement ok
-create table aa (ii double, jj double);
+create table a (i double, j double);
 
 statement ok
-insert into aa values (1, 10), (42, 420);
+insert into a values (1, 10), (42, 420);
 
 statement ok
-EXPLAIN SELECT * FROM summary((SELECT * FROM aa))
+EXPLAIN SELECT * FROM summary((SELECT * FROM a))
 
 query III
-SELECT * FROM summary((SELECT * FROM aa))
+SELECT * FROM summary((SELECT * FROM a))
 ----
 [1.000000, 10.000000]	1.000000	10.000000
 [42.000000, 420.000000]	42.000000	420.000000
@@ -30,7 +30,7 @@ statement ok
 pragma force_parallelism
 
 query III
-SELECT * FROM summary((SELECT * FROM aa))
+SELECT * FROM summary((SELECT * FROM a))
 ----
 [1.000000, 10.000000]	1.000000	10.000000
 [42.000000, 420.000000]	42.000000	420.000000

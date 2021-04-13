@@ -86,9 +86,9 @@ SELECT printf('%d %x %o %#x %#o', 100, 100, 100, 100, 100)
 
 # ascii characters
 query T
-SELECT printf('%cc', 65)
+SELECT printf('%c', 65)
 ----
-aa
+A
 
 # width trick
 query T

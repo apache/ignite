@@ -20,13 +20,13 @@ statement error
 select corr(*)
 
 statement ok
-create table aggr(kk int, v decimal(10,2), v2 decimal(10, 2));
+create table aggr(k int, v decimal(10,2), v2 decimal(10, 2));
 
 statement ok
 insert into aggr values(1, 10, null),(2, 10, 11), (2, 20, 22), (2, 25, null), (2, 30, 35);
 
 query II
-select kk, corr(v, v2) from aggr group by kk;
+select k, corr(v, v2) from aggr group by k;
 ----
 1	NULL
 2	0.9988445981
@@ -40,7 +40,7 @@ select  corr(v, v2) from aggr
 require vector_size 512
 
 query I rowsort
-select  corr(v, v2) over (partition by kk)
+select  corr(v, v2) over (partition by k)
     from aggr;
 ----
 0.998845

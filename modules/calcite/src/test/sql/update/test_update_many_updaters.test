@@ -4,9 +4,9 @@
 
 # this test contains four query connections (con1, con2, con3, con4)
 # and one updating connection (updater)
-# first create aa table, filled with 3 values (1), (2), (3)
+# first create a table, filled with 3 values (1), (2), (3)
 statement ok con1
-CREATE TABLE test (aa INTEGER);
+CREATE TABLE test (a INTEGER);
 
 statement ok con1
 INSERT INTO test VALUES (1), (2), (3)
@@ -17,19 +17,19 @@ statement ok con1
 BEGIN TRANSACTION
 
 statement ok updater
-UPDATE test SET aa=4 WHERE aa=1
+UPDATE test SET a=4 WHERE a=1
 
 statement ok con2
 BEGIN TRANSACTION
 
 statement ok updater
-UPDATE test SET aa=5 WHERE aa=2
+UPDATE test SET a=5 WHERE a=2
 
 statement ok con3
 BEGIN TRANSACTION
 
 statement ok updater
-UPDATE test SET aa=6 WHERE aa=3
+UPDATE test SET a=6 WHERE a=3
 
 statement ok con4
 BEGIN TRANSACTION
@@ -37,7 +37,7 @@ BEGIN TRANSACTION
 # now read the different states
 # con sees {1, 2, 3}
 query I con1
-SELECT * FROM test ORDER BY aa
+SELECT * FROM test ORDER BY a
 ----
 1
 2
@@ -45,7 +45,7 @@ SELECT * FROM test ORDER BY aa
 
 # con2 sees {2, 3, 4}
 query I con2
-SELECT * FROM test ORDER BY aa
+SELECT * FROM test ORDER BY a
 ----
 2
 3
@@ -53,7 +53,7 @@ SELECT * FROM test ORDER BY aa
 
 # con3 sees {3, 4, 5}
 query I con3
-SELECT * FROM test ORDER BY aa
+SELECT * FROM test ORDER BY a
 ----
 3
 4
@@ -61,7 +61,7 @@ SELECT * FROM test ORDER BY aa
 
 # con4 sees {4, 5, 6}
 query I con4
-SELECT * FROM test ORDER BY aa
+SELECT * FROM test ORDER BY a
 ----
 4
 5
@@ -69,17 +69,17 @@ SELECT * FROM test ORDER BY aa
 
 # now verify that we get conflicts when we update values that have been updated AFTER we started
 statement error con1
-UPDATE test SET aa=99 WHERE aa=1
+UPDATE test SET a=99 WHERE a=1
 
 statement error con2
-UPDATE test SET aa=99 WHERE aa=2
+UPDATE test SET a=99 WHERE a=2
 
 statement error con3
-UPDATE test SET aa=99 WHERE aa=3
+UPDATE test SET a=99 WHERE a=3
 
 # revert to previous state
 statement ok updater
-UPDATE test SET aa=aa-3
+UPDATE test SET a=a-3
 
 # rollback all connections
 statement ok con1
@@ -100,19 +100,19 @@ statement ok con1
 BEGIN TRANSACTION
 
 statement ok updater
-UPDATE test SET aa=4 WHERE aa=1
+UPDATE test SET a=4 WHERE a=1
 
 statement ok con2
 BEGIN TRANSACTION
 
 statement ok updater
-UPDATE test SET aa=5 WHERE aa=2
+UPDATE test SET a=5 WHERE a=2
 
 statement ok con3
 BEGIN TRANSACTION
 
 statement ok updater
-UPDATE test SET aa=6 WHERE aa=3
+UPDATE test SET a=6 WHERE a=3
 
 statement ok con4
 BEGIN TRANSACTION
@@ -120,7 +120,7 @@ BEGIN TRANSACTION
 # now read the different states
 # con sees {1, 2, 3}
 query I con1
-SELECT * FROM test ORDER BY aa
+SELECT * FROM test ORDER BY a
 ----
 1
 2
@@ -128,7 +128,7 @@ SELECT * FROM test ORDER BY aa
 
 # con2 sees {2, 3, 4}
 query I con2
-SELECT * FROM test ORDER BY aa
+SELECT * FROM test ORDER BY a
 ----
 2
 3
@@ -136,7 +136,7 @@ SELECT * FROM test ORDER BY aa
 
 # con3 sees {3, 4, 5}
 query I con3
-SELECT * FROM test ORDER BY aa
+SELECT * FROM test ORDER BY a
 ----
 3
 4
@@ -144,7 +144,7 @@ SELECT * FROM test ORDER BY aa
 
 # con4 sees {4, 5, 6}
 query I con4
-SELECT * FROM test ORDER BY aa
+SELECT * FROM test ORDER BY a
 ----
 4
 5
@@ -152,18 +152,18 @@ SELECT * FROM test ORDER BY aa
 
 # we now verify that we CAN update values that were committed BEFORE we started
 statement ok con2
-UPDATE test SET aa=7 WHERE aa=4
+UPDATE test SET a=7 WHERE a=4
 
 statement ok con3
-UPDATE test SET aa=8 WHERE aa=5
+UPDATE test SET a=8 WHERE a=5
 
 statement ok con4
-UPDATE test SET aa=9 WHERE aa=6
+UPDATE test SET a=9 WHERE a=6
 
 # now read the different states again
 # con sees {1, 2, 3} still
 query I con1
-SELECT * FROM test ORDER BY aa
+SELECT * FROM test ORDER BY a
 ----
 1
 2
@@ -171,7 +171,7 @@ SELECT * FROM test ORDER BY aa
 
 # con2 sees {2, 3, 7}
 query I con2
-SELECT * FROM test ORDER BY aa
+SELECT * FROM test ORDER BY a
 ----
 2
 3
@@ -179,7 +179,7 @@ SELECT * FROM test ORDER BY aa
 
 # con3 sees {3, 4, 8}
 query I con3
-SELECT * FROM test ORDER BY aa
+SELECT * FROM test ORDER BY a
 ----
 3
 4
@@ -187,7 +187,7 @@ SELECT * FROM test ORDER BY aa
 
 # con4 sees {4, 5, 9}
 query I con4
-SELECT * FROM test ORDER BY aa
+SELECT * FROM test ORDER BY a
 ----
 4
 5
@@ -195,7 +195,7 @@ SELECT * FROM test ORDER BY aa
 
 # updater still sees {4, 5, 6}
 query I updater
-SELECT * FROM test ORDER BY aa
+SELECT * FROM test ORDER BY a
 ----
 4
 5
@@ -208,28 +208,28 @@ COMMIT
 
 # con, con2, con3 still see the same data, con4 sees the currently committed data
 query I con1
-SELECT * FROM test ORDER BY aa
+SELECT * FROM test ORDER BY a
 ----
 1
 2
 3
 
 query I con2
-SELECT * FROM test ORDER BY aa
+SELECT * FROM test ORDER BY a
 ----
 2
 3
 7
 
 query I con3
-SELECT * FROM test ORDER BY aa
+SELECT * FROM test ORDER BY a
 ----
 3
 4
 8
 
 query I con4
-SELECT * FROM test ORDER BY aa
+SELECT * FROM test ORDER BY a
 ----
 4
 5
@@ -241,28 +241,28 @@ COMMIT
 
 # con, con3 still see the same data, con2 and con4 see the committed data
 query I con1
-SELECT * FROM test ORDER BY aa
+SELECT * FROM test ORDER BY a
 ----
 1
 2
 3
 
 query I con2
-SELECT * FROM test ORDER BY aa
+SELECT * FROM test ORDER BY a
 ----
 5
 7
 9
 
 query I con3
-SELECT * FROM test ORDER BY aa
+SELECT * FROM test ORDER BY a
 ----
 3
 4
 8
 
 query I con4
-SELECT * FROM test ORDER BY aa
+SELECT * FROM test ORDER BY a
 ----
 5
 7
@@ -274,40 +274,40 @@ COMMIT
 
 # con still sees the same data, but the rest all see the committed data
 query I con1
-SELECT * FROM test ORDER BY aa
+SELECT * FROM test ORDER BY a
 ----
 1
 2
 3
 
 query I con2
-SELECT * FROM test ORDER BY aa
+SELECT * FROM test ORDER BY a
 ----
 7
 8
 9
 
 query I con3
-SELECT * FROM test ORDER BY aa
+SELECT * FROM test ORDER BY a
 ----
 7
 8
 9
 
 query I con4
-SELECT * FROM test ORDER BY aa
+SELECT * FROM test ORDER BY a
 ----
 7
 8
 9
 
-# now we commit con1, this should trigger aa cleanup
+# now we commit con1, this should trigger a cleanup
 statement ok con1
 COMMIT
 
 # now con1 also sees the committed data
 query I con1
-SELECT * FROM test ORDER BY aa
+SELECT * FROM test ORDER BY a
 ----
 7
 8

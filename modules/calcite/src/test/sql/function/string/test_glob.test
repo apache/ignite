@@ -22,32 +22,32 @@ SELECT 'aaa' GLOB '*'
 1
 
 query T
-SELECT 'aaa' GLOB '*aa'
+SELECT 'aaa' GLOB '*a'
 ----
 1
 
 query T
-SELECT 'aaa' GLOB '*bb'
+SELECT 'aaa' GLOB '*b'
 ----
 0
 
 query T
-SELECT 'aaa' GLOB 'aa*'
+SELECT 'aaa' GLOB 'a*'
 ----
 1
 
 query T
-SELECT 'aaa' GLOB 'bb*'
+SELECT 'aaa' GLOB 'b*'
 ----
 0
 
 query T
-SELECT 'aaa' GLOB 'aa?aa'
+SELECT 'aaa' GLOB 'a?a'
 ----
 1
 
 query T
-SELECT 'aaa' GLOB 'aa?'
+SELECT 'aaa' GLOB 'a?'
 ----
 0
 
@@ -73,11 +73,11 @@ SELECT '3' GLOB '[0-9]'
 1
 
 query T
-SELECT 'aa' GLOB '[0-9]'
+SELECT 'a' GLOB '[0-9]'
 ----
 0
 
-# multiple brackets in aa row
+# multiple brackets in a row
 query T
 SELECT '012' GLOB '[0-9][0-9][0-9]'
 ----
@@ -85,7 +85,7 @@ SELECT '012' GLOB '[0-9][0-9][0-9]'
 
 # trailing in pattern after brackets
 query T
-SELECT '012' GLOB '[0-9][0-9][0-9]aa'
+SELECT '012' GLOB '[0-9][0-9][0-9]a'
 ----
 0
 
@@ -108,7 +108,7 @@ SELECT 'd3' GLOB '[abc0-9][abc0-9]'
 
 # inverse brackets
 query T
-SELECT 'aa' GLOB '[!0-9]'
+SELECT 'a' GLOB '[!0-9]'
 ----
 1
 
@@ -124,7 +124,7 @@ SELECT '*' GLOB '\*'
 1
 
 query T
-SELECT 'aa' GLOB '\*'
+SELECT 'a' GLOB '\*'
 ----
 0
 
@@ -136,11 +136,11 @@ SELECT '\' GLOB '\\'
 
 # '
 query T
-SELECT 'aa' GLOB '\\'
+SELECT 'a' GLOB '\\'
 ----
 0
 
-# bracket in aa bracket
+# bracket in a bracket
 # this is valid as long as the closing bracket is the first non-exclamation mark character
 query T
 SELECT '3]' GLOB '[]3][]]'
@@ -170,7 +170,7 @@ SELECT '3' GLOB '\\'
 ----
 0
 
-# aa bunch of asterisks
+# a bunch of asterisks
 query T
 SELECT '3' GLOB '3***'
 ----
@@ -182,7 +182,7 @@ SELECT '1245' GLOB '**1***2*******4*5***'
 1
 
 query T
-SELECT 'aaaaaaaaaaaaaaaaaaaaaaa' GLOB '*aa'
+SELECT 'aaaaaaaaaaaaaaaaaaaaaaa' GLOB '*a'
 ----
 1
 
@@ -207,7 +207,7 @@ SELECT '3' GLOB '[*]'
 ----
 0
 
-# multiple ranges in aa bracket
+# multiple ranges in a bracket
 query T
 SELECT '6' GLOB '[1-35-7]'
 ----
@@ -223,7 +223,7 @@ statement ok
 CREATE TABLE strings(s STRING, pat STRING);
 
 statement ok
-INSERT INTO strings VALUES ('abab', 'ab*'), ('aaa', 'aa?aa'), ('aaa', '*bb*')
+INSERT INTO strings VALUES ('abab', 'ab*'), ('aaa', 'a?a'), ('aaa', '*b*')
 
 query T
 SELECT s FROM strings WHERE s GLOB 'ab*'

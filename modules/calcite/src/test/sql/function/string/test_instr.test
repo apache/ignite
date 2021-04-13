@@ -9,7 +9,7 @@ statement ok
 CREATE TABLE strings(s VARCHAR, off INTEGER, length INTEGER);
 
 statement ok
-INSERT INTO strings VALUES ('hello', 1, 2), ('world', 2, 3), ('bb', 1, 1), (NULL, 2, 2)
+INSERT INTO strings VALUES ('hello', 1, 2), ('world', 2, 3), ('b', 1, 1), (NULL, 2, 2)
 
 # Test first letter
 query I
@@ -80,7 +80,7 @@ SELECT instr(s,'o'),s FROM strings
 ----
 5	hello
 2	world
-0	bb
+0	b
 NULL	NULL
 
 # Test NULL constant in different places

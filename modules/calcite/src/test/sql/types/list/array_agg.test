@@ -10,13 +10,13 @@ SELECT ARRAY_AGG(NULL), ARRAY_AGG(42)
 
 # simple array agg
 query I
-SELECT ARRAY_AGG(ii) FROM range(0, 3) tbl(ii)
+SELECT ARRAY_AGG(i) FROM range(0, 3) tbl(i)
 ----
 [0, 1, 2]
 
 # empty array agg
 query I
-SELECT ARRAY_AGG(ii) FROM range(0, 0) tbl(ii)
+SELECT ARRAY_AGG(i) FROM range(0, 0) tbl(i)
 ----
 NULL
 

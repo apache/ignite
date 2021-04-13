@@ -6,19 +6,19 @@ statement ok
 PRAGMA enable_verification
 
 statement ok
-CREATE TABLE t1 (aa INTEGER, bb INTEGER)
+CREATE TABLE t1 (a INTEGER, b INTEGER)
 
 statement ok
 INSERT INTO t1 VALUES (1, 2)
 
 statement ok
-CREATE TABLE t2 (bb INTEGER, cc INTEGER)
+CREATE TABLE t2 (b INTEGER, c INTEGER)
 
 statement ok
 INSERT INTO t2 VALUES (2, 3)
 
 statement ok
-CREATE TABLE t3 (cc INTEGER, d INTEGER)
+CREATE TABLE t3 (c INTEGER, d INTEGER)
 
 statement ok
 INSERT INTO t3 VALUES (3, 4)
@@ -26,17 +26,17 @@ INSERT INTO t3 VALUES (3, 4)
 # multiple joins with using
 # single column
 query IIII
-SELECT * FROM t1 JOIN t2 USING (bb) JOIN t3 USING (cc) ORDER BY 1, 2, 3, 4;
+SELECT * FROM t1 JOIN t2 USING (b) JOIN t3 USING (c) ORDER BY 1, 2, 3, 4;
 ----
 1	2	3	4
 
 # column does not exist on left side of join
 statement error
-SELECT * FROM t1 JOIN t2 USING (cc)
+SELECT * FROM t1 JOIN t2 USING (c)
 
 # column does not exist on right side of join
 statement error
-SELECT * FROM t1 JOIN t2 USING (aa)
+SELECT * FROM t1 JOIN t2 USING (a)
 
 statement ok
 DROP TABLE t1
@@ -48,13 +48,13 @@ statement ok
 DROP TABLE t3
 
 statement ok
-CREATE TABLE t1 (aa INTEGER, bb INTEGER, cc INTEGER)
+CREATE TABLE t1 (a INTEGER, b INTEGER, c INTEGER)
 
 statement ok
 INSERT INTO t1 VALUES (1, 2, 2)
 
 statement ok
-CREATE TABLE t2 (bb INTEGER, cc INTEGER, d INTEGER, e INTEGER)
+CREATE TABLE t2 (b INTEGER, c INTEGER, d INTEGER, e INTEGER)
 
 statement ok
 INSERT INTO t2 VALUES (2, 2, 3, 4)
@@ -67,7 +67,7 @@ INSERT INTO t3 VALUES (3, 4)
 
 # multi column
 query IIIII
-SELECT * FROM t1 JOIN t2 USING (bb, cc) JOIN t3 USING (d, e);
+SELECT * FROM t1 JOIN t2 USING (b, c) JOIN t3 USING (d, e);
 ----
 1	2	2	3	4
 

@@ -6,7 +6,7 @@ statement ok
 PRAGMA enable_verification
 
 statement ok
-CREATE TABLE blobs (bb BYTEA);
+CREATE TABLE blobs (b BYTEA);
 
 # Insert valid hex strings
 statement ok
@@ -53,10 +53,10 @@ INSERT INTO blobs VALUES('\xGA\xFF\xAA')
 
 # Insert invalid hex strings (odd # of chars)
 statement error
-INSERT INTO blobs VALUES('\xaa')
+INSERT INTO blobs VALUES('\xA')
 
 statement error
-INSERT INTO blobs VALUES('\xAA\xaa')
+INSERT INTO blobs VALUES('\xAA\xA')
 
 statement error
 INSERT INTO blobs VALUES('blablabla\x')
@@ -77,7 +77,7 @@ SELECT NULL::BLOB
 NULL
 
 statement ok
-CREATE TABLE blob_empty (bb BYTEA);
+CREATE TABLE blob_empty (b BYTEA);
 
 statement ok
 INSERT INTO blob_empty VALUES(''), (''::BLOB)

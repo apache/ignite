@@ -6,14 +6,14 @@ statement ok
 PRAGMA enable_verification
 
 statement ok
-CREATE TABLE intervals(ii INTERVAL)
+CREATE TABLE intervals(i INTERVAL)
 
 statement ok
 INSERT INTO intervals VALUES ('2 years'), ('16 months'), ('42 days'), ('2066343400 microseconds'), (NULL)
 
 # extract various parts of the intervals
 query I
-SELECT EXTRACT(year FROM ii) FROM intervals
+SELECT EXTRACT(year FROM i) FROM intervals
 ----
 2
 1
@@ -22,7 +22,7 @@ SELECT EXTRACT(year FROM ii) FROM intervals
 NULL
 
 query I
-SELECT EXTRACT(month FROM ii) FROM intervals
+SELECT EXTRACT(month FROM i) FROM intervals
 ----
 0
 4
@@ -31,7 +31,7 @@ SELECT EXTRACT(month FROM ii) FROM intervals
 NULL
 
 query I
-SELECT EXTRACT(day FROM ii) FROM intervals
+SELECT EXTRACT(day FROM i) FROM intervals
 ----
 0
 0
@@ -40,7 +40,7 @@ SELECT EXTRACT(day FROM ii) FROM intervals
 NULL
 
 query I
-SELECT EXTRACT(decade FROM ii) FROM intervals
+SELECT EXTRACT(decade FROM i) FROM intervals
 ----
 0
 0
@@ -49,7 +49,7 @@ SELECT EXTRACT(decade FROM ii) FROM intervals
 NULL
 
 query I
-SELECT EXTRACT(century FROM ii) FROM intervals
+SELECT EXTRACT(century FROM i) FROM intervals
 ----
 0
 0
@@ -58,7 +58,7 @@ SELECT EXTRACT(century FROM ii) FROM intervals
 NULL
 
 query I
-SELECT EXTRACT(millennium FROM ii) FROM intervals
+SELECT EXTRACT(millennium FROM i) FROM intervals
 ----
 0
 0
@@ -67,7 +67,7 @@ SELECT EXTRACT(millennium FROM ii) FROM intervals
 NULL
 
 query I
-SELECT EXTRACT(quarter FROM ii) FROM intervals
+SELECT EXTRACT(quarter FROM i) FROM intervals
 ----
 1
 2
@@ -76,19 +76,19 @@ SELECT EXTRACT(quarter FROM ii) FROM intervals
 NULL
 
 statement error
-SELECT EXTRACT(dayofweek FROM ii) FROM intervals
+SELECT EXTRACT(dayofweek FROM i) FROM intervals
 
 statement error
-SELECT EXTRACT(isodow FROM ii) FROM intervals
+SELECT EXTRACT(isodow FROM i) FROM intervals
 
 statement error
-SELECT EXTRACT(dayofyear FROM ii) FROM intervals
+SELECT EXTRACT(dayofyear FROM i) FROM intervals
 
 statement error
-SELECT EXTRACT(week FROM ii) FROM intervals
+SELECT EXTRACT(week FROM i) FROM intervals
 
 query I
-SELECT EXTRACT(epoch FROM ii) FROM intervals
+SELECT EXTRACT(epoch FROM i) FROM intervals
 ----
 62208000
 41472000
@@ -97,7 +97,7 @@ SELECT EXTRACT(epoch FROM ii) FROM intervals
 NULL
 
 query I
-SELECT EXTRACT(microsecond FROM ii) FROM intervals
+SELECT EXTRACT(microsecond FROM i) FROM intervals
 ----
 0
 0
@@ -106,7 +106,7 @@ SELECT EXTRACT(microsecond FROM ii) FROM intervals
 NULL
 
 query I
-SELECT EXTRACT(millisecond FROM ii) FROM intervals
+SELECT EXTRACT(millisecond FROM i) FROM intervals
 ----
 0
 0
@@ -115,7 +115,7 @@ SELECT EXTRACT(millisecond FROM ii) FROM intervals
 NULL
 
 query I
-SELECT EXTRACT(second FROM ii) FROM intervals
+SELECT EXTRACT(second FROM i) FROM intervals
 ----
 0
 0
@@ -124,7 +124,7 @@ SELECT EXTRACT(second FROM ii) FROM intervals
 NULL
 
 query I
-SELECT EXTRACT(minute FROM ii) FROM intervals
+SELECT EXTRACT(minute FROM i) FROM intervals
 ----
 0
 0
@@ -133,7 +133,7 @@ SELECT EXTRACT(minute FROM ii) FROM intervals
 NULL
 
 query I
-SELECT EXTRACT(hour FROM ii) FROM intervals
+SELECT EXTRACT(hour FROM i) FROM intervals
 ----
 0
 0

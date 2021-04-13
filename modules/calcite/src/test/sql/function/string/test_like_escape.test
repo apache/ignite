@@ -43,7 +43,7 @@ SELECT '_ ' LIKE '*_ ' ESCAPE '*';
 1
 
 query T
-SELECT ' aa ' LIKE '*_ ' ESCAPE '*';
+SELECT ' a ' LIKE '*_ ' ESCAPE '*';
 ----
 0
 
@@ -69,7 +69,7 @@ statement ok
 CREATE TABLE strings(s STRING, pat STRING);
 
 statement ok
-INSERT INTO strings VALUES ('abab', 'ab%'), ('aaa', 'aa*_a'), ('aaa', '*%bb'), ('bbb', 'aa%');
+INSERT INTO strings VALUES ('abab', 'ab%'), ('aaa', 'a*_a'), ('aaa', '*%b'), ('bbb', 'a%');
 
 query T
 SELECT s FROM strings;
@@ -83,12 +83,12 @@ query T
 SELECT pat FROM strings;
 ----
 ab%
-aa*_a
-*%bb
-aa%
+a*_a
+*%b
+a%
 
 query T
-SELECT s FROM strings WHERE pat LIKE 'aa*%' ESCAPE '*';
+SELECT s FROM strings WHERE pat LIKE 'a*%' ESCAPE '*';
 ----
 bbb
 

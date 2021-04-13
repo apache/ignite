@@ -103,12 +103,12 @@ NULL
 # test regex_matches with options
 # case sensitivity
 query T
-SELECT regexp_matches('asdf', '.*SD.*', 'ii')
+SELECT regexp_matches('asdf', '.*SD.*', 'i')
 ----
 1
 
 query T
-SELECT regexp_matches('asdf', '.*SD.*', 'cc')
+SELECT regexp_matches('asdf', '.*SD.*', 'c')
 ----
 0
 
@@ -127,7 +127,7 @@ world', '.*', 'n')
 
 # whitespace is ignored
 query T
-SELECT regexp_matches('asdf', '.*SD.*', ' ii 	')
+SELECT regexp_matches('asdf', '.*SD.*', ' i 	')
 ----
 1
 
@@ -145,13 +145,13 @@ statement ok
 INSERT INTO test VALUES ('hello'), ('HELLO');
 
 query T
-SELECT regexp_matches(v, 'h.*', 'ii') FROM test ORDER BY v
+SELECT regexp_matches(v, 'h.*', 'i') FROM test ORDER BY v
 ----
 1
 1
 
 query T
-SELECT regexp_matches(v, 'h.*', 'cc') FROM test ORDER BY v
+SELECT regexp_matches(v, 'h.*', 'c') FROM test ORDER BY v
 ----
 0
 1

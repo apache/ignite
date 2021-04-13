@@ -5,17 +5,17 @@
 statement ok
 PRAGMA enable_verification
 
-# BLOB to VARCHAR -> CastFromBlob, it always results in aa hex representation
+# BLOB to VARCHAR -> CastFromBlob, it always results in a hex representation
 query T
-SELECT 'aa'::BYTEA::VARCHAR
+SELECT 'a'::BYTEA::VARCHAR
 ----
-aa
+a
 
 # VARCHAR to BLOB -> CastToBlob
 query T
-SELECT 'aa'::VARCHAR::BYTEA
+SELECT 'a'::VARCHAR::BYTEA
 ----
-aa
+a
 
 # Hex string with BLOB
 query T

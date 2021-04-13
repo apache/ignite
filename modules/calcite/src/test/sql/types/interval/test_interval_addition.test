@@ -11,7 +11,7 @@ SELECT DATE '1992-03-01' + INTERVAL '1' YEAR
 ----
 1993-03-01
 
-# check aa bunch of different months to test proper month looping behavior
+# check a bunch of different months to test proper month looping behavior
 query T
 SELECT DATE '1992-03-01' + INTERVAL '0' MONTH
 ----
@@ -174,7 +174,7 @@ SELECT DATE '1993-03-01' - INTERVAL '1' SECOND
 ----
 1993-03-01
 
-# but aa large amount of seconds does have an impact
+# but a large amount of seconds does have an impact
 query T
 SELECT DATE '1993-03-01' + INTERVAL '1000000' SECOND
 ----

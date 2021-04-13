@@ -41,14 +41,14 @@ SELECT 4 / 0
 NULL
 
 statement ok
-CREATE TABLE test (aa INTEGER, bb INTEGER);
+CREATE TABLE test (a INTEGER, b INTEGER);
 
 statement ok
 INSERT INTO test VALUES (11, 22), (NULL, 21), (13, 22)
 
 # NULL selection
 query I
-SELECT aa FROM test
+SELECT a FROM test
 ----
 11
 NULL
@@ -56,7 +56,7 @@ NULL
 
 # cast NULL
 query I
-SELECT cast(aa AS BIGINT) FROM test;
+SELECT cast(a AS BIGINT) FROM test;
 ----
 11
 NULL
@@ -64,7 +64,7 @@ NULL
 
 # division by constant zero is NULL
 query I
-SELECT aa / 0 FROM test;
+SELECT a / 0 FROM test;
 ----
 NULL
 NULL
@@ -72,7 +72,7 @@ NULL
 
 # division by non-constant zero as well
 query I
-SELECT aa / (aa - aa) FROM test;
+SELECT a / (a - a) FROM test;
 ----
 NULL
 NULL
@@ -80,7 +80,7 @@ NULL
 
 # NULL addition results in NULL
 query I
-SELECT aa + bb FROM test
+SELECT a + b FROM test
 ----
 33
 NULL

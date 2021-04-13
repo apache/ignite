@@ -1,5 +1,5 @@
 # name: test/sql/types/decimal/decimal_overflow_table.test
-# description: Test overflow in various decimal computations involving aa table
+# description: Test overflow in various decimal computations involving a table
 # group: [decimal]
 
 statement ok

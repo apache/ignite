@@ -29,7 +29,7 @@ statement error
 SELECT decode('\x00'::BLOB)
 
 query I
-SELECT decode(encode(aa)) || aa from (values ('hello'), ('world')) tbl(aa);
+SELECT decode(encode(a)) || a from (values ('hello'), ('world')) tbl(a);
 ----
 hellohello
 worldworld

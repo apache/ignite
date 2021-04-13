@@ -3,13 +3,13 @@
 # group: [aggregates]
 
 query TTTTI
-SELECT NULL as aa, NULL as bb, NULL as cc, NULL as d, 1 as id UNION SELECT 'Кирилл' as aa, 'Müller' as bb, '我是谁' as cc, 'ASCII' as d, 2 as id ORDER BY 1
+SELECT NULL as a, NULL as b, NULL as c, NULL as d, 1 as id UNION SELECT 'Кирилл' as a, 'Müller' as b, '我是谁' as c, 'ASCII' as d, 2 as id ORDER BY 1
 ----
 NULL	NULL	NULL	NULL	1
 Кирилл	Müller	我是谁	ASCII	2
 
 statement ok
-CREATE TABLE test (aa INTEGER, s VARCHAR);
+CREATE TABLE test (a INTEGER, s VARCHAR);
 
 statement ok
 INSERT INTO test VALUES (11, 'hello'), (12, 'world'), (11, NULL)
@@ -22,14 +22,14 @@ SELECT COUNT(*), COUNT(s) FROM test;
 
 # grouped aggregation on string
 query III
-SELECT aa, COUNT(*), COUNT(s) FROM test GROUP BY aa ORDER BY aa;
+SELECT a, COUNT(*), COUNT(s) FROM test GROUP BY a ORDER BY a;
 ----
 11	2	1
 12	1	1
 
 # group by the strings
 query TR
-SELECT s, SUM(aa) FROM test GROUP BY s ORDER BY s;
+SELECT s, SUM(a) FROM test GROUP BY s ORDER BY s;
 ----
 NULL	11.000000
 hello	11.000000
@@ -47,14 +47,14 @@ SELECT COUNT(*), COUNT(s), COUNT(DISTINCT s) FROM test;
 
 # grouped distinct
 query IIII
-SELECT aa, COUNT(*), COUNT(s), COUNT(DISTINCT s) FROM test GROUP BY aa ORDER BY aa;
+SELECT a, COUNT(*), COUNT(s), COUNT(DISTINCT s) FROM test GROUP BY a ORDER BY a;
 ----
 11	3	2	1
 12	2	2	1
 
 # now with WHERE clause
 query IIII
-SELECT aa, COUNT(*), COUNT(s), COUNT(DISTINCT s) FROM test WHERE s IS NOT NULL GROUP BY aa ORDER BY aa;
+SELECT a, COUNT(*), COUNT(s), COUNT(DISTINCT s) FROM test WHERE s IS NOT NULL GROUP BY a ORDER BY a;
 ----
 11	2	2	1
 12	2	2	1

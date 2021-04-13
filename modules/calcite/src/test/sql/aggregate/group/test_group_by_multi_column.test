@@ -3,13 +3,13 @@
 # group: [group]
 
 statement ok
-CREATE TABLE integers(ii INTEGER, jj INTEGER, kk INTEGER);
+CREATE TABLE integers(i INTEGER, j INTEGER, k INTEGER);
 
 statement ok
 INSERT INTO integers VALUES (1, 1, 2), (1, 2, 2), (1, 1, 2), (2, 1, 2), (1, 2, 4), (1, 2, NULL);
 
 query IIRII
-SELECT ii, jj, SUM(kk), COUNT(*), COUNT(kk) FROM integers GROUP BY ii, jj ORDER BY 1, 2
+SELECT i, j, SUM(k), COUNT(*), COUNT(k) FROM integers GROUP BY i, j ORDER BY 1, 2
 ----
 1	1	4.000000	2	2
 1	2	6.000000	3	2

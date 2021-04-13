@@ -6,13 +6,13 @@ statement ok
 PRAGMA enable_verification
 
 statement ok
-create temporary table t as select range ii, mod(range,10) jj,mod(range,10)*10000000 kk from range(1000);
+create temporary table t as select range i, mod(range,10) j,mod(range,10)*10000000 k from range(1000);
 
 
 query II
 SELECT
   COUNT(*) AS unfiltered,
-  COUNT(*) FILTER (WHERE ii < 5) AS filtered
+  COUNT(*) FILTER (WHERE i < 5) AS filtered
 FROM t;
 ----
 1000	5
@@ -20,31 +20,31 @@ FROM t;
 query II
 SELECT
   COUNT(*) AS unfiltered,
-  COUNT(*) FILTER (WHERE ii > 5 and ii < 10) AS filtered
+  COUNT(*) FILTER (WHERE i > 5 and i < 10) AS filtered
 FROM t;
 ----
 1000	4
 
 query II
 SELECT
-  SUM(ii) AS unfiltered,
-  SUM(ii) FILTER (WHERE ii < 5) AS filtered
+  SUM(i) AS unfiltered,
+  SUM(i) FILTER (WHERE i < 5) AS filtered
 FROM t;
 ----
 499500	10
 
 query II
 SELECT
-  SUM(ii) AS unfiltered,
-  SUM(ii) FILTER (WHERE ii between 5 and 10) AS filtered
+  SUM(i) AS unfiltered,
+  SUM(i) FILTER (WHERE i between 5 and 10) AS filtered
 FROM t;
 ----
 499500	45
 
 query II
 SELECT
-  SUM(ii) AS unfiltered,
-  SUM(jj) FILTER (WHERE jj < 2) AS filtered
+  SUM(i) AS unfiltered,
+  SUM(j) FILTER (WHERE j < 2) AS filtered
 FROM t;
 ----
 499500	100
@@ -52,21 +52,21 @@ FROM t;
 
 query I
 SELECT
-  SUM(jj) FILTER (WHERE ii < 10)
+  SUM(j) FILTER (WHERE i < 10)
 FROM t;
 ----
 45
 
 query I
 SELECT
-  SUM(jj) FILTER (WHERE ii < (select 10))
+  SUM(j) FILTER (WHERE i < (select 10))
 FROM t;
 ----
 45
 
 query I
 SELECT
-  SUM(ii) FILTER (WHERE ii < (select ii from t as t2 where t.ii = t2.ii))
+  SUM(i) FILTER (WHERE i < (select i from t as t2 where t.i = t2.i))
 FROM t;
 ----
 NULL
@@ -74,7 +74,7 @@ NULL
 # use it inside subquery
 query I
 SELECT
- (select sum(t2.ii) FILTER (where t2.ii < 10)  from t as t2)
+ (select sum(t2.i) FILTER (where t2.i < 10)  from t as t2)
 FROM t
 limit 5;
 ----
@@ -87,18 +87,18 @@ limit 5;
 # multiple filters
 query II
 SELECT
- SUM(jj) FILTER (WHERE ii < 10),
-  SUM(ii) FILTER (WHERE ii < 5)
+ SUM(j) FILTER (WHERE i < 10),
+  SUM(i) FILTER (WHERE i < 5)
 FROM t;
 ----
 45	10
 
 query II
  SELECT
-  sum(ii) AS unfiltered,
-  sum(ii) FILTER (WHERE ii < 5) AS filtered
+  sum(i) AS unfiltered,
+  sum(i) FILTER (WHERE i < 5) AS filtered
 FROM t
-group by jj;
+group by j;
 ----
 49500	0
 49600	1
@@ -116,10 +116,10 @@ group by jj;
 query III
  SELECT
   COUNT(*) AS unfiltered,
-  COUNT(*) FILTER (WHERE ii > 5 and ii < 10) AS filtered,
-  jj
+  COUNT(*) FILTER (WHERE i > 5 and i < 10) AS filtered,
+  j
 FROM t
-group by jj;
+group by j;
 ----
 100	0	0
 100	0	1
@@ -136,10 +136,10 @@ group by jj;
 
 query II
 SELECT
-  SUM(ii) AS unfiltered,
-  SUM(ii) FILTER (WHERE ii between 5 and 10) AS filtered
+  SUM(i) AS unfiltered,
+  SUM(i) FILTER (WHERE i between 5 and 10) AS filtered
 FROM t
-group by jj;
+group by j;
 ----
 49500	10
 49600	NULL
@@ -157,11 +157,11 @@ group by jj;
 
 query III
 SELECT
-  SUM(ii) AS unfiltered,
-  SUM(jj) FILTER (WHERE jj = 1) AS filtered,
-  jj
+  SUM(i) AS unfiltered,
+  SUM(j) FILTER (WHERE j = 1) AS filtered,
+  j
 FROM t
-group by jj;
+group by j;
 ----
 49500	NULL	0
 49600	100	    1
@@ -177,9 +177,9 @@ group by jj;
 
 query I
 SELECT
-  SUM(jj) FILTER (WHERE ii < 10)
+  SUM(j) FILTER (WHERE i < 10)
 FROM t
-group by jj;
+group by j;
 ----
 0
 1
@@ -194,9 +194,9 @@ group by jj;
 
 query I
 SELECT
-  SUM(jj) FILTER (WHERE ii < (select 10))
+  SUM(j) FILTER (WHERE i < (select 10))
 FROM t
-group by jj;
+group by j;
 ----
 0
 1
@@ -211,9 +211,9 @@ group by jj;
 
 query I
 SELECT
-  SUM(ii) FILTER (WHERE ii < (select ii from t as t2 where t.ii = t2.ii))
+  SUM(i) FILTER (WHERE i < (select i from t as t2 where t.i = t2.i))
 FROM t
-group by jj;
+group by j;
 ----
 NULL
 NULL
@@ -229,9 +229,9 @@ NULL
 # use it inside subquery
 query I
  SELECT
- (select sum(t2.ii) FILTER (where t2.ii < 10)  from t as t2)
+ (select sum(t2.i) FILTER (where t2.i < 10)  from t as t2)
 FROM t
-group by jj
+group by j
 limit 5;
 ----
 45
@@ -243,10 +243,10 @@ limit 5;
 # multiple filters
 query II
 SELECT
- SUM(jj) FILTER (WHERE ii < 10),
-  SUM(ii) FILTER (WHERE ii < 5)
+ SUM(j) FILTER (WHERE i < 10),
+  SUM(i) FILTER (WHERE i < 5)
 FROM t
-group by jj;
+group by j;
 ----
 0	0
 1	1
@@ -262,10 +262,10 @@ group by jj;
 
 query II
  SELECT
-  sum(ii) AS unfiltered,
-  sum(ii) FILTER (WHERE ii < 5) AS filtered
+  sum(i) AS unfiltered,
+  sum(i) FILTER (WHERE i < 5) AS filtered
 FROM t
-group by kk;
+group by k;
 ----
 49500	0
 49600	1
@@ -283,9 +283,9 @@ group by kk;
 query II
  SELECT
   COUNT(*) AS unfiltered,
-  COUNT(*) FILTER (WHERE ii > 5 and ii < 10) AS filtered
+  COUNT(*) FILTER (WHERE i > 5 and i < 10) AS filtered
 FROM t
-group by kk;
+group by k;
 ----
 100	0
 100	0
@@ -302,10 +302,10 @@ group by kk;
 
 query II
 SELECT
-  SUM(ii) AS unfiltered,
-  SUM(ii) FILTER (WHERE ii between 5 and 10) AS filtered
+  SUM(i) AS unfiltered,
+  SUM(i) FILTER (WHERE i between 5 and 10) AS filtered
 FROM t
-group by kk;
+group by k;
 ----
 49500	10
 49600	NULL
@@ -323,11 +323,11 @@ group by kk;
 
 query III
 SELECT
-  SUM(ii) AS unfiltered,
-  SUM(jj) FILTER (WHERE jj = 1) AS filtered,
-  kk
+  SUM(i) AS unfiltered,
+  SUM(j) FILTER (WHERE j = 1) AS filtered,
+  k
 FROM t
-group by kk;
+group by k;
 ----
 49500	NULL	0
 49600	100	10000000
@@ -343,9 +343,9 @@ group by kk;
 
 query I
 SELECT
-  SUM(jj) FILTER (WHERE ii < 10)
+  SUM(j) FILTER (WHERE i < 10)
 FROM t
-group by kk;
+group by k;
 ----
 0
 1
@@ -360,9 +360,9 @@ group by kk;
 
 query I
 SELECT
-  SUM(jj) FILTER (WHERE ii < (select 10))
+  SUM(j) FILTER (WHERE i < (select 10))
 FROM t
-group by kk;
+group by k;
 ----
 0
 1
@@ -377,9 +377,9 @@ group by kk;
 
 query I
 SELECT
-  SUM(ii) FILTER (WHERE ii < (select ii from t as t2 where t.ii = t2.ii))
+  SUM(i) FILTER (WHERE i < (select i from t as t2 where t.i = t2.i))
 FROM t
-group by kk;
+group by k;
 ----
 NULL
 NULL
@@ -395,9 +395,9 @@ NULL
 # use it inside subquery
 query I
  SELECT
- (select sum(t2.ii) FILTER (where t2.ii < 10)  from t as t2)
+ (select sum(t2.i) FILTER (where t2.i < 10)  from t as t2)
 FROM t
-group by kk
+group by k
 limit 5;
 ----
 45
@@ -409,10 +409,10 @@ limit 5;
 # multiple filters
 query II
 SELECT
- SUM(jj) FILTER (WHERE ii < 10),
-  SUM(ii) FILTER (WHERE ii < 5)
+ SUM(j) FILTER (WHERE i < 10),
+  SUM(i) FILTER (WHERE i < 5)
 FROM t
-group by kk;
+group by k;
 ----
 0	0
 1	1
@@ -429,9 +429,9 @@ group by kk;
 # use correlated expression inside the filter itself
 query I
     SELECT
- (select sum(t2.ii) FILTER (where t.ii = t2.ii)  from t as t2)
+ (select sum(t2.i) FILTER (where t.i = t2.i)  from t as t2)
 FROM t
-where ii < 5
+where i < 5
 ----
 0
 1
@@ -441,20 +441,20 @@ where ii < 5
 
 #Query with many different filter clauses (e.g. 5 aggregates, 5 different filters)
 statement ok
-create temporary table t_2 as select range aa, length(range) bb, mod(range,100) cc, 5 d, 10000 e from range(1000);
+create temporary table t_2 as select range a, length(range) b, mod(range,100) c, 5 d, 10000 e from range(1000);
 
 query IIIII
-select count (aa) filter (where aa>10 and aa < 15), count (bb) filter (where bb between 1 and 3),
-    count (cc) filter ( where cc < 10), count (d) filter (where d =5), count(e) filter (where e < 10)
+select count (a) filter (where a>10 and a < 15), count (b) filter (where b between 1 and 3),
+    count (c) filter ( where c < 10), count (d) filter (where d =5), count(e) filter (where e < 10)
     from t_2;
 ----
 4	1000	100	1000	0
 
 query IIIII
-select count (aa) filter (where aa>10 and aa < 15), count (bb) filter (where bb between 1 and 3),
-    count (cc) filter ( where cc < 10), count (d) filter (where d =5), count(e) filter (where e < 10)
+select count (a) filter (where a>10 and a < 15), count (b) filter (where b between 1 and 3),
+    count (c) filter ( where c < 10), count (d) filter (where d =5), count(e) filter (where e < 10)
     from t_2
-    group by bb;
+    group by b;
 ----
 0	10	10	10	0
 4	90	0	90	0
@@ -463,14 +463,14 @@ select count (aa) filter (where aa>10 and aa < 15), count (bb) filter (where bb 
 
 #Filter with some more complex aggregates: COVAR_POP (multiple input columns), STRING_AGG (strings) and ARRAY_AGG (lists)
 query II
-select COVAR_POP(aa,bb) filter (where aa < 100), COVAR_POP(aa,bb) filter (where bb <5) from t_2;
+select COVAR_POP(a,b) filter (where a < 100), COVAR_POP(a,b) filter (where b <5) from t_2;
 ----
 4.5	49.95
 
 query II
-select COVAR_POP(aa,cc) filter (where aa < 100), COVAR_POP(aa,cc) filter (where cc <50)
+select COVAR_POP(a,c) filter (where a < 100), COVAR_POP(a,c) filter (where c <50)
 from t_2
-group by bb;
+group by b;
 ----
 8.250000	8.250000
 674.916667	133.250000
@@ -531,12 +531,12 @@ The Martian	Matt Damon
 
 #DISTINCT aggregates
 statement ok
-CREATE TABLE integers(ii INTEGER)
+CREATE TABLE integers(i INTEGER)
 
 statement ok
 insert into integers values (1),(1),(2),(2),(3),(4),(8);
 
 query I
-select  sum(distinct ii) filter (where ii >1 and ii < 5) from integers;
+select  sum(distinct i) filter (where i >1 and i < 5) from integers;
 ----
 9

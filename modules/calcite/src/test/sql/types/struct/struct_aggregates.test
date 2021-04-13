@@ -6,11 +6,11 @@ statement ok
 PRAGMA enable_verification
 
 query III
-select min(struct_pack(ii :=  ii, jj := ii + 2)), max(struct_pack(ii :=  ii, jj := ii + 2)), first(struct_pack(ii :=  ii, jj := ii + 2)) from range(10) tbl(ii);
+select min(struct_pack(i :=  i, j := i + 2)), max(struct_pack(i :=  i, j := i + 2)), first(struct_pack(i :=  i, j := i + 2)) from range(10) tbl(i);
 ----
-<ii: 0, jj: 2>	<ii: 9, jj: 11>	<ii: 0, jj: 2>
+<i: 0, j: 2>	<i: 9, j: 11>	<i: 0, j: 2>
 
 query I
-select string_agg(struct_pack(ii :=  ii, jj := ii + 2), ',') from range(10) tbl(ii);
+select string_agg(struct_pack(i :=  i, j := i + 2), ',') from range(10) tbl(i);
 ----
-<ii: 0, jj: 2>,<ii: 1, jj: 3>,<ii: 2, jj: 4>,<ii: 3, jj: 5>,<ii: 4, jj: 6>,<ii: 5, jj: 7>,<ii: 6, jj: 8>,<ii: 7, jj: 9>,<ii: 8, jj: 10>,<ii: 9, jj: 11>
+<i: 0, j: 2>,<i: 1, j: 3>,<i: 2, j: 4>,<i: 3, j: 5>,<i: 4, j: 6>,<i: 5, j: 7>,<i: 6, j: 8>,<i: 7, j: 9>,<i: 8, j: 10>,<i: 9, j: 11>

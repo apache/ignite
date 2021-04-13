@@ -2,12 +2,12 @@
 # description: Test string updates with many strings
 # group: [update]
 
-# create aa table
+# create a table
 statement ok con1
-CREATE TABLE test (aa VARCHAR);
+CREATE TABLE test (a VARCHAR);
 
 statement ok con1
-INSERT INTO test VALUES ('aa'), ('bb'), ('cc'), (NULL)
+INSERT INTO test VALUES ('a'), ('b'), ('c'), (NULL)
 
 # insert the same strings many times
 # 16 -> 64
@@ -44,44 +44,44 @@ INSERT INTO test SELECT * FROM test
 
 # verify that the distinct values are correct
 query T con1
-SELECT DISTINCT aa FROM test ORDER BY aa
+SELECT DISTINCT a FROM test ORDER BY a
 ----
 NULL
-aa
-bb
-cc
+a
+b
+c
 
 query T con2
-SELECT DISTINCT aa FROM test ORDER BY aa
+SELECT DISTINCT a FROM test ORDER BY a
 ----
 NULL
-aa
-bb
-cc
+a
+b
+c
 
 # test update of string column in another transaction
 statement ok con1
 BEGIN TRANSACTION;
 
 statement ok con1
-UPDATE test SET aa='aa' WHERE aa='aa';
+UPDATE test SET a='aa' WHERE a='a';
 
 # verify that the values were updated
 query T con1
-SELECT DISTINCT aa FROM test ORDER BY aa
+SELECT DISTINCT a FROM test ORDER BY a
 ----
 NULL
 aa
-bb
-cc
+b
+c
 
 query T con2
-SELECT DISTINCT aa FROM test ORDER BY aa
+SELECT DISTINCT a FROM test ORDER BY a
 ----
 NULL
-aa
-bb
-cc
+a
+b
+c
 
 # now roll it back
 statement ok con1
@@ -89,39 +89,39 @@ ROLLBACK;
 
 # the values should be back to normal
 query T con1
-SELECT DISTINCT aa FROM test ORDER BY aa
+SELECT DISTINCT a FROM test ORDER BY a
 ----
 NULL
-aa
-bb
-cc
+a
+b
+c
 
 query T con2
-SELECT DISTINCT aa FROM test ORDER BY aa
+SELECT DISTINCT a FROM test ORDER BY a
 ----
 NULL
-aa
-bb
-cc
+a
+b
+c
 
 # this time do the same but commit it
 statement ok con1
-UPDATE test SET aa='aa' WHERE aa='aa';
+UPDATE test SET a='aa' WHERE a='a';
 
 # now both connections have the updated value
 query T con1
-SELECT DISTINCT aa FROM test ORDER BY aa
+SELECT DISTINCT a FROM test ORDER BY a
 ----
 NULL
 aa
-bb
-cc
+b
+c
 
 query T con2
-SELECT DISTINCT aa FROM test ORDER BY aa
+SELECT DISTINCT a FROM test ORDER BY a
 ----
 NULL
 aa
-bb
-cc
+b
+c
 

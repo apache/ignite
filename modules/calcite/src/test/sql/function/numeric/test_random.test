@@ -2,24 +2,24 @@
 # description: Test random & setseed functions
 # group: [numeric]
 
-# we need to be aa bit more clever here for testing random
+# we need to be a bit more clever here for testing random
 # it's very unlikely that three random variables are exactly equivalent
 
 statement ok
 BEGIN TRANSACTION
 
 statement ok
-CREATE TEMPORARY TABLE t1 AS SELECT RANDOM() aa;
+CREATE TEMPORARY TABLE t1 AS SELECT RANDOM() a;
 
 statement ok
-CREATE TEMPORARY TABLE t2 AS SELECT RANDOM() bb;
+CREATE TEMPORARY TABLE t2 AS SELECT RANDOM() b;
 
 statement ok
-CREATE TEMPORARY TABLE t3 AS SELECT RANDOM() cc;
+CREATE TEMPORARY TABLE t3 AS SELECT RANDOM() c;
 
 # empty result on this join
 query I
-SELECT COUNT(*) FROM (SELECT aa FROM t1 JOIN t2 ON (aa=bb) JOIN t3 ON (bb=cc)) s1
+SELECT COUNT(*) FROM (SELECT a FROM t1 JOIN t2 ON (a=b) JOIN t3 ON (b=c)) s1
 ----
 0
 
@@ -31,23 +31,23 @@ statement ok
 select setseed(0.1)
 
 statement ok
-CREATE TEMPORARY TABLE t1 AS SELECT RANDOM() aa;
+CREATE TEMPORARY TABLE t1 AS SELECT RANDOM() a;
 
 statement ok
 select setseed(0.1)
 
 statement ok
-CREATE TEMPORARY TABLE t2 AS SELECT RANDOM() bb;
+CREATE TEMPORARY TABLE t2 AS SELECT RANDOM() b;
 
 statement ok
 select setseed(0.1)
 
 statement ok
-CREATE TEMPORARY TABLE t3 AS SELECT RANDOM() cc;
+CREATE TEMPORARY TABLE t3 AS SELECT RANDOM() c;
 
 # now the join has one value
 query I
-SELECT COUNT(*) FROM (SELECT aa FROM t1 JOIN t2 ON (aa=bb) JOIN t3 ON (bb=cc)) s1
+SELECT COUNT(*) FROM (SELECT a FROM t1 JOIN t2 ON (a=b) JOIN t3 ON (b=c)) s1
 ----
 1
 
@@ -58,15 +58,15 @@ select setseed(1.1)
 statement error
 select setseed(-1.1)
 
-# we can use setseed with aa table as well
+# we can use setseed with a table as well
 statement ok
-CREATE TABLE seeds(aa DOUBLE)
+CREATE TABLE seeds(a DOUBLE)
 
 statement ok
 INSERT INTO seeds VALUES (-0.1), (0.0), (0.1)
 
 query IR
-select setseed(aa), aa from seeds;
+select setseed(a), a from seeds;
 ----
 NULL	-0.100000
 NULL	0.000000
@@ -74,7 +74,7 @@ NULL	0.100000
 
 # use random in some complicated expressions
 statement ok
-CREATE TABLE numbers(aa INTEGER)
+CREATE TABLE numbers(a INTEGER)
 
 statement ok
 INSERT INTO numbers VALUES (1), (2), (3), (4), (5), (6), (7), (8), (9), (10)

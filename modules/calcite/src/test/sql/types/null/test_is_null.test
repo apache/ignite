@@ -3,21 +3,21 @@
 # group: [null]
 
 statement ok
-CREATE TABLE test (aa INTEGER, bb INTEGER);
+CREATE TABLE test (a INTEGER, b INTEGER);
 
 statement ok
 INSERT INTO test VALUES (11, 1), (NULL, 2), (13, 3)
 
 # IS NULL/IS NOT NULL
 query TTTT
-SELECT aa IS NULL, aa IS NOT NULL, rowid IS NULL, (aa = NULL) IS NULL FROM test ORDER BY bb
+SELECT a IS NULL, a IS NOT NULL, rowid IS NULL, (a = NULL) IS NULL FROM test ORDER BY b
 ----
 0	1	0	1
 1	0	0	1
 0	1	0	1
 
 query TTTT
-SELECT aa IS NULL, aa IS NOT NULL, rowid IS NULL, (aa = NULL) IS NULL FROM test WHERE bb != 1 ORDER BY bb
+SELECT a IS NULL, a IS NOT NULL, rowid IS NULL, (a = NULL) IS NULL FROM test WHERE b != 1 ORDER BY b
 ----
 1	0	0	1
 0	1	0	1

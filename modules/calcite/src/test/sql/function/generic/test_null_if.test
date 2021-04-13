@@ -13,19 +13,19 @@ hello
 
 # NULL IF with subquery
 statement ok
-CREATE TABLE test (aa STRING);
+CREATE TABLE test (a STRING);
 
 statement ok
 INSERT INTO test VALUES ('hello'), ('world'), ('test')
 
 statement ok
-CREATE TABLE test2 (aa STRING, bb STRING);
+CREATE TABLE test2 (a STRING, b STRING);
 
 statement ok
-INSERT INTO test2 VALUES ('blabla', 'bb'), ('blabla2', 'cc'), ('blabla3', 'd')
+INSERT INTO test2 VALUES ('blabla', 'b'), ('blabla2', 'c'), ('blabla3', 'd')
 
 query T
-SELECT NULLIF(NULLIF ((SELECT aa FROM test LIMIT 1 offset 1), aa), bb) FROM test2
+SELECT NULLIF(NULLIF ((SELECT a FROM test LIMIT 1 offset 1), a), b) FROM test2
 ----
 world
 world
@@ -36,20 +36,20 @@ DROP TABLE test;
 
 # NULL IF with strings
 statement ok
-CREATE TABLE test3 (aa INTEGER, bb INTEGER);
+CREATE TABLE test3 (a INTEGER, b INTEGER);
 
 statement ok
 INSERT INTO test3 VALUES (11, 22), (13, 22), (12, 21)
 
 query T
-SELECT NULLIF(CAST(aa AS VARCHAR), 11) FROM test3;
+SELECT NULLIF(CAST(a AS VARCHAR), 11) FROM test3;
 ----
 NULL
 13
 12
 
 query IT
-SELECT aa, CASE WHEN aa>11 THEN CAST(aa AS VARCHAR) ELSE CAST(bb AS VARCHAR) END FROM test3 ORDER BY 1;
+SELECT a, CASE WHEN a>11 THEN CAST(a AS VARCHAR) ELSE CAST(b AS VARCHAR) END FROM test3 ORDER BY 1;
 ----
 11	22
 12	12

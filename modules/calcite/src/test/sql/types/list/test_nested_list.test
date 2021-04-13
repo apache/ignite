@@ -12,24 +12,24 @@ statement ok
 INSERT INTO list_data VALUES (1, 1), (1, 2), (2, 3), (2, 4), (2, 5), (3, 6), (5, NULL)
 
 query T
-SELECT LIST(aa) l1 FROM (VALUES (1), (2), (3)) AS t1 (aa)
+SELECT LIST(a) l1 FROM (VALUES (1), (2), (3)) AS t1 (a)
 ----
 [1, 2, 3]
 
 query I
-SELECT UNNEST(l1) FROM (SELECT LIST(aa) l1 FROM (VALUES (1), (2), (3)) AS t1 (aa)) t1
+SELECT UNNEST(l1) FROM (SELECT LIST(a) l1 FROM (VALUES (1), (2), (3)) AS t1 (a)) t1
 ----
 1
 2
 3
 
 query TT
-SELECT * FROM (SELECT LIST(aa) l1 FROM (VALUES (1), (2), (3)) AS t1 (aa)) t1, (SELECT LIST(bb) l2 FROM (VALUES (4), (5), (6), (7)) AS t2 (bb)) t2
+SELECT * FROM (SELECT LIST(a) l1 FROM (VALUES (1), (2), (3)) AS t1 (a)) t1, (SELECT LIST(b) l2 FROM (VALUES (4), (5), (6), (7)) AS t2 (b)) t2
 ----
 [1, 2, 3]	[4, 5, 6, 7]
 
 query II
-SELECT UNNEST(l1) u1, UNNEST(l2) u2 FROM (SELECT LIST(aa) l1 FROM (VALUES (1), (2), (3)) AS t1 (aa)) t1, (SELECT LIST(bb) l2 FROM (VALUES (4), (5), (6), (7)) AS t2 (bb)) t2
+SELECT UNNEST(l1) u1, UNNEST(l2) u2 FROM (SELECT LIST(a) l1 FROM (VALUES (1), (2), (3)) AS t1 (a)) t1, (SELECT LIST(b) l2 FROM (VALUES (4), (5), (6), (7)) AS t2 (b)) t2
 ----
 1	4
 2	5
@@ -37,14 +37,14 @@ SELECT UNNEST(l1) u1, UNNEST(l2) u2 FROM (SELECT LIST(aa) l1 FROM (VALUES (1), (
 NULL	7
 
 query IT
-SELECT UNNEST(l1), l2 FROM (SELECT LIST(aa) l1 FROM (VALUES (1), (2), (3)) AS t1 (aa)) t1, 	(SELECT LIST(bb) l2 FROM (VALUES (4), (5), (6), (7)) AS t2 (bb)) t2
+SELECT UNNEST(l1), l2 FROM (SELECT LIST(a) l1 FROM (VALUES (1), (2), (3)) AS t1 (a)) t1, 	(SELECT LIST(b) l2 FROM (VALUES (4), (5), (6), (7)) AS t2 (b)) t2
 ----
 1	[4, 5, 6, 7]
 2	[4, 5, 6, 7]
 3	[4, 5, 6, 7]
 
 query TI
-SELECT l1, UNNEST(l2) FROM (SELECT LIST(aa) l1 FROM (VALUES (1), (2), (3)) AS t1 (aa)) t1, (SELECT LIST(bb) l2 FROM (VALUES (4), (5), (6), (7)) AS t2 (bb)) t2
+SELECT l1, UNNEST(l2) FROM (SELECT LIST(a) l1 FROM (VALUES (1), (2), (3)) AS t1 (a)) t1, (SELECT LIST(b) l2 FROM (VALUES (4), (5), (6), (7)) AS t2 (b)) t2
 ----
 [1, 2, 3]	4
 [1, 2, 3]	5
@@ -182,30 +182,30 @@ SELECT g, UNNEST(l)+1 u FROM (SELECT g, LIST(e) l FROM list_data GROUP BY g) u1 
 
 # omg omg, list of structs, structs of lists
 query IT
-SELECT g, STRUCT_PACK(aa := g, bb := le) sl FROM (SELECT g, LIST(e) le from list_data GROUP BY g) xx WHERE g < 3 ORDER BY g
+SELECT g, STRUCT_PACK(a := g, b := le) sl FROM (SELECT g, LIST(e) le from list_data GROUP BY g) xx WHERE g < 3 ORDER BY g
 ----
-1	<aa: 1, bb: [1, 2]>
-2	<aa: 2, bb: [3, 4, 5]>
+1	<a: 1, b: [1, 2]>
+2	<a: 2, b: [3, 4, 5]>
 
 query T
-SELECT LIST(STRUCT_PACK(aa := g, bb := le)) mind_blown FROM (SELECT g, LIST(e) le from list_data  GROUP BY g ORDER BY g) xx
+SELECT LIST(STRUCT_PACK(a := g, b := le)) mind_blown FROM (SELECT g, LIST(e) le from list_data  GROUP BY g ORDER BY g) xx
 ----
-[<aa: 1, bb: [1, 2]>, <aa: 2, bb: [3, 4, 5]>, <aa: 3, bb: [6]>, <aa: 5, bb: [NULL]>]
+[<a: 1, b: [1, 2]>, <a: 2, b: [3, 4, 5]>, <a: 3, b: [6]>, <a: 5, b: [NULL]>]
 
 query IT
-SELECT g, LIST(STRUCT_PACK(aa := e, bb := e+1)) ls from list_data GROUP BY g ORDER BY g
+SELECT g, LIST(STRUCT_PACK(a := e, b := e+1)) ls from list_data GROUP BY g ORDER BY g
 ----
-1	[<aa: 1, bb: 2>, <aa: 2, bb: 3>]
-2	[<aa: 3, bb: 4>, <aa: 4, bb: 5>, <aa: 5, bb: 6>]
-3	[<aa: 6, bb: 7>]
-5	[<aa: NULL, bb: NULL>]
+1	[<a: 1, b: 2>, <a: 2, b: 3>]
+2	[<a: 3, b: 4>, <a: 4, b: 5>, <a: 5, b: 6>]
+3	[<a: 6, b: 7>]
+5	[<a: NULL, b: NULL>]
 
 # TODO check second col
 query IT
-SELECT g, LIST(STRUCT_PACK(aa := e, bb := e+1)) ls from list_data WHERE g > 2GROUP BY g ORDER BY g
+SELECT g, LIST(STRUCT_PACK(a := e, b := e+1)) ls from list_data WHERE g > 2GROUP BY g ORDER BY g
 ----
-3	[<aa: 6, bb: 7>]
-5	[<aa: NULL, bb: NULL>]
+3	[<a: 6, b: 7>]
+5	[<a: NULL, b: NULL>]
 
 # list of list of int
 query IT

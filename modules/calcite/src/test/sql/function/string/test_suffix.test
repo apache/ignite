@@ -143,7 +143,7 @@ SELECT suffix('omotá', 'á')
 1
 
 query T
-SELECT suffix('omotá', 'aa')
+SELECT suffix('omotá', 'a')
 ----
 0
 

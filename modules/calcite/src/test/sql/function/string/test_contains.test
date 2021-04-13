@@ -21,13 +21,13 @@ SELECT CONTAINS('hello world', 'h'),
 1	1	1	1	1	1	1	1	1	1
 
 query IIIIIIIIII
-SELECT CONTAINS('hello world', 'aa'),
+SELECT CONTAINS('hello world', 'a'),
        CONTAINS('hello world', 'ha'),
        CONTAINS('hello world', 'hea'),
        CONTAINS('hello world', 'hela'),
        CONTAINS('hello world', 'hella'),
        CONTAINS('hello world', 'helloa'),
-       CONTAINS('hello world', 'hello aa'),
+       CONTAINS('hello world', 'hello a'),
        CONTAINS('hello world', 'hello wa'),
        CONTAINS('hello world', 'hello woa'),
        CONTAINS('hello world', 'hello wora')
@@ -44,7 +44,7 @@ statement ok
 CREATE TABLE strings(s VARCHAR, off INTEGER, length INTEGER);
 
 statement ok
-INSERT INTO strings VALUES ('hello', 1, 2), ('world', 2, 3), ('bb', 1, 1), (NULL, 2, 2)
+INSERT INTO strings VALUES ('hello', 1, 2), ('world', 2, 3), ('b', 1, 1), (NULL, 2, 2)
 
 # Test first letter
 query T

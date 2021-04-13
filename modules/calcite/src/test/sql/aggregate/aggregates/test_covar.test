@@ -40,7 +40,7 @@ NULL
 NULL
 NULL
 
-# test population covariance on aa sequence
+# test population covariance on a sequence
 statement ok
 CREATE SEQUENCE seqx;
 
@@ -57,7 +57,7 @@ SELECT COVAR_POP(nextval('seqx'),nextval('seqy'))
 ----
 0.000000
 
-# test population covariance on aa set of values
+# test population covariance on a set of values
 statement ok
 CREATE TABLE integers(x INTEGER, y INTEGER);
 

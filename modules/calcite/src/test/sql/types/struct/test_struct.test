@@ -12,9 +12,9 @@ statement ok
 INSERT INTO struct_data VALUES (1, 1), (1, 2), (2, 3), (2, 4), (2, 5), (3, 6), (5, NULL)
 
 query T
-SELECT STRUCT_PACK(aa := 42, bb := 43)
+SELECT STRUCT_PACK(a := 42, b := 43)
 ----
-<aa: 42, bb: 43>
+<a: 42, b: 43>
 
 query IT
 SELECT e, STRUCT_PACK(e) FROM struct_data ORDER BY e LIMIT 2
@@ -23,17 +23,17 @@ NULL	<e: NULL>
 1	<e: 1>
 
 query T
-SELECT STRUCT_PACK(aa := 42, bb := 43) as struct
+SELECT STRUCT_PACK(a := 42, b := 43) as struct
 ----
-<aa: 42, bb: 43>
+<a: 42, b: 43>
 
 # FIXME: this is borked
 mode skip
 
 query I
-select null::row(aa integer);
+select null::row(a integer);
 ----
-<aa: NULL>
+<a: NULL>
 
 mode unskip
 
@@ -60,7 +60,7 @@ SELECT e, (STRUCT_PACK(xx := e, yy := g)).xx as ee FROM struct_data
 NULL	NULL
 
 query II
-SELECT e, (aa).xx as ee FROM (SELECT e, STRUCT_PACK(xx := e, yy := g) FROM struct_data) tbl(e, aa)
+SELECT e, (a).xx as ee FROM (SELECT e, STRUCT_PACK(xx := e, yy := g) FROM struct_data) tbl(e, a)
 ----
 1	1
 2	2
@@ -105,7 +105,7 @@ NULL	NULL
 1	1
 
 query II
-SELECT e, STRUCT_EXTRACT(STRUCT_PACK(aa := e, bb := ROWID, cc := 42), 'cc') as ee FROM struct_data ORDER BY ROWID
+SELECT e, STRUCT_EXTRACT(STRUCT_PACK(a := e, b := ROWID, c := 42), 'c') as ee FROM struct_data ORDER BY ROWID
 ----
 1	42
 2	42
@@ -116,7 +116,7 @@ SELECT e, STRUCT_EXTRACT(STRUCT_PACK(aa := e, bb := ROWID, cc := 42), 'cc') as e
 NULL	42
 
 query I
-SELECT STRUCT_EXTRACT(STRUCT_PACK(aa := 42, bb := 43), 'aa') FROM struct_data
+SELECT STRUCT_EXTRACT(STRUCT_PACK(a := 42, b := 43), 'a') FROM struct_data
 ----
 42
 42
@@ -127,12 +127,12 @@ SELECT STRUCT_EXTRACT(STRUCT_PACK(aa := 42, bb := 43), 'aa') FROM struct_data
 42
 
 query I
-SELECT STRUCT_EXTRACT(STRUCT_PACK(aa := 42, bb := 43), 'aa') s
+SELECT STRUCT_EXTRACT(STRUCT_PACK(a := 42, b := 43), 'a') s
 ----
 42
 
 query T
-SELECT STRUCT_EXTRACT(STRUCT_EXTRACT(STRUCT_PACK(aa := STRUCT_PACK(x := 'asdf', y := NULL), bb := 43), 'aa'), 'x') s
+SELECT STRUCT_EXTRACT(STRUCT_EXTRACT(STRUCT_PACK(a := STRUCT_PACK(x := 'asdf', y := NULL), b := 43), 'a'), 'x') s
 ----
 asdf
 
@@ -144,7 +144,7 @@ statement error
 SELECT STRUCT_PACK(e+1) FROM struct_data
 
 statement error
-SELECT STRUCT_PACK(aa := e, aa := g) FROM struct_data
+SELECT STRUCT_PACK(a := e, a := g) FROM struct_data
 
 statement error
 SELECT STRUCT_PACK(e, e) FROM struct_data

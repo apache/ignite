@@ -41,7 +41,7 @@ SELECT strftime(DATE '1992-02-01', '%Y %Y %Y %Y');
 ----
 1992 1992 1992 1992
 
-# test on aa table
+# test on a table
 statement ok
 CREATE TABLE dates(d DATE);
 INSERT INTO dates VALUES ('1992-01-01'), ('1993-03-20'), (NULL);

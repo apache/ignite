@@ -6,7 +6,7 @@ statement ok
 PRAGMA enable_verification
 
 statement ok
-CREATE TABLE times(ii TIME)
+CREATE TABLE times(i TIME)
 
 statement ok
 INSERT INTO times VALUES ('00:01:20'), ('20:08:10.998'), ('20:08:10.33'), ('20:08:10.001'), (NULL)
@@ -16,31 +16,31 @@ PRAGMA disable_verification
 
 # extract various parts of the time
 query I
-SELECT stats(EXTRACT(second FROM ii)) FROM times LIMIT 1
+SELECT stats(EXTRACT(second FROM i)) FROM times LIMIT 1
 ----
 <REGEX>:.*true.*0.*60.*
 
 query I
-SELECT stats(EXTRACT(minute FROM ii)) FROM times LIMIT 1
+SELECT stats(EXTRACT(minute FROM i)) FROM times LIMIT 1
 ----
 <REGEX>:.*true.*0.*60.*
 
 query I
-SELECT stats(EXTRACT(hour FROM ii)) FROM times LIMIT 1
+SELECT stats(EXTRACT(hour FROM i)) FROM times LIMIT 1
 ----
 <REGEX>:.*true.*0.*24.*
 
 query I
-SELECT stats(EXTRACT(milliseconds FROM ii)) FROM times LIMIT 1
+SELECT stats(EXTRACT(milliseconds FROM i)) FROM times LIMIT 1
 ----
 <REGEX>:.*true.*0.*60000.*
 
 query I
-SELECT stats(EXTRACT(microseconds FROM ii)) FROM times LIMIT 1
+SELECT stats(EXTRACT(microseconds FROM i)) FROM times LIMIT 1
 ----
 <REGEX>:.*true.*0.*60000000.*
 
 query I
-SELECT stats(EXTRACT(epoch FROM ii)) FROM times LIMIT 1
+SELECT stats(EXTRACT(epoch FROM i)) FROM times LIMIT 1
 ----
 <REGEX>:.*true.*0.*86400.*

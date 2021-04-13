@@ -7,7 +7,7 @@ PRAGMA enable_verification
 
 # standard replace
 query T
-SELECT regexp_replace('foobarbaz', 'bb..', 'X')
+SELECT regexp_replace('foobarbaz', 'b..', 'X')
 ----
 fooXbaz
 
@@ -24,12 +24,12 @@ banana banana
 
 # case sensitivity
 query T
-SELECT regexp_replace('ana', 'ana', 'banana', 'cc')
+SELECT regexp_replace('ana', 'ana', 'banana', 'c')
 ----
 banana
 
 query T
-SELECT regexp_replace('ANA', 'ana', 'banana', 'ii')
+SELECT regexp_replace('ANA', 'ana', 'banana', 'i')
 ----
 banana
 
@@ -40,13 +40,13 @@ world', '.*', 'x', 'sg')
 ----
 x
 
-# the result here is aa single row with aa newline ('x\nx')
-# this is aa bit complicated to check in sqllogictest, so we use aa JOIN with aa count
+# the result here is a single row with a newline ('x\nx')
+# this is a bit complicated to check in sqllogictest, so we use a JOIN with a count
 # to verify the correct result
 query T
 SELECT COUNT(*) FROM (SELECT 'x
-x') t1(aa) JOIN (SELECT regexp_replace('hello
-world', '.*', 'x', 'ng')) t2(aa) USING (aa)
+x') t1(a) JOIN (SELECT regexp_replace('hello
+world', '.*', 'x', 'ng')) t2(a) USING (a)
 ----
 1
 
@@ -58,13 +58,13 @@ statement ok
 INSERT INTO test VALUES ('hello'), ('HELLO');
 
 query T
-SELECT regexp_replace(v, 'h.*', 'world', 'ii') FROM test ORDER BY v
+SELECT regexp_replace(v, 'h.*', 'world', 'i') FROM test ORDER BY v
 ----
 world
 world
 
 query T
-SELECT regexp_replace(v, 'h.*', 'world', 'cc') FROM test ORDER BY v
+SELECT regexp_replace(v, 'h.*', 'world', 'c') FROM test ORDER BY v
 ----
 HELLO
 world
@@ -75,5 +75,5 @@ SELECT regexp_replace(v, 'h.*', 'world', v) FROM test ORDER BY v
 
 # throw on invalid options
 statement error
-SELECT regexp_replace('asdf', '.*SD.*', 'aa', 'q')
+SELECT regexp_replace('asdf', '.*SD.*', 'a', 'q')
 

@@ -27,22 +27,22 @@ SELECT 'aaa' LIKE '%'
 1
 
 query T
-SELECT 'aaa' LIKE '%aa'
+SELECT 'aaa' LIKE '%a'
 ----
 1
 
 query T
-SELECT 'aaa' LIKE '%bb'
+SELECT 'aaa' LIKE '%b'
 ----
 0
 
 query T
-SELECT 'aaa' LIKE 'aa%'
+SELECT 'aaa' LIKE 'a%'
 ----
 1
 
 query T
-SELECT 'aaa' LIKE 'bb%'
+SELECT 'aaa' LIKE 'b%'
 ----
 0
 
@@ -82,12 +82,12 @@ SELECT 'ababac' LIKE 'abab%%%%%'
 1
 
 query T
-SELECT 'ababac' LIKE '%%%aa%%%bb%%aa%bb%%%%%aa%cc%%'
+SELECT 'ababac' LIKE '%%%a%%%b%%a%b%%%%%a%c%%'
 ----
 1
 
 query T
-SELECT 'ababac' LIKE '%%%aa%%%bb%%aa%bb%%%%%aa%d%%'
+SELECT 'ababac' LIKE '%%%a%%%b%%a%b%%%%%a%d%%'
 ----
 0
 
@@ -266,7 +266,7 @@ statement ok
 CREATE TABLE strings(s STRING, pat STRING);
 
 statement ok
-INSERT INTO strings VALUES ('abab', 'ab%'), ('aaa', 'a_a'), ('aaa', '%bb%')
+INSERT INTO strings VALUES ('abab', 'ab%'), ('aaa', 'a_a'), ('aaa', '%b%')
 
 query T
 SELECT s FROM strings WHERE s LIKE 'ab%'

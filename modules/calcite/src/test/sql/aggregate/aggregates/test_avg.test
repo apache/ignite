@@ -24,13 +24,13 @@ SELECT AVG(nextval('seq'))
 2
 
 statement ok
-CREATE TABLE integers(ii INTEGER);
+CREATE TABLE integers(i INTEGER);
 
 statement ok
 INSERT INTO integers VALUES (1), (2), (3)
 
 query RRRR
-SELECT AVG(ii), AVG(1), AVG(DISTINCT ii), AVG(NULL) FROM integers
+SELECT AVG(i), AVG(1), AVG(DISTINCT i), AVG(NULL) FROM integers
 ----
 2
 1
@@ -38,7 +38,7 @@ SELECT AVG(ii), AVG(1), AVG(DISTINCT ii), AVG(NULL) FROM integers
 NULL
 
 query R
-SELECT AVG(ii) FROM integers WHERE ii > 100
+SELECT AVG(i) FROM integers WHERE i > 100
 ----
 NULL
 

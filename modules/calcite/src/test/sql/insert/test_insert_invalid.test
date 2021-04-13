@@ -3,29 +3,35 @@
 # group: [insert]
 
 statement ok
-CREATE TABLE strings(ii STRING)
+CREATE TABLE strings(i STRING)
+
+statement error
+INSERT INTO strings VALUES ('â‚(')
+
+statement error
+SELECT * FROM strings WHERE i = 'â‚('
 
 # Test insert with too few or too many cols
 statement ok
-CREATE TABLE aa(ii integer, jj integer)
+CREATE TABLE a(i integer, j integer)
 
 statement ok
-INSERT INTO aa VALUES (1, 2)
+INSERT INTO a VALUES (1, 2)
 
 # scalar inserts
 statement error
-INSERT INTO aa VALUES (1)
+INSERT INTO a VALUES (1)
 
 statement error
-INSERT INTO aa VALUES (1,2,3)
+INSERT INTO a VALUES (1,2,3)
 
 statement error
-INSERT INTO aa VALUES (1,2),(3)
+INSERT INTO a VALUES (1,2),(3)
 
 statement error
-INSERT INTO aa VALUES (1,2),(3,4,5)
+INSERT INTO a VALUES (1,2),(3,4,5)
 
 # also with queries
 statement error
-INSERT INTO aa SELECT 42
+INSERT INTO a SELECT 42
 

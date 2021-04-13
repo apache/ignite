@@ -9,7 +9,7 @@ PRAGMA enable_verification
 statement error
 SELECT TRY_CAST('hello' as INTEGER)
 
-# not aa reserved keyword
+# not a reserved keyword
 statement ok
 CREATE TABLE try_cast(try_cast INTEGER);
 

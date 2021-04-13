@@ -3,10 +3,10 @@
 # group: [insert]
 
 statement ok
-CREATE TABLE strings(aa VARCHAR)
+CREATE TABLE strings(a VARCHAR)
 
 statement ok
-CREATE TABLE integers(ii INTEGER)
+CREATE TABLE integers(i INTEGER)
 
 statement ok
 INSERT INTO integers VALUES (3), (4), (NULL)
@@ -22,10 +22,10 @@ SELECT * FROM strings
 NULL
 
 statement ok
-UPDATE strings SET aa=13 WHERE aa=3
+UPDATE strings SET a=13 WHERE a=3
 
 query T
-SELECT * FROM strings ORDER BY cast(aa AS INTEGER)
+SELECT * FROM strings ORDER BY cast(a AS INTEGER)
 ----
 NULL
 4

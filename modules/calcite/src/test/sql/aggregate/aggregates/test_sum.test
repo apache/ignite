@@ -3,14 +3,14 @@
 # group: [aggregates]
 
 statement ok
-CREATE TABLE integers(ii INTEGER);
+CREATE TABLE integers(i INTEGER);
 
 statement ok
 INSERT INTO integers SELECT * FROM range(0, 1000, 1);
 
 # positive numbers
 query I
-SELECT SUM(ii) FROM integers;
+SELECT SUM(i) FROM integers;
 ----
 499500
 
@@ -19,7 +19,7 @@ statement ok
 INSERT INTO integers SELECT * FROM range(0, -1000, -1);
 
 query I
-SELECT SUM(ii) FROM integers;
+SELECT SUM(i) FROM integers;
 ----
 0
 
@@ -28,11 +28,11 @@ statement ok
 INSERT INTO integers SELECT * FROM range(0, -1000, -1);
 
 query I
-SELECT SUM(ii) FROM integers;
+SELECT SUM(i) FROM integers;
 ----
 -499500
 
-# now perform sum of aa constant
+# now perform sum of a constant
 query I
 SELECT SUM(1) FROM integers;
 ----
@@ -44,32 +44,32 @@ SELECT SUM(-1) FROM integers;
 ----
 -3000
 
-# negative constant with aa low amount of values
+# negative constant with a low amount of values
 query I
-SELECT SUM(-1) FROM integers WHERE ii=-1;
+SELECT SUM(-1) FROM integers WHERE i=-1;
 ----
 -2
 
 # no values
 query I
-SELECT SUM(-1) FROM integers WHERE ii>10000;
+SELECT SUM(-1) FROM integers WHERE i>10000;
 ----
 NULL
 
 # bigint sum
 statement ok
-CREATE TABLE bigints(bb BIGINT);
+CREATE TABLE bigints(b BIGINT);
 
-# aa bunch of huge values
+# a bunch of huge values
 statement ok
 INSERT INTO bigints SELECT * FROM range(4611686018427387904, 4611686018427388904, 1);
 
 # sum them up
 query I
-SELECT SUM(bb) FROM bigints
+SELECT SUM(b) FROM bigints
 ----
 4611686018427388403500
 
-# this is too big for aa bigint
+# this is too big for a bigint
 statement error
-SELECT SUM(bb)::BIGINT FROM bigints
+SELECT SUM(b)::BIGINT FROM bigints

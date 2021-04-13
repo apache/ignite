@@ -7,7 +7,7 @@ PRAGMA enable_verification
 
 # Empty Table
 query I
-SELECT histogram(ii) FROM range(100) tbl(ii) WHERE 1=0;
+SELECT histogram(i) FROM range(100) tbl(i) WHERE 1=0;
 ----
 NULL
 

@@ -6,7 +6,7 @@ statement ok
 PRAGMA enable_verification
 
 statement ok
-CREATE TABLE integers(aa INTEGER, bb INTEGER)
+CREATE TABLE integers(a INTEGER, b INTEGER)
 
 statement ok
 INSERT INTO integers VALUES (1, 10), (2, 12), (3, 14), (4, 16), (5, NULL), (NULL, NULL)
@@ -32,163 +32,163 @@ SELECT * FROM integers WHERE NULL ORDER BY 1
 
 # involving equality
 query II
-SELECT * FROM integers WHERE aa=2 AND aa=2
+SELECT * FROM integers WHERE a=2 AND a=2
 ----
 2	12
 
 query II
-SELECT * FROM integers WHERE aa=2 AND aa>0
+SELECT * FROM integers WHERE a=2 AND a>0
 ----
 2	12
 
 query II
-SELECT * FROM integers WHERE aa>0 AND aa=2
+SELECT * FROM integers WHERE a>0 AND a=2
 ----
 2	12
 
 query II
-SELECT * FROM integers WHERE aa=2 AND aa<4
+SELECT * FROM integers WHERE a=2 AND a<4
 ----
 2	12
 
 query II
-SELECT * FROM integers WHERE aa<4 AND aa=2
+SELECT * FROM integers WHERE a<4 AND a=2
 ----
 2	12
 
 query II
-SELECT * FROM integers WHERE aa=2 AND aa<=2
+SELECT * FROM integers WHERE a=2 AND a<=2
 ----
 2	12
 
 query II
-SELECT * FROM integers WHERE aa=2 AND aa>=2
+SELECT * FROM integers WHERE a=2 AND a>=2
 ----
 2	12
 
 # involving multiple GREATER THAN expressions
 query II
-SELECT * FROM integers WHERE aa>2 AND aa>4
+SELECT * FROM integers WHERE a>2 AND a>4
 ----
 5	NULL
 
 query II
-SELECT * FROM integers WHERE aa>4 AND aa>2
+SELECT * FROM integers WHERE a>4 AND a>2
 ----
 5	NULL
 
 query II
-SELECT * FROM integers WHERE aa>4 AND aa>=4
+SELECT * FROM integers WHERE a>4 AND a>=4
 ----
 5	NULL
 
 query II
-SELECT * FROM integers WHERE aa>=4 AND aa>4
+SELECT * FROM integers WHERE a>=4 AND a>4
 ----
 5	NULL
 
 # involving multiple LESS THAN expressions
 query II
-SELECT * FROM integers WHERE aa<2 AND aa<4
+SELECT * FROM integers WHERE a<2 AND a<4
 ----
 1	10
 
 query II
-SELECT * FROM integers WHERE aa<4 AND aa<2
+SELECT * FROM integers WHERE a<4 AND a<2
 ----
 1	10
 
 query II
-SELECT * FROM integers WHERE aa<2 AND aa<=2
+SELECT * FROM integers WHERE a<2 AND a<=2
 ----
 1	10
 
 query II
-SELECT * FROM integers WHERE aa<=2 AND aa<2
+SELECT * FROM integers WHERE a<=2 AND a<2
 ----
 1	10
 
 # involving inequality expression
 query II
-SELECT * FROM integers WHERE aa<2 AND aa<>3
+SELECT * FROM integers WHERE a<2 AND a<>3
 ----
 1	10
 
 query II
-SELECT * FROM integers WHERE aa<=1 AND aa<>3
+SELECT * FROM integers WHERE a<=1 AND a<>3
 ----
 1	10
 
 query II
-SELECT * FROM integers WHERE aa>4 AND aa<>2
+SELECT * FROM integers WHERE a>4 AND a<>2
 ----
 5	NULL
 
 query II
-SELECT * FROM integers WHERE aa>=5 AND aa<>2
+SELECT * FROM integers WHERE a>=5 AND a<>2
 ----
 5	NULL
 
 query II
-SELECT * FROM integers WHERE aa>=4 AND aa<>4 AND aa<>4
+SELECT * FROM integers WHERE a>=4 AND a<>4 AND a<>4
 ----
 5	NULL
 
 # many conditions
 query II
-SELECT * FROM integers WHERE aa<3 AND aa<4 AND aa<5 AND aa<10 AND aa<2 AND aa<20
+SELECT * FROM integers WHERE a<3 AND a<4 AND a<5 AND a<10 AND a<2 AND a<20
 ----
 1	10
 
 # various obsolete filters that always result in zero results
-# (ii.e. entire tree can be pruned)
+# (i.e. entire tree can be pruned)
 
 query II
-SELECT * FROM integers WHERE aa=2 AND aa=4
+SELECT * FROM integers WHERE a=2 AND a=4
 ----
 
 query II
-SELECT * FROM integers WHERE aa=2 AND aa>4
+SELECT * FROM integers WHERE a=2 AND a>4
 ----
 
 query II
-SELECT * FROM integers WHERE aa>4 AND aa=2
+SELECT * FROM integers WHERE a>4 AND a=2
 ----
 
 query II
-SELECT * FROM integers WHERE aa=2 AND aa>2
+SELECT * FROM integers WHERE a=2 AND a>2
 ----
 
 query II
-SELECT * FROM integers WHERE aa>=4 AND aa=2
+SELECT * FROM integers WHERE a>=4 AND a=2
 ----
 
 query II
-SELECT * FROM integers WHERE aa=4 AND aa<2
+SELECT * FROM integers WHERE a=4 AND a<2
 ----
 
 query II
-SELECT * FROM integers WHERE aa<2 AND aa=4
+SELECT * FROM integers WHERE a<2 AND a=4
 ----
 
 query II
-SELECT * FROM integers WHERE aa=2 AND aa<2
+SELECT * FROM integers WHERE a=2 AND a<2
 ----
 
 query II
-SELECT * FROM integers WHERE aa<=2 AND aa=4
+SELECT * FROM integers WHERE a<=2 AND a=4
 ----
 
 query II
-SELECT * FROM integers WHERE aa<2 AND aa>4
+SELECT * FROM integers WHERE a<2 AND a>4
 ----
 
 query II
-SELECT * FROM integers WHERE aa=2 AND aa<>2
+SELECT * FROM integers WHERE a=2 AND a<>2
 ----
 
 query II
-SELECT * FROM integers WHERE aa<>2 AND aa=2
+SELECT * FROM integers WHERE a<>2 AND a=2
 ----
 
 query II
@@ -196,7 +196,7 @@ SELECT * FROM integers WHERE 0
 ----
 
 query II
-SELECT * FROM integers WHERE aa<2 AND 0
+SELECT * FROM integers WHERE a<2 AND 0
 ----
 
 # Test string expressions with obsolete filters
@@ -225,7 +225,7 @@ SELECT * FROM strings WHERE s='hello' AND s<>'world'
 hello
 
 query T
-SELECT * FROM strings WHERE s='hello' AND s>'aa'
+SELECT * FROM strings WHERE s='hello' AND s>'a'
 ----
 hello
 
@@ -245,7 +245,7 @@ SELECT * FROM strings WHERE s='hello' AND s<'z'
 hello
 
 query T
-SELECT * FROM strings WHERE s='hello' AND s<='aa'
+SELECT * FROM strings WHERE s='hello' AND s<='a'
 ----
 
 query T
@@ -261,7 +261,7 @@ SELECT * FROM strings WHERE s='hello' AND s>='z'
 ----
 
 query T
-SELECT * FROM strings WHERE s<>'hello' AND s<='aa'
+SELECT * FROM strings WHERE s<>'hello' AND s<='a'
 ----
 
 query T

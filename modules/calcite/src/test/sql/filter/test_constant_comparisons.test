@@ -9,7 +9,7 @@ PRAGMA enable_verification
 # The main point here is to check that the optimizer handles all these cases correctly
 
 statement ok
-CREATE TABLE integers(aa INTEGER, bb INTEGER)
+CREATE TABLE integers(a INTEGER, b INTEGER)
 
 statement ok
 INSERT INTO integers VALUES (2, 12)
@@ -63,12 +63,12 @@ statement ok
 SELECT * FROM integers WHERE 2<=1
 
 query T
-SELECT aa=NULL FROM integers
+SELECT a=NULL FROM integers
 ----
 NULL
 
 query T
-SELECT NULL=aa FROM integers
+SELECT NULL=a FROM integers
 ----
 NULL
 
@@ -89,7 +89,7 @@ statement ok
 SELECT * FROM integers WHERE 2 IN ((1+1)*2, 3, 4, 5)
 
 query I
-SELECT CASE WHEN TRUE THEN 13 ELSE 12 END;
+SELECT CASE WHEN 1 THEN 13 ELSE 12 END;
 ----
 13
 

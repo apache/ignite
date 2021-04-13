@@ -7,14 +7,14 @@ PRAGMA enable_verification
 
 # payload string that is longer than the 8MB initial string size - this tests whether RowChunk dynamically increases block capacity
 statement ok
-select range % 2 ii, string_agg('thisstringis200characterslong..........................................................................................................................................................................') s from range(100000) group by ii order by ii
+select range % 2 i, string_agg('thisstringis200characterslong..........................................................................................................................................................................') s from range(100000) group by i order by i
 
 # weird one from SQLancer
 statement ok
 create table t0 (c0 varchar);
 
 statement ok
-insert into t0 values ('aa'), (NULL), (NULL), (NULL), (NULL), (NULL), (NULL);
+insert into t0 values ('a'), (NULL), (NULL), (NULL), (NULL), (NULL), (NULL);
 
 query T
 SELECT * FROM t0 ORDER BY t0.c0 DESC;
@@ -25,7 +25,7 @@ NULL
 NULL
 NULL
 NULL
-aa
+a
 
 # strings longer than the 8 character prefix
 statement ok
@@ -88,13 +88,13 @@ SELECT count(*) FROM test3_1
 
 # multiple columns
 statement ok
-CREATE TABLE test4 (ii INT, jj INT)
+CREATE TABLE test4 (i INT, j INT)
 
 statement ok
 INSERT INTO test4 VALUES (3, 3), (2, 3), (2, 2), (3, 2)
 
 query II
-SELECT * FROM test4 ORDER BY cast(ii AS VARCHAR), jj
+SELECT * FROM test4 ORDER BY cast(i AS VARCHAR), j
 ----
 2	2
 2	3
@@ -102,7 +102,7 @@ SELECT * FROM test4 ORDER BY cast(ii AS VARCHAR), jj
 3	3
 
 query II
-SELECT * FROM test4 ORDER BY ii, cast(jj AS VARCHAR)
+SELECT * FROM test4 ORDER BY i, cast(j AS VARCHAR)
 ----
 2	2
 2	3
@@ -110,7 +110,7 @@ SELECT * FROM test4 ORDER BY ii, cast(jj AS VARCHAR)
 3	3
 
 query II
-SELECT * FROM test4 ORDER BY cast(ii AS VARCHAR), cast(jj AS VARCHAR)
+SELECT * FROM test4 ORDER BY cast(i AS VARCHAR), cast(j AS VARCHAR)
 ----
 2	2
 2	3
@@ -122,87 +122,87 @@ statement ok
 CREATE TABLE tpch_q1_agg (l_returnflag VARCHAR, l_linestatus VARCHAR, sum_qty INT, sum_base_price DOUBLE, sum_disc_price DOUBLE, sum_charge DOUBLE, avg_qty DOUBLE, avg_price DOUBLE, avg_disc DOUBLE, count_order BIGINT);
 
 statement ok
-INSERT INTO tpch_q1_agg VALUES ('N', 'O', 7459297, 10512270008.90, 9986238338.3847, 10385578376.585467, 25.545537671232875, 36000.9246880137, 0.05009595890410959, 292000), ('R', 'F', 3785523, 5337950526.47, 5071818532.9420, 5274405503.049367, 25.5259438574251, 35994.029214030925, 0.04998927856184382, 148301), ('aa', 'F', 3774200, 5320753880.69, 5054096266.6828, 5256751331.449234, 25.537587116854997, 36002.12382901414, 0.05014459706340077, 147790), ('N', 'F', 95257, 133737795.84, 127132372.6512, 132286291.229445, 25.30066401062417, 35521.32691633466, 0.04939442231075697, 3765);
+INSERT INTO tpch_q1_agg VALUES ('N', 'O', 7459297, 10512270008.90, 9986238338.3847, 10385578376.585467, 25.545537671232875, 36000.9246880137, 0.05009595890410959, 292000), ('R', 'F', 3785523, 5337950526.47, 5071818532.9420, 5274405503.049367, 25.5259438574251, 35994.029214030925, 0.04998927856184382, 148301), ('A', 'F', 3774200, 5320753880.69, 5054096266.6828, 5256751331.449234, 25.537587116854997, 36002.12382901414, 0.05014459706340077, 147790), ('N', 'F', 95257, 133737795.84, 127132372.6512, 132286291.229445, 25.30066401062417, 35521.32691633466, 0.04939442231075697, 3765);
 
 query TTTTTTTTTT
 SELECT * FROM tpch_q1_agg ORDER BY l_returnflag, l_linestatus;
 ----
-aa	F	3774200	5320753880.69	5054096266.6828	5256751331.449234	25.537587116854997	36002.12382901414	0.05014459706340077	147790
+A	F	3774200	5320753880.69	5054096266.6828	5256751331.449234	25.537587116854997	36002.12382901414	0.05014459706340077	147790
 N	F	95257	133737795.84	127132372.6512	132286291.229445	25.30066401062417	35521.32691633466	0.04939442231075697	3765
 N	O	7459297	10512270008.90	9986238338.3847	10385578376.585467	25.545537671232875	36000.9246880137	0.05009595890410959	292000
 R	F	3785523	5337950526.47	5071818532.9420	5274405503.049367	25.5259438574251	35994.029214030925	0.04998927856184382	148301
 
 statement ok
-create table test5 (ii int, s varchar);
+create table test5 (i int, s varchar);
 
 statement ok
 insert into test5 values (3, 'ababa'), (1, 'babab'), (NULL, 'abbab'), (2, NULL);
 
 query TT
-select ii, list(string_split(s, 'bb')) from test5 group by ii order by ii;
+select i, list(string_split(s, 'b')) from test5 group by i order by i;
 ----
-NULL	[[aa, , aa, ]]
-1	[[, aa, aa, ]]
+NULL	[[a, , a, ]]
+1	[[, a, a, ]]
 2	[NULL]
-3	[[aa, aa, aa]]
+3	[[a, a, a]]
 
 query TT
-select ii, struct_pack(ii:=ii, s:=s) from test5 order by ii;
+select i, struct_pack(i:=i, s:=s) from test5 order by i;
 ----
-NULL	<ii: NULL, s: abbab>
-1	<ii: 1, s: babab>
-2	<ii: 2, s: NULL>
-3	<ii: 3, s: ababa>
+NULL	<i: NULL, s: abbab>
+1	<i: 1, s: babab>
+2	<i: 2, s: NULL>
+3	<i: 3, s: ababa>
 
 query TT
-select ii, struct_pack(ii:=ii, s:=string_split(s, 'bb')) from test5 order by ii;
+select i, struct_pack(i:=i, s:=string_split(s, 'b')) from test5 order by i;
 ----
-NULL	<ii: NULL, s: [aa, , aa, ]>
-1	<ii: 1, s: [, aa, aa, ]>
-2	<ii: 2, s: NULL>
-3	<ii: 3, s: [aa, aa, aa]>
+NULL	<i: NULL, s: [a, , a, ]>
+1	<i: 1, s: [, a, a, ]>
+2	<i: 2, s: NULL>
+3	<i: 3, s: [a, a, a]>
 
 query TT
-select ii, struct_pack(ii:=ii, s:=UNNEST(string_split(s, 'bb'))) from test5 order by ii;
+select i, struct_pack(i:=i, s:=UNNEST(string_split(s, 'b'))) from test5 order by i;
 ----
-NULL	<ii: NULL, s: aa>
-NULL	<ii: NULL, s: >
-NULL	<ii: NULL, s: aa>
-NULL	<ii: NULL, s: >
-1	<ii: 1, s: >
-1	<ii: 1, s: aa>
-1	<ii: 1, s: aa>
-1	<ii: 1, s: >
-2	<ii: 2, s: NULL>
-3	<ii: 3, s: aa>
-3	<ii: 3, s: aa>
-3	<ii: 3, s: aa>
+NULL	<i: NULL, s: a>
+NULL	<i: NULL, s: >
+NULL	<i: NULL, s: a>
+NULL	<i: NULL, s: >
+1	<i: 1, s: >
+1	<i: 1, s: a>
+1	<i: 1, s: a>
+1	<i: 1, s: >
+2	<i: 2, s: NULL>
+3	<i: 3, s: a>
+3	<i: 3, s: a>
+3	<i: 3, s: a>
 
 query TT
-select ii, struct_pack(ii:=ii, s:=list(s)) from test5 group by ii order by ii;
+select i, struct_pack(i:=i, s:=list(s)) from test5 group by i order by i;
 ----
-NULL	<ii: NULL, s: [abbab]>
-1	<ii: 1, s: [babab]>
-2	<ii: 2, s: [NULL]>
-3	<ii: 3, s: [ababa]>
+NULL	<i: NULL, s: [abbab]>
+1	<i: 1, s: [babab]>
+2	<i: 2, s: [NULL]>
+3	<i: 3, s: [ababa]>
 
 query TT
-select ii, struct_pack(ii:=ii, s:=s) from test5 order by s;
+select i, struct_pack(i:=i, s:=s) from test5 order by s;
 ----
-2	<ii: 2, s: NULL>
-3	<ii: 3, s: ababa>
-NULL	<ii: NULL, s: abbab>
-1	<ii: 1, s: babab>
+2	<i: 2, s: NULL>
+3	<i: 3, s: ababa>
+NULL	<i: NULL, s: abbab>
+1	<i: 1, s: babab>
 
 query TT
-select ii, struct_pack(ii:=ii, s:=list(string_split(s, 'bb'))) from test5 group by ii order by ii;
+select i, struct_pack(i:=i, s:=list(string_split(s, 'b'))) from test5 group by i order by i;
 ----
-NULL	<ii: NULL, s: [[aa, , aa, ]]>
-1	<ii: 1, s: [[, aa, aa, ]]>
-2	<ii: 2, s: [NULL]>
-3	<ii: 3, s: [[aa, aa, aa]]>
+NULL	<i: NULL, s: [[a, , a, ]]>
+1	<i: 1, s: [[, a, a, ]]>
+2	<i: 2, s: [NULL]>
+3	<i: 3, s: [[a, a, a]]>
 
-# sorting by aa mix of variable size and constant size columns
+# sorting by a mix of variable size and constant size columns
 statement ok
 CREATE TABLE test6 (i1 INT, s1 VARCHAR, i2 int, s2 VARCHAR)
 
@@ -367,21 +367,21 @@ Brand#11	ECONOMY BURNISHED NICKEL	49	4
 
 # simple nested lists (no structs)
 statement ok
-create table test8 (ii int, s varchar)
+create table test8 (i int, s varchar)
 
 statement ok
 insert into test8 values (3, 'aba'), (1, 'ccbcc'), (NULL, 'dbdbd'), (2, NULL);
 
 query TT
-select ii, string_split(s, 'bb') from test8 order by ii;
+select i, string_split(s, 'b') from test8 order by i;
 ----
 NULL	[d, d, d]
 1	[cc, cc]
 2	NULL
-3	[aa, aa]
+3	[a, a]
 
 query TT
-select ii, list(s) from test8 group by ii order by ii;
+select i, list(s) from test8 group by i order by i;
 ----
 NULL	[dbdbd]
 1	[ccbcc]
@@ -389,21 +389,21 @@ NULL	[dbdbd]
 3	[aba]
 
 query TT
-select ii, list(string_split(s, 'bb')) from test8 group by ii order by ii;
+select i, list(string_split(s, 'b')) from test8 group by i order by i;
 ----
 NULL	[[d, d, d]]
 1	[[cc, cc]]
 2	[NULL]
-3	[[aa, aa]]
+3	[[a, a]]
 
 # lists longer than STANDARD_VECTOR_SIZE
 statement ok
-CREATE TABLE test9 AS (SELECT range % 4 ii, range jj FROM range(5000));
+CREATE TABLE test9 AS (SELECT range % 4 i, range j FROM range(5000));
 
 statement ok
 INSERT INTO test9 VALUES (0, NULL), (1, NULL), (2, NULL), (3, NULL)
 
 query TT
-SELECT ii, list(jj) FROM test9 GROUP BY ii ORDER BY ii;
+SELECT i, list(j) FROM test9 GROUP BY i ORDER BY i;
 ----
 8 values hashing to fc909a9ac472ea404c0bceecf7f1f3d6
