@@ -31,7 +31,6 @@ import org.apache.ignite.mxbean.PerformanceStatisticsMBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static java.util.Collections.singletonList;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_FLUSH_SIZE;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERF_STAT_DIR;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.WRITER_THREAD_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -80,18 +79,6 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
         statisticsMBean(grids.get(0).name()).start();
 
         waitForStatisticsEnabled(true);
-    }
-
-    /** Starts collecting performance statistics with immediately flush. */
-    protected static void startCollectStatisticsWithImmediatelyFlush() throws Exception {
-        System.setProperty(IGNITE_PERF_STAT_FLUSH_SIZE, "1");
-
-        try {
-            startCollectStatistics();
-        }
-        finally {
-            System.clearProperty(IGNITE_PERF_STAT_FLUSH_SIZE);
-        }
     }
 
     /** Rotate file collecting performance statistics. */
@@ -212,11 +199,24 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
         }
 
         /** {@inheritDoc} */
-        @Override public void checkpoint(UUID nodeId, long beforeLockDuration, long lockWaitDuration,
-            long listenersExecDuration, long markDuration, long lockHoldDuration, long pagesWriteDuration,
-            long fsyncDuration, long walCpRecordFsyncDuration, long writeCpEntryDuration,
-            long splitAndSortCpPagesDuration, long totalDuration, long cpStartTime, int pagesSize,
-            int dataPagesWritten, int cowPagesWritten) {
+        @Override public void checkpoint(
+            UUID nodeId,
+            long beforeLockDuration,
+            long lockWaitDuration,
+            long listenersExecDuration,
+            long markDuration,
+            long lockHoldDuration,
+            long pagesWriteDuration,
+            long fsyncDuration,
+            long walCpRecordFsyncDuration,
+            long writeCpEntryDuration,
+            long splitAndSortCpPagesDuration,
+            long totalDuration,
+            long cpStartTime,
+            int pagesSize,
+            int dataPagesWritten,
+            int cowPagesWritten
+        ) {
             // No-op.
         }
 

@@ -425,10 +425,22 @@ public class FilePerformanceStatisticsReader {
             int cowPagesWritten = buf.getInt();
 
             for (PerformanceStatisticsHandler handler : curHnd) {
-                handler.checkpoint(nodeId, beforeLockDuration, lockWaitDuration, listenersExecDuration, markDuration,
-                    lockHoldDuration, pagesWriteDuration, fsyncDuration, walCpRecordFsyncDuration,
-                    writeCheckpointEntryDuration, splitAndSortCpPagesDuration, totalDuration, cpStartTime,
-                    pagesSize, dataPagesWritten, cowPagesWritten);
+                handler.checkpoint(nodeId,
+                    beforeLockDuration,
+                    lockWaitDuration,
+                    listenersExecDuration,
+                    markDuration,
+                    lockHoldDuration,
+                    pagesWriteDuration,
+                    fsyncDuration,
+                    walCpRecordFsyncDuration,
+                    writeCheckpointEntryDuration,
+                    splitAndSortCpPagesDuration,
+                    totalDuration,
+                    cpStartTime,
+                    pagesSize,
+                    dataPagesWritten,
+                    cowPagesWritten);
             }
 
             return true;
