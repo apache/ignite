@@ -18,7 +18,9 @@ package org.apache.ignite.spi.discovery.tcp.ipfinder.azure;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -43,6 +45,8 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiConfiguration;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAdapter;
+
+import static com.nimbusds.oauth2.sdk.util.URLUtils.CHARSET;
 
 /**
  * Azure Blob Storage based IP Finder
@@ -151,11 +155,14 @@ public class TcpDiscoveryAzureBlobStoreIpFinder extends TcpDiscoveryIpFinderAdap
 
         for (InetSocketAddress addr : addrs) {
             String key = keyFromAddr(addr);
+            try {
+                key = URLEncoder.encode(key, CHARSET);
+            } catch (UnsupportedEncodingException e) {
+                throw new IgniteSpiException("Unable to encode URL due to error "
+                        + e.getMessage());
+            }
 
-            // Remove extra characters in case of Ipv6
-            String strippedKey = key.replaceAll("[%*$]","");
-
-            BlockBlobClient blobClient = blobContainerClient.getBlobClient(strippedKey).getBlockBlobClient();
+            BlockBlobClient blobClient = blobContainerClient.getBlobClient(key).getBlockBlobClient();
             InputStream dataStream = new ByteArrayInputStream(OBJECT_CONTENT);
 
             try {
