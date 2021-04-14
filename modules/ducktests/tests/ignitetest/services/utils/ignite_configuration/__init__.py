@@ -64,8 +64,9 @@ class IgniteClientConfiguration(IgniteConfiguration):
     client_mode = True
 
 
-class ThinClientConfiguration(IgniteConfiguration):
+class ThinClientConfiguration(NamedTuple):
     """
     Thin client configuration.
     """
     addresses: str = None
+    version: IgniteVersion = DEV_BRANCH

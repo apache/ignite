@@ -30,7 +30,7 @@ from ignitetest.services.utils.path import get_home_dir, get_module_path
 from ignitetest.utils.version import DEV_BRANCH
 
 
-def resolve_spec(service, context, config, main_java_class, **kwargs):
+def resolve_spec(service, context, config, main_java_class, thin_client_config=None, **kwargs):
     """
     Resolve Spec classes for IgniteService and IgniteApplicationService
     """
@@ -53,7 +53,8 @@ def resolve_spec(service, context, config, main_java_class, **kwargs):
 
     if is_impl("IgniteApplicationService"):
         return _resolve_spec("AppSpec", ApacheIgniteApplicationSpec)(path_aware=service, context=context, config=config,
-                                                                     main_java_class=main_java_class, **kwargs)
+                                                                     main_java_class=main_java_class,
+                                                                     thin_client_config=thin_client_config, **kwargs)
 
     raise Exception("There is no specification for class %s" % type(service))
 
@@ -63,7 +64,7 @@ class IgniteSpec(metaclass=ABCMeta):
     This class is a basic Spec
     """
     # pylint: disable=R0913
-    def __init__(self, path_aware, config, project, jvm_opts=None, full_jvm_opts=None):
+    def __init__(self, path_aware, config, project, thin_client_config=None, jvm_opts=None, full_jvm_opts=None):
         self.project = project
         self.path_aware = path_aware
         self.envs = {}
@@ -78,7 +79,11 @@ class IgniteSpec(metaclass=ABCMeta):
                                                 gc_dump_path=os.path.join(path_aware.log_dir, "ignite_gc.log"),
                                                 oom_path=os.path.join(path_aware.log_dir, "ignite_out_of_mem.hprof"))
         self.config = config
-        self.version = config.version
+        self.thin_client_config = thin_client_config
+        if self.config:
+            self.version = config.version
+        else:
+            self.version = thin_client_config.version
 
     @property
     def config_template(self):
@@ -87,9 +92,16 @@ class IgniteSpec(metaclass=ABCMeta):
         """
         if self.config.client_mode:
             return IgniteClientConfigTemplate()
-        if self.config.addresses:
-            return IgniteThinClientConfigTemplate()
         return IgniteServerConfigTemplate()
+
+    @property
+    def thin_client_config_template(self):
+        """
+        :return: thin client config that service will use to start on a node
+        """
+        if self.thin_client_config:
+            return IgniteThinClientConfigTemplate()
+        return None
 
     def __home(self, version=None, project=None):
         """

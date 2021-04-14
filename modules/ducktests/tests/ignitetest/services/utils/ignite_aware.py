@@ -59,7 +59,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
     # pylint: disable=R0913
     def __init__(self, context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, main_java_class,
-                 **kwargs):
+                 thin_client_config=None, **kwargs):
         """
         **kwargs are params that passed to IgniteSpec
         """
@@ -73,16 +73,21 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         self.main_java_class = main_java_class
         self.startup_timeout_sec = startup_timeout_sec
         self.shutdown_timeout_sec = shutdown_timeout_sec
+        self.thin_client_config = thin_client_config
 
-        self.spec = resolve_spec(self, context, config, main_java_class, **kwargs)
+        self.spec = resolve_spec(self, context, config, main_java_class, thin_client_config, **kwargs)
         self.init_logs_attribute()
 
         self.disconnected_nodes = []
         self.start_ignite = kwargs.get("start_ignite", True)
 
+    # pylint: disable=R1705
     @property
     def version(self):
-        return self.config.version
+        if not self.thin_client_config:
+            return self.config.version
+        else:
+            return self.thin_client_config.version
 
     @property
     def project(self):
@@ -108,12 +113,12 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         Update ssl configuration from globals.
         """
         ssl_params = None
-        if self.config.ssl_params is None and is_ssl_enabled(self.globals):
+        if self.config and self.config.ssl_params is None and is_ssl_enabled(self.globals):
             ssl_params = get_ssl_params(
                 self.globals,
                 IGNITE_CLIENT_ALIAS if self.config.client_mode else IGNITE_SERVER_ALIAS
             )
-        if ssl_params:
+        if ssl_params and self.config:
             self.config = self.config._replace(ssl_params=ssl_params,
                                                connector_configuration=ConnectorConfiguration(
                                                    ssl_enabled=True, ssl_params=ssl_params))
@@ -198,17 +203,22 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         node.account.create_file(self.config_file, node_config)
 
     def _prepare_config(self, node):
-        if not self.config.consistent_id:
-            config = self.config._replace(consistent_id=node.account.externally_routable_ip)
+        if not self.thin_client_config:
+            if not self.config.consistent_id:
+                config = self.config._replace(consistent_id=node.account.externally_routable_ip)
+            else:
+                config = self.config
+
+            config = config._replace(local_host=socket.gethostbyname(node.account.hostname))
+
+            config.discovery_spi.prepare_on_start(cluster=self)
+
+            node_config = self.spec.config_template.render(config_dir=self.config_dir, work_dir=self.work_dir,
+                                                           config=config)
         else:
-            config = self.config
-
-        config = config._replace(local_host=socket.gethostbyname(node.account.hostname))
-
-        config.discovery_spi.prepare_on_start(cluster=self)
-
-        node_config = self.spec.config_template.render(config_dir=self.config_dir, work_dir=self.work_dir,
-                                                       config=config)
+            node_config = self.spec.thin_client_config_template.render(config_dir=self.config_dir,
+                                                                       work_dir=self.work_dir,
+                                                                       config=self.thin_client_config)
 
         setattr(node, "consistent_id", node.account.externally_routable_ip)
 
