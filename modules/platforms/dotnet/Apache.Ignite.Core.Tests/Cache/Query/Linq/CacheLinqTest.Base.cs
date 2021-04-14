@@ -268,19 +268,24 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             CollectionAssert.AreEqual(expected, actual, new NumericComparer());
         }
 
-        private static void CheckWhereFunc<T>(Expression<Func<T, bool>> exp, IQueryable<T> query)
+        private static void CheckWhereFunc<T>(Expression<Func<T, bool>> expression, IQueryable<T> query)
+        {
+            CheckWhereFunc<T>(expression, expression, query);
+        }
+
+        private static void CheckWhereFunc<T>(Expression<Func<T, bool>> memoryExpression, Expression<Func<T, bool>> sqlExpression, IQueryable<T> query)
         {
             // Calculate result locally, using real method invocation
-            var expected = query.ToArray().AsQueryable().Where(exp).OrderBy(x => x).ToArray();
+            var expected = query.ToArray().AsQueryable().Where(memoryExpression).OrderBy(x => x).ToArray();
 
             // Perform SQL query
-            var actual = query.Where(exp).ToArray().OrderBy(x => x).ToArray();
+            var actual = query.Where(sqlExpression).ToArray().OrderBy(x => x).ToArray();
 
             // Compare results
             CollectionAssert.AreEqual(expected, actual, new NumericComparer());
 
             // Perform intermediate anonymous type conversion to check type projection
-            actual = query.Where(exp).Select(x => new { Foo = x }).ToArray().Select(x => x.Foo)
+            actual = query.Where(sqlExpression).Select(x => new { Foo = x }).ToArray().Select(x => x.Foo)
                 .OrderBy(x => x).ToArray();
 
             // Compare results

@@ -370,13 +370,13 @@ namespace Apache.Ignite.Linq.Impl
             visitor.Visit(expression.Arguments[1]);
             if (ignoreCase) visitor.ResultBuilder.Append(")");
             visitor.ResultBuilder.Append(", 0, casewhen(");
-            visitor.ResultBuilder.Append("lower(");
+            if (ignoreCase) visitor.ResultBuilder.Append("lower(");
             visitor.Visit(expression.Arguments[0]);
-            visitor.ResultBuilder.Append(")");
+            if (ignoreCase) visitor.ResultBuilder.Append(")");
             visitor.ResultBuilder.Append(" >= ");
-            visitor.ResultBuilder.Append("lower(");
+            if (ignoreCase) visitor.ResultBuilder.Append("lower(");
             visitor.Visit(expression.Arguments[1]);
-            visitor.ResultBuilder.Append(")");
+            if (ignoreCase) visitor.ResultBuilder.Append(")");
             visitor.ResultBuilder.Append(", 1, -1))");
             visitor.ResultBuilder.Append(", 1)");
         }
