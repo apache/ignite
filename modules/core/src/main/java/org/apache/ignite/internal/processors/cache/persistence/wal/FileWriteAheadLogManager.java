@@ -1327,16 +1327,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         @Nullable FileArchiver archiver0 = archiver;
 
-        FileDescriptor[] walArchiveFiles = walArchiveFiles();
-
-        if (archiver0 != null &&
-            !F.isEmpty(walArchiveFiles) &&
-            absIdx <= walArchiveFiles[walArchiveFiles.length - 1].idx) {
-            absIdx = walArchiveFiles[walArchiveFiles.length - 1].idx + 1;
-
-            lastReadPtr = new WALPointer(absIdx, HEADER_RECORD_SIZE, 0);
-        }
-
         long segNo = archiver0 == null ? absIdx : absIdx % dsCfg.getWalSegments();
 
         File curFile = new File(walWorkDir, fileName(segNo));
@@ -1375,6 +1365,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 FileWriteHandle hnd = fileHandleManager.initHandle(fileIO, off + len, ser);
 
                 segmentAware.curAbsWalIdx(absIdx);
+
+                FileDescriptor[] walArchiveFiles = walArchiveFiles();
+
+                if (archiver0 != null &&
+                    !F.isEmpty(walArchiveFiles) &&
+                    absIdx <= walArchiveFiles[walArchiveFiles.length - 1].idx) {
+                    hnd = initNextWriteHandle(hnd);
+                }
 
                 segmentAware.minReserveIndex(F.isEmpty(walArchiveFiles) ? -1 : walArchiveFiles[0].idx - 1);
                 segmentAware.lastTruncatedArchiveIdx(F.isEmpty(walArchiveFiles) ? -1 : walArchiveFiles[0].idx - 1);
