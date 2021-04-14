@@ -41,6 +41,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
@@ -51,6 +52,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -71,6 +73,15 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
 
     /** Binary type name. */
     private static final String BIN_TYPE_NAME = "customType";
+
+    /** Cache 1 name. */
+    private static final String CACHE1 = "cache1";
+
+    /** Cache 2 name. */
+    private static final String CACHE2 = "cache2";
+
+    /** Default shared cache group name. */
+    private static final String SHARED_GRP = "shared";
 
     /** Static cache configurations. */
     private CacheConfiguration<?, ?>[] cacheCfgs;
@@ -130,7 +141,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
 
         GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), ClusterTopologyCheckedException.class, null);
 
-        ensureCacheDirEmpty(2, dfltCacheCfg);
+        ensureCacheDirEmpty(dfltCacheCfg);
     }
 
     /** @throws Exception If failed. */
@@ -251,34 +262,27 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
 
         GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), IgniteIllegalStateException.class, null);
 
-        ensureCacheDirEmpty(1, dfltCacheCfg);
+        ensureCacheDirEmpty(dfltCacheCfg);
     }
 
     /** @throws Exception If failed. */
     @Test
     public void testRestoreSharedCacheGroup() throws Exception {
-        String grpName = "shared";
-        String cacheName1 = "cache1";
-        String cacheName2 = "cache2";
+        CacheConfiguration<Integer, Object> cacheCfg1 =
+            txCacheConfig(new CacheConfiguration<Integer, Object>(CACHE1)).setGroupName(SHARED_GRP);
 
-        CacheConfiguration<?, ?> cacheCfg1 = txCacheConfig(new CacheConfiguration<>(cacheName1)).setGroupName(grpName);
-        CacheConfiguration<?, ?> cacheCfg2 = txCacheConfig(new CacheConfiguration<>(cacheName2)).setGroupName(grpName);
+        CacheConfiguration<Integer, Object> cacheCfg2 =
+            txCacheConfig(new CacheConfiguration<Integer, Object>(CACHE2)).setGroupName(SHARED_GRP);
+
+        IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valBuilder, cacheCfg1, cacheCfg2);
 
         cacheCfgs = new CacheConfiguration[] {cacheCfg1, cacheCfg2};
 
-        IgniteEx ignite = startGrids(2);
-
         ignite.cluster().state(ClusterState.ACTIVE);
-
-        IgniteCache<Integer, Object> cache1 = ignite.cache(cacheName1);
-        putKeys(cache1, 0, CACHE_KEYS_RANGE);
-
-        IgniteCache<Integer, Object> cache2 = ignite.cache(cacheName2);
-        putKeys(cache2, 0, CACHE_KEYS_RANGE);
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
 
-        cache1.destroy();
+        ignite.cache(CACHE1).destroy();
 
         awaitPartitionMapExchange();
 
@@ -286,19 +290,19 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
 
         GridTestUtils.assertThrowsAnyCause(
             log,
-            () -> snp.restoreSnapshot(SNAPSHOT_NAME, Arrays.asList(cacheName1, cacheName2)).get(TIMEOUT),
+            () -> snp.restoreSnapshot(SNAPSHOT_NAME, Arrays.asList(CACHE1, CACHE2)).get(TIMEOUT),
             IllegalArgumentException.class,
             "Cache group(s) was not found in the snapshot"
         );
 
-        cache2.destroy();
+        ignite.cache(CACHE2).destroy();
 
         awaitPartitionMapExchange();
 
-        snp.restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(grpName)).get(TIMEOUT);
+        snp.restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(SHARED_GRP)).get(TIMEOUT);
 
-        checkCacheKeys(ignite.cache(cacheName1), CACHE_KEYS_RANGE);
-        checkCacheKeys(ignite.cache(cacheName2), CACHE_KEYS_RANGE);
+        checkCacheKeys(ignite.cache(CACHE1), CACHE_KEYS_RANGE);
+        checkCacheKeys(ignite.cache(CACHE2), CACHE_KEYS_RANGE);
     }
 
     /** @throws Exception If failed. */
@@ -359,7 +363,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
 
         GridTestUtils.assertThrowsAnyCause(log, () -> fut0.get(TIMEOUT), BinaryObjectException.class, null);
 
-        ensureCacheDirEmpty(2, dfltCacheCfg);
+        ensureCacheDirEmpty(dfltCacheCfg);
 
         for (int i = 0; i < CACHE_KEYS_RANGE; i++)
             assertEquals(objs[i], cache1.get(i));
@@ -411,26 +415,23 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
         Class<? extends Throwable> expCls,
         String expMsg
     ) throws Exception {
-        String grpName = "shared";
-        String cacheName = "cache1";
-
-        dfltCacheCfg = txCacheConfig(new CacheConfiguration<Integer, Object>(cacheName)).setGroupName(grpName);
+        dfltCacheCfg = txCacheConfig(new CacheConfiguration<Integer, Object>(CACHE1)).setGroupName(SHARED_GRP);
 
         IgniteEx ignite = startGridsWithSnapshot(2, CACHE_KEYS_RANGE);
 
         TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(1));
 
-        IgniteFuture<Void> fut = waitForBlockOnRestore(spi, procType, grpName);
+        IgniteFuture<Void> fut = waitForBlockOnRestore(spi, procType, SHARED_GRP);
 
-        GridTestUtils.assertThrowsAnyCause(log, () -> ignite.createCache(grpName), IgniteCheckedException.class, null);
+        GridTestUtils.assertThrowsAnyCause(log, () -> ignite.createCache(SHARED_GRP), IgniteCheckedException.class, null);
 
-        GridTestUtils.assertThrowsAnyCause(log, () -> ignite.createCache(cacheName), expCls, expMsg);
+        GridTestUtils.assertThrowsAnyCause(log, () -> ignite.createCache(CACHE1), expCls, expMsg);
 
         spi.stopBlock();
 
         fut.get(TIMEOUT);
 
-        checkCacheKeys(grid(0).cache(cacheName), CACHE_KEYS_RANGE);
+        checkCacheKeys(grid(0).cache(CACHE1), CACHE_KEYS_RANGE);
     }
 
     /** @throws Exception If failed. */
@@ -468,13 +469,11 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
                 "Required node has left the cluster"
             );
 
-            ensureCacheDirEmpty(3, dfltCacheCfg);
-
             fut0.get(TIMEOUT);
 
             awaitPartitionMapExchange();
 
-            dfltCacheCfg = null;
+            ensureCacheDirEmpty(dfltCacheCfg);
 
             GridTestUtils.assertThrowsAnyCause(
                 log,
@@ -551,25 +550,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
         @Nullable Class<? extends Throwable> exCls,
         @Nullable String expMsg
     ) throws Exception {
-        checkClusterStateChange(state, procType, exCls, expMsg, false);
-    }
-
-    /**
-     * @param state Cluster state.
-     * @param procType The type of distributed process on which communication is blocked.
-     * @param exCls Expected exception class.
-     * @param expMsg Expected exception message.
-     * @param stopNode Stop node flag.
-     * @throws Exception if failed.
-     */
-    private void checkClusterStateChange(
-        ClusterState state,
-        DistributedProcessType procType,
-        @Nullable Class<? extends Throwable> exCls,
-        @Nullable String expMsg,
-        boolean stopNode
-    ) throws Exception {
-        int nodesCnt = stopNode ? 3 : 2;
+        int nodesCnt = 2;
 
         Ignite ignite = startGridsWithSnapshot(nodesCnt, CACHE_KEYS_RANGE, true);
 
@@ -579,10 +560,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
 
         ignite.cluster().state(state);
 
-        if (stopNode)
-            stopGrid(nodesCnt - 1);
-        else
-            spi.stopBlock();
+        spi.stopBlock();
 
         if (exCls == null) {
             fut.get(TIMEOUT);
@@ -598,17 +576,9 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
 
         ignite.cluster().state(ClusterState.ACTIVE);
 
-        ensureCacheDirEmpty(stopNode ? nodesCnt - 1 : nodesCnt, dfltCacheCfg);
+        ensureCacheDirEmpty(dfltCacheCfg);
 
         String cacheName = dfltCacheCfg.getName();
-
-        if (stopNode) {
-            dfltCacheCfg = null;
-
-            startGrid(nodesCnt - 1);
-
-            resetBaselineTopology();
-        }
 
         grid(nodesCnt - 1).snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(cacheName)).get(TIMEOUT);
 
@@ -616,28 +586,30 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
     }
 
     /**
-     * @param nodesCnt Count of nodes.
      * @param ccfg Cache configuration.
      * @throws IgniteCheckedException if failed.
      */
-    private void ensureCacheDirEmpty(int nodesCnt, CacheConfiguration<?, ?> ccfg) throws IgniteCheckedException {
+    private void ensureCacheDirEmpty(CacheConfiguration<?, ?> ccfg) throws IgniteCheckedException {
         String cacheName = ccfg.getName();
 
-        for (int nodeIdx = 0; nodeIdx < nodesCnt; nodeIdx++) {
-            IgniteEx grid = grid(nodeIdx);
+        for (Ignite ignite : G.allGrids()) {
+            GridKernalContext kctx = ((IgniteEx)ignite).context();
 
-            CacheGroupDescriptor desc = grid.context().cache().cacheGroupDescriptors().get(CU.cacheId(cacheName));
+            if (kctx.clientNode())
+                continue;
 
-            assertNull("nodeIdx=" + nodeIdx + ", cache=" + cacheName, desc);
+            CacheGroupDescriptor desc = kctx.cache().cacheGroupDescriptors().get(CU.cacheId(cacheName));
+
+            assertNull("nodeId=" + kctx.localNodeId() + ", cache=" + cacheName, desc);
 
             GridTestUtils.waitForCondition(
-                () -> !grid.context().cache().context().snapshotMgr().isRestoring(),
+                () -> !kctx.cache().context().snapshotMgr().isRestoring(),
                 TIMEOUT);
 
-            File dir = ((FilePageStoreManager)grid.context().cache().context().pageStore()).cacheWorkDir(ccfg);
+            File dir = ((FilePageStoreManager)kctx.cache().context().pageStore()).cacheWorkDir(ccfg);
 
             String errMsg = String.format("%s, dir=%s, exists=%b, files=%s",
-                grid.name(), dir, dir.exists(), Arrays.toString(dir.list()));
+                ignite.name(), dir, dir.exists(), Arrays.toString(dir.list()));
 
             assertTrue(errMsg, !dir.exists() || dir.list().length == 0);
         }
