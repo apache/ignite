@@ -28,6 +28,7 @@ public class SegmentEofException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
     public final boolean switchSegmentRecord;
 
     /**
