@@ -126,6 +126,8 @@ public class SnapshotRestoreProcess {
      * @return Future that will be completed when the restore operation is complete and the cache groups are started.
      */
     public IgniteFuture<Void> start(String snpName, Collection<String> cacheGrpNames) {
+        UUID reqId = UUID.randomUUID();
+
         try {
             if (ctx.clientNode())
                 throw new IgniteException(OP_REJECT_MSG + "Client and daemon nodes can not perform this operation.");
@@ -148,7 +150,7 @@ public class SnapshotRestoreProcess {
                 if (isRestoring() || fut != null)
                     throw new IgniteException(OP_REJECT_MSG + "The previous snapshot restore operation was not completed.");
 
-                fut = new ClusterSnapshotFuture(UUID.randomUUID(), snpName);
+                fut = new ClusterSnapshotFuture(reqId, snpName);
             }
         } catch (IgniteException e) {
             return new IgniteFinishedFutureImpl<>(e);
@@ -157,7 +159,7 @@ public class SnapshotRestoreProcess {
         ctx.cache().context().snapshotMgr().collectSnapshotMetadata(snpName).listen(
             f -> {
                 if (f.error() != null) {
-                    finishProcess(fut.rqId, f.error());
+                    finishProcess(reqId, f.error());
 
                     return;
                 }
@@ -180,7 +182,7 @@ public class SnapshotRestoreProcess {
                 }
 
                 if (!reqGrpIds.isEmpty()) {
-                    finishProcess(fut.rqId, new IllegalArgumentException(OP_REJECT_MSG + "Cache group(s) was not found in the " +
+                    finishProcess(reqId, new IllegalArgumentException(OP_REJECT_MSG + "Cache group(s) was not found in the " +
                         "snapshot [groups=" + reqGrpIds.values() + ", snapshot=" + snpName + ']'));
 
                     return;
@@ -189,7 +191,7 @@ public class SnapshotRestoreProcess {
                 ctx.cache().context().snapshotMgr().runSnapshotVerification(metas).listen(
                     f0 -> {
                         if (f0.error() != null) {
-                            finishProcess(fut.rqId, f0.error());
+                            finishProcess(reqId, f0.error());
 
                             return;
                         }
@@ -201,13 +203,13 @@ public class SnapshotRestoreProcess {
 
                             res.print(sb::append, true);
 
-                            finishProcess(fut.rqId, new IgniteException(sb.toString()));
+                            finishProcess(reqId, new IgniteException(sb.toString()));
 
                             return;
                         }
 
                         SnapshotOperationRequest req =
-                            new SnapshotOperationRequest(fut.rqId, F.first(dataNodes), snpName, cacheGrpNames, dataNodes);
+                            new SnapshotOperationRequest(reqId, F.first(dataNodes), snpName, cacheGrpNames, dataNodes);
 
                         prepareRestoreProc.start(req.requestId(), req);
                     }
@@ -411,7 +413,7 @@ public class SnapshotRestoreProcess {
 
             opCtx0.stopFut = new IgniteFutureImpl<>(retFut.chain(f -> null));
 
-            restoreAsync(opCtx0.snpName, opCtx0.dirs, ctx.localNodeId().equals(req.operNodeId()), stopChecker, errHnd)
+            restoreAsync(opCtx0.snpName, opCtx0.dirs, ctx.localNodeId().equals(req.operationalNodeId()), stopChecker, errHnd)
                 .thenAccept(res -> {
                     Throwable err = opCtx.err.get();
 

@@ -104,7 +104,7 @@ public class SnapshotOperationRequest implements Serializable {
     /**
      * @return Operational node ID.
      */
-    public UUID operNodeId() {
+    public UUID operationalNodeId() {
         return opNodeId;
     }
 

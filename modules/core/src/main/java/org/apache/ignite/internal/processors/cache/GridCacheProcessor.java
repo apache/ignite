@@ -3709,6 +3709,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param failIfExists Fail if exists flag.
      * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
      * @param disabledAfterStart If true, cache proxies will be only activated after {@link #restartProxies()}.
+     * @param internal Flag indicating that the cache was started internally and not by the user.
      * @return Future that will be completed when all caches are deployed.
      */
     public IgniteInternalFuture<Boolean> dynamicStartCaches(
@@ -3716,7 +3717,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean failIfExists,
         boolean checkThreadTx,
         boolean disabledAfterStart,
-        boolean restoredCache
+        boolean internal
     ) {
         return dynamicStartCachesByStoredConf(
             ccfgList.stream().map(StoredCacheData::new).collect(toList()),
@@ -3724,7 +3725,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             checkThreadTx,
             disabledAfterStart,
             null,
-            restoredCache);
+            internal);
     }
 
     /**
@@ -3735,6 +3736,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
      * @param disabledAfterStart If true, cache proxies will be only activated after {@link #restartProxies()}.
      * @param restartId Restart requester id (it'll allow to start this cache only him).
+     * @param internal Flag indicating that the cache was started internally and not by the user.
      * @return Future that will be completed when all caches are deployed.
      */
     public IgniteInternalFuture<Boolean> dynamicStartCachesByStoredConf(
@@ -3743,10 +3745,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean checkThreadTx,
         boolean disabledAfterStart,
         IgniteUuid restartId,
-        boolean restoredCache
+        boolean internal
     ) {
         return dynamicStartCachesByStoredConf(storedCacheDataList, failIfExists, checkThreadTx, disabledAfterStart,
-            restartId, restoredCache, null);
+            restartId, internal, null);
     }
 
     /**
@@ -4090,13 +4092,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /**
      * @param reqs Requests.
-     * @param topNodes Server nodes on which a successful start of the cache(s) is required, if any of these nodes fails
-     *                 when starting the cache(s), the whole procedure is rolled back.
+     * @param rqNodes Server nodes on which a successful start of the cache(s) is required, if any of these nodes fails
+     *                when starting the cache(s), the whole procedure is rolled back.
      * @return Collection of futures.
      */
     private Collection<DynamicCacheStartFuture> initiateCacheChanges(
         Collection<DynamicCacheChangeRequest> reqs,
-        @Nullable Collection<UUID> topNodes
+        @Nullable Collection<UUID> rqNodes
     ) {
         Collection<DynamicCacheStartFuture> res = new ArrayList<>(reqs.size());
 
@@ -4152,7 +4154,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (!sndReqs.isEmpty()) {
             try {
-                ctx.discovery().sendCustomEvent(new DynamicCacheChangeBatch(sndReqs, topNodes));
+                ctx.discovery().sendCustomEvent(new DynamicCacheChangeBatch(sndReqs, rqNodes));
 
                 err = checkNodeState();
             }

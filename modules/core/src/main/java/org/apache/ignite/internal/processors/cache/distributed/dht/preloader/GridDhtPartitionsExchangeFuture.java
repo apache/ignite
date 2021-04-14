@@ -3834,7 +3834,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     return;
                 }
 
-                for (UUID nodeId : exchActions.cacheStartTopologySnapshot()) {
+                for (UUID nodeId : exchActions.cacheStartRequiredAliveNodes()) {
                     ClusterNode node = cctx.discovery().node(nodeId);
 
                     if (node != null &&

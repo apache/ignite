@@ -629,7 +629,7 @@ public class ClusterCachesInfo {
             batch.exchangeActions(exchangeActions);
 
             if (!F.isEmpty(batch.topologyNodes()))
-                exchangeActions.cacheStartTopologySnapshot(batch.topologyNodes());
+                exchangeActions.cacheStartRequiredAliveNodes(batch.topologyNodes());
         }
 
         return res.needExchange;

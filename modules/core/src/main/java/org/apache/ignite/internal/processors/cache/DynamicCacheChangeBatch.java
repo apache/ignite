@@ -50,7 +50,7 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
      * Server nodes on which a successful start of the cache(s) is required, if any of these nodes fails when starting
      * the cache(s), the whole procedure is rolled back.
      */
-    private Collection<UUID> topNodes;
+    private Collection<UUID> rqNodes;
 
     /** Cache updates to be executed on exchange. */
     private transient ExchangeActions exchangeActions;
@@ -67,14 +67,14 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
 
     /**
      * @param reqs Requests.
-     * @param topNodes Server nodes on which a successful start of the cache(s) is required, if any of these nodes fails
-     *                 when starting the cache(s), the whole procedure is rolled back.
+     * @param rqNodes Server nodes on which a successful start of the cache(s) is required, if any of these nodes fails
+     *                when starting the cache(s), the whole procedure is rolled back.
      */
-    public DynamicCacheChangeBatch(Collection<DynamicCacheChangeRequest> reqs, @Nullable Collection<UUID> topNodes) {
+    public DynamicCacheChangeBatch(Collection<DynamicCacheChangeRequest> reqs, @Nullable Collection<UUID> rqNodes) {
         assert !F.isEmpty(reqs) : reqs;
 
         this.reqs = reqs;
-        this.topNodes = topNodes;
+        this.rqNodes = rqNodes;
     }
 
     /** {@inheritDoc} */
@@ -177,7 +177,7 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
      * starting the cache(s), the whole procedure is rolled back.
      */
     public Collection<UUID> topologyNodes() {
-        return topNodes;
+        return rqNodes;
     }
 
     /** {@inheritDoc} */

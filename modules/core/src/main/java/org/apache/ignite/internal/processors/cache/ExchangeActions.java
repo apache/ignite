@@ -48,7 +48,7 @@ public class ExchangeActions {
      * Server nodes on which a successful start of the cache(s) is required, if any of these nodes fails when starting
      * the cache(s), the whole procedure is rolled back.
      */
-    private Collection<UUID> cacheStartTopSnapshot;
+    private Collection<UUID> cacheStartRequiredAliveNodes;
 
     /** */
     private Map<String, CacheActionData> cachesToStop;
@@ -330,16 +330,17 @@ public class ExchangeActions {
      * @return Server nodes on which a successful start of the cache(s) is required, if any of these nodes fails when
      *      starting the cache(s), the whole procedure is rolled back.
      */
-    public Collection<UUID> cacheStartTopologySnapshot() {
-        return cacheStartTopSnapshot == null ? Collections.emptyList() : cacheStartTopSnapshot;
+    public Collection<UUID> cacheStartRequiredAliveNodes() {
+        return cacheStartRequiredAliveNodes == null ? Collections.emptyList() : cacheStartRequiredAliveNodes;
     }
 
     /**
-     * @param cacheStartTopSnapshot Server nodes on which a successful start of the cache(s) is required, if any of
-     *                              these nodes fails when starting the cache(s), the whole procedure is rolled back.
+     * @param cacheStartRequiredAliveNodes Server nodes on which a successful start of the cache(s) is required, if any
+     *                                     of these nodes fails when starting the cache(s), the whole procedure is
+     *                                     rolled back.
      */
-    public void cacheStartTopologySnapshot(Collection<UUID> cacheStartTopSnapshot) {
-        this.cacheStartTopSnapshot = new ArrayList<>(cacheStartTopSnapshot);
+    public void cacheStartRequiredAliveNodes(Collection<UUID> cacheStartRequiredAliveNodes) {
+        this.cacheStartRequiredAliveNodes = new ArrayList<>(cacheStartRequiredAliveNodes);
     }
 
     /**
