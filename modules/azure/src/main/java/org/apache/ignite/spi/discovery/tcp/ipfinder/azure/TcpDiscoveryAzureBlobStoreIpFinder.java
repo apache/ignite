@@ -371,7 +371,7 @@ public class TcpDiscoveryAzureBlobStoreIpFinder extends TcpDiscoveryIpFinderAdap
     /** Handles stripping the interface name for IpV6 addresses */
     private static void handleInterfaceStripping(Collection<InetSocketAddress> addrs) {
         if (System.getProperty(PREFER_IPV4) == null) {
-            Pattern pattern = Pattern.compile(INTERFACE_REGEX ,Pattern.CASE_INSENSITIVE);
+            Pattern pattern = Pattern.compile(INTERFACE_REGEX, Pattern.CASE_INSENSITIVE);
 
             Iterator<InetSocketAddress> iterator = addrs.iterator();
 
