@@ -29,7 +29,7 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
 })
 @LogicalTestEnvironment(scriptsRoot = "src/test/sql"
-//    , script = "src/test/sql/filter/test_constant_comparisons.test"
+//    , script = "src/test/sql/subquery/test_neumann.test_ignore"
 )
 public class LogicalTestSuite {
 }

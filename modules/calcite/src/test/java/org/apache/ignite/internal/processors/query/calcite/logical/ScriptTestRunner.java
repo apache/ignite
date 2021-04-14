@@ -413,6 +413,9 @@ public class ScriptTestRunner {
                 if (s.equals("----"))
                     break;
 
+                if (sql.length() > 0)
+                    sql.append(" ");
+
                 sql.append(s);
             }
 

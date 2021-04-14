@@ -122,8 +122,16 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
 
     /** {@inheritDoc} */
     @Override public void closeInternal() {
+        closeInternal0(ex.get() == null);
+    }
+
+    /** */
+    private void closeInternal0(boolean sync) {
         try {
-            context().submit(() -> sources().forEach(U::closeQuiet), this::onError).get();
+            if (sync)
+                context().submit(() -> sources().forEach(U::closeQuiet), this::onError).get();
+            else
+                context().execute(() -> sources().forEach(U::closeQuiet), this::onError);
         }
         catch (InterruptedException | ExecutionException e) {
             U.warn(context().planningContext().logger(), "Execution is cancelled.", e);
