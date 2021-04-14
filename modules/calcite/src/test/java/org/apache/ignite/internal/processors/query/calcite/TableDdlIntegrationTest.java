@@ -52,10 +52,11 @@ import static org.apache.ignite.internal.util.IgniteUtils.map;
 import static org.apache.ignite.testframework.GridTestUtils.hasSize;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
 
 /** */
-public class CreateTableIntegrationTest extends GridCommonAbstractTest {
+public class TableDdlIntegrationTest extends GridCommonAbstractTest {
     /** */
     private static final String CLIENT_NODE_NAME = "client";
 
@@ -233,7 +234,7 @@ public class CreateTableIntegrationTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Creates a table in a different schema.
+     * Creates a table in a custom schema.
      */
     @Test
     public void createTableCustomSchema() {
@@ -243,6 +244,80 @@ public class CreateTableIntegrationTest extends GridCommonAbstractTest {
         executeSql("insert into my_schema.my_table values (1, '1'),(2, '2')");
 
         assertThat(executeSql("select * from my_schema.my_table"), hasSize(4));
+    }
+
+    /**
+     * Drops a table created in a default schema.
+     */
+    @Test
+    public void dropTableDefaultSchema() {
+        Set<String> cachesBefore = new HashSet<>(client.cacheNames());
+
+        executeSql("create table my_table (id int primary key, val varchar)");
+
+        Set<String> cachesAfter = new HashSet<>(client.cacheNames());
+        cachesAfter.removeAll(cachesBefore);
+
+        assertThat(cachesAfter, hasSize(1));
+
+        String createdCacheName = cachesAfter.iterator().next();
+
+        executeSql("drop table my_table");
+
+        cachesAfter = new HashSet<>(client.cacheNames());
+        cachesAfter.removeAll(cachesBefore);
+
+        assertThat(cachesAfter, hasSize(0));
+
+        assertThat(client.cachex(createdCacheName), nullValue());
+    }
+
+    /**
+     * Drops a table created in a custom schema.
+     */
+    @Test
+    public void dropTableCustomSchema() {
+        Set<String> cachesBefore = new HashSet<>(client.cacheNames());
+
+        executeSql("create table my_schema.my_table (id int primary key, val varchar)");
+
+        Set<String> cachesAfter = new HashSet<>(client.cacheNames());
+        cachesAfter.removeAll(cachesBefore);
+
+        assertThat(cachesAfter, hasSize(1));
+
+        String createdCacheName = cachesAfter.iterator().next();
+
+        executeSql("drop table my_schema.my_table");
+
+        cachesAfter = new HashSet<>(client.cacheNames());
+        cachesAfter.removeAll(cachesBefore);
+
+        assertThat(cachesAfter, hasSize(0));
+
+        assertThat(client.cachex(createdCacheName), nullValue());
+    }
+
+    /**
+     * Drops a table several times with and without
+     * specifying IF EXISTS.
+     */
+    @Test
+    @SuppressWarnings("ThrowableNotThrown")
+    public void dropTableIfExists() {
+        executeSql("create table my_schema.my_table (id int primary key, val varchar)");
+
+        GridTestUtils.assertThrows(log,
+            () -> executeSql("drop table my_table"),
+            IgniteSQLException.class, "Table doesn't exist: MY_TABLE]");
+
+        executeSql("drop table my_schema.my_table");
+
+        GridTestUtils.assertThrows(log,
+            () -> executeSql("drop table my_schema.my_table"),
+            IgniteSQLException.class, "Table doesn't exist: MY_TABLE]");
+
+        executeSql("drop table if exists my_schema.my_table");
     }
 
     /** */

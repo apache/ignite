@@ -37,6 +37,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlNumericLiteral;
 import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
+import org.apache.calcite.sql.ddl.SqlDropTable;
 import org.apache.calcite.sql.ddl.SqlKeyConstraint;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -119,6 +120,9 @@ public class DdlSqlToCommandConverter {
         if (ddlNode instanceof IgniteSqlCreateTable)
             return convertCreateTable((IgniteSqlCreateTable)ddlNode, ctx);
 
+        if (ddlNode instanceof SqlDropTable)
+            return convertDropTable((SqlDropTable)ddlNode, ctx);
+
         throw new IgniteSQLException("Unsupported operation [" +
             "sqlNodeKind=" + ddlNode.getKind() + "; " +
             "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
@@ -131,40 +135,10 @@ public class DdlSqlToCommandConverter {
      * @param ctx Planning context.
      */
     private CreateTableCommand convertCreateTable(IgniteSqlCreateTable createTblNode, PlanningContext ctx) {
-        String schemaName, tableName;
-
-        if (createTblNode.name().isSimple()) {
-            schemaName = ctx.schemaName();
-            tableName = createTblNode.name().getSimple();
-        }
-        else {
-            SqlIdentifier schemaId = createTblNode.name().skipLast(1);
-
-            if (!schemaId.isSimple()) {
-                throw new IgniteSQLException("Unexpected value of schemaName [" +
-                    "expected a simple identifier, but was " + schemaId + "; " +
-                    "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.PARSING);
-            }
-
-            schemaName = schemaId.getSimple();
-
-            SqlIdentifier tableId = createTblNode.name().getComponent(schemaId.names.size());
-
-            if (!tableId.isSimple()) {
-                throw new IgniteSQLException("Unexpected value of tableName [" +
-                    "expected a simple identifier, but was " + tableId + "; " +
-                    "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.PARSING);
-            }
-
-            tableName = tableId.getSimple();
-        }
-
-        ensureSchemaExists(ctx, schemaName);
-
         CreateTableCommand createTblCmd = new CreateTableCommand();
 
-        createTblCmd.schemaName(schemaName);
-        createTblCmd.tableName(tableName);
+        createTblCmd.schemaName(deriveSchemaName(createTblNode.name(), ctx));
+        createTblCmd.tableName(deriveObjectName(createTblNode.name(), ctx, "tableName"));
         createTblCmd.ifNotExists(createTblNode.ifNotExists());
         createTblCmd.templateName(QueryUtils.TEMPLATE_PARTITIONED);
 
@@ -229,6 +203,60 @@ public class DdlSqlToCommandConverter {
         }
 
         return createTblCmd;
+    }
+
+    /**
+     * Converts a given DropTable AST to a DropTable command.
+     *
+     * @param dropTblNode Root node of the given AST.
+     * @param ctx Planning context.
+     */
+    private DropTableCommand convertDropTable(SqlDropTable dropTblNode, PlanningContext ctx) {
+        DropTableCommand dropTblCmd = new DropTableCommand();
+
+        dropTblCmd.schemaName(deriveSchemaName(dropTblNode.name, ctx));
+        dropTblCmd.tableName(deriveObjectName(dropTblNode.name, ctx, "tableName"));
+        dropTblCmd.ifExists(dropTblNode.ifExists);
+
+        return dropTblCmd;
+    }
+
+    /** Derives a schema name from the compound identifier. */
+    private String deriveSchemaName(SqlIdentifier id, PlanningContext ctx) {
+        String schemaName;
+        if (id.isSimple())
+            schemaName = ctx.schemaName();
+        else {
+            SqlIdentifier schemaId = id.skipLast(1);
+
+            if (!schemaId.isSimple()) {
+                throw new IgniteSQLException("Unexpected value of schemaName [" +
+                    "expected a simple identifier, but was " + schemaId + "; " +
+                    "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.PARSING);
+            }
+
+            schemaName = schemaId.getSimple();
+        }
+
+        ensureSchemaExists(ctx, schemaName);
+
+        return schemaName;
+    }
+
+    /** Derives an object(a table, an index, etc) name from the compound identifier. */
+    private String deriveObjectName(SqlIdentifier id, PlanningContext ctx, String objDesc) {
+        if (id.isSimple())
+            return id.getSimple();
+
+        SqlIdentifier objId = id.getComponent(id.skipLast(1).names.size());
+
+        if (!objId.isSimple()) {
+            throw new IgniteSQLException("Unexpected value of " + objDesc + " [" +
+                "expected a simple identifier, but was " + objId + "; " +
+                "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.PARSING);
+        }
+
+        return objId.getSimple();
     }
 
     /** */

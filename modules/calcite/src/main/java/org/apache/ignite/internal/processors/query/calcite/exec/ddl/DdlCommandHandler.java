@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import org.apache.calcite.schema.SchemaPlus;
+import org.apache.calcite.schema.Table;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -39,6 +40,8 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningConte
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.ColumnDefinition;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.CreateTableCommand;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.DdlCommand;
+import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.DropTableCommand;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
@@ -76,6 +79,9 @@ public class DdlCommandHandler {
     public void handle(PlanningContext pctx, DdlCommand cmd) throws IgniteCheckedException {
         if (cmd instanceof CreateTableCommand)
             handle0(pctx, (CreateTableCommand)cmd);
+
+        else if (cmd instanceof DropTableCommand)
+            handle0(pctx, (DropTableCommand)cmd);
 
         else {
             throw new IgniteSQLException("Unsupported DDL operation [" +
@@ -125,6 +131,26 @@ public class DdlCommandHandler {
             cmd.encrypted(),
             null
         );
+    }
+
+    /** */
+    private void handle0(PlanningContext pctx, DropTableCommand cmd) throws IgniteCheckedException {
+        isDdlOnSchemaSupported(cmd.schemaName());
+
+        Table tbl = schemaSupp.get().getSubSchema(cmd.schemaName()).getTable(cmd.tableName());
+
+        if (tbl == null) {
+            if (!cmd.ifExists())
+                throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, cmd.tableName());
+
+            return;
+        }
+
+        String cacheName = ((IgniteTable)tbl).descriptor().cacheInfo().name();
+
+        security.authorize(cacheName, SecurityPermission.CACHE_DESTROY);
+
+        qryProcessorSupp.get().dynamicTableDrop(cacheName, cmd.tableName(), cmd.ifExists());
     }
 
     /** */

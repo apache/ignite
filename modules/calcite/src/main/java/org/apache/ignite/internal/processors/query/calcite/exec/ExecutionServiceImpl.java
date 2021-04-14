@@ -570,6 +570,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 return prepareExplain(sqlNode, ctx);
 
             case CREATE_TABLE:
+            case DROP_TABLE:
                 return prepareDdl(sqlNode, ctx);
 
             default:
