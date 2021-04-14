@@ -21,6 +21,7 @@ import org.apache.ignite.internal.encryption.CacheGroupReencryptionTest;
 import org.apache.ignite.internal.processors.cache.IgnitePdsSingleNodeWithIndexingAndGroupPutGetPersistenceSelfTest;
 import org.apache.ignite.internal.processors.cache.IgnitePdsSingleNodeWithIndexingPutGetPersistenceTest;
 import org.apache.ignite.internal.processors.cache.index.ClientReconnectWithSqlTableConfiguredTest;
+import org.apache.ignite.internal.processors.cache.index.ForceRebuildIndexTest;
 import org.apache.ignite.internal.processors.cache.index.StopRebuildIndexTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsIndexingDefragmentationTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgniteTcBotInitNewPageTest;
@@ -64,7 +65,8 @@ import org.junit.runners.Suite;
     MultipleParallelCacheDeleteDeadlockTest.class,
     CacheGroupReencryptionTest.class,
     IgnitePdsIndexingDefragmentationTest.class,
-    StopRebuildIndexTest.class
+    StopRebuildIndexTest.class,
+    ForceRebuildIndexTest.class
 })
 public class IgnitePdsWithIndexingTestSuite {
 }

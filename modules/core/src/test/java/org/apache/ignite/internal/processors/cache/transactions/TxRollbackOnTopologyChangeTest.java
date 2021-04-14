@@ -162,7 +162,7 @@ public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
 
                         fail("Deadlock expected");
                     }
-                    catch (Throwable t) {
+                    catch (Throwable ignore) {
                         // Expected.
                     }
 

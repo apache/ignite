@@ -282,7 +282,7 @@ public class GridNioSessionImpl implements GridNioSession {
             try {
                 return meta.sslEngine().getSession().getPeerCertificates();
             }
-            catch (SSLPeerUnverifiedException e) {
+            catch (SSLPeerUnverifiedException ignore) {
                 // Nothing to do.
             }
         }
