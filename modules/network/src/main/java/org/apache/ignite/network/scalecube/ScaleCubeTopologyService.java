@@ -16,11 +16,13 @@
  */
 package org.apache.ignite.network.scalecube;
 
-import java.util.Collection;
-import java.util.stream.Collectors;
-import io.scalecube.cluster.Cluster;
 import io.scalecube.cluster.Member;
 import io.scalecube.cluster.membership.MembershipEvent;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.network.AbstractTopologyService;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.TopologyEventHandler;
@@ -30,49 +32,62 @@ import org.apache.ignite.network.TopologyService;
  * Implementation of {@link TopologyService} based on ScaleCube.
  */
 final class ScaleCubeTopologyService extends AbstractTopologyService {
-    /** Inner representation a ScaleCube cluster. */
-    private Cluster cluster;
+    /** Local member node. */
+    private ClusterNode localMember;
+
+    /** Topology members. */
+    private final Map<String, ClusterNode> members = new ConcurrentHashMap<>();
 
     /**
-     * Sets the ScaleCube's {@link Cluster}. Needed for cyclic dependency injection.
+     * Sets the ScaleCube's local {@link Member}.
      */
-    void setCluster(Cluster cluster) {
-        this.cluster = cluster;
+    void setLocalMember(Member member) {
+        this.localMember = fromMember(member);
+
+        this.members.put(localMember.name(), localMember);
     }
 
     /**
      * Delegates the received topology event to the registered event handlers.
      */
-    void fireEvent(MembershipEvent event) {
+    void onMembershipEvent(MembershipEvent event) {
         ClusterNode member = fromMember(event.member());
         for (TopologyEventHandler handler : getEventHandlers()) {
             switch (event.type()) {
                 case ADDED:
+                    members.put(member.name(), member);
+
                     handler.onAppeared(member);
+
                     break;
+
                 case LEAVING:
-                case REMOVED:
+                    members.remove(member.name());
+
                     handler.onDisappeared(member);
+
                     break;
+
+                case REMOVED:
                 case UPDATED:
-                    // do nothing
+                    // No-op.
                     break;
+
                 default:
-                    throw new RuntimeException("This event is not supported: event = " + event);
+                    throw new IgniteInternalException("This event is not supported: event = " + event);
+
             }
         }
     }
 
     /** {@inheritDoc} */
     @Override public ClusterNode localMember() {
-        return fromMember(cluster.member());
+        return localMember;
     }
 
     /** {@inheritDoc} */
     @Override public Collection<ClusterNode> allMembers() {
-        return cluster.members().stream()
-            .map(ScaleCubeTopologyService::fromMember)
-            .collect(Collectors.toList());
+        return Collections.unmodifiableCollection(members.values());
     }
 
     /**

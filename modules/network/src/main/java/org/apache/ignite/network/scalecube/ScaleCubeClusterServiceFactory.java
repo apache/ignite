@@ -17,18 +17,18 @@
 
 package org.apache.ignite.network.scalecube;
 
-import java.util.List;
-import java.util.stream.Collectors;
 import io.scalecube.cluster.ClusterImpl;
 import io.scalecube.cluster.ClusterMessageHandler;
 import io.scalecube.cluster.membership.MembershipEvent;
 import io.scalecube.cluster.transport.api.Message;
 import io.scalecube.net.Address;
-import org.apache.ignite.network.ClusterService;
-import org.apache.ignite.network.NetworkConfigurationException;
-import org.apache.ignite.network.ClusterLocalConfiguration;
-import org.apache.ignite.network.ClusterServiceFactory;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.ignite.network.AbstractClusterService;
+import org.apache.ignite.network.ClusterLocalConfiguration;
+import org.apache.ignite.network.ClusterService;
+import org.apache.ignite.network.ClusterServiceFactory;
+import org.apache.ignite.network.NetworkConfigurationException;
 
 /**
  * {@link ClusterServiceFactory} implementation that uses ScaleCube for messaging and topology services.
@@ -41,12 +41,14 @@ public class ScaleCubeClusterServiceFactory implements ClusterServiceFactory {
 
         var cluster = new ClusterImpl()
             .handler(cl -> new ClusterMessageHandler() {
+                /** {@inheritDoc} */
                 @Override public void onMessage(Message message) {
                     messagingService.fireEvent(message);
                 }
 
+                /** {@inheritDoc} */
                 @Override public void onMembershipEvent(MembershipEvent event) {
-                    topologyService.fireEvent(event);
+                    topologyService.onMembershipEvent(event);
                 }
             })
             .config(opts -> opts.memberAlias(context.getName()))
@@ -54,14 +56,17 @@ public class ScaleCubeClusterServiceFactory implements ClusterServiceFactory {
             .membership(opts -> opts.seedMembers(parseAddresses(context.getMemberAddresses())));
 
         // resolve cyclic dependencies
-        topologyService.setCluster(cluster);
         messagingService.setCluster(cluster);
 
         return new AbstractClusterService(context, topologyService, messagingService) {
+            /** {@inheritDoc} */
             @Override public void start() {
                 cluster.startAwait();
+
+                topologyService.setLocalMember(cluster.member());
             }
 
+            /** {@inheritDoc} */
             @Override public void shutdown() {
                 cluster.shutdown();
                 cluster.onShutdown().block();
@@ -69,13 +74,18 @@ public class ScaleCubeClusterServiceFactory implements ClusterServiceFactory {
         };
     }
 
-    /** */
+    /**
+     * Convert string addresses to ScaleCube's {@link Address}es.
+     * @param addresses "host:port" formatted strings.
+     * @return List of addresses.
+     */
     private List<Address> parseAddresses(List<String> addresses) {
         try {
             return addresses.stream()
                 .map(Address::from)
                 .collect(Collectors.toList());
-        } catch (IllegalArgumentException e) {
+        }
+        catch (IllegalArgumentException e) {
             throw new NetworkConfigurationException("Failed to parse address", e);
         }
     }

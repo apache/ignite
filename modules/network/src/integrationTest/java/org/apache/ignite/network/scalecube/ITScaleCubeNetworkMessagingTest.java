@@ -17,6 +17,7 @@
 package org.apache.ignite.network.scalecube;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +38,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** */
@@ -67,13 +69,15 @@ class ITScaleCubeNetworkMessagingTest {
         //Given: Three started member which are gathered to cluster.
         List<String> addresses = List.of("localhost:3344", "localhost:3345", "localhost:3346");
 
-        CountDownLatch latch = new CountDownLatch(3);
+        CountDownLatch messageReceivedLatch = new CountDownLatch(3);
 
-        ClusterService alice = startNetwork("Alice", 3344, addresses);
+        String aliceName = "Alice";
+
+        ClusterService alice = startNetwork(aliceName, 3344, addresses);
         ClusterService bob = startNetwork("Bob", 3345, addresses);
         ClusterService carol = startNetwork("Carol", 3346, addresses);
 
-        NetworkMessageHandler messageWaiter = (message, sender, correlationId) -> latch.countDown();
+        NetworkMessageHandler messageWaiter = (message, sender, correlationId) -> messageReceivedLatch.countDown();
 
         alice.messagingService().addMessageHandler(messageWaiter);
         bob.messagingService().addMessageHandler(messageWaiter);
@@ -83,18 +87,40 @@ class ITScaleCubeNetworkMessagingTest {
 
         //When: Send one message to all members in cluster.
         for (ClusterNode member : alice.topologyService().allMembers()) {
-            System.out.println("SEND : " + member);
-
             alice.messagingService().weakSend(member, testMessage);
         }
 
-        boolean done = latch.await(3, TimeUnit.SECONDS);
-        assertTrue(done);
+        boolean messagesReceived = messageReceivedLatch.await(3, TimeUnit.SECONDS);
+        assertTrue(messagesReceived);
 
         //Then: All members successfully received message.
         assertThat(getLastMessage(alice), is(testMessage));
         assertThat(getLastMessage(bob), is(testMessage));
         assertThat(getLastMessage(carol), is(testMessage));
+
+        CountDownLatch aliceShutdownLatch = new CountDownLatch(1);
+
+        bob.topologyService().addEventHandler(new TopologyEventHandler() {
+            /** {@inheritDoc} */
+            @Override public void onAppeared(ClusterNode member) {
+                // No-op.
+            }
+
+            /** {@inheritDoc} */
+            @Override public void onDisappeared(ClusterNode member) {
+                if (aliceName.equals(member.name()))
+                    aliceShutdownLatch.countDown();
+            }
+        });
+
+        alice.shutdown();
+
+        boolean aliceShutdownReceived = aliceShutdownLatch.await(3, TimeUnit.SECONDS);
+        assertTrue(aliceShutdownReceived);
+
+        Collection<ClusterNode> networkMembers = bob.topologyService().allMembers();
+
+        assertEquals(2, networkMembers.size());
     }
 
     /** */
@@ -107,22 +133,9 @@ class ITScaleCubeNetworkMessagingTest {
         var context = new ClusterLocalConfiguration(name, port, addresses, SERIALIZATION_REGISTRY);
 
         ClusterService clusterService = NETWORK_FACTORY.createClusterService(context);
-        System.out.println("-----" + name + " started");
 
         clusterService.messagingService().addMessageHandler((message, sender, correlationId) -> {
             messageStorage.put(name, message);
-
-            System.out.println(name + " handled messages : " + message);
-        });
-
-        clusterService.topologyService().addEventHandler(new TopologyEventHandler() {
-            @Override public void onAppeared(ClusterNode member) {
-                System.out.println(name + " found member : " + member);
-            }
-
-            @Override public void onDisappeared(ClusterNode member) {
-                System.out.println(name + " lost member : " + member);
-            }
         });
 
         clusterService.start();
