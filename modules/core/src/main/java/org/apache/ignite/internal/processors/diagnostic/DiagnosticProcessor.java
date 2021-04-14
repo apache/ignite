@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.processors.diagnostic;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
@@ -31,6 +29,8 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.CorruptedTreeException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentRouter;
@@ -40,8 +40,10 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.joining;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistenceEnabled;
 
 /**
  * Processor which contained helper methods for different diagnostic cases.
@@ -64,6 +66,9 @@ public class DiagnosticProcessor extends GridProcessorAdapter {
     /** Full path for store dubug info. */
     private final Path diagnosticPath;
 
+    /** File I/O factory. */
+    @Nullable private final FileIOFactory fileIOFactory;
+
     /**
      * Constructor.
      *
@@ -74,6 +79,9 @@ public class DiagnosticProcessor extends GridProcessorAdapter {
 
         diagnosticPath = U.resolveWorkDirectory(ctx.config().getWorkDirectory(), DEFAULT_TARGET_FOLDER, false)
             .toPath();
+
+        fileIOFactory = isPersistenceEnabled(ctx.config()) ?
+            ctx.config().getDataStorageConfiguration().getFileIOFactory() : null;
     }
 
     /**
@@ -89,7 +97,7 @@ public class DiagnosticProcessor extends GridProcessorAdapter {
 
         CorruptedTreeException corruptedTreeE = X.cause(failureCtx.error(), CorruptedTreeException.class);
 
-        if (corruptedTreeE != null && !F.isEmpty(corruptedTreeE.pages())) {
+        if (corruptedTreeE != null && !F.isEmpty(corruptedTreeE.pages()) && fileIOFactory != null) {
             File[] walDirs = walDirs(ctx);
 
             if (F.isEmpty(walDirs)) {
@@ -98,7 +106,11 @@ public class DiagnosticProcessor extends GridProcessorAdapter {
             }
             else {
                 try {
-                    File corruptedPagesFile = corruptedPagesFile(diagnosticPath, corruptedTreeE.pages());
+                    File corruptedPagesFile = corruptedPagesFile(
+                        diagnosticPath,
+                        fileIOFactory,
+                        corruptedTreeE.pages()
+                    );
 
                     String walDirsStr = Arrays.stream(walDirs).map(File::getAbsolutePath)
                         .collect(joining(", ", "[", "]"));
@@ -129,28 +141,36 @@ public class DiagnosticProcessor extends GridProcessorAdapter {
     /**
      * Creation and filling of a file with pages that can be corrupted.
      * Pages are written on each line in format "grpId:pageId".
-     * File name format "corruptedPages_TIMESTAMP.txt".
+     * File name format "corruptedPages_yyyy-MM-dd'_'HH-mm-ss_SSS.txt".
      *
      * @param dirPath Path to the directory where the file will be created.
+     * @param ioFactory File I/O factory.
      * @param pages Pages that could be corrupted. Mapping: cache group id -> page id.
      * @return Created and filled file.
      * @throws IOException If an I/O error occurs.
      */
-    public static File corruptedPagesFile(Path dirPath, T2<Integer, Long>... pages) throws IOException {
+    public static File corruptedPagesFile(
+        Path dirPath,
+        FileIOFactory ioFactory,
+        T2<Integer, Long>... pages
+    ) throws IOException {
         dirPath.toFile().mkdirs();
 
         File f = dirPath.resolve("corruptedPages_" + LocalDateTime.now().format(TIME_FORMATTER) + ".txt").toFile();
 
         assert !f.exists();
 
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(f))) {
+        try (FileIO fileIO = ioFactory.create(f)) {
             for (T2<Integer, Long> p : pages) {
-                bw.write(p.get1().toString() + ':' + p.get2().toString());
+                byte[] bytes = (p.get1().toString() + ':' + p.get2().toString() + U.nl()).getBytes(UTF_8);
 
-                bw.newLine();
+                int left = bytes.length;
+
+                while ((left - fileIO.writeFully(bytes, bytes.length - left, left)) > 0)
+                    ;
             }
 
-            bw.flush();
+            fileIO.force();
         }
 
         return f;

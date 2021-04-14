@@ -37,6 +37,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.CorruptedTreeException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentRouter;
@@ -107,7 +108,7 @@ public class DiagnosticProcessorTest extends GridCommonAbstractTest {
         try {
             T2<Integer, Long>[] pages = new T2[] {new T2<>(10, 20L), new T2<>(30, 40L)};
 
-            File f = corruptedPagesFile(tmpDir.toPath(), pages);
+            File f = corruptedPagesFile(tmpDir.toPath(), new RandomAccessFileIOFactory(), pages);
 
             assertTrue(f.exists());
             assertTrue(f.isFile());

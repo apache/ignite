@@ -25,6 +25,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -547,7 +548,7 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
         try {
             T2<Integer, Long>[] pages = new T2[] {new T2<>(10, 20L), new T2(30, 40L)};
 
-            File f = DiagnosticProcessor.corruptedPagesFile(tmpDir.toPath(), pages);
+            File f = DiagnosticProcessor.corruptedPagesFile(tmpDir.toPath(), new RandomAccessFileIOFactory(), pages);
             assertTrue(f.exists());
             assertTrue(f.isFile());
             assertTrue(f.length() > 0);
