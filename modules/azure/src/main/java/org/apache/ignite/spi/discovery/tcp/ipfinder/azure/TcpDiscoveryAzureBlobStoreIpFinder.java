@@ -26,6 +26,8 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
@@ -77,6 +79,12 @@ public class TcpDiscoveryAzureBlobStoreIpFinder extends TcpDiscoveryIpFinderAdap
     /** Grid logger. */
     @LoggerResource
     private IgniteLogger log;
+
+    /** System property which defines if the system is set to use Ipv4 */
+    private static final String PREFER_IPV4 = "java.net.preferIPv4Stack";
+
+    /** Regex which allows matching interface names for Ipv6 */
+    private static final String INTERFACE_REGEX = "^/\\[[^\\]]*]:47500$";
 
     /** Azure Blob Storage's account name*/
     private String accountName;
@@ -148,6 +156,8 @@ public class TcpDiscoveryAzureBlobStoreIpFinder extends TcpDiscoveryIpFinderAdap
         assert !F.isEmpty(addrs);
 
         init();
+
+        handleInterfaceStripping(addrs);
 
         for (InetSocketAddress addr : addrs) {
             String key = keyFromAddr(addr);
@@ -355,6 +365,26 @@ public class TcpDiscoveryAzureBlobStoreIpFinder extends TcpDiscoveryIpFinderAdap
         }
         catch (Exception e) {
             throw new IgniteSpiException("Failed to remove the container: " + containerName, e);
+        }
+    }
+
+    /** Handles stripping the interface name for IpV6 addresses */
+    private static void handleInterfaceStripping(Collection<InetSocketAddress> addrs) {
+        if (System.getProperty(PREFER_IPV4) == null) {
+            Pattern pattern = Pattern.compile(INTERFACE_REGEX ,Pattern.CASE_INSENSITIVE);
+
+            Iterator<InetSocketAddress> iterator = addrs.iterator();
+
+            while (iterator.hasNext()) {
+                InetSocketAddress addr = iterator.next();
+
+                // Match regex against input
+                Matcher matcher = pattern.matcher(addr.toString());
+
+                if (matcher.matches()) {
+                    iterator.remove();
+                }
+            }
         }
     }
 
