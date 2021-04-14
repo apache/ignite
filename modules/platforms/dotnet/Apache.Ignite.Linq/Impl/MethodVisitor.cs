@@ -356,6 +356,9 @@ namespace Apache.Ignite.Linq.Impl
         /// <param name="visitor"></param>
         private static void VisitStringCompare(MethodCallExpression expression, CacheQueryExpressionVisitor visitor, bool ignoreCase)
         {
+            visitor.ResultBuilder.Append("nvl2(");
+            visitor.Visit(expression.Arguments[1]);
+            visitor.ResultBuilder.Append(", ");
             visitor.ResultBuilder.Append("casewhen(");
             if (ignoreCase) visitor.ResultBuilder.Append("lower(");
             visitor.Visit(expression.Arguments[0]);
@@ -373,6 +376,7 @@ namespace Apache.Ignite.Linq.Impl
             visitor.Visit(expression.Arguments[1]);
             visitor.ResultBuilder.Append(")");
             visitor.ResultBuilder.Append(", 1, -1))");
+            visitor.ResultBuilder.Append(", 1)");
         }
 
         /// <summary>
