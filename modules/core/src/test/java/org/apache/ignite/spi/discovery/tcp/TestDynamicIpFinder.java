@@ -17,11 +17,11 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
-import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-
 import java.net.InetSocketAddress;
 import java.util.Collection;
+
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
 /**
  * Shared IpFinder implementation for testing purposes.
