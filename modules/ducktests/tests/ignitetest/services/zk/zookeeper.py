@@ -63,7 +63,7 @@ class ZookeeperService(DucktestsService, PathAware):
         self.init_logs_attribute()
 
     @property
-    def identity(self):
+    def product(self):
         return "%s-%s" % ("zookeeper", self.settings.version)
 
     @property

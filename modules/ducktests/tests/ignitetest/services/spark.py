@@ -45,7 +45,7 @@ class SparkService(DucktestsService, PathAware):
         self.init_logs_attribute()
 
     @property
-    def identity(self):
+    def product(self):
         return "%s-%s" % ("spark", self._version)
 
     @property

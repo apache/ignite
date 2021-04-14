@@ -87,12 +87,12 @@ class IgniteSpec(metaclass=ABCMeta):
             return IgniteClientConfigTemplate()
         return IgniteServerConfigTemplate()
 
-    def __home(self, identity=None):
+    def __home(self, product=None):
         """
         Get home directory for current spec.
         """
-        identity = identity if identity else str(self.config.version)
-        return get_home_dir(self.path_aware.install_root, identity)
+        product = product if product else str(self.config.version)
+        return get_home_dir(self.path_aware.install_root, product)
 
     def _module(self, name):
         """
