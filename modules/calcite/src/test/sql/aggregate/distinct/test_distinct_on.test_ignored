@@ -1,6 +1,7 @@
 # name: test/sql/aggregate/distinct/test_distinct_on.test
 # description: Test DISTINCT ON
 # group: [distinct]
+# Ignored: https://issues.apache.org/jira/browse/IGNITE-14539
 
 statement ok
 PRAGMA enable_verification
