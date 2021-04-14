@@ -348,7 +348,7 @@ namespace Apache.Ignite.Linq.Impl
             }
 
             throw new NotSupportedException(
-                "Parameter 'ignoreCase' from 'string.Compare' method should be specified as a constant expression");
+                "Parameter 'ignoreCase' from 'string.Compare method should be specified as a constant expression");
         }
 
         /// <summary>
