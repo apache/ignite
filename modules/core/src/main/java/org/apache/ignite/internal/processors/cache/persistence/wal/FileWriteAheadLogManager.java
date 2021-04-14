@@ -707,7 +707,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Override public void resumeLogging(WALPointer filePtr) throws IgniteCheckedException {
+    @Override public void resumeLogging(WALPointer filePtr, boolean nextSegmentRecordReached) throws IgniteCheckedException {
         if (log.isDebugEnabled()) {
             log.debug("File write ahead log manager resuming logging [nodeId=" + cctx.localNodeId() +
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
@@ -727,7 +727,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         fileHandleManager.resumeLogging();
 
-        updateCurrentHandle(restoreWriteHandle(filePtr), null);
+        updateCurrentHandle(restoreWriteHandle(filePtr, nextSegmentRecordReached), null);
 
         // For new handle write serializer version to it.
         if (filePtr == null)
@@ -1322,7 +1322,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * @return Initialized file write handle.
      * @throws StorageException If failed to initialize WAL write handle.
      */
-    private FileWriteHandle restoreWriteHandle(@Nullable WALPointer lastReadPtr) throws StorageException {
+    private FileWriteHandle restoreWriteHandle(@Nullable WALPointer lastReadPtr, boolean nextSegmentRecordReached) throws StorageException {
         long absIdx = lastReadPtr == null ? 0 : lastReadPtr.index();
 
         @Nullable FileArchiver archiver0 = archiver;
@@ -1368,7 +1368,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 FileDescriptor[] walArchiveFiles = walArchiveFiles();
 
-                if (lastReadPtr.nextSwitchSegment())
+                if (lastReadPtr != null && nextSegmentRecordReached)
                     hnd = initNextWriteHandle(hnd);
 
                 segmentAware.minReserveIndex(F.isEmpty(walArchiveFiles) ? -1 : walArchiveFiles[0].idx - 1);

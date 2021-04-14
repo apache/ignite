@@ -100,6 +100,9 @@ public abstract class AbstractWalRecordsIterator
     /** Position of last read valid record. */
     private WALPointer lastRead;
 
+    /** */
+    private boolean nextSegmentRecordReached;
+
     /**
      * @param log Logger.
      * @param sharedCtx Shared context.
@@ -206,6 +209,11 @@ public abstract class AbstractWalRecordsIterator
         return Optional.ofNullable(lastRead);
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean nextSemmentRecordReached() {
+        return nextSegmentRecordReached;
+    }
+
     /**
      * @param tailReachedException Tail reached exception.
      * @param currWalSegment Current WAL segment read handler.
@@ -280,8 +288,8 @@ public abstract class AbstractWalRecordsIterator
                 );
             }
 
-            if (e instanceof SegmentEofException && lastRead != null)
-                lastRead.nextSwitchSegment(((SegmentEofException)e).isSwitchSegmentRecord());
+            if (e instanceof SegmentEofException)
+                nextSegmentRecordReached = ((SegmentEofException)e).isSwitchSegmentRecord();
 
             if (!(e instanceof SegmentEofException) && !(e instanceof EOFException)) {
                 IgniteCheckedException e0 = handleRecordException(e, actualFilePtr);
@@ -365,8 +373,8 @@ public abstract class AbstractWalRecordsIterator
             return createReadFileHandle(fileIO, serializerFactory.createSerializer(serVer), in);
         }
         catch (SegmentEofException | EOFException ignore) {
-            if (ignore instanceof SegmentEofException && lastRead != null)
-                lastRead.nextSwitchSegment(((SegmentEofException)ignore).isSwitchSegmentRecord());
+            if (ignore instanceof SegmentEofException)
+                nextSegmentRecordReached = ((SegmentEofException)ignore).isSwitchSegmentRecord();
 
             try {
                 fileIO.close();

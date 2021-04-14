@@ -298,6 +298,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     private volatile WALPointer walTail;
 
+    /** */
+    private volatile boolean nextSegmentRecordReached;
+
     /**
      * Lock holder for compatible folders mode. Null if lock holder was created at start node. <br>
      * In this case lock is held on PDS resover manager and it is not required to manage locking here
@@ -1015,11 +1018,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 CheckpointStatus status = readCheckpointStatus();
 
                 walTail = CheckpointStatus.NULL_PTR.equals(status.endPtr) ? null : status.endPtr;
+                nextSegmentRecordReached = false;
             }
 
             resumeWalLogging();
 
             walTail = null;
+            nextSegmentRecordReached = false;
 
             // Recreate metastorage to refresh page memory state after deactivation.
             if (metaStorage == null)
@@ -1104,7 +1109,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 U.log(log, "Binary memory state restored at node startup [restoredPtr=" + restored + ']');
 
             // Wal logging is now available.
-            cctx.wal().resumeLogging(restored);
+            cctx.wal().resumeLogging(restored, binaryState.nextSegmentRecordReached());
 
             // Log MemoryRecoveryRecord to make sure that old physical records are not replayed during
             // next physical recovery.
@@ -1966,18 +1971,20 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         walTail = tailPointer(logicalState);
+        nextSegmentRecordReached = logicalState.nextSegmentRecordReached();
 
         cctx.wal().onDeActivate(kctx);
     }
 
     /** */
     public void resumeWalLogging() throws IgniteCheckedException {
-        cctx.wal().resumeLogging(walTail);
+        cctx.wal().resumeLogging(walTail, nextSegmentRecordReached);
     }
 
     /** */
     public void preserveWalTailPointer() throws IgniteCheckedException {
         walTail = cctx.wal().flush(null, true);
+        nextSegmentRecordReached = false;
     }
 
     /**
@@ -2948,9 +2955,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param grpId Group ID.
      * @param partId Partition ID.
      * @throws IgniteCheckedException If failed.
+     * @return {@code True} if the request to destroy the partition was canceled.
      */
-    public void cancelOrWaitPartitionDestroy(int grpId, int partId) throws IgniteCheckedException {
-        checkpointManager.cancelOrWaitPartitionDestroy(grpId, partId);
+    public boolean cancelOrWaitPartitionDestroy(int grpId, int partId) throws IgniteCheckedException {
+        return checkpointManager.cancelOrWaitPartitionDestroy(grpId, partId);
     }
 
     /**
@@ -3600,6 +3608,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             return iterator.lastRead()
                 .orElseGet(() -> status.startPtr);
+        }
+
+        /** */
+        public boolean nextSegmentRecordReached() {
+            return iterator.nextSemmentRecordReached();
         }
 
         /**
