@@ -3612,7 +3612,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         /** */
         public boolean nextSegmentRecordReached() {
-            return iterator.nextSemmentRecordReached();
+            return iterator.nextSegmentRecordReached();
         }
 
         /**

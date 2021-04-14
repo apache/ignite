@@ -210,7 +210,7 @@ public abstract class AbstractWalRecordsIterator
     }
 
     /** {@inheritDoc} */
-    @Override public boolean nextSemmentRecordReached() {
+    @Override public boolean nextSegmentRecordReached() {
         return nextSegmentRecordReached;
     }
 

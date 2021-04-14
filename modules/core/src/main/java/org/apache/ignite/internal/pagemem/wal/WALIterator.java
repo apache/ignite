@@ -32,5 +32,6 @@ public interface WALIterator extends GridCloseableIterator<IgniteBiTuple<WALPoin
      */
     public Optional<WALPointer> lastRead();
 
-    public boolean nextSemmentRecordReached();
+    /** */
+    public boolean nextSegmentRecordReached();
 }
