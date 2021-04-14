@@ -1333,6 +1333,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             !F.isEmpty(walArchiveFiles) &&
             absIdx <= walArchiveFiles[walArchiveFiles.length - 1].idx) {
             absIdx = walArchiveFiles[walArchiveFiles.length - 1].idx + 1;
+
+            lastReadPtr = new WALPointer(absIdx, HEADER_RECORD_SIZE, 0);
         }
 
         long segNo = archiver0 == null ? absIdx : absIdx % dsCfg.getWalSegments();
