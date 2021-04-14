@@ -287,8 +287,6 @@ public abstract class AbstractWalRecordsIterator
                     throw e0;
             }
 
-            System.out.println("AbstractWalRecordsIterator.advanceRecord - " + e.getMessage());
-
             return null;
         }
     }
