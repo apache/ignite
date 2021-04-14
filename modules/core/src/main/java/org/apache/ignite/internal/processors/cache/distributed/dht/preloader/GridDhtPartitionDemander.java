@@ -28,6 +28,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -677,10 +679,17 @@ public class GridDhtPartitionDemander {
         if (log.isDebugEnabled())
             log.debug("Received supply message [" + demandRoutineInfo(topicId, nodeId, supplyMsg) + "]");
 
+        final GridDhtPartitionTopology top = grp.topology();
+
         // Check whether there were error during supply message unmarshalling process.
         if (supplyMsg.classError() != null) {
-            U.warn(log, "Rebalancing from node cancelled [" + demandRoutineInfo(topicId, nodeId, supplyMsg) + "]" +
-                ". Supply message couldn't be unmarshalled: " + supplyMsg.classError());
+            GridDhtPartitionMap partMap = top.localPartitionMap();
+            Set<Integer> unstableParts = supplyMsg.infos().keySet().stream()
+                .filter(p -> partMap.get(p) == MOVING)
+                .collect(Collectors.toSet());
+
+            U.error(log, "Rebalancing from node cancelled [" + demandRoutineInfo(topicId, nodeId, supplyMsg) + "]" +
+                ". Supply message couldn't be unmarshalled. Partitions could be unavailable for reading " + S.compact(unstableParts) + ".", supplyMsg.classError());
 
             fut.cancel(nodeId);
 
@@ -689,15 +698,18 @@ public class GridDhtPartitionDemander {
 
         // Check whether there were error during supplying process.
         if (supplyMsg.error() != null) {
-            U.warn(log, "Rebalancing from node cancelled [" + demandRoutineInfo(topicId, nodeId, supplyMsg) + "]" +
-                "]. Supplier has failed with error: " + supplyMsg.error());
+            GridDhtPartitionMap partMap = top.localPartitionMap();
+            Set<Integer> unstableParts = supplyMsg.infos().keySet()
+                .stream().filter(p -> partMap.get(p) == MOVING)
+                .collect(Collectors.toSet());
+
+            U.error(log, "Rebalancing from node cancelled [" + demandRoutineInfo(topicId, nodeId, supplyMsg) + "]" +
+                    ". Supplier has failed with error. Partitions could be unavailable for reading " + S.compact(unstableParts) + ".", supplyMsg.error());
 
             fut.cancel(nodeId);
 
             return;
         }
-
-        final GridDhtPartitionTopology top = grp.topology();
 
         if (grp.sharedGroup()) {
             for (GridCacheContext cctx : grp.caches()) {
@@ -973,7 +985,11 @@ public class GridDhtPartitionDemander {
      * @param supplyMsg Supply message.
      */
     private String demandRoutineInfo(int topicId, UUID supplier, GridDhtPartitionSupplyMessage supplyMsg) {
-        return "grp=" + grp.cacheOrGroupName() + ", topVer=" + supplyMsg.topologyVersion() + ", supplier=" + supplier + ", topic=" + topicId;
+        return "grp=" + grp.cacheOrGroupName() + ", " +
+               "rebalanceId=" + supplyMsg.rebalanceId() + ", " +
+               "topVer=" + supplyMsg.topologyVersion() + ", " +
+               "supplier=" + supplier + ", " +
+               "topic=" + topicId;
     }
 
     /** {@inheritDoc} */
