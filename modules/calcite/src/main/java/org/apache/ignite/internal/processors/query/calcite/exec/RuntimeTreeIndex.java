@@ -38,7 +38,7 @@ import org.apache.ignite.internal.util.typedef.F;
 /**
  * Runtime sorted index based on on-heap tree.
  */
-public class RuntimeTreeIndex<Row> implements GridIndex<Row>, AutoCloseable {
+public class RuntimeTreeIndex<Row> implements RuntimeIndex<Row>, GridIndex<Row> {
     /** */
     protected final ExecutionContext<Row> ectx;
 
@@ -68,10 +68,8 @@ public class RuntimeTreeIndex<Row> implements GridIndex<Row>, AutoCloseable {
         rows = new TreeMap<>(comp);
     }
 
-    /**
-     * Add row to index.
-     */
-    public void push(Row r) {
+    /** {@inheritDoc} */
+    @Override public void push(Row r) {
         List<Row> newEqRows = new ArrayList<>();
 
         List<Row> eqRows = rows.putIfAbsent(r, newEqRows);
@@ -82,7 +80,7 @@ public class RuntimeTreeIndex<Row> implements GridIndex<Row>, AutoCloseable {
             newEqRows.add(r);
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public void close() {
         rows.clear();
     }
@@ -104,8 +102,7 @@ public class RuntimeTreeIndex<Row> implements GridIndex<Row>, AutoCloseable {
     }
 
     /**
-     * Return an iterable to scan index range from lower to upper bounds inclusive,
-     * filtered by {@code filter} predicate.
+     * Creates iterable on the index.
      */
     public Iterable<Row> scan(
         ExecutionContext<Row> ectx,

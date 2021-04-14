@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -27,7 +28,7 @@ import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.core.Spool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexSpool;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
@@ -38,12 +39,12 @@ import org.apache.ignite.internal.util.typedef.F;
 /**
  * Rule that pushes filter into the spool.
  */
-public class FilterSpoolMergeRule extends RelRule<FilterSpoolMergeRule.Config> {
+public class FilterSpoolMergeToSortedIndexSpoolRule extends RelRule<FilterSpoolMergeToSortedIndexSpoolRule.Config> {
     /** Instance. */
     public static final RelOptRule INSTANCE = Config.DEFAULT.toRule();
 
     /** */
-    private FilterSpoolMergeRule(Config cfg) {
+    private FilterSpoolMergeToSortedIndexSpoolRule(Config cfg) {
         super(cfg);
     }
 
@@ -62,7 +63,7 @@ public class FilterSpoolMergeRule extends RelRule<FilterSpoolMergeRule.Config> {
 
         RelNode input = spool.getInput();
 
-        IndexConditions idxCond = RexUtils.buildIndexConditions(
+        IndexConditions idxCond = RexUtils.buildSortedIndexConditions(
             cluster,
             TraitUtils.collation(input),
             filter.getCondition(),
@@ -73,9 +74,9 @@ public class FilterSpoolMergeRule extends RelRule<FilterSpoolMergeRule.Config> {
         if (F.isEmpty(idxCond.lowerCondition()) && F.isEmpty(idxCond.upperCondition()))
             return;
 
-        RelCollation collation = TraitUtils.collation(input);
+        RelCollation collation = TraitUtils.createCollation(ImmutableList.copyOf(idxCond.keys()));
         
-        RelNode res = new IgniteIndexSpool(
+        RelNode res = new IgniteSortedIndexSpool(
             cluster,
             trait.replace(collation),
             convert(input, input.getTraitSet().replace(collation)),
@@ -93,8 +94,8 @@ public class FilterSpoolMergeRule extends RelRule<FilterSpoolMergeRule.Config> {
         /** */
         Config DEFAULT = RelRule.Config.EMPTY
             .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER)
-            .withDescription("FilterSpoolMergeRule")
-            .as(FilterSpoolMergeRule.Config.class)
+            .withDescription("FilterSpoolMergeToSortedIndexSpoolRule")
+            .as(FilterSpoolMergeToSortedIndexSpoolRule.Config.class)
             .withOperandFor(IgniteFilter.class, IgniteTableSpool.class);
 
         /** Defines an operand tree for the given classes. */
@@ -109,8 +110,8 @@ public class FilterSpoolMergeRule extends RelRule<FilterSpoolMergeRule.Config> {
         }
 
         /** {@inheritDoc} */
-        @Override default FilterSpoolMergeRule toRule() {
-            return new FilterSpoolMergeRule(this);
+        @Override default FilterSpoolMergeToSortedIndexSpoolRule toRule() {
+            return new FilterSpoolMergeToSortedIndexSpoolRule(this);
         }
     }
 }

@@ -21,10 +21,11 @@ import org.apache.ignite.internal.processors.query.calcite.planner.AggregateDist
 import org.apache.ignite.internal.processors.query.calcite.planner.AggregatePlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.CorrelatedNestedLoopJoinPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.HashAggregatePlannerTest;
-import org.apache.ignite.internal.processors.query.calcite.planner.IndexSpoolPlannerTest;
+import org.apache.ignite.internal.processors.query.calcite.planner.HashIndexSpoolPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.JoinColocationPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.PlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.SortAggregatePlannerTest;
+import org.apache.ignite.internal.processors.query.calcite.planner.SortedIndexSpoolPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.TableSpoolPlannerTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -37,7 +38,8 @@ import org.junit.runners.Suite;
     PlannerTest.class,
     CorrelatedNestedLoopJoinPlannerTest.class,
     TableSpoolPlannerTest.class,
-    IndexSpoolPlannerTest.class,
+    SortedIndexSpoolPlannerTest.class,
+    HashIndexSpoolPlannerTest.class,
     AggregatePlannerTest.class,
     AggregateDistinctPlannerTest.class,
     HashAggregatePlannerTest.class,
