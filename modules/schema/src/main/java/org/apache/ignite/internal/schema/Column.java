@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.schema;
 
+import org.apache.ignite.internal.tostring.S;
+
 /**
  * Column description for a type schema. Column contains a column name, a column type and a nullability flag.
  * <p>
@@ -132,6 +134,6 @@ public class Column implements Comparable<Column> {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "Column [idx=" + schemaIndex + ", name=" + name + ", type=" + type + ", nullable=" + nullable + ']';
+        return S.toString(Column.class, this);
     }
 }

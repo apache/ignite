@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.schema.modification.TableModificationBuilderImpl;
+import org.apache.ignite.internal.tostring.S;
 import org.apache.ignite.schema.Column;
 import org.apache.ignite.schema.IndexColumn;
 import org.apache.ignite.schema.PrimaryIndex;
@@ -134,12 +135,6 @@ public class SchemaTableImpl extends AbstractSchemaObject implements SchemaTable
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "SchemaTable[" +
-            "name='" + name() + '\'' +
-            ", keyCols=" + keyCols.stream().map(Column::name).collect(Collectors.joining(",")) +
-            ", affCols=" + affCols.stream().map(Column::name).collect(Collectors.joining(",")) +
-            ", column=" + cols.values() +
-            ", indices=" + indices.values() +
-            ']';
+        return S.toString(SchemaTableImpl.class, this);
     }
 }

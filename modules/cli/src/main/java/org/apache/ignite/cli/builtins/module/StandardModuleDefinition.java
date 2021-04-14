@@ -19,6 +19,8 @@ package org.apache.ignite.cli.builtins.module;
 
 import java.util.Collections;
 import java.util.List;
+import org.apache.ignite.internal.tostring.IgniteToStringInclude;
+import org.apache.ignite.internal.tostring.S;
 
 /**
  * Definition of Ignite standard module.
@@ -27,15 +29,19 @@ import java.util.List;
  */
 public class StandardModuleDefinition {
     /** Module name. **/
+    @IgniteToStringInclude
     public final String name;
 
     /** Module description. */
+    @IgniteToStringInclude
     public final String desc;
 
     /** List of server artifacts. */
+    @IgniteToStringInclude
     public final List<String> artifacts;
 
     /** List of CLI tool artifacts. */
+    @IgniteToStringInclude
     public final List<String> cliArtifacts;
 
     /**
@@ -55,6 +61,6 @@ public class StandardModuleDefinition {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return name + ":\t" + desc;
+        return S.toString(StandardModuleDefinition.class, this);
     }
 }

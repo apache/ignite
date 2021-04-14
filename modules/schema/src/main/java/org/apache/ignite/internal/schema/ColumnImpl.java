@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.schema;
 
+import org.apache.ignite.internal.tostring.IgniteToStringInclude;
+import org.apache.ignite.internal.tostring.S;
 import org.apache.ignite.schema.Column;
 import org.apache.ignite.schema.ColumnType;
 import org.jetbrains.annotations.Nullable;
@@ -32,6 +34,7 @@ public class ColumnImpl extends AbstractSchemaObject implements Column {
     private final boolean nullable;
 
     /** Default value. */
+    @IgniteToStringInclude(sensitive = true)
     private final Object defVal;
 
     /**
@@ -66,11 +69,6 @@ public class ColumnImpl extends AbstractSchemaObject implements Column {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "ColumnImpl[" +
-            "name='" + name() + '\'' +
-            ", type=" + type +
-            ", nullable=" + nullable +
-            ", default=" + defVal +
-            ']';
+        return S.toString(ColumnImpl.class, this);
     }
 }

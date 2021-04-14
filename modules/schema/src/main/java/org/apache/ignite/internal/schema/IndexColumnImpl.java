@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.schema;
 
+import org.apache.ignite.internal.tostring.S;
 import org.apache.ignite.schema.IndexColumn;
 
 /**
@@ -34,8 +35,6 @@ class IndexColumnImpl extends AbstractSchemaObject implements IndexColumn {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "Column[" +
-            "name='" + name() + '\'' +
-            ']';
+        return S.toString(IndexColumnImpl.class.getSimpleName(), "name", name());
     }
 }

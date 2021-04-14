@@ -15,36 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.schema;
-
-import org.apache.ignite.internal.tostring.S;
-import org.apache.ignite.schema.SchemaObject;
-
 /**
- * Schema object base class.
+ * Contains internal tests or test related classes and interfaces.
  */
-public abstract class AbstractSchemaObject implements SchemaObject {
-    /** Schema object name. */
-    private final String name;
-
-    /**
-     * Constructor.
-     *
-     * @param name Schema object name.
-     */
-    protected AbstractSchemaObject(String name) {
-        this.name = name;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String name() {
-        return name;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString("SchemaObject",
-            "name", name,
-            "class", getClass().getName());
-    }
-}
+package org.apache.ignite.internal.testframework;

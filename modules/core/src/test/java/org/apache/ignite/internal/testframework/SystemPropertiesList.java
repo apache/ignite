@@ -15,36 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.schema;
+package org.apache.ignite.internal.testframework;
 
-import org.apache.ignite.internal.tostring.S;
-import org.apache.ignite.schema.SchemaObject;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Repeatable;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
- * Schema object base class.
+ * {@link Repeatable} for the {@link WithSystemProperty}.<br/>
+ * Not intended for direct usage. Use multiple {@link WithSystemProperty} annotation instead.
  */
-public abstract class AbstractSchemaObject implements SchemaObject {
-    /** Schema object name. */
-    private final String name;
-
-    /**
-     * Constructor.
-     *
-     * @param name Schema object name.
-     */
-    protected AbstractSchemaObject(String name) {
-        this.name = name;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String name() {
-        return name;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString("SchemaObject",
-            "name", name,
-            "class", getClass().getName());
-    }
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.TYPE, ElementType.METHOD})
+public @interface SystemPropertiesList {
+    /** Array of underlying annotations. */
+    WithSystemProperty[] value();
 }

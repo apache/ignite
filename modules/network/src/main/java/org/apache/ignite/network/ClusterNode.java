@@ -18,6 +18,7 @@ package org.apache.ignite.network;
 
 import java.io.Serializable;
 import java.util.Objects;
+import org.apache.ignite.internal.tostring.S;
 
 /**
  * Representation of a node in a cluster.
@@ -79,10 +80,6 @@ public class ClusterNode implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "ClusterNode{" +
-            "name='" + name + '\'' +
-            ", host='" + host + '\'' +
-            ", port=" + port +
-            '}';
+        return S.toString(ClusterNode.class, this);
     }
 }

@@ -19,8 +19,8 @@ package org.apache.ignite.internal.schema;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
-import org.apache.ignite.schema.IndexColumn;
+import org.apache.ignite.internal.tostring.IgniteToStringInclude;
+import org.apache.ignite.internal.tostring.S;
 import org.apache.ignite.schema.SortedIndex;
 import org.apache.ignite.schema.SortedIndexColumn;
 
@@ -29,6 +29,7 @@ import org.apache.ignite.schema.SortedIndexColumn;
  */
 public class SortedIndexImpl extends AbstractSchemaObject implements SortedIndex {
     /** Columns. */
+    @IgniteToStringInclude
     private final List<SortedIndexColumn> cols;
 
     /** Unique flag. */
@@ -65,12 +66,8 @@ public class SortedIndexImpl extends AbstractSchemaObject implements SortedIndex
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "SortedIndex[" +
-            "name='" + name() + '\'' +
-            ", type=SORTED" +
-            ", uniq=" + uniq +
-            ", columns=[" + columns().stream().map(IndexColumn::toString).collect(Collectors.joining(",")) +
-            "]]";
+        return S.toString(SortedIndex.class, this,
+            "type", type(),
+            "name", name());
     }
-
 }

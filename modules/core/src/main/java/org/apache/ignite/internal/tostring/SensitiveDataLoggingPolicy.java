@@ -15,36 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.schema;
-
-import org.apache.ignite.internal.tostring.S;
-import org.apache.ignite.schema.SchemaObject;
+package org.apache.ignite.internal.tostring;
 
 /**
- * Schema object base class.
+ * Log levels for sensitive data
  */
-public abstract class AbstractSchemaObject implements SchemaObject {
-    /** Schema object name. */
-    private final String name;
+public enum SensitiveDataLoggingPolicy {
+    /**
+     * Write sensitive information in {@code toString()} output.
+     */
+    PLAIN,
 
     /**
-     * Constructor.
-     *
-     * @param name Schema object name.
+     * Write hash of sensitive information in {@code toString()} output.
      */
-    protected AbstractSchemaObject(String name) {
-        this.name = name;
-    }
+    HASH,
 
-    /** {@inheritDoc} */
-    @Override public String name() {
-        return name;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString("SchemaObject",
-            "name", name,
-            "class", getClass().getName());
-    }
+    /**
+     * Don't write sensitive information in {@code toString()} output.
+     */
+    NONE;
 }

@@ -18,6 +18,7 @@
 package org.apache.ignite.raft.client;
 
 import java.io.Serializable;
+import org.apache.ignite.internal.tostring.S;
 import org.apache.ignite.network.ClusterNode;
 
 /**
@@ -73,6 +74,7 @@ public final class Peer implements Serializable {
         return priority;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
@@ -85,13 +87,15 @@ public final class Peer implements Serializable {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public int hashCode() {
         int result = node.hashCode();
         result = 31 * result + priority;
         return result;
     }
 
+    /** {@inheritDoc} */
     @Override public String toString() {
-        return node.name() + ":" + priority;
+        return S.toString(Peer.class, this);
     }
 }

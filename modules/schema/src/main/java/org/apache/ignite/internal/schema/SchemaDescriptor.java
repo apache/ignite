@@ -20,6 +20,7 @@ package org.apache.ignite.internal.schema;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.internal.tostring.S;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -105,5 +106,10 @@ public class SchemaDescriptor {
      */
     public @Nullable Column column(@NotNull String name) {
         return colMap.get(name);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(SchemaDescriptor.class, this);
     }
 }

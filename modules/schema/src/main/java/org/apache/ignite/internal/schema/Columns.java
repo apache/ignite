@@ -19,6 +19,7 @@ package org.apache.ignite.internal.schema;
 
 import java.util.Arrays;
 import java.util.NoSuchElementException;
+import org.apache.ignite.internal.tostring.S;
 
 /**
  * A set of columns representing a key or a value chunk in a row.
@@ -282,5 +283,10 @@ public class Columns {
         }
 
         throw new NoSuchElementException("No field '" + fieldName + "' defined");
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+       return S.arrayToString(cols);
     }
 }

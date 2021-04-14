@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.schema;
 
+import org.apache.ignite.internal.tostring.S;
+
 /**
  * A fixed-sized type representing a bitmask of <code>n</code> bits. The actual size of a bitmask will round up
  * to the smallest number of bytes required to store <code>n</code> bits.
@@ -83,5 +85,10 @@ public class Bitmask extends NativeType {
         }
         else
             return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(Bitmask.class.getSimpleName(), "bits", bits, "typeSpec", spec(), "len", length());
     }
 }

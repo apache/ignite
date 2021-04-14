@@ -16,10 +16,12 @@
  */
 package org.apache.ignite.configuration.validation;
 
+import org.apache.ignite.internal.tostring.S;
+
 /** */
 public class ValidationIssue {
     /** */
-    private String message;
+    private final String message;
 
     /** */
     public ValidationIssue(String message) {
@@ -31,8 +33,8 @@ public class ValidationIssue {
         return message;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public String toString() {
-        return "ValidationIssue [message=" + message + ']';
+        return S.toString(ValidationIssue.class, this);
     }
 }

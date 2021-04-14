@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.schema;
 
+import org.apache.ignite.internal.tostring.S;
+
 /**
  * Base class for storage built-in data types definition. The class contains predefined values
  * for fixed-sized types and some of the variable-sized types. Parameterized types, such as
@@ -173,6 +175,8 @@ public enum NativeTypeSpec {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "NativeTypeSpec [desc=" + desc + ", fixedSize=" + fixedSize + ']';
+        return S.toString(NativeTypeSpec.class.getSimpleName(),
+            "name", name(),
+            "fixed", fixedLength());
     }
 }

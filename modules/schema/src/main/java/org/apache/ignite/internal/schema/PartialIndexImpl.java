@@ -18,8 +18,7 @@
 package org.apache.ignite.internal.schema;
 
 import java.util.List;
-import java.util.stream.Collectors;
-import org.apache.ignite.schema.IndexColumn;
+import org.apache.ignite.internal.tostring.S;
 import org.apache.ignite.schema.PartialIndex;
 import org.apache.ignite.schema.SortedIndexColumn;
 
@@ -51,11 +50,10 @@ public class PartialIndexImpl extends SortedIndexImpl implements PartialIndex {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "PartialIndex[" +
-            "name='" + name() + '\'' +
-            ", type=PARTIAL" +
-            ", expr='" + expr + '\'' +
-            ", columns=[" + columns().stream().map(IndexColumn::toString).collect(Collectors.joining(",")) + ']' +
-            ']';
+        return S.toString(PartialIndex.class, this,
+            "type", type(),
+            "name", name(),
+            "uniq", unique(),
+            "cols", columns());
     }
 }

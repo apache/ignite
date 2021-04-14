@@ -17,6 +17,10 @@
 
 package org.apache.ignite.cli.builtins.module;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -24,12 +28,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonGetter;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.cli.CliPathsConfigLoader;
 import org.apache.ignite.cli.IgniteCLIException;
+import org.apache.ignite.internal.tostring.IgniteToStringInclude;
+import org.apache.ignite.internal.tostring.S;
 
 /**
  * The registry of installed CLI or Ignite server modules.
@@ -152,15 +154,19 @@ public class ModuleRegistry {
      */
     public static class ModuleDefinition {
         /** Module's name. */
+        @IgniteToStringInclude
         public final String name;
 
         /** Module's server artifacts. */
+        @IgniteToStringInclude
         public final List<Path> artifacts;
 
         /** Module's CLI artifacts. */
+        @IgniteToStringInclude
         public final List<Path> cliArtifacts;
 
         /** Type of module source. */
+        @IgniteToStringInclude
         public final SourceType type;
 
         /**
@@ -210,15 +216,8 @@ public class ModuleRegistry {
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return "ModuleDefinition{" +
-                "name='" + name + '\'' +
-                ", artifacts=" + artifacts +
-                ", cliArtifacts=" + cliArtifacts +
-                ", type=" + type +
-                ", source='" + src + '\'' +
-                '}';
+            return S.toString(ModuleDefinition.class, this);
         }
-
     }
 
     /**

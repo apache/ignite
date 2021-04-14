@@ -13,6 +13,7 @@
  */
 package com.facebook.presto.bytecode;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -126,8 +127,7 @@ public class AnnotationDefinition {
     }
 
     public Map<String, Object> getValues() {
-        // todo we need an unmodifiable view
-        return values;
+        return Collections.unmodifiableMap(values);
     }
 
     @SuppressWarnings("OverlyStrongTypeCast")

@@ -20,6 +20,8 @@ package org.apache.ignite.internal.schema;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.apache.ignite.internal.tostring.IgniteToStringInclude;
+import org.apache.ignite.internal.tostring.S;
 import org.apache.ignite.schema.HashIndex;
 import org.apache.ignite.schema.IndexColumn;
 
@@ -28,6 +30,7 @@ import org.apache.ignite.schema.IndexColumn;
  */
 public class HashIndexImpl extends AbstractSchemaObject implements HashIndex {
     /** Index columns. */
+    @IgniteToStringInclude
     private final List<IndexColumn> columns;
 
     /**
@@ -50,11 +53,9 @@ public class HashIndexImpl extends AbstractSchemaObject implements HashIndex {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "TableIndex[" +
-            "type=HASH, " +
-            "name='" + name() + '\'' +
-            ", columns=[" + columns.stream().map(IndexColumn::name).collect(Collectors.joining()) + ']' +
-            ']';
+        return S.toString(HashIndexImpl.class, this,
+            "type", type(),
+            "name", name());
     }
 
 }

@@ -15,36 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.schema;
+package org.apache.ignite.internal.tostring;
 
-import org.apache.ignite.internal.tostring.S;
-import org.apache.ignite.schema.SchemaObject;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
- * Schema object base class.
+ * Class or field annotated with IgniteToStringInclude claims the element <b>must be</b> excluded
+ * from {@code toString()} output.
+ * This annotation is used to override the default exclusion policy.
  */
-public abstract class AbstractSchemaObject implements SchemaObject {
-    /** Schema object name. */
-    private final String name;
-
-    /**
-     * Constructor.
-     *
-     * @param name Schema object name.
-     */
-    protected AbstractSchemaObject(String name) {
-        this.name = name;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String name() {
-        return name;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString("SchemaObject",
-            "name", name,
-            "class", getClass().getName());
-    }
+@Documented
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.FIELD, ElementType.TYPE})
+public @interface IgniteToStringExclude {
+    // No-op.
 }

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.schema;
 
+import org.apache.ignite.internal.tostring.S;
 import org.apache.ignite.schema.SortedIndexColumn;
 
 /**
@@ -45,9 +46,6 @@ public class SortedIndexColumnImpl extends AbstractSchemaObject implements Sorte
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "Column[" +
-            "name='" + name() + '\'' +
-            ", order=" + (asc ? "asc" : "desc") +
-            ']';
+        return S.toString(SortedIndexColumnImpl.class, this);
     }
 }

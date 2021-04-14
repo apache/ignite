@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.schema;
 
+import org.apache.ignite.internal.tostring.S;
+
 /**
  * A thin wrapper over {@link NativeTypeSpec} to instantiate parameterized constrained types.
  */
@@ -55,6 +57,7 @@ public class NativeType implements Comparable<NativeType> {
     private final int len;
 
     /**
+     *
      */
     protected NativeType(NativeTypeSpec typeSpec, int len) {
         if (!typeSpec.fixedLength())
@@ -68,6 +71,7 @@ public class NativeType implements Comparable<NativeType> {
     }
 
     /**
+     *
      */
     protected NativeType(NativeTypeSpec typeSpec) {
         if (typeSpec.fixedLength())
@@ -137,6 +141,9 @@ public class NativeType implements Comparable<NativeType> {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "NativeType [typeSpec=" + typeSpec + ", len=" + len + ']';
+        return S.toString(NativeType.class.getSimpleName(),
+            "name", typeSpec.name(),
+            "len", len,
+            "fixed", typeSpec.fixedLength());
     }
 }

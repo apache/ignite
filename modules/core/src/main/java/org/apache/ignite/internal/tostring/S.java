@@ -15,36 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.schema;
-
-import org.apache.ignite.internal.tostring.S;
-import org.apache.ignite.schema.SchemaObject;
+package org.apache.ignite.internal.tostring;
 
 /**
- * Schema object base class.
+ * Defines a shortcut for {@link IgniteToStringBuilder}.
+ *
+ * Since Java doesn't provide type aliases (like Scala, for example) we resort to these types of measures.
+ * Intended for internal use only and meant to provide for more terse code when readability of code is not compromised.
  */
-public abstract class AbstractSchemaObject implements SchemaObject {
-    /** Schema object name. */
-    private final String name;
-
-    /**
-     * Constructor.
-     *
-     * @param name Schema object name.
-     */
-    protected AbstractSchemaObject(String name) {
-        this.name = name;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String name() {
-        return name;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString("SchemaObject",
-            "name", name,
-            "class", getClass().getName());
-    }
+@SuppressWarnings({"ExtendsUtilityClass"})
+public final class S extends IgniteToStringBuilder {
+    /* No-op. */
 }

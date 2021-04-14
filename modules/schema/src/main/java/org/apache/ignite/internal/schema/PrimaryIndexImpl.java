@@ -19,6 +19,8 @@ package org.apache.ignite.internal.schema;
 
 import java.util.Collections;
 import java.util.List;
+import org.apache.ignite.internal.tostring.IgniteToStringInclude;
+import org.apache.ignite.internal.tostring.S;
 import org.apache.ignite.schema.PrimaryIndex;
 import org.apache.ignite.schema.SortedIndexColumn;
 
@@ -27,6 +29,7 @@ import org.apache.ignite.schema.SortedIndexColumn;
  */
 public class PrimaryIndexImpl extends SortedIndexImpl implements PrimaryIndex {
     /** Affinity columns. */
+    @IgniteToStringInclude
     private final List<String> affCols;
 
     /**
@@ -48,5 +51,19 @@ public class PrimaryIndexImpl extends SortedIndexImpl implements PrimaryIndex {
     /** {@inheritDoc} */
     @Override public String type() {
         return "PK";
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean unique() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(PrimaryIndexImpl.class, this,
+            "type", type(),
+            "name", name(),
+            "uniq", unique(),
+            "cols", columns());
     }
 }
