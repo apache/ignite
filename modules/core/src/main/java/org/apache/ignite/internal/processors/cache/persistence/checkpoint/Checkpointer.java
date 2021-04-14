@@ -602,6 +602,25 @@ public class Checkpointer extends GridWorker {
      * @param tracker Tracker.
      */
     private void updateMetrics(Checkpoint chp, CheckpointMetricsTracker tracker) {
+        if (psproc.enabled()) {
+            psproc.checkpoint(
+                tracker.beforeLockDuration(),
+                tracker.lockWaitDuration(),
+                tracker.listenersExecuteDuration(),
+                tracker.markDuration(),
+                tracker.lockHoldDuration(),
+                tracker.pagesWriteDuration(),
+                tracker.fsyncDuration(),
+                tracker.walCpRecordFsyncDuration(),
+                tracker.writeCheckpointEntryDuration(),
+                tracker.splitAndSortCpPagesDuration(),
+                tracker.totalDuration(),
+                tracker.checkpointStartTime(),
+                chp.pagesSize,
+                tracker.dataPagesWritten(),
+                tracker.cowPagesWritten());
+        }
+
         if (persStoreMetrics.metricsEnabled()) {
             persStoreMetrics.onCheckpoint(
                 tracker.beforeLockDuration(),
@@ -620,25 +639,6 @@ public class Checkpointer extends GridWorker {
                 tracker.dataPagesWritten(),
                 tracker.cowPagesWritten()
             );
-        }
-
-        if (psproc.enabled()) {
-            psproc.checkpoint(
-                tracker.beforeLockDuration(),
-                tracker.lockWaitDuration(),
-                tracker.listenersExecuteDuration(),
-                tracker.markDuration(),
-                tracker.lockHoldDuration(),
-                tracker.pagesWriteDuration(),
-                tracker.fsyncDuration(),
-                tracker.walCpRecordFsyncDuration(),
-                tracker.writeCheckpointEntryDuration(),
-                tracker.splitAndSortCpPagesDuration(),
-                tracker.totalDuration(),
-                tracker.checkpointStartTime(),
-                chp.pagesSize,
-                tracker.dataPagesWritten(),
-                tracker.cowPagesWritten());
         }
     }
 

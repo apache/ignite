@@ -588,11 +588,11 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
     /** @param time Time to add to {@code totalThrottlingTime} metric in milliseconds. */
     public void addThrottlingTime(long time) {
-        if (metricsEnabled)
-            totalThrottlingTime.add(time);
-
         if (psproc.enabled())
             psproc.pagesWriteThrottle(U.currentTimeMillis(), time);
+
+        if (metricsEnabled)
+            totalThrottlingTime.add(time);
     }
 
     /**
