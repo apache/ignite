@@ -115,25 +115,37 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             CheckWhereFunc(x => string.Compare(x, "Person_1300") < 0, strings);
             CheckWhereFunc(x => string.Compare(x, "Person_1300") > 0, strings);
             CheckWhereFunc(x => string.Compare(x, "Person_1300") == 0, strings);
+            CheckWhereFunc(x => string.Compare(x, "Person_1300") <= 0, strings);
+            CheckWhereFunc(x => string.Compare(x, "Person_1300") >= 0, strings);
             CheckWhereFunc(x => string.Compare(x, "person_1300") < 0, strings);
             CheckWhereFunc(x => string.Compare(x, "person_1300") > 0, strings);
             CheckWhereFunc(x => string.Compare(x, "person_1300") == 0, strings);
+            CheckWhereFunc(x => string.Compare(x, "person_1300") <= 0, strings);
+            CheckWhereFunc(x => string.Compare(x, "person_1300") >= 0, strings);
 
             // string.Compare(string strA, string strB, true)
             CheckWhereFunc(x => string.Compare(x, "Person_1300", true) < 0, strings);
             CheckWhereFunc(x => string.Compare(x, "Person_1300", true) > 0, strings);
             CheckWhereFunc(x => string.Compare(x, "Person_1300", true) == 0, strings);
+            CheckWhereFunc(x => string.Compare(x, "Person_1300", true) <= 0, strings);
+            CheckWhereFunc(x => string.Compare(x, "Person_1300", true) >= 0, strings);
             CheckWhereFunc(x => string.Compare(x, "person_1300", true) < 0, strings);
             CheckWhereFunc(x => string.Compare(x, "person_1300", true) > 0, strings);
             CheckWhereFunc(x => string.Compare(x, "person_1300", true) == 0, strings);
+            CheckWhereFunc(x => string.Compare(x, "person_1300", true) <= 0, strings);
+            CheckWhereFunc(x => string.Compare(x, "person_1300", true) >= 0, strings);
 
             // string.Compare(string strA, string strB, false)
             CheckWhereFunc(x => string.Compare(x, "Person_1300", false) < 0, strings);
             CheckWhereFunc(x => string.Compare(x, "Person_1300", false) > 0, strings);
             CheckWhereFunc(x => string.Compare(x, "Person_1300", false) == 0, strings);
+            CheckWhereFunc(x => string.Compare(x, "Person_1300", false) <= 0, strings);
+            CheckWhereFunc(x => string.Compare(x, "Person_1300", false) >= 0, strings);
             CheckWhereFunc(x => string.Compare(x, "person_1300", false) < 0, strings);
             CheckWhereFunc(x => string.Compare(x, "person_1300", false) > 0, strings);
             CheckWhereFunc(x => string.Compare(x, "person_1300", false) == 0, strings);
+            CheckWhereFunc(x => string.Compare(x, "person_1300", false) <= 0, strings);
+            CheckWhereFunc(x => string.Compare(x, "person_1300", false) >= 0, strings);
         }
     }
 }
