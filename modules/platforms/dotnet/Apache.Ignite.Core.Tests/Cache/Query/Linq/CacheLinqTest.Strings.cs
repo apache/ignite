@@ -173,6 +173,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             CheckWhereFunc(x => string.Compare(null, null, false) == 0, strings);
             CheckWhereFunc(x => string.Compare(null, null, false) < 0, strings);
             CheckWhereFunc(x => string.Compare(null, null, false) > 0, strings);
+
+            Assert.Throws<NotSupportedException>(
+                () => strings.Where(x => string.Compare(x, "person_1300", x.StartsWith("Person")) == 0).ToArray(),
+                "Parameter 'ignoreCase' from 'string.Compare' method should be specified as a constant expression");
         }
     }
 }

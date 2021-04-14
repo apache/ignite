@@ -338,15 +338,17 @@ namespace Apache.Ignite.Linq.Impl
         /// <returns></returns>
         private static bool GetStringCompareIgnoreCaseParameter(Expression expression)
         {
-            if (expression is ConstantExpression constant)
+            var constant = expression as ConstantExpression;
+            if (constant != null)
             {
-                if (constant.Value is bool ignoreCase)
+                if (constant.Value is bool)
                 {
-                    return ignoreCase;
+                    return (bool)constant.Value;
                 }
             }
 
-            throw new ArgumentException("ignoreCase");            
+            throw new NotSupportedException(
+                "Parameter 'ignoreCase' from 'string.Compare' method should be specified as a constant expression");
         }
 
         /// <summary>
