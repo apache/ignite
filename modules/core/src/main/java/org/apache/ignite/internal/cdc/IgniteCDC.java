@@ -53,7 +53,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_NAME_PATTERN;
 
 /**
@@ -304,8 +303,8 @@ public class IgniteCDC implements Runnable {
             .binaryMetadataFileStoreDir(binaryMeta)
             .marshallerMappingFileStoreDir(marshaller)
             .keepBinary(cdcCfg.isKeepBinary())
-            .filesOrDirs(segment.toFile())
-            .addFilter((type, ptr) -> type == DATA_RECORD_V2);
+            .filesOrDirs(segment.toFile());
+            //.addFilter((type, ptr) -> type == DATA_RECORD_V2);
 
         if (initState != null) {
             long segmentIdx = segmentIndex(segment);
@@ -316,7 +315,8 @@ public class IgniteCDC implements Runnable {
 
                 throw new IgniteException("Some data missed.");
             }
-            else if (segmentIdx < initState.index()) {
+
+            if (segmentIdx < initState.index()) {
                 if (log.isInfoEnabled()) {
                     log.info("Deleting segment. Saved state has greater index.[segment=" +
                         segmentIdx + ",state=" + initState.index() + ']');
@@ -333,18 +333,16 @@ public class IgniteCDC implements Runnable {
                     throw new IgniteException(e);
                 }
             }
-            else {
-                builder.from(initState);
 
-                initState = null;
-            }
+            System.out.println("initState = " + initState);
+
+            builder.from(initState);
+
+            initState = null;
         }
 
         try (WALIterator it = factory.iterator(builder)) {
-            System.out.println("BeforeHasNext = " + segment);
-
             while (it.hasNext()) {
-                System.out.println("AfterHasNext = " + segment);
                 boolean commit = consumer.onRecords(F.iterator(it.iterator(), IgniteBiTuple::get2, true));
 
                 if (commit) {

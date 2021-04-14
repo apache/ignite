@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cdc;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -43,6 +44,8 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cdc.IgniteCDC;
+import org.apache.ignite.internal.pagemem.wal.WALIterator;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -119,7 +122,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         stopAllGrids();
 
-        cleanPersistenceDir();
+        //cleanPersistenceDir();
 
         super.beforeTest();
     }
@@ -239,9 +242,48 @@ public class CDCSelfTest extends GridCommonAbstractTest {
             assertTrue(keys.contains(i));
     }
 
+    @Test
+    public void testMe() throws Exception {
+        List<String> files = Arrays.asList(
+            "/Users/sbt-izhikov-nv/work/ignite/work/db/wal/cdc/8d79730e_4b3a_4db7_8a6f_9c01000c47c6/0000000000000004.wal"
+/*
+            , "/Users/sbt-izhikov-nv/work/ignite/work/db/wal/cdc/8d79730e_4b3a_4db7_8a6f_9c01000c47c6/0000000000000003.wal"
+            , "/Users/sbt-izhikov-nv/work/ignite/work/db/wal/cdc/8d79730e_4b3a_4db7_8a6f_9c01000c47c6/0000000000000002.wal"
+            , "/Users/sbt-izhikov-nv/work/ignite/work/db/wal/cdc/8d79730e_4b3a_4db7_8a6f_9c01000c47c6/0000000000000001.wal"
+*/
+        );
+
+        for (String path : files) {
+            System.out.println("============================================ " + path);
+
+            File seg = new File(path);
+
+            assertTrue(seg.exists());
+
+            IgniteWalIteratorFactory.IteratorParametersBuilder builder = new IgniteWalIteratorFactory.IteratorParametersBuilder()
+                .log(log)
+                .binaryMetadataFileStoreDir(null)
+                .marshallerMappingFileStoreDir(null)
+                .keepBinary(true)
+                .filesOrDirs(seg);
+
+            IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log);
+
+            try (WALIterator it = factory.iterator(builder)) {
+                System.out.println(it.getClass());
+
+                while (it.hasNext()) {
+                    System.out.println(it.next().get2().type());
+                }
+            }
+        }
+    }
+
     /** */
     @Test
     public void testReadAfterNodeStop() throws Exception {
+        cleanPersistenceDir();
+
         AtomicInteger cnt = new AtomicInteger();
 
         TestCDCConsumer cnsmr = new TestCDCConsumer();
@@ -553,11 +595,6 @@ public class CDCSelfTest extends GridCommonAbstractTest {
     private void removeData(IgniteCache<Integer, ?> cache, int from, int to) {
         for (int i = from; i < to; i++)
             cache.remove(i);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        cleanPersistenceDir();
     }
 
     /** */

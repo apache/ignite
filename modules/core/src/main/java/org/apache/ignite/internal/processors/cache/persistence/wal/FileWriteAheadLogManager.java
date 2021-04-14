@@ -54,6 +54,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -70,8 +71,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
-import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
@@ -674,22 +673,43 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         stopAutoRollover();
 
+        boolean archiveLast = dsCfg.isCdcEnabled() && archiver != null && cctx.kernalContext().isStopping();
+
         try {
-            fileHandleManager.onDeactivate();
+            FileWriteHandle hnd = fileHandleManager.onDeactivate(archiveLast);
+
+            if (archiveLast) {
+                if (switchSegmentRecordOffset != null) {
+                    int idx = (int)(hnd.getSegmentId() % dsCfg.getWalSegments());
+
+                    switchSegmentRecordOffset.set(idx, hnd.getSwitchSegmentRecordOffset());
+                }
+            }
         }
         catch (Exception e) {
             U.error(log, "Failed to gracefully close WAL segment: " + currHnd, e);
         }
 
-        if (dsCfg.isCdcEnabled() && archiver != null && cctx.kernalContext().isStopping()) {
-            // Archive last segment here.
-        }
-
         segmentAware.interrupt();
 
         try {
-            if (archiver != null)
+            if (archiver != null) {
                 archiver.shutdown();
+
+                if (archiveLast) {
+                    long from = segmentAware.lastArchivedAbsoluteIndex() + 1;
+                    long to = segmentAware.curAbsWalIdx();
+
+                    for (long i = from; i <= to; i++) {
+                        try {
+                            archiver.archiveSegment(i);
+                        }
+                        catch (StorageException e) {
+                            throw new IgniteException(e);
+                        }
+                    }
+                }
+            }
 
             if (compressor != null)
                 compressor.shutdown();
@@ -863,13 +883,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** {@inheritDoc} */
     @Override public WALPointer log(WALRecord rec, RolloverType rolloverType) throws IgniteCheckedException {
-        if (rec.type() == WALRecord.RecordType.DATA_RECORD_V2) {
-            List<DataEntry> entries = ((DataRecord)rec).writeEntries();
-            for (DataEntry entry : entries) {
-                System.out.println("entry.key() = " + entry.key() + ", " + currHnd.getSegmentId());
-            }
-        }
-
         if (serializer == null || mode == WALMode.NONE)
             return null;
 
@@ -2046,6 +2059,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             assert switchSegmentRecordOffset != null;
 
             long offs = switchSegmentRecordOffset.getAndSet((int)segIdx, 0);
+
+            assert offs > 0;
+
             long origLen = origFile.length();
 
             long reservedSize = offs > 0 && offs < origLen ? offs : origLen;

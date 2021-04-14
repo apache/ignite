@@ -81,6 +81,12 @@ public class WALRecordsConsumer<K, V> {
      * @return {@code True} if current offset in WAL should be commited.
      */
     public <T extends WALRecord> boolean onRecords(Iterator<T> recs) {
+        recs = F.iterator(recs, r -> r, true, r -> {
+            System.out.println(r.type());
+
+            return r.type() == WALRecord.RecordType.DATA_RECORD_V2;
+        });
+
         return dataConsumer.onChange(F.concat(F.iterator(recs, r -> F.iterator(((DataRecord)r).writeEntries(), e -> {
             UnwrappedDataEntry ue = (UnwrappedDataEntry)e;
 
