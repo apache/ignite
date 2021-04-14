@@ -47,6 +47,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
@@ -126,7 +127,7 @@ public class SnapshotRestoreProcess {
      * @return Future that will be completed when the restore operation is complete and the cache groups are started.
      */
     public IgniteFuture<Void> start(String snpName, Collection<String> cacheGrpNames) {
-        UUID reqId = UUID.randomUUID();
+        ClusterSnapshotFuture fut0;
 
         try {
             if (ctx.clientNode())
@@ -150,7 +151,9 @@ public class SnapshotRestoreProcess {
                 if (isRestoring() || fut != null)
                     throw new IgniteException(OP_REJECT_MSG + "The previous snapshot restore operation was not completed.");
 
-                fut = new ClusterSnapshotFuture(reqId, snpName);
+                fut = new ClusterSnapshotFuture(UUID.randomUUID(), snpName);
+
+                fut0 = fut;
             }
         } catch (IgniteException e) {
             return new IgniteFinishedFutureImpl<>(e);
@@ -159,7 +162,7 @@ public class SnapshotRestoreProcess {
         ctx.cache().context().snapshotMgr().collectSnapshotMetadata(snpName).listen(
             f -> {
                 if (f.error() != null) {
-                    finishProcess(reqId, f.error());
+                    finishProcess(fut0.rqId, f.error());
 
                     return;
                 }
@@ -167,6 +170,7 @@ public class SnapshotRestoreProcess {
                 Set<UUID> dataNodes = new HashSet<>();
                 Map<ClusterNode, List<SnapshotMetadata>> metas = f.result();
                 Map<Integer, String> reqGrpIds = cacheGrpNames.stream().collect(Collectors.toMap(CU::cacheId, v -> v));
+                Set<String> snpBltNodes = null;
 
                 for (Map.Entry<ClusterNode, List<SnapshotMetadata>> entry : metas.entrySet()) {
                     SnapshotMetadata meta = F.first(entry.getValue());
@@ -176,14 +180,31 @@ public class SnapshotRestoreProcess {
                     if (!entry.getKey().consistentId().equals(meta.consistentId()))
                         continue;
 
+                    if (snpBltNodes == null)
+                        snpBltNodes = new HashSet<>(meta.baselineNodes());
+
                     dataNodes.add(entry.getKey().id());
 
                     reqGrpIds.keySet().removeAll(meta.partitions().keySet());
                 }
 
                 if (!reqGrpIds.isEmpty()) {
-                    finishProcess(reqId, new IllegalArgumentException(OP_REJECT_MSG + "Cache group(s) was not found in the " +
+                    finishProcess(fut0.rqId, new IllegalArgumentException(OP_REJECT_MSG + "Cache group(s) was not found in the " +
                         "snapshot [groups=" + reqGrpIds.values() + ", snapshot=" + snpName + ']'));
+
+                    return;
+                }
+
+                Collection<String> bltNodes = F.viewReadOnly(ctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
+                    node -> node.consistentId().toString(), (node) -> CU.baselineNode(node, ctx.state().clusterState()));
+
+                assert !F.isEmpty(snpBltNodes);
+
+                snpBltNodes.removeAll(bltNodes);
+
+                if (!snpBltNodes.isEmpty()) {
+                    finishProcess(fut0.rqId, new IgniteIllegalStateException(OP_REJECT_MSG + "Some nodes required to " +
+                        "restore a cache group are missing [nodeId(s)=" + snpBltNodes + ", snapshot=" + snpName + ']'));
 
                     return;
                 }
@@ -191,7 +212,7 @@ public class SnapshotRestoreProcess {
                 ctx.cache().context().snapshotMgr().runSnapshotVerification(metas).listen(
                     f0 -> {
                         if (f0.error() != null) {
-                            finishProcess(reqId, f0.error());
+                            finishProcess(fut0.rqId, f0.error());
 
                             return;
                         }
@@ -203,13 +224,13 @@ public class SnapshotRestoreProcess {
 
                             res.print(sb::append, true);
 
-                            finishProcess(reqId, new IgniteException(sb.toString()));
+                            finishProcess(fut0.rqId, new IgniteException(sb.toString()));
 
                             return;
                         }
 
                         SnapshotOperationRequest req =
-                            new SnapshotOperationRequest(reqId, F.first(dataNodes), snpName, cacheGrpNames, dataNodes);
+                            new SnapshotOperationRequest(fut0.rqId, F.first(dataNodes), snpName, cacheGrpNames, dataNodes);
 
                         prepareRestoreProc.start(req.requestId(), req);
                     }
@@ -217,7 +238,7 @@ public class SnapshotRestoreProcess {
             }
         );
 
-        return new IgniteFutureImpl<>(fut);
+        return new IgniteFutureImpl<>(fut0);
     }
 
     /**

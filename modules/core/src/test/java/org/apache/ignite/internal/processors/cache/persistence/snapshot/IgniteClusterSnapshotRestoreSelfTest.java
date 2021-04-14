@@ -28,6 +28,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -72,10 +73,10 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
     private static final String BIN_TYPE_NAME = "customType";
 
     /** Static cache configurations. */
-    protected CacheConfiguration<?, ?>[] cacheCfgs;
+    private CacheConfiguration<?, ?>[] cacheCfgs;
 
     /** Cache value builder. */
-    protected Function<Integer, Object> valBuilder = new IndexedValueBuilder();
+    private Function<Integer, Object> valBuilder = new IndexedValueBuilder();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
@@ -191,7 +192,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
 
     /** @throws Exception If failed. */
     @Test
-    public void testClusterSnapshotRestoreDiffTopology() throws Exception {
+    public void testClusterSnapshotRestoreOnBiggerTopology() throws Exception {
         int nodesCnt = 4;
 
         int keysCnt = 10_000;
@@ -232,6 +233,25 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
         awaitPartitionMapExchange();
 
         checkCacheKeys(cache, keysCnt);
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testClusterSnapshotRestoreOnSmallerTopology() throws Exception {
+        int keysCnt = 10_000;
+
+        startGridsWithSnapshot(2, keysCnt, true);
+
+        stopGrid(1);
+
+        resetBaselineTopology();
+
+        IgniteFuture<Void> fut =
+            grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(dfltCacheCfg.getName()));
+
+        GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), IgniteIllegalStateException.class, null);
+
+        ensureCacheDirEmpty(1, dfltCacheCfg);
     }
 
     /** @throws Exception If failed. */
