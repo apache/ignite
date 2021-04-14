@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -26,22 +30,47 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.pagemem.wal.WALIterator;
+import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.aware.SegmentAware;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.DB_DEFAULT_FOLDER;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /**
  * This tests check that the following scenario will works correctly.
  */
+@RunWith(Parameterized.class)
 public class WalRolloverOnStopTest extends GridCommonAbstractTest {
+    /** WAL mode. */
+    @Parameterized.Parameter
+    public WALMode walMode;
+
+    /** @return Test parameters. */
+    @Parameterized.Parameters(name = "walMode={0}")
+    public static Collection<?> parameters() {
+        return Arrays.asList(new Object[][] {{WALMode.BACKGROUND}, {WALMode.LOG_ONLY}, {WALMode.FSYNC}});
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
@@ -69,6 +98,8 @@ public class WalRolloverOnStopTest extends GridCommonAbstractTest {
      * */
     @Test
     public void testWallRollover() throws Exception {
+        AtomicLong curIdx = new AtomicLong();
+
         for (int i = 0; i < 2; i++) {
             IgniteEx ign = startGrid(0);
 
@@ -84,16 +115,44 @@ public class WalRolloverOnStopTest extends GridCommonAbstractTest {
             CountDownLatch waitAfterCp = new CountDownLatch(1);
             AtomicLong cntr = new AtomicLong(0);
 
-            db.addCheckpointListener(new WaitOnLastCheckpoint(ign, waitAfterCp, cntr, getTestTimeout()));
+            db.addCheckpointListener(new CheckpointListener() {
+                @Override public void afterCheckpointEnd(Context ctx) {
+                    if (!ign.context().isStopping())
+                        return;
 
-            for (int j = i * 3; j < (i + 1) * 3; j++)
+                    try {
+                        waitAfterCp.await(getTestTimeout(), TimeUnit.MILLISECONDS);
+
+                        cntr.incrementAndGet();
+                    }
+                    catch (InterruptedException e) {
+                        throw new IgniteException(e);
+                    }
+                }
+
+                @Override public void onMarkCheckpointBegin(Context ctx) {
+                    // No-op.
+                }
+
+                @Override public void onCheckpointBegin(Context ctx) {
+                    // No-op.
+                }
+
+                @Override public void beforeCheckpointBegin(Context ctx) {
+                    // No-op.
+                }
+            });
+
+            int maxKey = (i + 1) * 3;
+
+            for (int j = i * 3; j < maxKey; j++)
                 cache.put(j, j);
 
-            long cutIdx = aware.curAbsWalIdx();
+            curIdx.set(aware.curAbsWalIdx());
 
-            runAsync(() -> {
+            IgniteInternalFuture<?> fut = runAsync(() -> {
                 try {
-                    aware.awaitSegmentArchived(cutIdx);
+                    aware.awaitSegmentArchived(curIdx.get());
 
                     cntr.incrementAndGet();
                 }
@@ -107,62 +166,33 @@ public class WalRolloverOnStopTest extends GridCommonAbstractTest {
 
             G.stop(ign.name(), false);
 
+            fut.get(getTestTimeout());
+
             // Checkpoint will happens two time because of segment archivation.
             assertEquals("Should successfully wait for current segment archivation", 3, cntr.get());
-        }
-    }
 
-    /** */
-    private static class WaitOnLastCheckpoint implements CheckpointListener {
-        /** */
-        private final IgniteEx ign;
+            IgniteWalIteratorFactory.IteratorParametersBuilder builder =
+                new IgniteWalIteratorFactory.IteratorParametersBuilder()
+                    .log(ign.log())
+                    .filesOrDirs(
+                        U.resolveWorkDirectory(U.defaultWorkDirectory(), DB_DEFAULT_FOLDER + "/wal/archive", false))
+                    .filter((type, ptr) -> type == DATA_RECORD);
 
-        /** */
-        private final CountDownLatch waitAfterCp;
+            Set<Integer> keys = new HashSet<>();
 
-        /** */
-        private final long timeout;
+            try (WALIterator it = new IgniteWalIteratorFactory().iterator(builder)) {
+                while (it.hasNext()) {
+                    IgniteBiTuple<WALPointer, WALRecord> tup = it.next();
 
-        /** */
-        private final AtomicLong cntr;
+                    DataRecord rec = (DataRecord)tup.get2();
 
-        /** */
-        public WaitOnLastCheckpoint(IgniteEx ign, CountDownLatch waitAfterCp, AtomicLong cntr, long timeout) {
-            this.ign = ign;
-            this.waitAfterCp = waitAfterCp;
-            this.cntr = cntr;
-            this.timeout = timeout;
-
-        }
-
-        /** {@inheritDoc} */
-        @Override public void afterCheckpointEnd(Context ctx) {
-            if (!ign.context().isStopping())
-                return;
-
-            try {
-                waitAfterCp.await(timeout, TimeUnit.MILLISECONDS);
-
-                cntr.incrementAndGet();
+                    for (DataEntry entry : rec.writeEntries())
+                        keys.add(entry.key().value(null, false));
+                }
             }
-            catch (InterruptedException e) {
-                throw new IgniteException(e);
-            }
-        }
 
-        /** {@inheritDoc} */
-        @Override public void onMarkCheckpointBegin(Context ctx) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onCheckpointBegin(Context ctx) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void beforeCheckpointBegin(Context ctx) {
-            // No-op.
+            for (int j = 0; j < maxKey; j++)
+                assertTrue(keys.contains(j));
         }
     }
 }
