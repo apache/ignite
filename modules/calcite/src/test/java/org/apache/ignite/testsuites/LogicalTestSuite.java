@@ -29,7 +29,7 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
 })
 @LogicalTestEnvironment(scriptsRoot = "src/test/sql"
-    , script = "src/test/sql/aggregate/aggregates/test_count.test"
+    , script = "src/test/sql/aggregate/aggregates/test_aggr_string.test"
 )
 public class LogicalTestSuite {
 }

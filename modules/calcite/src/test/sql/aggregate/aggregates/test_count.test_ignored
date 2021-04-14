@@ -1,6 +1,8 @@
 # name: test/sql/aggregate/aggregates/test_count.test
 # description: Test COUNT operator
 # group: [aggregates]
+# Ignored: https://issues.apache.org/jira/browse/IGNITE-14543
+# Ignored: https://issues.apache.org/jira/browse/IGNITE-14544
 
 # test counts on scalar values
 query IIIII
