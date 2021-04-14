@@ -154,7 +154,6 @@ class IgniteApplicationSpec(IgniteSpec):
     def _app_args(self):
         return ",".join(self.args)
 
-    # pylint: disable=W0221
     def command(self, node):
         cmd = "%s %s %s %s 2>&1 | tee -a %s &" % \
               (self._envs(),
