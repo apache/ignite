@@ -1325,15 +1325,15 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private FileWriteHandle restoreWriteHandle(@Nullable WALPointer lastReadPtr) throws StorageException {
         long absIdx = lastReadPtr == null ? 0 : lastReadPtr.index();
 
+        @Nullable FileArchiver archiver0 = archiver;
+
         FileDescriptor[] walArchiveFiles = walArchiveFiles();
 
-        if (archiver != null &&
+        if (archiver0 != null &&
             !F.isEmpty(walArchiveFiles) &&
             absIdx <= walArchiveFiles[walArchiveFiles.length - 1].idx) {
             absIdx = walArchiveFiles[walArchiveFiles.length - 1].idx + 1;
         }
-
-        @Nullable FileArchiver archiver0 = archiver;
 
         long segNo = archiver0 == null ? absIdx : absIdx % dsCfg.getWalSegments();
 
