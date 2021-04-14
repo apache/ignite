@@ -22,16 +22,15 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptCost;
-import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.CorrelationId;
-import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
@@ -51,6 +50,11 @@ public class IgniteSingleMinus extends IgniteMinusBase {
         super(cluster, traitSet, inputs, all);
     }
 
+    /** */
+    public IgniteSingleMinus(RelInput input) {
+        super(input);
+    }
+
     /** {@inheritDoc} */
     @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(
         RelTraitSet nodeTraits,
@@ -65,6 +69,18 @@ public class IgniteSingleMinus extends IgniteMinusBase {
 
         return ImmutableList.of(Pair.of(nodeTraits.replace(RewindabilityTrait.ONE_WAY),
             Commons.transform(inputTraits, t -> t.replace(RewindabilityTrait.ONE_WAY))));
+    }
+
+    /** {@inheritDoc} */
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughDistribution(RelTraitSet nodeTraits, List<RelTraitSet> inTraits) {
+        IgniteDistribution distr = TraitUtils.distribution(nodeTraits);
+
+        if (IgniteDistributions.single().satisfies(distr)) {
+            return Pair.of(nodeTraits.replace(IgniteDistributions.single()),
+                Commons.transform(inTraits, t -> t.replace(IgniteDistributions.single())));
+        }
+
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -111,10 +127,8 @@ public class IgniteSingleMinus extends IgniteMinusBase {
         return visitor.visit(this);
     }
 
-/*
-    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        //TODO
-        return computeSelfCostHash(planner, mq);
+    /** {@inheritDoc} */
+    @Override protected int aggregateFieldsCount() {
+        return getInput(0).getRowType().getFieldCount() + getInputs().size();
     }
-*/
 }

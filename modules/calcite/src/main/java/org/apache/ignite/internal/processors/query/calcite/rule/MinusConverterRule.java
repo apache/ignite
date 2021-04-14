@@ -26,6 +26,7 @@ import org.apache.calcite.rel.PhysicalNode;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.LogicalMinus;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.util.Util;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteMapMinus;
 import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteReduceMinus;
@@ -57,8 +58,9 @@ public class MinusConverterRule {
         /** {@inheritDoc} */
         @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, LogicalMinus setOp) {
             RelOptCluster cluster = setOp.getCluster();
+            RelTraitSet inTrait = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(IgniteDistributions.single());
             RelTraitSet outTrait = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(IgniteDistributions.single());
-            List<RelNode> inputs = convertList(setOp.getInputs(), IgniteDistributions.single());
+            List<RelNode> inputs = Util.transform(setOp.getInputs(), rel -> convert(rel, inTrait));
 
             return new IgniteSingleMinus(cluster, outTrait, inputs, setOp.all);
         }
@@ -76,7 +78,7 @@ public class MinusConverterRule {
             RelOptCluster cluster = setOp.getCluster();
             RelTraitSet inTrait = cluster.traitSetOf(IgniteConvention.INSTANCE);
             RelTraitSet outTrait = cluster.traitSetOf(IgniteConvention.INSTANCE);
-            List<RelNode> inputs = convertList(setOp.getInputs(), IgniteDistributions.any());
+            List<RelNode> inputs = Util.transform(setOp.getInputs(), rel -> convert(rel, inTrait));
 
             RelNode map = new IgniteMapMinus(cluster, outTrait, inputs, setOp.all);
 
@@ -85,7 +87,8 @@ public class MinusConverterRule {
                 outTrait.replace(IgniteDistributions.single()),
                 convert(map, inTrait.replace(IgniteDistributions.single())),
                 setOp.all,
-                inputs.get(0).getRowType()
+                cluster.getTypeFactory().leastRestrictive(Util.transform(inputs, RelNode::getRowType)),
+                inputs.size()
             );
         }
     }

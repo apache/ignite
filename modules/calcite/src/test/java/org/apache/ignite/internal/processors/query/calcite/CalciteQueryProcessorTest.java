@@ -614,6 +614,11 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         List<List<?>> rows;
 
+/*
+        rows = sql(
+            "SELECT avg(salary) FROM (SELECT name, avg(salary) as salary FROM Orders GROUP BY name UNION ALL SELECT name, salary FROM Account)");
+*/
+
         rows = sql(
             "SELECT name FROM Orders EXCEPT SELECT name from Account");
 
@@ -623,6 +628,11 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             "SELECT name FROM Orders EXCEPT ALL SELECT name from Account");
 
         assertEquals(4, rows.size());
+
+        rows = sql(
+            "SELECT name FROM Orders EXCEPT (SELECT name FROM Orders EXCEPT SELECT name from Account)");
+
+        assertEquals(2, rows.size());
     }
 
     /**

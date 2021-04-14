@@ -218,6 +218,7 @@ class RelJson {
         ImmutableList.of(
             "org.apache.ignite.internal.processors.query.calcite.rel.",
             "org.apache.ignite.internal.processors.query.calcite.rel.agg.",
+            "org.apache.ignite.internal.processors.query.calcite.rel.set.",
             "org.apache.calcite.rel.",
             "org.apache.calcite.rel.core.",
             "org.apache.calcite.rel.logical.",

@@ -20,21 +20,34 @@ package org.apache.ignite.internal.processors.query.calcite.rel.set;
 import java.util.List;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Minus;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.util.Pair;
+import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
+import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitsAwareIgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
  * Base class for physical MINUS set op.
  */
-abstract class IgniteMinusBase extends Minus implements TraitsAwareIgniteRel {
+public abstract class IgniteMinusBase extends Minus implements TraitsAwareIgniteRel {
     /** */
     IgniteMinusBase(RelOptCluster cluster, RelTraitSet traits, List<RelNode> inputs, boolean all) {
         super(cluster, traits, inputs, all);
+    }
+
+    /** {@inheritDoc} */
+    protected IgniteMinusBase(RelInput input) {
+        super(TraitUtils.changeTraits(input, IgniteConvention.INSTANCE));
     }
 
     /** {@inheritDoc} */
@@ -51,4 +64,34 @@ abstract class IgniteMinusBase extends Minus implements TraitsAwareIgniteRel {
             Commons.transform(inputTraits, t -> t.replace(RelCollations.EMPTY))));
     }
 
+    /** Gets count of fields for aggregation for this node. Required for memory consumption calculation. */
+    protected abstract int aggregateFieldsCount();
+
+    /** {@inheritDoc} */
+    @Override public double estimateRowCount(RelMetadataQuery mq) {
+        final List<RelNode> inputs = getInputs();
+
+        double rows = mq.getRowCount(inputs.get(0));
+
+        for (int i = 1; i < inputs.size(); i++)
+            rows -= 0.5 * Math.min(rows, mq.getRowCount(inputs.get(i)));
+
+        return rows;
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+        IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
+
+        double rows = estimateRowCount(mq);
+
+        double inputRows = 0;
+
+        for (RelNode input : getInputs())
+            inputRows += mq.getRowCount(input);
+
+        double mem = 0.5 * inputRows * aggregateFieldsCount() * IgniteCost.AVERAGE_FIELD_SIZE;
+
+        return costFactory.makeCost(rows, inputRows * IgniteCost.ROW_PASS_THROUGH_COST, 0, mem, 0);
+    }
 }

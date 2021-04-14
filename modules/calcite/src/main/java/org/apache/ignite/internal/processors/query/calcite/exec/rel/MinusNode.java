@@ -70,7 +70,7 @@ public class MinusNode<Row> extends AbstractNode<Row> {
         this.type = type;
         this.rowFactory = rowFactory;
 
-        grouping = new Grouping(2); // TODO
+        grouping = new Grouping(sourcesCnt);
     }
 
     /** {@inheritDoc} */

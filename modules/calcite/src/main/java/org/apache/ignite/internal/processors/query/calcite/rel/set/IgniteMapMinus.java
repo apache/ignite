@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.type.RelDataType;
@@ -32,6 +33,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.GroupKey
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
@@ -50,6 +52,11 @@ public class IgniteMapMinus extends IgniteMinusBase {
         boolean all
     ) {
         super(cluster, traitSet, inputs, all);
+    }
+
+    /** */
+    public IgniteMapMinus(RelInput input) {
+        super(input);
     }
 
     /** {@inheritDoc} */
@@ -102,14 +109,21 @@ public class IgniteMapMinus extends IgniteMinusBase {
         RelTraitSet nodeTraits,
         List<RelTraitSet> inputTraits
     ) {
-        boolean single = inputTraits.stream()
+        Set<IgniteDistribution> distributions = inputTraits.stream()
             .map(TraitUtils::distribution)
-            .allMatch(d -> d.satisfies(IgniteDistributions.single()));
+            .collect(Collectors.toSet());
 
-        if (single)
-            return ImmutableList.of();
+        ImmutableList.Builder<Pair<RelTraitSet, List<RelTraitSet>>> b = ImmutableList.builder();
 
-        return ImmutableList.of(Pair.of(nodeTraits.replace(IgniteDistributions.any()), inputTraits));
+        for (IgniteDistribution distribution : distributions) {
+            if (distribution.satisfies(IgniteDistributions.single()))
+                continue;
+
+            b.add(Pair.of(nodeTraits.replace(distribution),
+                Commons.transform(inputTraits, t -> t.replace(distribution))));
+        }
+
+        return b.build();
     }
 
     /** {@inheritDoc} */
@@ -126,11 +140,8 @@ public class IgniteMapMinus extends IgniteMinusBase {
             inTraits));
     }
 
-/*
-    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        //return computeSelfCostHash(planner, mq);
-        // TODO
-        return null;
+    /** {@inheritDoc} */
+    @Override protected int aggregateFieldsCount() {
+        return getInput(0).getRowType().getFieldCount() + getInputs().size();
     }
-*/
 }

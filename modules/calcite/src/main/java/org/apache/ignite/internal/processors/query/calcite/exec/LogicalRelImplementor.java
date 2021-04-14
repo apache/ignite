@@ -465,7 +465,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
         List<Node<Row>> inputs = Commons.transform(rel.getInputs(), this::visit);
 
-        MinusNode<Row> node = new MinusNode<>(ctx, rowType, AggregateType.REDUCE, rel.all, rowFactory, inputs.size());
+        MinusNode<Row> node = new MinusNode<>(ctx, rowType, AggregateType.REDUCE, rel.all, rowFactory, rel.mapInputsCount());
 
         node.register(inputs);
 
