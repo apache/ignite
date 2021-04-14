@@ -31,6 +31,4 @@ public interface WALIterator extends GridCloseableIterator<IgniteBiTuple<WALPoin
      * @return Pointer of last read valid record. Empty if no records were read.
      */
     public Optional<WALPointer> lastRead();
-
-    boolean isNextSwitchSegment();
 }

@@ -127,7 +127,7 @@ public class RecordV1Serializer implements RecordSerializer {
             RecordType recType = readRecordType(in);
 
             if (recType == RecordType.SWITCH_SEGMENT_RECORD)
-                throw new SegmentEofException("Reached end of segment", null);
+                throw new SegmentEofException("Reached end of segment", null, true);
 
             WALPointer ptr = readPosition(in);
 

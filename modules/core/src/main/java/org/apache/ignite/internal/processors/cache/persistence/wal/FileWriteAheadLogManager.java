@@ -1368,11 +1368,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 FileDescriptor[] walArchiveFiles = walArchiveFiles();
 
-                if (archiver0 != null &&
-                    !F.isEmpty(walArchiveFiles) &&
-                    absIdx == walArchiveFiles[walArchiveFiles.length - 1].idx) {
+                if (lastReadPtr.nextSwitchSegment())
                     hnd = initNextWriteHandle(hnd);
-                }
 
                 segmentAware.minReserveIndex(F.isEmpty(walArchiveFiles) ? -1 : walArchiveFiles[0].idx - 1);
                 segmentAware.lastTruncatedArchiveIdx(F.isEmpty(walArchiveFiles) ? -1 : walArchiveFiles[0].idx - 1);

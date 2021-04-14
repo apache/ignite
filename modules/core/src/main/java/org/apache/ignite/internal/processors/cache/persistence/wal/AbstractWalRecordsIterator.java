@@ -280,6 +280,9 @@ public abstract class AbstractWalRecordsIterator
                 );
             }
 
+            if (e instanceof SegmentEofException && lastRead != null)
+                lastRead.nextSwitchSegment(((SegmentEofException)e).isSwitchSegmentRecord());
+
             if (!(e instanceof SegmentEofException) && !(e instanceof EOFException)) {
                 IgniteCheckedException e0 = handleRecordException(e, actualFilePtr);
 
@@ -362,6 +365,9 @@ public abstract class AbstractWalRecordsIterator
             return createReadFileHandle(fileIO, serializerFactory.createSerializer(serVer), in);
         }
         catch (SegmentEofException | EOFException ignore) {
+            if (ignore instanceof SegmentEofException && lastRead != null)
+                lastRead.nextSwitchSegment(((SegmentEofException)ignore).isSwitchSegmentRecord());
+
             try {
                 fileIO.close();
             }

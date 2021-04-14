@@ -39,7 +39,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -2907,10 +2906,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param grpId Group ID.
      * @param partId Partition ID.
      * @throws IgniteCheckedException If failed.
-     * @return {@code True} if the request to destroy the partition was canceled.
      */
-    public boolean cancelOrWaitPartitionDestroy(int grpId, int partId) throws IgniteCheckedException {
-        return checkpointManager.cancelOrWaitPartitionDestroy(grpId, partId);
+    public void cancelOrWaitPartitionDestroy(int grpId, int partId) throws IgniteCheckedException {
+        checkpointManager.cancelOrWaitPartitionDestroy(grpId, partId);
     }
 
     /**
@@ -3558,14 +3556,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         public WALPointer lastReadRecordPointer() {
             assert status.startPtr != null;
 
-            Optional<WALPointer> ptr = iterator.lastRead();
-
-            if (!ptr.isPresent())
-                return status.startPtr;
-
-            //TODO: fix me.
-            if (iterator.isNextSwitchSegment())
-                iterator.
+            return iterator.lastRead()
+                .orElseGet(() -> status.startPtr);
         }
 
         /**

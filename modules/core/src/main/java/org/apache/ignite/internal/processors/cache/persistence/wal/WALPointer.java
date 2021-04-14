@@ -40,6 +40,8 @@ public class WALPointer implements Serializable, Comparable<WALPointer> {
     /** Written record length */
     private int len;
 
+    private boolean nextSwitchSegment;
+
     /**
      * @param idx Absolute WAL segment file index (incremental counter).
      * @param fileOff Offset in file, from the beginning.
@@ -77,6 +79,16 @@ public class WALPointer implements Serializable, Comparable<WALPointer> {
      */
     public void length(int len) {
         this.len = len;
+    }
+
+    /** @param nextSwitchSegment Value. */
+    public void nextSwitchSegment(boolean nextSwitchSegment) {
+        this.nextSwitchSegment = nextSwitchSegment;
+    }
+
+    /** @return Next switch segment value. */
+    public boolean nextSwitchSegment() {
+        return nextSwitchSegment;
     }
 
     /**
