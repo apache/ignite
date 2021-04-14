@@ -89,7 +89,7 @@ public class IgniteAwareApplicationService {
         else if (thinClientFlag) {
             log.info("Starting thin client...");
 
-            ClientConfiguration cfg = IgnitionEx.loadSpringBean(cfgPath,"thin.client.cfg");
+            ClientConfiguration cfg = IgnitionEx.loadSpringBean(cfgPath, "thin.client.cfg");
 
 
             try (IgniteClient client = Ignition.startClient(cfg)) {
