@@ -39,6 +39,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -3557,8 +3558,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         public WALPointer lastReadRecordPointer() {
             assert status.startPtr != null;
 
-            return iterator.lastRead()
-                .orElseGet(() -> status.startPtr);
+            Optional<WALPointer> ptr = iterator.lastRead();
+
+            if (!ptr.isPresent())
+                return status.startPtr;
+
+            //TODO: fix me.
+            if (iterator.isNextSwitchSegment())
+                iterator.
         }
 
         /**

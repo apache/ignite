@@ -1370,7 +1370,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 if (archiver0 != null &&
                     !F.isEmpty(walArchiveFiles) &&
-                    absIdx <= walArchiveFiles[walArchiveFiles.length - 1].idx) {
+                    absIdx == walArchiveFiles[walArchiveFiles.length - 1].idx) {
                     hnd = initNextWriteHandle(hnd);
                 }
 
@@ -1378,7 +1378,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 segmentAware.lastTruncatedArchiveIdx(F.isEmpty(walArchiveFiles) ? -1 : walArchiveFiles[0].idx - 1);
 
                 if (archiver0 == null)
-                    segmentAware.setLastArchivedAbsoluteIndex(absIdx - 1);
+                    segmentAware.setLastArchivedAbsoluteIndex(hnd.getSegmentId() - 1);
 
                 // Getting segment sizes.
                 F.asList(walArchiveDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER)).stream()
