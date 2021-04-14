@@ -63,8 +63,8 @@ class ZookeeperService(DucktestsService, PathAware):
         self.init_logs_attribute()
 
     @property
-    def version(self):
-        return self.settings.version
+    def product(self):
+        return "%s-%s" % ("zookeeper", self.settings.version)
 
     @property
     def globals(self):
@@ -77,10 +77,6 @@ class ZookeeperService(DucktestsService, PathAware):
     @property
     def config_file(self):
         return os.path.join(self.persistent_root, "zookeeper.properties")
-
-    @property
-    def project(self):
-        return "zookeeper"
 
     def start(self, **kwargs):
         super().start(**kwargs)
