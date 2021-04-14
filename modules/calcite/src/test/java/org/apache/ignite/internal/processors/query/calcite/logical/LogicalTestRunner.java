@@ -112,7 +112,7 @@ public class LogicalTestRunner extends Runner {
     @Override public void run(RunNotifier notifier) {
         try {
             if (script == null) {
-                Files.walk(scriptsRoot).forEach((p) -> {
+                Files.walk(scriptsRoot).sorted().forEach((p) -> {
                     if (p.equals(scriptsRoot))
                         return;
 

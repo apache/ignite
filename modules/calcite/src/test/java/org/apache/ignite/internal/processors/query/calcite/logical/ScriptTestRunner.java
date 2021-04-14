@@ -529,6 +529,9 @@ public class ScriptTestRunner {
 
         /** */
         private void checkEquals(String msg, String expectedStr, Object actual) {
+            if (actual != null ^ expectedStr != null)
+                throw new AssertionError(msg);
+
             if (actual instanceof Number) {
                 BigDecimal actDec = new BigDecimal(String.valueOf(actual));
                 BigDecimal expDec = new BigDecimal(expectedStr);
