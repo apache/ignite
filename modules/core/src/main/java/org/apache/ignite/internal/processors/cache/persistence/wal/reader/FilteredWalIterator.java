@@ -63,8 +63,8 @@ public class FilteredWalIterator extends GridIteratorAdapter<IgniteBiTuple<WALPo
     }
 
     /** {@inheritDoc} **/
-    @Override public boolean nextSegmentRecordReached() {
-        return delegateWalIter.nextSegmentRecordReached();
+    @Override public boolean switchSegmentRecordReached() {
+        return delegateWalIter.switchSegmentRecordReached();
     }
 
     /**

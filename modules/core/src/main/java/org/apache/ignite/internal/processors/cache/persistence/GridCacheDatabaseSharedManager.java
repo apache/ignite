@@ -93,6 +93,7 @@ import org.apache.ignite.internal.pagemem.wal.record.MvccTxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.ReencryptionStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.RollbackRecord;
+import org.apache.ignite.internal.pagemem.wal.record.SwitchSegmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WalRecordCacheGroupAware;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
@@ -298,7 +299,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     private volatile WALPointer walTail;
 
-    /** */
+    /** Flag indicates that during segment iteration {@link SwitchSegmentRecord} reached. */
     private volatile boolean switchSegmentRecReached;
 
     /**
@@ -3612,7 +3613,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         /** */
         public boolean nextSegmentRecordReached() {
-            return iterator.nextSegmentRecordReached();
+            return iterator.switchSegmentRecordReached();
         }
 
         /**
