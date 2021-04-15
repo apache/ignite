@@ -1368,8 +1368,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 FileWriteHandle hnd = fileHandleManager.initHandle(fileIO, off + len, ser);
 
-                if (lastReadPtr != null && switchSegmentRecReached)
+                if (lastReadPtr != null && switchSegmentRecReached) {
+                    if (switchSegmentRecordOffset != null)
+                        switchSegmentRecordOffset.set((int)segNo, lastReadPtr.fileOffset());
+
                     hnd = initNextWriteHandle(hnd);
+                }
 
                 segmentAware.curAbsWalIdx(hnd.getSegmentId());
 
