@@ -50,7 +50,7 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void resumeLogging(WALPointer lastWrittenPtr, boolean nextSegmentRecordReached) {
+    @Override public void resumeLogging(WALPointer ptr, boolean switchSegmentRecReached) {
         // No-op.
     }
 
