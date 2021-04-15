@@ -32,6 +32,7 @@ import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
@@ -703,6 +704,101 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         assertEquals(3, rows.size());
         assertEquals(2, F.size(rows, r -> r.get(0).equals("Igor")));
         assertEquals(1, F.size(rows, r -> r.get(0).equals("Igor1")));
+    }
+
+    /** */
+    @Test
+    public void testExceptBigBatch() throws Exception {
+        client.getOrCreateCache(new CacheConfiguration<Integer, Integer>()
+            .setName("cache1")
+            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Integer.class).setTableName("table1")))
+            .setBackups(2)
+        );
+
+        client.getOrCreateCache(new CacheConfiguration<Integer, Integer>()
+            .setName("cache2")
+            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Integer.class).setTableName("table2")))
+            .setBackups(1)
+        );
+
+        copyCacheAsReplicated("cache1");
+        copyCacheAsReplicated("cache2");
+
+        try (IgniteDataStreamer<Integer, Integer> ds1 = client.dataStreamer("cache1");
+             IgniteDataStreamer<Integer, Integer> ds2 = client.dataStreamer("cache2");
+             IgniteDataStreamer<Integer, Integer> ds3 = client.dataStreamer("cache1Replicated");
+             IgniteDataStreamer<Integer, Integer> ds4 = client.dataStreamer("cache2Replicated")
+        ) {
+            int key = 0;
+
+            for (int i = 0; i < 5; i++) {
+                for (int j = 0; j < ((i == 0) ? 1 : (1 << (i * 4 - 1))); j++) {
+                    // Cache1 keys count: 1 of "0", 8 of "1", 128 of "2", 2048 of "3", 32768 of "4".
+                    ds1.addData(key++, i);
+                    ds3.addData(key++, i);
+
+                    // Cache2 keys count: 1 of "5", 128 of "3", 32768 of "1".
+                    if ((i & 1) == 0) {
+                        ds2.addData(key++, 5 - i);
+                        ds4.addData(key++, 5 - i);
+                    }
+                }
+            }
+        }
+
+        awaitPartitionMapExchange(true, true, null);
+
+        List<List<?>> rows;
+
+        // Check 2 partitioned caches.
+        rows = sql("SELECT _val FROM \"cache1\".table1 EXCEPT SELECT _val FROM \"cache2\".table2");
+
+        assertEquals(3, rows.size());
+        assertEquals(1, F.size(rows, r -> r.get(0).equals(0)));
+        assertEquals(1, F.size(rows, r -> r.get(0).equals(2)));
+        assertEquals(1, F.size(rows, r -> r.get(0).equals(4)));
+
+        rows = sql("SELECT _val FROM \"cache1\".table1 EXCEPT ALL SELECT _val FROM \"cache2\".table2");
+
+        assertEquals(34817, rows.size());
+        assertEquals(1, F.size(rows, r -> r.get(0).equals(0)));
+        assertEquals(128, F.size(rows, r -> r.get(0).equals(2)));
+        assertEquals(1920, F.size(rows, r -> r.get(0).equals(3)));
+        assertEquals(32768, F.size(rows, r -> r.get(0).equals(4)));
+
+        // Check 1 replicated and 1 partitioned caches.
+        rows = sql("SELECT _val FROM \"cache1Replicated\".table1_repl EXCEPT SELECT _val FROM \"cache2\".table2");
+
+        assertEquals(3, rows.size());
+        assertEquals(1, F.size(rows, r -> r.get(0).equals(0)));
+        assertEquals(1, F.size(rows, r -> r.get(0).equals(2)));
+        assertEquals(1, F.size(rows, r -> r.get(0).equals(4)));
+
+        rows = sql("SELECT _val FROM \"cache1Replicated\".table1_repl EXCEPT ALL SELECT _val FROM \"cache2\".table2");
+
+        assertEquals(34817, rows.size());
+        assertEquals(1, F.size(rows, r -> r.get(0).equals(0)));
+        assertEquals(128, F.size(rows, r -> r.get(0).equals(2)));
+        assertEquals(1920, F.size(rows, r -> r.get(0).equals(3)));
+        assertEquals(32768, F.size(rows, r -> r.get(0).equals(4)));
+
+        // Check 2 replicated caches.
+        rows = sql("SELECT _val FROM \"cache1Replicated\".table1_repl EXCEPT SELECT _val FROM \"cache2Replicated\"" +
+            ".table2_repl");
+
+        assertEquals(3, rows.size());
+        assertEquals(1, F.size(rows, r -> r.get(0).equals(0)));
+        assertEquals(1, F.size(rows, r -> r.get(0).equals(2)));
+        assertEquals(1, F.size(rows, r -> r.get(0).equals(4)));
+
+        rows = sql("SELECT _val FROM \"cache1Replicated\".table1_repl EXCEPT ALL SELECT _val FROM \"cache2Replicated\"" +
+            ".table2_repl");
+
+        assertEquals(34817, rows.size());
+        assertEquals(1, F.size(rows, r -> r.get(0).equals(0)));
+        assertEquals(128, F.size(rows, r -> r.get(0).equals(2)));
+        assertEquals(1920, F.size(rows, r -> r.get(0).equals(3)));
+        assertEquals(32768, F.size(rows, r -> r.get(0).equals(4)));
     }
 
     /**

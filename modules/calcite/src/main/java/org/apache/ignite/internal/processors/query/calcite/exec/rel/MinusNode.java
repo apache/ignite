@@ -296,7 +296,7 @@ public class MinusNode<Row> extends AbstractNode<Row> {
                     cnt -= availableRows;
                 }
                 else {
-                    availableRows -= cnt;
+                    availableRows = cnt;
 
                     decrementAvailableRows(cntrs, availableRows);
 
