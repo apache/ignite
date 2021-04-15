@@ -3652,7 +3652,7 @@ public class IgniteConfiguration {
      * <p />
      * When <code>null</code> (default), {@link ForkJoinPool#commonPool()} is used.
      * <p />
-     * When async client operation completes, corresponding {@link org.apache.ignite.lang.IgniteFuture} listeners
+     * When async operation completes, corresponding {@link org.apache.ignite.lang.IgniteFuture} listeners
      * will be invoked using this executor.
      *
      * @return Executor for async continuations.
