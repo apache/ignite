@@ -17,6 +17,12 @@
 
 package org.apache.ignite.kubernetes.discovery;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.kubernetes.configuration.KubernetesConnectionConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -27,12 +33,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
-
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.stream.Collectors;
 
 import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import static org.mockserver.model.HttpRequest.request;
