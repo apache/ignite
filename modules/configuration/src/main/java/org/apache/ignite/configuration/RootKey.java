@@ -17,7 +17,7 @@
 
 package org.apache.ignite.configuration;
 
-import org.apache.ignite.configuration.storage.ConfigurationStorage;
+import org.apache.ignite.configuration.storage.ConfigurationType;
 import org.apache.ignite.configuration.tree.InnerNode;
 
 /** */
@@ -26,7 +26,7 @@ public abstract class RootKey<T extends ConfigurationTree<VIEW, ?>, VIEW> {
     public abstract String key();
 
     /** */
-    protected abstract Class<? extends ConfigurationStorage> getStorageType();
+    protected abstract ConfigurationType type();
 
     /** */
     protected abstract InnerNode createRootNode();

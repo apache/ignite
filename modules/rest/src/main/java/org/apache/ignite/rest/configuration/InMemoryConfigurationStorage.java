@@ -26,6 +26,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.configuration.storage.ConfigurationStorage;
 import org.apache.ignite.configuration.storage.ConfigurationStorageListener;
+import org.apache.ignite.configuration.storage.ConfigurationType;
 import org.apache.ignite.configuration.storage.Data;
 import org.apache.ignite.configuration.storage.StorageException;
 
@@ -79,5 +80,10 @@ public class InMemoryConfigurationStorage implements ConfigurationStorage {
     /** {@inheritDoc} */
     @Override public void notifyApplied(long storageRevision) {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public ConfigurationType type() {
+        return ConfigurationType.LOCAL;
     }
 }

@@ -28,6 +28,9 @@ import org.apache.ignite.network.internal.MessageWriter;
 import org.apache.ignite.network.message.NetworkMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 
+/**
+ * Direct marshalling I/O stream.
+ */
 public interface DirectByteBufferStream {
     /**
      * @param buf Buffer.

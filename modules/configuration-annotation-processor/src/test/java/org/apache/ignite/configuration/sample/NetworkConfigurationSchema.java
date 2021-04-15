@@ -19,12 +19,12 @@ package org.apache.ignite.configuration.sample;
 
 import org.apache.ignite.configuration.annotation.ConfigValue;
 import org.apache.ignite.configuration.annotation.ConfigurationRoot;
-import org.apache.ignite.configuration.storage.TestConfigurationStorage;
+import org.apache.ignite.configuration.storage.ConfigurationType;
 
 /**
  * Test network configuration schema.
  */
-@ConfigurationRoot(rootName = "network", storage = TestConfigurationStorage.class)
+@ConfigurationRoot(rootName = "network", type = ConfigurationType.LOCAL)
 public class NetworkConfigurationSchema {
     /** Discovery. */
     @ConfigValue

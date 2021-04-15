@@ -39,6 +39,7 @@ import org.apache.ignite.configuration.internal.util.KeyNotFoundException;
 import org.apache.ignite.configuration.internal.validation.MaxValidator;
 import org.apache.ignite.configuration.internal.validation.MinValidator;
 import org.apache.ignite.configuration.storage.ConfigurationStorage;
+import org.apache.ignite.configuration.storage.ConfigurationType;
 import org.apache.ignite.configuration.tree.ConfigurationSource;
 import org.apache.ignite.configuration.tree.ConfigurationVisitor;
 import org.apache.ignite.configuration.tree.InnerNode;
@@ -84,7 +85,7 @@ public class ConfigurationRegistry {
     }
 
     /** */
-    public void startStorageConfigurations(Class<? extends ConfigurationStorage> storageType) {
+    public void startStorageConfigurations(ConfigurationType storageType) {
         changer.initialize(storageType);
     }
 
@@ -168,13 +169,13 @@ public class ConfigurationRegistry {
      * Does not register this root anywhere, used for static object initialization only.
      *
      * @param rootName Name of the root as described in {@link ConfigurationRoot#rootName()}.
-     * @param storageType Storage class as described in {@link ConfigurationRoot#storage()}.
+     * @param storageType Storage class as described in {@link ConfigurationRoot#type()}.
      * @param rootSupplier Closure to instantiate internal configuration tree roots.
      * @param publicRootCreator Function to create public user-facing tree instance.
      */
     public static <T extends ConfigurationTree<V, ?>, V> RootKey<T, V> newRootKey(
         String rootName,
-        Class<? extends ConfigurationStorage> storageType,
+        ConfigurationType storageType,
         Supplier<InnerNode> rootSupplier,
         BiFunction<RootKey<T, V>, ConfigurationChanger, T> publicRootCreator
     ) {

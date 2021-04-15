@@ -29,6 +29,8 @@ import com.squareup.javapoet.TypeSpec;
 import com.squareup.javapoet.TypeVariableName;
 import com.squareup.javapoet.WildcardTypeName;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -47,9 +49,8 @@ import javax.lang.model.element.Modifier;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
-import javax.lang.model.type.MirroredTypesException;
-import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
+import javax.tools.Diagnostic;
 import org.apache.ignite.configuration.NamedConfigurationTree;
 import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.ConfigValue;
@@ -57,6 +58,7 @@ import org.apache.ignite.configuration.annotation.ConfigurationRoot;
 import org.apache.ignite.configuration.annotation.NamedConfigValue;
 import org.apache.ignite.configuration.annotation.Value;
 import org.apache.ignite.configuration.internal.NamedListConfiguration;
+import org.apache.ignite.configuration.storage.ConfigurationType;
 import org.apache.ignite.configuration.tree.ConfigurationSource;
 import org.apache.ignite.configuration.tree.ConfigurationVisitor;
 import org.apache.ignite.configuration.tree.InnerNode;
@@ -96,6 +98,23 @@ public class Processor extends AbstractProcessor {
 
     /** {@inheritDoc} */
     @Override public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnvironment) {
+        try {
+            return process0(roundEnvironment);
+        } catch (Throwable t) {
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            t.printStackTrace(pw);
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to process configuration: " + sw.toString());
+        }
+        return false;
+    }
+
+    /**
+     * Processes a set of annotation types on type elements.
+     * @param roundEnvironment Processing environment.
+     * @return Whether or not the set of annotation types are claimed by this processor.
+     */
+    private boolean process0(RoundEnvironment roundEnvironment) {
         final Elements elementUtils = processingEnv.getElementUtils();
 
         Map<TypeName, ConfigurationDescription> props = new HashMap<>();
@@ -259,21 +278,7 @@ public class Processor extends AbstractProcessor {
             createPojoBindings(clazz, fields, schemaClassName, configurationClassBuilder, configurationInterfaceBuilder);
 
             if (isRoot) {
-                TypeMirror storageType = null;
-
-                try {
-                    //  From JavaDocs: The annotation returned by this method could contain an element whose value is of type Class.
-                    //  This value cannot be returned directly: information necessary to locate and load a class
-                    //  (such as the class loader to use) is not available, and the class might not be loadable at all.
-                    //  Attempting to read a Class object by invoking the relevant method on the returned annotation will
-                    //  result in a MirroredTypeException, from which the corresponding TypeMirror may be extracted.
-                    //  Similarly, attempting to read a Class[]-valued element will result in a MirroredTypesException.
-                    rootAnnotation.storage();
-                }
-                catch (MirroredTypesException e) {
-                    storageType = e.getTypeMirrors().get(0);
-                }
-
+                ConfigurationType storageType = rootAnnotation.type();
                 createRootKeyField(configInterface, configurationInterfaceBuilder, configDesc, storageType, schemaClassName);
             }
 
@@ -294,7 +299,7 @@ public class Processor extends AbstractProcessor {
         ClassName configInterface,
         TypeSpec.Builder configurationClassBuilder,
         ConfigurationDescription configDesc,
-        TypeMirror storageType,
+        ConfigurationType storageType,
         ClassName schemaClassName
     ) {
         ClassName viewClassName = Utils.getViewName(schemaClassName);
@@ -307,8 +312,8 @@ public class Processor extends AbstractProcessor {
 
         FieldSpec keyField = FieldSpec.builder(fieldTypeName, "KEY", PUBLIC, STATIC, FINAL)
             .initializer(
-                "$T.newRootKey($S, $T.class, $T::new, $T::new)",
-                cfgRegistryClassName, configDesc.getName(), storageType, nodeClassName,
+                "$T.newRootKey($S, $T.$L, $T::new, $T::new)",
+                cfgRegistryClassName, configDesc.getName(), ConfigurationType.class, storageType, nodeClassName,
                 Utils.getConfigurationName(schemaClassName)
             )
             .build();

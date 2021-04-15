@@ -57,4 +57,9 @@ public interface ConfigurationStorage {
      * notification on node restart.
      */
     void notifyApplied(long storageRevision);
+
+    /**
+     * @return Type of this configuration storage.
+     */
+    ConfigurationType type();
 }
