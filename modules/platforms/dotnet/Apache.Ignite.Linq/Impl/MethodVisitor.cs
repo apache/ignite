@@ -334,8 +334,6 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Get IgnoreCase parameter for string.Compare method
         /// </summary>
-        /// <param name="expression"></param>
-        /// <returns></returns>
         private static bool GetStringCompareIgnoreCaseParameter(Expression expression)
         {
             var constant = expression as ConstantExpression;
@@ -354,8 +352,6 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Visits string.Compare method
         /// </summary>
-        /// <param name="expression"></param>
-        /// <param name="visitor"></param>
         private static void VisitStringCompare(MethodCallExpression expression, CacheQueryExpressionVisitor visitor, bool ignoreCase)
         {
             // Ex: nvl2(?, casewhen(_T0.NAME = ?, 0, casewhen(_T0.NAME >= ?, 1, -1)), 1)
