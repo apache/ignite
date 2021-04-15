@@ -20,16 +20,13 @@ package org.apache.ignite.testsuites;
 import org.apache.ignite.internal.processors.query.calcite.logical.LogicalTestEnvironment;
 import org.apache.ignite.internal.processors.query.calcite.logical.LogicalTestRunner;
 import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
 
 /**
  *
  */
 @RunWith(LogicalTestRunner.class)
-@Suite.SuiteClasses({
-})
 @LogicalTestEnvironment(scriptsRoot = "src/test/sql"
-    , script = "src/test/sql/aggregate/aggregates/test_aggr_string.test"
+//    , script = "src/test/sql/aggregate/aggregates/test_aggr_string.test"
 )
 public class LogicalTestSuite {
 }
