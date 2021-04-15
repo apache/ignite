@@ -175,6 +175,32 @@ public class SqlDdlParserTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Parsing of CREATE TABLE with specified PK constraint where constraint
+     * consists of several columns.
+     */
+    @Test
+    public void createTableWithPkCase4() throws SqlParseException {
+        String query = "create table my_table(id1 int, id2 int, val varchar, primary key(id1, id2))";
+
+        SqlNode node = parse(query);
+
+        assertThat(node, instanceOf(IgniteSqlCreateTable.class));
+
+        IgniteSqlCreateTable createTable = (IgniteSqlCreateTable)node;
+
+        assertThat(createTable.name().names, is(ImmutableList.of("MY_TABLE")));
+        assertThat(createTable.ifNotExists, is(false));
+        assertThat(createTable.columnList(), hasItem(ofTypeMatching(
+            "PK constraint with two columns", SqlKeyConstraint.class,
+            constraint -> hasItem(ofTypeMatching("identifier \"ID1\"", SqlIdentifier.class, id -> "ID1".equals(id.names.get(0))))
+                .matches(constraint.getOperandList().get(1))
+                && hasItem(ofTypeMatching("identifier \"ID2\"", SqlIdentifier.class, id -> "ID2".equals(id.names.get(0))))
+                .matches(constraint.getOperandList().get(1))
+                && constraint.getOperandList().get(0) == null
+                && constraint.isA(singleton(SqlKind.PRIMARY_KEY)))));
+    }
+
+    /**
      * Parsing of CREATE TABLE with specified table options.
      */
     @Test

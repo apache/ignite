@@ -44,7 +44,6 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.SqlDdl;
 import org.apache.calcite.sql.SqlExplain;
 import org.apache.calcite.sql.SqlExplainLevel;
-import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.parser.SqlParseException;
@@ -554,21 +553,30 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         ctx.planner().reset();
 
-       if (sqlNode.getKind().belongsTo(SqlKind.QUERY))
-           return prepareQuery(sqlNode, ctx);
+        switch (sqlNode.getKind()) {
+            case SELECT:
+            case ORDER_BY:
+            case WITH:
+            case VALUES:
+            case UNION:
+                return prepareQuery(sqlNode, ctx);
 
-       else if (sqlNode.getKind().belongsTo(SqlKind.DML))
-           return prepareDml(sqlNode, ctx);
+            case INSERT:
+            case DELETE:
+            case UPDATE:
+                return prepareDml(sqlNode, ctx);
 
-       else if (sqlNode.getKind() == SqlKind.EXPLAIN)
-           return prepareExplain(sqlNode, ctx);
+            case EXPLAIN:
+                return prepareExplain(sqlNode, ctx);
 
-       else if (sqlNode.getKind().belongsTo(SqlKind.DDL))
-           return prepareDdl(sqlNode, ctx);
+            case CREATE_TABLE:
+                return prepareDdl(sqlNode, ctx);
 
-       throw new IgniteSQLException("Unsupported operation [" +
-           "sqlNodeKind=" + sqlNode.getKind() + "; " +
-           "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+            default:
+                throw new IgniteSQLException("Unsupported operation [" +
+                    "sqlNodeKind=" + sqlNode.getKind() + "; " +
+                    "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+        }
     }
 
     /** */
