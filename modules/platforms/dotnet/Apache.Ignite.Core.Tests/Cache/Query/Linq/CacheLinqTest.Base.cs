@@ -268,12 +268,19 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             CollectionAssert.AreEqual(expected, actual, new NumericComparer());
         }
 
+        /// <summary>
+        /// Checks that function used in Where Clause maps to SQL function properly
+        /// </summary>
         private static void CheckWhereFunc<T>(Expression<Func<T, bool>> expression, IQueryable<T> query)
         {
-            CheckWhereFunc<T>(expression, expression, query);
+            CheckWhereFunc(expression, expression, query);
         }
 
-        private static void CheckWhereFunc<T>(Expression<Func<T, bool>> memoryExpression, Expression<Func<T, bool>> sqlExpression, IQueryable<T> query)
+        /// <summary>
+        /// Checks that function used in Where Clause maps to SQL function properly
+        /// </summary>
+        private static void CheckWhereFunc<T>(Expression<Func<T, bool>> memoryExpression, 
+            Expression<Func<T, bool>> sqlExpression, IQueryable<T> query)
         {
             // Calculate result locally, using real method invocation
             var expected = query.ToArray().AsQueryable().Where(memoryExpression).OrderBy(x => x).ToArray();
