@@ -1110,7 +1110,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 U.log(log, "Binary memory state restored at node startup [restoredPtr=" + restored + ']');
 
             // Wal logging is now available.
-            cctx.wal().resumeLogging(restored, binaryState.nextSegmentRecordReached());
+            cctx.wal().resumeLogging(restored, binaryState.switchSegmentRecordReached());
 
             // Log MemoryRecoveryRecord to make sure that old physical records are not replayed during
             // next physical recovery.
@@ -1972,7 +1972,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         walTail = tailPointer(logicalState);
-        switchSegmentRecReached = logicalState.nextSegmentRecordReached();
+        switchSegmentRecReached = logicalState.switchSegmentRecordReached();
 
         cctx.wal().onDeActivate(kctx);
     }
@@ -3611,8 +3611,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 .orElseGet(() -> status.startPtr);
         }
 
-        /** */
-        public boolean nextSegmentRecordReached() {
+        /** @return {@code True} when during segment iteration {@link SwitchSegmentRecord} reached. */
+        public boolean switchSegmentRecordReached() {
             return iterator.switchSegmentRecordReached();
         }
 
