@@ -53,8 +53,8 @@ public class IgniteSqlCreateTable extends SqlCreate {
         SqlIdentifier name, @Nullable SqlNodeList columnList, @Nullable SqlNodeList createOptionList) {
         super(OPERATOR, pos, false, ifNotExists);
         this.name = Objects.requireNonNull(name, "name");
-        this.columnList = columnList; // may be null
-        this.createOptionList = createOptionList; // may be null
+        this.columnList = columnList;
+        this.createOptionList = createOptionList;
     }
 
     /** {@inheritDoc} */

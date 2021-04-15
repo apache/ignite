@@ -34,6 +34,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -74,6 +75,9 @@ public class CreateTableIntegrationTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
+            .setSqlConfiguration(
+                new SqlConfiguration().setSqlSchemas("MY_SCHEMA")
+            )
             .setDataStorageConfiguration(
                 new DataStorageConfiguration()
                     .setDataRegionConfigurations(new DataRegionConfiguration().setName(DATA_REGION_NAME))
@@ -226,6 +230,19 @@ public class CreateTableIntegrationTest extends GridCommonAbstractTest {
         executeSql("insert into my_table values (1, '1'),(2, '2')");
 
         assertThat(executeSql("select * from my_table"), hasSize(4));
+    }
+
+    /**
+     * Creates a table in a different schema.
+     */
+    @Test
+    public void createTableCustomSchema() {
+        executeSql("create table my_schema.my_table (f1 int, f2 varchar)");
+
+        executeSql("insert into my_schema.my_table(f1, f2) values (1, '1'),(2, '2')");
+        executeSql("insert into my_schema.my_table values (1, '1'),(2, '2')");
+
+        assertThat(executeSql("select * from my_schema.my_table"), hasSize(4));
     }
 
     /** */
