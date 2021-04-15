@@ -249,7 +249,7 @@ tab:XML[]
     <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
       <property name="ipFinder">
         <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.gce.TcpDiscoveryGoogleStorageIpFinder">
-          <property name="projectName" ref="YOUR_GOOGLE_PLATFORM_PROJECT_NAME"/>
+          <property name="projectName" value="YOUR_GOOGLE_PLATFORM_PROJECT_NAME"/>
           <property name="bucketName" value="YOUR_BUCKET_NAME"/>
           <property name="serviceAccountId" value="YOUR_SERVICE_ACCOUNT_ID"/>
           <property name="serviceAccountP12FilePath" value="PATH_TO_YOUR_PKCS12_KEY"/>

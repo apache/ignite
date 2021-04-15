@@ -92,7 +92,7 @@ public class DiskPageCompressionIntegrationTest extends AbstractPageCompressionI
 
         String cacheName = "test";
 
-        CacheConfiguration<Integer,TestVal> ccfg = new CacheConfiguration<Integer,TestVal>()
+        CacheConfiguration<Integer, TestVal> ccfg = new CacheConfiguration<Integer, TestVal>()
             .setName(cacheName)
             .setBackups(0)
             .setAtomicityMode(ATOMIC)
@@ -100,7 +100,7 @@ public class DiskPageCompressionIntegrationTest extends AbstractPageCompressionI
             .setDiskPageCompression(compression)
             .setDiskPageCompressionLevel(compressionLevel);
 
-        IgniteCache<Integer,TestVal> cache = ignite.getOrCreateCache(ccfg);
+        IgniteCache<Integer, TestVal> cache = ignite.getOrCreateCache(ccfg);
 
         int cnt = 2_000;
 
@@ -133,7 +133,7 @@ public class DiskPageCompressionIntegrationTest extends AbstractPageCompressionI
         else
             assertTrue(sparseStoreSize < 0);
 
-        GridCacheContext<?,?> cctx = ignite.cachex(cacheName).context();
+        GridCacheContext<?, ?> cctx = ignite.cachex(cacheName).context();
 
         int cacheId = cctx.cacheId();
         int groupId = cctx.groupId();
@@ -187,7 +187,7 @@ public class DiskPageCompressionIntegrationTest extends AbstractPageCompressionI
 
         String cacheName = "test";
 
-        CacheConfiguration<Integer,TestVal> ccfg = new CacheConfiguration<Integer,TestVal>()
+        CacheConfiguration<Integer, TestVal> ccfg = new CacheConfiguration<Integer, TestVal>()
             .setName(cacheName)
             .setBackups(0)
             .setAtomicityMode(ATOMIC)
@@ -198,7 +198,7 @@ public class DiskPageCompressionIntegrationTest extends AbstractPageCompressionI
 
         ignite.getOrCreateCache(ccfg);
 
-        IgniteInternalCache<Integer,TestVal> cache = ignite.cachex(cacheName);
+        IgniteInternalCache<Integer, TestVal> cache = ignite.cachex(cacheName);
 
         MetricRegistry mreg = ignite.context().metric().registry(
             metricName(CACHE_GROUP_METRICS_PREFIX, cacheName));

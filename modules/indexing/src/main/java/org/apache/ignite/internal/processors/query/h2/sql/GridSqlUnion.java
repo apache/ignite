@@ -21,6 +21,8 @@ import javax.cache.CacheException;
 import org.h2.command.dml.SelectUnion;
 import org.h2.util.StatementBuilder;
 
+import static org.apache.ignite.internal.processors.query.QueryUtils.delimeter;
+
 /**
  * Select query with UNION.
  */
@@ -103,25 +105,27 @@ public class GridSqlUnion extends GridSqlQuery {
 
     /** {@inheritDoc} */
     @Override public String getSQL() {
-        StatementBuilder buff = new StatementBuilder(explain() ? "EXPLAIN \n" : "");
+        char delim = delimeter();
+
+        StatementBuilder buff = new StatementBuilder(explain() ? "EXPLAIN " + delim : "");
 
         buff.append('(').append(left.getSQL()).append(')');
 
         switch (unionType()) {
             case UNION_ALL:
-                buff.append("\nUNION ALL\n");
+                buff.append(delim).append("UNION ALL").append(delim);
                 break;
 
             case UNION:
-                buff.append("\nUNION\n");
+                buff.append(delim).append("UNION").append(delim);
                 break;
 
             case INTERSECT:
-                buff.append("\nINTERSECT\n");
+                buff.append(delim).append("INTERSECT").append(delim);
                 break;
 
             case EXCEPT:
-                buff.append("\nEXCEPT\n");
+                buff.append(delim).append("EXCEPT").append(delim);
                 break;
 
             default:

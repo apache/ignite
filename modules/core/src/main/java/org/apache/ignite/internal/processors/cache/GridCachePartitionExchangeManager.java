@@ -134,6 +134,7 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -980,6 +981,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         U.join(exchWorker, log);
 
+        if (cctx.kernalContext().clientDisconnected())
+            cctx.affinity().removeGroupHolders();
+
         // Finish all exchange futures.
         ExchangeFutureSet exchFuts0 = exchFuts;
 
@@ -1044,7 +1048,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         CacheGroupDescriptor grpDesc = cctx.affinity().cacheGroups().get(grpId);
 
-        assert grpDesc != null : grpId;
+        assert grpDesc != null : "grpId=" + grpId;
 
         CacheConfiguration<?, ?> ccfg = grpDesc.config();
 
@@ -1384,7 +1388,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             // No need to send to nodes which did not finish their first exchange.
             AffinityTopologyVersion rmtTopVer =
                 lastFut != null ?
-                    (lastFut.isDone() ? lastFut.topologyVersion() : lastFut.initialVersion())
+                    (lastFut.isDone() && lastFut.error() == null ? lastFut.topologyVersion() : lastFut.initialVersion())
                     : AffinityTopologyVersion.NONE;
 
             Collection<ClusterNode> rmts = cctx.discovery().remoteAliveNodesWithCaches(rmtTopVer);
@@ -3688,7 +3692,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         /** {@inheritDoc} */
         @Override public void onTimeout() {
-            cctx.kernalContext().closure().runLocalSafe(new Runnable() {
+            cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
                 @Override public void run() {
                     if (!busyLock.readLock().tryLock())
                         return;

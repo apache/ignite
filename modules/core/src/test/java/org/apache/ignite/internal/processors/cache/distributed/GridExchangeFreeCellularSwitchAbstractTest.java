@@ -19,8 +19,11 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
@@ -147,7 +150,7 @@ public abstract class GridExchangeFreeCellularSwitchAbstractTest extends GridCom
                 }
 
                 return true;
-            }, 5000));
+            }, 10000));
     }
 
     /**
@@ -170,14 +173,9 @@ public abstract class GridExchangeFreeCellularSwitchAbstractTest extends GridCom
      *
      */
     protected void checkTransactionsCount(
-        Ignite orig,
-        int origCnt,
-        Ignite primary,
-        int primaryCnt,
-        List<Ignite> backupNodes,
-        int backupCnt,
-        List<Ignite> nearNodes,
-        int nearCnt,
+        Ignite origNode, int origCnt,
+        List<Ignite> brokenCellNodes, int brokenCellCnt,
+        List<Ignite> aliveCellNodes, int aliveCellCnt,
         Set<GridCacheVersion> vers) {
         Function<Ignite, Collection<GridCacheVersion>> txs = ignite -> {
             Collection<IgniteInternalTx> active = ((IgniteEx)ignite).context().cache().context().tm().activeTransactions();
@@ -189,19 +187,77 @@ public abstract class GridExchangeFreeCellularSwitchAbstractTest extends GridCom
                 .collect(Collectors.toSet());
         };
 
-        if (orig != null)
-            assertEquals(origCnt, txs.apply(orig).size());
+        long till = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
 
-        if (primary != null && primary != orig)
-            assertEquals(primaryCnt, txs.apply(primary).size());
+        while (true) {
+            try {
+                if (origNode != null)
+                    assertEquals(origCnt, txs.apply(origNode).size());
 
-        for (Ignite backup : backupNodes)
-            if (backup != orig)
-                assertEquals(backupCnt, txs.apply(backup).size());
+                for (Ignite brokenCellNode : brokenCellNodes)
+                    if (brokenCellNode != origNode)
+                        assertEquals(brokenCellCnt, txs.apply(brokenCellNode).size());
 
-        for (Ignite near : nearNodes)
-            if (near != orig)
-                assertEquals(nearCnt, txs.apply(near).size());
+                for (Ignite aliveCellNode : aliveCellNodes)
+                    if (aliveCellNode != origNode)
+                        assertEquals(aliveCellCnt, txs.apply(aliveCellNode).size());
+
+                break;
+            }
+            catch (Throwable err) {
+                if (System.nanoTime() > till)
+                    throw err;
+            }
+        }
+
+    }
+
+    /**
+     *
+     */
+    protected CellularCluster resolveCellularCluster(int nodes, TransactionCoordinatorNode startFrom) throws Exception {
+        Ignite failed = G.allGrids().get(new Random().nextInt(nodes));
+
+        Integer cellKey = primaryKey(failed.getOrCreateCache(PART_CACHE_NAME));
+
+        List<Ignite> brokenCellNodes = backupNodes(cellKey, PART_CACHE_NAME);
+        List<Ignite> aliveCellNodes = new ArrayList<>(G.allGrids());
+
+        aliveCellNodes.remove(failed);
+        aliveCellNodes.removeAll(brokenCellNodes);
+
+        assertTrue(Collections.disjoint(brokenCellNodes, aliveCellNodes));
+        assertEquals(nodes / 2 - 1, brokenCellNodes.size());
+        assertEquals(nodes / 2, aliveCellNodes.size());
+
+        Ignite orig;
+
+        switch (startFrom) {
+            case FAILED:
+                orig = failed;
+
+                break;
+
+            case BROKEN_CELL:
+                orig = brokenCellNodes.get(new Random().nextInt(brokenCellNodes.size()));
+
+                break;
+
+            case ALIVE_CELL:
+                orig = aliveCellNodes.get(new Random().nextInt(aliveCellNodes.size()));
+
+                break;
+
+            case CLIENT:
+                orig = startClientGrid();
+
+                break;
+
+            default:
+                throw new UnsupportedOperationException();
+        }
+
+        return new CellularCluster(orig, failed, brokenCellNodes, aliveCellNodes);
     }
 
     /**
@@ -275,16 +331,44 @@ public abstract class GridExchangeFreeCellularSwitchAbstractTest extends GridCom
      * Specifies node starts the transaction (originating node).
      */
     protected enum TransactionCoordinatorNode {
-        /** Primary. */
-        PRIMARY,
+        /** Failed. */
+        FAILED,
 
-        /** Backup. */
-        BACKUP,
+        /**Broken cell. */
+        BROKEN_CELL,
 
-        /** Near. */
-        NEAR,
+        /** Alive cell. */
+        ALIVE_CELL,
 
         /** Client. */
         CLIENT
+    }
+
+    /**
+     *
+     */
+    protected static class CellularCluster {
+        /** Originating node. */
+        public Ignite orig;
+
+        /** Failed node. */
+        public Ignite failed;
+
+        /** Broken cell's nodes. */
+        public List<Ignite> brokenCellNodes;
+
+        /** Alive cell's nodes. */
+        public List<Ignite> aliveCellNodes;
+
+        /**
+         *
+         */
+        public CellularCluster(Ignite orig, Ignite failed, List<Ignite> brokenCellNodes,
+            List<Ignite> aliveCellNodes) {
+            this.orig = orig;
+            this.failed = failed;
+            this.brokenCellNodes = brokenCellNodes;
+            this.aliveCellNodes = aliveCellNodes;
+        }
     }
 }

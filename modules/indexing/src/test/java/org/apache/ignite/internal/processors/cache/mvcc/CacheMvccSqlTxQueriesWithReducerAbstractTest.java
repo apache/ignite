@@ -89,9 +89,9 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
             checkNode.cache(DEFAULT_CACHE_NAME);
 
         cache.putAll(F.asMap(
-            1,new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(1),
-            2,new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(2),
-            3,new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(3)));
+            1, new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(1),
+            2, new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(2),
+            3, new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(3)));
 
         assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(1), cache.get(1));
         assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(2), cache.get(2));
@@ -143,9 +143,9 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
             checkNode.cache(DEFAULT_CACHE_NAME);
 
         cache.putAll(F.asMap(
-            1,new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(1),
-            2,new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(2),
-            3,new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(3)));
+            1, new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(1),
+            2, new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(2),
+            3, new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(3)));
 
         assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(1), cache.get(1));
         assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(2), cache.get(2));
@@ -192,9 +192,9 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
             checkNode.cache(DEFAULT_CACHE_NAME);
 
         cache.putAll(F.asMap(
-            1,new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(1),
-            2,new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(2),
-            3,new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(3)));
+            1, new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(1),
+            2, new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(2),
+            3, new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(3)));
 
         assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(1), cache.get(1));
         assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(2), cache.get(2));
@@ -427,9 +427,9 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
             checkNode.cache(DEFAULT_CACHE_NAME);
 
         cache.putAll(F.asMap(
-            1,new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(1),
-            2,new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(2),
-            3,new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(3)));
+            1, new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(1),
+            2, new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(2),
+            3, new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(3)));
 
         assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(1), cache.get(1));
         assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(2), cache.get(2));
@@ -477,9 +477,9 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
             checkNode.cache(DEFAULT_CACHE_NAME);
 
         cache.putAll(F.asMap(
-            1,new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(1),
-            2,new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(2),
-            3,new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(3)));
+            1, new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(1),
+            2, new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(2),
+            3, new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(3)));
 
         assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(1), cache.get(1));
         assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(2), cache.get(2));
@@ -797,7 +797,7 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
 
         IgniteCache<Object, Object> cache = checkNode.cache(DEFAULT_CACHE_NAME);
 
-        cache.putAll(F.asMap(1,1,2,2,3,3));
+        cache.putAll(F.asMap(1, 1, 2, 2, 3, 3));
 
         assertEquals(1, cache.get(1));
         assertEquals(2, cache.get(2));
@@ -840,9 +840,9 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
         IgniteCache<Object, Object> cache = checkNode.cache(DEFAULT_CACHE_NAME);
 
         cache.putAll(F.asMap(
-            1,new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(1),
-            2,new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(2),
-            3,new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(3)));
+            1, new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(1),
+            2, new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(2),
+            3, new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(3)));
 
         assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(1), cache.get(1));
         assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(2), cache.get(2));

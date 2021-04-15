@@ -271,8 +271,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public long restorePartitionStates(Map<GroupPartitionId, Integer> partitionRecoveryStates) throws IgniteCheckedException {
-        return 0; // No-op.
+    @Override public Map<Integer, Long> restorePartitionStates(
+        Map<GroupPartitionId, Integer> partRecoveryStates
+    ) throws IgniteCheckedException {
+        return Collections.emptyMap(); // No-op.
     }
 
     /** {@inheritDoc} */
@@ -1113,6 +1115,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         long pageId = allocateForTree();
 
         return new RootPage(new FullPageId(pageId, grp.groupId()), true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable RootPage findRootPageForIndex(int cacheId, String idxName, int segment) throws IgniteCheckedException {
+        return null; // No-op.
     }
 
     /** {@inheritDoc} */

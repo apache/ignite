@@ -697,7 +697,7 @@ public class GridSqlQuerySplitter {
         GridSqlSelect select = model.ast();
 
         Set<GridSqlAlias> tblAliases = U.newIdentityHashSet();
-        Map<String,GridSqlAlias> cols = new HashMap<>();
+        Map<String, GridSqlAlias> cols = new HashMap<>();
 
         // Collect all the tables for push down.
         for (int i = begin; i <= end; i++) {
@@ -737,7 +737,7 @@ public class GridSqlQuerySplitter {
      */
     private void pushDownJoins(
         Set<GridSqlAlias> tblAliases,
-        Map<String,GridSqlAlias> cols,
+        Map<String, GridSqlAlias> cols,
         SplitterQueryModel model,
         int begin,
         int end,
@@ -901,7 +901,7 @@ public class GridSqlQuerySplitter {
     @SuppressWarnings("IfMayBeConditional")
     private void pushDownSelectColumns(
         Set<GridSqlAlias> tblAliases,
-        Map<String,GridSqlAlias> cols,
+        Map<String, GridSqlAlias> cols,
         GridSqlAlias wrapAlias,
         GridSqlSelect select
     ) {
@@ -945,7 +945,7 @@ public class GridSqlQuerySplitter {
      */
     private void pushDownColumnsInExpression(
         Set<GridSqlAlias> tblAliases,
-        Map<String,GridSqlAlias> cols,
+        Map<String, GridSqlAlias> cols,
         GridSqlAlias wrapAlias,
         GridSqlAst parent,
         int childIdx
@@ -969,7 +969,7 @@ public class GridSqlQuerySplitter {
      */
     private void pushDownColumn(
         Set<GridSqlAlias> tblAliases,
-        Map<String,GridSqlAlias> cols,
+        Map<String, GridSqlAlias> cols,
         GridSqlAlias wrapAlias,
         GridSqlAst parent,
         int childIdx
@@ -1050,7 +1050,7 @@ public class GridSqlQuerySplitter {
      */
     private void pushDownWhereConditions(
         Set<GridSqlAlias> tblAliases,
-        Map<String,GridSqlAlias> cols,
+        Map<String, GridSqlAlias> cols,
         GridSqlAlias wrapAlias,
         GridSqlSelect select
     ) {
@@ -1324,7 +1324,7 @@ public class GridSqlQuerySplitter {
      * @return Map of columns with types.
      */
     @SuppressWarnings("IfMayBeConditional")
-    private LinkedHashMap<String,?> collectColumns(List<GridSqlAst> cols) {
+    private LinkedHashMap<String, ?> collectColumns(List<GridSqlAst> cols) {
         LinkedHashMap<String, GridSqlType> res = new LinkedHashMap<>(cols.size(), 1f, false);
 
         for (int i = 0; i < cols.size(); i++) {

@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -259,7 +260,7 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
         for (Map.Entry<UUID, Collection<UUID>> entry : txNodes.entrySet()) {
             UUID nodeId = entry.getKey();
 
-            // Skip left nodes and local node.
+            // Skipping iteration when local node is one of tx's primary.
             if (!nodes.containsKey(nodeId) && nodeId.equals(cctx.localNodeId()))
                 continue;
 
@@ -459,7 +460,7 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
                 final MiniFuture f = (MiniFuture)fut;
 
                 if (f.nodeId().equals(nodeId)) {
-                    cctx.kernalContext().closure().runLocalSafe(new Runnable() {
+                    cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
                         @Override public void run() {
                             f.onNodeLeft(nodeId);
                         }

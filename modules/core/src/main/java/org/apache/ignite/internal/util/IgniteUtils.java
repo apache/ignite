@@ -4218,6 +4218,32 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Closes given socket logging possible checked exception.
+     *
+     * @param sock Socket to close. If it's {@code null} - it's no-op.
+     * @param log Logger to log possible checked exception with (optional).
+     */
+    public static void close(@Nullable Socket sock, @Nullable IgniteLogger log) {
+        if (sock != null) {
+            try {
+                // Avoid tls 1.3 incompatibility https://bugs.openjdk.java.net/browse/JDK-8208526
+                sock.shutdownOutput();
+                sock.shutdownInput();
+            }
+            catch (Exception e) {
+                warn(log, "Failed to shutdown socket: " + e.getMessage(), e);
+            }
+
+            try {
+                sock.close();
+            }
+            catch (Exception e) {
+                warn(log, "Failed to close socket: " + e.getMessage(), e);
+            }
+        }
+    }
+
+    /**
      * Closes given resource suppressing possible checked exception.
      *
      * @param rsrc Resource to close. If it's {@code null} - it's no-op.
@@ -4372,7 +4398,7 @@ public abstract class IgniteUtils {
             return;
 
         try {
-            // Avoid java 12 bug see https://bugs.openjdk.java.net/browse/JDK-8219658
+            // Avoid tls 1.3 incompatibility https://bugs.openjdk.java.net/browse/JDK-8208526
             sock.shutdownOutput();
             sock.shutdownInput();
         }
@@ -9005,7 +9031,7 @@ public abstract class IgniteUtils {
 
         if (cls == null) {
             if (clsFilter != null && !clsFilter.apply(clsName))
-                throw new RuntimeException("Deserialization of class " + clsName + " is disallowed.");
+                throw new ClassNotFoundException("Deserialization of class " + clsName + " is disallowed.");
 
             // Avoid class caching inside Class.forName
             if (ldr instanceof CacheClassLoaderMarker)
@@ -9612,7 +9638,7 @@ public abstract class IgniteUtils {
                         "    <property name=\"workDirectory\" value=\"location\"/> in IgniteConfiguration <bean>.\n");
                 }
             }
-            catch (Exception e) {
+            catch (Exception ignore) {
                 // Ignore.
             }
 
@@ -11422,7 +11448,7 @@ public abstract class IgniteUtils {
     /**
      * The batch of tasks with a batch index in global array.
      */
-    private static class Batch<T,R> {
+    private static class Batch<T, R> {
         /** List tasks. */
         private final List<T> tasks;
 

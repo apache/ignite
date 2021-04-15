@@ -508,7 +508,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
                 }
             }).get(5_000);
         }
-        catch (IgniteFutureTimeoutCheckedException ex) {
+        catch (IgniteFutureTimeoutCheckedException ignore) {
             // Expected.
         }
         finally {

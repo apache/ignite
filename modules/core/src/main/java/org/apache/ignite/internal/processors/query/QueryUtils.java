@@ -79,10 +79,12 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_SYSTEM_SCHEMA_NAME_IGNITE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.TOO_LONG_VALUE;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.VALUE_SCALE_OUT_OF_RANGE;
+import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_INCLUDE_SENSITIVE;
 
 /**
  * Utility methods for queries.
@@ -130,6 +132,29 @@ public class QueryUtils {
 
     /** */
     private static final Set<Class<?>> SQL_TYPES = createSqlTypes();
+
+    /** Default SQL delimeter. */
+    public static final char DEFAULT_DELIM = '\n';
+
+    /** Space SQL delimeter. */
+    public static final char SPACE_DELIM = ' ';
+
+    /** Setting to {@code true} enables writing sensitive information in {@code toString()} output. */
+    public static boolean INCLUDE_SENSITIVE =
+        IgniteSystemProperties.getBoolean(IGNITE_TO_STRING_INCLUDE_SENSITIVE, DFLT_TO_STRING_INCLUDE_SENSITIVE);
+
+    /**
+     * Enables {@link IgniteSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE} mode for current thread.
+     * Note, setting {@code INCL_SENS_TL} to {@code false} will lead to generation of invalid SQL query.
+     * For example:<br>
+     * source query - "SELECT * FROM TBL WHERE name = 'Name'"<br>
+     * generated query - "SELECT * FROM TBL WHERE name = ?" - there is no parameter value in query.<br>
+     * It's a desired behaviour, because, when {@link IgniteSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE} {@code = false}
+     * we want to filter out all sensitive data and those data can be sitting in SQL constants.
+     * Please, see {@code GridSqlConst#getSQL()}, {@code IgniteH2Indexing#sqlWithoutConst(GridSqlStatement)}.
+     */
+    public static final ThreadLocal<Boolean> INCLUDE_SENSITIVE_TL =
+        ThreadLocal.withInitial(() -> DFLT_TO_STRING_INCLUDE_SENSITIVE);
 
     /**
      * Creates SQL types set.
@@ -630,7 +655,7 @@ public class QueryUtils {
             d.addProperty(prop, false);
         }
 
-        if (!isKeyClsSqlType)
+        if (!isKeyClsSqlType && qryEntity instanceof QueryEntityEx && ((QueryEntityEx)qryEntity).isPreserveKeysOrder())
             d.primaryKeyFields(keyFields);
 
         // Sql-typed key/value doesn't have field property, but they may have precision and scale constraints.
@@ -864,7 +889,7 @@ public class QueryUtils {
      * @throws IgniteCheckedException If failed.
      */
     public static QueryClassProperty buildClassProperty(Class<?> keyCls, Class<?> valCls, String pathStr,
-        Class<?> resType, Map<String,String> aliases, boolean notNull, CacheObjectContext coCtx)
+        Class<?> resType, Map<String, String> aliases, boolean notNull, CacheObjectContext coCtx)
         throws IgniteCheckedException {
         QueryClassProperty res = buildClassProperty(false, valCls, pathStr, resType, aliases, notNull, coCtx);
 
@@ -891,7 +916,7 @@ public class QueryUtils {
      * @throws IgniteCheckedException If failed.
      */
     public static GridQueryProperty buildProperty(Class<?> keyCls, Class<?> valCls, String keyFieldName,
-        String valueFieldName, String pathStr, Class<?> resType, Map<String,String> aliases, boolean notNull,
+        String valueFieldName, String pathStr, Class<?> resType, Map<String, String> aliases, boolean notNull,
         CacheObjectContext coCtx) throws IgniteCheckedException {
         if (pathStr.equals(keyFieldName))
             return new KeyOrValProperty(true, pathStr, keyCls);
@@ -936,7 +961,7 @@ public class QueryUtils {
      */
     @SuppressWarnings("ConstantConditions")
     public static QueryClassProperty buildClassProperty(boolean key, Class<?> cls, String pathStr, Class<?> resType,
-        Map<String,String> aliases, boolean notNull, CacheObjectContext coCtx) {
+        Map<String, String> aliases, boolean notNull, CacheObjectContext coCtx) {
         String[] path = pathStr.split("\\.");
 
         QueryClassProperty res = null;
@@ -1115,6 +1140,11 @@ public class QueryUtils {
      * @return Type name.
      */
     public static String typeName(String clsName) {
+        int genericStart = clsName.indexOf('`');  // .NET generic, not valid for Java class name.
+
+        if (genericStart >= 0)
+            clsName = clsName.substring(0, genericStart);
+
         int pkgEnd = clsName.lastIndexOf('.');
 
         if (pkgEnd >= 0 && pkgEnd < clsName.length() - 1)
@@ -1181,7 +1211,7 @@ public class QueryUtils {
      * @param ccfg Cache configuration.
      * @return {@code true} If query index must be enabled for this cache.
      */
-    public static boolean isEnabled(CacheConfiguration<?,?> ccfg) {
+    public static boolean isEnabled(CacheConfiguration<?, ?> ccfg) {
         return !F.isEmpty(ccfg.getIndexedTypes()) ||
             !F.isEmpty(ccfg.getQueryEntities());
     }
@@ -1603,6 +1633,27 @@ public class QueryUtils {
             qry.setTimeout(timeout, timeUnit);
 
         return qry;
+    }
+
+    /**
+     * @return {@code True} if output sensitive data allowed.
+     */
+    public static boolean includeSensitive() {
+        return INCLUDE_SENSITIVE || INCLUDE_SENSITIVE_TL.get();
+    }
+
+    /**
+     * Return space character as an SQL delimeter in case {@link #includeSensitive()} is {@code false}
+     * to make output SQL one line. Default multiline SQL output looks ugly in system view and other view tool.
+     * See, {@code GridSqlConst} and {@code IgniteH2Indexing#sqlWithoutConst()} for details.
+     *
+     * @return Delimeter to use.
+     */
+    public static char delimeter() {
+        if (!includeSensitive())
+            return SPACE_DELIM;
+
+        return DEFAULT_DELIM;
     }
 
     /**
