@@ -16,11 +16,6 @@
 */
 package org.apache.ignite.internal.processors.cache.persistence.db;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
-import java.nio.file.OpenOption;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -28,7 +23,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -45,11 +39,7 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -98,7 +88,7 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
-                .setFileIOFactory(new SlowCheckpointFileIOFactory())
+                .setFileIOFactory(new SlowCheckpointFileIOFactory(slowCheckpointEnabled, CHECKPOINT_PARK_NANOS))
                 .setCheckpointThreads(checkpointThreads)
                 .setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration()
@@ -342,54 +332,4 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
 
         log.unregisterListener(lsnr);
     }
-
-    /**
-     * Create File I/O that emulates poor checkpoint write speed.
-     */
-    private static class SlowCheckpointFileIOFactory implements FileIOFactory {
-        /** Serial version uid. */
-        private static final long serialVersionUID = 0L;
-
-        /** Delegate factory. */
-        private final FileIOFactory delegateFactory = new RandomAccessFileIOFactory();
-
-        /** {@inheritDoc} */
-        @Override public FileIO create(File file, OpenOption... openOption) throws IOException {
-            final FileIO delegate = delegateFactory.create(file, openOption);
-
-            return new FileIODecorator(delegate) {
-                @Override public int write(ByteBuffer srcBuf) throws IOException {
-                    parkIfNeeded();
-
-                    return delegate.write(srcBuf);
-                }
-
-                @Override public int write(ByteBuffer srcBuf, long position) throws IOException {
-                    parkIfNeeded();
-
-                    return delegate.write(srcBuf, position);
-                }
-
-                @Override public int write(byte[] buf, int off, int len) throws IOException {
-                    parkIfNeeded();
-
-                    return delegate.write(buf, off, len);
-                }
-
-                /**
-                 * Parks current checkpoint thread if slow mode is enabled.
-                 */
-                private void parkIfNeeded() {
-                    if (slowCheckpointEnabled.get() && Thread.currentThread().getName().contains("checkpoint"))
-                        LockSupport.parkNanos(CHECKPOINT_PARK_NANOS);
-                }
-
-                /** {@inheritDoc} */
-                @Override public MappedByteBuffer map(int sizeBytes) throws IOException {
-                    return delegate.map(sizeBytes);
-                }
-            };
-        }
-    }
-
 }
