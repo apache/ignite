@@ -22,11 +22,14 @@ import org.apache.ignite.internal.processors.query.calcite.logical.LogicalTestRu
 import org.junit.runner.RunWith;
 
 /**
+ * Test suite to run SQL test scripts.
  *
+ * Use {@link LogicalTestEnvironment#script()} property to specify one test script to debug run.
+ * e.g. script = "src/test/sql/aggregate/aggregates/test_aggr_string.test"
+ *
+ * Use other properties of the {@link LogicalTestEnvironment} to setup cluster and test environment.
  */
 @RunWith(LogicalTestRunner.class)
-@LogicalTestEnvironment(scriptsRoot = "src/test/sql"
-//    , script = "src/test/sql/aggregate/aggregates/test_aggr_string.test"
-)
+@LogicalTestEnvironment(scriptsRoot = "src/test/sql")
 public class LogicalTestSuite {
 }
