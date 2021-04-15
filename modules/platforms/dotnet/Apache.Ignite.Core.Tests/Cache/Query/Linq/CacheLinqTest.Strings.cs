@@ -42,6 +42,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
         /// Tests strings.
         /// </summary>
         [Test]
+        [SuppressMessage("ReSharper", "StringCompareIsCultureSpecific.2", Justification = "SQL")]
+        [SuppressMessage("ReSharper", "StringCompareIsCultureSpecific.3", Justification = "SQL")]
         public void TestStrings()
         {
             var strings = GetSecondPersonCache().AsCacheQueryable().Select(x => x.Value.Name);
@@ -174,6 +176,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             CheckWhereFunc(x => string.Compare(null, null, false) < 0, strings);
             CheckWhereFunc(x => string.Compare(null, null, false) > 0, strings);
 
+            // ReSharper disable once ReturnValueOfPureMethodIsNotUsed (force LINQ evaluation)
             Assert.Throws<NotSupportedException>(
                 () => strings.Where(x => string.Compare(x, "person_1300", x.StartsWith("Person")) == 0).ToArray(),
                 "Parameter 'ignoreCase' from 'string.Compare' method should be specified as a constant expression");
