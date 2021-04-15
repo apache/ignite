@@ -28,8 +28,8 @@
         <property name="pluginProviders">
             <list>
         {% for plugin in config.plugins %}
-            {% import plugin['template_path'] as plugin_template -%}
-            {{ plugin_template(plugin['config'], config) }}
+            {% import plugin.template_path as plugin_template -%}
+            {{ plugin_template.apply(config, plugin) }}
         {% endfor %}
             </list>
         </property>
@@ -39,8 +39,8 @@
 {% macro ext_beans(config) %}
     {% if config.ext_beans %}
         {% for ext_bean in config.ext_beans %}
-            {% import ext_bean['template_path'] as bean_template -%}
-            {{ bean_template(ext_bean['config'], config) }}
+            {% import ext_bean.template_path as bean_template -%}
+            {{ bean_template.apply(config, ext_bean) }}
         {% endfor %}
     {% endif %}
 {% endmacro %}

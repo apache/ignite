@@ -30,5 +30,5 @@ class ClientConnectorConfiguration(NamedTuple):
     port: int = 10800
     ssl_enabled: bool = False
     use_ignite_ssl_context_factory: bool = True
-    ssl_client_auth: bool = True
+    ssl_client_auth: bool = False
     ssl_params: SslParams = None
