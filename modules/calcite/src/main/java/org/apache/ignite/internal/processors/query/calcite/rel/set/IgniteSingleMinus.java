@@ -37,7 +37,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
- *
+ * Physical node for MINUS (EXCEPT) operator which inputs satisfy SINGLE distribution.
  */
 public class IgniteSingleMinus extends IgniteMinusBase {
     /** {@inheritDoc} */

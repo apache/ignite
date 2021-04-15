@@ -41,7 +41,7 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
- *
+ * Physical node for MAP phase of MINUS (EXCEPT) operator.
  */
 public class IgniteMapMinus extends IgniteMinusBase {
     /** */

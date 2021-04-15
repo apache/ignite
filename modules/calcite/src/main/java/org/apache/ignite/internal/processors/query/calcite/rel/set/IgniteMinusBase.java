@@ -37,7 +37,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.TraitsAwareIgni
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
- * Base class for physical MINUS set op.
+ * Base class for physical MINUS (EXCEPT) set op.
  */
 public abstract class IgniteMinusBase extends Minus implements TraitsAwareIgniteRel {
     /** */

@@ -32,7 +32,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.GroupKey
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
- *
+ * Execution node for MINUS (EXCEPT) operator.
  */
 public class MinusNode<Row> extends AbstractNode<Row> {
     /** */

@@ -117,7 +117,7 @@ public class IgniteMdRowCount extends RelMdRowCount {
     }
 
     /**
-     *
+     * Estimation of row count for MINUS (EXCEPT) operator.
      */
     public double getRowCount(IgniteMinusBase rel, RelMetadataQuery mq) {
         return rel.estimateRowCount(mq);

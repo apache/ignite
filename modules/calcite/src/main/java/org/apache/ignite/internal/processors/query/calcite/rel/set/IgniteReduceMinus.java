@@ -38,7 +38,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
- *
+ * Physical node for REDUCE phase of MINUS (EXCEPT) operator.
  */
 public class IgniteReduceMinus extends IgniteMinusBase {
     /** Count of inputs of corresponding map rel node. */

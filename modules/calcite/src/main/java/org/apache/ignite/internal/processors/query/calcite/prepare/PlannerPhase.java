@@ -138,6 +138,7 @@ public enum PlannerPhase {
                                 .anyInputs()).toRule(),
 
                     CoreRules.UNION_MERGE,
+                    CoreRules.MINUS_MERGE,
                     CoreRules.UNION_REMOVE,
                     CoreRules.JOIN_COMMUTE,
                     CoreRules.AGGREGATE_REMOVE,

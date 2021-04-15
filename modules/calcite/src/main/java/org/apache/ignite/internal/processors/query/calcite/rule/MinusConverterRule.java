@@ -34,7 +34,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteSingleM
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 
 /**
- * Minus operation converter rule.
+ * MINUS (EXCEPT) operation converter rule.
  */
 public class MinusConverterRule {
     /** */

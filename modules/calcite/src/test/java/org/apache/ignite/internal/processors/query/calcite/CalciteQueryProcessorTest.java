@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import javax.cache.Cache;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.util.ImmutableIntList;
@@ -461,6 +462,25 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange(true, true, null);
     }
 
+    /** Copy cache with it's content to new replicated cache. */
+    private void copyCacheAsReplicated(String cacheName) throws InterruptedException {
+        IgniteCache<Object, Object> cache = client.cache(cacheName);
+
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<Object, Object>(
+            cache.getConfiguration(CacheConfiguration.class));
+
+        ccfg.setName(cacheName + "Replicated");
+        ccfg.setCacheMode(CacheMode.REPLICATED);
+        ccfg.getQueryEntities().forEach(qe -> qe.setTableName(qe.getTableName() + "_repl"));
+
+        IgniteCache<Object, Object> replCache = client.getOrCreateCache(ccfg);
+
+        for (Cache.Entry<?, ?> entry : cache)
+            replCache.put(entry.getKey(), entry.getValue());
+
+        awaitPartitionMapExchange(true, true, null);
+    }
+
     /** */
     @Test
     public void testEqConditionWithDistinctSubquery() throws Exception {
@@ -601,38 +621,88 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     public void testExcept() throws Exception {
         populateTables();
 
-        List<List<?>> rows = sql(
-            "SELECT name FROM Orders EXCEPT SELECT name from Account");
+        List<List<?>> rows = sql("SELECT name FROM Orders EXCEPT SELECT name from Account");
 
         assertEquals(1, rows.size());
+        assertEquals("Igor", rows.get(0).get(0));
     }
 
     /** */
     @Test
-    public void testExcept() throws Exception {
+    public void testExceptSeveralColumns() throws Exception {
         populateTables();
 
-        List<List<?>> rows;
-
-/*
-        rows = sql(
-            "SELECT avg(salary) FROM (SELECT name, avg(salary) as salary FROM Orders GROUP BY name UNION ALL SELECT name, salary FROM Account)");
-*/
-
-        rows = sql(
-            "SELECT name FROM Orders EXCEPT SELECT name from Account");
-
-        assertEquals(1, rows.size());
-
-        rows = sql(
-            "SELECT name FROM Orders EXCEPT ALL SELECT name from Account");
+        List<List<?>> rows = sql("SELECT name, salary FROM Orders EXCEPT SELECT name, salary from Account");
 
         assertEquals(4, rows.size());
+        assertEquals(3, F.size(rows, r -> r.get(0).equals("Igor")));
+        assertEquals(1, F.size(rows, r -> r.get(0).equals("Roman")));
+    }
 
-        rows = sql(
-            "SELECT name FROM Orders EXCEPT (SELECT name FROM Orders EXCEPT SELECT name from Account)");
+    /** */
+    @Test
+    public void testExceptAll() throws Exception {
+        populateTables();
+
+        List<List<?>> rows = sql("SELECT name FROM Orders EXCEPT ALL SELECT name from Account");
+
+        assertEquals(4, rows.size());
+        assertEquals(3, F.size(rows, r -> r.get(0).equals("Igor")));
+        assertEquals(1, F.size(rows, r -> r.get(0).equals("Igor1")));
+    }
+
+    /** */
+    @Test
+    public void testExceptNested() throws Exception {
+        populateTables();
+
+        List<List<?>> rows =
+            sql("SELECT name FROM Orders EXCEPT (SELECT name FROM Orders EXCEPT SELECT name from Account)");
 
         assertEquals(2, rows.size());
+        assertEquals(1, F.size(rows, r -> r.get(0).equals("Roman")));
+        assertEquals(1, F.size(rows, r -> r.get(0).equals("Igor1")));
+    }
+
+    /** */
+    @Test
+    public void testExceptReplicatedWithPartitioned() throws Exception {
+        populateTables();
+        copyCacheAsReplicated("orders");
+
+        List<List<?>> rows = sql("SELECT name FROM Orders_repl EXCEPT ALL SELECT name from Account");
+
+        assertEquals(4, rows.size());
+        assertEquals(3, F.size(rows, r -> r.get(0).equals("Igor")));
+        assertEquals(1, F.size(rows, r -> r.get(0).equals("Igor1")));
+    }
+
+    /** */
+    @Test
+    public void testExceptReplicated() throws Exception {
+        populateTables();
+        copyCacheAsReplicated("orders");
+        copyCacheAsReplicated("account");
+
+        List<List<?>> rows = sql("SELECT name FROM Orders_repl EXCEPT ALL SELECT name from Account_repl");
+
+        assertEquals(4, rows.size());
+        assertEquals(3, F.size(rows, r -> r.get(0).equals("Igor")));
+        assertEquals(1, F.size(rows, r -> r.get(0).equals("Igor1")));
+    }
+
+    /** */
+    @Test
+    public void testExceptMerge() throws Exception {
+        populateTables();
+        copyCacheAsReplicated("orders");
+
+        List<List<?>> rows = sql("SELECT name FROM Orders_repl EXCEPT ALL SELECT name FROM Account EXCEPT ALL " +
+            "SELECT name FROM orders WHERE salary < 11");
+
+        assertEquals(3, rows.size());
+        assertEquals(2, F.size(rows, r -> r.get(0).equals("Igor")));
+        assertEquals(1, F.size(rows, r -> r.get(0).equals("Igor1")));
     }
 
     /**
