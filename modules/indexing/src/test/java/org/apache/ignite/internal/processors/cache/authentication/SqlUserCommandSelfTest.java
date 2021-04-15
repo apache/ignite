@@ -24,17 +24,17 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.authentication.IgniteAccessControlException;
 import org.apache.ignite.internal.processors.authentication.UserManagementException;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.authenticate;
 import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.withSecurityContext;
-import static org.apache.ignite.internal.processors.authentication.User.DFAULT_USER_NAME;
+import static org.apache.ignite.internal.processors.authentication.User.DEFAULT_USER_NAME;
 
 /**
  * Test for leaks JdbcConnection on SqlFieldsQuery execute.
@@ -75,7 +75,7 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
 
         grid(0).cluster().active(true);
 
-        secCtxDflt = authenticate(grid(0), DFAULT_USER_NAME, "ignite");
+        secCtxDflt = authenticate(grid(0), DEFAULT_USER_NAME, "ignite");
 
         assertNotNull(secCtxDflt);
     }
@@ -165,22 +165,22 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
                 userSql(idx, null, "CREATE USER test WITH PASSWORD 'test'");
 
                 return null;
-            }, IgniteAccessControlException.class,
-                "User management operations initiated on behalf of the Ignite node are not expected.");
+            }, SecurityException.class,
+                "User management operations initiated on behalf of the Ignite node are not supported");
 
             GridTestUtils.assertThrowsAnyCause(log, () -> {
                 userSql(idx, null, "ALTER USER test WITH PASSWORD 'test'");
 
                 return null;
-            }, IgniteAccessControlException.class,
-                "User management operations initiated on behalf of the Ignite node are not expected.");
+            }, SecurityException.class,
+                "User management operations initiated on behalf of the Ignite node are not supported");
 
             GridTestUtils.assertThrowsAnyCause(log, () -> {
                 userSql(idx, null, "DROP USER test");
 
                 return null;
-            }, IgniteAccessControlException.class,
-                "User management operations initiated on behalf of the Ignite node are not expected.");
+            }, SecurityException.class,
+                "User management operations initiated on behalf of the Ignite node are not supported");
         }
     }
 
@@ -200,19 +200,19 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
                 userSql(idx, secCtx, "CREATE USER test WITH PASSWORD 'test'");
 
                 return null;
-            }, IgniteAccessControlException.class, "User management operations are not allowed for user");
+            }, SecurityException.class, "User management operations are not allowed for user");
 
             GridTestUtils.assertThrowsAnyCause(log, () -> {
                 userSql(idx, secCtx, "ALTER USER test WITH PASSWORD 'test'");
 
                 return null;
-            }, IgniteAccessControlException.class, "User management operations are not allowed for user");
+            }, SecurityException.class, "User management operations are not allowed for user");
 
             GridTestUtils.assertThrowsAnyCause(log, () -> {
                 userSql(idx, secCtx, "DROP USER test");
 
                 return null;
-            }, IgniteAccessControlException.class, "User management operations are not allowed for user");
+            }, SecurityException.class, "User management operations are not allowed for user");
         }
     }
 
@@ -230,7 +230,7 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
 
                     return null;
                 }
-            }, IgniteAccessControlException.class, "Default user cannot be removed");
+            }, SecurityException.class, "Default user cannot be removed");
         }
     }
 

@@ -37,7 +37,7 @@ import static org.apache.ignite.internal.processors.authentication.Authenticatio
 import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.authenticate;
 import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.createUser;
 import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.dropUser;
-import static org.apache.ignite.internal.processors.authentication.User.DFAULT_USER_NAME;
+import static org.apache.ignite.internal.processors.authentication.User.DEFAULT_USER_NAME;
 
 /**
  * Test for {@link IgniteAuthenticationProcessor} on unstable topology.
@@ -97,7 +97,7 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
 
         grid(0).cluster().active(true);
 
-        secCtxDflt = authenticate(grid(0), DFAULT_USER_NAME, "ignite");
+        secCtxDflt = authenticate(grid(0), DEFAULT_USER_NAME, "ignite");
 
         assertNotNull(secCtxDflt);
     }

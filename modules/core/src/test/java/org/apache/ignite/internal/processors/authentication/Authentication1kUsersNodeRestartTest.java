@@ -33,7 +33,7 @@ import org.junit.Test;
 import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.alterUserPassword;
 import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.authenticate;
 import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.createUser;
-import static org.apache.ignite.internal.processors.authentication.User.DFAULT_USER_NAME;
+import static org.apache.ignite.internal.processors.authentication.User.DEFAULT_USER_NAME;
 
 /**
  * Test for {@link IgniteAuthenticationProcessor} on unstable topology.
@@ -93,7 +93,7 @@ public class Authentication1kUsersNodeRestartTest extends GridCommonAbstractTest
 
         srv.cluster().active(true);
 
-        SecurityContext secCtxDflt = authenticate(srv, DFAULT_USER_NAME, "ignite");
+        SecurityContext secCtxDflt = authenticate(srv, DEFAULT_USER_NAME, "ignite");
 
         IntStream.range(0, USERS_COUNT).parallel().forEach(i -> {
             try {

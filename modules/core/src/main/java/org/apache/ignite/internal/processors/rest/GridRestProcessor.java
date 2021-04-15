@@ -68,6 +68,7 @@ import org.apache.ignite.internal.processors.rest.request.GridRestNodeStateBefor
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestTaskRequest;
 import org.apache.ignite.internal.processors.rest.request.RestQueryRequest;
+import org.apache.ignite.internal.processors.rest.request.RestUserActionRequest;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
@@ -99,6 +100,9 @@ import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_ILLEGAL_ARGUMENT;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SECURITY_CHECK_FAILED;
+import static org.apache.ignite.plugin.security.SecurityPermission.ALTER_USER;
+import static org.apache.ignite.plugin.security.SecurityPermission.CREATE_USER;
+import static org.apache.ignite.plugin.security.SecurityPermission.DROP_USER;
 import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_CLIENT;
 
 /**
@@ -901,6 +905,24 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
 
                 break;
 
+            case ADD_USER:
+                name = ((RestUserActionRequest)req).user();
+                perm = CREATE_USER;
+
+                break;
+
+            case UPDATE_USER:
+                name = ((RestUserActionRequest)req).user();
+                perm = ALTER_USER;
+
+                break;
+
+            case REMOVE_USER:
+                name = ((RestUserActionRequest)req).user();
+                perm = DROP_USER;
+
+                break;
+
             case DATA_REGION_METRICS:
             case DATA_STORAGE_METRICS:
             case CACHE_METRICS:
@@ -920,9 +942,6 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
             case BASELINE_CURRENT_STATE:
             case CLUSTER_STATE:
             case AUTHENTICATE:
-            case ADD_USER:
-            case REMOVE_USER:
-            case UPDATE_USER:
                 break;
 
             default:

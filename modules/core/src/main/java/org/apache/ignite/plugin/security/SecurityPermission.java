@@ -85,7 +85,16 @@ public enum SecurityPermission {
     ADMIN_WRITE_DISTRIBUTED_PROPERTY,
 
     /** Administration operation with cluster snapshots (create, cancel, check). */
-    ADMIN_SNAPSHOT;
+    ADMIN_SNAPSHOT,
+
+    /** User creation permission. */
+    CREATE_USER,
+
+    /** User alteration permission. */
+    ALTER_USER,
+
+    /** User drop permission. */
+    DROP_USER;
 
     /** Enumerated values. */
     private static final SecurityPermission[] VALS = values();

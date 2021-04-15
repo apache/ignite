@@ -35,13 +35,18 @@ import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
+import org.apache.ignite.plugin.security.SecurityException;
+import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecuritySubject;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.commons.lang3.StringUtils.repeat;
-import static org.apache.ignite.internal.processors.authentication.User.DFAULT_USER_NAME;
+import static org.apache.ignite.internal.processors.authentication.User.DEFAULT_USER_NAME;
+import static org.apache.ignite.plugin.security.SecurityPermission.ALTER_USER;
+import static org.apache.ignite.plugin.security.SecurityPermission.CREATE_USER;
+import static org.apache.ignite.plugin.security.SecurityPermission.DROP_USER;
 import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_CLIENT;
 
 /**
@@ -114,7 +119,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
 
         grid(0).cluster().active(true);
 
-        secCtxDflt = authenticate(grid(0), DFAULT_USER_NAME, "ignite");
+        secCtxDflt = authenticate(grid(0), DEFAULT_USER_NAME, "ignite");
 
         assertNotNull(secCtxDflt);
     }
@@ -164,14 +169,10 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
     @Test
     public void testRemoveDefault() throws Exception {
         for (int i = 0; i < NODES_COUNT; ++i) {
-            final int nodeIdx = i;
+            IgniteEx srv = grid(i);
 
-            IgniteEx srv = grid(nodeIdx);
-
-            assertThrows(() -> dropUser(srv, secCtxDflt, "ignite"),
-                IgniteAccessControlException.class, "Default user cannot be removed");
-
-            assertNotNull(authenticate(srv, "ignite", "ignite"));
+            assertThrows(() -> authorizeUserOperation(srv, secCtxDflt, DEFAULT_USER_NAME, DROP_USER),
+                SecurityException.class, "Default user cannot be removed");
         }
     }
 
@@ -187,18 +188,18 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < NODES_COUNT; ++i) {
             IgniteEx srv = grid(i);
 
-            assertThrows(() -> createUser(srv, secCtx, "test1", "test1"), IgniteAccessControlException.class,
+            assertThrows(() -> authorizeUserOperation(srv, secCtx, "test1", CREATE_USER), SecurityException.class,
                 "User management operations are not allowed for user");
 
-            assertThrows(() -> dropUser(srv, secCtx, "test"), IgniteAccessControlException.class,
+            assertThrows(() -> authorizeUserOperation(srv, secCtx, "test", DROP_USER), SecurityException.class,
                 "User management operations are not allowed for user");
 
-            alterUserPassword(srv, secCtx, "test", "new_password");
+            authorizeUserOperation(srv, secCtx, "test", ALTER_USER);
 
-            alterUserPassword(srv, secCtx, "test", "test");
+            authorizeUserOperation(srv, secCtx, "test", ALTER_USER);
 
-            assertThrows(() -> dropUser(srv, null, "test"), IgniteAccessControlException.class,
-                "User management operations initiated on behalf of the Ignite node are not expected.");
+            assertThrows(() -> authorizeUserOperation(srv, null, "test", DROP_USER), SecurityException.class,
+                "User management operations initiated on behalf of the Ignite node are not supported");
         }
     }
 
@@ -535,20 +536,21 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
         withSecurityContext(ignite, secCtx, ign -> ign.context().security().dropUser(login));
     }
 
+    /** Authorizes user management operation. */
+    private void authorizeUserOperation(IgniteEx ignite, SecurityContext secCtx, String login, SecurityPermission perm)
+        throws IgniteCheckedException {
+        withSecurityContext(ignite, secCtx, ign -> ign.context().security().authorize(login, perm));
+    }
+
     /**
      * @param ignite Ignite instance to perform the operation on.
      * @param secCtx Security context in which operation will be executed.
      * @param op Operation to execute.
      */
-    public static void withSecurityContext(
-        IgniteEx ignite,
-        SecurityContext secCtx,
-        IgniteThrowableConsumer<IgniteEx> op
-    ) throws IgniteCheckedException {
-        IgniteSecurity security = ignite.context().security();
-
+    public static void withSecurityContext(IgniteEx ignite, SecurityContext secCtx, IgniteThrowableConsumer<IgniteEx> op)
+        throws IgniteCheckedException {
         if (secCtx != null) {
-            try (OperationSecurityContext ignored = security.withContext(secCtx)) {
+            try (OperationSecurityContext ignored = ignite.context().security().withContext(secCtx)) {
                 op.accept(ignite);
             }
         }

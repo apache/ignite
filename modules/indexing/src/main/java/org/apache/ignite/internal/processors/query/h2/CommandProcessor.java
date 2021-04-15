@@ -137,6 +137,9 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEna
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.txStart;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser.PARAM_WRAP_VALUE;
+import static org.apache.ignite.plugin.security.SecurityPermission.ALTER_USER;
+import static org.apache.ignite.plugin.security.SecurityPermission.CREATE_USER;
+import static org.apache.ignite.plugin.security.SecurityPermission.DROP_USER;
 
 /**
  * Processor responsible for execution of all non-SELECT and non-DML commands.
@@ -658,15 +661,21 @@ public class CommandProcessor {
             else if (cmd instanceof SqlCreateUserCommand) {
                 SqlCreateUserCommand addCmd = (SqlCreateUserCommand)cmd;
 
+                ctx.security().authorize(addCmd.userName(), CREATE_USER);
+
                 ctx.security().createUser(addCmd.userName(), addCmd.userOptions());
             }
             else if (cmd instanceof SqlAlterUserCommand) {
                 SqlAlterUserCommand altCmd = (SqlAlterUserCommand)cmd;
 
+                ctx.security().authorize(altCmd.userName(), ALTER_USER);
+
                 ctx.security().alterUser(altCmd.userName(), altCmd.userOptions());
             }
             else if (cmd instanceof SqlDropUserCommand) {
                 SqlDropUserCommand dropCmd = (SqlDropUserCommand)cmd;
+
+                ctx.security().authorize(dropCmd.userName(), DROP_USER);
 
                 ctx.security().dropUser(dropCmd.userName());
             }
