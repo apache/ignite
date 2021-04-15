@@ -261,6 +261,7 @@ public class LogicalTestRunner extends Runner {
 
             U.dumpThreads(log);
 
+            // Try to interrupt runner several times for case when InterruptedException is handled invalid.
             for (int i = 0; i < 100 && runner.isAlive(); ++i) {
                 U.interrupt(runner);
 
