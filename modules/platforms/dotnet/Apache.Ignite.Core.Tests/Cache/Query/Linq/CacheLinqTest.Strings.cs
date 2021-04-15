@@ -28,6 +28,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Text.RegularExpressions;
     using Apache.Ignite.Linq;
