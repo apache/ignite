@@ -184,7 +184,7 @@ public class LogicalTestRunner extends Runner {
         String dirName = test.getParent().toString().substring(scriptsRoot.toString().length() + 1);
         String fileName = test.getFileName().toString();
 
-        if (!fileName.endsWith("test") && fileName.endsWith("test_slow"))
+        if (!fileName.endsWith("test") && !fileName.endsWith("test_slow"))
             return;
 
         Description desc = Description.createTestDescription(dirName, fileName);

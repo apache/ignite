@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -98,6 +99,24 @@ public class ScriptTestRunner {
         }
         finally {
             script.close();
+        }
+    }
+
+    /** */
+    private List<List<?>> sql(String sql) {
+        if (!loopVars.isEmpty()) {
+            for (Map.Entry<String, Integer> loopVar : loopVars.entrySet())
+                sql = sql.replaceAll("\\$\\{" + loopVar.getKey() + "\\}", loopVar.getValue().toString());
+        }
+
+        log.info("Execute: " + sql);
+
+        List<FieldsQueryCursor<List<?>>> curs = engine.query(null, schemaPublic, sql);
+
+        assert curs.size() == 1 : "Unexpected results [cursorsCount=" + curs.size() + ']';
+
+        try (QueryCursor<List<?>> cur = curs.get(0)) {
+            return cur.getAll();
         }
     }
 
@@ -328,23 +347,15 @@ public class ScriptTestRunner {
                     continue;
                 }
 
-                log.info("Execute: " + qry);
-
                 try {
-                    List<FieldsQueryCursor<List<?>>> curs = engine.query(null, schemaPublic, qry);
-
-                    assert curs.size() == 1 : "Unexpected results [cursorsCount=" + curs.size() + ']';
-
-                    try (QueryCursor<List<?>> cur = curs.get(0)) {
-                        cur.getAll();
-                    }
+                    sql(qry);
 
                     if (expected != ExpectedStatementStatus.OK)
-                        throw new IgniteException("Error expected at: " + posDesc + ". Statement: " + toString());
+                        throw new IgniteException("Error expected at: " + posDesc + ". Statement: " + this);
                 }
                 catch (Throwable e) {
                     if (expected != ExpectedStatementStatus.ERROR)
-                        throw new IgniteException("Error at: " + posDesc + ". Statement: " + toString(), e);
+                        throw new IgniteException("Error at: " + posDesc + ". Statement: " + this, e);
                 }
             }
         }
@@ -477,18 +488,10 @@ public class ScriptTestRunner {
 
         /** {@inheritDoc} */
         @Override void execute() {
-            log.info("Execute: " + sql);
-
             try {
-                List<FieldsQueryCursor<List<?>>> curs = engine.query(null, schemaPublic, sql.toString());
+                List<List<?>> res = sql(sql.toString());
 
-                assert curs.size() == 1 : "Unexpected results [cursorsCount=" + curs.size() + ']';
-
-                try (QueryCursor<List<?>> cur = curs.get(0)) {
-                    List<List<?>> res = cur.getAll();
-
-                    checkResult(res);
-                }
+                checkResult(res);
             }
             catch (IgniteSQLException e) {
                 throw new IgniteException("Error at: " + posDesc + ". sql: " + sql, e);
