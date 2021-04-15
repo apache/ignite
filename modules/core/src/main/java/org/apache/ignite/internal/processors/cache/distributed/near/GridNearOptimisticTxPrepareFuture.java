@@ -282,7 +282,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         Throwable err0 = err;
 
         if ((!tx.onePhaseCommit() || tx.mappings().get(cctx.localNodeId()) == null) &&
-                (err0 == null || tx.needCheckBackup()))
+            (err0 == null || tx.needCheckBackup()))
             tx.state(PREPARED);
 
         if (super.onDone(tx, err0)) {

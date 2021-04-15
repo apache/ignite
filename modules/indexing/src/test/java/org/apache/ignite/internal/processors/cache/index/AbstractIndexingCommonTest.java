@@ -27,6 +27,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
@@ -35,6 +36,7 @@ import org.apache.ignite.internal.processors.query.h2.H2PooledConnection;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexOperationCancellationToken;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
@@ -146,22 +148,23 @@ public class AbstractIndexingCommonTest extends GridCommonAbstractTest {
      * <p>
      * Blocks the indexes rebuilding until unblocked via {@link #stopBlock(String)}.
      */
-    public static class BlockingIndexing extends IgniteH2Indexing {
+    public static class BlockingIndexesRebuildTask extends IndexesRebuildTask {
         /** */
         private final Map<String, CountDownLatch> latches = new ConcurrentHashMap<>();
 
         /** {@inheritDoc} */
-        @Override protected void rebuildIndexesFromHash0(
+        @Override protected void startRebuild(
             GridCacheContext cctx,
+            GridFutureAdapter<Void> rebuildIdxFut,
             SchemaIndexCacheVisitorClosure clo,
-            GridFutureAdapter<Void> rebuildIdxFut
+            SchemaIndexOperationCancellationToken cancel
         ) {
             CountDownLatch startThread = new CountDownLatch(1);
 
             new Thread(() -> {
                 startThread.countDown();
 
-                new SchemaIndexCacheVisitorImpl(cctx, null, rebuildIdxFut) {
+                new SchemaIndexCacheVisitorImpl(cctx, cancel, rebuildIdxFut) {
                     /** {@inheritDoc} */
                     @Override protected void beforeExecute() {
                         String cacheName = cctx.name();

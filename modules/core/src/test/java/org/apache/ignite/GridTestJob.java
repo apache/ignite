@@ -58,7 +58,7 @@ public class GridTestJob extends ComputeJobAdapter {
         if (latch != null) {
             try {
                 latch.await();
-            } catch (InterruptedException e) {
+            } catch (InterruptedException ignore) {
                 // Nothing to do
             }
         }

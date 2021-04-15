@@ -334,7 +334,7 @@ public class SecurityUtils {
                     GridInternalWrapper.class.getMethod(mtd.getName(), mtd.getParameterTypes()) != null)
                     return mtd.invoke(original, args);
             }
-            catch (NoSuchMethodException e) {
+            catch (NoSuchMethodException ignore) {
                 // Ignore.
             }
 

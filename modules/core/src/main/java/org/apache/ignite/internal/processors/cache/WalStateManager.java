@@ -204,27 +204,29 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         synchronized (mux) {
             // Process top pending requests.
             for (CacheGroupDescriptor grpDesc : cacheProcessor().cacheGroupDescriptors().values()) {
-                WalStateProposeMessage msg = grpDesc.nextWalChangeRequest();
+                CacheGroupContext cctx = cacheProcessor().cacheGroup(grpDesc.groupId());
 
-                if (msg != null) {
-                    if (log.isDebugEnabled())
-                        log.debug("Processing WAL state message on start: " + msg);
+                if (cctx != null)
+                    cctx.globalWalEnabled(grpDesc.walEnabled());
 
-                    boolean enabled = grpDesc.walEnabled();
+                for (WalStateProposeMessage msg : grpDesc.walChangeRequests()) {
+                    if (msg != null) {
+                        if (log.isDebugEnabled())
+                            log.debug("Processing WAL state message on start: " + msg);
 
-                    WalStateResult res;
+                        boolean enabled = grpDesc.walEnabled();
 
-                    if (F.eq(enabled, msg.enable()))
-                        res = new WalStateResult(msg, false);
-                    else {
-                        res = new WalStateResult(msg, true);
+                        WalStateResult res;
 
-                        grpDesc.walEnabled(!enabled);
+                        if (F.eq(enabled, msg.enable()))
+                            res = new WalStateResult(msg, false);
+                        else
+                            res = new WalStateResult(msg, true);
+
+                        initialRess.add(res);
+
+                        addResult(res);
                     }
-
-                    initialRess.add(res);
-
-                    addResult(res);
                 }
             }
         }
@@ -241,8 +243,18 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             return;
 
         synchronized (mux) {
-            for (WalStateResult res : initialRess)
+            for (WalStateResult res : initialRess) {
                 onCompletedLocally(res);
+
+                if (res.changed()) {
+                    WalStateProposeMessage propMsg = res.message();
+
+                    CacheGroupContext grpCtx = cctx.cache().cacheGroup(propMsg.groupId());
+
+                    if (grpCtx != null)
+                        grpCtx.globalWalEnabled(propMsg.enable());
+                }
+            }
 
             initialRess.clear();
         }

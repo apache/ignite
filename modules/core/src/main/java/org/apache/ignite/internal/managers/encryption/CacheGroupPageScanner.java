@@ -39,6 +39,7 @@ import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
@@ -150,12 +151,14 @@ public class CacheGroupPageScanner implements CheckpointListener {
 
                 try {
                     for (GroupScanTask grpScanTask : completeCandidates) {
-                        grps.remove(grpScanTask.groupId());
+                        grps.remove(grpScanTask.group().groupId());
 
                         grpScanTask.onDone();
 
-                        if (log.isInfoEnabled())
-                            log.info("Cache group reencryption is finished [grpId=" + grpScanTask.groupId() + "]");
+                        if (log.isInfoEnabled()) {
+                            log.info("Cache group reencryption is finished [grp=" +
+                                grpScanTask.group().cacheOrGroupName() + "]");
+                        }
                     }
 
                     if (!grps.isEmpty())
@@ -191,6 +194,8 @@ public class CacheGroupPageScanner implements CheckpointListener {
             return new GridFinishedFuture<>();
         }
 
+        GroupScanTask grpScanTask = new GroupScanTask(grp);
+
         lock.lock();
 
         try {
@@ -209,39 +214,36 @@ public class CacheGroupPageScanner implements CheckpointListener {
                 return prevState;
             }
 
-            Set<Integer> parts = new HashSet<>();
-            long[] pagesLeft = new long[1];
+            grps.put(grpId, grpScanTask);
+        } finally {
+            lock.unlock();
+        }
 
-            forEachPageStore(grp, new IgniteInClosureX<Integer>() {
+        singleExecSvc.submit(() -> schedule0(grpScanTask));
+
+        return grpScanTask;
+    }
+
+    /**
+     * @param grpScanTask Cache group scan task.
+     */
+    private void schedule0(GroupScanTask grpScanTask) {
+        try {
+            forEachPageStore(grpScanTask.group(), new IgniteInClosureX<Integer>() {
                 @Override public void applyx(Integer partId) {
-                    long encState = ctx.encryption().getEncryptionState(grpId, partId);
+                    long encState = ctx.encryption().getEncryptionState(grpScanTask.group().groupId(), partId);
 
-                    if (encState == 0) {
-                        if (log.isDebugEnabled())
-                            log.debug("Skipping partition reencryption [grp=" + grpId + ", p=" + partId + "]");
-
-                        return;
-                    }
-
-                    parts.add(partId);
-
-                    pagesLeft[0] += (ReencryptStateUtils.pageCount(encState) - ReencryptStateUtils.pageIndex(encState));
+                    if (encState != 0)
+                        grpScanTask.addPartition(partId, encState);
                 }
             });
 
-            GroupScanTask grpScan = new GroupScanTask(grp, parts, pagesLeft[0]);
-
-            singleExecSvc.submit(grpScan);
-
             if (log.isInfoEnabled())
-                log.info("Scheduled reencryption [grpId=" + grpId + "]");
+                log.info("Scheduled reencryption [grp=" + grpScanTask.group().cacheOrGroupName() + "]");
 
-            grps.put(grpId, grpScan);
-
-            return grpScan;
-        }
-        finally {
-            lock.unlock();
+            grpScanTask.checkComplete();
+        } catch (IgniteCheckedException e) {
+            grpScanTask.onDone(e);
         }
     }
 
@@ -288,6 +290,17 @@ public class CacheGroupPageScanner implements CheckpointListener {
             return false;
 
         return grpScanTask.excludePartition(partId);
+    }
+
+    /**
+     * @param grpId Cache group ID.
+     * @param partId Partition ID.
+     */
+    public void includePartition(int grpId, int partId) {
+        GroupScanTask grpScanTask = grps.get(grpId);
+
+        if (grpScanTask != null)
+            grpScanTask.schedulePending(partId);
     }
 
     /**
@@ -385,28 +398,40 @@ public class CacheGroupPageScanner implements CheckpointListener {
     /**
      * Cache group partition scanning task.
      */
-    private class GroupScanTask extends GridFutureAdapter<Void> implements Runnable {
+    private class GroupScanTask extends GridFutureAdapter<Void> {
         /** Cache group ID. */
         private final CacheGroupContext grp;
 
-        /** Partition IDs. */
-        private final Set<Integer> parts;
+        /** Partitions to reencrypt. */
+        private final Set<Integer> parts = new GridConcurrentHashSet<>();
 
         /** Page memory. */
         private final PageMemoryEx pageMem;
 
         /** Total memory pages left for reencryption. */
-        private final AtomicLong remainingPagesCntr;
+        private final AtomicLong remainingPagesCntr = new AtomicLong();
 
         /**
          * @param grp Cache group.
          */
-        public GroupScanTask(CacheGroupContext grp, Set<Integer> parts, long remainingPagesCnt) {
+        public GroupScanTask(CacheGroupContext grp) {
             this.grp = grp;
-            this.parts = new GridConcurrentHashSet<>(parts);
 
-            remainingPagesCntr = new AtomicLong(remainingPagesCnt);
             pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
+        }
+
+        /**
+         * Schedule partition re-encryption.
+         *
+         * @param partId Partition ID.
+         * @param state Reencryption status.
+         */
+        public synchronized void addPartition(int partId, long state) {
+            remainingPagesCntr.addAndGet(ReencryptStateUtils.pageCount(state) - ReencryptStateUtils.pageIndex(state));
+
+            parts.add(partId);
+
+            schedulePartitionScan(partId);
         }
 
         /** {@inheritDoc} */
@@ -421,18 +446,36 @@ public class CacheGroupPageScanner implements CheckpointListener {
          * @return {@code True} if reencryption was cancelled.
          */
         public synchronized boolean excludePartition(int partId) {
-            long state = ctx.encryption().getEncryptionState(groupId(), partId);
+            if (!parts.remove(partId))
+                return false;
 
-            remainingPagesCntr.addAndGet(ReencryptStateUtils.pageIndex(state) - ReencryptStateUtils.pageCount(state));
+            long state = ctx.encryption().getEncryptionState(grp.groupId(), partId);
 
-            return parts.remove(partId);
+            long pagesLeft = remainingPagesCntr.addAndGet(
+                ReencryptStateUtils.pageIndex(state) - ReencryptStateUtils.pageCount(state));
+
+            if (pagesLeft == 0)
+                checkComplete();
+
+            return true;
         }
 
         /**
-         * @return Cache group ID.
+         * @param partId Partition ID.
          */
-        public int groupId() {
-            return grp.groupId();
+        public synchronized void schedulePending(int partId) {
+            if (isDone())
+                return;
+
+            if (parts.contains(partId))
+                schedulePartitionScan(partId);
+        }
+
+        /**
+         * @return Cache group context.
+         */
+        public CacheGroupContext group() {
+            return grp;
         }
 
         /**
@@ -442,74 +485,91 @@ public class CacheGroupPageScanner implements CheckpointListener {
             return remainingPagesCntr.get();
         }
 
-        /** {@inheritDoc} */
-        @Override public void run() {
-            try {
-                for (int partId : parts) {
-                    long state = ctx.encryption().getEncryptionState(grp.groupId(), partId);
+        /**
+         * @param partId Partition ID.
+         */
+        private void schedulePartitionScan(int partId) {
+            singleExecSvc.submit(() -> scanPartition(partId));
+        }
 
-                    if (state == 0)
-                        continue;
-
-                    scanPartition(partId, ReencryptStateUtils.pageIndex(state), ReencryptStateUtils.pageCount(state));
-
-                    if (isDone())
-                        return;
-                }
-
-                boolean added = cpWaitGrps.add(this);
-
-                assert added;
-            }
-            catch (Throwable t) {
-                if (X.hasCause(t, NodeStoppingException.class))
-                    onCancelled();
-                else
-                    onDone(t);
-            }
+        /**
+         * Check the completeness of the cache group scan.
+         */
+        private synchronized void checkComplete() {
+            if (!isDone() && parts.isEmpty() && !cpWaitGrps.contains(this))
+                cpWaitGrps.add(this);
         }
 
         /**
          * @param partId Partition ID.
-         * @param off Start page offset.
-         * @param cnt Count of pages to scan.
+         * @return {@code True} if partition has been evicted.
          */
-        private void scanPartition(int partId, int off, int cnt) throws IgniteCheckedException {
+        private boolean evicted(int partId) {
+            if (partId == PageIdAllocator.INDEX_PARTITION)
+                return false;
+
+            return !parts.contains(partId) ||
+                grp.topology().localPartition(partId).state() == GridDhtPartitionState.EVICTED;
+        }
+
+        /**
+         * @param partId Partition ID.
+         */
+        private void scanPartition(int partId) {
+            long state = ctx.encryption().getEncryptionState(grp.groupId(), partId);
+
+            int off = ReencryptStateUtils.pageIndex(state);
+            int cnt = ReencryptStateUtils.pageCount(state);
+
             if (log.isDebugEnabled()) {
                 log.debug("Partition reencryption is started [grpId=" + grp.groupId() +
                     ", p=" + partId + ", remain=" + (cnt - off) + ", total=" + cnt + "]");
             }
 
-            while (off < cnt) {
-                int pagesCnt = Math.min(batchSize, cnt - off);
+            try {
+                while (off < cnt) {
+                    int pagesCnt = Math.min(batchSize, cnt - off);
 
-                limiter.acquire(pagesCnt);
+                    limiter.acquire(pagesCnt);
 
-                synchronized (this) {
-                    if (isDone() || !parts.contains(partId))
-                        break;
+                    synchronized (this) {
+                        if (isDone())
+                            return;
 
-                    ctx.cache().context().database().checkpointReadLock();
+                        ctx.cache().context().database().checkpointReadLock();
 
-                    try {
-                        off += scanPages(partId, off, pagesCnt);
+                        try {
+                            if (evicted(partId))
+                                return;
+
+                            off += scanPages(partId, off, pagesCnt);
+                        }
+                        finally {
+                            ctx.cache().context().database().checkpointReadUnlock();
+                        }
                     }
-                    finally {
-                        ctx.cache().context().database().checkpointReadUnlock();
-                    }
+
+                    remainingPagesCntr.addAndGet(-pagesCnt);
+
+                    ctx.encryption().setEncryptionState(grp, partId, off, cnt);
                 }
 
-                remainingPagesCntr.addAndGet(-pagesCnt);
+                parts.remove(partId);
+            } catch (Throwable t) {
+                if (X.hasCause(t, NodeStoppingException.class))
+                    onCancelled();
+                else
+                    onDone(t);
+            } finally {
+                checkComplete();
 
-                ctx.encryption().setEncryptionState(grp, partId, off, cnt);
-            }
-
-            if (log.isDebugEnabled()) {
-                log.debug("Partition reencryption is finished " +
-                    "[grpId=" + grp.groupId() +
-                    ", p=" + partId +
-                    ", remain=" + (cnt - off) +
-                    ", total=" + cnt + "]");
+                if (log.isDebugEnabled()) {
+                    log.debug("Partition reencryption is finished " +
+                        "[grpId=" + grp.groupId() +
+                        ", p=" + partId +
+                        ", remain=" + (cnt - off) +
+                        ", total=" + cnt + "]");
+                }
             }
         }
 
