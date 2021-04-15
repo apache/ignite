@@ -82,7 +82,7 @@ public class WALRecordsConsumer<K, V> {
      */
     public <T extends WALRecord> boolean onRecords(Iterator<T> recs) {
         recs = F.iterator(recs, r -> r, true, r -> {
-            System.out.println(r.type());
+            //System.out.println(r.type());
 
             return r.type() == WALRecord.RecordType.DATA_RECORD_V2;
         });

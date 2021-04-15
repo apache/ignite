@@ -242,43 +242,6 @@ public class CDCSelfTest extends GridCommonAbstractTest {
             assertTrue(keys.contains(i));
     }
 
-    @Test
-    public void testMe() throws Exception {
-        List<String> files = Arrays.asList(
-            "/Users/sbt-izhikov-nv/work/ignite/work/db/wal/cdc/8d79730e_4b3a_4db7_8a6f_9c01000c47c6/0000000000000004.wal"
-/*
-            , "/Users/sbt-izhikov-nv/work/ignite/work/db/wal/cdc/8d79730e_4b3a_4db7_8a6f_9c01000c47c6/0000000000000003.wal"
-            , "/Users/sbt-izhikov-nv/work/ignite/work/db/wal/cdc/8d79730e_4b3a_4db7_8a6f_9c01000c47c6/0000000000000002.wal"
-            , "/Users/sbt-izhikov-nv/work/ignite/work/db/wal/cdc/8d79730e_4b3a_4db7_8a6f_9c01000c47c6/0000000000000001.wal"
-*/
-        );
-
-        for (String path : files) {
-            System.out.println("============================================ " + path);
-
-            File seg = new File(path);
-
-            assertTrue(seg.exists());
-
-            IgniteWalIteratorFactory.IteratorParametersBuilder builder = new IgniteWalIteratorFactory.IteratorParametersBuilder()
-                .log(log)
-                .binaryMetadataFileStoreDir(null)
-                .marshallerMappingFileStoreDir(null)
-                .keepBinary(true)
-                .filesOrDirs(seg);
-
-            IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log);
-
-            try (WALIterator it = factory.iterator(builder)) {
-                System.out.println(it.getClass());
-
-                while (it.hasNext()) {
-                    System.out.println(it.next().get2().type());
-                }
-            }
-        }
-    }
-
     /** */
     @Test
     public void testReadAfterNodeStop() throws Exception {

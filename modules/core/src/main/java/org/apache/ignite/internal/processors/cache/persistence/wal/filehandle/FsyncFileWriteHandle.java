@@ -284,7 +284,7 @@ class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle
             rec.position(ptr);
 
             if (head.compareAndSet(h, rec)) {
-                System.out.println("FileWriteAheadLogManager.log - " + rec.type() + ", " + ptr.index());
+                //System.out.println("FileWriteAheadLogManager.log - " + rec.type() + ", " + ptr.index() + ", " + ptr.fileOffset());
 
                 return ptr;
             }

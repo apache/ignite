@@ -54,7 +54,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -673,18 +672,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         stopAutoRollover();
 
-        boolean archiveLast = dsCfg.isCdcEnabled() && archiver != null && cctx.kernalContext().isStopping();
-
         try {
-            FileWriteHandle hnd = fileHandleManager.onDeactivate(archiveLast);
-
-            if (archiveLast) {
-                if (switchSegmentRecordOffset != null) {
-                    int idx = (int)(hnd.getSegmentId() % dsCfg.getWalSegments());
-
-                    switchSegmentRecordOffset.set(idx, hnd.getSwitchSegmentRecordOffset());
-                }
-            }
+            fileHandleManager.onDeactivate();
         }
         catch (Exception e) {
             U.error(log, "Failed to gracefully close WAL segment: " + currHnd, e);
@@ -693,23 +682,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         segmentAware.interrupt();
 
         try {
-            if (archiver != null) {
+            if (archiver != null)
                 archiver.shutdown();
-
-                if (archiveLast) {
-                    long from = segmentAware.lastArchivedAbsoluteIndex() + 1;
-                    long to = segmentAware.curAbsWalIdx();
-
-                    for (long i = from; i <= to; i++) {
-                        try {
-                            archiver.archiveSegment(i);
-                        }
-                        catch (StorageException e) {
-                            throw new IgniteException(e);
-                        }
-                    }
-                }
-            }
 
             if (compressor != null)
                 compressor.shutdown();
@@ -1442,8 +1416,15 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 FileWriteHandle hnd = fileHandleManager.initHandle(fileIO, off + len, ser);
 
-                if (lastReadPtr != null && switchSegmentRecReached)
+                if (lastReadPtr != null && switchSegmentRecReached) {
+                    if (switchSegmentRecordOffset != null) {
+                        int idx = (int)(hnd.getSegmentId() % dsCfg.getWalSegments());
+
+                        switchSegmentRecordOffset.set(idx, lastReadPtr.fileOffset());
+                    }
+
                     hnd = initNextWriteHandle(hnd);
+                }
 
                 segmentAware.curAbsWalIdx(hnd.getSegmentId());
 
@@ -2060,10 +2041,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             assert switchSegmentRecordOffset != null;
 
             long offs = switchSegmentRecordOffset.getAndSet((int)segIdx, 0);
-
-            assert offs > 0;
-
             long origLen = origFile.length();
+
+            System.out.println("FileArchiver.archiveSegment - " + absIdx + ", offs = " + offs + ", origLen = " + origLen);
+            Thread.dumpStack();
 
             long reservedSize = offs > 0 && offs < origLen ? offs : origLen;
             segmentAware.addReservedWalArchiveSize(reservedSize);
