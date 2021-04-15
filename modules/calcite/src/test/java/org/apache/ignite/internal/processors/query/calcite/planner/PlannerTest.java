@@ -1955,7 +1955,7 @@ public class PlannerTest extends AbstractPlannerTest {
             sqlNode = planner.validate(sqlNode);
 
             // Convert to Relational operators graph
-            rel = planner.convert(sqlNode);
+            rel = planner.rel(sqlNode).rel;
 
             rel = planner.transform(PlannerPhase.HEURISTIC_OPTIMIZATION, rel.getTraitSet(), rel);
 

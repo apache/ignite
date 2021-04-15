@@ -41,6 +41,8 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.hint.Hintable;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlExplain;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlNode;
@@ -49,6 +51,7 @@ import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.ValidationException;
+import org.apache.calcite.util.Pair;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -100,6 +103,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.QueryTemplate
 import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ValidationResult;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTraitDef;
@@ -602,7 +606,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             // Convert to Relational operators graph
             RelRoot root = planner.rel(sqlNode);
 
-            RelNode rel = root.project();
+            RelNode rel = root.rel;
 
             if (rel instanceof Hintable)
                 planner.setDisabledRules(HintUtils.disabledRules((Hintable)rel));
@@ -616,7 +620,19 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 .replace(root.collation == null ? RelCollations.EMPTY : root.collation)
                 .simplify();
 
-            return planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
+            IgniteRel igniteRel = planner.transform(PlannerPhase.OPTIMIZATION, desired, rel);
+
+            if (!root.isRefTrivial()) {
+                final List<RexNode> projects = new ArrayList<>();
+                final RexBuilder rexBuilder = igniteRel.getCluster().getRexBuilder();
+
+                for (int field : Pair.left(root.fields))
+                    projects.add(rexBuilder.makeInputRef(igniteRel, field));
+
+                igniteRel = new IgniteProject(igniteRel.getCluster(), desired, igniteRel, projects, root.validatedRowType);
+            }
+
+            return igniteRel;
         }
         catch (Throwable ex) {
             log.error("Unexpected error at query optimizer.", ex);
