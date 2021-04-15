@@ -358,27 +358,33 @@ namespace Apache.Ignite.Linq.Impl
         /// <param name="visitor"></param>
         private static void VisitStringCompare(MethodCallExpression expression, CacheQueryExpressionVisitor visitor, bool ignoreCase)
         {
+            // Ex: nvl2(?, casewhen(_T0.NAME = ?, 0, casewhen(_T0.NAME >= ?, 1, -1)), 1)
             visitor.ResultBuilder.Append("nvl2(");
             visitor.Visit(expression.Arguments[1]);
-            visitor.ResultBuilder.Append(", ");
-            visitor.ResultBuilder.Append("casewhen(");
-            if (ignoreCase) visitor.ResultBuilder.Append("lower(");
-            visitor.Visit(expression.Arguments[0]);
-            if (ignoreCase) visitor.ResultBuilder.Append(")");
+            visitor.ResultBuilder.Append(", casewhen(");
+            VisitArg(visitor, expression, 0, ignoreCase);
             visitor.ResultBuilder.Append(" = ");
-            if (ignoreCase) visitor.ResultBuilder.Append("lower(");
-            visitor.Visit(expression.Arguments[1]);
-            if (ignoreCase) visitor.ResultBuilder.Append(")");
+            VisitArg(visitor, expression, 1, ignoreCase);
             visitor.ResultBuilder.Append(", 0, casewhen(");
-            if (ignoreCase) visitor.ResultBuilder.Append("lower(");
-            visitor.Visit(expression.Arguments[0]);
-            if (ignoreCase) visitor.ResultBuilder.Append(")");
+            VisitArg(visitor, expression, 0, ignoreCase);
             visitor.ResultBuilder.Append(" >= ");
-            if (ignoreCase) visitor.ResultBuilder.Append("lower(");
-            visitor.Visit(expression.Arguments[1]);
-            if (ignoreCase) visitor.ResultBuilder.Append(")");
-            visitor.ResultBuilder.Append(", 1, -1))");
-            visitor.ResultBuilder.Append(", 1)");
+            VisitArg(visitor, expression, 1, ignoreCase);
+            visitor.ResultBuilder.Append(", 1, -1)), 1)");
+        }
+
+        /// <summary>
+        /// Visits member expression argument.
+        /// </summary>
+        private static void VisitArg(CacheQueryExpressionVisitor visitor, MethodCallExpression expression, int idx,
+            bool lower)
+        {
+            if (lower)
+                visitor.ResultBuilder.Append("lower(");
+
+            visitor.Visit(expression.Arguments[idx]);
+
+            if (lower)
+                visitor.ResultBuilder.Append(")");
         }
 
         /// <summary>
