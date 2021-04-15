@@ -207,7 +207,7 @@ public class CacheIndexesForceRebuild extends AbstractCommand<CacheIndexesForceR
             IndexForceRebuildCommandArg arg = CommandArgUtils.of(nextArg, IndexForceRebuildCommandArg.class);
 
             if (arg == null)
-                throw new IllegalArgumentException("Unknown argument: " + arg.argName());
+                throw new IllegalArgumentException("Unknown argument: " + nextArg);
 
             switch (arg) {
                 case NODE_ID:
