@@ -107,7 +107,7 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
             if (!isLocked)
                 throw new IgniteException("tryLock should succeed or interrupted");
         }
-        catch (InterruptedException e) {
+        catch (InterruptedException ignore) {
             // This is expected.
         }
         finally {

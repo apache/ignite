@@ -70,45 +70,50 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     private final ArrayList<PerformanceStatisticsStateListener> lsnrs = new ArrayList<>();
 
     /** Rotate performance statistics process. */
-    private final DistributedProcess<Serializable, Serializable> rotateProc;
+    private DistributedProcess<Serializable, Serializable> rotateProc;
 
     /** @param ctx Kernal context. */
     public PerformanceStatisticsProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        ctx.internalSubscriptionProcessor().registerDistributedMetastorageListener(
-            new DistributedMetastorageLifecycleListener() {
-            @Override public void onReadyForRead(ReadableDistributedMetaStorage metastorage) {
-                metastorage.listen(PERF_STAT_KEY::equals, (key, oldVal, newVal) -> {
-                    // Skip history on local join.
-                    if (!ctx.discovery().localJoinFuture().isDone())
-                        return;
-
-                    onMetastorageUpdate((boolean)newVal);
-                });
-            }
-
-            @Override public void onReadyForWrite(DistributedMetaStorage metastorage) {
-                PerformanceStatisticsProcessor.this.metastorage = metastorage;
-
-                try {
-                    Boolean performanceStatsEnabled = metastorage.read(PERF_STAT_KEY);
-
-                    if (performanceStatsEnabled == null)
-                        return;
-
-                    onMetastorageUpdate(performanceStatsEnabled);
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-            }
-        });
-
         registerStateListener(() -> {
             if (U.isLocalNodeCoordinator(ctx.discovery()))
                 ctx.cache().cacheDescriptors().values().forEach(desc -> cacheStart(desc.cacheId(), desc.cacheName()));
         });
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start() throws IgniteCheckedException {
+        super.start();
+
+        ctx.internalSubscriptionProcessor().registerDistributedMetastorageListener(
+            new DistributedMetastorageLifecycleListener() {
+                @Override public void onReadyForRead(ReadableDistributedMetaStorage metastorage) {
+                    metastorage.listen(PERF_STAT_KEY::equals, (key, oldVal, newVal) -> {
+                        // Skip history on local join.
+                        if (!ctx.discovery().localJoinFuture().isDone())
+                            return;
+
+                        onMetastorageUpdate((boolean)newVal);
+                    });
+                }
+
+                @Override public void onReadyForWrite(DistributedMetaStorage metastorage) {
+                    PerformanceStatisticsProcessor.this.metastorage = metastorage;
+
+                    try {
+                        Boolean performanceStatsEnabled = metastorage.read(PERF_STAT_KEY);
+
+                        if (performanceStatsEnabled == null)
+                            return;
+
+                        onMetastorageUpdate(performanceStatsEnabled);
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+                }
+            });
 
         rotateProc = new DistributedProcess<>(ctx, PERFORMANCE_STATISTICS_ROTATE,
             req -> ctx.closure().callLocalSafe(() -> {
@@ -195,6 +200,64 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
      */
     public void job(IgniteUuid sesId, long queuedTime, long startTime, long duration, boolean timedOut) {
         write(writer -> writer.job(sesId, queuedTime, startTime, duration, timedOut));
+    }
+
+    /**
+     * @param beforeLockDuration Before lock duration.
+     * @param lockWaitDuration Lock wait duration.
+     * @param listenersExecDuration Listeners execute duration.
+     * @param markDuration Mark duration.
+     * @param lockHoldDuration Lock hold duration.
+     * @param pagesWriteDuration Pages write duration.
+     * @param fsyncDuration Fsync duration.
+     * @param walCpRecordFsyncDuration Wal cp record fsync duration.
+     * @param writeCpEntryDuration Write checkpoint entry duration.
+     * @param splitAndSortCpPagesDuration Split and sort cp pages duration.
+     * @param totalDuration Total duration in milliseconds.
+     * @param cpStartTime Checkpoint start time in milliseconds.
+     * @param pagesSize Pages size.
+     * @param dataPagesWritten Data pages written.
+     * @param cowPagesWritten Cow pages written.
+     */
+    public void checkpoint(
+        long beforeLockDuration,
+        long lockWaitDuration,
+        long listenersExecDuration,
+        long markDuration,
+        long lockHoldDuration,
+        long pagesWriteDuration,
+        long fsyncDuration,
+        long walCpRecordFsyncDuration,
+        long writeCpEntryDuration,
+        long splitAndSortCpPagesDuration,
+        long totalDuration,
+        long cpStartTime,
+        int pagesSize,
+        int dataPagesWritten,
+        int cowPagesWritten
+    ) {
+        write(writer -> writer.checkpoint(beforeLockDuration,
+            lockWaitDuration,
+            listenersExecDuration,
+            markDuration,
+            lockHoldDuration,
+            pagesWriteDuration, fsyncDuration,
+            walCpRecordFsyncDuration,
+            writeCpEntryDuration,
+            splitAndSortCpPagesDuration,
+            totalDuration,
+            cpStartTime,
+            pagesSize,
+            dataPagesWritten,
+            cowPagesWritten));
+    }
+
+    /**
+     * @param endTime End time in milliseconds.
+     * @param duration Duration in milliseconds.
+     */
+    public void pagesWriteThrottle(long endTime, long duration) {
+        write(writer -> writer.pagesWriteThrottle(endTime, duration));
     }
 
     /**

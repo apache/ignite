@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetrics
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressImpl;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
@@ -76,8 +77,15 @@ public class IgniteThrottlingUnitTest {
 
         IgniteConfiguration cfg = new IgniteConfiguration().setMetricExporterSpi(new NoopMetricExporterSpi());
 
+        GridTestKernalContext ctx = new GridTestKernalContext(new GridTestLog4jLogger(), cfg);
+
+        ctx.add(new GridMetricManager(ctx));
+        ctx.add(new PerformanceStatisticsProcessor(ctx));
+
         DataRegionMetricsImpl metrics = new DataRegionMetricsImpl(new DataRegionConfiguration(),
-            new GridMetricManager(new GridTestKernalContext(new GridTestLog4jLogger(), cfg)), NO_OP_METRICS);
+            ctx.metric(),
+            ctx.performanceStatistics(),
+            NO_OP_METRICS);
 
         when(pageMemory2g.metrics()).thenReturn(metrics);
     }

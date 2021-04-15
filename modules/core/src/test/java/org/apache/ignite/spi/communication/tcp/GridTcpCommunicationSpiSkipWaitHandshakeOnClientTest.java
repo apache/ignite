@@ -113,7 +113,7 @@ public class GridTcpCommunicationSpiSkipWaitHandshakeOnClientTest extends GridCo
             try {
                 startGrid(0);
             }
-            catch (Exception e) {
+            catch (Exception ignore) {
                 // Noop
             }
         }).start();
