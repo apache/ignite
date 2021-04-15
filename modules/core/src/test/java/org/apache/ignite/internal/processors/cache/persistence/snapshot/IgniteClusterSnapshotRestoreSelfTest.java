@@ -23,7 +23,11 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.function.IntSupplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -115,6 +119,66 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
             .setIndexes(Arrays.asList(new QueryIndex("id"), new QueryIndex("name")));
     }
 
+    /** @throws Exception If failed. */
+    @Test
+    public void testBasicClusterSnapshotRestore() throws Exception {
+        int keysCnt = 10_000;
+
+        IgniteEx client = startGridsWithSnapshot(2, keysCnt, true);
+
+        grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(dfltCacheCfg.getName())).get(TIMEOUT);
+
+        IgniteCache<Object, Object> cache = client.cache(dfltCacheCfg.getName());
+
+        assertTrue(cache.indexReadyFuture().isDone());
+
+        checkCacheKeys(cache, keysCnt);
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testStartClusterSnapshotRestoreMultipleThreadsSameNode() throws Exception {
+        checkStartClusterSnapshotRestoreMultithreaded(() -> 0);
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testStartClusterSnapshotRestoreMultipleThreadsDiffNode() throws Exception {
+        AtomicInteger nodeIdx = new AtomicInteger();
+
+        checkStartClusterSnapshotRestoreMultithreaded(nodeIdx::getAndIncrement);
+    }
+
+    /**
+     * @param nodeIdxSupplier Ignite node index supplier.
+     */
+    public void checkStartClusterSnapshotRestoreMultithreaded(IntSupplier nodeIdxSupplier) throws Exception {
+        startGridsWithSnapshot(2, CACHE_KEYS_RANGE);
+
+        CountDownLatch startLatch = new CountDownLatch(1);
+        AtomicInteger successCnt = new AtomicInteger();
+
+        IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(() -> {
+            try {
+                startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS);
+
+                grid(nodeIdxSupplier.getAsInt()).snapshot().restoreSnapshot(
+                    SNAPSHOT_NAME, Collections.singleton(dfltCacheCfg.getName())).get(TIMEOUT);
+
+                successCnt.incrementAndGet();
+            }
+            catch (Exception ignore) {
+                // Expected exception.
+            }
+        }, 2, "runner");
+
+        startLatch.countDown();
+
+        fut.get(TIMEOUT);
+
+        assertEquals(1, successCnt.get());
+    }
+
     /**
      * Ensures that the cache doesn't start if one of the baseline nodes fails.
      *
@@ -142,22 +206,6 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
         GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), ClusterTopologyCheckedException.class, null);
 
         ensureCacheDirEmpty(dfltCacheCfg);
-    }
-
-    /** @throws Exception If failed. */
-    @Test
-    public void testBasicClusterSnapshotRestore() throws Exception {
-        int keysCnt = 10_000;
-
-        IgniteEx ignite = startGridsWithSnapshot(2, keysCnt, true);
-
-        grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(dfltCacheCfg.getName())).get(TIMEOUT);
-
-        IgniteCache<Object, Object> cache = ignite.cache(dfltCacheCfg.getName());
-
-        assertTrue(cache.indexReadyFuture().isDone());
-
-        checkCacheKeys(cache, keysCnt);
     }
 
     /** @throws Exception If failed. */

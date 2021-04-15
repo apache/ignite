@@ -211,8 +211,8 @@ public class SnapshotRestoreProcess {
                 }
 
                 if (!reqGrpIds.isEmpty()) {
-                    finishProcess(fut0.rqId, new IllegalArgumentException(OP_REJECT_MSG + "Cache group(s) was not found in the " +
-                        "snapshot [groups=" + reqGrpIds.values() + ", snapshot=" + snpName + ']'));
+                    finishProcess(fut0.rqId, new IllegalArgumentException(OP_REJECT_MSG + "Cache group(s) was not " +
+                        "found in the snapshot [groups=" + reqGrpIds.values() + ", snapshot=" + snpName + ']'));
 
                     return;
                 }
@@ -658,7 +658,7 @@ public class SnapshotRestoreProcess {
 
         assert opCtx0 != null || failure != null : "Context has not been created on the node " + ctx.localNodeId();
 
-        if (opCtx0 == null) {
+        if (opCtx0 == null || !reqId.equals(opCtx0.reqId)) {
             finishProcess(reqId, failure);
 
             return;
