@@ -153,7 +153,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
      * @param nodeIdxSupplier Ignite node index supplier.
      */
     public void checkStartClusterSnapshotRestoreMultithreaded(IntSupplier nodeIdxSupplier) throws Exception {
-        startGridsWithSnapshot(2, CACHE_KEYS_RANGE);
+        Ignite ignite = startGridsWithSnapshot(2, CACHE_KEYS_RANGE);
 
         CountDownLatch startLatch = new CountDownLatch(1);
         AtomicInteger successCnt = new AtomicInteger();
@@ -177,6 +177,36 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
         fut.get(TIMEOUT);
 
         assertEquals(1, successCnt.get());
+
+        checkCacheKeys(ignite.cache(dfltCacheCfg.getName()), CACHE_KEYS_RANGE);
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testCreateSnapshotDuringRestore() throws Exception {
+        Ignite ignite = startGridsWithSnapshot(2, CACHE_KEYS_RANGE);
+
+        BlockingCustomMessageDiscoverySpi discoSpi = discoSpi(grid(0));
+
+        discoSpi.block((msg) -> msg instanceof DynamicCacheChangeBatch);
+
+        IgniteFuture<Void> fut =
+            ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(dfltCacheCfg.getName()));
+
+        discoSpi.waitBlocked(TIMEOUT);
+
+        GridTestUtils.assertThrowsAnyCause(
+            log,
+            () -> grid(1).snapshot().createSnapshot("NEW_SNAPSHOT").get(TIMEOUT),
+            IgniteException.class,
+            "Cache group restore operation is currently in progress."
+        );
+
+        discoSpi.unblock();
+
+        fut.get(TIMEOUT);
+
+        checkCacheKeys(ignite.cache(dfltCacheCfg.getName()), CACHE_KEYS_RANGE);
     }
 
     /**
@@ -485,57 +515,47 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
     /** @throws Exception If failed. */
     @Test
     public void testNodeFail() throws Exception {
-        checkTopologyChange(true);
-    }
-
-    /** @throws Exception If failed. */
-    @Test
-    public void testNodeJoin() throws Exception {
-        checkTopologyChange(false);
-    }
-
-    /**
-     * @param stopNode {@code True} to check node fail, {@code False} to check node join.
-     * @throws Exception if failed.
-     */
-    private void checkTopologyChange(boolean stopNode) throws Exception {
-        int keysCnt = 10_000;
-
-        IgniteEx ignite = startGridsWithSnapshot(4, keysCnt);
+        startGridsWithSnapshot(4, CACHE_KEYS_RANGE);
 
         TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(3));
 
         IgniteFuture<Void> fut = waitForBlockOnRestore(spi, RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE, dfltCacheCfg.getName());
 
-        if (stopNode) {
-            IgniteInternalFuture<?> fut0 = runAsync(() -> stopGrid(3, true));
-
-            GridTestUtils.assertThrowsAnyCause(
-                log,
-                () -> fut.get(TIMEOUT),
-                ClusterTopologyCheckedException.class,
-                "Required node has left the cluster"
-            );
-
-            fut0.get(TIMEOUT);
-
-            awaitPartitionMapExchange();
-
-            ensureCacheDirEmpty(dfltCacheCfg);
-
-            GridTestUtils.assertThrowsAnyCause(
-                log,
-                () -> startGrid(3),
-                IgniteSpiException.class,
-                "to add the node to cluster - remove directories with the caches"
-            );
-
-            return;
-        }
+        IgniteInternalFuture<?> fut0 = runAsync(() -> stopGrid(3, true));
 
         GridTestUtils.assertThrowsAnyCause(
             log,
-            () -> startGrid(4),
+            () -> fut.get(TIMEOUT),
+            ClusterTopologyCheckedException.class,
+            "Required node has left the cluster"
+        );
+
+        fut0.get(TIMEOUT);
+
+        awaitPartitionMapExchange();
+
+        ensureCacheDirEmpty(dfltCacheCfg);
+
+        GridTestUtils.assertThrowsAnyCause(
+            log,
+            () -> startGrid(3),
+            IgniteSpiException.class,
+            "to add the node to cluster - remove directories with the caches"
+        );
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testNodeJoin() throws Exception {
+        Ignite ignite = startGridsWithSnapshot(2, CACHE_KEYS_RANGE);
+
+        TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(1));
+
+        IgniteFuture<Void> fut = waitForBlockOnRestore(spi, RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE, dfltCacheCfg.getName());
+
+        GridTestUtils.assertThrowsAnyCause(
+            log,
+            () -> startGrid(2),
             IgniteSpiException.class,
             "Joining node during caches restore is not allowed"
         );
@@ -548,7 +568,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
 
         assertTrue(cache.indexReadyFuture().isDone());
 
-        checkCacheKeys(cache, keysCnt);
+        checkCacheKeys(cache, CACHE_KEYS_RANGE);
     }
 
     /**
