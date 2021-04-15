@@ -48,7 +48,7 @@ public interface AddLearnersRequest extends NetworkMessage, Serializable {
          * @param learners Learners.
          * @return The builder.
          */
-        Builder learners(List<Peer> learner);
+        Builder learners(List<Peer> learners);
 
         /**
          * @return The complete message.

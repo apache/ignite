@@ -52,12 +52,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-core</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>
         </dependency>

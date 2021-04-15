@@ -36,8 +36,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.jdkVersion;
 import static org.apache.ignite.internal.util.IgniteUtils.majorJavaVersion;
 
 /**
- * <p>Wrapper for the {@link sun.misc.Unsafe} class.</p>
- *
+ * Wrapper for the {@link sun.misc.Unsafe} class.
  * <p>
  * All memory access operations have the following properties:
  * <ul>
@@ -51,7 +50,6 @@ import static org.apache.ignite.internal.util.IgniteUtils.majorJavaVersion;
  * while native byte order is big-endian. So it is client code responsibility to check native byte order before
  * invoking these methods.</li>
  * </ul>
- * </p>
  */
 public abstract class GridUnsafe {
     /** */

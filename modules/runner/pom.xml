@@ -74,5 +74,18 @@
                 <filtering>true</filtering>
             </resource>
         </resources>
+
+        <plugins>
+            <!--
+                Include javadoc from generated sources
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <sourcepath>src/main/java:target/generated-sources/annotations</sourcepath>
+                </configuration>
+            </plugin>
+        </plugins>
     </build>
 </project>

@@ -24,8 +24,8 @@ import org.jetbrains.annotations.Nullable;
  * Represents a storage unit as entry with key, value and revision, where
  * <ul>
  *     <li>key - an unique entry's key. Keys are comparable in lexicographic manner.</li>
- *     <ul>value - a data which is associated with a key and represented as an array of bytes.</ul>
- *     <ul>revision - a number which denotes a version of whole meta storage. Each change increments the revision.</ul>
+ *     <li>value - a data which is associated with a key and represented as an array of bytes.</li>
+ *     <li>revision - a number which denotes a version of whole meta storage. Each change increments the revision.</li>
  * </ul>
  */
 public interface Entry {

@@ -25,7 +25,7 @@ import org.apache.ignite.table.mapper.Mappers;
  * <p>
  *
  * @param <R> Record type.
- * @apiNote 'Record class field' &gt;-&lt 'table column' mapping laid down in implementation.
+ * @apiNote 'Record class field' &gt;-&lt; 'table column' mapping laid down in implementation.
  * @apiNote Some methods require a record with the only key fields set. This is not mandatory requirement
  * and value fields will be just ignored.
  * @see Mappers

@@ -37,7 +37,7 @@ import static java.lang.annotation.RetentionPolicy.SOURCE;
  *
  * <h1 class="header">Example</h1>
  * Here is how to create a root configuration schema:
- * <pre name="code" class="java">
+ * <pre><code>
  * {@literal @}Config(value = "local", root = true)
  * public class LocalConfigurationSchema {
  *
@@ -50,7 +50,7 @@ import static java.lang.annotation.RetentionPolicy.SOURCE;
  *      {@literal @}ConfigValue
  *      private SomeOtherConfiguration someOther;
  * }
- * </pre>
+ * </code></pre>
  */
 @Target({ TYPE })
 @Retention(SOURCE)

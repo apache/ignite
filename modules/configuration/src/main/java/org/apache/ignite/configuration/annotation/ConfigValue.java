@@ -26,7 +26,7 @@ import static java.lang.annotation.RetentionPolicy.SOURCE;
 
 /**
  * This annotation marks configuration schema field as a configuration tree node.
- * <pre name="code" class="java">
+ * <pre><code>
  * {@literal @}Config
  * public class FooConfigurationSchema {
  *
@@ -34,7 +34,7 @@ import static java.lang.annotation.RetentionPolicy.SOURCE;
  *      private SomeOtherConfiguration someOther;
  *
  * }
- * </pre>
+ * </code></pre>
  */
 @Target({ FIELD })
 @Retention(SOURCE)

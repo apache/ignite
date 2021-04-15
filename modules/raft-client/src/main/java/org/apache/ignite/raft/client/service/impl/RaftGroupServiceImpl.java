@@ -96,7 +96,6 @@ public class RaftGroupServiceImpl implements RaftGroupService {
      * @param peers Initial group configuration.
      * @param refreshLeader {@code True} to synchronously refresh leader on service creation.
      * @param retryDelay Retry delay.
-     * @param executor Request executor.
      */
     public RaftGroupServiceImpl(
         String groupId,

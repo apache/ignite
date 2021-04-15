@@ -72,7 +72,7 @@ public class IgniteUtils {
 
     /**
      * Returns a capacity that is sufficient to keep the map from being resized as
-     * long as it grows no larger than expSize and the load factor is >= its
+     * long as it grows no larger than expSize and the load factor is &gt;= its
      * default (0.75).
      *
      * Copy pasted from guava. See com.google.common.collect.Maps#capacity(int)

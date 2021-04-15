@@ -29,7 +29,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * @param <K> Mapped key type.
  * @param <V> Mapped value type.
- * @apiNote 'Key/value class field' &gt;-&lt 'table column' mapping laid down in implementation.
+ * @apiNote 'Key/value class field' &gt;-&lt; 'table column' mapping laid down in implementation.
  * @see Mappers
  */
 public interface KeyValueView<K, V> {

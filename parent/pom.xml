@@ -78,15 +78,16 @@
         <!-- Plugins versions -->
         <apache.rat.plugin.version>0.13</apache.rat.plugin.version>
         <checkstyle.puppycrawl.version>8.37</checkstyle.puppycrawl.version>
-        <launch.mave.plugin.version>1.7.25</launch.mave.plugin.version>
+        <launch.maven.plugin.version>1.7.25</launch.maven.plugin.version>
         <maven.antrun.plugin.version>3.0.0</maven.antrun.plugin.version>
         <maven.assembly.plugin.version>3.2.0</maven.assembly.plugin.version>
-        <maven.build-helper.plugin.version>3.1.0</maven.build-helper.plugin.version>
+        <maven.build-helper.plugin.version>3.2.0</maven.build-helper.plugin.version>
         <maven.checkstyle.plugin.version>3.1.1</maven.checkstyle.plugin.version>
         <maven.compiler.plugin.version>3.8.1</maven.compiler.plugin.version>
         <maven.deploy.plugin.version>2.8.2</maven.deploy.plugin.version>
         <maven.failsafe.plugin.version>3.0.0-M5</maven.failsafe.plugin.version>
         <maven.flatten.plugin.version>1.2.2</maven.flatten.plugin.version>
+        <maven.javadoc.plugin.version>3.2.0</maven.javadoc.plugin.version>
         <maven.pmd.plugin.version>3.14.0</maven.pmd.plugin.version>
         <maven.source.plugin.version>3.2.1</maven.source.plugin.version>
         <maven.surefire.plugin.version>3.0.0-M5</maven.surefire.plugin.version>
@@ -308,10 +309,11 @@
         </dependencies>
     </dependencyManagement>
 
-    <!--
-        Profile to exclude running surefire (unit) tests but do not prevent running integration ones
-    -->
     <profiles>
+
+        <!--
+            Profile to exclude running surefire (unit) tests but do not prevent running integration ones
+        -->
         <profile>
             <activation>
                 <property>
@@ -329,6 +331,32 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+
+        <!--
+            Profile to exclude internal packages from Javadoc release build
+        -->
+        <profile>
+            <id>javadoc</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <configuration>
+                            <excludePackageNames>org.apache.ignite.internal.*:org.apache.ignite.configuration.internal:org.apache.ignite.configuration.internal.*:org.apache.ignite.configuration.processor.internal:org.apache.ignite.network.internal:org.apache.ignite.network.internal.*</excludePackageNames>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>    
         </profile>
     </profiles>
 
@@ -394,7 +422,7 @@
                 <plugin>
                     <groupId>com.akathist.maven.plugins.launch4j</groupId>
                     <artifactId>launch4j-maven-plugin</artifactId>
-                    <version>${launch.mave.plugin.version}</version>
+                    <version>${launch.maven.plugin.version}</version>
                 </plugin>
 
                 <plugin>
@@ -413,6 +441,12 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-pmd-plugin</artifactId>
                     <version>${maven.pmd.plugin.version}</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>${maven.javadoc.plugin.version}</version>
                 </plugin>
 
                 <plugin>
@@ -615,6 +649,92 @@
                     <rulesets>
                         <ruleset>${project.basedir}/check-rules/pmd-rules.xml</ruleset>
                     </rulesets>
+                </configuration>
+            </plugin>
+
+            <!--
+                Plugin to validate module javadoc
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <doctitle>Ignite ${project.version}</doctitle>
+                    <windowtitle>Ignite ${project.version}</windowtitle>
+                    <breakiterator>true</breakiterator>
+                    <verbose>true</verbose>
+                    <show>package</show>
+                    <use>true</use>
+                    <author>false</author>
+                    <version>false</version>
+                    <additionalJOptions>${javadoc.opts}</additionalJOptions>
+                    <excludePackageNames>com.facebook.presto.*</excludePackageNames>
+                    <links>
+                        <link>https://ignite.apache.org/releases/latest/javadoc/</link>
+                    </links>
+                    <tags>
+                        <tag>
+                            <name>apiNote</name>
+                            <placement>a</placement>
+                            <head>API Note:</head>
+                        </tag>
+                        <tag>
+                            <name>implSpec</name>
+                            <placement>a</placement>
+                            <head>Implementation Requirements:</head>
+                        </tag>
+                        <tag>
+                            <name>implNote</name>
+                            <placement>a</placement>
+                            <head>Implementation Note:</head>
+                        </tag>
+                    </tags>
+                    <bottom>
+                        <![CDATA[
+                            <table width="100%" border="0" cellspacing=0 cellpadding=0 style="padding: 5px">
+                            <tr>
+                                <td>
+                                    <table style="padding-left: 0; margin: 0">
+                                        <tbody style="padding: 0; margin: 0">
+                                            <tr style="padding: 0; margin: 0">
+                                                <td>
+                                                    <a target=_blank href="https://ignite.apache.org"><nobr>${current.year} Copyright &#169; Apache Software Foundation</nobr></a>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </td>
+                                <td width="100%" align="right" valign="center">
+                                    <a href="https://twitter.com/ApacheIgnite" class="twitter-follow-button" data-show-count="false" data-size="large">Follow @ApacheIgnite</a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="2" valign="top" align="left">
+                                    <table style="padding-left: 0; margin: 0">
+                                        <tbody style="padding: 0; margin: 0">
+                                            <tr style="padding: 0; margin: 0">
+                                                <td>
+                                                    <b>Ignite Database and Caching Platform</b>
+                                                </td>
+                                                <td>:&nbsp;&nbsp;
+                                                    ver. <strong>${project.version}</strong>
+                                                </td>
+                                            </tr>
+                                            <tr style="padding: 0; margin: 0">
+                                                <td>
+                                                    <b>Release Date</b>
+                                                </td>
+                                                <td>:&nbsp;&nbsp;
+                                                    ${maven.build.timestamp}
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </td>
+                            </tr>
+                            </table>
+                        ]]>
+                    </bottom>
                 </configuration>
             </plugin>
         </plugins>

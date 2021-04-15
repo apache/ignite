@@ -35,7 +35,7 @@ import org.apache.ignite.internal.tostring.S;
 
 /**
  * The registry of installed CLI or Ignite server modules.
- * Module from the the registry's point of view is a pair of (name -> [artifacts, cliArtifacts]).
+ * Module from the the registry's point of view is a pair of (name -&gt; [artifacts, cliArtifacts]).
  * Where:
  * <ul>
  *     <li>artifacts - is a list of Ignite server node artifacts, which will be used in classpath of any server node.</li>

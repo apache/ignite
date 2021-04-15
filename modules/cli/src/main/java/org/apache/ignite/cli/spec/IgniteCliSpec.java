@@ -71,7 +71,7 @@ public class IgniteCliSpec extends CommandSpec {
     }
 
     /**
-     * Init Ignite command line with needed look&feel options
+     * Init Ignite command line with needed look&amp;feel options
      * and loads external extensions if any exists.
      *
      * @param applicationCtx DI application context.

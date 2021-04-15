@@ -24,26 +24,31 @@ import java.nio.file.Path;
  * The main resolver of Ignite paths for the current installation (like bin, work and etc. dirs).
  * Current Ignite distributive has the following dirs structure:
  * <ul>
- *     <li>bin</li>
- *     <ul>
- *         <li>${version}</li>
- *         <ul>
- *             <li>cli</li>
- *             <li>libs</li>
- *         </ul>
- *     </ul>
- *     <li>work</li>
- *     <ul>
- *         <li>config</li>
- *         <ul>
- *             <li>default-config.xml</li>
- *         </ul>
- *         <li>cli</li>
- *         <ul>
- *             <li>pids</li>
- *         </ul>
- *         <li>modules.json</li>
- *     </ul>
+ *      <li>bin
+ *          <ul>
+ *              <li>${version}
+ *                  <ul>
+ *                      <li>cli</li>
+ *                      <li>libs</li>
+ *                  </ul>
+ *              </li>
+ *          </ul>
+ *     </li>
+ *     <li>work
+ *          <ul>
+ *              <li>config
+ *                  <ul>
+ *                      <li>default-config.xml</li>
+ *                  </ul>
+ *              </li>
+ *              <li>cli
+ *                  <ul>
+ *                      <li>pids</li>
+ *                  </ul>
+ *              </li>
+ *              <li>modules.json</li>
+ *          </ul>
+ *     </li>
  * </ul>
  */
 public class IgnitePaths {

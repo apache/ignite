@@ -36,7 +36,7 @@ public interface GetLeaderResponse extends NetworkMessage, Serializable {
          * @param leader Leader
          * @return The builder.
          */
-        Builder leader(Peer leaderId);
+        Builder leader(Peer leader);
 
         /**
          * @return The complete message.

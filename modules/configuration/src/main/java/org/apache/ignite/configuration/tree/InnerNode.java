@@ -28,8 +28,8 @@ public abstract class InnerNode implements TraversableTreeNode, ConstructableTre
 
     /**
      * Method with auto-generated implementation. Must look like this:
-     * <pre>{@code
-     * @Override public void traverseChildren(ConfigurationVisitor visitor) {
+     * <pre><code>
+     * {@literal @}Override public void traverseChildren(ConfigurationVisitor visitor) {
      *     visitor.visitInnerNode("pojoField1", this.pojoField1);
      *
      *     visitor.visitNamedListNode("pojoField2", this.pojoField2);
@@ -38,7 +38,7 @@ public abstract class InnerNode implements TraversableTreeNode, ConstructableTre
      *
      *     visitor.visitLeafNode("primitiveField2", this.primitiveField2);
      * }
-     * }</pre>
+     * </code></pre>
      *
      * Order of fields must be the same as they are described in configuration schema.
      *
@@ -48,8 +48,8 @@ public abstract class InnerNode implements TraversableTreeNode, ConstructableTre
 
     /**
      * Method with auto-generated implementation. Must look like this:
-     * <pre>{@code
-     * @Override public void traverseChild(String key, ConfigurationVisitor visitor) throws NoSuchElementException {
+     * <pre><code>
+     * {@literal @}Override public void traverseChild(String key, ConfigurationVisitor visitor) throws NoSuchElementException {
      *     switch (key) {
      *         case "pojoField1":
      *             visitor.visitInnerNode("pojoField1", this.pojoField1);
@@ -71,7 +71,7 @@ public abstract class InnerNode implements TraversableTreeNode, ConstructableTre
      *             throw new NoSuchElementException(key);
      *     }
      * }
-     * }</pre>
+     * </code></pre>
      *
      * @param key Name of the child.
      * @param visitor Configuration visitor.
@@ -81,12 +81,12 @@ public abstract class InnerNode implements TraversableTreeNode, ConstructableTre
 
     /**
      * Method with auto-generated implementation. Must look like this:
-     * <pre>{@code
-     * @Override public abstract void construct(String key, ConfigurationSource src) throws NoSuchElementException {
+     * <pre><code>
+     * {@literal @}Override public abstract void construct(String key, ConfigurationSource src) throws NoSuchElementException {
      *     switch (key) {
      *         case "namedList":
      *             if (src == null)
-     *                 namedList = new NamedListNode<>(Foo::new);
+     *                 namedList = new{@code NamedListNode<>}(Foo::new);
      *             else
      *                 src.descend(namedList = namedList.copy());
      *             break;
@@ -105,7 +105,7 @@ public abstract class InnerNode implements TraversableTreeNode, ConstructableTre
      *         default: throw new NoSuchElementException(key);
      *     }
      * }
-     * }</pre>
+     * </code></pre>
      * {@inheritDoc}
      */
     @Override public abstract void construct(String key, ConfigurationSource src) throws NoSuchElementException;

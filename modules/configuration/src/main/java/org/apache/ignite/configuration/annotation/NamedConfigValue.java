@@ -32,7 +32,7 @@ import static java.lang.annotation.RetentionPolicy.SOURCE;
  * Every field annotated with this annotation will produce a {@link NamedListConfiguration} field in generated configuration class.
  *
  * <h1 class="header">Example</h1>
- * <pre name="code" class="java">
+ * <pre><code>
  * {@literal @}Config(value = "local", root = true)
  * public class LocalConfigurationSchema {
  *
@@ -40,7 +40,7 @@ import static java.lang.annotation.RetentionPolicy.SOURCE;
  *      private SomeOtherConfiguration someOther;
  *
  * }
- * </pre>
+ * </code></pre>
  */
 @Target({ FIELD })
 @Retention(SOURCE)
