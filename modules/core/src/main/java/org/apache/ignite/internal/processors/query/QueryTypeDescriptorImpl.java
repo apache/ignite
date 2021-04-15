@@ -135,6 +135,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** Primary key fields. */
     private Set<String> pkFields;
 
+    /** */
+    private boolean implicitPk;
+
     /**
      * Constructor.
      *
@@ -745,5 +748,15 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** {@inheritDoc} */
     @Override public void primaryKeyFields(Set<String> keys) {
         pkFields = keys;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean implicitPk() {
+        return implicitPk;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void implicitPk(boolean implicitPk) {
+        this.implicitPk = implicitPk;
     }
 }

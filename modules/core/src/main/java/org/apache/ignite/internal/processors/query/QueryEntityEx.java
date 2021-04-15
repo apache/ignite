@@ -34,6 +34,9 @@ public class QueryEntityEx extends QueryEntity {
     /** Fields that must have non-null value. */
     private Set<String> notNullFields;
 
+    /** Whether a primary key should be autocreated or not. */
+    private boolean implicitPk;
+
     /**
      * Default constructor.
      */
@@ -53,6 +56,7 @@ public class QueryEntityEx extends QueryEntity {
             QueryEntityEx other0 = (QueryEntityEx)other;
 
             notNullFields = other0.notNullFields != null ? new HashSet<>(other0.notNullFields) : null;
+            implicitPk = other0.implicitPk;
         }
     }
 
@@ -68,6 +72,18 @@ public class QueryEntityEx extends QueryEntity {
         return this;
     }
 
+    /** */
+    public boolean implicitPk() {
+        return implicitPk;
+    }
+
+    /** */
+    public QueryEntity implicitPk(boolean implicitPk) {
+        this.implicitPk = implicitPk;
+
+        return this;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
@@ -78,7 +94,8 @@ public class QueryEntityEx extends QueryEntity {
 
         QueryEntityEx entity = (QueryEntityEx)o;
 
-        return super.equals(entity) && F.eq(notNullFields, entity.notNullFields);
+        return super.equals(entity) && F.eq(notNullFields, entity.notNullFields)
+            && implicitPk == entity.implicitPk;
     }
 
     /** {@inheritDoc} */
@@ -86,6 +103,7 @@ public class QueryEntityEx extends QueryEntity {
         int res = super.hashCode();
 
         res = 31 * res + (notNullFields != null ? notNullFields.hashCode() : 0);
+        res = 31 * res + (implicitPk ? 1 : 0);
 
         return res;
     }

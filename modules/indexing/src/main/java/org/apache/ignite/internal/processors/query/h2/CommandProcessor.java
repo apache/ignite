@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteDataStreamer;
@@ -135,6 +136,8 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEnabled;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.txStart;
+import static org.apache.ignite.internal.processors.query.QueryUtils.convert;
+import static org.apache.ignite.internal.processors.query.QueryUtils.isDdlOnSchemaSupported;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser.PARAM_WRAP_VALUE;
 
 /**
@@ -966,17 +969,6 @@ public class CommandProcessor {
     }
 
     /**
-     * Check if schema supports DDL statement.
-     *
-     * @param schemaName Schema name.
-     */
-    private static void isDdlOnSchemaSupported(String schemaName) {
-        if (F.eq(QueryUtils.SCHEMA_SYS, schemaName))
-            throw new IgniteSQLException("DDL statements are not supported on " + schemaName + " schema",
-                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-    }
-
-    /**
      * Check if table supports DDL statement.
      *
      * @param tbl Table.
@@ -1003,55 +995,6 @@ public class CommandProcessor {
             else
                 tx.rollback();
         }
-    }
-
-    /**
-     * @return {@link IgniteSQLException} with the message same as of {@code this}'s and
-     */
-    private IgniteSQLException convert(SchemaOperationException e) {
-        int sqlCode;
-
-        switch (e.code()) {
-            case SchemaOperationException.CODE_CACHE_NOT_FOUND:
-                sqlCode = IgniteQueryErrorCode.CACHE_NOT_FOUND;
-
-                break;
-
-            case SchemaOperationException.CODE_TABLE_NOT_FOUND:
-                sqlCode = IgniteQueryErrorCode.TABLE_NOT_FOUND;
-
-                break;
-
-            case SchemaOperationException.CODE_TABLE_EXISTS:
-                sqlCode = IgniteQueryErrorCode.TABLE_ALREADY_EXISTS;
-
-                break;
-
-            case SchemaOperationException.CODE_COLUMN_NOT_FOUND:
-                sqlCode = IgniteQueryErrorCode.COLUMN_NOT_FOUND;
-
-                break;
-
-            case SchemaOperationException.CODE_COLUMN_EXISTS:
-                sqlCode = IgniteQueryErrorCode.COLUMN_ALREADY_EXISTS;
-
-                break;
-
-            case SchemaOperationException.CODE_INDEX_NOT_FOUND:
-                sqlCode = IgniteQueryErrorCode.INDEX_NOT_FOUND;
-
-                break;
-
-            case SchemaOperationException.CODE_INDEX_EXISTS:
-                sqlCode = IgniteQueryErrorCode.INDEX_ALREADY_EXISTS;
-
-                break;
-
-            default:
-                sqlCode = IgniteQueryErrorCode.UNKNOWN;
-        }
-
-        return new IgniteSQLException(e.getMessage(), sqlCode, e);
     }
 
     /**
