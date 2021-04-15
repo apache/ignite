@@ -484,7 +484,7 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
 
         walMgr.onActivate(kctx);
 
-        walMgr.resumeLogging(null);
+        walMgr.resumeLogging(null, false);
 
         RecordSerializer recordSerializer = new RecordSerializerFactoryImpl(ctx)
             .createSerializer(walMgr.serializerVersion());

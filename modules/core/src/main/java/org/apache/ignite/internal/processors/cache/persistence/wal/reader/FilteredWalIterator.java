@@ -62,6 +62,11 @@ public class FilteredWalIterator extends GridIteratorAdapter<IgniteBiTuple<WALPo
         return Optional.ofNullable(next == null ? null : next.get1());
     }
 
+    /** {@inheritDoc} **/
+    @Override public boolean switchSegmentRecordReached() {
+        return delegateWalIter.switchSegmentRecordReached();
+    }
+
     /**
      * @return Next filtered record.
      */

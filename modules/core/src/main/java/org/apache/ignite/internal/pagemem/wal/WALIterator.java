@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.pagemem.wal;
 
 import java.util.Optional;
+import org.apache.ignite.internal.pagemem.wal.record.SwitchSegmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
@@ -31,4 +32,7 @@ public interface WALIterator extends GridCloseableIterator<IgniteBiTuple<WALPoin
      * @return Pointer of last read valid record. Empty if no records were read.
      */
     public Optional<WALPointer> lastRead();
+
+    /** @return {@code True} when during segment iteration {@link SwitchSegmentRecord} reached. */
+    public boolean switchSegmentRecordReached();
 }

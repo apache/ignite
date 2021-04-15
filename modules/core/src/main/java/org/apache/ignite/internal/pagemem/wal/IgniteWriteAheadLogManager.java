@@ -53,7 +53,7 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      *
      * @throws IgniteCheckedException If fails.
      */
-    public void resumeLogging(WALPointer lastWrittenPtr) throws IgniteCheckedException;
+    public void resumeLogging(WALPointer lastWrittenPtr, boolean switchSegmentRecReached) throws IgniteCheckedException;
 
     /**
      * Appends the given log entry to the write-ahead log.

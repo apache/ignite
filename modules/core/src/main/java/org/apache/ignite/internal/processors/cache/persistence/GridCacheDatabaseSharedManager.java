@@ -88,6 +88,7 @@ import org.apache.ignite.internal.pagemem.wal.record.MvccTxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.ReencryptionStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.RollbackRecord;
+import org.apache.ignite.internal.pagemem.wal.record.SwitchSegmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WalRecordCacheGroupAware;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
@@ -292,6 +293,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * not the last WAL pointer and can't be used for resumming logging.
      */
     private volatile WALPointer walTail;
+
+    /** Flag indicates that during segment iteration {@link SwitchSegmentRecord} reached. */
+    private volatile boolean switchSegmentRecReached;
 
     /**
      * Lock holder for compatible folders mode. Null if lock holder was created at start node. <br>
@@ -1010,11 +1014,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 CheckpointStatus status = readCheckpointStatus();
 
                 walTail = CheckpointStatus.NULL_PTR.equals(status.endPtr) ? null : status.endPtr;
+                switchSegmentRecReached = false;
             }
 
             resumeWalLogging();
 
             walTail = null;
+            switchSegmentRecReached = false;
 
             // Recreate metastorage to refresh page memory state after deactivation.
             if (metaStorage == null)
@@ -1099,7 +1105,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 U.log(log, "Binary memory state restored at node startup [restoredPtr=" + restored + ']');
 
             // Wal logging is now available.
-            cctx.wal().resumeLogging(restored);
+            cctx.wal().resumeLogging(restored, binaryState.switchSegmentRecordReached());
 
             // Log MemoryRecoveryRecord to make sure that old physical records are not replayed during
             // next physical recovery.
@@ -1961,18 +1967,20 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         walTail = tailPointer(logicalState);
+        switchSegmentRecReached = logicalState.switchSegmentRecordReached();
 
         cctx.wal().onDeActivate(kctx);
     }
 
     /** */
     public void resumeWalLogging() throws IgniteCheckedException {
-        cctx.wal().resumeLogging(walTail);
+        cctx.wal().resumeLogging(walTail, switchSegmentRecReached);
     }
 
     /** */
     public void preserveWalTailPointer() throws IgniteCheckedException {
         walTail = cctx.wal().flush(null, true);
+        switchSegmentRecReached = false;
     }
 
     /**
@@ -3477,6 +3485,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             return iterator.lastRead()
                 .orElseGet(() -> status.startPtr);
+        }
+
+        /** @return {@code True} when during segment iteration {@link SwitchSegmentRecord} reached. */
+        public boolean switchSegmentRecordReached() {
+            return iterator.switchSegmentRecordReached();
         }
 
         /**

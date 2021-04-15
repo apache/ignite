@@ -28,11 +28,30 @@ public class SegmentEofException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    public final boolean switchSegmentRec;
+
     /**
      * @param msg Message.
      * @param cause Cause.
      */
     public SegmentEofException(String msg, Throwable cause) {
+        this(msg, cause, false);
+    }
+
+    /**
+     * @param msg Message.
+     * @param cause Cause.
+     * @param switchSegmentRec Switch segmment record flag.
+     */
+    public SegmentEofException(String msg, Throwable cause, boolean switchSegmentRec) {
         super(msg, cause, false);
+
+        this.switchSegmentRec = switchSegmentRec;
+    }
+
+    /** @return Switch segment record value. */
+    public boolean isSwitchSegmentRec() {
+        return switchSegmentRec;
     }
 }

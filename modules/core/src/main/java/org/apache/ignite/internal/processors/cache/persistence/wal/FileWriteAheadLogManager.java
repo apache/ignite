@@ -755,7 +755,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Override public void resumeLogging(WALPointer filePtr) throws IgniteCheckedException {
+    @Override public void resumeLogging(WALPointer filePtr, boolean switchSegmentRecReached) throws IgniteCheckedException {
         if (log.isDebugEnabled()) {
             log.debug("File write ahead log manager resuming logging [nodeId=" + cctx.localNodeId() +
                 " topVer=" + cctx.discovery().topologyVersionEx() + " ]");
@@ -775,7 +775,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         fileHandleManager.resumeLogging();
 
-        updateCurrentHandle(restoreWriteHandle(filePtr), null);
+        updateCurrentHandle(restoreWriteHandle(filePtr, switchSegmentRecReached), null);
 
         // For new handle write serializer version to it.
         if (filePtr == null)
@@ -1393,10 +1393,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /**
      * @param lastReadPtr Last read WAL file pointer.
+     * @param {@code True} if WAL iteration stoped on {@link SwitchSegmentRecord}.
      * @return Initialized file write handle.
      * @throws StorageException If failed to initialize WAL write handle.
      */
-    private FileWriteHandle restoreWriteHandle(@Nullable WALPointer lastReadPtr) throws StorageException {
+    private FileWriteHandle restoreWriteHandle(
+        @Nullable WALPointer lastReadPtr,
+        boolean switchSegmentRecReached
+    ) throws StorageException {
         long absIdx = lastReadPtr == null ? 0 : lastReadPtr.index();
 
         @Nullable FileArchiver archiver0 = archiver;
@@ -1438,15 +1442,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 FileWriteHandle hnd = fileHandleManager.initHandle(fileIO, off + len, ser);
 
-                segmentAware.curAbsWalIdx(absIdx);
+                if (lastReadPtr != null && switchSegmentRecReached)
+                    hnd = initNextWriteHandle(hnd);
+
+                segmentAware.curAbsWalIdx(hnd.getSegmentId());
 
                 FileDescriptor[] walArchiveFiles = walArchiveFiles();
-
-                if (archiver0 != null &&
-                    !F.isEmpty(walArchiveFiles) &&
-                    absIdx <= walArchiveFiles[walArchiveFiles.length - 1].idx) {
-                    hnd = initNextWriteHandle(hnd);
-                }
 
                 segmentAware.minReserveIndex(F.isEmpty(walArchiveFiles) ? -1 : walArchiveFiles[0].idx - 1);
                 segmentAware.lastTruncatedArchiveIdx(F.isEmpty(walArchiveFiles) ? -1 : walArchiveFiles[0].idx - 1);
