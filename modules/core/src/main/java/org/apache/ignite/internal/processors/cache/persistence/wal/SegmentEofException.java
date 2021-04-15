@@ -29,7 +29,7 @@ public class SegmentEofException extends IgniteCheckedException {
     private static final long serialVersionUID = 0L;
 
     /** */
-    public final boolean switchSegmentRecord;
+    public final boolean switchSegmentRec;
 
     /**
      * @param msg Message.
@@ -42,16 +42,16 @@ public class SegmentEofException extends IgniteCheckedException {
     /**
      * @param msg Message.
      * @param cause Cause.
-     * @param switchSegmentRecord Switch segmment record flag.
+     * @param switchSegmentRec Switch segmment record flag.
      */
-    public SegmentEofException(String msg, Throwable cause, boolean switchSegmentRecord) {
+    public SegmentEofException(String msg, Throwable cause, boolean switchSegmentRec) {
         super(msg, cause, false);
 
-        this.switchSegmentRecord = switchSegmentRecord;
+        this.switchSegmentRec = switchSegmentRec;
     }
 
     /** @return Switch segment record value. */
-    public boolean isSwitchSegmentRecord() {
-        return switchSegmentRecord;
+    public boolean isSwitchSegmentRec() {
+        return switchSegmentRec;
     }
 }

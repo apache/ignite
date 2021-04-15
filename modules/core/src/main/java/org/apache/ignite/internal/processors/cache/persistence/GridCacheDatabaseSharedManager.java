@@ -299,7 +299,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private volatile WALPointer walTail;
 
     /** */
-    private volatile boolean nextSegmentRecordReached;
+    private volatile boolean switchSegmentRecReached;
 
     /**
      * Lock holder for compatible folders mode. Null if lock holder was created at start node. <br>
@@ -1018,13 +1018,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 CheckpointStatus status = readCheckpointStatus();
 
                 walTail = CheckpointStatus.NULL_PTR.equals(status.endPtr) ? null : status.endPtr;
-                nextSegmentRecordReached = false;
+                switchSegmentRecReached = false;
             }
 
             resumeWalLogging();
 
             walTail = null;
-            nextSegmentRecordReached = false;
+            switchSegmentRecReached = false;
 
             // Recreate metastorage to refresh page memory state after deactivation.
             if (metaStorage == null)
@@ -1971,20 +1971,20 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         walTail = tailPointer(logicalState);
-        nextSegmentRecordReached = logicalState.nextSegmentRecordReached();
+        switchSegmentRecReached = logicalState.nextSegmentRecordReached();
 
         cctx.wal().onDeActivate(kctx);
     }
 
     /** */
     public void resumeWalLogging() throws IgniteCheckedException {
-        cctx.wal().resumeLogging(walTail, nextSegmentRecordReached);
+        cctx.wal().resumeLogging(walTail, switchSegmentRecReached);
     }
 
     /** */
     public void preserveWalTailPointer() throws IgniteCheckedException {
         walTail = cctx.wal().flush(null, true);
-        nextSegmentRecordReached = false;
+        switchSegmentRecReached = false;
     }
 
     /**

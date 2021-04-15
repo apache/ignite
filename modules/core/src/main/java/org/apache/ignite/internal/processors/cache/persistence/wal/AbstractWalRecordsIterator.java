@@ -26,6 +26,7 @@ import java.util.Optional;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
+import org.apache.ignite.internal.pagemem.wal.record.SwitchSegmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
@@ -100,8 +101,8 @@ public abstract class AbstractWalRecordsIterator
     /** Position of last read valid record. */
     private WALPointer lastRead;
 
-    /** */
-    private boolean nextSegmentRecordReached;
+    /** Flag indicates what during segment read Iterator reached {@link SwitchSegmentRecord}. */
+    private boolean switchSegmentRecReached;
 
     /**
      * @param log Logger.
@@ -211,7 +212,7 @@ public abstract class AbstractWalRecordsIterator
 
     /** {@inheritDoc} */
     @Override public boolean nextSegmentRecordReached() {
-        return nextSegmentRecordReached;
+        return switchSegmentRecReached;
     }
 
     /**
@@ -288,8 +289,8 @@ public abstract class AbstractWalRecordsIterator
                 );
             }
 
-            nextSegmentRecordReached = (e instanceof SegmentEofException)
-                && ((SegmentEofException)e).isSwitchSegmentRecord();
+            switchSegmentRecReached = (e instanceof SegmentEofException)
+                && ((SegmentEofException)e).isSwitchSegmentRec();
 
             if (!(e instanceof SegmentEofException) && !(e instanceof EOFException)) {
                 IgniteCheckedException e0 = handleRecordException(e, actualFilePtr);
@@ -373,8 +374,8 @@ public abstract class AbstractWalRecordsIterator
             return createReadFileHandle(fileIO, serializerFactory.createSerializer(serVer), in);
         }
         catch (SegmentEofException | EOFException e) {
-            nextSegmentRecordReached = (e instanceof SegmentEofException)
-                && ((SegmentEofException)e).isSwitchSegmentRecord();
+            switchSegmentRecReached = (e instanceof SegmentEofException)
+                && ((SegmentEofException)e).isSwitchSegmentRec();
 
             try {
                 fileIO.close();
