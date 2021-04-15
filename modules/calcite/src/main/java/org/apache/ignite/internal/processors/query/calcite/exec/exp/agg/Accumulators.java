@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec.exp.agg;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.Supplier;
 import org.apache.calcite.rel.core.AggregateCall;
@@ -31,6 +32,7 @@ import static org.apache.calcite.sql.type.SqlTypeName.BIGINT;
 import static org.apache.calcite.sql.type.SqlTypeName.DECIMAL;
 import static org.apache.calcite.sql.type.SqlTypeName.DOUBLE;
 import static org.apache.calcite.sql.type.SqlTypeName.INTEGER;
+import static org.apache.calcite.sql.type.SqlTypeName.VARCHAR;
 
 /**
  *
@@ -118,6 +120,8 @@ public class Accumulators {
                 return DecimalMinMax.MIN_FACTORY;
             case INTEGER:
                 return IntMinMax.MIN_FACTORY;
+            case VARCHAR:
+                return VarCharMinMax.MIN_FACTORY;
             case BIGINT:
             default:
                 return LongMinMax.MIN_FACTORY;
@@ -135,6 +139,8 @@ public class Accumulators {
                 return DecimalMinMax.MAX_FACTORY;
             case INTEGER:
                 return IntMinMax.MAX_FACTORY;
+            case VARCHAR:
+                return VarCharMinMax.MAX_FACTORY;
             case BIGINT:
             default:
                 return LongMinMax.MAX_FACTORY;
@@ -722,6 +728,94 @@ public class Accumulators {
         /** {@inheritDoc} */
         @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
             return typeFactory.createTypeWithNullability(typeFactory.createSqlType(DOUBLE), true);
+        }
+    }
+
+    /** */
+    private static class VarCharMinMax implements Accumulator {
+        /** */
+        public static final Supplier<Accumulator> MIN_FACTORY = () -> new VarCharMinMax(true);
+
+        /** */
+        public static final Supplier<Accumulator> MAX_FACTORY = () -> new VarCharMinMax(false);
+
+        /** */
+        private final boolean min;
+
+        /** */
+        private CharSequence val;
+
+        /** */
+        private boolean empty = true;
+
+        /** */
+        private VarCharMinMax(boolean min) {
+            this.min = min;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void add(Object... args) {
+            CharSequence in = (CharSequence)args[0];
+
+            if (in == null)
+                return;
+
+            val = empty ? in : min ?
+                (CharSeqComparator.INSTANCE.compare(val, in) < 0 ? val : in) :
+                (CharSeqComparator.INSTANCE.compare(val, in) < 0 ? in : val);
+
+            empty = false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void apply(Accumulator other) {
+            VarCharMinMax other0 = (VarCharMinMax)other;
+
+            if (other0.empty)
+                return;
+
+            val = empty ? other0.val : min ?
+                (CharSeqComparator.INSTANCE.compare(val, other0.val) < 0 ? val : other0.val) :
+                (CharSeqComparator.INSTANCE.compare(val, other0.val) < 0 ? other0.val : val);
+
+            empty = false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object end() {
+            return empty ? null : val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<RelDataType> argumentTypes(IgniteTypeFactory typeFactory) {
+            return F.asList(typeFactory.createTypeWithNullability(typeFactory.createSqlType(VARCHAR), true));
+        }
+
+        /** {@inheritDoc} */
+        @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
+            return typeFactory.createTypeWithNullability(typeFactory.createSqlType(VARCHAR), true);
+        }
+
+        /** */
+        @SuppressWarnings("ComparatorNotSerializable")
+        private static class CharSeqComparator implements Comparator<CharSequence> {
+            /** */
+            private static final CharSeqComparator INSTANCE = new CharSeqComparator();
+
+            /** */
+            @Override public int compare(CharSequence s1, CharSequence s2) {
+                int len = Math.min(s1.length(), s2.length());
+
+                // find the first difference and return
+                for (int i = 0; i < len; i += 1) {
+                    int cmp = Character.compare(s1.charAt(i), s2.charAt(i));
+                    if (cmp != 0)
+                        return cmp;
+                }
+
+                // if there are no differences, then the shorter seq is first
+                return Integer.compare(s1.length(), s2.length());
+            }
         }
     }
 
