@@ -80,11 +80,6 @@ public class WalRolloverOnStopTest extends GridCommonAbstractTest {
                 .setPersistenceEnabled(true)));
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        cleanPersistenceDir();
-    }
-
     /**
      * Test scenario:
      *
@@ -98,6 +93,8 @@ public class WalRolloverOnStopTest extends GridCommonAbstractTest {
      * */
     @Test
     public void testWallRollover() throws Exception {
+        cleanPersistenceDir();
+
         AtomicLong curIdx = new AtomicLong();
 
         for (int i = 0; i < 2; i++) {
@@ -192,7 +189,7 @@ public class WalRolloverOnStopTest extends GridCommonAbstractTest {
             }
 
             for (int j = 0; j < maxKey; j++)
-                assertTrue(keys.contains(j));
+                assertTrue(Long.toString(j), keys.contains(j));
         }
     }
 }

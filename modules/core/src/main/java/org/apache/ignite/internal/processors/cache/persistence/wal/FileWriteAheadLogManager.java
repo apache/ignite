@@ -857,6 +857,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** {@inheritDoc} */
     @Override public WALPointer log(WALRecord rec, RolloverType rolloverType) throws IgniteCheckedException {
+        System.out.println("FileWriteAheadLogManager.log - " + rec.type() + ", " + currHnd.getSegmentId());
+
         if (serializer == null || mode == WALMode.NONE)
             return null;
 
@@ -2041,9 +2043,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             long offs = switchSegmentRecordOffset.getAndSet((int)segIdx, 0);
             long origLen = origFile.length();
-
-            System.out.println("FileArchiver.archiveSegment - " + absIdx + ", offs = " + offs + ", origLen = " + origLen);
-            Thread.dumpStack();
 
             long reservedSize = offs > 0 && offs < origLen ? offs : origLen;
             segmentAware.addReservedWalArchiveSize(reservedSize);

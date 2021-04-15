@@ -51,7 +51,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VERSION;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.STOP_ITERATION_RECORD_TYPE;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.prepareSerializerVersionBuffer;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory.LATEST_SERIALIZER_VERSION;
 
@@ -283,11 +282,8 @@ class FsyncFileWriteHandle extends AbstractFileHandle implements FileWriteHandle
 
             rec.position(ptr);
 
-            if (head.compareAndSet(h, rec)) {
-                //System.out.println("FileWriteAheadLogManager.log - " + rec.type() + ", " + ptr.index() + ", " + ptr.fileOffset());
-
+            if (head.compareAndSet(h, rec))
                 return ptr;
-            }
         }
     }
 
