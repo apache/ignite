@@ -17,19 +17,23 @@
 
 package org.apache.ignite.testsuites;
 
-import org.apache.ignite.internal.processors.query.calcite.logical.LogicalTestEnvironment;
-import org.apache.ignite.internal.processors.query.calcite.logical.LogicalTestRunner;
+import org.apache.ignite.internal.processors.query.calcite.logical.ScriptRunnerTestsEnvironment;
+import org.apache.ignite.internal.processors.query.calcite.logical.ScriptTestRunner;
 import org.junit.runner.RunWith;
 
 /**
  * Test suite to run SQL test scripts.
  *
- * Use {@link LogicalTestEnvironment#script()} property to specify one test script to debug run.
- * e.g. script = "src/test/sql/aggregate/aggregates/test_aggr_string.test"
+ * By default only "*.test" and "*.test_slow" scripts are run.
+ * Other files are ignored.
  *
- * Use other properties of the {@link LogicalTestEnvironment} to setup cluster and test environment.
+ * Use {@link ScriptRunnerTestsEnvironment#regex()} property to specify regular expression for filter
+ * script path to debug run. In this case the file suffix will be ignored.
+ * e.g. regex = "test_aggr_string.test"
+ *
+ * Use other properties of the {@link ScriptRunnerTestsEnvironment} to setup cluster and test environment.
  */
-@RunWith(LogicalTestRunner.class)
-@LogicalTestEnvironment(scriptsRoot = "src/test/sql")
-public class LogicalTestSuite {
+@RunWith(ScriptTestRunner.class)
+@ScriptRunnerTestsEnvironment(scriptsRoot = "src/test/sql")
+public class ScriptTestSuite {
 }

@@ -27,16 +27,19 @@ import java.lang.annotation.Target;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-public @interface LogicalTestEnvironment {
+public @interface ScriptRunnerTestsEnvironment {
     /**
      * @return Test scripts root directory.
      */
     String scriptsRoot();
 
     /**
-     * @return Single script to execute.
+     * The Regular expression may be used by debug / development runs of the test scripts
+     * to specify only necessary tests to run.
+     *
+     * @return Regular expression to filter test path to execute.
      */
-    String script() default "";
+    String regex() default "";
 
     /**
      * @return Ignite nodes count.
