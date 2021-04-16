@@ -1,7 +1,7 @@
 Apache Ignite Azure Module
 ------------------------
 
-Apache Ignite Azure module provides Azure Blob Storage based implementations of IP finder for TCP discovery.
+Apache Ignite Azure module provides Azure Blob Storage based implementation of IP finder for TCP discovery.
 
 To enable Azure module when starting a standalone node, move 'optional/ignite-azure' folder to
 'libs' folder before running 'ignite.{sh|bat}' script. The content of the module folder will
