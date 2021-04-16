@@ -52,7 +52,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
@@ -173,7 +173,7 @@ public class WalRolloverOnStopTest extends GridCommonAbstractTest {
                     .log(ign.log())
                     .filesOrDirs(
                         U.resolveWorkDirectory(U.defaultWorkDirectory(), DB_DEFAULT_FOLDER + "/wal/archive", false))
-                    .filter((type, ptr) -> type == DATA_RECORD);
+                    .filter((type, ptr) -> type == DATA_RECORD_V2);
 
             Set<Integer> keys = new HashSet<>();
 

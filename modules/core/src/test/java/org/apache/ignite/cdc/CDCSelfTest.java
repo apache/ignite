@@ -17,7 +17,6 @@
 
 package org.apache.ignite.cdc;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -44,8 +43,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cdc.IgniteCDC;
-import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -67,7 +64,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
     public static final String TX_CACHE_NAME = "tx-cache";
 
     /** */
-    public static final int WAL_ARCHIVE_TIMEOUT = 1_000;
+    public static final int WAL_ARCHIVE_TIMEOUT = 5_000;
 
     /** */
     @Parameterized.Parameter
@@ -581,8 +578,6 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public boolean onChange(Iterator<ChangeEvent> events) {
             events.forEachRemaining(evt -> {
-                System.out.println("evt.key() = " + evt.key() + ", evts.primary = " + evt.primary());
-
                 if (!evt.primary())
                     return;
 

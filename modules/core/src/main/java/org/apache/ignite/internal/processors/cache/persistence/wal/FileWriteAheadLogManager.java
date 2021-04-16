@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -672,8 +673,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         stopAutoRollover();
 
+        boolean archiveLast = dsCfg.isCdcEnabled() && archiver != null && cctx.kernalContext().isStopping();
+
         try {
-            fileHandleManager.onDeactivate();
+            if (archiveLast) // TODO: check empty segment here
+                closeBufAndRollover(currentHandle(), null, RolloverType.NONE);
+
+            fileHandleManager.onDeactivate(archiveLast);
         }
         catch (Exception e) {
             U.error(log, "Failed to gracefully close WAL segment: " + currHnd, e);
@@ -682,8 +688,25 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         segmentAware.interrupt();
 
         try {
-            if (archiver != null)
+            if (archiver != null) {
                 archiver.shutdown();
+
+                if (archiveLast) {
+                    long i = segmentAware.lastArchivedAbsoluteIndex() + 1;
+
+                    if (i <= segmentAware.curAbsWalIdx())
+                        System.out.println("FileWriteAheadLogManager.stop0");
+
+                    try {
+                        for (; i < segmentAware.curAbsWalIdx(); i++)
+                            archiver.archiveSegment(i);
+                    }
+                    catch (StorageException e) {
+                        U.error(log, "Failed to gracefully close WAL segment: " + i, e);
+                    }
+
+                }
+            }
 
             if (compressor != null)
                 compressor.shutdown();
@@ -795,6 +818,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 nextEndTime = lastRecMs <= 0 ? U.currentTimeMillis() : lastRecMs + walAutoArchiveAfterInactivity;
             }
 
+            if (log.isInfoEnabled())
+                log.info("Next timeout rollover scheduled[date=" + new Date(nextEndTime) + ']');
+
             cctx.time().addTimeoutObject(timeoutRollover = new TimeoutRollover(nextEndTime));
         }
     }
@@ -855,10 +881,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         return log(rec, RolloverType.NONE);
     }
 
+    private AtomicLong cntr = new AtomicLong(0);
+
     /** {@inheritDoc} */
     @Override public WALPointer log(WALRecord rec, RolloverType rolloverType) throws IgniteCheckedException {
-        System.out.println("FileWriteAheadLogManager.log - " + rec.type() + ", " + currHnd.getSegmentId());
-
         if (serializer == null || mode == WALMode.NONE)
             return null;
 
@@ -874,6 +900,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         // Logging was not resumed yet.
         if (currWrHandle == null || (isDisable != null && isDisable.check()))
             return null;
+
+        if ((cntr.incrementAndGet() % 5 == 0 || cctx.kernalContext().isStopping()) && rec.type() == WALRecord.RecordType.DATA_RECORD_V2)
+            System.out.println("FileWriteAheadLogManager.log - " + rec.type() + ", " + currWrHandle.getSegmentId());
 
         // Do page snapshots compression if configured.
         if (pageCompression != DiskPageCompression.DISABLED && rec instanceof PageSnapshot) {
@@ -1425,11 +1454,23 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     }
 
                     hnd = initNextWriteHandle(hnd);
+
+                    if (log.isInfoEnabled()) {
+                        log.info("Switched to the next WAL segment, because last record is switch segment record " +
+                            "[curIdx=" + hnd.getSegmentId() + ']');
+                    }
+                }
+                else {
+                    Thread.dumpStack();
                 }
 
                 segmentAware.curAbsWalIdx(hnd.getSegmentId());
 
                 FileDescriptor[] walArchiveFiles = walArchiveFiles();
+
+                if (!F.isEmpty(walArchiveFiles)) {
+                    System.out.println("LAST ARCHIVE - " + walArchiveFiles[walArchiveFiles.length - 1].file);
+                }
 
                 segmentAware.minReserveIndex(F.isEmpty(walArchiveFiles) ? -1 : walArchiveFiles[0].idx - 1);
                 segmentAware.lastTruncatedArchiveIdx(F.isEmpty(walArchiveFiles) ? -1 : walArchiveFiles[0].idx - 1);
