@@ -1,0 +1,35 @@
+# name: test/sql/aggregate/aggregates/test_aggr_string.test
+# description: Test aggregations on strings
+# group: [aggregates]
+
+statement ok
+CREATE TABLE test (a INTEGER, s VARCHAR);
+
+statement ok
+INSERT INTO test VALUES (11, 'hello'), (12, 'world'), (11, NULL)
+
+# scalar aggregation on string
+query II
+SELECT COUNT(*), COUNT(s) FROM test;
+----
+3	2
+
+# grouped aggregation on string
+query III
+SELECT a, COUNT(*), COUNT(s) FROM test GROUP BY a ORDER BY a;
+----
+11	2	1
+12	1	1
+
+# group by the strings
+query TR
+SELECT s, SUM(a) FROM test GROUP BY s ORDER BY s;
+----
+hello	11.000000
+world	12.000000
+NULL	11.000000
+
+# distinct aggregations ons tring
+statement ok
+INSERT INTO test VALUES (11, 'hello'), (12, 'world')
+
