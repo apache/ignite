@@ -459,7 +459,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             CacheGroupContext grp = cacheGroup(task0.groupId());
 
             if (grp != null)
-                grp.preloader().finishPreloading(task0.topologyVersion());
+                grp.preloader().finishPreloading(task0.topologyVersion(), task0.rebalanceId());
         }
         else
             U.warn(log, "Unsupported custom exchange task: " + task);
