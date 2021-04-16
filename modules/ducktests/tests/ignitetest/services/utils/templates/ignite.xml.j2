@@ -24,7 +24,6 @@
 {% import 'misc_macro.j2' as misc_utils %}
 {% import 'ssl_params_macro.j2' as ssl_params_util %}
 {% import 'connector_configuration.j2' as connector_configuration_util %}
-{% import 'client_connector_configuration.j2' as client_connector_configuration_util %}
 
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -95,7 +94,17 @@
 
         {% if config.client_connector_configuration %}
             <property name="clientConnectorConfiguration">
-                {{ client_connector_configuration_util.client_connector_configuration(config.client_connector_configuration) }}
+                <bean class="org.apache.ignite.configuration.ClientConnectorConfiguration">
+                    <property name="port" value="{{ config.client_connector_configuration.port }}"/>
+                    <property name="sslEnabled" value="{{ config.client_connector_configuration.ssl_enabled }}"/>
+                    {% if config.client_connector_configuration.ssl_enabled %}
+                    <property name="sslContextFactory">
+                        {{ ssl_params_util.ssl_params(config.client_connector_configuration.ssl_params) }}
+                    </property>
+                    <property name="useIgniteSslContextFactory" value="{{ config.client_connector_configuration.use_ignite_ssl_context_factory }}"/>
+                    <property name="sslClientAuth" value="{{ config.client_connector_configuration.ssl_client_auth }}"/>
+                    {% endif %}
+                </bean>
             </property>
         {% endif %}
 
@@ -106,6 +115,9 @@
             </bean>
         </property>
         {% endif %}
+
+        <property name="localEventListeners" ref="eventListeners"/>
+        <property name="includeEventTypes" ref="eventTypes"/>
 
         {{ misc_utils.plugins(config) }}
 

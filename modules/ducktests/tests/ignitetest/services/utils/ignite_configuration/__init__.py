@@ -58,6 +58,8 @@ class IgniteConfiguration(NamedTuple):
     rebalance_batch_size: int = None
     rebalance_batches_prefetch_count: int = None
     rebalance_throttle: int = None
+    local_event_listeners: str = None
+    include_event_types: str = None
 
 
 class IgniteClientConfiguration(IgniteConfiguration):
