@@ -139,7 +139,12 @@ public class ScriptTestRunner extends Runner {
 
     /** */
     private void runTest(Path test, RunNotifier notifier) {
-        String dirName = test.subpath(scriptsRoot.getNameCount(), test.getNameCount() - 1).toString();
+        String dirName;
+        if (test.getNameCount() - 1 > scriptsRoot.getNameCount())
+            dirName = test.subpath(scriptsRoot.getNameCount(), test.getNameCount() - 1).toString();
+        else
+            dirName = scriptsRoot.subpath(scriptsRoot.getNameCount() - 1, scriptsRoot.getNameCount()).toString();
+
         String fileName = test.getFileName().toString();
 
         if (
