@@ -34,6 +34,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteSnapshot;
+import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -41,6 +42,7 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.CacheExistsException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -53,6 +55,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.typedef.F;
@@ -75,8 +78,8 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
     /** Timeout. */
     private static final long TIMEOUT = 15_000;
 
-    /** Binary type name. */
-    private static final String BIN_TYPE_NAME = "customType";
+    /** Type name used for binary and SQL. */
+    private static final String TYPE_NAME = IndexedObject.class.getName();
 
     /** Cache 1 name. */
     private static final String CACHE1 = "cache1";
@@ -101,8 +104,8 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
             cfg.setCacheConfiguration(cacheCfgs);
         else if (dfltCacheCfg != null) {
             dfltCacheCfg.setSqlIndexMaxInlineSize(255);
-            dfltCacheCfg.setQueryEntities(
-                Arrays.asList(queryEntity(BIN_TYPE_NAME), queryEntity(IndexedObject.class.getName())));
+            dfltCacheCfg.setSqlSchema("PUBLIC");
+            dfltCacheCfg.setQueryEntities(Collections.singletonList(queryEntity(TYPE_NAME)));
         }
 
         return cfg;
@@ -116,7 +119,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
             .setKeyType(Integer.class.getName())
             .setValueType(typeName)
             .setFields(new LinkedHashMap<>(F.asMap("id", Integer.class.getName(), "name", String.class.getName())))
-            .setIndexes(Arrays.asList(new QueryIndex("id"), new QueryIndex("name")));
+            .setIndexes(Collections.singletonList(new QueryIndex("id")));
     }
 
     /** @throws Exception If failed. */
@@ -271,12 +274,12 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
     public void testBasicClusterSnapshotRestoreWithMetadata() throws Exception {
         int keysCnt = 10_000;
 
-        valBuilder = new BinaryValueBuilder(0, BIN_TYPE_NAME);
+        valBuilder = new BinaryValueBuilder(0, TYPE_NAME);
 
         IgniteEx ignite = startGridsWithSnapshot(2, keysCnt);
 
         // Remove metadata.
-        int typeId = ignite.context().cacheObjects().typeId(BIN_TYPE_NAME);
+        int typeId = ignite.context().cacheObjects().typeId(TYPE_NAME);
 
         ignite.context().cacheObjects().removeType(typeId);
 
@@ -314,7 +317,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
 
         int keysCnt = 10_000;
 
-        valBuilder = new BinaryValueBuilder(0, BIN_TYPE_NAME);
+        valBuilder = new BinaryValueBuilder(0, TYPE_NAME);
 
         startGridsWithCache(nodesCnt - 2, keysCnt, valBuilder, dfltCacheCfg);
 
@@ -333,7 +336,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
         awaitPartitionMapExchange();
 
         // Remove metadata.
-        int typeId = ignite.context().cacheObjects().typeId(BIN_TYPE_NAME);
+        int typeId = ignite.context().cacheObjects().typeId(TYPE_NAME);
 
         ignite.context().cacheObjects().removeType(typeId);
 
@@ -414,18 +417,18 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
     /** @throws Exception If failed. */
     @Test
     public void testIncompatibleMetasUpdate() throws Exception {
-        valBuilder = new BinaryValueBuilder(0, BIN_TYPE_NAME);
+        valBuilder = new BinaryValueBuilder(0, TYPE_NAME);
 
         IgniteEx ignite = startGridsWithSnapshot(2, CACHE_KEYS_RANGE);
 
-        int typeId = ignite.context().cacheObjects().typeId(BIN_TYPE_NAME);
+        int typeId = ignite.context().cacheObjects().typeId(TYPE_NAME);
 
         ignite.context().cacheObjects().removeType(typeId);
 
         BinaryObject[] objs = new BinaryObject[CACHE_KEYS_RANGE];
 
         IgniteCache<Integer, Object> cache1 = createCacheWithBinaryType(ignite, "cache1", n -> {
-            BinaryObjectBuilder builder = ignite.binary().builder(BIN_TYPE_NAME);
+            BinaryObjectBuilder builder = ignite.binary().builder(TYPE_NAME);
 
             builder.setField("id", n);
 
@@ -455,7 +458,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
 
         // Create cache with incompatible binary type.
         cache1 = createCacheWithBinaryType(ignite, "cache1", n -> {
-            BinaryObjectBuilder builder = ignite.binary().builder(BIN_TYPE_NAME);
+            BinaryObjectBuilder builder = ignite.binary().builder(TYPE_NAME);
 
             builder.setField("id", UUID.randomUUID());
 
@@ -785,6 +788,27 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
 
         for (int i = 0; i < keysCnt; i++)
             assertEquals(valBuilder.apply(i), cache.get(i));
+
+        //noinspection unchecked
+        if (!grid(0).context().query().moduleEnabled() ||
+            F.isEmpty(cache.getConfiguration(CacheConfiguration.class).getQueryEntities()))
+            return;
+
+        String tblName = new BinaryBasicNameMapper(true).typeName(TYPE_NAME);
+
+        for (Ignite grid : G.allGrids()) {
+            GridQueryProcessor qry = ((IgniteEx)grid).context().query();
+
+            // Make sure  SQL works fine.
+            assertEquals((long)keysCnt, qry.querySqlFields(new SqlFieldsQuery(
+                "SELECT count(*) FROM " + tblName), true).getAll().get(0).get(0));
+
+            // Make sure the index is in use.
+            String explainPlan = (String)qry.querySqlFields(new SqlFieldsQuery(
+                "explain SELECT * FROM " + tblName + " WHERE id < 10"), true).getAll().get(0).get(0);
+
+            assertTrue("id=" + grid.cluster().localNode().id() + "\n" + explainPlan, explainPlan.contains("ID_ASC_IDX"));
+        }
     }
 
     /** */
@@ -802,7 +826,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
         private final int id;
 
         /** Name. */
-        @QuerySqlField(index = true)
+        @QuerySqlField
         private final String name;
 
         /**
