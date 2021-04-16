@@ -163,16 +163,6 @@ class IgnitePathAware(PathAware, metaclass=ABCMeta):
 
     IGNITE_LOG_CONFIG_NAME = "ignite-log4j.xml"
 
-    def init_persistent(self, node):
-        """
-        Init persistent directory.
-        :param node: Ignite service node.
-        """
-        super().init_persistent(node)
-
-        logger_config = IgniteLoggerConfigTemplate().render(work_dir=self.work_dir)
-        node.account.create_file(self.log_config_file, logger_config)
-
     @property
     def config_file(self):
         return os.path.join(self.config_dir, IgnitePathAware.IGNITE_CONFIG_NAME)
