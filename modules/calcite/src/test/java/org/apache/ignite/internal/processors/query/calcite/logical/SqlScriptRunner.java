@@ -49,16 +49,16 @@ import org.jetbrains.annotations.NotNull;
  *
  */
 public class SqlScriptRunner {
-    /** Hashing label. */
+    /** Hashing label pattern. */
     private static final Pattern HASHING_PTRN = Pattern.compile("([0-9]+) values hashing to ([0-9a-fA-F]+)");
 
-    /** Hashing label. */
+    /** Ignored statements. */
     private static final Set<String> ignoredStmts = ImmutableSet.of("PRAGMA");
 
     /** NULL label. */
     private static final String NULL = "NULL";
 
-    /** NULL label. */
+    /** Default schema. */
     private static final String schemaPublic = "PUBLIC";
 
     /** Test script path. */
@@ -67,14 +67,14 @@ public class SqlScriptRunner {
     /** Query engine. */
     private final QueryEngine engine;
 
+    /** Loop variables. */
+    private final Map<String, Integer> loopVars = new HashMap<>();
+
     /** Logger. */
     private final IgniteLogger log;
 
     /** Script. */
     private Script script;
-
-    /** Loop variables. */
-    private HashMap<String, Integer> loopVars = new HashMap<>();
 
     /** */
     public SqlScriptRunner(Path test, QueryEngine engine, IgniteLogger log) {
