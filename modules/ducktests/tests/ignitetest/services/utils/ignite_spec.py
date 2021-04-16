@@ -30,7 +30,7 @@ from ignitetest.services.utils.path import get_home_dir, get_module_path
 from ignitetest.utils.version import DEV_BRANCH
 
 
-def resolve_spec(service, context, config, main_java_class, thin_client_config=None, **kwargs):
+def resolve_spec(service, context, config, main_java_class, start_ignite, thin_client_config=None, **kwargs):
     """
     Resolve Spec classes for IgniteService and IgniteApplicationService
     """
@@ -54,6 +54,7 @@ def resolve_spec(service, context, config, main_java_class, thin_client_config=N
     if is_impl("IgniteApplicationService"):
         return _resolve_spec("AppSpec", ApacheIgniteApplicationSpec)(path_aware=service, context=context, config=config,
                                                                      main_java_class=main_java_class,
+                                                                     start_ignite=start_ignite,
                                                                      thin_client_config=thin_client_config, **kwargs)
 
     raise Exception("There is no specification for class %s" % type(service))
