@@ -57,6 +57,15 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         OUTPUT = 1
         ALL = 2
 
+    @constructible
+    class StartIgnite(IntEnum):
+        """
+        Network part to emulate failure.
+        """
+        NODE = 0
+        THIN_CLIENT = 1
+        NONE = 2
+
     # pylint: disable=R0913
     def __init__(self, context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, main_java_class,
                  thin_client_config=None, **kwargs):
@@ -75,11 +84,18 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         self.shutdown_timeout_sec = shutdown_timeout_sec
         self.thin_client_config = thin_client_config
 
-        self.spec = resolve_spec(self, context, config, main_java_class, thin_client_config, **kwargs)
+        if self.thin_client_config:
+            self.start_ignite = IgniteAwareService.StartIgnite.THIN_CLIENT
+        else:
+            if self.config:
+                self.start_ignite = IgniteAwareService.StartIgnite.NODE
+            else:
+                self.start_ignite = IgniteAwareService.StartIgnite.NONE
+
+        self.spec = resolve_spec(self, context, config, main_java_class, self.start_ignite, thin_client_config, **kwargs)
         self.init_logs_attribute()
 
         self.disconnected_nodes = []
-        self.start_ignite = kwargs.get("start_ignite", True)
 
     # pylint: disable=R1705
     @property
@@ -127,7 +143,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
         Awaits start finished.
         """
-        if not self.start_ignite:
+        if self.start_ignite in (IgniteAwareService.StartIgnite.NONE, IgniteAwareService.StartIgnite.THIN_CLIENT):
             return
 
         self.logger.info("Waiting for IgniteAware(s) to start ...")

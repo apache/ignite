@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.ducktest.utils;
 
 import java.util.Base64;
-import java.util.Optional;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.Ignite;
@@ -38,9 +37,10 @@ import org.apache.log4j.Logger;
 public class IgniteAwareApplicationService {
     /** Logger. */
     private static final Logger log = LogManager.getLogger(IgniteAwareApplicationService.class.getName());
-
-    /** Thin client connection string variable. */
-    public static final String THIN_CLIENT_FLAG = "thin_client";
+    /** Ignite mode = node. */
+    public static final String IGNITE_START_NODE = "StartIgnite.NODE";
+    /** Ignite start mode = thin client. */
+    public static final String IGNITE_START_THIN_CLIENT = "StartIgnite.THIN_CLIENT";
 
     /**
      * @param args Args.
@@ -50,7 +50,7 @@ public class IgniteAwareApplicationService {
 
         String[] params = args[0].split(",");
 
-        boolean startIgnite = Boolean.parseBoolean(params[0]);
+        String startIgnite = params[0];
 
         Class<?> clazz = Class.forName(params[1]);
 
@@ -61,16 +61,12 @@ public class IgniteAwareApplicationService {
         JsonNode jsonNode = params.length > 3 ?
             mapper.readTree(Base64.getDecoder().decode(params[3])) : mapper.createObjectNode();
 
-        Boolean thinClientFlag = Optional.ofNullable(jsonNode.get(THIN_CLIENT_FLAG))
-            .map(JsonNode::asBoolean)
-            .orElse(false);
-
         IgniteAwareApplication app =
             (IgniteAwareApplication)clazz.getConstructor().newInstance();
 
         app.cfgPath = cfgPath;
 
-        if (startIgnite) {
+        if (startIgnite.equals(IGNITE_START_NODE)) {
             log.info("Starting Ignite node...");
 
             IgniteBiTuple<IgniteConfiguration, GridSpringResourceContext> cfgs = IgnitionEx.loadConfiguration(cfgPath);
@@ -86,7 +82,7 @@ public class IgniteAwareApplicationService {
                 log.info("Ignite instance closed. [interrupted=" + Thread.currentThread().isInterrupted() + "]");
             }
         }
-        else if (thinClientFlag) {
+        else if (startIgnite.equals(IGNITE_START_THIN_CLIENT)) {
             log.info("Starting thin client...");
 
             ClientConfiguration cfg = IgnitionEx.loadSpringBean(cfgPath, "thin.client.cfg");
