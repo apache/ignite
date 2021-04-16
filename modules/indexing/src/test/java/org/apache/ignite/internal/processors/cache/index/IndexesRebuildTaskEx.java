@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -97,6 +98,13 @@ class IndexesRebuildTaskEx extends IndexesRebuildTask {
             cacheRowConsumer.entrySet().removeIf(e -> e.getKey().startsWith(nodeNamePrefix));
             cacheRebuildRunner.entrySet().removeIf(e -> e.getKey().startsWith(nodeNamePrefix));
         }
+    }
+
+    /**
+     * Set {@link IndexesRebuildTaskEx} to {@link IndexProcessor#idxRebuildCls} before starting the node.
+     */
+    static void prepareBeforeNodeStart() {
+        IndexProcessor.idxRebuildCls = IndexesRebuildTaskEx.class;
     }
 
     /**
