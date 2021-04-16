@@ -21,6 +21,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonSyntaxException;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -28,6 +30,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import java.net.BindException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -86,7 +89,7 @@ public class RestModule {
     /**
      *
      */
-    public void start() throws InterruptedException {
+    public ChannelFuture start() throws InterruptedException {
         var router = new Router();
         router
             .get(CONF_URL, (req, resp) -> {
@@ -145,11 +148,11 @@ public class RestModule {
                 }
             });
 
-        startRestEndpoint(router);
+        return startRestEndpoint(router);
     }
 
     /** */
-    private void startRestEndpoint(Router router) throws InterruptedException {
+    private ChannelFuture startRestEndpoint(Router router) throws InterruptedException {
         RestView restConfigurationView = sysConf.getConfiguration(RestConfiguration.KEY).value();
 
         int desiredPort = restConfigurationView.port();
@@ -157,59 +160,55 @@ public class RestModule {
 
         int port = 0;
 
-        if (portRange == 0) {
-            try {
-                port = desiredPort;
-            }
-            catch (RuntimeException e) {
-                log.warn("Failed to start REST endpoint: ", e);
+        Channel ch = null;
 
-                throw e;
-            }
-        }
-        else {
-            int startPort = desiredPort;
+        EventLoopGroup parentGrp = new NioEventLoopGroup();
+        EventLoopGroup childGrp = new NioEventLoopGroup();
 
-            for (int portCandidate = startPort; portCandidate < startPort + portRange; portCandidate++) {
-                try {
-                    port = (portCandidate);
-                }
-                catch (RuntimeException ignored) {
-                    // No-op.
-                }
-            }
-
-            if (port == 0) {
-                String msg = "Cannot start REST endpoint. " +
-                    "All ports in range [" + startPort + ", " + (startPort + portRange) + "] are in use.";
-
-                log.warn(msg);
-
-                throw new RuntimeException(msg);
-            }
-        }
-
-        EventLoopGroup bossGrp = new NioEventLoopGroup(1);
-        EventLoopGroup workerGrp = new NioEventLoopGroup();
         var hnd = new RestApiInitializer(router);
-        try {
-            ServerBootstrap b = new ServerBootstrap();
-            b.option(ChannelOption.SO_BACKLOG, 1024);
-            b.group(bossGrp, workerGrp)
-                .channel(NioServerSocketChannel.class)
-                .handler(new LoggingHandler(LogLevel.INFO))
-                .childHandler(hnd);
 
-            Channel ch = b.bind(port).sync().channel();
+        ServerBootstrap b = new ServerBootstrap();
+        b.option(ChannelOption.SO_BACKLOG, 1024);
+        b.group(parentGrp, childGrp)
+            .channel(NioServerSocketChannel.class)
+            .handler(new LoggingHandler(LogLevel.INFO))
+            .childHandler(hnd);
 
-            if (log.isInfoEnabled())
-                log.info("REST protocol started successfully on port " + port);
+        for (int portCandidate = desiredPort; portCandidate < desiredPort + portRange; portCandidate++) {
+            ChannelFuture bindRes = b.bind(portCandidate).await();
+            if (bindRes.isSuccess()) {
+                ch = bindRes.channel();
 
-            ch.closeFuture().sync();
+                ch.closeFuture().addListener(new ChannelFutureListener() {
+                    @Override public void operationComplete(ChannelFuture fut) {
+                        parentGrp.shutdownGracefully();
+                        childGrp.shutdownGracefully();
+                    }
+                });
+                port = portCandidate;
+                break;
+            }
+            else if (!(bindRes.cause() instanceof BindException)) {
+                parentGrp.shutdownGracefully();
+                childGrp.shutdownGracefully();
+                throw new RuntimeException(bindRes.cause());
+            }
         }
-        finally {
-            bossGrp.shutdownGracefully();
-            workerGrp.shutdownGracefully();
+
+        if (ch == null) {
+            String msg = "Cannot start REST endpoint. " +
+                "All ports in range [" + desiredPort + ", " + (desiredPort + portRange) + "] are in use.";
+
+            log.error(msg);
+
+            parentGrp.shutdownGracefully();
+            childGrp.shutdownGracefully();
+
+            throw new RuntimeException(msg);
         }
+
+        log.info("REST protocol started successfully on port " + port);
+
+        return ch.closeFuture();
     }
 }

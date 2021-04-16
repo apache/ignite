@@ -17,6 +17,7 @@
 
 package org.apache.ignite.app;
 
+import io.netty.channel.ChannelFuture;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -98,9 +99,8 @@ public class IgniteRunner {
 
             String str;
 
-            while ((str = confReader.readLine()) != null) {
+            while ((str = confReader.readLine()) != null)
                 bldr.append(str);
-            }
 
             restModule.prepareStart(confModule.configurationRegistry());
 
@@ -111,9 +111,11 @@ public class IgniteRunner {
                 confReader.close();
         }
 
-        restModule.start();
+        ChannelFuture restChFut = restModule.start();
 
         ackSuccessStart();
+
+        restChFut.sync();
     }
 
     /** */
