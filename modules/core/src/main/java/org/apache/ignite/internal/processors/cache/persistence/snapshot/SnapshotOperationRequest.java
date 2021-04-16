@@ -24,6 +24,7 @@ import java.util.UUID;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Snapshot operation start request for {@link DistributedProcess} initiate message.
@@ -63,7 +64,7 @@ public class SnapshotOperationRequest implements Serializable {
         UUID reqId,
         UUID opNodeId,
         String snpName,
-        Collection<String> grps,
+        @Nullable Collection<String> grps,
         Set<UUID> nodes
     ) {
         this.reqId = reqId;
@@ -90,7 +91,7 @@ public class SnapshotOperationRequest implements Serializable {
     /**
      * @return List of cache group names.
      */
-    public Collection<String> groups() {
+    public @Nullable Collection<String> groups() {
         return grps;
     }
 

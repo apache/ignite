@@ -137,6 +137,34 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
 
     /** @throws Exception If failed. */
     @Test
+    public void testRestoreAllGroups() throws Exception {
+        CacheConfiguration<Integer, Object> cacheCfg1 =
+            txCacheConfig(new CacheConfiguration<Integer, Object>(CACHE1)).setGroupName(SHARED_GRP);
+
+        CacheConfiguration<Integer, Object> cacheCfg2 =
+            txCacheConfig(new CacheConfiguration<Integer, Object>(CACHE2)).setGroupName(SHARED_GRP);
+
+        IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valBuilder,
+            dfltCacheCfg.setBackups(0), cacheCfg1, cacheCfg2);
+
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+
+        ignite.cache(CACHE1).destroy();
+        ignite.cache(CACHE2).destroy();
+        ignite.cache(dfltCacheCfg.getName()).destroy();
+
+        awaitPartitionMapExchange();
+
+        // Restore all cache groups.
+        grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT);
+
+        checkCacheKeys(ignite.cache(dfltCacheCfg.getName()), CACHE_KEYS_RANGE);
+        checkCacheKeys(ignite.cache(CACHE1), CACHE_KEYS_RANGE);
+        checkCacheKeys(ignite.cache(CACHE2), CACHE_KEYS_RANGE);
+    }
+
+    /** @throws Exception If failed. */
+    @Test
     public void testStartClusterSnapshotRestoreMultipleThreadsSameNode() throws Exception {
         checkStartClusterSnapshotRestoreMultithreaded(() -> 0);
     }
@@ -514,7 +542,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
 
     /** @throws Exception If failed. */
     @Test
-    public void testNodeFail() throws Exception {
+    public void testNodeFailDuringRestore() throws Exception {
         startGridsWithSnapshot(4, CACHE_KEYS_RANGE);
 
         TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(3));
@@ -546,7 +574,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
 
     /** @throws Exception If failed. */
     @Test
-    public void testNodeJoin() throws Exception {
+    public void testNodeJoinDuringRestore() throws Exception {
         Ignite ignite = startGridsWithSnapshot(2, CACHE_KEYS_RANGE);
 
         TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(1));

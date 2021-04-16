@@ -1123,10 +1123,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Void> restoreSnapshot(String name, Collection<String> grpNames) {
+    @Override public IgniteFuture<Void> restoreSnapshot(String name, @Nullable Collection<String> grpNames) {
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
-        A.ensure(!F.isEmpty(grpNames), "List of cache group names cannot be empty.");
+        A.ensure(grpNames == null || !grpNames.isEmpty(), "List of cache group names cannot be empty.");
 
         return restoreCacheGrpProc.start(name, grpNames);
     }

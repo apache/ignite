@@ -145,10 +145,10 @@ public class SnapshotRestoreProcess {
      * Start cache group restore operation.
      *
      * @param snpName Snapshot name.
-     * @param cacheGrpNames Name of the cache groups for restore.
+     * @param cacheGrpNames Cache groups to be restored or {@code null} to restore all cache groups from the snapshot.
      * @return Future that will be completed when the restore operation is complete and the cache groups are started.
      */
-    public IgniteFuture<Void> start(String snpName, Collection<String> cacheGrpNames) {
+    public IgniteFuture<Void> start(String snpName, @Nullable Collection<String> cacheGrpNames) {
         ClusterSnapshotFuture fut0;
 
         try {
@@ -190,9 +190,10 @@ public class SnapshotRestoreProcess {
                 }
 
                 Set<UUID> dataNodes = new HashSet<>();
-                Map<ClusterNode, List<SnapshotMetadata>> metas = f.result();
-                Map<Integer, String> reqGrpIds = cacheGrpNames.stream().collect(Collectors.toMap(CU::cacheId, v -> v));
                 Set<String> snpBltNodes = null;
+                Map<ClusterNode, List<SnapshotMetadata>> metas = f.result();
+                Map<Integer, String> reqGrpIds = cacheGrpNames == null ? Collections.emptyMap() :
+                    cacheGrpNames.stream().collect(Collectors.toMap(CU::cacheId, v -> v));
 
                 for (Map.Entry<ClusterNode, List<SnapshotMetadata>> entry : metas.entrySet()) {
                     SnapshotMetadata meta = F.first(entry.getValue());
@@ -210,6 +211,13 @@ public class SnapshotRestoreProcess {
                     reqGrpIds.keySet().removeAll(meta.partitions().keySet());
                 }
 
+                if (snpBltNodes == null) {
+                    finishProcess(fut0.rqId, new IllegalArgumentException(OP_REJECT_MSG + "No snapshot data " +
+                        "has been found [groups=" + reqGrpIds.values() + ", snapshot=" + snpName + ']'));
+
+                    return;
+                }
+
                 if (!reqGrpIds.isEmpty()) {
                     finishProcess(fut0.rqId, new IllegalArgumentException(OP_REJECT_MSG + "Cache group(s) was not " +
                         "found in the snapshot [groups=" + reqGrpIds.values() + ", snapshot=" + snpName + ']'));
@@ -219,8 +227,6 @@ public class SnapshotRestoreProcess {
 
                 Collection<String> bltNodes = F.viewReadOnly(ctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
                     node -> node.consistentId().toString(), (node) -> CU.baselineNode(node, ctx.state().clusterState()));
-
-                assert !F.isEmpty(snpBltNodes);
 
                 snpBltNodes.removeAll(bltNodes);
 
@@ -251,8 +257,8 @@ public class SnapshotRestoreProcess {
                             return;
                         }
 
-                        SnapshotOperationRequest req =
-                            new SnapshotOperationRequest(fut0.rqId, F.first(dataNodes), snpName, cacheGrpNames, dataNodes);
+                        SnapshotOperationRequest req = new SnapshotOperationRequest(
+                            fut0.rqId, F.first(dataNodes), snpName, cacheGrpNames, dataNodes);
 
                         prepareRestoreProc.start(req.requestId(), req);
                     }
@@ -426,9 +432,6 @@ public class SnapshotRestoreProcess {
                 }
             }
 
-            for (String grpName : req.groups())
-                ensureCacheAbsent(grpName);
-
             opCtx = prepareContext(req);
 
             SnapshotRestoreContext opCtx0 = opCtx;
@@ -438,13 +441,17 @@ public class SnapshotRestoreProcess {
 
             // Ensure that shared cache groups has no conflicts.
             for (StoredCacheData cfg : opCtx0.cfgs.values()) {
+                ensureCacheAbsent(cfg.config().getName());
+
                 if (!F.isEmpty(cfg.config().getGroupName()))
-                    ensureCacheAbsent(cfg.config().getName());
+                    ensureCacheAbsent(cfg.config().getGroupName());
             }
 
             if (log.isInfoEnabled()) {
-                log.info("Starting local snapshot restore operation [reqId=" + req.requestId() +
-                    ", snapshot=" + req.snapshotName() + ", group(s)=" + req.groups() + ']');
+                log.info("Starting local snapshot restore operation" +
+                    " [reqId=" + req.requestId() +
+                    ", snapshot=" + req.snapshotName() +
+                    ", cache(s)=" + F.viewReadOnly(opCtx0.cfgs.values(), data -> data.config().getName()) + ']');
             }
 
             Consumer<Throwable> errHnd = (ex) -> opCtx.err.compareAndSet(null, ex);
@@ -603,7 +610,7 @@ public class SnapshotRestoreProcess {
         for (File snpCacheDir : cctx.snapshotMgr().snapshotCacheDirectories(req.snapshotName(), meta.folderName())) {
             String grpName = FilePageStoreManager.cacheGroupName(snpCacheDir);
 
-            if (!req.groups().contains(grpName))
+            if (!F.isEmpty(req.groups()) && !req.groups().contains(grpName))
                 continue;
 
             File cacheDir = pageStore.cacheWorkDir(snpCacheDir.getName().startsWith(CACHE_GRP_DIR_PREFIX), grpName);

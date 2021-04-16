@@ -19,6 +19,7 @@ package org.apache.ignite;
 
 import java.util.Collection;
 import org.apache.ignite.lang.IgniteFuture;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * This interface provides functionality for creating cluster-wide cache data snapshots.
@@ -54,8 +55,8 @@ public interface IgniteSnapshot {
      * Restore cache group(s) from the snapshot.
      *
      * @param name Snapshot name.
-     * @param cacheGroupNames Cache groups to be restored.
+     * @param cacheGroupNames Cache groups to be restored or {@code null} to restore all cache groups from the snapshot.
      * @return Future which will be completed when restore operation finished.
      */
-    public IgniteFuture<Void> restoreSnapshot(String name, Collection<String> cacheGroupNames);
+    public IgniteFuture<Void> restoreSnapshot(String name, @Nullable Collection<String> cacheGroupNames);
 }
