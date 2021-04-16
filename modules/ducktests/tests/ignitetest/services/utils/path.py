@@ -159,6 +159,10 @@ class IgnitePathAware(PathAware, metaclass=ABCMeta):
     """
     This class contains Ignite path configs.
     """
+    IGNITE_CONFIG_NAME = "ignite-config.xml"
+
+    IGNITE_LOG_CONFIG_NAME = "ignite-log4j.xml"
+
     def init_persistent(self, node):
         """
         Init persistent directory.
@@ -171,11 +175,11 @@ class IgnitePathAware(PathAware, metaclass=ABCMeta):
 
     @property
     def config_file(self):
-        return os.path.join(self.config_dir, "ignite-config.xml")
+        return os.path.join(self.config_dir, IgnitePathAware.IGNITE_CONFIG_NAME)
 
     @property
     def log_config_file(self):
-        return os.path.join(self.config_dir, "ignite-log4j.xml")
+        return os.path.join(self.config_dir, IgnitePathAware.IGNITE_LOG_CONFIG_NAME)
 
     @property
     def database_dir(self):

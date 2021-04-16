@@ -23,10 +23,11 @@ import json
 import os
 from abc import ABCMeta, abstractmethod
 
-from ignitetest.services.utils.config_template import IgniteClientConfigTemplate, IgniteServerConfigTemplate
+from ignitetest.services.utils.config_template import IgniteClientConfigTemplate, IgniteServerConfigTemplate, IgniteLoggerConfigTemplate
 from ignitetest.services.utils.jvm_utils import create_jvm_settings, merge_jvm_settings
-from ignitetest.services.utils.path import get_home_dir, get_module_path
+from ignitetest.services.utils.path import get_home_dir, get_module_path, IgnitePathAware
 from ignitetest.utils.version import DEV_BRANCH
+
 
 
 def resolve_spec(service, context, config, main_java_class, **kwargs):
@@ -80,13 +81,15 @@ class IgniteSpec(metaclass=ABCMeta):
         self.version = config.version
 
     @property
-    def config_template(self):
+    def config_templates(self):
         """
         :return: config that service will use to start on a node
         """
-        if self.config.client_mode:
-            return IgniteClientConfigTemplate()
-        return IgniteServerConfigTemplate()
+        return [
+            (IgnitePathAware.IGNITE_LOG_CONFIG_NAME, IgniteLoggerConfigTemplate()),
+            (IgnitePathAware.IGNITE_CONFIG_NAME,
+             IgniteClientConfigTemplate() if self.config.client_mode else IgniteServerConfigTemplate())
+        ]
 
     def __home(self, version=None, project=None):
         """
