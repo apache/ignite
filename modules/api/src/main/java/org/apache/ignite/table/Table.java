@@ -42,6 +42,7 @@ public interface Table extends TableView<Tuple> {
      * Creates record view of table for record class mapper provided.
      *
      * @param recMapper Record class mapper.
+     * @param <R> Record type.
      * @return Table record view.
      */
     <R> RecordView<R> recordView(RecordMapper<R> recMapper);
@@ -51,6 +52,8 @@ public interface Table extends TableView<Tuple> {
      *
      * @param keyMapper Key class mapper.
      * @param valMapper Value class mapper.
+     * @param <K> Key type.
+     * @param <V> Value type.
      * @return Table key-value view.
      */
     <K, V> KeyValueView<K, V> kvView(KeyMapper<K> keyMapper, ValueMapper<V> valMapper);
@@ -66,6 +69,7 @@ public interface Table extends TableView<Tuple> {
      * Creates record view of table for record class provided.
      *
      * @param recCls Record class.
+     * @param <R> Record type.
      * @return Table record view.
      */
     default <R> RecordView<R> recordView(Class<R> recCls) {
@@ -77,6 +81,8 @@ public interface Table extends TableView<Tuple> {
      *
      * @param keyCls Key class.
      * @param valCls Value class.
+     * @param <K> Key type.
+     * @param <V> Value type.
      * @return Table key-value view.
      */
     default <K, V> KeyValueView<K, V> kvView(Class<K> keyCls, Class<V> valCls) {

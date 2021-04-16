@@ -1321,6 +1321,7 @@ public abstract class GridUnsafe {
      *
      * @param cls Class.
      * @return Allocated instance.
+     * @throws InstantiationException If failed to instantiate class.
      */
     public static Object allocateInstance(Class cls) throws InstantiationException {
         return UNSAFE.allocateInstance(cls);
@@ -1474,6 +1475,7 @@ public abstract class GridUnsafe {
      *
      * @param mtd Method.
      * @param args Arguments.
+     * @return Method invocation result.
      */
     public static Object invoke(Method mtd, Object... args) {
         try {

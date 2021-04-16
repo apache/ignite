@@ -71,7 +71,10 @@ public class ExpandableByteBuf {
     }
 
     /**
+     * Writes {@code byte} value to the buffer.
      *
+     * @param off Buffer offset.
+     * @param val Value.
      */
     public void put(int off, byte val) {
         ensureCapacity(off + 1);
@@ -80,7 +83,10 @@ public class ExpandableByteBuf {
     }
 
     /**
+     * Writes {@code short} value to the buffer.
      *
+     * @param off Buffer offset.
+     * @param val Value.
      */
     public void putShort(int off, short val) {
         ensureCapacity(off + 2);
@@ -89,7 +95,10 @@ public class ExpandableByteBuf {
     }
 
     /**
+     * Writes {@code int} value to the buffer.
      *
+     * @param off Buffer offset.
+     * @param val Value.
      */
     public void putInt(int off, int val) {
         ensureCapacity(off + 4);
@@ -98,7 +107,10 @@ public class ExpandableByteBuf {
     }
 
     /**
+     * Writes {@code float} value to the buffer.
      *
+     * @param off Buffer offset.
+     * @param val Value.
      */
     public void putFloat(int off, float val) {
         ensureCapacity(off + 4);
@@ -107,7 +119,10 @@ public class ExpandableByteBuf {
     }
 
     /**
+     * Writes {@code long} value to the buffer.
      *
+     * @param off Buffer offset.
+     * @param val Value.
      */
     public void putLong(int off, long val) {
         ensureCapacity(off + 8);
@@ -116,7 +131,10 @@ public class ExpandableByteBuf {
     }
 
     /**
+     * Writes {@code double} value to the buffer.
      *
+     * @param off Buffer offset.
+     * @param val Value.
      */
     public void putDouble(int off, double val) {
         ensureCapacity(off + 8);
@@ -125,12 +143,15 @@ public class ExpandableByteBuf {
     }
 
     /**
+     * Writes {@code byte[]} value to the buffer.
      *
+     * @param off Buffer offset.
+     * @param val Value.
      */
-    public void putBytes(int curOff, byte[] val) {
-        ensureCapacity(curOff + val.length);
+    public void putBytes(int off, byte[] val) {
+        ensureCapacity(off + val.length);
 
-        buf.position(curOff);
+        buf.position(off);
 
         try {
             buf.put(val);
@@ -141,7 +162,13 @@ public class ExpandableByteBuf {
     }
 
     /**
+     * Writes {@code String} value to the buffer.
      *
+     * @param off Buffer offset.
+     * @param val Value.
+     * @param encoder Charset encoder.
+     * @return Bytes written.
+     * @throws CharacterCodingException If encoding failed.
      */
     public int putString(int off, String val, CharsetEncoder encoder) throws CharacterCodingException {
         ensureCapacity(off);
@@ -198,7 +225,10 @@ public class ExpandableByteBuf {
     }
 
     /**
+     * Reads {@code byte} value from buffer.
      *
+     * @param off Buffer offset.
+     * @return Value.
      */
     public byte get(int off) {
         return buf.get(off);

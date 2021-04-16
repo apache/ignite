@@ -1970,6 +1970,7 @@ public class IgniteToStringBuilder {
      *
      * @param col Collection of numbers.
      * @param nextValFun Function to get nearby number.
+     * @param <T> Comparable number type.
      * @return Compacted string representation of given collections.
      */
     public static <T extends Number & Comparable<? super T>> String compact(

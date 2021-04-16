@@ -74,6 +74,7 @@ public interface BinaryRow {
     /**
      * Writes binary row to given stream.
      *
+     * @param stream Stream to write to.
      * @throws IOException If write operation fails.
      */
     void writeTo(OutputStream stream) throws IOException;
@@ -116,18 +117,20 @@ public interface BinaryRow {
 
     /**
      * @param off Offset.
+     * @param len Length.
      * @return String value.
      */
      String readString(int off, int len);
 
     /**
      * @param off Offset.
+     * @param len Length.
      * @return Byte array.
      */
      byte[] readBytes(int off, int len);
 
     /**
-     *
+     * Row flags.
      */
     final class RowFlags {
         /** Tombstone flag. */
@@ -138,6 +141,7 @@ public interface BinaryRow {
 
         /** Stub. */
         private RowFlags() {
+            // No-op.
         }
     }
 }

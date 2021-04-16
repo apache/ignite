@@ -29,21 +29,32 @@ public interface Serializer {
      * @param key Key object.
      * @param val Value object.
      * @return Serialized key-value pair.
+     * @throws SerializationException If serialization failed.
      */
     byte[] serialize(Object key, Object val) throws SerializationException;
 
     /**
+     * @param data Key bytes.
+     * @param <K> Key object type.
      * @return Key object.
+     * @throws SerializationException If deserialization failed.
      */
     <K> K deserializeKey(byte[] data) throws SerializationException;
 
     /**
+     * @param data Value bytes.
+     * @param <V> Value object type.
      * @return Value object.
+     * @throws SerializationException If deserialization failed.
      */
     <V> V deserializeValue(byte[] data) throws SerializationException;
 
     /**
+     * @param data Row bytes.
+     * @param <K> Key object type.
+     * @param <V> Value object type.
      * @return Key-value pair.
+     * @throws SerializationException If deserialization failed.
      */
     <K, V> Pair<K,V> deserialize(byte[] data) throws SerializationException;
 }

@@ -35,6 +35,8 @@ import java.lang.annotation.Target;
 public @interface IgniteToStringOrder {
     /**
      * Numeric order value.
+     *
+     * @return Field order.
      */
     int value();
 }

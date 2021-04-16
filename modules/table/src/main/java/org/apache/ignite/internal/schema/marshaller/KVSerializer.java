@@ -22,14 +22,15 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Key-value marshaller interface.
+ * Key-value serializer interface.
  */
 public interface KVSerializer<K, V> {
     /**
-     * @param obj Object to serialize.
-     * @return Table row with columns set from given object.
+     * @param key Key object to serialize.
+     * @param val Value object to serialize.
+     * @return Table row with columns serialized from given key-value pair.
      */
-    Row serialize(@NotNull K obj, V val);
+    Row serialize(@NotNull K key, V val);
 
     /**
      * @param row Table row.

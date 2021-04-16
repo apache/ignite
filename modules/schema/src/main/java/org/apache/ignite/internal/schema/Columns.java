@@ -91,6 +91,7 @@ public class Columns {
      * Constructs the columns chunk. The columns will be internally sorted in write-efficient order based on
      * {@link Column} comparison.
      *
+     * @param baseSchemaIdx First column absolute index in schema.
      * @param cols Array of columns.
      */
     Columns(int baseSchemaIdx, Column... cols) {
@@ -275,14 +276,18 @@ public class Columns {
     }
 
     /**
+     * Returns columns index for given column name.
+     *
+     * @param colName Column name.
+     * @return Column index.
      */
-    public int columnIndex(String fieldName) {
+    public int columnIndex(String colName) {
         for (int i = 0; i < cols.length; i++) {
-            if (cols[i].name().equalsIgnoreCase(fieldName))
+            if (cols[i].name().equalsIgnoreCase(colName))
                 return i;
         }
 
-        throw new NoSuchElementException("No field '" + fieldName + "' defined");
+        throw new NoSuchElementException("No field '" + colName + "' defined");
     }
 
     /** {@inheritDoc} */

@@ -23,6 +23,7 @@ package org.apache.ignite.binary;
 public final class BinaryObjects {
     /**
      * Wraps byte array to BinaryObject.
+     *
      * @param data Object data.
      * @return Binary object.
      */
@@ -35,6 +36,7 @@ public final class BinaryObjects {
      *
      * @param obj Object to deserialize.
      * @param targetCls Target class.
+     * @param <T> Target type.
      * @return Deserialized object.
      */
     public static <T> T deserialize(BinaryObject obj, Class<T> targetCls) {

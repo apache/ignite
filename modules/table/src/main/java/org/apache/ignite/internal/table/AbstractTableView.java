@@ -45,6 +45,7 @@ abstract class AbstractTableView {
      * Waits for operation completion.
      *
      * @param fut Future to wait to.
+     * @param <T> Future result type.
      * @return Future result.
      */
     protected <T> T sync(CompletableFuture<T> fut) {

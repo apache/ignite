@@ -130,7 +130,9 @@ class FieldDescriptor {
         return type;
     }
 
-    /** */
+    /**
+     * @return Field class.
+     */
     public Class<?> fieldClass() {
         return cls;
     }

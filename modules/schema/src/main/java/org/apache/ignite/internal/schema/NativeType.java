@@ -57,7 +57,10 @@ public class NativeType implements Comparable<NativeType> {
     private final int len;
 
     /**
+     * Constructor for fixed-length types.
      *
+     * @param typeSpec Type spec.
+     * @param len Type length.
      */
     protected NativeType(NativeTypeSpec typeSpec, int len) {
         if (!typeSpec.fixedLength())
@@ -71,7 +74,9 @@ public class NativeType implements Comparable<NativeType> {
     }
 
     /**
+     * Constructor for variable-length types.
      *
+     * @param typeSpec Type spec.
      */
     protected NativeType(NativeTypeSpec typeSpec) {
         if (typeSpec.fixedLength())

@@ -277,6 +277,8 @@ public interface TableView<R> {
      * Executes an InvokeProcessor code against a record with the same key columns values as the given one has.
      *
      * @param keyRec Record with key columns set.
+     * @param proc Invoke processor.
+     * @param <T> InvokeProcessor result type.
      * @return Results of the processing.
      */
     <T extends Serializable> T invoke(R keyRec, InvokeProcessor<R, R, T> proc);
@@ -286,6 +288,8 @@ public interface TableView<R> {
      * with the same key columns values as the given one has.
      *
      * @param keyRec Record with key columns set.
+     * @param proc Invoke processor.
+     * @param <T> InvokeProcessor result type.
      * @return Future representing pending completion of the operation.
      */
     @NotNull <T extends Serializable> CompletableFuture<T> invokeAsync(R keyRec, InvokeProcessor<R, R, T> proc);
@@ -294,14 +298,19 @@ public interface TableView<R> {
      * Executes an InvokeProcessor code against records with the same key columns values as the given ones has.
      *
      * @param keyRecs Records with key columns set.
+     * @param proc Invoke processor.
+     * @param <T> InvokeProcessor result type.
      * @return Results of the processing.
      */
     <T extends Serializable> Map<R, T> invokeAll(Collection<R> keyRecs, InvokeProcessor<R, R, T> proc);
 
     /**
-     * Asynchronously executes an InvokeProcessor against records with the same key columns values as the given ones has.
+     * Asynchronously executes an InvokeProcessor against records with the same key columns values as the given ones
+     * has.
      *
      * @param keyRecs Records with key columns set.
+     * @param proc Invoke processor.
+     * @param <T> InvokeProcessor result type.
      * @return Results of the processing.
      */
     @NotNull <T extends Serializable> CompletableFuture<Map<R, T>> invokeAllAsync(Collection<R> keyRecs,

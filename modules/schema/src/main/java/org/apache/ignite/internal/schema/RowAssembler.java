@@ -80,7 +80,11 @@ public class RowAssembler {
     }
 
     /**
-     * This implementation is not tolerant to malformed char sequences.
+     * Calculates encoded string length.
+     *
+     * @param seq Char sequence.
+     * @return Encoded string length.
+     * @implNote This implementation is not tolerant to malformed char sequences.
      */
     public static int utf8EncodedLength(CharSequence seq) {
         int cnt = 0;

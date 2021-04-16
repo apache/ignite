@@ -74,6 +74,7 @@ public abstract class AbstractSerializer implements Serializer {
      *
      * @param key Key object.
      * @param val Value object.
+     * @return Row assembler.
      */
     protected abstract RowAssembler createAssembler(Object key, @Nullable Object val);
 

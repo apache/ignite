@@ -345,6 +345,7 @@ abstract class FieldAccessor {
      *
      * @param writer Row writer.
      * @param obj Source object.
+     * @throws Exception If write failed.
      */
     protected abstract void write0(RowAssembler writer, Object obj) throws Exception;
 
