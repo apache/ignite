@@ -15,32 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.future;
+package org.apache.ignite.internal.processors.cache;
 
-import javax.cache.CacheException;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.IgniteCacheFutureImpl;
+import java.util.concurrent.Executor;
+
+import org.apache.ignite.configuration.IgniteConfiguration;
 
 /**
- * Tests IgniteCacheFutureImpl.
+ * Tests {@link IgniteConfiguration#setAsyncContinuationExecutor(Executor)} with synchronous executor (old behavior).
  */
-public class IgniteCacheFutureImplTest extends IgniteFutureImplTest {
+public class CacheAsyncContinuationSynchronousExecutorTest extends CacheAsyncContinuationExecutorTest {
     /** {@inheritDoc} */
-    @Override protected <V> IgniteFutureImpl<V> createFuture(IgniteInternalFuture<V> fut) {
-        return new IgniteCacheFutureImpl<>(fut, Runnable::run);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setAsyncContinuationExecutor(Runnable::run);
     }
 
     /** {@inheritDoc} */
-    @Override protected Class<? extends Exception> expectedException() {
-        return CacheException.class;
+    @Override protected String expectedThreadNamePrefix() {
+        return "sys-stripe-";
     }
 
     /** {@inheritDoc} */
-    @Override protected void assertExpectedException(Exception e, Exception exp) {
-        if (exp instanceof IgniteException)
-            assertEquals(exp, e.getCause().getCause());
-        else
-            assertEquals(exp, e.getCause());
+    @Override protected boolean allowCacheOperationsInContinuation() {
+        return false;
     }
 }

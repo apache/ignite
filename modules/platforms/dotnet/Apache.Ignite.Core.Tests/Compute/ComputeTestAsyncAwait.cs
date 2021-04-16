@@ -15,29 +15,36 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Client.Cache
+namespace Apache.Ignite.Core.Tests.Compute
 {
     using System.Threading.Tasks;
-    using Apache.Ignite.Core.Tests.Client;
     using NUnit.Framework;
 
     /// <summary>
-    /// Tests thin cache operations with async/await.
+    /// Tests compute async continuation behavior.
     /// </summary>
-    public class CacheTestAsyncAwait : ClientTestBase
+    public class ComputeTestAsyncAwait : TestBase
     {
         /// <summary>
-        /// Tests that async continuations are executed on a ThreadPool thread, not on response handler thread.
+        /// Tests that RunAsync continuation does not capture Ignite threads.
         /// </summary>
         [Test]
-        public async Task TestAsyncAwaitContinuationIsExecutedOnThreadPool()
+        public async Task TestComputeRunAsyncContinuation()
         {
-            var cache = GetClientCache<int>();
-            await cache.PutAsync(1, 1).ConfigureAwait(false);
+            await Ignite.GetCompute().RunAsync(new ComputeAction());
 
-            // This causes deadlock if async continuation is executed on response handler thread.
-            cache.PutAsync(2, 2).Wait();
-            Assert.AreEqual(2, cache.Get(2));
+            StringAssert.StartsWith("Thread-", TestUtilsJni.GetJavaThreadName());
+        }
+
+        /// <summary>
+        /// Tests that ExecuteAsync continuation does not capture Ignite threads.
+        /// </summary>
+        [Test]
+        public async Task TestComputeExecuteAsyncContinuation()
+        {
+            await Ignite.GetCompute().ExecuteAsync(new StringLengthEmptyTask(), "abc");
+
+            StringAssert.StartsWith("Thread-", TestUtilsJni.GetJavaThreadName());
         }
     }
 }
