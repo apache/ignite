@@ -141,11 +141,6 @@ public class GridDhtPartitionSupplyMessageV2 extends GridDhtPartitionSupplyMessa
         return err;
     }
 
-    /** Set up message error */
-    public void setError(Throwable t) {
-         err = t;
-    }
-
     /** {@inheritDoc} */
     @Override public short directType() {
         return 158;
