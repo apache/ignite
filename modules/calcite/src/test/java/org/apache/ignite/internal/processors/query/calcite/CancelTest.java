@@ -36,7 +36,6 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.util.Collections.singletonList;
@@ -115,7 +114,6 @@ public class CancelTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-14289")
     @Test
     public void testNotOriginatorNodeStop() throws Exception {
         QueryEngine engine = Commons.lookupComponent(grid(0).context(), QueryEngine.class);
