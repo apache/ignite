@@ -86,7 +86,7 @@ public class MinusNode<Row> extends AbstractNode<Row> {
         if (waiting == 0)
             sources().get(curSrcIdx).request(waiting = IN_BUFFER_SIZE);
         else if (!inLoop)
-            context().execute(this::doFlush, this::onError);
+            context().execute(this::flush, this::onError);
     }
 
     /** */
@@ -148,14 +148,12 @@ public class MinusNode<Row> extends AbstractNode<Row> {
     }
 
     /** */
-    private void doFlush() throws Exception {
+    private void flush() throws Exception {
+        if (isClosed())
+            return;
+
         checkState();
 
-        flush();
-    }
-
-    /** */
-    private void flush() throws Exception {
         assert waiting == -1;
 
         int processed = 0;
@@ -177,7 +175,7 @@ public class MinusNode<Row> extends AbstractNode<Row> {
 
                 if (processed >= IN_BUFFER_SIZE && requested > 0) {
                     // Allow others to do their job.
-                    context().execute(this::doFlush, this::onError);
+                    context().execute(this::flush, this::onError);
 
                     return;
                 }
