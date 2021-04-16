@@ -161,7 +161,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     private final GridFutureAdapter<Void> activateFut = new GridFutureAdapter<>();
 
     /** User management operations. */
-    EnumSet<SecurityPermission> userOps = EnumSet.of(CREATE_USER, DROP_USER, ALTER_USER);
+    private final EnumSet<SecurityPermission> userOps = EnumSet.of(CREATE_USER, DROP_USER, ALTER_USER);
 
     /**
      * @param ctx Kernal context.

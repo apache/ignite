@@ -54,7 +54,7 @@ public class IgniteAuthenticationPluginProvider implements PluginProvider<Plugin
 
     /** {@inheritDoc} */
     @Override public <T extends IgnitePlugin> T plugin() {
-        return (T) new IgniteAuthenticationPlugin();
+        return (T)new IgniteAuthenticationPlugin();
     }
 
     /** {@inheritDoc} */

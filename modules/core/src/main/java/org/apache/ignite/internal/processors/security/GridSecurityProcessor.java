@@ -66,7 +66,7 @@ public interface GridSecurityProcessor extends GridProcessor {
      * Authenticates subject via underlying Authenticator.
      *
      * @param ctx Authentication context.
-     * @return {@code True} if succeeded, {@code false} otherwise.
+     * @return The security context associated with the authenticated user.
      * @throws IgniteCheckedException If error occurred.
      */
     public SecurityContext authenticate(AuthenticationContext ctx) throws IgniteCheckedException;
