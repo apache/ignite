@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.processors.cache.persistence.standbycluster.join;
 
 import java.util.Map;
-import org.apache.ignite.internal.processors.cache.persistence.standbycluster.AbstractNodeJoinTemplate;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.persistence.standbycluster.AbstractNodeJoinTemplate;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.junit.Assert;
 import org.junit.Ignore;

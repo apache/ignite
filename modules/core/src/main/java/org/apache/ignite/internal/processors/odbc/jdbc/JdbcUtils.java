@@ -21,9 +21,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Various JDBC utility methods.
@@ -33,7 +36,7 @@ public class JdbcUtils {
      * @param writer Binary writer.
      * @param items Query results items.
      */
-    public static void writeItems(BinaryWriterExImpl writer, List<List<Object>> items) {
+    public static void writeItems(BinaryWriterExImpl writer, List<List<Object>> items, JdbcProtocolContext protoCtx) {
         writer.writeInt(items.size());
 
         for (List<Object> row : items) {
@@ -41,7 +44,7 @@ public class JdbcUtils {
                 writer.writeInt(row.size());
 
                 for (Object obj : row)
-                    SqlListenerUtils.writeObject(writer, obj, false);
+                    writeObject(writer, obj, protoCtx);
             }
         }
     }
@@ -50,7 +53,7 @@ public class JdbcUtils {
      * @param reader Binary reader.
      * @return Query results items.
      */
-    public static List<List<Object>> readItems(BinaryReaderExImpl reader) {
+    public static List<List<Object>> readItems(BinaryReaderExImpl reader, JdbcProtocolContext protoCtx) {
         int rowsSize = reader.readInt();
 
         if (rowsSize > 0) {
@@ -62,7 +65,7 @@ public class JdbcUtils {
                 List<Object> col = new ArrayList<>(colsSize);
 
                 for (int colCnt = 0; colCnt < colsSize; ++colCnt)
-                    col.add(SqlListenerUtils.readObject(reader, false));
+                    col.add(readObject(reader, protoCtx));
 
                 items.add(col);
             }
@@ -104,5 +107,62 @@ public class JdbcUtils {
         }
         else
             return Collections.emptyList();
+    }
+
+    /**
+     * Read nullable Integer.
+     *
+     * @param reader Binary reader.
+     * @return read value.
+     */
+    @Nullable public static Integer readNullableInteger(BinaryReaderExImpl reader) {
+        return reader.readBoolean() ? reader.readInt() : null;
+    }
+
+    /**
+     * Write nullable integer.
+     *
+     * @param writer Binary writer.
+     * @param val Integer value..
+     */
+    public static void writeNullableInteger(BinaryWriterExImpl writer, @Nullable Integer val) {
+        writer.writeBoolean(val != null);
+
+        if (val != null)
+            writer.writeInt(val);
+    }
+
+    /**
+     * @param reader Reader.
+     * @param protoCtx Protocol context.
+     * @return Read object.
+     * @throws BinaryObjectException On error.
+     */
+    @Nullable public static Object readObject(
+        BinaryReaderExImpl reader,
+        JdbcProtocolContext protoCtx
+    ) throws BinaryObjectException {
+        return SqlListenerUtils.readObject(reader.readByte(), reader,
+            protoCtx.isFeatureSupported(JdbcThinFeature.CUSTOM_OBJECT), protoCtx.keepBinary());
+    }
+
+    /**
+     * @param writer Writer.
+     * @param obj Object to write.
+     * @param protoCtx Protocol context.
+     * @throws BinaryObjectException On error.
+     */
+    public static void writeObject(
+        BinaryWriterExImpl writer,
+        @Nullable Object obj,
+        JdbcProtocolContext protoCtx
+    ) throws BinaryObjectException {
+        if (obj == null) {
+            writer.writeByte(GridBinaryMarshaller.NULL);
+
+            return;
+        }
+
+        SqlListenerUtils.writeObject(writer, obj, protoCtx.isFeatureSupported(JdbcThinFeature.CUSTOM_OBJECT));
     }
 }

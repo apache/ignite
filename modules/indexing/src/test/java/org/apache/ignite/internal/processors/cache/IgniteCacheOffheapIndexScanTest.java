@@ -42,7 +42,7 @@ public class IgniteCacheOffheapIndexScanTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration<?,?> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
+        CacheConfiguration<?, ?> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cacheCfg.setCacheMode(LOCAL);
         cacheCfg.setIndexedTypes(
@@ -73,14 +73,14 @@ public class IgniteCacheOffheapIndexScanTest extends GridCommonAbstractTest {
      */
     @Test
     public void testQueryPlan() throws Exception {
-        for (int i = 0 ; i < 1000; i++)
+        for (int i = 0; i < 1000; i++)
             cache.put(i, new Person(i, "firstName" + i, "lastName" + i, i % 100));
 
         final AtomicBoolean end = new AtomicBoolean();
 
         IgniteInternalFuture<?> fut = multithreadedAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                while(!end.get())
+                while (!end.get())
                     cache.query(new SqlFieldsQuery("select _val from Person")).getAll();
 
                 return null;

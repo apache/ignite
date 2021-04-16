@@ -38,11 +38,10 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -108,17 +107,17 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
         Map<String, Collection<String>> res = U.newHashMap(results.size());
         Map<String, VisorClusterNode> nodesInfo = U.newHashMap(results.size());
 
-        for (ComputeJobResult result: results){
+        for (ComputeJobResult result: results) {
             ClusterNode node = result.getNode();
 
             String nodeId = node.consistentId().toString();
 
-            if(result.getException() != null)
+            if (result.getException() != null)
                 exRes.put(nodeId, result.getException());
             else if (result.getData() != null) {
                 Collection<String> data = result.getData();
 
-                if(data != null)
+                if (data != null)
                     res.put(nodeId, data);
             }
 
@@ -168,7 +167,7 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
 
                 }
             }
-            catch (IgniteCheckedException e){
+            catch (IgniteCheckedException e) {
                 U.error(log, "Failed to perform WAL task", e);
 
                 throw new IgniteException("Failed to perform WAL task", e);
@@ -185,7 +184,7 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
         Collection<String> getUnusedWalSegments(
             GridCacheDatabaseSharedManager dbMgr,
             FileWriteAheadLogManager wal
-        ) throws IgniteCheckedException{
+        ) throws IgniteCheckedException {
             WALPointer lowBoundForTruncate = dbMgr.checkpointHistory().firstCheckpointPointer();
 
             if (lowBoundForTruncate == null)
@@ -197,7 +196,7 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
 
             Collection<String> res = new ArrayList<>(walFiles != null && walFiles.length > 0 ? walFiles.length - 1 : 0);
 
-            if(walFiles != null && walFiles.length > 0) {
+            if (walFiles != null && walFiles.length > 0) {
                 sortWalFiles(walFiles);
 
                 // Obtain index of last archived WAL segment, it will not be deleted.
@@ -238,7 +237,7 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
 
             dbMgr.onWalTruncated(lowBoundForTruncate);
 
-            int num = wal.truncate(null, lowBoundForTruncate);
+            int num = wal.truncate(lowBoundForTruncate);
 
             if (walFiles != null) {
                 sortWalFiles(walFiles);
@@ -265,11 +264,9 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
          *
          */
         private int resolveMaxReservedIndex(FileWriteAheadLogManager wal, WALPointer lowBoundForTruncate) {
-            FileWALPointer low = (FileWALPointer)lowBoundForTruncate;
-
             int resCnt = wal.reserved(null, lowBoundForTruncate);
 
-            long highIdx = low.index();
+            long highIdx = lowBoundForTruncate.index();
 
             return (int)(highIdx - resCnt + 1);
         }
@@ -308,7 +305,6 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
 
             return dir;
         }
-
 
         /**
          * Sort WAL files according their indices.

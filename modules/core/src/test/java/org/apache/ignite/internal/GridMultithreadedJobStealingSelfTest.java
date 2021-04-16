@@ -46,6 +46,7 @@ import org.apache.ignite.spi.failover.jobstealing.JobStealingFailoverSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
@@ -116,12 +117,12 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
             info("Metrics [nodeId=" + g.cluster().localNode().id() +
                 ", metrics=" + g.cluster().localNode().metrics() + ']');
 
-        assertNull("Test failed with exception: ",fail.get());
+        assertNull("Test failed with exception: ", fail.get());
 
         // Total jobs number is threadsNum * 2
-        assertEquals("Incorrect processed jobs number",threadsNum * 2, stolen.get() + noneStolen.get());
+        assertEquals("Incorrect processed jobs number", threadsNum * 2, stolen.get() + noneStolen.get());
 
-        assertFalse( "No jobs were stolen.",stolen.get() == 0);
+        assertFalse( "No jobs were stolen.", stolen.get() == 0);
 
         for (Ignite g : G.allGrids())
             assertTrue("Node get no jobs.", nodes.contains(g.name()));
@@ -187,12 +188,12 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
 
         future.get();
 
-        assertNull("Test failed with exception: ",fail.get());
+        assertNull("Test failed with exception: ", fail.get());
 
         // Total jobs number is threadsNum * 3
-        assertEquals("Incorrect processed jobs number",threadsNum * jobsPerTask, stolen.get() + noneStolen.get());
+        assertEquals("Incorrect processed jobs number", threadsNum * jobsPerTask, stolen.get() + noneStolen.get());
 
-        assertFalse( "No jobs were stolen.",stolen.get() == 0);
+        assertFalse( "No jobs were stolen.", stolen.get() == 0);
 
         for (Ignite g : G.allGrids())
             assertTrue("Node get no jobs.", nodes.contains(g.name()));
@@ -244,7 +245,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
         }
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             @Nullable Object arg) {
             assert subgrid.size() == 2 : "Invalid subgrid size: " + subgrid.size();
 

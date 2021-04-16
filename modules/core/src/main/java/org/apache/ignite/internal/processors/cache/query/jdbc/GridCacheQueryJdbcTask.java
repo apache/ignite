@@ -55,6 +55,7 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.compute.ComputeJobResultPolicy.WAIT;
@@ -80,7 +81,7 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
     private Ignite ignite;
 
     /** {@inheritDoc} */
-    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, byte[] arg) {
+    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, byte[] arg) {
         try {
             assert arg != null;
 
@@ -293,7 +294,7 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
 
             assert futId != null;
 
-            ConcurrentMap<UUID,Cursor> m = ignite.cluster().nodeLocalMap();
+            ConcurrentMap<UUID, Cursor> m = ignite.cluster().nodeLocalMap();
 
             if (c == null)
                 c = m.get(futId);
@@ -349,7 +350,7 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
          * @return {@code true} If succeeded.
          */
         private boolean remove(UUID futId, Cursor c) {
-            if (ignite.cluster().<UUID,Cursor>nodeLocalMap().remove(futId, c)) {
+            if (ignite.cluster().<UUID, Cursor>nodeLocalMap().remove(futId, c)) {
                 c.cursor.close();
 
                 return true;
@@ -368,7 +369,7 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
             SCHEDULER.schedule(new CAX() {
                 @Override public void applyx() {
                     for (;;) {
-                        Cursor c = ignite.cluster().<UUID,Cursor>nodeLocalMap().get(id);
+                        Cursor c = ignite.cluster().<UUID, Cursor>nodeLocalMap().get(id);
 
                         if (c == null)
                             break;

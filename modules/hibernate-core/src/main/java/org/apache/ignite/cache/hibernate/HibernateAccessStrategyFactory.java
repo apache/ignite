@@ -100,7 +100,7 @@ public class HibernateAccessStrategyFactory {
     /**
      * @param cfgValues {@link Map} of config values.
      */
-    public void start(Map<Object, Object> cfgValues)  {
+    public void start(Map<Object, Object> cfgValues) {
         cachePrefix = cfgValues.getOrDefault(CACHE_PREFIX, "").toString();
 
         verifyAtomicity = Boolean.valueOf(cfgValues.getOrDefault(VERIFY_ATOMICITY, verifyAtomicity).toString());

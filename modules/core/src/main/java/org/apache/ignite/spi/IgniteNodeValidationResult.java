@@ -35,6 +35,14 @@ public class IgniteNodeValidationResult {
 
     /**
      * @param nodeId Offending node ID.
+     * @param msg Message logged locally and sending to joining node.
+     */
+    public IgniteNodeValidationResult(UUID nodeId, String msg) {
+        this(nodeId, msg, msg);
+    }
+
+    /**
+     * @param nodeId Offending node ID.
      * @param msg Message logged locally.
      * @param sndMsg Message sent to joining node.
      */

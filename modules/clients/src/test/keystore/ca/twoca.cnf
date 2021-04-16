@@ -16,16 +16,17 @@
 
 [ ca ]
 default_ca = twoca
- 
+
 [ twoca ]
-certificate = ./twoca.pem
-database = ./twoindex.txt
-private_key = ./twoca.key
-new_certs_dir = ./
+dir=ca
+certificate = $dir/twoca.pem
+database = $dir/twoca-index.txt
+private_key = $dir/twoca.key
+new_certs_dir = $dir/certs
 default_md = sha1
 policy = policy_match
-serial = ./twoserial
+serial = $dir/twoca-serial
 default_days = 365
- 
+
 [policy_match]
 commonName = supplied

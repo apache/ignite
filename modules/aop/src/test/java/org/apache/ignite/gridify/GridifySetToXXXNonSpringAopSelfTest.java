@@ -51,7 +51,7 @@ import org.junit.Test;
  *
  * 2. Classpath should contains the ${IGNITE_HOME}/modules/tests/config/aop/aspectj folder.
  */
-@GridCommonTest(group="AOP")
+@GridCommonTest(group = "AOP")
 public class GridifySetToXXXNonSpringAopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.

@@ -27,6 +27,7 @@ import org.apache.ignite.internal.visor.VisorDataTransferObject;
 /**
  * Argument for task returns changing of sampling state result.
  */
+@Deprecated
 public class VisorIgfsSamplingStateTaskArg extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;

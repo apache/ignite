@@ -26,16 +26,16 @@
     <parent>
         <groupId>org.apache.ignite</groupId>
         <artifactId>ignite-cassandra</artifactId>
-        <version>2.8.0-SNAPSHOT</version>
+        <version>2.11.0-SNAPSHOT</version>
         <relativePath>..</relativePath>
     </parent>
 
     <artifactId>ignite-cassandra-store</artifactId>
-    <version>2.8.0-SNAPSHOT</version>
+    <version>2.11.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
     <properties>
-        <commons-beanutils.version>1.9.2</commons-beanutils.version>
+        <commons-beanutils.version>1.9.4</commons-beanutils.version>
         <cassandra-driver.version>3.2.0</cassandra-driver.version>
         <cassandra-all.version>3.11.3</cassandra-all.version>
         <netty.version>4.1.27.Final</netty.version>
@@ -66,6 +66,13 @@
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-log4j</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-tools</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
@@ -108,6 +115,12 @@
         </dependency>
 
         <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-resolver</artifactId>
+            <version>${netty.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
             <version>${guava.version}</version>
@@ -117,6 +130,12 @@
             <groupId>com.codahale.metrics</groupId>
             <artifactId>metrics-core</artifactId>
             <version>${metrics-core.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
         </dependency>
 
         <dependency>
@@ -305,6 +324,14 @@
                 </executions>
             </plugin>
 
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>2.8.2</version>
+                <configuration>
+                    <skip>false</skip>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>

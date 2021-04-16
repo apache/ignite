@@ -17,21 +17,17 @@
 
 package org.apache.ignite.failure;
 
-import java.lang.management.ManagementFactory;
 import java.util.concurrent.CountDownLatch;
-import javax.management.MBeanServer;
-import javax.management.MBeanServerInvocationHandler;
-import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.worker.FailureHandlingMxBeanImpl;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.mxbean.FailureHandlingMxBean;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -183,51 +179,34 @@ public class FailureHandlingConfigurationTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT, value = "80000")
+    @WithSystemProperty(key = IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT, value = "90000")
     public void testOverridingBySysProps() throws Exception {
-        String prevWorkerProp = System.getProperty(IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT);
-        String prevCheckpointProp = System.getProperty(IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT);
+        sysWorkerBlockedTimeout = 1L;
+        checkpointReadLockTimeout = 2L;
 
-        long workerPropVal = 80_000;
-        long checkpointPropVal = 90_000;
+        IgniteEx ignite = startGrid(0);
 
-        System.setProperty(IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT, String.valueOf(workerPropVal));
-        System.setProperty(IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT, String.valueOf(checkpointPropVal));
+        ignite.cluster().active(true);
 
-        try {
-            sysWorkerBlockedTimeout = 1L;
-            checkpointReadLockTimeout = 2L;
+        WorkersRegistry reg = ignite.context().workersRegistry();
 
-            IgniteEx ignite = startGrid(0);
+        IgniteCacheDatabaseSharedManager dbMgr = ignite.context().cache().context().database();
 
-            ignite.cluster().active(true);
+        FailureHandlingMxBean mBean = getMBean();
 
-            WorkersRegistry reg = ignite.context().workersRegistry();
+        assertEquals(sysWorkerBlockedTimeout, ignite.configuration().getSystemWorkerBlockedTimeout());
+        assertEquals(checkpointReadLockTimeout,
+            ignite.configuration().getDataStorageConfiguration().getCheckpointReadLockTimeout());
 
-            IgniteCacheDatabaseSharedManager dbMgr = ignite.context().cache().context().database();
+        long workerPropVal = Long.getLong(IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT);
+        long checkpointPropVal = Long.getLong(IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT);
 
-            FailureHandlingMxBean mBean = getMBean();
+        assertEquals(workerPropVal, reg.getSystemWorkerBlockedTimeout());
+        assertEquals(checkpointPropVal, dbMgr.checkpointReadLockTimeout());
 
-            assertEquals(sysWorkerBlockedTimeout, ignite.configuration().getSystemWorkerBlockedTimeout());
-            assertEquals(checkpointReadLockTimeout,
-                ignite.configuration().getDataStorageConfiguration().getCheckpointReadLockTimeout());
-
-            assertEquals(workerPropVal, reg.getSystemWorkerBlockedTimeout());
-            assertEquals(checkpointPropVal, dbMgr.checkpointReadLockTimeout());
-
-            assertEquals(workerPropVal, mBean.getSystemWorkerBlockedTimeout());
-            assertEquals(checkpointPropVal, mBean.getCheckpointReadLockTimeout());
-        }
-        finally {
-            if (prevWorkerProp != null)
-                System.setProperty(IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT, prevWorkerProp);
-            else
-                System.clearProperty(IGNITE_SYSTEM_WORKER_BLOCKED_TIMEOUT);
-
-            if (prevCheckpointProp != null)
-                System.setProperty(IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT, prevCheckpointProp);
-            else
-                System.clearProperty(IGNITE_CHECKPOINT_READ_LOCK_TIMEOUT);
-        }
+        assertEquals(workerPropVal, mBean.getSystemWorkerBlockedTimeout());
+        assertEquals(checkpointPropVal, mBean.getCheckpointReadLockTimeout());
     }
 
     /**
@@ -256,13 +235,7 @@ public class FailureHandlingConfigurationTest extends GridCommonAbstractTest {
 
     /** */
     private FailureHandlingMxBean getMBean() throws Exception {
-        ObjectName name = U.makeMBeanName(getTestIgniteInstanceName(0), "Kernal",
-            FailureHandlingMxBeanImpl.class.getSimpleName());
-
-        MBeanServer srv = ManagementFactory.getPlatformMBeanServer();
-
-        assertTrue(srv.isRegistered(name));
-
-        return MBeanServerInvocationHandler.newProxyInstance(srv, name, FailureHandlingMxBean.class, true);
+        return getMxBean(getTestIgniteInstanceName(0), "Kernal",
+            FailureHandlingMxBeanImpl.class, FailureHandlingMxBean.class);
     }
 }

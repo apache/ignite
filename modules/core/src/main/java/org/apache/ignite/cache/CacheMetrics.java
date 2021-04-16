@@ -21,6 +21,9 @@ import javax.cache.Cache;
 import javax.cache.integration.CacheLoader;
 import javax.cache.integration.CacheWriter;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.mxbean.TransactionsMXBean;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Cache metrics used to obtain statistics on cache itself.
@@ -315,6 +318,7 @@ public interface CacheMetrics {
 
     /**
      * Gets number of non-{@code null} values in the cache.
+     * Note this method will always return {@code 0}
      *
      * @return Number of non-{@code null} values in the cache.
      * @deprecated Can overflow. Use {@link CacheMetrics#getCacheSize()} instead.
@@ -331,6 +335,7 @@ public interface CacheMetrics {
 
     /**
      * Gets number of keys in the cache, possibly with {@code null} values.
+     * Note this method will always return {@code 0}
      *
      * @return Number of keys in the cache.
      * @deprecated Can overflow. Use {@link CacheMetrics#getCacheSize()} instead.
@@ -641,7 +646,7 @@ public interface CacheMetrics {
     public long getRebalancingStartTime();
 
     /**
-     * @return Number of partitions need to be cleared before actual rebalance start.
+     * @return The number of partitions need to be cleared before actual rebalance start.
      */
     public long getRebalanceClearingPartitionsLeft();
 
@@ -689,6 +694,9 @@ public interface CacheMetrics {
 
     /**
      * Checks whether cache topology is valid for read operations.
+     * <p>
+     * Note: the method will return {@code false} if any partition was lost despite the fact others can be awailable
+     * for reading.
      *
      * @return {@code true} when cache topology is valid for reading.
      */
@@ -696,8 +704,35 @@ public interface CacheMetrics {
 
     /**
      * Checks whether cache topology is valid for write operations.
+     * <p>
+     * Note: the method will return {@code false} if any partition was lost despite the fact others can be awailable
+     * for writing according to configured partition loss policy.
      *
      * @return {@code true} when cache topology is valid for writing.
      */
     public boolean isValidForWriting();
+
+    /**
+     * Checks if there were any tx key collisions last time.
+     * Interval for check specified throught: {@link IgniteSystemProperties#IGNITE_DUMP_TX_COLLISIONS_INTERVAL} or
+     * {@link TransactionsMXBean#setTxKeyCollisionsInterval(int)}.
+     *
+     * @return Key collisions and appropriate queue size string representation.
+     */
+    @NotNull public String getTxKeyCollisions();
+
+    /**
+     * Return {@code true} if index rebuild is in progress.
+     *
+     * @return {@code true} if index rebuild is in progress.
+     */
+    public boolean isIndexRebuildInProgress();
+
+    /**
+     * Return number of keys processed during index rebuilding.
+     * To get remaining number of keys for rebuilding, subtract current value from {@link #getCacheSize}.
+     *
+     * @return Number of keys processed during index rebuilding.
+     */
+    public long getIndexRebuildKeysProcessed();
 }

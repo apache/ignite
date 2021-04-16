@@ -64,7 +64,7 @@ public class SqlLexer implements SqlLexerToken {
      * @return Next token.
      */
     public SqlLexerToken lookAhead() {
-        int pos0  = pos;
+        int pos0 = pos;
         String token0 = token;
         int tokenPos0 = tokenPos;
         SqlLexerTokenType tokenTyp0 = tokenTyp;

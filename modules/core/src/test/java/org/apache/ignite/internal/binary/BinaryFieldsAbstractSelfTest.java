@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.UUID;
 import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
@@ -27,12 +32,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import java.math.BigDecimal;
-import java.sql.Timestamp;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.UUID;
 import org.junit.Test;
 
 /**
@@ -598,34 +597,56 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
     public static class TestObject {
         /** Primitive fields. */
         public byte fByte;
+
         public boolean fBool;
+
         public short fShort;
+
         public char fChar;
+
         public int fInt;
+
         public long fLong;
+
         public float fFloat;
+
         public double fDouble;
 
         public byte[] fByteArr;
+
         public boolean[] fBoolArr;
+
         public short[] fShortArr;
+
         public char[] fCharArr;
+
         public int[] fIntArr;
+
         public long[] fLongArr;
+
         public float[] fFloatArr;
+
         public double[] fDoubleArr;
 
         /** Special fields. */
         public String fString;
+
         public Date fDate;
+
         public Timestamp fTimestamp;
+
         public UUID fUuid;
+
         public BigDecimal fDecimal;
 
         public String[] fStringArr;
+
         public Date[] fDateArr;
+
         public Timestamp[] fTimestampArr;
+
         public UUID[] fUuidArr;
+
         public BigDecimal[] fDecimalArr;
 
         /** Nested object. */

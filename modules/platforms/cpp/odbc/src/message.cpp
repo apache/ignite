@@ -84,9 +84,10 @@ namespace ignite
             {
                 utility::WriteString(writer, config.GetUser());
                 utility::WriteString(writer, config.GetPassword());
-
-                writer.WriteInt8(config.GetNestedTxMode());
             }
+
+            if (version >= ProtocolVersion::VERSION_2_7_0)
+                writer.WriteInt8(config.GetNestedTxMode());
         }
 
         QueryExecuteRequest::QueryExecuteRequest(const std::string& schema, const std::string& sql,
@@ -221,6 +222,26 @@ namespace ignite
             writer.WriteObject<std::string>(schema);
             writer.WriteObject<std::string>(table);
             writer.WriteObject<std::string>(column);
+        }
+
+        QueryGetResultsetMetaRequest::QueryGetResultsetMetaRequest(const std::string &schema, const std::string &sqlQuery) :
+            schema(schema),
+            sqlQuery(sqlQuery)
+        {
+            // No-op.
+        }
+
+        QueryGetResultsetMetaRequest::~QueryGetResultsetMetaRequest()
+        {
+            // No-op.
+        }
+
+        void QueryGetResultsetMetaRequest::Write(impl::binary::BinaryWriterImpl &writer, const ProtocolVersion &) const
+        {
+            writer.WriteInt8(RequestType::META_RESULTSET);
+
+            writer.WriteObject<std::string>(schema);
+            writer.WriteObject<std::string>(sqlQuery);
         }
 
         QueryGetTablesMetaRequest::QueryGetTablesMetaRequest(const std::string& catalog, const std::string& schema,
@@ -454,8 +475,7 @@ namespace ignite
             // No-op.
         }
 
-        void QueryFetchResponse::ReadOnSuccess(impl::binary::BinaryReaderImpl& reader,
-            const ProtocolVersion& ver)
+        void QueryFetchResponse::ReadOnSuccess(impl::binary::BinaryReaderImpl& reader, const ProtocolVersion&)
         {
             queryId = reader.ReadInt64();
 
@@ -474,6 +494,21 @@ namespace ignite
 
         void QueryGetColumnsMetaResponse::ReadOnSuccess(impl::binary::BinaryReaderImpl& reader,
             const ProtocolVersion& ver)
+        {
+            meta::ReadColumnMetaVector(reader, meta, ver);
+        }
+
+        QueryGetResultsetMetaResponse::QueryGetResultsetMetaResponse()
+        {
+            // No-op.
+        }
+
+        QueryGetResultsetMetaResponse::~QueryGetResultsetMetaResponse()
+        {
+            // No-op.
+        }
+
+        void QueryGetResultsetMetaResponse::ReadOnSuccess(impl::binary::BinaryReaderImpl &reader, const ProtocolVersion& ver)
         {
             meta::ReadColumnMetaVector(reader, meta, ver);
         }

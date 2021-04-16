@@ -80,7 +80,7 @@ public class GridMetadataAwareAdapterLoadTest extends GridCommonAbstractTest {
 
                 for (int i = 0; i < 1_000_000; i++) {
                     GridCacheMockEntry<String, String> entry = new GridCacheMockEntry<>(KEY_VALUE);
-                    switch (c) {//commented lines for old API
+                    switch (c) { //commented lines for old API
                         case -1:
                             for (int j = 9; j >= 0; j--)
                                 //entry.addMeta(uuids[j], dic[i]);

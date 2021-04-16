@@ -17,10 +17,10 @@
 
 package org.apache.ignite.yardstick.upload;
 
-import com.beust.jcommander.Parameter;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import com.beust.jcommander.Parameter;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.yardstick.IgniteBenchmarkArguments;

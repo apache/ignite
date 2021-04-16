@@ -82,7 +82,7 @@ public class GridNioBenchmarkTest {
             }
         };
 
-        IgniteLogger log  = new GridTestLog4jLogger(U.resolveIgniteUrl("config/ignite-log4j.xml"));
+        IgniteLogger log = new GridTestLog4jLogger(U.resolveIgniteUrl("config/ignite-log4j.xml"));
 
         GridNioServer.<ByteBuffer>builder()
             .address(InetAddress.getByName("localhost"))

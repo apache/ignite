@@ -99,7 +99,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      */
     private static CacheConfiguration createCache(String name, CacheMode mode, Class<?> clsK, Class<?> clsV) {
-        CacheConfiguration<?,?> cc = defaultCacheConfiguration();
+        CacheConfiguration<?, ?> cc = defaultCacheConfiguration();
 
         cc.setName(name);
         cc.setCacheMode(mode);
@@ -220,7 +220,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testApiQueries() throws Exception {
-        IgniteCache<Object,Object> c = ignite.cache(PART_CACHE_NAME);
+        IgniteCache<Object, Object> c = ignite.cache(PART_CACHE_NAME);
 
         c.query(new SqlFieldsQuery("select cast(? as varchar) from FactPurchase").setArgs("aaa")).getAll();
 
@@ -258,7 +258,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
         assertEquals(2, cursors.size());
 
-        for(FieldsQueryCursor<List<?>> cur : cursors)
+        for (FieldsQueryCursor<List<?>> cur : cursors)
             U.closeQuiet(cur);
 
         qry.setLocal(true);
@@ -278,7 +278,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
      * @param idx Index.
      * @return Int.
      */
-    private static int i(List<?> l, int idx){
+    private static int i(List<?> l, int idx) {
         return ((Number)l.get(idx)).intValue();
     }
 

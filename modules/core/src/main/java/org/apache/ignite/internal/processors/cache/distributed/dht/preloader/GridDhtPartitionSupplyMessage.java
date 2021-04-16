@@ -219,7 +219,8 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
      * @param cacheObjCtx Cache object context.
      * @throws IgniteCheckedException If failed.
      */
-    void addEntry0(int p, boolean historical, GridCacheEntryInfo info, GridCacheSharedContext ctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
+    void addEntry0(int p, boolean historical, GridCacheEntryInfo info, GridCacheSharedContext ctx,
+        CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         assert info != null;
         assert info.key() != null : info;
         assert info.value() != null || historical : info;

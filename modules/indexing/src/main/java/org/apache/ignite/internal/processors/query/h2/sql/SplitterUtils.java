@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
+import java.util.TreeSet;
 import org.apache.ignite.IgniteException;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.TreeSet;
 
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst.TRUE;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlFunctionType.MAX;
@@ -158,6 +157,35 @@ public class SplitterUtils {
 
             if (join.isLeftOuter())
                 return true;
+
+            from = join.leftTable();
+        }
+
+        return false;
+    }
+
+    /**
+     * Checks whether the expression has an OUTER JOIN from replicated to partitioned.
+     *
+     * This is used to infer the `treatReplicatedAsPartitioned` flag
+     * to eventually pass it to {@link org.apache.ignite.spi.indexing.IndexingQueryFilterImpl}.
+     *
+     * @param from FROM expression.
+     * @return {@code true} if the expression has an OUTER JOIN from replicated to partitioned.
+     */
+    public static boolean hasOuterJoinReplicatedPartitioned(GridSqlAst from) {
+        boolean isRightPartitioned = false;
+        while (from instanceof GridSqlJoin) {
+            GridSqlJoin join = (GridSqlJoin)from;
+
+            assert !(join.rightTable() instanceof GridSqlJoin);
+
+            isRightPartitioned = isRightPartitioned || hasPartitionedTables(join.rightTable());
+
+            if (join.isLeftOuter()) {
+                boolean isLeftPartitioned = hasPartitionedTables(join.leftTable());
+                return !isLeftPartitioned && isRightPartitioned;
+            }
 
             from = join.leftTable();
         }

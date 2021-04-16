@@ -39,7 +39,7 @@ public class IgnitePdsCacheObjectBinaryProcessorOnDiscoveryTest extends GridComm
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if ("client".equals(igniteInstanceName))
-            cfg.setClientMode(true).setFailureHandler(new StopNodeFailureHandler());
+            cfg.setFailureHandler(new StopNodeFailureHandler());
 
         return cfg.setDataStorageConfiguration(new DataStorageConfiguration()
                         .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
@@ -86,7 +86,7 @@ public class IgnitePdsCacheObjectBinaryProcessorOnDiscoveryTest extends GridComm
 
         startGrid(0);
 
-        IgniteEx client = startGrid(getConfiguration("client"));
+        IgniteEx client = startClientGrid(getConfiguration("client"));
 
         startGrid(1);
 
@@ -110,7 +110,7 @@ public class IgnitePdsCacheObjectBinaryProcessorOnDiscoveryTest extends GridComm
         BinaryObjectBuilder builder = ig.binary().builder(typeName);
 
         if (fields != null) {
-            for (IgniteBiTuple<String,Class<?>> field: fields)
+            for (IgniteBiTuple<String, Class<?>> field: fields)
                 builder.setField(field.get1(), field.get2());
         }
 

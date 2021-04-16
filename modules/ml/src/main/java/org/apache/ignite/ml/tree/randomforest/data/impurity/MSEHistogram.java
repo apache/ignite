@@ -150,7 +150,7 @@ public class MSEHistogram extends ImpurityHistogram implements ImpurityComputer<
      * @param cnt Counter value.
      * @param ys plus of Ys.
      * @param y2s plus of Y^2 s.
-     * @return impurity value.
+     * @return Impurity value.
      */
     private double impurity(double cnt, double ys, double y2s) {
         return y2s - 2.0 * ys / cnt * ys + Math.pow(ys / cnt, 2) * cnt;
@@ -235,7 +235,7 @@ public class MSEHistogram extends ImpurityHistogram implements ImpurityComputer<
     }
 
     /**
-     * Class for label summurizing in histograms.
+     * Class for label summarizing in histograms.
      */
     private static class SumOfLabelsHistogram extends BootstrappedVectorsHistogram {
         /** Serial version uid. */

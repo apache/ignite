@@ -132,9 +132,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
      */
     @Test
     public void testClientOnlyNode() throws Exception {
-        try {
-            Ignite g = startGrid("client");
-
+        try (Ignite g = startClientGrid("client")) {
             IgniteCache<Integer, Integer> c = jcache(g, Integer.class, Integer.class);
 
             for (int i = 0; i < 10; i++)
@@ -156,9 +154,6 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
 
                 i++;
             }
-        }
-        finally {
-            stopGrid("client");
         }
     }
 
@@ -356,12 +351,10 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
      */
     @Test
     public void testNodeLeft() throws Exception {
-        Ignite g = startGrid("client");
+        try (Ignite client = startClientGrid("client")) {
+            assertTrue(client.configuration().isClientMode());
 
-        try {
-            assertTrue(g.configuration().isClientMode());
-
-            IgniteCache<Integer, Integer> cache = jcache(g, Integer.class, Integer.class);
+            IgniteCache<Integer, Integer> cache = jcache(client, Integer.class, Integer.class);
 
             for (int i = 0; i < 1000; i++)
                 cache.put(i, i);
@@ -381,18 +374,21 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
 
             assertEquals(1, mapNode1.size() + mapNode2.size() + mapNode3.size());
 
-            final UUID nodeId = g.cluster().localNode().id();
+            final UUID nodeId = client.cluster().localNode().id();
 
-            final CountDownLatch latch = new CountDownLatch(1);
+            final CountDownLatch latch = new CountDownLatch(3);
 
-            grid(0).events().localListen(new IgnitePredicate<Event>() {
-                @Override public boolean apply(Event evt) {
-                    if (((DiscoveryEvent)evt).eventNode().id().equals(nodeId))
-                        latch.countDown();
+            // Add listeners on all nodes.
+            for (int i = 0; i < 3; i++) {
+                grid(i).events().localListen(new IgnitePredicate<Event>() {
+                    @Override public boolean apply(Event evt) {
+                        if (((DiscoveryEvent)evt).eventNode().id().equals(nodeId))
+                            latch.countDown();
 
-                    return true;
-                }
-            }, EVT_NODE_LEFT, EVT_NODE_FAILED);
+                        return true;
+                    }
+                }, EVT_NODE_LEFT, EVT_NODE_FAILED);
+            }
 
             stopGrid("client");
 
@@ -401,9 +397,6 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
             assertEquals(0, mapNode1.size());
             assertEquals(0, mapNode2.size());
             assertEquals(0, mapNode3.size());
-        }
-        finally {
-            stopGrid("client");
         }
     }
 

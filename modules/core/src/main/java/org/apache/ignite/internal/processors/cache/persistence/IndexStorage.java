@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Meta store.
@@ -45,6 +47,17 @@ public interface IndexStorage {
     public RootPage allocateIndex(String idxName) throws IgniteCheckedException;
 
     /**
+     * Find index root.
+     *
+     * @param cacheId Cache ID.
+     * @param idxName Index name.
+     * @param segment Segment.
+     * @return Root ID or null if no page was found.
+     * @throws IgniteCheckedException  If failed.
+     */
+    public @Nullable RootPage findCacheIndex(Integer cacheId, String idxName, int segment) throws IgniteCheckedException;
+
+    /**
      * Deallocate index page and remove from tree.
      *
      * @param cacheId Cache ID.
@@ -70,4 +83,19 @@ public interface IndexStorage {
      * @throws IgniteCheckedException  If failed.
      */
     public void destroy() throws IgniteCheckedException;
+
+    /**
+     * @return Index names of all indexes which this storage keeps.
+     *
+     * @throws IgniteCheckedException  If failed.
+     */
+    public Collection<String> getIndexNames() throws IgniteCheckedException;
+
+    /**
+     *
+     * @param idxName Index name to check.
+     * @param cacheId Cache id to check.
+     * @return True if the given idxName could be assosiated with the given cacheId (existing is not checked).
+     */
+    boolean nameIsAssosiatedWithCache(String idxName, int cacheId);
 }

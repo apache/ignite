@@ -175,7 +175,7 @@ public abstract class CacheAbstractQueryDetailMetricsSelfTest extends GridCommon
         String lastMetrics = "";
 
         for (QueryDetailMetrics m : metrics)
-            lastMetrics += m.queryType() +  " " + m.query() + ";";
+            lastMetrics += m.queryType() + " " + m.query() + ";";
 
         assertTrue(lastMetrics.contains("SQL_FIELDS select * from String limit 2;"));
         assertTrue(lastMetrics.contains("SCAN A;"));
@@ -232,7 +232,7 @@ public abstract class CacheAbstractQueryDetailMetricsSelfTest extends GridCommon
         private final IgniteCache cache;
 
         /** */
-        private final  Query qry;
+        private final Query qry;
 
         /** */
         Worker(IgniteCache cache, Query qry) {

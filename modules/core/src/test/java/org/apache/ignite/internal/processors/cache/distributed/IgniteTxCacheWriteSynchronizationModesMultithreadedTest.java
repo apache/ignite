@@ -32,7 +32,6 @@ import javax.cache.integration.CacheWriterException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
@@ -41,6 +40,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -50,8 +50,8 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionOptimisticException;
+import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -77,16 +77,11 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
     private static final int NODES = SRVS + CLIENTS;
 
     /** */
-    private boolean clientMode;
-
-    /** */
     private static final int MULTITHREADED_TEST_KEYS = 100;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(clientMode);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
@@ -104,17 +99,10 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
 
         startGridsMultiThreaded(SRVS);
 
-        clientMode = true;
-
-        startGridsMultiThreaded(SRVS, CLIENTS);
+        startClientGridsMultiThreaded(SRVS, CLIENTS);
 
         for (int i = 0; i < CLIENTS; i++)
             assertTrue(grid(SRVS + i).configuration().isClientMode());
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-9470", MvccFeatureChecker.forcedMvcc());
     }
 
     /**
@@ -231,7 +219,16 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
 
                     Integer key = rnd.nextInt(MULTITHREADED_TEST_KEYS);
 
-                    cache.put(key, rnd.nextInt());
+                    while (true) {
+                        try {
+                            cache.put(key, rnd.nextInt());
+
+                            break;
+                        }
+                        catch (CacheException e) {
+                            MvccFeatureChecker.assertMvccWriteConflict(e);
+                        }
+                    }
                 }
             });
 
@@ -247,7 +244,19 @@ public class IgniteTxCacheWriteSynchronizationModesMultithreadedTest extends Gri
                         map.put(key, rnd.nextInt());
                     }
 
-                    cache.putAll(map);
+                    while (true) {
+                        try {
+                            cache.putAll(map);
+
+                            break;
+                        }
+                        catch (CacheException e) {
+                            if (X.hasCause(e, TransactionRollbackException.class))
+                                return;
+
+                            MvccFeatureChecker.assertMvccWriteConflict(e);
+                        }
+                    }
                 }
             });
 

@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -44,9 +45,6 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
             new DataRegionConfiguration().setMaxSize(200L * 1024 * 1024).setPersistenceEnabled(true));
 
         cfg.setDataStorageConfiguration(memCfg);
-
-        if (gridName.equals("client"))
-            cfg.setClientMode(true);
 
         return cfg;
     }
@@ -95,8 +93,12 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
         ccfg.setName("cache1");
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
+
+        if (MvccFeatureChecker.forcedMvcc())
+            ccfg.setRebalanceDelay(Long.MAX_VALUE);
+        else
+            ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
 
         for (int k = 0; k < iterations; k++) {
             System.out.println("Iteration: " + k);
@@ -130,8 +132,12 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
 
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
+
+        if (MvccFeatureChecker.forcedMvcc())
+            ccfg.setRebalanceDelay(Long.MAX_VALUE);
+        else
+            ccfg.setRebalanceMode(CacheRebalanceMode.NONE);
 
         ccfg.setIndexedTypes(Integer.class, String.class);
 
@@ -139,7 +145,7 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
 
         int iteration = 0;
 
-        while (U.currentTimeMillis() < finishTime ){
+        while (U.currentTimeMillis() < finishTime ) {
             System.out.println("Iteration: " + iteration);
 
             for (int i = 0; i < caches; i++) {
@@ -153,7 +159,7 @@ public class IgniteDbDynamicCacheSelfTest extends GridCommonAbstractTest {
                 ignite.destroyCache("cache" + i);
             }
 
-            iteration ++;
+            iteration++;
         }
     }
 }

@@ -45,10 +45,64 @@ public class XGBoostModelLexer extends Lexer {
     protected static final PredictionContextCache _sharedContextCache = new PredictionContextCache();
 
     /** */
-    public static final int
-        YES = 1, NO = 2, MISSING = 3, EQ = 4, COMMA = 5, PLUS = 6, MINUS = 7, DOT = 8, EXP = 9,
-        BOOSTER = 10, LBRACK = 11, RBRACK = 12, COLON = 13, LEAF = 14, INT = 15, DOUBLE = 16,
-        STRING = 17, NEWLINE = 18, LT = 19, WS = 20;
+    public static final int YES = 1;
+
+    /** */
+    public static final int NO = 2;
+
+    /** */
+    public static final int MISSING = 3;
+
+    /** */
+    public static final int EQ = 4;
+
+    /** */
+    public static final int COMMA = 5;
+
+    /** */
+    public static final int PLUS = 6;
+
+    /** */
+    public static final int MINUS = 7;
+
+    /** */
+    public static final int DOT = 8;
+
+    /** */
+    public static final int EXP = 9;
+
+    /** */
+    public static final int BOOSTER = 10;
+
+    /** */
+    public static final int LBRACK = 11;
+
+    /** */
+    public static final int RBRACK = 12;
+
+    /** */
+    public static final int COLON = 13;
+
+    /** */
+    public static final int LEAF = 14;
+
+    /** */
+    public static final int INT = 15;
+
+    /** */
+    public static final int DOUBLE = 16;
+
+    /** */
+    public static final int STRING = 17;
+
+    /** */
+    public static final int NEWLINE = 18;
+
+    /** */
+    public static final int LT = 19;
+
+    /** */
+    public static final int WS = 20;
 
     /** Channel names. */
     public static String[] channelNames = {

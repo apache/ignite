@@ -1,0 +1,588 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Ignite Cassandra Integration Configuration
+
+== Overview
+
+To setup Cassandra as a persistent store, you need to set `CacheStoreFactory` for your Ignite caches to
+`org.apache.ignite.cache.store.cassandra.CassandraCacheStoreFactory`.
+
+This could be done using Spring context configuration like this:
+
+[tabs]
+--
+tab:XML[]
+[source, xml]
+----
+<bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+    <property name="cacheConfiguration">
+        <list>
+            ...
+            <!-- Configuring persistence for "cache1" cache -->
+            <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                <property name="name" value="cache1"/>
+                <!-- Tune on Read-Through and Write-Through mode -->
+                <property name="readThrough" value="true"/>
+                <property name="writeThrough" value="true"/>
+                <!-- Specifying CacheStoreFactory -->
+                <property name="cacheStoreFactory">
+                    <bean class="org.apache.ignite.cache.store.cassandra.CassandraCacheStoreFactory">
+                        <!-- Datasource configuration bean which is responsible for Cassandra connection details -->
+                        <property name="dataSourceBean" value="cassandraDataSource"/>
+                        <!-- Persistent settings bean which is responsible for the details of how objects will be persisted to Cassandra -->
+                        <property name="persistenceSettingsBean" value="cache1_persistence_settings"/>
+                    </bean>
+                </property>
+            </bean>
+            ...
+        </list>
+        ...
+    </property>
+</bean>
+----
+--
+
+There are two main properties which should be specified for `CassandraCacheStoreFactory`:
+
+* `dataSourceBean` - instance of the `org.apache.ignite.cache.store.cassandra.datasource.DataSource` class responsible for
+all the aspects of Cassandra database connection (credentials, contact points, read/write consistency level, load balancing policy and etc...)
+* `persistenceSettingsBean` - instance of the `org.apache.ignite.cache.store.cassandra.persistence.KeyValuePersistenceSettings`
+class responsible for all the aspects of how objects should be persisted into Cassandra (keyspace and its options, table
+and its options, partition and cluster key options, POJO object fields mapping, secondary indexes, serializer for BLOB objects and etc...)
+
+In the below section these two beans and their configuration settings will be described in details.
+
+== DataSourceBean
+
+This bean stores all the details required for Cassandra database connection and CRUD operations. In the table below you can find all the bean properties:
+
+[cols="20%,70%,10%",opts="header"]
+|===
+| Property | Description | Default
+| `user`| User name used to connect to Cassandra|
+| `password`| User password used to connect to Cassandra|
+| `credentials`| Credentials bean providing `username` and `password`|
+| `authProvider`| Use the specified AuthProvider when connecting to Cassandra. Use this method when a custom authentication scheme is in place.|
+| `port`| Port to use to connect to Cassandra (if it's not provided in connection point specification)|
+| `contactPoints`| Array of contact points (`hostaname:[port]`) to use for Cassandra connection|
+| `maxSchemaAgreementWaitSeconds`| Maximum time to wait for schema agreement before returning from a DDL query| `10` seconds
+| `protocolVersion`| Specifies what version of Cassandra driver protocol should be used (could be helpful for backward compatibility with old versions of Cassandra)| `3`
+| `compression`| Compression to use for the transport. Supported compressions: `snappy`, `lz4`|
+| `useSSL`| Enables the use of SSL| `false`
+| `sslOptions`| Enables the use of SSL using the provided options|`false`
+| `collectMetrix`| Enables metrics collection|`false`
+| `jmxReporting`| Enables JMX reporting of the metrics|`false`
+| `fetchSize`| Specifies query fetch size. Fetch size controls how much resulting rows will be retrieved simultaneously.|
+| `readConsistency`| Specifies consistency level for READ queries|
+| `writeConsistency`| Specifies consistency level for WRITE/DELETE/UPDATE queries|
+| `loadBalancingPolicy`| Specifies load balancing policy to use| `TokenAwarePolicy`
+| `reconnectionPolicy`| Specifies reconnection policy to use| `ExponentialReconnectionPolicy`
+| `retryPolicy`| Specifies retry policy to use| `DefaultRetryPolicy`
+| `addressTranslater`| Specifies address translater to use| `IdentityTranslater`
+| `speculativeExecutionPolicy`| Specifies speculative execution policy to use| `NoSpeculativeExecutionPolicy`
+| `poolingOptions`| Specifies connection pooling options|
+| `socketOptions`| Specifies low-level socket options for the connections kept to the Cassandra hosts|
+| `nettyOptions`| Hooks that allow clients to customize Cassandra driver's underlying Netty layer|
+|===
+
+
+== PersistenceSettingsBean
+
+This bean stores all the details(keyspace, table, partition options, POJO fields mapping and etc...) of how objects
+(keys and values) should be persisted into Cassandra database.
+
+The constructor of `org.apache.ignite.cache.store.cassandra.persistence.KeyValuePersistenceSettings` allows to create such
+a bean from a string which contains XML configuration document of specific structure (see below) or from the resource pointing to XML document.
+
+Here is the generic example of an XML configuration document (*persistence descriptor*) which specifies how Ignite cache
+keys and values should be serialized/deserialized to/from Cassandra:
+
+[tabs]
+--
+tab:XML[]
+[source, xml]
+----
+<!--
+Root container for persistence settings configuration.
+
+Note: required element
+
+Attributes:
+  1) keyspace [required] - specifies keyspace for Cassandra tables which should be used to store key/value pairs
+  2) table    [required] - specifies Cassandra table which should be used to store key/value pairs
+  3) ttl      [optional] - specifies expiration period for the table rows (in seconds)
+-->
+<persistence keyspace="my_keyspace" table="my_table" ttl="86400">
+    <!--
+    Specifies Cassandra keyspace options which should be used to create provided keyspace if it doesn't exist.
+
+    Note: optional element
+    -->
+    <keyspaceOptions>
+        REPLICATION = {'class' : 'SimpleStrategy', 'replication_factor' : 3}
+        AND DURABLE_WRITES = true
+    </keyspaceOptions>
+
+    <!--
+    Specifies Cassandra table options which should be used to create provided table if it doesn't exist.
+
+    Note: optional element
+    -->
+    <tableOptions>
+        comment = 'A most excellent and useful table'
+        AND read_repair_chance = 0.2
+    </tableOptions>
+
+    <!--
+    Specifies persistent settings for Ignite cache keys.
+
+    Note: required element
+
+    Attributes:
+      1) class      [required] - java class name for Ignite cache key
+      2) strategy   [required] - one of three possible persistent strategies:
+            a) PRIMITIVE - stores key value as is, by mapping it to Cassandra table column with corresponding type.
+                Should be used only for simple java types (int, long, String, double, Date) which could be mapped
+                to corresponding Cassadra types.
+            b) BLOB - stores key value as BLOB, by mapping it to Cassandra table column with blob type.
+                Could be used for any java object. Conversion of java object to BLOB is handled by "serializer"
+                which could be specified in serializer attribute (see below).
+            c) POJO - stores each field of an object as a column having corresponding type in Cassandra table.
+                Provides ability to utilize Cassandra secondary indexes for object fields.
+      3) serializer [optional] - specifies serializer class for BLOB strategy. Shouldn't be used for PRIMITIVE and
+        POJO strategies. Available implementations:
+            a) org.apache.ignite.cache.store.cassandra.serializer.JavaSerializer - uses standard Java
+                serialization framework
+            b) org.apache.ignite.cache.store.cassandra.serializer.KryoSerializer - uses Kryo
+                serialization framework
+      4) column     [optional] - specifies column name for PRIMITIVE and BLOB strategies where to store key value.
+        If not specified column having 'key' name will be used. Shouldn't be used for POJO strategy.
+    -->
+    <keyPersistence class="org.mycompany.MyKeyClass" strategy="..." serializer="..." column="...">
+        <!--
+        Specifies partition key fields if POJO strategy used.
+
+        Note: optional element, only required for POJO strategy in case you want to manually specify
+            POJO fields to Cassandra columns mapping, instead of relying on dynamic discovering of
+            POJO fields and mapping them to the same columns of Cassandra table.
+        -->
+        <partitionKey>
+            <!--
+             Specifies mapping from POJO field to Cassandra table column.
+
+             Note: required element
+
+             Attributes:
+               1) name   [required] - POJO field name
+               2) column [optional] - Cassandra table column name. If not specified lowercase
+                  POJO field name will be used.
+            -->
+            <field name="companyCode" column="company" />
+            ...
+            ...
+        </partitionKey>
+
+        <!--
+        Specifies cluster key fields if POJO strategy used.
+
+        Note: optional element, only required for POJO strategy in case you want to manually specify
+            POJO fields to Cassandra columns mapping, instead of relying on dynamic discovering of
+            POJO fields and mapping them to the same columns of Cassandra table.
+        -->
+        <clusterKey>
+            <!--
+             Specifies mapping from POJO field to Cassandra table column.
+
+             Note: required element
+
+             Attributes:
+               1) name   [required] - POJO field name
+               2) column [optional] - Cassandra table column name. If not specified lowercase
+                  POJO field name will be used.
+               3) sort   [optional] - specifies sort order (asc or desc)
+            -->
+            <field name="personNumber" column="number" sort="desc"/>
+            ...
+            ...
+        </clusterKey>
+    </keyPersistence>
+
+    <!--
+    Specifies persistent settings for Ignite cache values.
+
+    Note: required element
+
+    Attributes:
+      1) class      [required] - java class name for Ignite cache value
+      2) strategy   [required] - one of three possible persistent strategies:
+            a) PRIMITIVE - stores key value as is, by mapping it to Cassandra table column with corresponding type.
+                Should be used only for simple java types (int, long, String, double, Date) which could be mapped
+                to corresponding Cassadra types.
+            b) BLOB - stores key value as BLOB, by mapping it to Cassandra table column with blob type.
+                Could be used for any java object. Conversion of java object to BLOB is handled by "serializer"
+                which could be specified in serializer attribute (see below).
+            c) POJO - stores each field of an object as a column having corresponding type in Cassandra table.
+                Provides ability to utilize Cassandra secondary indexes for object fields.
+      3) serializer [optional] - specifies serializer class for BLOB strategy. Shouldn't be used for PRIMITIVE and
+        POJO strategies. Available implementations:
+            a) org.apache.ignite.cache.store.cassandra.serializer.JavaSerializer - uses standard Java
+                serialization framework
+            b) org.apache.ignite.cache.store.cassandra.serializer.KryoSerializer - uses Kryo
+                serialization framework
+      4) column     [optional] - specifies column name for PRIMITIVE and BLOB strategies where to store value.
+        If not specified column having 'value' name will be used. Shouldn't be used for POJO strategy.
+    -->
+    <valuePersistence class="org.mycompany.MyValueClass" strategy="..." serializer="..." column="">
+        <!--
+         Specifies mapping from POJO field to Cassandra table column.
+
+         Note: required element
+
+         Attributes:
+           1) name         [required] - POJO field name
+           2) column       [optional] - Cassandra table column name. If not specified lowercase
+              POJO field name will be used.
+           3) static       [optional] - boolean flag which specifies that column is static withing a given partition
+           4) index        [optional] - boolean flag specifying that secondary index should be created for the field
+           5) indexClass   [optional] - custom index java class name if you want to use custom index
+           6) indexOptions [optional] - custom index options
+        -->
+        <field name="firstName" column="first_name" static="..." index="..." indexClass="..." indexOptions="..."/>
+        ...
+        ...
+    </valuePersistence>
+</persistence>
+----
+--
+
+Below are provided all the details about persistence descriptor configuration and its elements:
+
+=== persistence
+
+[CAUTION]
+====
+[discrete]
+=== ! Required Element
+Root container for persistence settings configuration.
+====
+
+[cols="20%,20%,60%",opts="header"]
+|===
+| Attribute | Required | Description
+| `keyspace`| yes | Keyspace for Cassandra tables which should be used to store key/value pairs. If keyspace doesn't
+exist it will be created (if specified Cassandra account has appropriate permissions).
+| `table`| no | Cassandra table which should be used to store key/value pairs. If table doesn't exist it will be created
+(if specified Cassandra account has appropriate permissions). If table name doesn't specified Ignite cache name will be used as a table name.
+| `ttl`| no | Expiration period for the table rows (in seconds).
+|===
+
+In the next chapters you'll find what child elements could be placed inside persistence settings container.
+
+=== keyspaceOptions
+
+[NOTE]
+====
+[discrete]
+=== Optional Element
+Options to create Cassandra keyspace specified in the `keyspace` attribute of persistence settings container.
+====
+
+Keyspace will be created only if it doesn't exist and if an account used to connect to Cassandra has appropriate permissions.
+
+The text specified in this XML element is just a chunk of
+http://docs.datastax.com/en/cql/3.0/cql/cql_reference/create_keyspace_r.html[CREATE KEYSPACE, window=_blank] Cassandra DDL statement which goes after *WITH* keyword.
+
+=== tableOptions
+
+[NOTE]
+====
+[discrete]
+=== Optional Element
+Options to create Cassandra table specified in the table attribute of persistence settings container.
+====
+
+A table will be created only if it doesn't exist and if an account used to connect to Cassandra has appropriate permissions.
+
+The text specified in this XML element is just a chunk of
+http://docs.datastax.com/en/cql/3.0/cql/cql_reference/create_table_r.html[CREATE TABLE, window=_blank] Cassandra DDL statement which goes after *WITH* keyword.
+
+=== keyPersistence
+
+[CAUTION]
+====
+[discrete]
+=== ! Required Element
+Persistent settings for Ignite cache keys.
+====
+
+These settings specify how key objects from Ignite cache should be stored/loaded to/from Cassandra table:
+
+[cols="20%,20%,60%",opts="header"]
+|===
+| Attribute | Required | Description
+
+| `class`
+| yes
+| Java class name for Ignite cache keys.
+
+| `strategy`
+| yes
+| Specifies one of three possible persistent strategies (see below) which controls how object should be persisted/loaded to/from Cassandra table.
+
+| `serializer`
+| no
+| Serializer class for BLOB strategy (see below for available implementations). Shouldn't be used for PRIMITIVE and POJO strategies.
+
+| `column`
+| no
+| Column name for PRIMITIVE and BLOB strategies where to store key. If not specified, column having 'key' name will be
+used. Attribute shouldn't be specified for POJO strategy.
+|===
+
+Persistence strategies:
+
+[cols="1,3",opts="header"]
+|===
+| Name | Description
+
+| `PRIMITIVE`
+| Stores object as is, by mapping it to Cassandra table column with corresponding type. Should be used only for simple java types
+(int, long, String, double, Date) which could be directly mapped to corresponding Cassadra types. Use this
+https://docs.datastax.com/en/developer/java-driver/4.4/manual/core/#cql-to-java-type-mapping[link, window=_blank] to figure out Java to Cassandra types mapping.
+
+| `BLOB`
+| Stores object as BLOB, by mapping it to Cassandra table column with blob type. Could be used for any java object.
+Conversion of java object to BLOB is handled by "serializer" which could be specified in serializer attribute of *keyPersistence* container.
+
+| `POJO`
+| Stores each field of an object as a column having corresponding type in Cassandra table. Provides ability to utilize
+Cassandra secondary indexes for object fields. Could be used only for POJO objects following Java Beans convention and
+having their fields of https://docs.datastax.com/en/developer/java-driver/4.4/manual/core/#cql-to-java-type-mapping[simple java type which could be directly mapped to corresponding Cassandra types, window=_blank].
+|===
+
+Available serializer implementations:
+
+[cols="1,3",opts="header"]
+|===
+| Class | Description
+
+| `org.apache.ignite.cache.store.cassandra.serializer.JavaSerializer`
+| Uses standard Java serialization framework
+
+| `org.apache.ignite.cache.store.cassandra.serializer.KryoSerializer`
+| Uses Kryo serialization framework
+|===
+
+If you are using `PRIMITIVE` or `BLOB` persistence strategy you don't need to specify internal elements of `keyPersistence`
+tag, cause the idea of these two strategies is that the whole object should be persisted into one column of Cassandra table
+(which could be specified by `column` attribute).
+
+If you are using the `POJO` persistence strategy you have two option:
+
+* Leave `keyPersistence` tag empty - in a such case, all the fields of POJO object class will be detected automatically using such rules:
+ ** Only fields having simple java types which could be directly mapped to
+http://docs.datastax.com/en/developer/java-driver/1.0/java-driver/reference/javaClass2Cql3Datatypes_r.html[appropriate Cassandra types, window=_blank]
+will be detected.
+ ** Fields discovery mechanism takes into account `@QuerySqlField` annotation:
+  *** If `name` attribute is specified it will be used as a column name for Cassandra table. Otherwise field name in a lowercase will be used as a column name.
+  *** If `descending` attribute is specified for a field mapped to *cluster key* column, it will be used to set sort order for the column.
+ ** Fields discovery mechanism takes into account `@AffinityKeyMapped` annotation. All the fields marked by this annotation
+will be treated as http://docs.datastax.com/en/cql/3.0/cql/ddl/ddl_compound_keys_c.html[partition key, window=_blank]
+fields (in an order as they are declared in a class). All other fields will be treated as
+http://docs.datastax.com/en/cql/3.0/cql/ddl/ddl_compound_keys_c.html[cluster key] fields.
+ ** If there are no fields annotated with `@AffinityKeyMapped` all the discovered fields will be treated as
+http://docs.datastax.com/en/cql/3.0/cql/ddl/ddl_compound_keys_c.html[partition key, window=_blank] fields.
+* Specify persistence details inside `keyPersistence` tag - in such case, you have to specify *partition key* fields
+mapping to Cassandra table columns inside `partitionKey` tag. This tag is used just as a container for mapping settings
+and doesn't have any attributes. Optionally (if you are going to use cluster key) you can also specify *cluster key*
+fields mapping to appropriate Cassandra table columns inside `clusterKey` tag. This tag is used just as a container for
+mapping settings and doesn't have any attributes.
+
+Next two sections are providing a detailed specification for `partition` and `cluster` key fields mappings (which makes
+sense if you choose the second option from the list above).
+
+=== partitionKey
+
+[NOTE]
+====
+[discrete]
+=== Optional Element
+Container for `field` elements specifying Cassandra partition key.
+====
+
+Defines the Ignite cache KEY object fields (inside it), which should be used as a *partition key* fields in Cassandra
+table and specifies fields mappings to table columns.
+
+Mappings are specified by using `<field>` tag having such attributes:
+
+[cols="20%,20%,60%",opts="header"]
+|===
+| Attribute | Required | Description
+
+| `name`
+| yes
+| POJO object field name.
+
+| `column`
+| no
+| Cassandra table column name. If not specified lowercase POJO field name will be used.
+|===
+
+=== clusterKey
+
+[NOTE]
+====
+[discrete]
+=== Optional Element
+Container for `field` elements specifying Cassandra cluster key.
+====
+
+Defines the Ignite cache KEY object fields (inside it), which should be used as a *cluster key* fields in Cassandra
+table and specifies fields mappings to table columns.
+
+Mapping are specified by using `<field>` tag having such attributes:
+
+[cols="20%,20%,60%",opts="header"]
+|===
+| Attribute | Required | Description
+
+| `name`
+| yes
+| POJO object field name.
+
+| `column`
+| no
+| Cassandra table column name. If not specified lowercase POJO field name will be used.
+
+
+| `sort`
+| no
+| Specifies sort order for the field (`asc` or `desc`).
+|===
+
+=== valuePersistence
+
+[CAUTION]
+====
+[discrete]
+=== ! Required Element
+Persistent settings for Ignite cache values.
+====
+
+These settings specify how value objects from Ignite cache should be stored/loaded to/from Cassandra table. The settings attributes
+look very similar to corresponding settings for Ignite cache keys:
+
+[cols="20%,20%,60%",opts="header"]
+|===
+| Attribute | Required | Description
+
+| `class`
+| yes
+| Java class name for Ignite cache values.
+
+| `strategy`
+| yes
+| Specifies one of three possible persistent strategies (see below) which controls how object should be persisted/loaded to/from Cassandra table.
+
+| `serializer`
+| no
+| Serializer class for BLOB strategy (see below for available implementations). Shouldn't be used for `PRIMITIVE` and `POJO` strategies.
+
+| `column`
+| no
+| Column name for `PRIMITIVE` and `BLOB` strategies where to store value. If not specified, column having `value` name will be used.
+Attribute shouldn't be specified for POJO strategy.
+|===
+
+Persistence strategies (same as for key persistence settings):
+
+[cols="1,3",opts="header"]
+|===
+| Name | Description
+
+| `PRIMITIVE`
+| Stores object as is, by mapping it to Cassandra table column with corresponding type. Should be used only for simple java types
+(int, long, String, double, Date) which could be directly mapped to corresponding Cassadra types. Use this
+http://docs.datastax.com/en/developer/java-driver/2.0/java-driver/reference/javaClass2Cql3Datatypes_r.html[link, window=_blank] to figure out Java to Cassandra types mapping.
+
+| `BLOB`
+| Stores object as `BLOB`, by mapping it to Cassandra table column with blob type. Could be used for any java object. Conversion of
+java object to `BLOB` is handled by "serializer" which could be specified in serializer attribute of `keyPersistence` container.
+
+| `POJO`
+| Stores each field of an object as a column having a corresponding type in Cassandra table. Provides ability to utilize Cassandra
+secondary indexes for object fields. Could be used only for POJO objects following Java Beans convention and having their fields
+of http://docs.datastax.com/en/developer/java-driver/1.0/java-driver/reference/javaClass2Cql3Datatypes_r.html[simple java type which could be directly mapped to corresponding Cassandra types, window=_blank].
+|===
+
+Available serializer implementations (same as for key persistence settings):
+
+[cols="1,3",opts="header"]
+|===
+| Class | Description
+
+| `org.apache.ignite.cache.store.cassandra.serializer.JavaSerializer`
+| Uses standard Java serialization framework.
+
+| `org.apache.ignite.cache.store.cassandra.serializer.KryoSerializer`
+| Uses Kryo serialization framework.
+|===
+
+If you are using `PRIMITIVE` or `BLOB` persistence strategy you don't need to specify internal elements of `valuePersistence`
+tag, cause the idea of these two strategies is that the whole object should be persisted into one column of Cassandra table
+(which could be specified by `column` attribute).
+
+If you are using `POJO` persistence strategy you have two option (similar to the same options for keys):
+
+* Leave `valuePersistence` tag empty - in such a case, all the fields of POJO object class will be detected automatically using such rules:
+ ** Only fields having simple java types which could be directly mapped to
+http://docs.datastax.com/en/developer/java-driver/1.0/java-driver/reference/javaClass2Cql3Datatypes_r.html[appropriate Cassandra types, window=_blank] will be detected.
+ ** Fields discovery mechanism takes into account `@QuerySqlField` annotation:
+  *** If `name` attribute is specified it will be used as a column name for Cassandra table. Otherwise, field name in a lower case will be used as a column name.
+  *** If `index` attribute is specified, secondary index will be created for a corresponding column in Cassandra table (if such table doesn't exist).
+* Specify persistence details inside `valuePersistence` tag - in such a case, you have to specify your POJO fields mapping to Cassandra table columns
+inside `valuePersistence` tag.
+
+If you selected the second option from the list above, you have to use `<field>` tag to specify POJO fields to Cassandra
+table columns mapping. The tag has following attributes:
+
+[cols="20%,20%,60%",opts="header"]
+|===
+| Attribute | Required | Description
+
+| `name`
+| yes
+| POJO object field name.
+
+| `column`
+| no
+| Cassandra table column name. If not specified lowercase POJO field name will be used.
+
+| `static`
+| no
+| Boolean flag which specifies that column is static withing a given partition.
+
+| `index`
+| no
+| Boolean flag specifying that secondary index should be created for the field.
+
+| `indexClass`
+| no
+| Custom index java class name, in case you want to use custom index.
+
+| `indexOptions`
+| no
+| Custom index options.
+|===

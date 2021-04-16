@@ -80,7 +80,6 @@ public final class GridConfigurationFinder {
                 String s1 = t1.get1();
                 String s2 = t2.get1();
 
-
                 String q1 = s1.startsWith(Q_PREFIX) ? s1.substring(Q_PREFIX_LEN + 1) : s1;
                 String q2 = s2.startsWith(Q_PREFIX) ? s2.substring(Q_PREFIX_LEN + 1) : s2;
 

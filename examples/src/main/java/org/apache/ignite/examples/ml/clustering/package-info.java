@@ -16,7 +16,6 @@
  */
 
 /**
- * <!-- Package description. -->
- * ML clustering examples.
+ * <!-- Package description. --> ML clustering examples.
  */
 package org.apache.ignite.examples.ml.clustering;

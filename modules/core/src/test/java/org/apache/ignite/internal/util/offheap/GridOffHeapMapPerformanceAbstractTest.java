@@ -61,7 +61,7 @@ public abstract class GridOffHeapMapPerformanceAbstractTest extends GridCommonAb
     protected long mem = 12L * 1024L * 1024L * 1024L;
 
     /** */
-    protected long dur = 60 * 1000;//2 * 60 * 60 * 1000;
+    protected long dur = 60 * 1000; //2 * 60 * 60 * 1000;
 
     /**
      *
@@ -79,7 +79,7 @@ public abstract class GridOffHeapMapPerformanceAbstractTest extends GridCommonAb
                 String k = string();
                 String v = string();
 
-                kvMap.put(k,  new T3<>(v, k.getBytes(), v.getBytes()));
+                kvMap.put(k, new T3<>(v, k.getBytes(), v.getBytes()));
             }
     }
 

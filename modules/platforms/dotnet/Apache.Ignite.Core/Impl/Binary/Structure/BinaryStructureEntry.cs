@@ -106,7 +106,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Structure
         /// </summary>
         public bool IsJumpTable
         {
-            get { return _name == null && _id >= 0; }
+            get { return _name == null && _id > 0; }
         }
 
         /// <summary>

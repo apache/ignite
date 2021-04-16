@@ -163,7 +163,7 @@ public class GridCacheQueueHeader implements GridCacheInternal, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeGridUuid(out, id);
+        U.writeIgniteUuid(out, id);
         out.writeInt(cap);
         out.writeBoolean(collocated);
         out.writeLong(head);
@@ -180,7 +180,7 @@ public class GridCacheQueueHeader implements GridCacheInternal, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        id = U.readGridUuid(in);
+        id = U.readIgniteUuid(in);
         cap = in.readInt();
         collocated = in.readBoolean();
         head = in.readLong();

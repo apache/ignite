@@ -18,6 +18,11 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.cache.GridCacheClearSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheClusterReadOnlyModeSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheInvokeClusterReadOnlyModeSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheStoreClusterReadOnlyModeSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteNearCacheClusterReadOnlyModeSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteNearCacheInvokeClusterReadOnlyModeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheAtomicFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheAtomicNearEnabledFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheAtomicReloadAllSelfTest;
@@ -77,6 +82,7 @@ import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicWit
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalFullApiMultithreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalWithGroupFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.persistence.standbycluster.extended.GridActivateExtensionTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -164,7 +170,13 @@ import org.junit.runners.Suite;
     GridCachePartitionedMultiNodeWithGroupFullApiSelfTest.class,
     GridCachePartitionedNearDisabledMultiNodeWithGroupFullApiSelfTest.class,
 
-    //suite.addTest(new JUnit4TestAdapter(GridActivateExtensionTest.class));
+    IgniteCacheClusterReadOnlyModeSelfTest.class,
+    IgniteNearCacheClusterReadOnlyModeSelfTest.class,
+    IgniteCacheInvokeClusterReadOnlyModeSelfTest.class,
+    IgniteNearCacheInvokeClusterReadOnlyModeSelfTest.class,
+    IgniteCacheStoreClusterReadOnlyModeSelfTest.class,
+
+    GridActivateExtensionTest.class
 })
 public class IgniteCacheFullApiSelfTestSuite {
 }

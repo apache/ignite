@@ -24,8 +24,10 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.curator.test.TestingZooKeeperServer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteState;
+import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
@@ -36,10 +38,10 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.zk.curator.TestingZooKeeperServer;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiTestUtil;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.zookeeper.ZkTestClientCnxnSocketNIO;
 import org.apache.zookeeper.ZooKeeper;
@@ -47,6 +49,7 @@ import org.apache.zookeeper.server.quorum.QuorumPeer;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
@@ -64,83 +67,75 @@ public class ZookeeperDiscoverySegmentationAndConnectionRestoreTest extends Zook
      * @see <a href="https://issues.apache.org/jira/browse/IGNITE-9040">IGNITE-9040</a> ticket for more context of the test.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_WAL_LOG_TX_RECORDS, value = "true")
     public void testStopNodeOnSegmentaion() throws Exception {
-        try {
-            System.setProperty("IGNITE_WAL_LOG_TX_RECORDS", "true");
+        sesTimeout = 2000;
+        testSockNio = true;
+        persistence = true;
+        atomicityMode = CacheAtomicityMode.TRANSACTIONAL;
+        backups = 2;
 
-            sesTimeout = 2000;
-            testSockNio = true;
-            persistence = true;
-            atomicityMode = CacheAtomicityMode.TRANSACTIONAL;
-            backups = 2;
+        final Ignite node0 = startGrid(0);
 
-            final Ignite node0 = startGrid(0);
+        sesTimeout = 10_000;
+        testSockNio = false;
 
-            sesTimeout = 10_000;
-            testSockNio = false;
+        startGrid(1);
 
-            startGrid(1);
+        node0.cluster().active(true);
 
-            node0.cluster().active(true);
+        final IgniteEx client = startClientGrid(2);
 
-            helper.clientMode(true);
+        //first transaction
+        client.transactions().txStart(PESSIMISTIC, READ_COMMITTED, 0, 0);
+        client.cache(DEFAULT_CACHE_NAME).put(0, 0);
 
-            final IgniteEx client = startGrid(2);
+        //second transaction to create a deadlock with the first one
+        // and guarantee transaction futures will be presented on segmented node
+        // (erroneous write to WAL on segmented node stop happens
+        // on completing transaction with NodeStoppingException)
+        GridTestUtils.runAsync(new Runnable() {
+            @Override public void run() {
+                Transaction tx2 = client.transactions().txStart(OPTIMISTIC, READ_COMMITTED, 0, 0);
+                client.cache(DEFAULT_CACHE_NAME).put(0, 0);
+                tx2.commit();
+            }
+        });
 
-            //first transaction
-            client.transactions().txStart(PESSIMISTIC, READ_COMMITTED, 0, 0);
-            client.cache(DEFAULT_CACHE_NAME).put(0, 0);
+        //next block simulates Ignite node segmentation by closing socket of ZooKeeper client
+        {
+            final CountDownLatch l = new CountDownLatch(1);
 
-            //second transaction to create a deadlock with the first one
-            // and guarantee transaction futures will be presented on segmented node
-            // (erroneous write to WAL on segmented node stop happens
-            // on completing transaction with NodeStoppingException)
-            GridTestUtils.runAsync(new Runnable() {
-                @Override public void run() {
-                    Transaction tx2 = client.transactions().txStart(OPTIMISTIC, READ_COMMITTED, 0, 0);
-                    client.cache(DEFAULT_CACHE_NAME).put(0, 0);
-                    tx2.commit();
+            node0.events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    l.countDown();
+
+                    return false;
                 }
-            });
+            }, EventType.EVT_NODE_SEGMENTED);
 
-            //next block simulates Ignite node segmentation by closing socket of ZooKeeper client
-            {
-                final CountDownLatch l = new CountDownLatch(1);
+            ZkTestClientCnxnSocketNIO c0 = ZkTestClientCnxnSocketNIO.forNode(node0);
 
-                node0.events().localListen(new IgnitePredicate<Event>() {
-                    @Override public boolean apply(Event evt) {
-                        l.countDown();
+            c0.closeSocket(true);
 
-                        return false;
-                    }
-                }, EventType.EVT_NODE_SEGMENTED);
+            for (int i = 0; i < 10; i++) {
+                //noinspection BusyWait
+                Thread.sleep(1_000);
 
-                ZkTestClientCnxnSocketNIO c0 = ZkTestClientCnxnSocketNIO.forNode(node0);
-
-                c0.closeSocket(true);
-
-                for (int i = 0; i < 10; i++) {
-                    //noinspection BusyWait
-                    Thread.sleep(1_000);
-
-                    if (l.getCount() == 0)
-                        break;
-                }
-
-                info("Allow connect");
-
-                c0.allowConnect();
-
-                assertTrue(l.await(10, TimeUnit.SECONDS));
+                if (l.getCount() == 0)
+                    break;
             }
 
-            waitForNodeStop(node0.name());
+            info("Allow connect");
 
-            checkStoppedNodeThreads(node0.name());
+            c0.allowConnect();
+
+            assertTrue(l.await(10, TimeUnit.SECONDS));
         }
-        finally {
-            System.clearProperty("IGNITE_WAL_LOG_TX_RECORDS");
-        }
+
+        waitForNodeStop(node0.name());
+
+        checkStoppedNodeThreads(node0.name());
     }
 
     /** */
@@ -396,7 +391,7 @@ public class ZookeeperDiscoverySegmentationAndConnectionRestoreTest extends Zook
 
             closeZkClient(spi);
 
-            helper.checkEvents(node0, evts, ZookeeperDiscoverySpiTestHelper.failEvent(4));
+            helper.checkEvents(node0, evts, ZookeeperDiscoverySpiTestHelper.leftEvent(4, true));
         }
 
         c1.allowConnect();
@@ -404,9 +399,9 @@ public class ZookeeperDiscoverySegmentationAndConnectionRestoreTest extends Zook
         helper.checkEvents(ignite(1), evts, ZookeeperDiscoverySpiTestHelper.joinEvent(3));
 
         if (failWhenDisconnected) {
-            helper.checkEvents(ignite(1), evts, ZookeeperDiscoverySpiTestHelper.failEvent(4));
+            helper.checkEvents(ignite(1), evts, ZookeeperDiscoverySpiTestHelper.leftEvent(4, true));
 
-            IgnitionEx.stop(getTestIgniteInstanceName(2), true, true);
+            IgnitionEx.stop(getTestIgniteInstanceName(2), true, ShutdownPolicy.IMMEDIATE, true);
         }
 
         fut.get();

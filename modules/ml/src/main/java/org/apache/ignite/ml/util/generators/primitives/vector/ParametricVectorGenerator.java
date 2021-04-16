@@ -39,7 +39,7 @@ public class ParametricVectorGenerator implements VectorGenerator {
     private final RandomProducer randomProducer;
 
     /**
-     * Create an intance of ParametricVectorGenerator.
+     * Create an instance of ParametricVectorGenerator.
      *
      * @param paramGenerator Parameter generator.
      * @param perDimensionGenerators Per dimension generators.

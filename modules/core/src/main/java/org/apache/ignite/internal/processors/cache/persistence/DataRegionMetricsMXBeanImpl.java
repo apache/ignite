@@ -19,10 +19,22 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
+import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 
 /**
  * MBean to expose {@link DataRegionMetrics} through JMX interface.
+ *
+ * @deprecated Check the {@link JmxMetricExporterSpi} with "name=io.dataregion.{data_region_name}" instead.
+ *
+ * @see ReadOnlyMetricManager
+ * @see ReadOnlyMetricRegistry
+ * @see JmxMetricExporterSpi
+ * @see MetricExporterSpi
  */
+@Deprecated
 class DataRegionMetricsMXBeanImpl implements DataRegionMetricsMXBean {
     /** */
     private final DataRegionMetricsImpl memMetrics;
@@ -64,6 +76,11 @@ class DataRegionMetricsMXBeanImpl implements DataRegionMetricsMXBean {
     /** {@inheritDoc} */
     @Override public long getTotalAllocatedPages() {
         return memMetrics.getTotalAllocatedPages();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getTotalUsedPages() {
+        return memMetrics.getTotalUsedPages();
     }
 
     /** {@inheritDoc} */

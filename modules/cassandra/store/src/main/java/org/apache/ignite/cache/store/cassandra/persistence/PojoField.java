@@ -17,14 +17,13 @@
 
 package org.apache.ignite.cache.store.cassandra.persistence;
 
-import com.datastax.driver.core.DataType;
-import com.datastax.driver.core.Row;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.util.List;
-
-import org.apache.ignite.cache.store.cassandra.common.PropertyMappingHelper;
+import com.datastax.driver.core.DataType;
+import com.datastax.driver.core.Row;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cache.store.cassandra.common.PropertyMappingHelper;
 import org.apache.ignite.cache.store.cassandra.serializer.Serializer;
 import org.w3c.dom.Element;
 
@@ -61,7 +60,7 @@ public abstract class PojoField implements Serializable {
      * @param fieldName field name.
      * @return true if list contains field or false otherwise.
      */
-    public static boolean containsField(List<PojoField> fields, String fieldName) {
+    public static boolean containsField(List<? extends PojoField> fields, String fieldName) {
         if (fields == null || fields.isEmpty())
             return false;
 
@@ -108,6 +107,18 @@ public abstract class PojoField implements Serializable {
                 sqlField.name() : name.toLowerCase();
 
         init(accessor);
+    }
+
+    /**
+     * Creates instance of {@link PojoField} from the other instance
+     * and java class.
+     */
+    public PojoField(PojoField field, Class<?> pojoCls) {
+        this.name = field.name;
+        this.col = field.col;
+        this.colDDL = field.colDDL;
+
+        init(PropertyMappingHelper.getPojoFieldAccessor(pojoCls, name));
     }
 
     /**

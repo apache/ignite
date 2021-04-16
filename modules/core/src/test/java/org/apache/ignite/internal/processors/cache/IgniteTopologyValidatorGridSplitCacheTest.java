@@ -153,8 +153,6 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
 
         if (idx != CONFIGLESS_GRID_IDX) {
             if (idx == RESOLVER_GRID_IDX) {
-                cfg.setClientMode(true);
-
                 userAttrs.put(ACTIVATOR_NODE_ATTR, "true");
             }
             else
@@ -377,7 +375,7 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
      * @throws Exception If failed.
      */
     private void resolveSplit() throws Exception {
-        startGrid(RESOLVER_GRID_IDX);
+        startClientGrid(RESOLVER_GRID_IDX);
 
         stopGrid(RESOLVER_GRID_IDX);
     }
@@ -389,7 +387,7 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
      * @throws Exception If failed.
      */
     private void resolveSplitWithRace(int srvNode) throws Exception {
-        startGrid(RESOLVER_GRID_IDX);
+        startClientGrid(RESOLVER_GRID_IDX);
 
         startGrid(srvNode);
 
@@ -443,7 +441,7 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
                 }
             }
 
-            assertTrue("Failed to find affinity key [gridIdx=" + idx +", cache=" + cacheName + ']',
+            assertTrue("Failed to find affinity key [gridIdx=" + idx + ", cache=" + cacheName + ']',
                 key != -1);
 
             IgniteCache<Object, Object> cache = g.cache(cacheName);

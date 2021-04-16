@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.jdbc2;
 
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Collections;
 import org.apache.ignite.IgniteDataStreamer;
@@ -35,15 +34,11 @@ class JdbcStreamedPreparedStatement extends JdbcPreparedStatement {
      * @param conn Connection.
      * @param sql SQL query.
      * @param streamer Data streamer to use with this statement. Will be closed on statement close.
-     * @param nativeStmt Native statement.
      */
-    JdbcStreamedPreparedStatement(JdbcConnection conn, String sql, IgniteDataStreamer<?, ?> streamer,
-        PreparedStatement nativeStmt) {
+    JdbcStreamedPreparedStatement(JdbcConnection conn, String sql, IgniteDataStreamer<?, ?> streamer) {
         super(conn, sql);
 
         this.streamer = streamer;
-
-        nativeStatement = nativeStmt;
     }
 
     /** {@inheritDoc} */
@@ -58,7 +53,7 @@ class JdbcStreamedPreparedStatement extends JdbcPreparedStatement {
         assert isQuery == null || !isQuery;
 
         long updCnt = conn.ignite().context().query().streamUpdateQuery(conn.cacheName(), conn.schemaName(),
-            streamer, sql, getArgs());
+            streamer, sql, getArgs(), conn.clientDescriptor());
 
         JdbcResultSet rs = new JdbcResultSet(this, updCnt);
 

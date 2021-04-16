@@ -59,6 +59,9 @@ public abstract class VisorDataTransferObject implements Externalizable {
      * @return List based on passed collection.
      */
     @Nullable protected static <T> List<T> toList(Collection<T> col) {
+        if (col instanceof List)
+            return (List<T>)col;
+
         if (col != null)
             return new ArrayList<>(col);
 
@@ -94,7 +97,7 @@ public abstract class VisorDataTransferObject implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        int hdr = MAGIC  + getProtocolVersion();
+        int hdr = MAGIC + getProtocolVersion();
 
         out.writeInt(hdr);
 

@@ -32,13 +32,13 @@ import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
  */
 public abstract class DistributionMixture<C extends Distribution> implements Distribution {
     /** Component probabilities. */
-    private final Vector componentProbs;
+    private Vector componentProbs;
 
     /** Distributions. */
-    private final List<C> distributions;
+    private List<C> distributions;
 
     /** Dimension. */
-    private final int dimension;
+    private int dimension;
 
     /**
      * Creates an instance of DistributionMixture.
@@ -61,6 +61,9 @@ public abstract class DistributionMixture<C extends Distribution> implements Dis
         this.dimension = dimension;
     }
 
+    public DistributionMixture() {
+    }
+
     /** {@inheritDoc} */
     @Override public double prob(Vector x) {
         return likelihood(x).sum();
@@ -76,21 +79,21 @@ public abstract class DistributionMixture<C extends Distribution> implements Dis
     }
 
     /**
-     * @return an amount of components.
+     * @return An amount of components.
      */
     public int countOfComponents() {
         return componentProbs.size();
     }
 
     /**
-     * @return component probabilities.
+     * @return Component probabilities.
      */
     public Vector componentsProbs() {
         return componentProbs.copy();
     }
 
     /**
-     * @return list of components.
+     * @return List of components.
      */
     public List<C> distributions() {
         return Collections.unmodifiableList(distributions);

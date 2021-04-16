@@ -121,6 +121,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         String taskName,
         final boolean deserializeBinary,
         final boolean recovery,
+        final boolean readRepair,
         final boolean skipVals,
         final boolean needVer
     ) {
@@ -129,8 +130,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
 
-        if (keyCheck)
-            validateCacheKeys(keys);
+        warnIfUnordered(keys, BulkOperation.GET);
 
         GridNearTxLocal tx = ctx.tm().threadLocalTx(ctx);
 
@@ -149,6 +149,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                         false,
                         skipStore,
                         recovery,
+                        readRepair,
                         needVer);
                 }
             }, opCtx, /*retry*/false);
@@ -173,6 +174,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @param tx Transaction.
      * @param keys Keys to load.
      * @param readThrough Read through flag.
+     * @param forcePrimary Force primary flag.
      * @param deserializeBinary Deserialize binary flag.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
@@ -183,6 +185,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         AffinityTopologyVersion topVer,
         @Nullable Collection<KeyCacheObject> keys,
         boolean readThrough,
+        boolean forcePrimary,
         boolean deserializeBinary,
         boolean recovery,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
@@ -193,7 +196,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx,
             keys,
             readThrough,
-            /*force primary*/needVer || !ctx.config().isReadFromBackup(),
+            forcePrimary,
             tx,
             CU.subjectId(tx, ctx.shared()),
             tx.resolveTaskName(),
@@ -217,7 +220,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
     public void clearLocks(UUID nodeId, GridDhtUnlockRequest req) {
         assert nodeId != null;
 
-        GridCacheVersion obsoleteVer = ctx.versions().next();
+        GridCacheVersion obsoleteVer = nextVersion();
 
         List<KeyCacheObject> keys = req.nearKeys();
 

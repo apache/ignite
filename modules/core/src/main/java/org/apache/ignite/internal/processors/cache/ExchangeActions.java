@@ -93,14 +93,14 @@ public class ExchangeActions {
      * @return New caches start requests.
      */
     public Collection<CacheActionData> cacheStartRequests() {
-        return cachesToStart != null ? cachesToStart.values() : Collections.<CacheActionData>emptyList();
+        return cachesToStart != null ? cachesToStart.values() : Collections.emptyList();
     }
 
     /**
      * @return Stop cache requests.
      */
     public Collection<CacheActionData> cacheStopRequests() {
-        return cachesToStop != null ? cachesToStop.values() : Collections.<CacheActionData>emptyList();
+        return cachesToStop != null ? cachesToStop.values() : Collections.emptyList();
     }
 
     /**
@@ -202,14 +202,21 @@ public class ExchangeActions {
      * @return {@code True} if has deactivate request.
      */
     public boolean deactivate() {
-        return stateChangeReq != null && stateChangeReq.activeChanged() && !stateChangeReq.activate();
+        return stateChangeReq != null && stateChangeReq.activeChanged() && !stateChangeReq.state().active();
     }
 
     /**
      * @return {@code True} if has activate request.
      */
     public boolean activate() {
-        return stateChangeReq != null && stateChangeReq.activeChanged() && stateChangeReq.activate();
+        return stateChangeReq != null && stateChangeReq.activeChanged() && stateChangeReq.state().active();
+    }
+
+    /**
+     * @return {@code True} if cluster state was changed.
+     */
+    public boolean changedClusterState() {
+        return stateChangeReq != null && stateChangeReq.prevState() != stateChangeReq.state();
     }
 
     /**

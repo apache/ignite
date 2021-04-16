@@ -35,7 +35,6 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -60,25 +59,11 @@ public class CacheRandomOperationsMultithreadedTest extends GridCommonAbstractTe
     /** */
     private static final int NODES = 4;
 
-    /** */
-    private boolean client;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(client);
-
-        return cfg;
-    }
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(NODES - 1);
 
-        client = true;
-
-        startGrid(NODES - 1);
+        startClientGrid(NODES - 1);
 
         super.beforeTestsStarted();
     }
@@ -328,7 +313,7 @@ public class CacheRandomOperationsMultithreadedTest extends GridCommonAbstractTe
     private CacheConfiguration<Object, Object> cacheConfiguration(
         CacheMode cacheMode,
         CacheAtomicityMode atomicityMode,
-        @Nullable  EvictionPolicy<Object, Object> evictionPlc,
+        @Nullable EvictionPolicy<Object, Object> evictionPlc,
         boolean indexing) {
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 

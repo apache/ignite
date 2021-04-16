@@ -154,6 +154,12 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** */
         private const int OpDataStorageMetrics = 37;
 
+        /** */
+        private const int OpEnableStatistics = 38;
+
+        /** */
+        private const int OpClearStatistics = 39;
+
         /** Initial Ignite instance. */
         private readonly IIgniteInternal _ignite;
         
@@ -451,6 +457,28 @@ namespace Apache.Ignite.Core.Impl.Cluster
             return _services.Value;
         }
 
+        /** <inheritDoc /> */
+        public void EnableStatistics(IEnumerable<string> cacheNames, bool enabled)
+        {
+            IgniteArgumentCheck.NotNull(cacheNames, "cacheNames");
+
+            DoOutOp(OpEnableStatistics,
+                w =>
+                {
+                    w.WriteBoolean(enabled);
+
+                    w.WriteStrings(cacheNames);
+                });
+        }
+
+        /** <inheritdoc /> */
+        public void ClearStatistics(IEnumerable<string> cacheNames)
+        {
+            IgniteArgumentCheck.NotNull(cacheNames, "cacheNames");
+
+            DoOutOp(OpClearStatistics, w => w.WriteStrings(cacheNames));
+        }
+
         /// <summary>
         /// Creates the services.
         /// </summary>
@@ -571,21 +599,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             IgniteArgumentCheck.NotNull(cacheNames, "cacheNames");
 
-            DoOutOp(OpResetLostPartitions, w =>
-            {
-                var pos = w.Stream.Position;
-
-                var count = 0;
-                w.WriteInt(count);  // Reserve space.
-
-                foreach (var cacheName in cacheNames)
-                {
-                    w.WriteString(cacheName);
-                    count++;
-                }
-
-                w.Stream.WriteInt(pos, count);
-            });
+            DoOutOp(OpResetLostPartitions, w => w.WriteStrings(cacheNames));
         }
 
         /// <summary>
@@ -705,6 +719,15 @@ namespace Apache.Ignite.Core.Impl.Cluster
                 new PersistentStoreMetrics(Marshaller.StartUnmarshal(stream, false)));
         }
 #pragma warning restore 618
+
+        /// <summary>
+        /// Clears cached node data.
+        /// </summary>
+        internal void ClearCachedNodeData()
+        {
+            _topVer = TopVerInit;
+            _nodes = null;
+        }
 
         /// <summary>
         /// Creates new Cluster Group from given native projection.

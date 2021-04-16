@@ -96,7 +96,6 @@ public class GridClientJdkMarshaller implements GridClientMarshaller {
         /** Class name filter. */
         private final IgnitePredicate<String> clsFilter;
 
-
         /**
          * @param in Input stream.
          * @param clsFilter Class filter.

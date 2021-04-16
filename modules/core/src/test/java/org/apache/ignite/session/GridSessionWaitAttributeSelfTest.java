@@ -449,7 +449,7 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
 
             IgniteUuid jobId = jobCtx.getJobId();
 
-            for (int i = 0; i < ATTR_NUM; i ++) {
+            for (int i = 0; i < ATTR_NUM; i++) {
                 String key = createKey(jobId.toString(), m, i);
                 String val = createValue(jobId.toString(), m, i);
 

@@ -16,8 +16,12 @@
  */
 package org.apache.ignite.spi.discovery;
 
+import org.apache.ignite.internal.util.worker.GridWorker;
+
 /**
  * Marker interface for discovery thread on cluster server node.
  */
 public interface IgniteDiscoveryThread {
+    /** */
+    GridWorker worker();
 }

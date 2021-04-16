@@ -43,6 +43,7 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -61,8 +62,8 @@ public class ExchangeLatchManager {
     private static final IgniteProductVersion VERSION_SINCE = IgniteProductVersion.fromString("2.5.0");
 
     /**
-     * Exchange latch V2 protocol introduces following optimization:
-     * Joining nodes are explicitly excluded from possible latch participants.
+     * Exchange latch V2 protocol introduces following optimization: Joining nodes are explicitly excluded from possible
+     * latch participants.
      */
     public static final IgniteProductVersion PROTOCOL_V2_VERSION_SINCE = IgniteProductVersion.fromString("2.5.3");
 
@@ -95,7 +96,10 @@ public class ExchangeLatchManager {
     @GridToStringInclude
     private final ConcurrentMap<CompletableLatchUid, ClientLatch> clientLatches = new ConcurrentHashMap<>();
 
-    /** Map (topology version -> joined node on this version). This map is needed to exclude joined nodes from latch participants. */
+    /**
+     * Map (topology version -> joined node on this version). This map is needed to exclude joined nodes from latch
+     * participants.
+     */
     @GridToStringExclude
     private final ConcurrentMap<AffinityTopologyVersion, ClusterNode> joinedNodes = new ConcurrentHashMap<>();
 
@@ -116,7 +120,7 @@ public class ExchangeLatchManager {
         if (!ctx.clientNode() && !ctx.isDaemon()) {
             ctx.io().addMessageListener(GridTopic.TOPIC_EXCHANGE, (nodeId, msg, plc) -> {
                 if (msg instanceof LatchAckMessage)
-                    processAck(nodeId, (LatchAckMessage) msg);
+                    processAck(nodeId, (LatchAckMessage)msg);
             });
 
             // First coordinator initialization.
@@ -131,7 +135,7 @@ public class ExchangeLatchManager {
 
                 // Do not process from discovery thread.
                 // TODO: Should use queue to guarantee the order of processing left nodes.
-                ctx.closure().runLocalSafe(() -> processNodeLeft(cache.version(), e.eventNode()));
+                ctx.closure().runLocalSafe((GridPlainRunnable)() -> processNodeLeft(cache.version(), e.eventNode()));
             }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
             ctx.event().addDiscoveryEventListener((e, cache) -> {
@@ -144,8 +148,7 @@ public class ExchangeLatchManager {
     }
 
     /**
-     * Creates server latch with given {@code id} and {@code topVer}.
-     * Adds corresponding pending acks to it.
+     * Creates server latch with given {@code id} and {@code topVer}. Adds corresponding pending acks to it.
      *
      * @param latchUid Latch uid.
      * @param participants Participant nodes.
@@ -159,7 +162,7 @@ public class ExchangeLatchManager {
         serverLatches.put(latchUid, latch);
 
         if (log.isDebugEnabled())
-            log.debug("Server latch is created [latch=" + latchUid + ", participantsSize=" + participants.size() + "]");
+            log.debug("Server latch is created [latch=" + latchUid + ", participantsSize=" + participants.size() + ']');
 
         if (pendingAcks.containsKey(latchUid)) {
             Set<UUID> acks = pendingAcks.get(latchUid);
@@ -175,15 +178,16 @@ public class ExchangeLatchManager {
     }
 
     /**
-     * Creates client latch.
-     * If there is final ack corresponds to given {@code id} and {@code topVer}, latch will be completed immediately.
+     * Creates client latch. If there is final ack corresponds to given {@code id} and {@code topVer}, latch will be
+     * completed immediately.
      *
      * @param latchUid Latch uid.
      * @param coordinator Coordinator node.
      * @param participants Participant nodes.
      * @return Client latch instance.
      */
-    private Latch createClientLatch(CompletableLatchUid latchUid, ClusterNode coordinator, Collection<ClusterNode> participants) {
+    private Latch createClientLatch(CompletableLatchUid latchUid, ClusterNode coordinator,
+        Collection<ClusterNode> participants) {
         assert !serverLatches.containsKey(latchUid);
         assert !clientLatches.containsKey(latchUid);
 
@@ -192,7 +196,7 @@ public class ExchangeLatchManager {
         if (log.isDebugEnabled())
             log.debug("Client latch is created [latch=" + latchUid
                 + ", crd=" + coordinator
-                + ", participantsSize=" + participants.size() + "]");
+                + ", participantsSize=" + participants.size() + ']');
 
         clientLatches.put(latchUid, latch);
 
@@ -202,8 +206,8 @@ public class ExchangeLatchManager {
     /**
      * Creates new latch with specified {@code id} and {@code topVer} or returns existing latch.
      *
-     * Participants of latch are calculated from given {@code topVer} as alive server nodes.
-     * If local node is coordinator {@code ServerLatch} instance will be created, otherwise {@code ClientLatch} instance.
+     * Participants of latch are calculated from given {@code topVer} as alive server nodes. If local node is
+     * coordinator {@code ServerLatch} instance will be created, otherwise {@code ClientLatch} instance.
      *
      * @param id Latch id.
      * @param topVer Latch topology version.
@@ -238,10 +242,40 @@ public class ExchangeLatchManager {
     }
 
     /**
+     * Drops client latches created by {@link #getOrCreate(String, AffinityTopologyVersion)}. The corresponding
+     * latches should be created before this method is invoked.
+     * <p>
+     * This method must be called when it is guaranteed that all nodes have processed the latches messages. In
+     * the context of partitions map exchange this can be done when exchange future is completed.
+     *
+     * @param topVer Latch topology version.
+     */
+    public void dropClientLatches(AffinityTopologyVersion topVer) {
+        lock.lock();
+
+        try {
+            for (CompletableLatchUid latchUid : clientLatches.keySet()) {
+                if (latchUid.topVer.equals(topVer)) {
+                    ClientLatch latch = clientLatches.remove(latchUid);
+
+                    if (log.isDebugEnabled())
+                        log.debug("Dropping client latch [id=" + latchUid + ", latch=" + latch + ']');
+
+                    pendingAcks.remove(latchUid);
+                }
+            }
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
+    /**
      * Gets alive server nodes from disco cache for provided AffinityTopologyVersion.
      *
      * @param topVer Topology version.
      * @return Collection of nodes with at least one cache configured.
+     * @throws IgniteException If nodes for the given {@code topVer} cannot be found in the discovery history.
      */
     private Collection<ClusterNode> aliveNodesForTopologyVer(AffinityTopologyVersion topVer) {
         if (topVer == AffinityTopologyVersion.NONE)
@@ -251,10 +285,10 @@ public class ExchangeLatchManager {
 
             if (histNodes != null)
                 return histNodes.stream().filter(n -> !n.isClient() && !n.isDaemon() && discovery.alive(n))
-                        .collect(Collectors.toList());
+                    .collect(Collectors.toList());
             else
-                throw new IgniteException("Topology " + topVer + " not found in discovery history "
-                        + "; consider increasing IGNITE_DISCOVERY_HISTORY_SIZE property. Current value is "
+                throw new IgniteException("Topology " + topVer + " not found in discovery history. "
+                        + "Consider increasing IGNITE_DISCOVERY_HISTORY_SIZE property. Current value is "
                         + IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_DISCOVERY_HISTORY_SIZE, -1));
         }
     }
@@ -267,9 +301,9 @@ public class ExchangeLatchManager {
         Collection<ClusterNode> aliveNodes = aliveNodesForTopologyVer(topVer);
 
         List<ClusterNode> participantNodes = aliveNodes
-                .stream()
-                .filter(node -> node.version().compareTo(VERSION_SINCE) >= 0)
-                .collect(Collectors.toList());
+            .stream()
+            .filter(node -> node.version().compareTo(VERSION_SINCE) >= 0)
+            .collect(Collectors.toList());
 
         if (canSkipJoiningNodes(topVer))
             return excludeJoinedNodes(participantNodes, topVer);
@@ -318,11 +352,10 @@ public class ExchangeLatchManager {
      * Checks that latch manager can use V2 protocol and skip joining nodes from latch participants.
      *
      * @param topVer Topology version.
+     * @throws IgniteException If nodes for the given {@code topVer} cannot be found in the discovery history.
      */
     public boolean canSkipJoiningNodes(AffinityTopologyVersion topVer) {
-        Collection<ClusterNode> applicableNodes = topVer.equals(AffinityTopologyVersion.NONE)
-            ? discovery.aliveServerNodes()
-            : discovery.topology(topVer.topologyVersion());
+        Collection<ClusterNode> applicableNodes = aliveNodesForTopologyVer(topVer);
 
         return applicableNodes.stream()
             .allMatch(node -> node.version().compareTo(PROTOCOL_V2_VERSION_SINCE) >= 0);
@@ -342,30 +375,42 @@ public class ExchangeLatchManager {
         lock.lock();
 
         try {
+            CompletableLatchUid latchUid = new CompletableLatchUid(message.latchId(), message.topVer());
+
+            if (discovery.topologyVersionEx().compareTo(message.topVer()) < 0) {
+                // It means that this node doesn't receive changed topology version message yet
+                // but received ack message from client latch.
+                // It can happen when we don't have guarantees of received message order for example in ZookeeperSpi.
+                pendingAcks.computeIfAbsent(latchUid, id -> new GridConcurrentHashSet<>()).add(from);
+
+                return;
+            }
+
             ClusterNode coordinator = getLatchCoordinator(message.topVer());
 
             if (coordinator == null)
                 return;
 
-            CompletableLatchUid latchUid = new CompletableLatchUid(message.latchId(), message.topVer());
-
             if (message.isFinal()) {
                 if (log.isDebugEnabled())
-                    log.debug("Process final ack [latch=" + latchUid + ", from=" + from + "]");
+                    log.debug("Process final ack [latch=" + latchUid + ", from=" + from + ']');
 
-                assert serverLatches.containsKey(latchUid) || clientLatches.containsKey(latchUid);
+                if (!serverLatches.containsKey(latchUid) && !clientLatches.containsKey(latchUid)) {
+                    log.warning("Latch for this acknowledge is completed or never existed " +
+                        "[latch=" + latchUid + ", from=" + from + ']');
+
+                    return;
+                }
 
                 if (clientLatches.containsKey(latchUid)) {
-                    ClientLatch latch = clientLatches.remove(latchUid);
+                    ClientLatch latch = clientLatches.get(latchUid);
 
                     latch.complete();
                 }
-
-                serverLatches.remove(latchUid);
             }
             else {
                 if (log.isDebugEnabled())
-                    log.debug("Process ack [latch=" + latchUid + ", from=" + from + "]");
+                    log.debug("Process ack [latch=" + latchUid + ", from=" + from + ']');
 
                 if (serverLatches.containsKey(latchUid)) {
                     ServerLatch latch = serverLatches.get(latchUid);
@@ -373,8 +418,14 @@ public class ExchangeLatchManager {
                     if (latch.hasParticipant(from) && !latch.hasAck(from))
                         latch.ack(from);
                 }
-                else
-                    pendingAcks.computeIfAbsent(latchUid, id -> new GridConcurrentHashSet<>()).add(from);
+                else {
+                    ClientLatch clientLatch = clientLatches.get(latchUid);
+
+                    if (clientLatch != null && clientLatch.isCompleted())
+                        sendAck(from, clientLatch.id, true);
+                    else
+                        pendingAcks.computeIfAbsent(latchUid, id -> new GridConcurrentHashSet<>()).add(from);
+                }
             }
         }
         finally {
@@ -383,8 +434,7 @@ public class ExchangeLatchManager {
     }
 
     /**
-     * Changes coordinator to current local node.
-     * Restores all server latches from pending acks and own client latches.
+     * Changes coordinator to current local node. Restores all server latches from pending acks and own client latches.
      */
     private void becomeNewCoordinator() {
         if (log.isInfoEnabled())
@@ -397,10 +447,15 @@ public class ExchangeLatchManager {
 
         for (CompletableLatchUid latchUid : latchesToRestore) {
             AffinityTopologyVersion topVer = latchUid.topVer;
-            Collection<ClusterNode> participants = getLatchParticipants(topVer);
 
-            if (!participants.isEmpty())
-                createServerLatch(latchUid, participants);
+            ClientLatch clientLatch = clientLatches.get(latchUid);
+
+            if (clientLatch == null || !clientLatch.isCompleted()) {
+                Collection<ClusterNode> participants = getLatchParticipants(topVer);
+
+                if (!participants.isEmpty())
+                    createServerLatch(latchUid, participants);
+            }
         }
     }
 
@@ -443,6 +498,7 @@ public class ExchangeLatchManager {
             // Change coordinator for client latches.
             for (Map.Entry<CompletableLatchUid, ClientLatch> latchEntry : clientLatches.entrySet()) {
                 ClientLatch latch = latchEntry.getValue();
+
                 if (latch.hasCoordinator(left.id())) {
                     // Change coordinator for latch and re-send ack if necessary.
                     if (latch.hasParticipant(coordinator.id()))
@@ -456,7 +512,6 @@ public class ExchangeLatchManager {
                         assert getLatchParticipants(latchTopVer).isEmpty();
 
                         latch.complete(new IgniteCheckedException("All latch participants are left from topology."));
-                        clientLatches.remove(latchEntry.getKey());
                     }
                 }
             }
@@ -467,7 +522,7 @@ public class ExchangeLatchManager {
 
                 if (latch.hasParticipant(left.id()) && !latch.hasAck(left.id())) {
                     if (log.isDebugEnabled())
-                        log.debug("Process node left [latch=" + latchEntry.getKey() + ", left=" + left.id() + "]");
+                        log.debug("Process node left [latch=" + latchEntry.getKey() + ", left=" + left.id() + ']');
 
                     latch.ack(left.id());
                 }
@@ -482,6 +537,35 @@ public class ExchangeLatchManager {
         }
         finally {
             lock.unlock();
+        }
+    }
+
+    /**
+     * Sends ack message to the given node ID with the given latch ID.
+     *
+     * @param nodeId Node ID to send ack to.
+     * @param latchUid Latch ID.
+     * @param finalAck If {@code true}, the final (completing) ack message will be sent, otherwise the initial ack
+     *      (sent from participants to coordinator) will be sent.
+     */
+    private void sendAck(UUID nodeId, CompletableLatchUid latchUid, boolean finalAck) {
+        try {
+            if (discovery.alive(nodeId)) {
+                io.sendToGridTopic(
+                    nodeId,
+                    GridTopic.TOPIC_EXCHANGE,
+                    new LatchAckMessage(latchUid.id, latchUid.topVer, finalAck),
+                    GridIoPolicy.SYSTEM_POOL
+                );
+
+                if (log.isDebugEnabled())
+                    log.debug("Ack has sent [latch=" + latchUid + ", final=" + finalAck + ", to=" + nodeId + ']');
+            }
+        }
+        catch (IgniteCheckedException e) {
+            if (log.isDebugEnabled())
+                log.debug("Failed to send ack [latch=" + latchUid + ", final=" + finalAck + ", to=" + nodeId +
+                    ", err=" + e.getMessage() + ']');
         }
     }
 
@@ -507,24 +591,13 @@ public class ExchangeLatchManager {
          */
         ServerLatch(CompletableLatchUid latchUid, Collection<ClusterNode> participants) {
             super(latchUid, participants);
-            this.permits = new AtomicInteger(participants.size());
+
+            permits = new AtomicInteger(participants.size());
 
             // Send final acks when latch is completed.
-            this.complete.listen(f -> {
-                for (ClusterNode node : participants) {
-                    try {
-                        if (discovery.alive(node)) {
-                            io.sendToGridTopic(node, GridTopic.TOPIC_EXCHANGE, new LatchAckMessage(id, topVer, true), GridIoPolicy.SYSTEM_POOL);
-
-                            if (log.isDebugEnabled())
-                                log.debug("Final ack has sent [latch=" + latchId() + ", to=" + node.id() + "]");
-                        }
-                    }
-                    catch (IgniteCheckedException e) {
-                        if (log.isDebugEnabled())
-                            log.debug("Failed to send final ack [latch=" + latchId() + ", to=" + node.id() + "]: " + e.getMessage());
-                    }
-                }
+            complete.listen(f -> {
+                for (ClusterNode node : participants)
+                    sendAck(node.id(), latchId(), true);
             });
         }
 
@@ -539,21 +612,19 @@ public class ExchangeLatchManager {
         }
 
         /**
-         * Receives ack from given node.
-         * Count downs latch if ack was not already processed.
+         * Receives ack from given node. Count downs latch if ack was not already processed.
          *
          * @param from Node.
          */
         private void ack(UUID from) {
             if (log.isDebugEnabled())
-                log.debug("Ack is accepted [latch=" + latchId() + ", from=" + from + "]");
+                log.debug("Ack is accepted [latch=" + latchId() + ", from=" + from + ']');
 
             countDown0(from);
         }
 
         /**
-         * Count down latch from ack of given node.
-         * Completes latch if all acks are received.
+         * Count down latch from ack of given node. Completes latch if all acks are received.
          *
          * @param node Node.
          */
@@ -566,10 +637,16 @@ public class ExchangeLatchManager {
             int remaining = permits.decrementAndGet();
 
             if (log.isDebugEnabled())
-                log.debug("Count down [latch=" + latchId() + ", remaining=" + remaining + "]");
+                log.debug("Count down [latch=" + latchId() + ", remaining=" + remaining + ']');
 
-            if (remaining == 0)
+            if (remaining == 0) {
                 complete();
+
+                serverLatches.remove(id);
+
+                if (log.isDebugEnabled())
+                    log.debug("Dropping server latch [id=" + id + ", latch=" + this + ']');
+            }
         }
 
         /** {@inheritDoc} */
@@ -582,14 +659,13 @@ public class ExchangeLatchManager {
             Set<UUID> pendingAcks = participants.stream().filter(ack -> !acks.contains(ack)).collect(Collectors.toSet());
 
             return S.toString(ServerLatch.class, this,
-                    "pendingAcks", pendingAcks,
-                    "super", super.toString());
+                "pendingAcks", pendingAcks,
+                "super", super.toString());
         }
     }
 
     /**
-     * Latch creating on non-coordinator node.
-     * Latch completes when final ack from coordinator is received.
+     * Latch creating on non-coordinator node. Latch completes when final ack from coordinator is received.
      */
     class ClientLatch extends CompletableLatch {
         /** Latch coordinator node. Can be changed if coordinator is left from topology. */
@@ -627,10 +703,11 @@ public class ExchangeLatchManager {
          * @param coordinator New coordinator.
          */
         private void newCoordinator(ClusterNode coordinator) {
-            if (log.isDebugEnabled())
-                log.debug("Coordinator is changed [latch=" + latchId() + ", newCrd=" + coordinator.id() + "]");
-
             synchronized (this) {
+                if (log.isDebugEnabled())
+                    log.debug("Coordinator is changed [latch=" + latchId() + ", newCrd=" + coordinator.id() +
+                        ", ackSent=" + ackSent + ']');
+
                 this.coordinator = coordinator;
 
                 // Resend ack to new coordinator.
@@ -640,23 +717,13 @@ public class ExchangeLatchManager {
         }
 
         /**
-         * Sends ack to coordinator node.
-         * There is ack deduplication on coordinator. So it's fine to send same ack twice.
+         * Sends ack to coordinator node. There is ack deduplication on coordinator. So it's fine to send same ack
+         * twice.
          */
         private void sendAck() {
-            try {
-                ackSent = true;
+            ackSent = true;
 
-                io.sendToGridTopic(coordinator, GridTopic.TOPIC_EXCHANGE, new LatchAckMessage(id, topVer, false), GridIoPolicy.SYSTEM_POOL);
-
-                if (log.isDebugEnabled())
-                    log.debug("Ack has sent [latch=" + latchId() + ", to=" + coordinator.id() + "]");
-            }
-            catch (IgniteCheckedException e) {
-                // Coordinator is unreachable. On coodinator node left discovery event ack will be resent.
-                if (log.isDebugEnabled())
-                    log.debug("Failed to send ack [latch=" + latchId() + ", to=" + coordinator.id() + "]: " + e.getMessage());
-            }
+            ExchangeLatchManager.this.sendAck(coordinator.id(), id, false);
         }
 
         /** {@inheritDoc} */
@@ -673,7 +740,7 @@ public class ExchangeLatchManager {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(ClientLatch.class, this,
-                    "super", super.toString());
+                "super", super.toString());
         }
     }
 
@@ -683,11 +750,7 @@ public class ExchangeLatchManager {
     private abstract static class CompletableLatch implements Latch {
         /** Latch id. */
         @GridToStringInclude
-        protected final String id;
-
-        /** Latch topology version. */
-        @GridToStringInclude
-        protected final AffinityTopologyVersion topVer;
+        protected final CompletableLatchUid id;
 
         /** Latch node participants. Only participant nodes are able to change state of latch. */
         @GridToStringExclude
@@ -704,8 +767,8 @@ public class ExchangeLatchManager {
          * @param participants Participant nodes.
          */
         CompletableLatch(CompletableLatchUid latchUid, Collection<ClusterNode> participants) {
-            this.id = latchUid.id;
-            this.topVer = latchUid.topVer;
+            id = latchUid;
+
             this.participants = participants.stream().map(ClusterNode::id).collect(Collectors.toSet());
         }
 
@@ -755,8 +818,8 @@ public class ExchangeLatchManager {
         /**
          * @return Full latch id.
          */
-        String latchId() {
-            return id + "-" + topVer;
+        CompletableLatchUid latchId() {
+            return id;
         }
 
         /** {@inheritDoc} */
@@ -770,9 +833,11 @@ public class ExchangeLatchManager {
      */
     private static class CompletableLatchUid {
         /** Id. */
+        @GridToStringInclude
         private String id;
 
         /** Topology version. */
+        @GridToStringInclude
         private AffinityTopologyVersion topVer;
 
         /**
@@ -802,7 +867,7 @@ public class ExchangeLatchManager {
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return "CompletableLatchUid{" + "id='" + id + '\'' + ", topVer=" + topVer + '}';
+            return S.toString(CompletableLatchUid.class, this);
         }
     }
 

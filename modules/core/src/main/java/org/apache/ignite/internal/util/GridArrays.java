@@ -61,7 +61,7 @@ public final class GridArrays {
     public static <T> T[] remove(T[] arr, int idx) {
         int len = arr.length;
 
-        assert idx >= 0 && idx < len: idx + " < " + len;
+        assert idx >= 0 && idx < len : idx + " < " + len;
 
         if (idx == len - 1)
             return Arrays.copyOfRange(arr, 0, len - 1);
@@ -85,7 +85,7 @@ public final class GridArrays {
     public static long[] remove(long[] arr, int idx) {
         int len = arr.length;
 
-        assert idx >= 0 && idx < len: idx + " < " + len;
+        assert idx >= 0 && idx < len : idx + " < " + len;
 
         if (idx == len - 1)
             return Arrays.copyOfRange(arr, 0, len - 1);

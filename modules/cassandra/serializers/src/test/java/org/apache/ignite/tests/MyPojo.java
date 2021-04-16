@@ -63,13 +63,8 @@ public class MyPojo implements Serializable {
         this.ref = ref;
     }
 
-    /**
-     * Compare POJOs.
-     *
-     * @param obj POJO to compare with.
-     * @return {@code true} if equals.
-     */
-    public boolean equals(Object obj) {
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object obj) {
         if (!(obj instanceof MyPojo))
             return false;
 

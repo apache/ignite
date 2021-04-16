@@ -25,7 +25,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -44,9 +43,7 @@ public class GridServiceSerializationSelfTest extends GridCommonAbstractTest {
         try {
             Ignite server = startGridsMultiThreaded(3);
 
-            Ignition.setClientMode(true);
-
-            Ignite client = startGrid("client");
+            Ignite client = startClientGrid("client");
 
             server.services(server.cluster().forServers())
                 .deployClusterSingleton("my-service", new MyServiceImpl());

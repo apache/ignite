@@ -91,6 +91,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateAware;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -210,7 +211,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                         fut.listen(new CI1<IgniteInternalFuture<?>>() {
                             @Override public void apply(IgniteInternalFuture<?> fut) {
-                                cctx.kernalContext().closure().runLocalSafe(new Runnable() {
+                                cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
                                     @Override public void run() {
                                         handleMessage(nodeId, cacheMsg, plc);
                                     }
@@ -236,7 +237,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             else {
                 AffinityTopologyVersion locAffVer = cctx.exchange().readyAffinityVersion();
 
-                if (locAffVer.compareTo(lastAffChangedVer) < 0) {
+                if (locAffVer.before(lastAffChangedVer)) {
                     IgniteLogger log = cacheMsg.messageLogger(cctx);
 
                     if (log.isDebugEnabled()) {
@@ -591,7 +592,22 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 processMessage(nodeId, cacheMsg, c);
         }
         catch (Throwable e) {
-            U.error(log, "Failed to process message [senderId=" + nodeId + ", messageType=" + cacheMsg.getClass() + ']', e);
+            String msgStr;
+
+            try {
+                msgStr = String.valueOf(cacheMsg);
+            }
+            catch (Throwable e0) {
+                String clsName = cacheMsg.getClass().getName();
+
+                U.error(log, "Failed to log message due to an error: " + clsName, e0);
+
+                msgStr = clsName + "(failed to log message)";
+            }
+
+            U.error(log, "Failed to process message [senderId=" + nodeId + ", msg=" + msgStr + ']', e);
+
+            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
             if (e instanceof Error)
                 throw (Error)e;
@@ -874,6 +890,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     0,
                     req.classError(),
                     null,
+                    false,
                     false);
 
                 sendResponseOnFailedMessage(nodeId, res, cctx, plc);
@@ -925,7 +942,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             case 114:
             case 120: {
-                processMessage(nodeId, msg, c);// Will be handled by Rebalance Demander.
+                processMessage(nodeId, msg, c); // Will be handled by Rebalance Demander.
             }
 
             break;
@@ -1421,7 +1438,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 if (clsHandlers == null)
                     clsHandlers = new IgniteBiInClosure[GridCacheMessage.MAX_CACHE_MSG_LOOKUP_INDEX];
 
-                if(clsHandlers[msgIdx] != null)
+                if (clsHandlers[msgIdx] != null)
                     return null;
 
                 clsHandlers[msgIdx] = c;
@@ -1589,23 +1606,23 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
         GridDeploymentInfo bean = cacheMsg.deployInfo();
 
-        if (bean != null) {
-            assert depEnabled : "Received deployment info while peer class loading is disabled [nodeId=" + nodeId +
-                ", msg=" + cacheMsg + ']';
-
-            cctx.deploy().p2pContext(
-                nodeId,
-                bean.classLoaderId(),
-                bean.userVersion(),
-                bean.deployMode(),
-                bean.participants()
-            );
-
-            if (log.isDebugEnabled())
-                log.debug("Set P2P context [senderId=" + nodeId + ", msg=" + cacheMsg + ']');
-        }
-
         try {
+            if (bean != null) {
+                assert depEnabled : "Received deployment info while peer class loading is disabled [nodeId=" + nodeId +
+                    ", msg=" + cacheMsg + ']';
+
+                cctx.deploy().p2pContext(
+                    nodeId,
+                    bean.classLoaderId(),
+                    bean.userVersion(),
+                    bean.deployMode(),
+                    bean.participants()
+                );
+
+                if (log.isDebugEnabled())
+                    log.debug("Set P2P context [senderId=" + nodeId + ", msg=" + cacheMsg + ']');
+            }
+
             cacheMsg.finishUnmarshal(cctx, cctx.deploy().globalLoader());
         }
         catch (IgniteCheckedException e) {

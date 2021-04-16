@@ -440,7 +440,7 @@ public class JdbcBlobTest {
 
             fail();
         }
-        catch(SQLException e) {
+        catch (SQLException e) {
             // No-op.
         }
 
@@ -449,7 +449,7 @@ public class JdbcBlobTest {
 
             fail();
         }
-        catch(SQLException e) {
+        catch (SQLException e) {
             // No-op.
         }
 

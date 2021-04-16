@@ -50,6 +50,9 @@ public class IgniteRebalanceIteratorImpl implements IgniteRebalanceIterator {
     /** Current full iterator. */
     private Map.Entry<Integer, GridCloseableIterator<CacheDataRow>> current;
 
+    /** Next value. */
+    private CacheDataRow cached;
+
     /** */
     private boolean reachedEnd;
 
@@ -57,7 +60,6 @@ public class IgniteRebalanceIteratorImpl implements IgniteRebalanceIterator {
     private boolean closed;
 
     /**
-     *
      * @param fullIterators
      * @param historicalIterator
      * @throws IgniteCheckedException
@@ -103,6 +105,9 @@ public class IgniteRebalanceIteratorImpl implements IgniteRebalanceIterator {
         if (historical(partId))
             return historicalIterator.isDone(partId);
 
+        if (cached != null)
+            return cached.partition() > partId;
+
         return current == null || current.getKey() > partId;
     }
 
@@ -142,12 +147,26 @@ public class IgniteRebalanceIteratorImpl implements IgniteRebalanceIterator {
     }
 
     /** {@inheritDoc} */
+    @Override public synchronized CacheDataRow peek() {
+        if (cached == null) {
+            if (!hasNext())
+                return null;
+
+            cached = next();
+        }
+
+        return cached;
+    }
+
+    /** {@inheritDoc} */
     @Override public synchronized void removeX() throws IgniteCheckedException {
         throw new UnsupportedOperationException("remove");
     }
 
     /** {@inheritDoc} */
     @Override public synchronized void close() throws IgniteCheckedException {
+        cached = null;
+
         if (historicalIterator != null)
             historicalIterator.close();
 
@@ -172,6 +191,9 @@ public class IgniteRebalanceIteratorImpl implements IgniteRebalanceIterator {
     /** {@inheritDoc} */
     @Override public synchronized boolean hasNext() {
         try {
+            if (cached != null)
+                return true;
+
             return hasNextX();
         }
         catch (IgniteCheckedException e) {
@@ -182,6 +204,14 @@ public class IgniteRebalanceIteratorImpl implements IgniteRebalanceIterator {
     /** {@inheritDoc} */
     @Override public synchronized CacheDataRow next() {
         try {
+            if (cached != null) {
+                CacheDataRow res = cached;
+
+                cached = null;
+
+                return res;
+            }
+
             return nextX();
         }
         catch (IgniteCheckedException e) {

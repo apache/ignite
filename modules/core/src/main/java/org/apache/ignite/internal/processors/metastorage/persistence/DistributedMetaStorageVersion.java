@@ -17,16 +17,18 @@
 
 package org.apache.ignite.internal.processors.metastorage.persistence;
 
-import java.io.Serializable;
-import java.util.Arrays;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.LongFunction;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /** Version class for distributed metastorage. */
-class DistributedMetaStorageVersion implements Serializable {
+final class DistributedMetaStorageVersion extends IgniteDataTransferObject {
     /** Serial version UID. */
     private static final long serialVersionUID = 0L;
 
@@ -35,7 +37,7 @@ class DistributedMetaStorageVersion implements Serializable {
 
     /** Incremental rehashing considering new update information. */
     private static long nextHash(long hash, DistributedMetaStorageHistoryItem update) {
-        return hash * 31L + ((long)update.key.hashCode() << 32) + Arrays.hashCode(update.valBytes);
+        return hash * 31L + update.longHash();
     }
 
     /**
@@ -45,14 +47,19 @@ class DistributedMetaStorageVersion implements Serializable {
      * @see #INITIAL_VERSION
      */
     @GridToStringInclude
-    public final long id;
+    private long id;
 
     /**
      * Hash of the whole updates list. Hashing algorinthm is almost the same as in {@link List#hashCode()}, but with
      * {@code long} value instead of {@code int}.
      */
     @GridToStringInclude
-    public final long hash;
+    private long hash;
+
+    /** Default constructor for deserialization. */
+    public DistributedMetaStorageVersion() {
+        // No-op.
+    }
 
     /**
      * Constructor with all fields.
@@ -132,6 +139,36 @@ class DistributedMetaStorageVersion implements Serializable {
             hash = nextHash(hash, update.apply(idx));
 
         return new DistributedMetaStorageVersion(id + toVer + 1 - fromVer, hash);
+    }
+
+    /**
+     * Id is basically a total number of distributed metastorage updates in current cluster.
+     * Increases incrementally on every update starting with zero.
+     *
+     * @see #INITIAL_VERSION
+     */
+    public long id() {
+        return id;
+    }
+
+    /**
+     * Hash of the whole updates list. Hashing algorinthm is almost the same as in {@link List#hashCode()}, but with
+     * {@code long} value instead of {@code int}.
+     */
+    public long hash() {
+        return hash;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        out.writeLong(id);
+        out.writeLong(hash);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException {
+        id = in.readLong();
+        hash = in.readLong();
     }
 
     /** {@inheritDoc} */

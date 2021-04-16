@@ -32,9 +32,9 @@ import org.junit.runners.Suite;
     IgniteCacheLargeValueExpireTest.class,
 
     IgniteCacheAtomicLocalExpiryPolicyTest.class,
-    //IgniteCacheAtomicLocalOnheapExpiryPolicyTest.class,
+    IgniteCacheAtomicLocalOnheapExpiryPolicyTest.class,
     IgniteCacheAtomicExpiryPolicyTest.class,
-    //IgniteCacheAtomicOnheapExpiryPolicyTest.class,
+    IgniteCacheAtomicOnheapExpiryPolicyTest.class,
     IgniteCacheAtomicWithStoreExpiryPolicyTest.class,
     IgniteCacheAtomicReplicatedExpiryPolicyTest.class,
 
@@ -56,7 +56,9 @@ import org.junit.runners.Suite;
 
     // Eager ttl expiration tests.
     GridCacheTtlManagerNotificationTest.class,
-    IgniteCacheOnlyOneTtlCleanupThreadExistsTest.class
+    IgniteCacheOnlyOneTtlCleanupThreadExistsTest.class,
+
+    IgniteCacheExpireWhileRebalanceTest.class
 })
 public class IgniteCacheExpiryPolicyTestSuite {
 }

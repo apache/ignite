@@ -33,9 +33,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.apache.ignite.lang.IgniteUuid;
 
+import static org.apache.ignite.cache.CachePeekMode.BACKUP;
 import static org.apache.ignite.cache.CachePeekMode.ONHEAP;
 import static org.apache.ignite.cache.CachePeekMode.PRIMARY;
-import static org.apache.ignite.cache.CachePeekMode.BACKUP;
 
 /**
  * Data transfer object for {@link IgniteCache}.
@@ -298,7 +298,7 @@ public class VisorCache extends VisorDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, name);
-        U.writeGridUuid(out, dynamicDeploymentId);
+        U.writeIgniteUuid(out, dynamicDeploymentId);
         U.writeEnum(out, mode);
         out.writeLong(memorySize);
         out.writeLong(indexesSize);
@@ -316,7 +316,7 @@ public class VisorCache extends VisorDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         name = U.readString(in);
-        dynamicDeploymentId = U.readGridUuid(in);
+        dynamicDeploymentId = U.readIgniteUuid(in);
         mode = CacheMode.fromOrdinal(in.readByte());
         memorySize = in.readLong();
         indexesSize = in.readLong();

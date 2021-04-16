@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -312,9 +313,9 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
             Object oldVal0;
 
             try {
-                key0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, keepBinary, false);
-                val0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(newVal, keepBinary, false);
-                oldVal0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(oldVal, keepBinary, false);
+                key0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, keepBinary, false, null);
+                val0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(newVal, keepBinary, false, null);
+                oldVal0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(oldVal, keepBinary, false, null);
             }
             catch (Exception e) {
                 if (!cctx.cacheObjectContext().kernalContext().cacheObjects().isBinaryEnabled(cctx.config()))
@@ -329,9 +330,9 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
 
                 forceKeepBinary = true;
 
-                key0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, true, false);
-                val0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(newVal, true, false);
-                oldVal0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(oldVal, true, false);
+                key0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, true, false, null);
+                val0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(newVal, true, false, null);
+                oldVal0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(oldVal, true, false, null);
             }
 
             IgniteUuid xid = tx == null ? null : tx.xid();
@@ -388,11 +389,18 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         GridCacheContext cctx0 = cctx;
 
         // Event recording is impossible in recovery mode.
-        if (cctx0 != null && cctx0.kernalContext().recoveryMode())
+        if (cctx0 == null || cctx0.kernalContext().recoveryMode())
             return false;
 
-        return cctx0 != null && cctx0.userCache() && cctx0.gridEvents().isRecordable(type)
-            && cctx0.config() != null && !cctx0.config().isEventsDisabled();
+        try {
+            CacheConfiguration cfg = cctx0.config();
+
+            return cctx0.userCache() && cctx0.gridEvents().isRecordable(type) && !cfg.isEventsDisabled();
+        }
+        catch (IllegalStateException e) {
+            // Cache context was cleaned up.
+            return false;
+        }
     }
 
     /** {@inheritDoc} */

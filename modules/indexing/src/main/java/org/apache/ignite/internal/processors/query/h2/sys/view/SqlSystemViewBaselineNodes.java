@@ -65,7 +65,7 @@ public class SqlSystemViewBaselineNodes extends SqlAbstractLocalSystemView {
             rows.add(
                 createRow(
                     ses,
-                    consistentId,
+                    toStringSafe(consistentId),
                     aliveNodeIds.contains(consistentId)
                 )
             );

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.ml.preprocessing.standardscaling;
 
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DummyVectorizer;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Test;
@@ -39,10 +41,12 @@ public class StandardScalerPreprocessorTest {
         double[] means = new double[] {0.5, 1.75, 4.5, 0.875};
         double[] sigmas = new double[] {0.5, 1.47901995, 14.51723114, 0.93374247};
 
+        final Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>(0, 1, 2, 3).labeled(0);
+
         StandardScalerPreprocessor<Integer, Vector> preprocessor = new StandardScalerPreprocessor<>(
             means,
             sigmas,
-            (k, v) -> v
+            vectorizer
         );
 
         double[][] expectedData = new double[][] {
@@ -53,6 +57,6 @@ public class StandardScalerPreprocessorTest {
         };
 
         for (int i = 0; i < inputData.length; i++)
-            assertArrayEquals(expectedData[i], preprocessor.apply(i, VectorUtils.of(inputData[i])).asArray(), 1e-8);
+            assertArrayEquals(expectedData[i], preprocessor.apply(i, VectorUtils.of(inputData[i])).features().asArray(), 1e-8);
     }
 }

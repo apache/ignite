@@ -19,19 +19,27 @@ package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.io.Serializable;
 
-/** */
+/**
+ * Distributed metastorage data that joining node sends to cluster.
+ */
 @SuppressWarnings("PublicField")
 class DistributedMetaStorageJoiningNodeData implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
+    /**
+     * Baseline topology id of node, {@code -1} if baseline topology is null.
+     */
     public final int bltId;
 
-    /** */
+    /**
+     * Distributed metastorage version of joining node.
+     */
     public final DistributedMetaStorageVersion ver;
 
-    /** */
+    /**
+     * Available history of joining node.
+     */
     public final DistributedMetaStorageHistoryItem[] hist;
 
     /** */

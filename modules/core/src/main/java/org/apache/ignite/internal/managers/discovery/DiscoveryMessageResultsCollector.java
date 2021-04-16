@@ -28,7 +28,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public abstract class DiscoveryMessageResultsCollector<M, R>  {
+public abstract class DiscoveryMessageResultsCollector<M, R> {
     /** */
     private final Map<UUID, NodeMessage<M>> rcvd = new HashMap<>();
 

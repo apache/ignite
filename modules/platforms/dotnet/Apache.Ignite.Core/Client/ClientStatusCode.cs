@@ -50,14 +50,24 @@ namespace Apache.Ignite.Core.Client
         CacheExists = 1001,
 
         /// <summary>
-        /// The too many cursors (see <see cref="ClientConnectorConfiguration.MaxOpenCursorsPerConnection"/>).
+        /// Too many cursors (see <see cref="ClientConnectorConfiguration.MaxOpenCursorsPerConnection"/>).
         /// </summary>
         TooManyCursors = 1010,
+
+        /// <summary>
+        /// Resource does not exist.
+        /// </summary>
+        ResourceDoesNotExist = 1011,
 
         /// <summary>
         /// Authorization failure.
         /// </summary>
         SecurityViolation = 1012,
+
+        /// <summary>
+        /// Too many compute tasks (see <see cref="ThinClientConfiguration.MaxActiveComputeTasksPerConnection"/>).
+        /// </summary>
+        TooManyComputeTasks = 1030,
 
         /// <summary>
         /// Authentication failed.

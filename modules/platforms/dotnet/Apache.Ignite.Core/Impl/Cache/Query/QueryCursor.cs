@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query
         /// Constructor.
         /// </summary>
         /// <param name="target">Target.</param>
-        /// <param name="keepBinary">Keep poratble flag.</param>
+        /// <param name="keepBinary">Keep binary flag.</param>
         public QueryCursor(IPlatformTargetInternal target, bool keepBinary)
             : base(target, keepBinary,
                 r => new CacheEntry<TK, TV>(r.ReadObject<TK>(), r.ReadObject<TV>()))

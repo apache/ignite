@@ -41,7 +41,7 @@ public abstract class ClientListenerResponse {
      * @param status Response status.
      * @param err Error, {@code null} if success is {@code true}.
      */
-    public ClientListenerResponse(int status, @Nullable String err) {
+    protected ClientListenerResponse(int status, @Nullable String err) {
         this.status = status;
         this.err = err;
     }
@@ -72,5 +72,12 @@ public abstract class ClientListenerResponse {
      */
     public void error(String err) {
         this.err = err;
+    }
+
+    /**
+     * Callback for response sent event.
+     */
+    public void onSent() {
+        // No-op.
     }
 }

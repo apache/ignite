@@ -17,14 +17,14 @@
 
 package org.apache.ignite.spi.discovery.tcp.ipfinder.s3.client;
 
-import com.amazonaws.services.s3.model.ObjectListing;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
 
 /**
  * Class to simulate the functionality of {@link ObjectListing}.

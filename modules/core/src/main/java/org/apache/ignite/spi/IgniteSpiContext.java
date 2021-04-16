@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Consumer;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -32,6 +33,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.plugin.security.SecuritySubject;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -376,4 +378,33 @@ public interface IgniteSpiContext {
      * @param err Error.
      */
     public void resolveCommunicationFailure(ClusterNode node, Exception err);
+
+    /**
+     * Returns existing or newly created instance of metric registry with given name.
+     *
+     * @param name Metric registry name.
+     * @return Existing or newly created instance of metric registry.
+     */
+    public ReadOnlyMetricRegistry getOrCreateMetricRegistry(String name);
+
+    /**
+     * Removes metric registry with given name.
+     *
+     * @param name Metric registry name.
+     */
+    public void removeMetricRegistry(String name);
+
+    /**
+     * Returns all registered metric registries.
+     *
+     * @return All registered metric registries.
+     */
+    public Iterable<ReadOnlyMetricRegistry> metricRegistries();
+
+    /**
+     * Register listener which will be notified on metric registry creation.
+     *
+     * @param lsnr Listener.
+     */
+    public void addMetricRegistryCreationListener(Consumer<ReadOnlyMetricRegistry> lsnr);
 }

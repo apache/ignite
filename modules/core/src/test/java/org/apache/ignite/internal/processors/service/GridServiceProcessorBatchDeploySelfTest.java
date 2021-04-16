@@ -61,7 +61,7 @@ public class GridServiceProcessorBatchDeploySelfTest extends GridCommonAbstractT
         for (int i = 0; i < NUM_NODES; i++)
             startGrid(i);
 
-        startGrid(CLIENT_NODE_NAME, getConfiguration(CLIENT_NODE_NAME).setClientMode(true));
+        startClientGrid(CLIENT_NODE_NAME, getConfiguration(CLIENT_NODE_NAME));
 
         DummyService.reset();
     }

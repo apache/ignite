@@ -23,8 +23,9 @@ import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
 import org.apache.ignite.ml.environment.LearningEnvironment;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
+import org.apache.ignite.ml.structures.LabeledVector;
 
 /**
  * A partition {@code data} builder that makes {@link SimpleLabeledDatasetData}.
@@ -38,22 +39,16 @@ public class SimpleLabeledDatasetDataBuilder<K, V, C extends Serializable>
     /** */
     private static final long serialVersionUID = 3678784980215216039L;
 
-    /** Function that extracts features from an {@code upstream} data. */
-    private final IgniteBiFunction<K, V, Vector> featureExtractor;
-
-    /** Function that extracts labels from an {@code upstream} data. */
-    private final IgniteBiFunction<K, V, double[]> lbExtractor;
+    /** Function that extracts labeled vectors from an {@code upstream} data. */
+    private final Preprocessor<K, V> vectorizer;
 
     /**
      * Constructs a new instance of partition {@code data} builder that makes {@link SimpleLabeledDatasetData}.
      *
-     * @param featureExtractor Function that extracts features from an {@code upstream} data.
-     * @param lbExtractor Function that extracts labels from an {@code upstream} data.
+     * @param vectorizer Function that extracts labeled vectors from an {@code upstream} data.
      */
-    public SimpleLabeledDatasetDataBuilder(IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, double[]> lbExtractor) {
-        this.featureExtractor = featureExtractor;
-        this.lbExtractor = lbExtractor;
+    public SimpleLabeledDatasetDataBuilder(Preprocessor<K, V> vectorizer) {
+        this.vectorizer = vectorizer;
     }
 
     /** {@inheritDoc} */
@@ -71,7 +66,8 @@ public class SimpleLabeledDatasetDataBuilder<K, V, C extends Serializable>
         while (upstreamData.hasNext()) {
             UpstreamEntry<K, V> entry = upstreamData.next();
 
-            Vector featureRow = featureExtractor.apply(entry.getKey(), entry.getValue());
+            LabeledVector<double[]> labeledVector = vectorizer.apply(entry.getKey(), entry.getValue());
+            Vector featureRow = labeledVector.features();
 
             if (featureCols < 0) {
                 featureCols = featureRow.size();
@@ -84,7 +80,7 @@ public class SimpleLabeledDatasetDataBuilder<K, V, C extends Serializable>
             for (int i = 0; i < featureCols; i++)
                 features[Math.toIntExact(i * upstreamDataSize) + ptr] = featureRow.get(i);
 
-            double[] lbRow = lbExtractor.apply(entry.getKey(), entry.getValue());
+            double[] lbRow = labeledVector.label();
 
             if (lbCols < 0) {
                 lbCols = lbRow.length;

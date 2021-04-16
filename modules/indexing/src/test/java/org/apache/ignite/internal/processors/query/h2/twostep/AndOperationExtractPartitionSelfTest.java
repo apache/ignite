@@ -112,7 +112,7 @@ public class AndOperationExtractPartitionSelfTest extends AbstractIndexingCommon
 
     /** */
     @Test
-    public void testAlternativeUsageOfIn(){
+    public void testAlternativeUsageOfIn() {
         try (FieldsQueryCursor<List<?>> cur = orgCache.query(new SqlFieldsQuery(
             "SELECT * FROM Organization org WHERE org._KEY = 'org1' AND " +
                 "org._KEY IN (SELECT subOrg._KEY FROM Organization subOrg)"))) {
@@ -150,7 +150,7 @@ public class AndOperationExtractPartitionSelfTest extends AbstractIndexingCommon
         testAndOperator(Arrays.asList(ORG + 0, ORG + 3, ORG + String.valueOf(ORG_COUNT - 1)), null, 1, 1);
         testAndOperator(Arrays.asList("ORG", ORG + 0, ORG + 4, ORG + String.valueOf(ORG_COUNT - 1)), null, 0, 0);
         testAndOperator(Arrays.asList(ORG + 0, ORG + 2, ORG + String.valueOf(ORG_COUNT - 1), "ORG"), null, 1, 1);
-        testAndOperator(Arrays.asList(ORG + 0, ORG + 1, "MID", ORG + String.valueOf(ORG_COUNT - 1), ORG+3), null, 2, 2);
+        testAndOperator(Arrays.asList(ORG + 0, ORG + 1, "MID", ORG + String.valueOf(ORG_COUNT - 1), ORG + 3), null, 2, 2);
 
         final List<String> allArgs3 = Arrays.asList("?", "?", "?");
         final List<String> allArgs4 = Arrays.asList("?", "?", "?", "?");

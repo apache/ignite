@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import javax.cache.CacheException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteClientDisconnectedException;
@@ -37,6 +37,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
@@ -53,6 +54,9 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
     /** Cache params. */
     private static final String CACHE_PARAMS = "PPRB_PARAMS";
 
+    /** */
+    private int joinTimeout;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -61,12 +65,13 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
         cfg.setIncludeEventTypes(EventType.EVTS_CACHE);
 
         if (getTestIgniteInstanceName(CLIENT_ID).equals(igniteInstanceName)) {
-            cfg.setClientMode(true);
-
             CacheConfiguration ccfg = getCacheConfiguration();
 
             cfg.setCacheConfiguration(ccfg);
         }
+
+        if (joinTimeout != 0 && getTestIgniteInstanceName(1).equals(igniteInstanceName))
+            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setJoinTimeout(joinTimeout);
 
         return cfg;
     }
@@ -113,13 +118,40 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
         return ccfg;
     }
 
-    /** */
+    /**
+     * @throws Exception if failed.
+     */
     @Test
     public void testReconnectClient() throws Exception {
+        checkReconnectClient();
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testReconnectClient10sTimeout() throws Exception {
+        joinTimeout = 10_000;
+
+        checkReconnectClient();
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testReconnectClient2sTimeout() throws Exception {
+        joinTimeout = 2_000;
+
+        checkReconnectClient();
+    }
+
+    /** */
+    public void checkReconnectClient() throws Exception {
         try {
             startGrid(SERVER_ID);
 
-            Ignite client = startGrid(CLIENT_ID);
+            Ignite client = startClientGrid(CLIENT_ID);
 
             checkTopology(2);
 
@@ -169,7 +201,8 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
 
             try {
                 assertNull(cache.get(1L));
-            } catch (CacheException ce) {
+            }
+            catch (CacheException ce) {
                 IgniteClientDisconnectedException icde = (IgniteClientDisconnectedException)ce.getCause();
 
                 icde.reconnectFuture().get();

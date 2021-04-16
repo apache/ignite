@@ -52,6 +52,8 @@ public class OomFailureHandlerTest extends AbstractFailureHandlerTest {
             .setBackups(0)
         );
 
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
+
         return cfg;
     }
 

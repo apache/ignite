@@ -153,7 +153,7 @@ public abstract class JdbcThinDynamicIndexAbstractSelfTest extends JdbcThinAbstr
         jdbcRun(CREATE_INDEX);
 
         // Test that local queries on all server nodes use new index.
-        for (int i = 0 ; i < 3; i++) {
+        for (int i = 0; i < 3; i++) {
             List<List<?>> locRes = ignite(i).cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("explain select id from " +
                 "Person where id = 5").setLocal(true)).getAll();
 
@@ -215,7 +215,7 @@ public abstract class JdbcThinDynamicIndexAbstractSelfTest extends JdbcThinAbstr
         jdbcRun(DROP_INDEX);
 
         // Test that no local queries on server nodes use new index.
-        for (int i = 0 ; i < 3; i++) {
+        for (int i = 0; i < 3; i++) {
             List<List<?>> locRes = ignite(i).cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("explain select id from " +
                 "Person where id = 5").setLocal(true)).getAll();
 

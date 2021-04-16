@@ -23,7 +23,7 @@ import java.io.ObjectOutput;
 import java.util.Map;
 import java.util.Spliterator;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.ml.math.exceptions.CardinalityException;
+import org.apache.ignite.ml.math.exceptions.math.CardinalityException;
 import org.apache.ignite.ml.math.functions.IgniteBiConsumer;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
@@ -77,16 +77,6 @@ class ReplicatedVectorMatrix implements Matrix {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isSequentialAccess() {
-        return vector.isSequentialAccess();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isRandomAccess() {
-        return vector.isRandomAccess();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isDense() {
         return vector.isDense();
     }
@@ -94,11 +84,6 @@ class ReplicatedVectorMatrix implements Matrix {
     /** {@inheritDoc} */
     @Override public boolean isArrayBased() {
         return vector.isArrayBased();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isDistributed() {
-        return vector.isDistributed();
     }
 
     /** {@inheritDoc} */
@@ -183,7 +168,7 @@ class ReplicatedVectorMatrix implements Matrix {
         return asCol ? new ReplicatedVectorMatrix(swap(row1, row2), replicationCnt, asCol) : this;
     }
 
-    /** {@inheritDoc} */
+    /** */
     private Vector swap(int idx1, int idx2) {
         double val = vector.getX(idx1);
 
@@ -362,7 +347,7 @@ class ReplicatedVectorMatrix implements Matrix {
      * Specialized optimized version of minus for ReplicatedVectorMatrix.
      *
      * @param mtx Matrix to be subtracted.
-     * @return new ReplicatedVectorMatrix resulting from subtraction.
+     * @return New ReplicatedVectorMatrix resulting from subtraction.
      */
     public Matrix minus(ReplicatedVectorMatrix mtx) {
         if (isColumnReplicated() == mtx.isColumnReplicated()) {
@@ -390,7 +375,7 @@ class ReplicatedVectorMatrix implements Matrix {
      * Specialized optimized version of plus for ReplicatedVectorMatrix.
      *
      * @param mtx Matrix to be added.
-     * @return new ReplicatedVectorMatrix resulting from addition.
+     * @return New ReplicatedVectorMatrix resulting from addition.
      */
     public Matrix plus(ReplicatedVectorMatrix mtx) {
         if (isColumnReplicated() == mtx.isColumnReplicated()) {

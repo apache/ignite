@@ -48,9 +48,8 @@ public final class GridDeploymentFolderScannerHelper {
         if (filter.accept(file))
             handler.handle(file);
         else if (file.isDirectory()) {
-            for (File child : file.listFiles()) {
+            for (File child : file.listFiles())
                 scanFolder(child, filter, handler);
-            }
         }
     }
 }

@@ -17,18 +17,17 @@
 
 package org.apache.ignite.lang.utils;
 
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.OffheapReadWriteLock;
-import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.OffheapReadWriteLock;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
@@ -352,7 +351,7 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
 
         final int threadCnt = 32;
 
-        final CyclicBarrier barr = new CyclicBarrier(threadCnt, () -> {if (done.get()) run.set(false);});
+        final CyclicBarrier barr = new CyclicBarrier(threadCnt, () -> { if (done.get()) run.set(false); });
 
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             /** {@inheritDoc} */

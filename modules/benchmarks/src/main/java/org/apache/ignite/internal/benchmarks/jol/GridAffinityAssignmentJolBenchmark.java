@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2;
 import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
 import org.apache.ignite.internal.processors.affinity.HistoryAffinityAssignment;
+import org.apache.ignite.internal.processors.affinity.HistoryAffinityAssignmentImpl;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
@@ -155,8 +156,8 @@ public class GridAffinityAssignmentJolBenchmark {
         long totalSize = GraphLayout.parseInstance(ga).totalSize();
 
         System.out.println("Optimized, parts " + parts
-            +" nodeCount " + nodeCnt
-            +" backups " + backups
+            + " nodeCount " + nodeCnt
+            + " backups " + backups
             + " " + totalSize);
 
         setOptimization(true);
@@ -172,8 +173,8 @@ public class GridAffinityAssignmentJolBenchmark {
         long totalSize2 = GraphLayout.parseInstance(ga2).totalSize();
 
         System.out.println("Deoptimized, parts " + parts
-            +" nodeCount " + nodeCnt
-            +" backups " + backups
+            + " nodeCount " + nodeCnt
+            + " backups " + backups
             + " " + totalSize2);
 
         if (totalSize > totalSize2)
@@ -252,7 +253,7 @@ public class GridAffinityAssignmentJolBenchmark {
 
             AffinityTopologyVersion topVer = new AffinityTopologyVersion(i + 1, 0);
             GridAffinityAssignmentV2 a = new GridAffinityAssignmentV2(topVer, lateAssignmemnt, idealAssignment);
-            HistoryAffinityAssignment h = new HistoryAffinityAssignment(a, backups);
+            HistoryAffinityAssignment h = new HistoryAffinityAssignmentImpl(a, backups);
 
             if (!lateAssignmemnt.equals(h.assignment()))
                 throw new RuntimeException();
@@ -273,7 +274,7 @@ public class GridAffinityAssignmentJolBenchmark {
             }
 
             GridAffinityAssignmentV2 a0 = new GridAffinityAssignmentV2(topVer0, assignment, idealAssignment);
-            HistoryAffinityAssignment h0 = new HistoryAffinityAssignment(a0, backups);
+            HistoryAffinityAssignment h0 = new HistoryAffinityAssignmentImpl(a0, backups);
 
             if (!assignment.equals(h0.assignment()))
                 throw new RuntimeException();

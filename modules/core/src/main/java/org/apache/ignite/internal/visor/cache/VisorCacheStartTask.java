@@ -98,7 +98,7 @@ public class VisorCacheStartTask extends VisorMultiNodeTask<VisorCacheStartTaskA
                 }
             }
             catch (IOException e) {
-                throw new  IgniteException(e);
+                throw new IgniteException(e);
             }
 
             return null;

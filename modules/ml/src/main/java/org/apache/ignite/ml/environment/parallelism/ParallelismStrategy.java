@@ -19,6 +19,7 @@ package org.apache.ignite.ml.environment.parallelism;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 
 /**
@@ -38,20 +39,31 @@ public interface ParallelismStrategy {
      * Submit task.
      *
      * @param task Task.
+     *
+     * @return The result of submit operation.
      */
     public <T> Promise<T> submit(IgniteSupplier<T> task);
+
+    /** Returns default parallelism. */
+    public int getParallelism();
 
     /**
      * Submit the list of tasks.
      *
      * @param tasks The task list.
      * @param <T> The type of return value.
-     * @return The result of submit operation.
+     * @return The results of the submitted operations list.
      */
     public default <T> List<Promise<T>> submit(List<IgniteSupplier<T>> tasks) {
         List<Promise<T>> results = new ArrayList<>();
-        for(IgniteSupplier<T> task : tasks)
+        for (IgniteSupplier<T> task : tasks)
             results.add(submit(task));
         return results;
     }
+
+    /** On default pool. */
+    public static IgniteFunction<Integer, Type> ON_DEFAULT_POOL = part -> Type.ON_DEFAULT_POOL;
+
+    /** No parallelism. */
+    public static IgniteFunction<Integer, Type> NO_PARALLELISM = part -> Type.NO_PARALLELISM;
 }

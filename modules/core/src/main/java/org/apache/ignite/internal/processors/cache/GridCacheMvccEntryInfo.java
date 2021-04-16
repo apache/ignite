@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersionAware;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -34,6 +35,9 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP
 public class GridCacheMvccEntryInfo extends GridCacheEntryInfo implements MvccVersionAware, MvccUpdateVersionAware {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    private static final int SIZE_OVERHEAD = 4 * 8 /* long */ + 2 * 4 /* int */;
 
     /** */
     private long mvccCrdVer;
@@ -119,6 +123,11 @@ public class GridCacheMvccEntryInfo extends GridCacheEntryInfo implements MvccVe
         mvccCrdVer = crd;
         mvccCntr = cntr;
         mvccOpCntr = opCntr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int marshalledSize(CacheObjectContext ctx) throws IgniteCheckedException {
+        return SIZE_OVERHEAD + super.marshalledSize(ctx);
     }
 
     /** {@inheritDoc} */

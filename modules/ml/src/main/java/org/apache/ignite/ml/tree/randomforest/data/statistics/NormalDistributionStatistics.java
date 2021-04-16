@@ -62,7 +62,7 @@ public class NormalDistributionStatistics implements Serializable {
      * Returns plus of normal distribution statistics.
      *
      * @param stats Stats.
-     * @return plus of normal distribution statistics.
+     * @return Plus of normal distribution statistics.
      */
     public NormalDistributionStatistics plus(NormalDistributionStatistics stats) {
         return new NormalDistributionStatistics(
@@ -75,14 +75,14 @@ public class NormalDistributionStatistics implements Serializable {
     }
 
     /**
-     * @return mean value.
+     * @return Mean value.
      */
     public double mean() {
         return sumOfValues / n;
     }
 
     /**
-     * @return variance value.
+     * @return Variance value.
      */
     public double variance() {
         double mean = mean();
@@ -90,21 +90,21 @@ public class NormalDistributionStatistics implements Serializable {
     }
 
     /**
-     * @return standard deviation value.
+     * @return Standard deviation value.
      */
     public double std() {
         return Math.sqrt(variance());
     }
 
     /**
-     * @return min value.
+     * @return Min value.
      */
     public double min() {
         return min;
     }
 
     /**
-     * @return max value.
+     * @return Max value.
      */
     public double max() {
         return max;

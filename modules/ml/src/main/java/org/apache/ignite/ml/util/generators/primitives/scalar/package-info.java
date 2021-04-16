@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains generators of pseudo-random scalars in according to specific disctribution.
+ * Contains generators of pseudo-random scalars in according to specific distribution.
  */
 package org.apache.ignite.ml.util.generators.primitives.scalar;

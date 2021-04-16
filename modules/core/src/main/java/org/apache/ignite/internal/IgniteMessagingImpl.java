@@ -207,7 +207,7 @@ public class IgniteMessagingImpl extends AsyncSupportAdapter<IgniteMessaging>
         guard();
 
         try {
-            GridContinuousHandler hnd = new GridMessageListenHandler(topic, (IgniteBiPredicate<UUID, Object>)p);
+            GridContinuousHandler hnd = new GridMessageListenHandler(topic, securityAwareBiPredicate(p));
 
             return saveOrGet(ctx.continuous().startRoutine(hnd,
                 false,
@@ -224,6 +224,22 @@ public class IgniteMessagingImpl extends AsyncSupportAdapter<IgniteMessaging>
         }
     }
 
+    /**
+     * @param p Original IgniteBiPredicate.
+     * @return Security aware IgniteBiPredicate.
+     */
+    private IgniteBiPredicate<UUID, Object> securityAwareBiPredicate(IgniteBiPredicate<UUID, ?> p) {
+        IgniteBiPredicate<UUID, Object> res = (IgniteBiPredicate<UUID, Object>)p;
+
+        if (ctx.security().enabled()) {
+            final UUID subjectId = ctx.security().securityContext().subject().id();
+
+            return new SecurityAwareBiPredicate<>(subjectId, res);
+        }
+
+        return res;
+    }
+
     /** {@inheritDoc} */
     @Override public IgniteFuture<UUID> remoteListenAsync(@Nullable Object topic,
         IgniteBiPredicate<UUID, ?> p) throws IgniteException {
@@ -232,7 +248,7 @@ public class IgniteMessagingImpl extends AsyncSupportAdapter<IgniteMessaging>
         guard();
 
         try {
-            GridContinuousHandler hnd = new GridMessageListenHandler(topic, (IgniteBiPredicate<UUID, Object>)p);
+            GridContinuousHandler hnd = new GridMessageListenHandler(topic, securityAwareBiPredicate(p));
 
             return new IgniteFutureImpl<>(ctx.continuous().startRoutine(hnd,
                 false,
@@ -240,6 +256,9 @@ public class IgniteMessagingImpl extends AsyncSupportAdapter<IgniteMessaging>
                 0,
                 false,
                 prj.predicate()));
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
         finally {
             unguard();

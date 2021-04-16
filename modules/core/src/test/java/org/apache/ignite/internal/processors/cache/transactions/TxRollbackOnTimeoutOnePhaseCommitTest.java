@@ -57,11 +57,7 @@ public class TxRollbackOnTimeoutOnePhaseCommitTest extends GridCommonAbstractTes
 
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
-        boolean client = igniteInstanceName.startsWith("client");
-
-        cfg.setClientMode(client);
-
-        if (!client) {
+        if (!igniteInstanceName.startsWith("client")) {
             CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
             ccfg.setAtomicityMode(TRANSACTIONAL);
@@ -81,7 +77,7 @@ public class TxRollbackOnTimeoutOnePhaseCommitTest extends GridCommonAbstractTes
 
         startGridsMultiThreaded(GRID_CNT);
 
-        startGrid("client");
+        startClientGrid("client");
     }
 
     /** {@inheritDoc} */
@@ -144,7 +140,7 @@ public class TxRollbackOnTimeoutOnePhaseCommitTest extends GridCommonAbstractTes
 
             tx.commit();
 
-            // fail(); // TODO IGNITE-10027 throw timeout exception for optimistic timeout.
+            fail();
         }
         catch (Exception e) {
             assertTrue(e.getClass().getName(), X.hasCause(e, TransactionTimeoutException.class));
@@ -199,13 +195,7 @@ public class TxRollbackOnTimeoutOnePhaseCommitTest extends GridCommonAbstractTes
 
         IdleVerifyResultV2 res = idleVerify(client, DEFAULT_CACHE_NAME);
 
-        if (res.hasConflicts()) {
-            StringBuilder b = new StringBuilder();
-
-            res.print(b::append);
-
-            fail(b.toString());
-        }
+        assertPartitionsSame(res);
 
         checkFutures();
     }

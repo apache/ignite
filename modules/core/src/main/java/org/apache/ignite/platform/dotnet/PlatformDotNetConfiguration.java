@@ -17,11 +17,10 @@
 
 package org.apache.ignite.platform.dotnet;
 
-import org.apache.ignite.configuration.PlatformConfiguration;
-import org.apache.ignite.internal.util.typedef.internal.S;
-
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.ignite.configuration.PlatformConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Mirror of .Net class IgniteConfiguration.cs

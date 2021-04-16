@@ -78,7 +78,7 @@ public class TcpCommunicationSpiDropNodesTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        System.setProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL,"true");
+        System.setProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL, "true");
     }
 
     /** {@inheritDoc} */
@@ -224,7 +224,7 @@ public class TcpCommunicationSpiDropNodesTest extends GridCommonAbstractTest {
             assertTrue(e.getCause().getCause() instanceof IgniteSpiException);
         }
 
-        assertEquals(NODES_CNT , grid(0).cluster().nodes().size());
+        assertEquals(NODES_CNT, grid(0).cluster().nodes().size());
         assertEquals(0, evts.get());
 
         for (int j = 0; j < NODES_CNT; j++) {

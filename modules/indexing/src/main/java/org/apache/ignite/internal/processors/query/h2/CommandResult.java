@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import org.apache.ignite.cache.query.FieldsQueryCursor;
-
 import java.util.List;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 
 /**
  * Command execution result.

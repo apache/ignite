@@ -19,8 +19,7 @@ package org.apache.ignite.ml.preprocessing.encoding;
 
 import java.util.Map;
 import java.util.Set;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 
 /**
  * Preprocessing function that makes encoding.
@@ -30,29 +29,43 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public abstract class EncoderPreprocessor<K, V> implements IgniteBiFunction<K, V, Vector> {
+public abstract class EncoderPreprocessor<K, V> implements Preprocessor<K, V> {
     /** */
-    protected static final String KEY_FOR_NULL_VALUES = "";
+    public static final String KEY_FOR_NULL_VALUES = "";
 
     /** Filling values. */
-    protected final Map<String, Integer>[] encodingValues;
+    protected Map<String, Integer>[] encodingValues;
+
+    /** Frequencies of categories for label presented as strings. */
+    protected Map<String, Integer> labelFrequencies;
 
     /** Base preprocessor. */
-    protected final IgniteBiFunction<K, V, Object[]> basePreprocessor;
+    protected final Preprocessor<K, V> basePreprocessor;
 
     /** Feature indices to apply encoder. */
-    protected final Set<Integer> handledIndices;
+    protected Set<Integer> handledIndices;
 
     /**
-     * Constructs a new instance of String Encoder preprocessor.
+     * Constructs a new instance of Encoder preprocessor.
      *
      * @param basePreprocessor Base preprocessor.
-     * @param handledIndices   Handled indices.
+     * @param handledIndices Handled indices.
      */
-    public EncoderPreprocessor(Map<String, Integer>[] encodingValues,
-                               IgniteBiFunction<K, V, Object[]> basePreprocessor, Set<Integer> handledIndices) {
+    protected EncoderPreprocessor(Map<String, Integer>[] encodingValues,
+        Preprocessor<K, V> basePreprocessor, Set<Integer> handledIndices) {
         this.handledIndices = handledIndices;
         this.encodingValues = encodingValues;
+        this.basePreprocessor = basePreprocessor;
+    }
+
+    /**
+     * Constructs a new instance of Encoder preprocessor.
+     *
+     * @param basePreprocessor Base preprocessor.
+     */
+    protected EncoderPreprocessor(Map<String, Integer> labelFrequencies,
+        Preprocessor<K, V> basePreprocessor) {
+        this.labelFrequencies = labelFrequencies;
         this.basePreprocessor = basePreprocessor;
     }
 }

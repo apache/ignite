@@ -18,11 +18,23 @@
 package org.apache.ignite.mxbean;
 
 import java.util.Map;
+import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.transactions.TransactionMetrics;
 
 /**
  * Transactions MXBean interface.
+ *
+ * @deprecated Check the {@link JmxMetricExporterSpi} with "name=\"tx\"" instead.
+ *
+ * @see ReadOnlyMetricManager
+ * @see ReadOnlyMetricRegistry
+ * @see JmxMetricExporterSpi
+ * @see MetricExporterSpi
  */
+@Deprecated
 @MXBeanDescription("MBean that provides access to Ignite transactions.")
 public interface TransactionMetricsMxBean extends TransactionMetrics {
     /**
@@ -39,9 +51,9 @@ public interface TransactionMetricsMxBean extends TransactionMetrics {
      * @return near transactions.
      */
     @MXBeanDescription("Long running near transactions.")
-    @MXBeanParametersNames("duration")
-    @MXBeanParametersDescriptions("Duration, at least (ms).")
-    @Override public Map<String, String> getLongRunningOwnerTransactions(int duration);
+    @Override public Map<String, String> getLongRunningOwnerTransactions(
+        @MXBeanParameter(name = "duration", description = "Duration, at least (ms).") int duration
+    );
 
     /**
      * The number of transactions which were committed.
@@ -82,4 +94,36 @@ public interface TransactionMetricsMxBean extends TransactionMetrics {
      */
     @MXBeanDescription("The number of active transactions for which this node is the initiator.")
     @Override public long getOwnerTransactionsNumber();
+
+    /**
+     * The last time, when transaction was commited.
+     *
+     * @return last time, when transaction was commited.
+     */
+    @MXBeanDescription("Last commit time.")
+    @Override long commitTime();
+
+    /**
+     * The last time, when transaction was rollbacked.
+     *
+     * @return last time, when transaction was rollbacked.
+     */
+    @MXBeanDescription("Last rollback time.")
+    @Override long rollbackTime();
+
+    /**
+     * The total number of commited transactions.
+     *
+     * @return total number of commited transactions.
+     */
+    @MXBeanDescription("Number of transaction commits.")
+    @Override int txCommits();
+
+    /**
+     * Tne total number of rollbacked transactions.
+     *
+     * @return total number of rollbacked transactions.
+     */
+    @MXBeanDescription("Number of transaction rollbacks.")
+    @Override int txRollbacks();
 }

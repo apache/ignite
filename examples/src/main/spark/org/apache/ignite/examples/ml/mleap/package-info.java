@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * MLeap model inference examples.
  */
+
 package org.apache.ignite.examples.ml.mleap;

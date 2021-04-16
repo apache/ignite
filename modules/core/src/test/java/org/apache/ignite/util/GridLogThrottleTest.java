@@ -49,26 +49,28 @@ public class GridLogThrottleTest extends GridCommonAbstractTest {
 
         String sep = System.getProperty("line.separator");
 
-        checkError("Test exception 1.", "Test msg", true);
-        checkError("Test exception 1.", "Test msg", false);
+        checkErrorWithThrowable("Test exception 1.", "Test msg", true);
+        checkErrorWithThrowable("Test exception 1.", "Test msg", false);
 
-        checkError("Test exception 2.", "Test msg", true);
+        checkErrorWithThrowable("Test exception 2.", "Test msg", true);
 
-        checkErrorNoThrowable("Test - without throwable.", true);
-        checkErrorNoThrowable("Test - without throwable.", false);
+        checkError("Test - without throwable.", true);
+        checkError("Test - without throwable.", false);
         checkWarn("Test - without throwable.", false);
 
         checkWarn("Test - without throwable 1.", true);
         checkWarn("Test - without throwable 1.", false);
+        checkWarnWithThrowable("Warn exception", "Test - without throwable 1.", true);
+        checkWarnWithThrowable("Warn exception", "Test - without throwable 1.", false);
 
         Thread.sleep(LT.throttleTimeout() * 2);
         info("Slept for throttle timeout: " + LT.throttleTimeout() * 2);
 
-        checkError("Test exception 1.", "Test msg", true);
-        checkError("Test exception 1.", "Test msg", false);
-        checkError("Test exception 1.", "Test msg1", false);
+        checkErrorWithThrowable("Test exception 1.", "Test msg", true);
+        checkErrorWithThrowable("Test exception 1.", "Test msg", false);
+        checkErrorWithThrowable("Test exception 1.", "Test msg1", false);
 
-        checkError("Test exception 2.", "Test msg", true);
+        checkErrorWithThrowable("Test exception 2.", "Test msg", true);
 
         checkWarn("Test - without throwable.", true);
         checkWarn("Test - without throwable.", false);
@@ -90,55 +92,67 @@ public class GridLogThrottleTest extends GridCommonAbstractTest {
     /**
      * @param eMsg Exception message.
      * @param msg Log message.
-     * @param isLogExpected Is log expected or not.
+     * @param logExp Is log expected or not.
      */
-    private void checkError(String eMsg, String msg, boolean isLogExpected) {
+    private void checkErrorWithThrowable(String eMsg, String msg, boolean logExp) {
         Exception e = eMsg != null ? new RuntimeException(eMsg) : null;
 
         LT.error(log0, e, msg);
 
-        check(e, msg, isLogExpected);
+        check(e, msg, logExp);
     }
 
     /**
      * @param msg Log message.
-     * @param isLogExpected Is log expected or not.
+     * @param logExp Is log expected or not.
      */
-    private void checkErrorNoThrowable(String msg, boolean isLogExpected) {
+    private void checkError(String msg, boolean logExp) {
         LT.error(log0, null, msg);
 
-        check(null, msg, isLogExpected);
+        check(null, msg, logExp);
     }
 
     /**
      * @param msg Log message.
-     * @param isLogExpected Is log expected or not.
+     * @param logExp Is log expected or not.
      */
-    private void checkWarn(String msg, boolean isLogExpected) {
+    private void checkWarnWithThrowable(String eMsg, String msg, boolean logExp) {
+        Exception e = eMsg != null ? new RuntimeException(eMsg) : null;
+
+        LT.warn(log0, e, msg, true, false);
+
+        check(e, msg, logExp);
+    }
+
+    /**
+     * @param msg Log message.
+     * @param logExp Is log expected or not.
+     */
+    private void checkWarn(String msg, boolean logExp) {
         LT.warn(log0, msg);
 
-        check(null, msg, isLogExpected);
+        check(null, msg, logExp);
     }
 
     /**
      * @param msg Log message.
-     * @param isLogExpected Is log expected or not.
+     * @param logExp Is log expected or not.
      */
-    private void checkInfo(String msg, boolean isLogExpected) {
+    private void checkInfo(String msg, boolean logExp) {
         LT.info(log0, msg);
 
-        check(null, msg, isLogExpected);
+        check(null, msg, logExp);
     }
 
     /**
      * @param e Exception.
      * @param msg Log message.
-     * @param isLogExpected Is log expected or not.
+     * @param logExp Is log expected or not.
      */
-    private void check(Exception e, String msg, boolean isLogExpected) {
+    private void check(Exception e, String msg, boolean logExp) {
         String sep = System.getProperty("line.separator");
 
-        if (isLogExpected) {
+        if (logExp) {
             String s = msg;
 
             if (e != null)

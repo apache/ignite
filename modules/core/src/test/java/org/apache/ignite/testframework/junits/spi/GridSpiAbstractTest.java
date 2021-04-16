@@ -145,17 +145,15 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         tests.put(getClass(), new TestData<T>());
     }
 
-    /**
-     * @throws Exception If failed.
-     */
-    @Override public final void setUp() throws Exception {
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
         // Need to change classloader here, although it also handled in the parent class
         // the current test initialisation procedure doesn't allow us to setUp the parent first.
         cl = Thread.currentThread().getContextClassLoader();
 
         Thread.currentThread().setContextClassLoader(getClass().getClassLoader());
 
-        super.setUp();
+        super.beforeTest();
     }
 
     /** */
@@ -210,13 +208,8 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
 
         spiConfigure(spi);
 
-        Map<String, Object> attrs = spi.getNodeAttributes();
-
         // Set up SPI class name and SPI version.
         Map<String, Serializable> spiAttrs = initSpiClassAndVersionAttributes(spi);
-
-        if (attrs != null)
-            getTestData().getAttributes().putAll(attrs);
 
         if (spiAttrs != null)
             getTestData().getAttributes().putAll(spiAttrs);
@@ -268,6 +261,11 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
 
         try {
             spiStart(spi);
+
+            Map<String, Object> attrs = spi.getNodeAttributes();
+
+            if (attrs != null)
+                getTestData().getAttributes().putAll(attrs);
         }
         catch (Exception e) {
             spiStop(spi);
@@ -506,8 +504,8 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
     /**
      * @throws Exception If failed.
      */
-    @Override public final void tearDown() throws Exception {
-        super.tearDown();
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
 
         Thread.currentThread().setContextClassLoader(cl);
     }

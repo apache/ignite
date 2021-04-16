@@ -16,7 +16,6 @@
  */
 
 /**
- * <!-- Package description. -->
- * Random forest examples.
+ * <!-- Package description. --> Random forest examples.
  */
 package org.apache.ignite.examples.ml.tree.randomforest;

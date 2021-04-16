@@ -29,16 +29,11 @@ public class CacheLateAffinityAssignmentNodeJoinValidationTest extends GridCommo
     /** */
     private boolean lateAff;
 
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setLateAffinityAssignment(lateAff);
-
-        cfg.setClientMode(client);
 
         return cfg;
     }
@@ -82,9 +77,7 @@ public class CacheLateAffinityAssignmentNodeJoinValidationTest extends GridCommo
 
         startGrid(1);
 
-        client = true;
-
-        startGrid(2);
+        startClientGrid(2);
 
         assertEquals(3, ignite.cluster().nodes().size());
     }

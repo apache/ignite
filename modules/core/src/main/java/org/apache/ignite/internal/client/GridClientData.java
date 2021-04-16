@@ -26,7 +26,7 @@ import java.util.UUID;
  * A data projection of grid client. Contains various methods for cache operations and metrics retrieval.
  * An instance of data projection over some remote cache is provided via
  * {@link GridClient#data(String)} method.
- * <h1 class="header">Affinity Awareness</h1>
+ * <h1 class="header">Partition awareness</h1>
  * One of the unique properties of the Ignite remote clients is that they are
  * affinity aware. In other words, both compute and data APIs will optionally
  * contact exactly the node where the data is cached based on some affinity key.

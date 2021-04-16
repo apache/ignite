@@ -19,6 +19,7 @@ package org.apache.ignite.spi.checkpoint.sharedfs;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
@@ -397,7 +398,7 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
 
         File file = new File(folder, getUniqueFileName(key));
 
-        if (file.exists())
+        if (file.exists()) {
             try {
                 SharedFsCheckpointData data = SharedFsUtils.read(file, marsh, log);
 
@@ -407,6 +408,9 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
                         null
                     : null;
             }
+            catch (FileNotFoundException ignore) {
+                // Ignore.
+            }
             catch (IgniteCheckedException e) {
                 throw new IgniteSpiException("Failed to unmarshal objects in checkpoint file: " +
                     file.getAbsolutePath(), e);
@@ -414,6 +418,7 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
             catch (IOException e) {
                 throw new IgniteSpiException("Failed to read checkpoint file: " + file.getAbsolutePath(), e);
             }
+        }
 
         return null;
     }
@@ -437,17 +442,34 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
         while (!saved) {
             File file = new File(folder, getUniqueFileName(key));
 
-            if (file.exists()) {
+            if (file.exists() && !overwrite)
+                return false;
+
+            File tmpFile = new File(folder, getUniqueFileName(key) + getUniqueFileName(Thread.currentThread().getName()));
+
+            if (tmpFile.exists()) {
                 if (!overwrite)
                     return false;
 
                 if (log.isDebugEnabled())
-                    log.debug("Overriding existing file: " + file.getAbsolutePath());
+                    log.warning("Overriding existing temp file: " + tmpFile.getAbsolutePath());
             }
 
             try {
-                SharedFsUtils.write(file, new SharedFsCheckpointData(state, expireTime, host, key),
+                SharedFsUtils.write(tmpFile, new SharedFsCheckpointData(state, expireTime, host, key),
                     marsh, log);
+
+                if (file.exists()) {
+                    if (overwrite)
+                        file.delete();
+                    else
+                        return false;
+                }
+
+                if (tmpFile.renameTo(file))
+                    saved = true;
+                else
+                    return false;
             }
             catch (IOException e) {
                 // Select next shared directory if exists, otherwise throw exception
@@ -455,11 +477,14 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
                     continue;
                 else
                     throw new IgniteSpiException("Failed to write checkpoint data into file: " +
-                        file.getAbsolutePath(), e);
+                        tmpFile.getAbsolutePath(), e);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteSpiException("Failed to marshal checkpoint data into file: " +
-                    file.getAbsolutePath(), e);
+                    tmpFile.getAbsolutePath(), e);
+            }
+            finally {
+                tmpFile.delete();
             }
 
             if (timeout > 0)

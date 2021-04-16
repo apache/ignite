@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.jetbrains.annotations.Nullable;
-
 import java.util.HashMap;
 import java.util.Map;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Reader handles.

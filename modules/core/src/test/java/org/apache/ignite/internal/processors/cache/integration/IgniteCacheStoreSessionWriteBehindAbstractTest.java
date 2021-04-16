@@ -79,7 +79,6 @@ public abstract class IgniteCacheStoreSessionWriteBehindAbstractTest extends Ign
     protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
         CacheConfiguration ccfg0 = super.cacheConfiguration(igniteInstanceName);
 
-
         ccfg0.setReadThrough(true);
         ccfg0.setWriteThrough(true);
         ccfg0.setWriteBehindBatchSize(10);
@@ -139,7 +138,7 @@ public abstract class IgniteCacheStoreSessionWriteBehindAbstractTest extends Ign
 
             assertTrue(latch.await(10_000, TimeUnit.MILLISECONDS));
 
-            assertTrue(entLatch.await(10_000,TimeUnit.MILLISECONDS));
+            assertTrue(entLatch.await(10_000, TimeUnit.MILLISECONDS));
         }
         finally {
             latch = null;
@@ -157,7 +156,7 @@ public abstract class IgniteCacheStoreSessionWriteBehindAbstractTest extends Ign
 
             assertTrue(latch.await(10_000, TimeUnit.MILLISECONDS));
 
-            assertTrue(entLatch.await(10_000,TimeUnit.MILLISECONDS));
+            assertTrue(entLatch.await(10_000, TimeUnit.MILLISECONDS));
         }
         finally {
             latch = null;

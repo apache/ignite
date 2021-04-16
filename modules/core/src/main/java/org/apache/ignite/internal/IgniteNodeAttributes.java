@@ -69,6 +69,9 @@ public final class IgniteNodeAttributes {
     /** Peer classloading enabled flag. */
     public static final String ATTR_PEER_CLASSLOADING = ATTR_PREFIX + ".peer.classloading.enabled";
 
+    /** Shutdown policy attribute name. */
+    public static final String ATTR_SHUTDOWN_POLICY = ATTR_PREFIX + ".shutdown.policy";
+
     /** Internal attribute name postfix constant. */
     public static final String ATTR_SPI_CLASS = ATTR_PREFIX + ".spi.class";
 
@@ -77,9 +80,6 @@ public final class IgniteNodeAttributes {
 
     /** Internal attribute name constant. */
     public static final String ATTR_TX_CONFIG = ATTR_PREFIX + ".tx";
-
-    /** Internal attribute name constant. */
-    public static final String ATTR_IGFS = ATTR_PREFIX + ".igfs";
 
     /** Internal attribute name constant. */
     public static final String ATTR_DAEMON = ATTR_PREFIX + ".daemon";
@@ -147,9 +147,6 @@ public final class IgniteNodeAttributes {
     /** Security credentials attribute name. Attribute is not available via public API. */
     public static final String ATTR_SECURITY_CREDENTIALS = ATTR_PREFIX + ".security.cred";
 
-    /** Security subject for authenticated node. */
-    public static final String ATTR_SECURITY_SUBJECT = ATTR_PREFIX + ".security.subject";
-
     /** V2 security subject for authenticated node. */
     public static final String ATTR_SECURITY_SUBJECT_V2 = ATTR_PREFIX + ".security.subject.v2";
 
@@ -193,17 +190,11 @@ public final class IgniteNodeAttributes {
     /** User authentication enabled flag. */
     public static final String ATTR_AUTHENTICATION_ENABLED = ATTR_PREFIX + ".authentication.enabled";
 
-    /** Encryption master key digest. */
-    public static final String ATTR_ENCRYPTION_MASTER_KEY_DIGEST = ATTR_PREFIX + ".master.key.digest";
-
     /** Rebalance thread pool size. */
     public static final String ATTR_REBALANCE_POOL_SIZE = ATTR_PREFIX + ".rebalance.pool.size";
 
     /** Internal attribute name constant. */
     public static final String ATTR_DYNAMIC_CACHE_START_ROLLBACK_SUPPORTED = ATTR_PREFIX + ".dynamic.cache.start.rollback.supported";
-
-    /** Internal attribute indicates that incoming cache requests should be validated on primary node as well. */
-    public static final String ATTR_VALIDATE_CACHE_REQUESTS = ATTR_CACHE + ".validate.cache.requests";
 
     /** Supported features. */
     public static final String ATTR_IGNITE_FEATURES = ATTR_PREFIX + ".features";

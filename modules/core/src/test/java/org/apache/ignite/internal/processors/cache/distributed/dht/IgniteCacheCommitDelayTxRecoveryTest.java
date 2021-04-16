@@ -66,16 +66,11 @@ public class IgniteCacheCommitDelayTxRecoveryTest extends GridCommonAbstractTest
     /** */
     private static volatile CountDownLatch commitFinishLatch;
 
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
-
-        cfg.setClientMode(client);
 
         return cfg;
     }
@@ -127,13 +122,9 @@ public class IgniteCacheCommitDelayTxRecoveryTest extends GridCommonAbstractTest
     private void checkRecovery(int backups, boolean useStore) throws Exception {
         startGridsMultiThreaded(SRVS, false);
 
-        client = true;
-
-        Ignite clientNode = startGrid(SRVS);
+        Ignite clientNode = startClientGrid(SRVS);
 
         assertTrue(clientNode.configuration().isClientMode());
-
-        client = false;
 
         clientNode.createCache(cacheConfiguration(backups, useStore));
 

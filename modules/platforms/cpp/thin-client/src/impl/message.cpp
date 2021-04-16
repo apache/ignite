@@ -22,6 +22,7 @@
 #include <ignite/impl/thin/readable.h>
 
 #include "impl/response_status.h"
+#include "impl/data_channel.h"
 #include "impl/message.h"
 
 namespace ignite
@@ -30,6 +31,35 @@ namespace ignite
     {
         namespace thin
         {
+            /**
+             * Message flags.
+             */
+            struct Flag
+            {
+                enum Type
+                {
+                    /** Failure flag. */
+                    FAILURE = 1,
+
+                    /** Affinity topology change flag. */
+                    AFFINITY_TOPOLOGY_CHANGED = 1 << 1
+                };
+            };
+
+            CachePartitionsRequest::CachePartitionsRequest(const std::vector<int32_t>& cacheIds) :
+                cacheIds(cacheIds)
+            {
+                // No-op.
+            }
+
+            void CachePartitionsRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
+            {
+                writer.WriteInt32(static_cast<int32_t>(cacheIds.size()));
+
+                for (size_t i = 0; i < cacheIds.size(); ++i)
+                    writer.WriteInt32(cacheIds[i]);
+            }
+
             GetOrCreateCacheWithNameRequest::GetOrCreateCacheWithNameRequest(const std::string& name) :
                 name(name)
             {
@@ -53,6 +83,7 @@ namespace ignite
             }
 
             Response::Response():
+                flags(),
                 status(ResponseStatus::FAILED)
             {
                 // No-op.
@@ -65,6 +96,23 @@ namespace ignite
 
             void Response::Read(binary::BinaryReaderImpl& reader, const ProtocolVersion& ver)
             {
+                if (ver >= DataChannel::VERSION_1_4_0)
+                {
+                    flags = reader.ReadInt16();
+
+                    if (IsAffinityTopologyChanged())
+                        topologyVersion.Read(reader);
+
+                    if (!IsFailure())
+                    {
+                        status = ResponseStatus::SUCCESS;
+
+                        ReadOnSuccess(reader, ver);
+
+                        return;
+                    }
+                }
+
                 status = reader.ReadInt32();
 
                 if (status == ResponseStatus::SUCCESS)
@@ -73,8 +121,18 @@ namespace ignite
                     reader.ReadString(error);
             }
 
+            bool Response::IsAffinityTopologyChanged() const
+            {
+                return (flags & Flag::AFFINITY_TOPOLOGY_CHANGED) != 0;
+            }
+
+            bool Response::IsFailure() const
+            {
+                return (flags & Flag::FAILURE) != 0;
+            }
+
             ClientCacheNodePartitionsResponse::ClientCacheNodePartitionsResponse(
-                std::vector<ConnectableNodePartitions>& nodeParts):
+                std::vector<NodePartitions>& nodeParts):
                 nodeParts(nodeParts)
             {
                 // No-op.
@@ -97,6 +155,30 @@ namespace ignite
                     nodeParts[i].Read(reader);
             }
 
+            CachePartitionsResponse::CachePartitionsResponse(std::vector<PartitionAwarenessGroup>& groups) :
+                groups(groups)
+            {
+                // No-op.
+            }
+
+            CachePartitionsResponse::~CachePartitionsResponse()
+            {
+                // No-op.
+            }
+
+            void CachePartitionsResponse::ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&)
+            {
+                topologyVersion.Read(reader);
+
+                int32_t groupsNum = reader.ReadInt32();
+
+                groups.clear();
+                groups.resize(static_cast<size_t>(groupsNum));
+
+                for (int32_t i = 0; i < groupsNum; ++i)
+                    groups[i].Read(reader);
+            }
+
             CacheValueResponse::CacheValueResponse(Readable& value) :
                 value(value)
             {
@@ -113,12 +195,12 @@ namespace ignite
                 value.Read(reader);
             }
 
-            void BinaryTypeGetRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
+            void BinaryTypeGetRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
             {
                 writer.WriteInt32(typeId);
             }
 
-            void BinaryTypePutRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
+            void BinaryTypePutRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
             {
                 writer.WriteInt32(snapshot.GetTypeId());
                 writer.WriteString(snapshot.GetTypeName());
@@ -255,6 +337,80 @@ namespace ignite
             void Int64Response::ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&)
             {
                 value = reader.ReadInt64();
+            }
+
+            void Int32Response::ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&)
+            {
+                value = reader.ReadInt32();
+            }
+
+            SqlFieldsQueryRequest::SqlFieldsQueryRequest(
+                int32_t cacheId,
+                const ignite::thin::cache::query::SqlFieldsQuery &qry
+                ) :
+                CacheRequest<RequestType::QUERY_SQL_FIELDS>(cacheId, false),
+                qry(qry)
+            {
+                // No-op.
+            }
+
+            void SqlFieldsQueryRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
+            {
+                CacheRequest<RequestType::QUERY_SQL_FIELDS>::Write(writer, ver);
+
+                if (qry.schema.empty())
+                    writer.WriteNull();
+                else
+                    writer.WriteString(qry.schema);
+
+                writer.WriteInt32(qry.pageSize);
+                writer.WriteInt32(qry.maxRows);
+                writer.WriteString(qry.sql);
+                writer.WriteInt32(static_cast<int32_t>(qry.args.size()));
+
+                std::vector<impl::thin::CopyableWritable*>::const_iterator it;
+
+                for (it = qry.args.begin(); it != qry.args.end(); ++it)
+                    (*it)->Write(writer);
+
+                writer.WriteInt8(0); // Statement type - Any
+
+                writer.WriteBool(qry.distributedJoins);
+                writer.WriteBool(qry.loc);
+                writer.WriteBool(false); // Replicated only
+                writer.WriteBool(qry.enforceJoinOrder);
+                writer.WriteBool(qry.collocated);
+                writer.WriteBool(qry.lazy);
+                writer.WriteInt64(qry.timeout);
+                writer.WriteBool(true); // Include field names
+            }
+
+            void SqlFieldsQueryResponse::ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&)
+            {
+                ignite::binary::BinaryRawReader rawReader(&reader);
+
+                cursorId = rawReader.ReadInt64();
+
+                int32_t columnsCnt = rawReader.ReadInt32();
+
+                columns.reserve(static_cast<size_t>(columnsCnt));
+
+                for (int32_t i = 0; i < columnsCnt; ++i)
+                {
+                    columns.push_back(rawReader.ReadString());
+                }
+
+                cursorPage.Get()->Read(reader);
+            }
+
+            void SqlFieldsCursorGetPageRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
+            {
+                writer.WriteInt64(cursorId);
+            }
+
+            void SqlFieldsCursorGetPageResponse::ReadOnSuccess(binary::BinaryReaderImpl&reader, const ProtocolVersion&)
+            {
+                cursorPage.Get()->Read(reader);
             }
         }
     }

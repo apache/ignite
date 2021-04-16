@@ -51,7 +51,7 @@ public class MvccRepeatableReadOperationsTest extends MvccRepeatableReadBulkOpsT
                 for (Integer key : keys) {
                     MvccTestAccount val = cache.cache.get(key);
 
-                    if(val != null)
+                    if (val != null)
                         res.put(key, val);
                 }
 
@@ -69,7 +69,7 @@ public class MvccRepeatableReadOperationsTest extends MvccRepeatableReadBulkOpsT
                 for (Integer key : keys) {
                     MvccTestAccount val = cache.cache.invoke(key, ep);
 
-                    if(val != null)
+                    if (val != null)
                         res.put(key, val);
                 }
 
@@ -292,7 +292,7 @@ public class MvccRepeatableReadOperationsTest extends MvccRepeatableReadBulkOpsT
             for (Integer key : allKeys) {
                 MvccTestAccount newVal = new MvccTestAccount(key, 2);
 
-                if(existedKeys.contains(key)) {
+                if (existedKeys.contains(key)) {
                     assertTrue(cache1.cache.replace(key, new MvccTestAccount(key, 1), newVal));
 
                     assertEquals(newVal, cache1.cache.getAndReplace(key, new MvccTestAccount(key, 3)));

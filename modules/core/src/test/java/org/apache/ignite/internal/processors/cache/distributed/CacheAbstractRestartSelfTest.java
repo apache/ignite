@@ -224,7 +224,7 @@ public abstract class CacheAbstractRestartSelfTest extends IgniteCacheAbstractTe
      *
      * @param cache Cache.
      */
-    protected abstract void checkCache(IgniteEx grid, IgniteCache cache) throws Exception ;
+    protected abstract void checkCache(IgniteEx grid, IgniteCache cache) throws Exception;
 
     /**
      * Updates cache in many threads.
@@ -232,7 +232,7 @@ public abstract class CacheAbstractRestartSelfTest extends IgniteCacheAbstractTe
      * @param grid Grid.
      * @param cache Cache.
      */
-    protected abstract void updateCache(IgniteEx grid, IgniteCache cache) throws Exception ;
+    protected abstract void updateCache(IgniteEx grid, IgniteCache cache) throws Exception;
 
     /**
      * @param futs Futers.

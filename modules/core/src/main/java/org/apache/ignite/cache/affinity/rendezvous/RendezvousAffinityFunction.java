@@ -33,6 +33,9 @@ import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -41,6 +44,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
 
@@ -99,6 +103,38 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
     /** Logger instance. */
     @LoggerResource
     private transient IgniteLogger log;
+
+    /** Ignite instance. */
+    @IgniteInstanceResource
+    private transient IgniteEx ignite;
+
+    /**
+     * Helper method to calculates mask.
+     *
+     * @param parts Number of partitions.
+     * @return Mask to use in calculation when partitions count is power of 2.
+     */
+    public static int calculateMask(int parts) {
+        return (parts & (parts - 1)) == 0 ? parts - 1 : -1;
+    }
+
+    /**
+     * Helper method to calculate partition.
+     *
+     * @param key – Key to get partition for.
+     * @param mask Mask to use in calculation when partitions count is power of 2.
+     * @param parts Number of partitions.
+     * @return Partition number for a given key.
+     */
+    public static int calculatePartition(Object key, int mask, int parts) {
+        if (mask >= 0) {
+            int h;
+
+            return ((h = key.hashCode()) ^ (h >>> 16)) & mask;
+        }
+
+        return U.safeAbs(key.hashCode() % parts);
+    }
 
     /**
      * Empty constructor with all defaults.
@@ -199,7 +235,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
 
         this.parts = parts;
 
-        mask = (parts & (parts - 1)) == 0 ? parts - 1 : -1;
+        mask = calculateMask(parts);
 
         return this;
     }
@@ -319,8 +355,8 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
         if (nodes.size() <= 1)
             return nodes;
 
-        IgniteBiTuple<Long, ClusterNode> [] hashArr =
-            (IgniteBiTuple<Long, ClusterNode> [])new IgniteBiTuple[nodes.size()];
+        IgniteBiTuple<Long, ClusterNode>[] hashArr =
+            (IgniteBiTuple<Long, ClusterNode>[])new IgniteBiTuple[nodes.size()];
 
         for (int i = 0; i < nodes.size(); i++) {
             ClusterNode node = nodes.get(i);
@@ -358,20 +394,23 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
             while (it.hasNext() && res.size() < primaryAndBackups) {
                 ClusterNode node = it.next();
 
-                if (exclNeighbors) {
-                    if (!allNeighbors.contains(node)) {
-                        res.add(node);
+                try {
+                    if ((backupFilter != null && backupFilter.apply(primary, node))
+                            || (affinityBackupFilter != null && affinityBackupFilter.apply(node, res))
+                            || (affinityBackupFilter == null && backupFilter == null)) {
+                        if (exclNeighbors) {
+                            if (!allNeighbors.contains(node)) {
+                                res.add(node);
 
-                        allNeighbors.addAll(neighborhoodCache.get(node.id()));
+                                allNeighbors.addAll(neighborhoodCache.get(node.id()));
+                            }
+                        }
+                        else
+                            res.add(node);
                     }
                 }
-                else if ((backupFilter != null && backupFilter.apply(primary, node))
-                    || (affinityBackupFilter != null && affinityBackupFilter.apply(node, res))
-                    || (affinityBackupFilter == null && backupFilter == null) ) {
-                    res.add(node);
-
-                    if (exclNeighbors)
-                        allNeighbors.addAll(neighborhoodCache.get(node.id()));
+                catch (Exception ex) {
+                    ignite.context().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, ex));
                 }
             }
         }
@@ -465,13 +504,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Serializabl
             throw new IllegalArgumentException("Null key is passed for a partition calculation. " +
                 "Make sure that an affinity key that is used is initialized properly.");
 
-        if (mask >= 0) {
-            int h;
-
-            return ((h = key.hashCode()) ^ (h >>> 16)) & mask;
-        }
-
-        return U.safeAbs(key.hashCode() % parts);
+        return calculatePartition(key, mask, parts);
     }
 
     /** {@inheritDoc} */

@@ -147,7 +147,7 @@ public class DiscoverySpiTestListener implements IgniteDiscoverySpiInternalListe
     /**
      * @param blockCustomEvtCls Event class to block.
      */
-    public void blockCustomEvent(Class<?> cls0, Class<?> ... blockCustomEvtCls) {
+    public void blockCustomEvent(Class<?> cls0, Class<?>... blockCustomEvtCls) {
         synchronized (mux) {
             assert blockedMsgs.isEmpty() : blockedMsgs;
 

@@ -21,10 +21,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteException;
 
 /**
- * TODO: Add class description.
- *
- * @author @java.author
- * @version @java.version
+ * Plugin validation exception.
  */
 public class PluginValidationException extends IgniteException {
     /** */
@@ -49,7 +46,6 @@ public class PluginValidationException extends IgniteException {
         this.nodeId = nodeId;
         this.rmtMsg = rmtMsg;
     }
-
 
     /**
      * @return Offending node ID.

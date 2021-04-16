@@ -190,7 +190,7 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
             }
         }
 
-        if(args.enablePreload()) {
+        if (args.enablePreload()) {
             startPreloadLogging(args.preloadLogsInterval());
 
             preload();
@@ -203,14 +203,14 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
      * Preload data before benchmarking.
      */
     protected void preload() {
-        IgniteSemaphore semaphore = ignite().semaphore("preloadSemaphore",1,true,true);
+        IgniteSemaphore semaphore = ignite().semaphore("preloadSemaphore", 1, true, true);
 
         semaphore.acquire();
 
         try {
             IgniteCache<String, Integer> preloadCache = ignite().getOrCreateCache("preloadCache");
 
-            if(preloadCache.get("loaded") == null) {
+            if (preloadCache.get("loaded") == null) {
                 IgniteCompute compute = ignite().compute(ignite().cluster().forServers().forOldest());
 
                 IgniteCache<Integer, SampleValue> cache = (IgniteCache<Integer, SampleValue>)cacheForOperation();
@@ -348,6 +348,7 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
     static class ThreadRange {
         /** */
         final int min;
+
         /** */
         final int max;
 

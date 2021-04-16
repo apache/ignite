@@ -27,6 +27,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.util.deque.FastSizeDeque;
@@ -153,7 +154,7 @@ public abstract class GridDeferredAckMessageSender<T> {
         /** {@inheritDoc} */
         @Override public void onTimeout() {
             if (guard.compareAndSet(false, true)) {
-                c.runLocalSafe(new Runnable() {
+                c.runLocalSafe(new GridPlainRunnable() {
                     @Override public void run() {
                         writeLock().lock();
 
@@ -175,7 +176,7 @@ public abstract class GridDeferredAckMessageSender<T> {
          * @return {@code True} if request was handled, {@code false} if this buffer is filled and cannot be used.
          */
         public boolean add(T ver) {
-            if(!readLock().tryLock())
+            if (!readLock().tryLock())
                 return false; // Here, writeLock is help by another thread and guard is already true.
 
             boolean snd = false;

@@ -31,7 +31,6 @@ import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.cache.store.CacheStoreSession;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.resources.CacheStoreSessionResource;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.junits.cache.TestCacheSession;
@@ -58,27 +57,13 @@ public class CacheConnectionLeakStoreTxTest extends GridCommonAbstractTest {
     private static final int CLIENT_NODE = 1;
 
     /** */
-    private static boolean client;
-
-    /** */
     private static volatile boolean isLoadFromStore;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setClientMode(client);
-
-        return cfg;
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrid(0);
 
-        client = true;
-
-        startGrid(CLIENT_NODE);
+        startClientGrid(CLIENT_NODE);
     }
 
     /** {@inheritDoc} */

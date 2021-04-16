@@ -48,7 +48,7 @@ public class BootstrappedVector extends LabeledVector<Double> {
     }
 
     /**
-     * @return repetitions counters vector.
+     * @return Repetitions counters vector.
      */
     public int[] counters() {
         return counters;

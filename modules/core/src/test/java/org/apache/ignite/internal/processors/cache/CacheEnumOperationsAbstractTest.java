@@ -24,7 +24,6 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -43,18 +42,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *
  */
 public abstract class CacheEnumOperationsAbstractTest extends GridCommonAbstractTest {
-    /** */
-    private boolean client;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(client);
-
-        return cfg;
-    }
-
     /**
      * @return Number of nodes.
      */
@@ -66,10 +53,7 @@ public abstract class CacheEnumOperationsAbstractTest extends GridCommonAbstract
 
         if (!singleNode()) {
             startGridsMultiThreaded(4);
-
-            client = true;
-
-            startGridsMultiThreaded(4, 2);
+            startClientGridsMultiThreaded(4, 2);
         }
         else
             startGrid(0);

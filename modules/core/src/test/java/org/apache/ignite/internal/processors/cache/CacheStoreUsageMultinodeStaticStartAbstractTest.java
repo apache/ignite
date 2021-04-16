@@ -148,11 +148,9 @@ public abstract class CacheStoreUsageMultinodeStaticStartAbstractTest extends Ca
 
             startGridsMultiThreaded(3);
 
-            client = true;
-
             cacheStore = clientStore;
 
-            startGrid(3);
+            startClientGrid(3);
 
             checkStoreUpdate(clientStore);
         }

@@ -186,7 +186,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
                 map.insert(p, hash(key), key.getBytes(), val.getBytes());
 
                 assertTrue(map.contains(p, hash(key), key.getBytes()));
-                assertEquals(val,  new String(map.get(p, hash(key), key.getBytes())));
+                assertEquals(val, new String(map.get(p, hash(key), key.getBytes())));
             }
 
             for (Map.Entry<String, String> e : kv.entrySet()) {
@@ -255,8 +255,6 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
 
         AffinityFunction aff = new RendezvousAffinityFunction(parts, null);
 
-        getTestResources().inject(aff);
-
         GridByteArrayWrapper[] keys = new GridByteArrayWrapper[512];
         Random rnd = new Random();
 
@@ -291,7 +289,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
                 map.insert(p, hash(key), key.getBytes(), val.getBytes());
 
                 assertTrue(map.contains(p, hash(key), key.getBytes()));
-                assertEquals(val,  new String(map.get(p, hash(key), key.getBytes())));
+                assertEquals(val, new String(map.get(p, hash(key), key.getBytes())));
                 assertEquals(10 * p + (i + 1), map.size());
             }
         }
@@ -339,7 +337,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
                 assertTrue(map.put(p, hash(key), key.getBytes(), val1.getBytes()));
 
                 assertTrue(map.contains(p, hash(key), key.getBytes()));
-                assertEquals(val1,  new String(map.get(p, hash(key), key.getBytes())));
+                assertEquals(val1, new String(map.get(p, hash(key), key.getBytes())));
                 assertEquals(10 * p + i + 1, map.size());
 
                 assertFalse(map.put(p, hash(key), key.getBytes(), val2.getBytes()));
@@ -855,7 +853,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
             Map<String, String> m = new HashMap<>();
 
             for (int i = 0; i < loadCnt; i++)
-                m.put(string(),  string());
+                m.put(string(), string());
 
             for (Map.Entry<String, String> e : m.entrySet()) {
                 String key = e.getKey();

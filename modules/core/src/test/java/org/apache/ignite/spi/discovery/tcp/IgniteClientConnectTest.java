@@ -22,15 +22,15 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -66,7 +66,7 @@ public class IgniteClientConnectTest extends GridCommonAbstractTest {
     private long connTimeout = -1;
 
     /** Maxx connection timeout. */
-    private long maxxConnTimeout = -1;
+    private long maxConnTimeout = -1;
 
     /** Recon count. */
     private int reconCnt = -1;
@@ -84,7 +84,6 @@ public class IgniteClientConnectTest extends GridCommonAbstractTest {
 
             disco.setIpFinder(ipFinder);
 
-
             if (failureDetectionTimeout != -1)
                 cfg.setFailureDetectionTimeout(failureDetectionTimeout);
 
@@ -92,7 +91,7 @@ public class IgniteClientConnectTest extends GridCommonAbstractTest {
                 TcpCommunicationSpi tcpCommSpi = (TcpCommunicationSpi)cfg.getCommunicationSpi();
 
                 tcpCommSpi.setConnectTimeout(connTimeout);
-                tcpCommSpi.setMaxConnectTimeout(maxxConnTimeout);
+                tcpCommSpi.setMaxConnectTimeout(maxConnTimeout);
                 tcpCommSpi.setReconnectCount(reconCnt);
             }
         }
@@ -159,7 +158,7 @@ public class IgniteClientConnectTest extends GridCommonAbstractTest {
         failureDetectionTimeout = 1000;
 
         connTimeout = 1000;
-        maxxConnTimeout = 3000;
+        maxConnTimeout = 3000;
         reconCnt = 3;
 
         try {
@@ -193,11 +192,9 @@ public class IgniteClientConnectTest extends GridCommonAbstractTest {
 
         IgniteConfiguration clientCfg = getConfiguration("client");
 
-        clientCfg.setClientMode(true);
-
         clientJustStarted.set(true);
 
-        IgniteEx client = startGrid(clientCfg);
+        IgniteEx client = startClientGrid(clientCfg);
 
         latch.countDown();
 

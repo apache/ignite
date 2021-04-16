@@ -417,7 +417,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
             String errMsg = "Failed to add node to topology because user authentication is enabled on cluster and " +
                 "the node doesn't support user authentication [nodeId=" + node.id() + ']';
 
-            return new IgniteNodeValidationResult(node.id(), errMsg, errMsg);
+            return new IgniteNodeValidationResult(node.id(), errMsg);
         }
 
         return null;
@@ -1061,7 +1061,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
         /** Error. */
         private IgniteCheckedException err;
-
 
         /**
          * @param opId User management operation ID.

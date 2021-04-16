@@ -76,7 +76,13 @@ public interface GridComponent {
         SERVICE_PROC,
 
         /** Distributed MetaStorage processor. */
-        META_STORAGE;
+        META_STORAGE,
+
+        /** Performance statistics processor. */
+        PERFORMANCE_STAT_PROC;
+
+        /** Cached values array. */
+        public static final DiscoveryDataExchangeType[] VALUES = values();
     }
 
     /**
@@ -161,7 +167,14 @@ public interface GridComponent {
      */
     @Nullable public IgniteNodeValidationResult validateNode(ClusterNode node);
 
-    /** */
+    /**
+     * Validates that new node can join grid topology, this method is called on coordinator
+     * node before new node joins topology.
+     *
+     * @param node Joining node.
+     * @param discoData Joining node discovery data.
+     * @return Validation result or {@code null} in case of success.
+     */
     @Nullable public IgniteNodeValidationResult validateNode(ClusterNode node, JoiningNodeDiscoveryData discoData);
 
     /**

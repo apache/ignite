@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.odbc.odbc;
 
 import java.sql.BatchUpdateException;
-import java.sql.ParameterMetaData;
-import java.sql.PreparedStatement;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -30,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.configuration.Factory;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -48,7 +47,9 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponseSender;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 import org.apache.ignite.internal.processors.odbc.odbc.escape.OdbcEscapeUtils;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -64,10 +65,15 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.transactions.TransactionAlreadyCompletedException;
 import org.apache.ignite.transactions.TransactionDuplicateKeyException;
+import org.apache.ignite.transactions.TransactionMixedModeException;
 import org.apache.ignite.transactions.TransactionSerializationException;
+import org.apache.ignite.transactions.TransactionUnsupportedConcurrencyException;
 
+import static java.sql.ResultSetMetaData.columnNoNulls;
+import static java.sql.ResultSetMetaData.columnNullable;
 import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.META_COLS;
 import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.META_PARAMS;
+import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.META_RESULTSET;
 import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.META_TBLS;
 import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.MORE_RESULTS;
 import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.QRY_CLOSE;
@@ -122,6 +128,9 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     /** Response sender. */
     private final ClientListenerResponseSender sender;
 
+    /** Connection context. */
+    private final OdbcConnectionContext connCtx;
+
     /**
      * Constructor.
      * @param ctx Context.
@@ -149,8 +158,12 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         boolean collocated,
         boolean lazy,
         boolean skipReducerOnUpdate,
-        AuthorizationContext actx, NestedTxMode nestedTxMode, ClientListenerProtocolVersion ver) {
+        AuthorizationContext actx,
+        NestedTxMode nestedTxMode,
+        ClientListenerProtocolVersion ver,
+        OdbcConnectionContext connCtx) {
         this.ctx = ctx;
+        this.connCtx = connCtx;
 
         Factory<GridWorker> orderedFactory = new Factory<GridWorker>() {
             @Override public GridWorker create() {
@@ -166,7 +179,9 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             collocated,
             replicatedOnly,
             lazy,
-            skipReducerOnUpdate
+            skipReducerOnUpdate,
+            null,
+            null
         );
 
         this.busyLock = busyLock;
@@ -251,6 +266,9 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
                 case META_PARAMS:
                     return getParamsMeta((OdbcQueryGetParamsMetaRequest)req);
 
+                case META_RESULTSET:
+                    return getResultMeta((OdbcQueryGetResultsetMetaRequest)req);
+
                 case MORE_RESULTS:
                     return moreResults((OdbcQueryMoreResultsRequest)req);
             }
@@ -265,7 +283,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public ClientListenerResponse handleException(Exception e, ClientListenerRequest req) {
+    @Override public ClientListenerResponse handleException(Throwable e, ClientListenerRequest req) {
         return exceptionToResult(e);
     }
 
@@ -309,6 +327,11 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isCancellationSupported() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public void registerRequest(long reqId, int cmdType) {
         // No-op.
     }
@@ -316,6 +339,11 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     /** {@inheritDoc} */
     @Override public void unregisterRequest(long reqId) {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClientListenerProtocolVersion protocolVersion() {
+        return ver;
     }
 
     /**
@@ -331,8 +359,9 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         SqlFieldsQueryEx qry = makeQuery(schema, sql);
 
         qry.setArgs(args);
-        qry.setTimeout(timeout, TimeUnit.SECONDS);
         qry.setAutoCommit(autoCommit);
+
+        QueryUtils.withQueryTimeout(qry, timeout, TimeUnit.SECONDS);
 
         return qry;
     }
@@ -351,9 +380,10 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         qry.setReplicatedOnly(cliCtx.isReplicatedOnly());
         qry.setCollocated(cliCtx.isCollocated());
         qry.setLazy(cliCtx.isLazy());
-        qry.setSchema(F.isEmpty(schema) ? QueryUtils.DFLT_SCHEMA : schema);
+        qry.setSchema(OdbcUtils.prepareSchema(schema));
         qry.setSkipReducerOnUpdate(cliCtx.isSkipReducerOnUpdate());
         qry.setNestedTxMode(nestedTxMode);
+        qry.setQueryInitiatorId(connCtx.clientDescriptor());
 
         return qry;
     }
@@ -397,7 +427,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             if (set == null)
                 fieldsMeta = new ArrayList<>();
             else {
-                fieldsMeta = results.currentResultSet().fieldsMeta();
+                fieldsMeta = set.fieldsMeta();
 
                 if (log.isDebugEnabled()) {
                     for (OdbcColumnMeta meta : fieldsMeta)
@@ -446,7 +476,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
                         + paramSet.length + ']');
 
             // Getting meta and do the checks for the first execution.
-            for (Object[] set  : paramSet)
+            for (Object[] set : paramSet)
                 qry.addBatchedArgs(set);
 
             List<FieldsQueryCursor<List<?>>> qryCurs =
@@ -473,14 +503,15 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      * @return Response.
      */
     private ClientListenerResponse dispatchBatchOrdered(OdbcStreamingBatchRequest req) {
-        synchronized (orderedBatchesMux) {
-            orderedBatchesQueue.add(req);
-
-            orderedBatchesMux.notify();
-        }
-
         if (!cliCtx.isStreamOrdered())
             processStreamingBatchOrdered(req);
+        else {
+            synchronized (orderedBatchesMux) {
+                orderedBatchesQueue.add(req);
+
+                orderedBatchesMux.notifyAll();
+            }
+        }
 
         return null;
     }
@@ -498,10 +529,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             U.error(null, "Error processing file batch", e);
 
             sender.send(new OdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Server error: " + e));
-        }
-
-        synchronized (orderedBatchesMux) {
-            orderedBatchesQueue.poll();
         }
 
         cliCtx.orderedRequestProcessed();
@@ -559,14 +586,15 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             assert cliCtx.isStream();
 
             ctx.query().streamBatchedUpdateQuery(
-                qry.getSchema(),
+                OdbcUtils.prepareSchema(qry.getSchema()),
                 cliCtx,
                 qry.getSql(),
-                qry.batchedArguments()
+                qry.batchedArguments(),
+                connCtx.clientDescriptor()
             );
         }
         catch (Exception e) {
-            U.error(log, "Failed to execute batch query [qry=" + qry +']', e);
+            U.error(log, "Failed to execute batch query [qry=" + qry + ']', e);
 
             extractBatchError(e, null, err);
         }
@@ -656,15 +684,15 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
                 // Parsing two-part table name.
                 String[] parts = req.tablePattern().split("\\.");
 
-                schemaPattern = OdbcUtils.removeQuotationMarksIfNeeded(parts[0]);
-
+                schemaPattern = parts[0];
                 tablePattern = parts[1];
             }
             else {
-                schemaPattern = OdbcUtils.removeQuotationMarksIfNeeded(req.schemaPattern());
-
+                schemaPattern = req.schemaPattern();
                 tablePattern = req.tablePattern();
             }
+
+            schemaPattern = OdbcUtils.removeQuotationMarksIfNeeded(schemaPattern);
 
             for (String cacheName : ctx.cache().publicCacheNames()) {
                 for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
@@ -679,7 +707,8 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
                         GridQueryProperty prop = table.property(field.getKey());
 
                         OdbcColumnMeta columnMeta = new OdbcColumnMeta(table.schemaName(), table.tableName(),
-                            field.getKey(), field.getValue(), prop.precision(), prop.scale(), ver);
+                            field.getKey(), field.getValue(), prop.precision(), prop.scale(),
+                            prop.notNull() ? columnNoNulls : columnNullable);
 
                         if (!meta.contains(columnMeta))
                             meta.add(columnMeta);
@@ -736,23 +765,27 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     }
 
     /**
-     * {@link OdbcQueryGetParamsMetaRequest} command handler.
+     * {@link OdbcQueryGetQueryMetaRequest} command handler.
+     * Returns metadata for the parameters to be set.
      *
      * @param req Get params metadata request.
      * @return Response.
      */
     private ClientListenerResponse getParamsMeta(OdbcQueryGetParamsMetaRequest req) {
         try {
-            PreparedStatement stmt = ctx.query().getIndexing().prepareNativeStatement(req.schema(), req.query());
+            String sql = OdbcEscapeUtils.parse(req.query());
+            String schema = OdbcUtils.prepareSchema(req.schema());
 
-            ParameterMetaData pmd = stmt.getParameterMetaData();
+            SqlFieldsQueryEx qry = makeQuery(schema, sql);
 
-            byte[] typeIds = new byte[pmd.getParameterCount()];
+            List<JdbcParameterMeta> params = ctx.query().getIndexing().parameterMetaData(schema, qry);
 
-            for (int i = 1; i <= pmd.getParameterCount(); ++i) {
-                int sqlType = pmd.getParameterType(i);
+            byte[] typeIds = new byte[params.size()];
 
-                typeIds[i - 1] = sqlTypeToBinary(sqlType);
+            for (int i = 0; i < params.size(); ++i) {
+                int sqlType = params.get(i).type();
+
+                typeIds[i] = sqlTypeToBinary(sqlType);
             }
 
             OdbcQueryGetParamsMetaResult res = new OdbcQueryGetParamsMetaResult(typeIds);
@@ -761,6 +794,34 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         }
         catch (Exception e) {
             U.error(log, "Failed to get params metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
+
+            return exceptionToResult(e);
+        }
+    }
+
+    /**
+     * {@link OdbcQueryGetQueryMetaRequest} command handler.
+     * Returns metadata for a columns of the result set.
+     *
+     * @param req Get resultset metadata request.
+     * @return Response.
+     */
+    private ClientListenerResponse getResultMeta(OdbcQueryGetResultsetMetaRequest req) {
+        try {
+            String sql = OdbcEscapeUtils.parse(req.query());
+            String schema = OdbcUtils.prepareSchema(req.schema());
+
+            SqlFieldsQueryEx qry = makeQuery(schema, sql);
+
+            List<GridQueryFieldMetadata> columns = ctx.query().getIndexing().resultMetaData(schema, qry);
+            Collection<OdbcColumnMeta> meta = OdbcUtils.convertMetadata(columns);
+
+            OdbcQueryGetResultsetMetaResult res = new OdbcQueryGetResultsetMetaResult(meta);
+
+            return new OdbcResponse(res);
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to get resultset metadata [reqId=" + req.requestId() + ", req=" + req + ']', e);
 
             return exceptionToResult(e);
         }
@@ -811,7 +872,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      * @param queryId Query ID.
      */
     private void CloseCursor(OdbcQueryResults results, long queryId) {
-        assert(results != null);
+        assert (results != null);
 
         results.closeAll();
 
@@ -975,16 +1036,16 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      * @param e Exception to convert.
      * @return resulting {@link OdbcResponse}.
      */
-    private static OdbcResponse exceptionToResult(Exception e) {
+    private static OdbcResponse exceptionToResult(Throwable e) {
         String msg = OdbcUtils.tryRetrieveH2ErrorMessage(e);
 
         if (e instanceof TransactionSerializationException)
             return new OdbcResponse(IgniteQueryErrorCode.TRANSACTION_SERIALIZATION_ERROR, msg);
         if (e instanceof TransactionAlreadyCompletedException)
             return new OdbcResponse(IgniteQueryErrorCode.TRANSACTION_COMPLETED, msg);
-        if (e instanceof MvccUtils.NonMvccTransactionException)
+        if (e instanceof TransactionMixedModeException)
             return new OdbcResponse(IgniteQueryErrorCode.TRANSACTION_TYPE_MISMATCH, msg);
-        if (e instanceof MvccUtils.UnsupportedTxModeException)
+        if (e instanceof TransactionUnsupportedConcurrencyException)
             return new OdbcResponse(IgniteQueryErrorCode.UNSUPPORTED_OPERATION, msg);
         if (e instanceof TransactionDuplicateKeyException)
             return new OdbcResponse(IgniteQueryErrorCode.DUPLICATE_KEY, msg);
@@ -1021,6 +1082,8 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
                         continue;
                     }
+                    else
+                        orderedBatchesQueue.poll();
                 }
 
                 processStreamingBatchOrdered(req);

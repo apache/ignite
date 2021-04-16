@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.platform.websession;
 
+import java.sql.Timestamp;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
@@ -25,9 +27,6 @@ import org.apache.ignite.internal.processors.platform.cache.PlatformCacheExtensi
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.utils.PlatformWriterClosure;
 import org.apache.ignite.internal.util.typedef.internal.S;
-
-import java.sql.Timestamp;
-import java.util.UUID;
 
 /**
  * Custom entry processor invoker.

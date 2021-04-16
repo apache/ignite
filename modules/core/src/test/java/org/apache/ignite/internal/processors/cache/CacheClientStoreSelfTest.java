@@ -74,9 +74,6 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         boolean client = igniteInstanceName != null && igniteInstanceName.startsWith("client");
-
-        cfg.setClientMode(client);
-
         if (client)
             cfg.setDataStorageConfiguration(new DataStorageConfiguration());
 
@@ -119,7 +116,7 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
 
         startGrids(2);
 
-        Ignite ignite = startGrid("client-1");
+        Ignite ignite = startClientGrid("client-1");
 
         IgniteCache<Object, Object> cache = ignite.cache(CACHE_NAME);
 
@@ -153,7 +150,7 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
 
         factory = new Factory2();
 
-        startGrid("client-1");
+        startClientGrid("client-1");
     }
 
     /**
@@ -171,13 +168,13 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
 
         System.setProperty(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK, "true");
 
-        startGrid("client-1");
+        startClientGrid("client-1");
 
         factory = new Factory1();
 
         System.clearProperty(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK);
 
-        startGrid("client-2");
+        startClientGrid("client-2");
     }
 
     /**
@@ -214,7 +211,7 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
     private void doTestNoStore() throws Exception {
         factory = null;
 
-        Ignite ignite = startGrid("client-1");
+        Ignite ignite = startClientGrid("client-1");
 
         IgniteCache<Object, Object> cache = ignite.cache(CACHE_NAME);
 
@@ -247,7 +244,7 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
 
         startGrids(2);
 
-        Ignite client = startGrid("client-1");
+        Ignite client = startClientGrid("client-1");
 
         IgniteCache<Object, Object> cache = client.cache(CACHE_NAME);
 
@@ -273,7 +270,7 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
 
         startGrids(2);
 
-        Ignite client = startGrid("client-1");
+        Ignite client = startClientGrid("client-1");
 
         IgniteCache cache = grid(0).cache(CACHE_NAME);
 
@@ -296,7 +293,7 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
 
         startGrids(2);
 
-        Ignite client = startGrid("client-1");
+        Ignite client = startClientGrid("client-1");
 
         IgniteCache cache = client.cache(CACHE_NAME);
 
@@ -320,7 +317,7 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
 
         startGrids(2);
 
-        Ignite client = startGrid("client-1");
+        Ignite client = startClientGrid("client-1");
 
         IgniteCache cache = client.cache(CACHE_NAME);
 

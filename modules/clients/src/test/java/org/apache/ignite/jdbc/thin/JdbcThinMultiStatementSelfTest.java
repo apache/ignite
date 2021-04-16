@@ -137,16 +137,25 @@ public class JdbcThinMultiStatementSelfTest extends GridCommonAbstractTest {
                 assertFalse("Expected, that first result is an update count.", p.execute());
 
                 assertTrue("Expected update count of the INSERT.", p.getUpdateCount() != -1);
+                assertTrue("More results are expected.", p.getMoreResults());
 
                 assertTrue("Expected update count of an empty statement.", p.getUpdateCount() != -1);
+                assertTrue("More results are expected.", p.getMoreResults());
                 assertTrue("Expected update count of an empty statement.", p.getUpdateCount() != -1);
+                assertTrue("More results are expected.", p.getMoreResults());
                 assertTrue("Expected update count of an empty statement.", p.getUpdateCount() != -1);
+                assertTrue("More results are expected.", p.getMoreResults());
                 assertTrue("Expected update count of an empty statement.", p.getUpdateCount() != -1);
+                assertTrue("More results are expected.", p.getMoreResults());
 
                 assertTrue("Expected update count of the BEGIN", p.getUpdateCount() != -1);
+                assertTrue("More results are expected.", p.getMoreResults());
                 assertTrue("Expected update count of the UPDATE", p.getUpdateCount() != -1);
+                assertTrue("More results are expected.", p.getMoreResults());
                 assertTrue("Expected update count of the INSERT", p.getUpdateCount() != -1);
+                assertTrue("More results are expected.", p.getMoreResults());
                 assertTrue("Expected update count of the DELETE", p.getUpdateCount() != -1);
+                assertTrue("More results are expected.", p.getMoreResults());
                 assertTrue("Expected update count of the COMMIT", p.getUpdateCount() != -1);
 
                 assertFalse("There should have been no results.", p.getMoreResults());

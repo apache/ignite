@@ -22,29 +22,39 @@ import java.util.HashSet;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.h2.engine.Session;
+import org.h2.index.IndexType;
 import org.h2.result.SortOrder;
 import org.h2.table.Column;
+import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
 
 /**
  * H2 tree index base.
  */
 public abstract class H2TreeIndexBase extends GridH2IndexBase {
+    /** Default value for {@code IGNITE_MAX_INDEX_PAYLOAD_SIZE} */
+    public static final int IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT = 10;
+
     /**
      * Constructor.
      *
      * @param tbl Table.
      */
-    protected H2TreeIndexBase(GridH2Table tbl) {
-        super(tbl);
+    protected H2TreeIndexBase(GridH2Table tbl, String name, IndexColumn[] cols, IndexType type) {
+        super(tbl, name, cols, type);
     }
+
+    /**
+     * @return Inline size.
+     */
+    public abstract int inlineSize();
 
     /** {@inheritDoc} */
     @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder,
         HashSet<Column> allColumnsSet) {
         long rowCnt = getRowCountApproximation();
 
-        double baseCost = getCostRangeIndex(masks, rowCnt, filters, filter, sortOrder, false, allColumnsSet);
+        double baseCost = getCostRangeIndexEx(masks, rowCnt, filters, filter, sortOrder, false, allColumnsSet);
 
         int mul = getDistributedMultiplier(ses, filters, filter);
 
@@ -54,10 +64,5 @@ public abstract class H2TreeIndexBase extends GridH2IndexBase {
     /** {@inheritDoc} */
     @Override public boolean canGetFirstOrLast() {
         return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getRowCountApproximation() {
-        return 10_000; // TODO
     }
 }

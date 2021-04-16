@@ -34,10 +34,10 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -47,8 +47,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -58,7 +56,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  *
  */
-@RunWith(JUnit4.class)
 public class IgnitePdsSporadicDataRecordsOnBackupTest extends GridCommonAbstractTest {
     /** */
     private static final int GRID_CNT = 2;
@@ -139,7 +136,7 @@ public class IgnitePdsSporadicDataRecordsOnBackupTest extends GridCommonAbstract
 
         stopAllGrids();
 
-        assertEquals(0,findSporadicDataRecords(nodeFolderName0) + findSporadicDataRecords(nodeFolderName1));
+        assertEquals(0, findSporadicDataRecords(nodeFolderName0) + findSporadicDataRecords(nodeFolderName1));
     }
 
     /**

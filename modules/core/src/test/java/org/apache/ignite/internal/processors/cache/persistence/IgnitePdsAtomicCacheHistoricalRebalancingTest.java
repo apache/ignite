@@ -42,7 +42,7 @@ public class IgnitePdsAtomicCacheHistoricalRebalancingTest extends IgnitePdsAtom
     /** {@inheritDoc */
     @Override protected void beforeTest() throws Exception {
         // Use rebalance from WAL if possible.
-        System.setProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
+        System.setProperty(IgniteSystemProperties.IGNITE_PREFER_WAL_REBALANCE, "true");
 
         super.beforeTest();
     }
@@ -54,7 +54,7 @@ public class IgnitePdsAtomicCacheHistoricalRebalancingTest extends IgnitePdsAtom
 
         IgniteWalRebalanceTest.WalRebalanceCheckingCommunicationSpi.cleanup();
 
-        System.clearProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD);
+        System.clearProperty(IgniteSystemProperties.IGNITE_PREFER_WAL_REBALANCE);
 
         super.afterTest();
 

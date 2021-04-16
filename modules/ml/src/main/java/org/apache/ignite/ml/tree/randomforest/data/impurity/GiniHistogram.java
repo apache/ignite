@@ -169,7 +169,7 @@ public class GiniHistogram extends ImpurityHistogram implements ImpurityComputer
      * Returns counters histogram for class-label.
      *
      * @param lbl Label.
-     * @return counters histogram for class-label.
+     * @return Counters histogram for class-label.
      */
     ObjectHistogram<BootstrappedVector> getHistForLabel(Double lbl) {
         return hists.get(lblMapping.get(lbl));
@@ -188,7 +188,7 @@ public class GiniHistogram extends ImpurityHistogram implements ImpurityComputer
             return false;
 
         for (Double lbl : unionMappings) {
-            if (lblMapping.get(lbl) != other.lblMapping.get(lbl))
+            if (!lblMapping.get(lbl).equals(other.lblMapping.get(lbl)))
                 return false;
 
             ObjectHistogram<BootstrappedVector> thisHist = getHistForLabel(lbl);

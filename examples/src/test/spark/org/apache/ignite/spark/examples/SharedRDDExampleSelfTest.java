@@ -26,6 +26,7 @@ import org.junit.Test;
  */
 public class SharedRDDExampleSelfTest extends GridAbstractExamplesTest {
     static final String[] EMPTY_ARGS = new String[0];
+
     /**
      * @throws Exception If failed.
      */

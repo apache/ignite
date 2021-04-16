@@ -22,13 +22,18 @@
 #include <string>
 #include <vector>
 
+#include <ignite/thin/cache/query/query_sql_fields.h>
+#include <ignite/thin/transactions/transaction_consts.h>
+
 #include <ignite/impl/binary/binary_writer_impl.h>
 #include <ignite/impl/binary/binary_reader_impl.h>
 
 #include <ignite/impl/thin/writable.h>
 #include <ignite/impl/thin/readable.h>
 
-#include "impl/connectable_node_partitions.h"
+#include "impl/affinity/affinity_topology_version.h"
+#include "impl/affinity/partition_awareness_group.h"
+#include "impl/cache/query/cursor_page.h"
 #include "impl/protocol_version.h"
 
 namespace ignite
@@ -37,6 +42,11 @@ namespace ignite
     {
         namespace thin
         {
+            /** "Transactional" flag mask. */
+            #define TRANSACTIONAL_FLAG_MASK 0x02;
+
+            #define KEEP_BINARY_FLAG_MASK 0x01;
+
             /* Forward declaration. */
             class Readable;
 
@@ -139,14 +149,26 @@ namespace ignite
                     /** Cache destroy. */
                     CACHE_DESTROY = 1056,
 
-                    /** Cache nodes and partitions request. */
-                    CACHE_NODE_PARTITIONS = 1100,
+                    /** Cache partitions request. */
+                    CACHE_PARTITIONS = 1101,
+
+                    /** SQL fields query request. */
+                    QUERY_SQL_FIELDS = 2004,
+
+                    /** SQL fields query get next cursor page request. */
+                    QUERY_SQL_FIELDS_CURSOR_GET_PAGE = 2005,
 
                     /** Get binary type info. */
                     GET_BINARY_TYPE = 3002,
 
                     /** Put binary type info. */
                     PUT_BINARY_TYPE = 3003,
+
+                    /** Start new transaction. */
+                    OP_TX_START = 4000,
+
+                    /** Commit transaction. */
+                    OP_TX_END = 4001
                 };
             };
 
@@ -182,10 +204,42 @@ namespace ignite
                  * @param writer Writer.
                  * @param ver Version.
                  */
-                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
+                virtual void Write(binary::BinaryWriterImpl&, const ProtocolVersion&) const
                 {
                     // No-op.
                 }
+            };
+
+            /**
+             * Cache partitions request.
+             */
+            class CachePartitionsRequest : public Request<RequestType::CACHE_PARTITIONS>
+            {
+            public:
+                /**
+                 * Constructor.
+                 *
+                 * @param cacheIds Cache IDs.
+                 */
+                CachePartitionsRequest(const std::vector<int32_t>& cacheIds);
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~CachePartitionsRequest()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Write request using provided writer.
+                 * @param writer Writer.
+                 */
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const;
+
+            private:
+                /** Cache IDs. */
+                const std::vector<int32_t>& cacheIds;
             };
 
             /**
@@ -308,7 +362,9 @@ namespace ignite
                  */
                 CacheRequest(int32_t cacheId, bool binary) :
                     cacheId(cacheId),
-                    binary(binary)
+                    binary(binary),
+                    actTx(false),
+                    txId(0)
                 {
                     // No-op.
                 }
@@ -322,13 +378,36 @@ namespace ignite
                 }
 
                 /**
+                 * Sets transaction active flag and appropriate txId.
+                 * @param active Transaction activity flag.
+                 * @param id Transaction id.
+                 */
+                void activeTx(bool active, int32_t id) {
+                    actTx = active;
+
+                    txId = id;
+                }
+
+                /**
                  * Write request using provided writer.
                  * @param writer Writer.
                  */
                 virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
                 {
                     writer.WriteInt32(cacheId);
-                    writer.WriteBool(binary);
+
+                    int8_t flags = 0;
+
+                    if (binary)
+                        flags |= KEEP_BINARY_FLAG_MASK;
+
+                    if (actTx)
+                        flags |= TRANSACTIONAL_FLAG_MASK;
+
+                    writer.WriteInt8(flags);
+
+                    if (actTx)
+                        writer.WriteInt32(txId);
                 }
 
             private:
@@ -337,6 +416,10 @@ namespace ignite
 
                 /** Binary flag. */
                 bool binary;
+
+                bool actTx;
+
+                int32_t txId;
             };
 
             /**
@@ -534,6 +617,108 @@ namespace ignite
             };
 
             /**
+             * Tx start request.
+             */
+            class TxStartRequest : public Request<RequestType::OP_TX_START>
+            {
+            public:
+                /**
+                 * Constructor.
+                 */
+                TxStartRequest(
+                    ignite::thin::transactions::TransactionConcurrency::Type conc,
+                    ignite::thin::transactions::TransactionIsolation::Type isolationLvl,
+                    int64_t tmOut,
+                    ignite::common::concurrent::SharedPointer<common::FixedSizeArray<char> > lbl
+                ) :
+                    concurrency(conc),
+                    isolation(isolationLvl),
+                    timeout(tmOut),
+                    label(lbl)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~TxStartRequest()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Write request using provided writer.
+                 * @param writer Writer.
+                 * @param ver Version.
+                 */
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const {
+                    writer.WriteInt8(concurrency);
+                    writer.WriteInt8(isolation);
+                    writer.WriteInt64(timeout);
+                    label.IsValid() ? writer.WriteString(label.Get()->GetData()) : writer.WriteNull();
+                }
+
+            private:
+                /** Cncurrency. */
+                ignite::thin::transactions::TransactionConcurrency::Type concurrency;
+
+                /** Isolation. */
+                ignite::thin::transactions::TransactionIsolation::Type isolation;
+
+                /** Timeout. */
+                const int64_t timeout;
+
+                /** Tx label. */
+                ignite::common::concurrent::SharedPointer<common::FixedSizeArray<char> > label;
+            };
+
+            /**
+             * Tx end request.
+             */
+            class TxEndRequest : public Request<RequestType::OP_TX_END>
+            {
+            public:
+                /**
+                 * Constructor.
+                 *
+                 * @param id Transaction id.
+                 * @param commit Need to commit flag.
+                 */
+                TxEndRequest(int32_t id, bool commit) :
+                    txId(id),
+                    commited(commit)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~TxEndRequest()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Write request using provided writer.
+                 * @param writer Writer.
+                 * @param ver Version.
+                 */
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const {
+                    writer.WriteInt32(txId);
+                    writer.WriteBool(commited);
+                }
+
+            private:
+                /** Tx id. */
+                const int32_t txId;
+
+                /** Need to commit flag. */
+                const bool commited;
+            };
+
+            /**
              * Cache get binary type request.
              */
             class BinaryTypeGetRequest : public Request<RequestType::GET_BINARY_TYPE>
@@ -608,6 +793,77 @@ namespace ignite
             };
 
             /**
+             * Cache SQL fields query request.
+             */
+            class SqlFieldsQueryRequest : public CacheRequest<RequestType::QUERY_SQL_FIELDS>
+            {
+            public:
+                /**
+                 * Constructor.
+                 *
+                 * @param cacheId Cache ID.
+                 * @param qry SQL query.
+                 */
+                explicit SqlFieldsQueryRequest(int32_t cacheId, const ignite::thin::cache::query::SqlFieldsQuery &qry);
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~SqlFieldsQueryRequest()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Write request using provided writer.
+                 * @param writer Writer.
+                 * @param ver Version.
+                 */
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
+
+            private:
+                /** Query. */
+                const ignite::thin::cache::query::SqlFieldsQuery &qry;
+            };
+
+            /**
+             * Cache SQL fields cursor get page request.
+             */
+            class SqlFieldsCursorGetPageRequest : public Request<RequestType::QUERY_SQL_FIELDS_CURSOR_GET_PAGE>
+            {
+            public:
+                /**
+                 * Constructor.
+                 *
+                 * @param cursorId Cursor ID.
+                 */
+                explicit SqlFieldsCursorGetPageRequest(int64_t cursorId) :
+                    cursorId(cursorId)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~SqlFieldsCursorGetPageRequest()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Write request using provided writer.
+                 * @param writer Writer.
+                 * @param ver Version.
+                 */
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
+
+            private:
+                /** Cursor ID. */
+                const int64_t cursorId;
+            };
+
+            /**
              * General response.
              */
             class Response
@@ -648,6 +904,33 @@ namespace ignite
                     return error;
                 }
 
+                /**
+                 * Get affinity topology version.
+                 *
+                 * @return Affinity topology version, or null if it has not changed.
+                 */
+                const AffinityTopologyVersion* GetAffinityTopologyVersion() const
+                {
+                    if (!IsAffinityTopologyChanged())
+                        return 0;
+
+                    return &topologyVersion;
+                }
+
+                /**
+                 * Check if affinity topology failed.
+                 *
+                 * @return @c true affinity topology failed.
+                 */
+                bool IsAffinityTopologyChanged() const;
+
+                /**
+                 * Check if operation failed.
+                 *
+                 * @return @c true if operation failed.
+                 */
+                bool IsFailure() const;
+
             protected:
                 /**
                  * Read data if response status is ResponseStatus::SUCCESS.
@@ -658,6 +941,12 @@ namespace ignite
                 }
 
             private:
+                /** Flags. */
+                int16_t flags;
+
+                /** Affinity topology version. */
+                AffinityTopologyVersion topologyVersion;
+
                 /** Request processing status. */
                 int32_t status;
 
@@ -676,7 +965,7 @@ namespace ignite
                  *
                  * @param nodeParts Node partitions.
                  */
-                ClientCacheNodePartitionsResponse(std::vector<ConnectableNodePartitions>& nodeParts);
+                ClientCacheNodePartitionsResponse(std::vector<NodePartitions>& nodeParts);
 
                 /**
                  * Destructor.
@@ -692,7 +981,60 @@ namespace ignite
 
             private:
                 /** Node partitions. */
-                std::vector<ConnectableNodePartitions>& nodeParts;
+                std::vector<NodePartitions>& nodeParts;
+            };
+
+            /**
+             * Cache node list request.
+             */
+            class CachePartitionsResponse : public Response
+            {
+            public:
+                /**
+                 * Constructor.
+                 *
+                 * @param groups Partition awareness Groups.
+                 */
+                CachePartitionsResponse(std::vector<PartitionAwarenessGroup>& groups);
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~CachePartitionsResponse();
+
+                /**
+                 * Read data if response status is ResponseStatus::SUCCESS.
+                 *
+                 * @param reader Reader.
+                 */
+                virtual void ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&);
+
+                /**
+                 * Get version.
+                 *
+                 * @return Topology version.
+                 */
+                const AffinityTopologyVersion& GetVersion() const
+                {
+                    return topologyVersion;
+                }
+
+                /**
+                 * Get partition awareness groups.
+                 *
+                 * @return Partition awareness groups.
+                 */
+                const std::vector<PartitionAwarenessGroup>& GetGroups() const
+                {
+                    return groups;
+                }
+
+            private:
+                /** Affinity topology version. */
+                AffinityTopologyVersion topologyVersion;
+
+                /** Partition awareness groups. */
+                std::vector<PartitionAwarenessGroup>& groups;
             };
 
             /**
@@ -887,6 +1229,166 @@ namespace ignite
             private:
                 /** Value. */
                 int64_t value;
+            };
+
+            /**
+             * Get cache names response.
+             */
+            class Int32Response : public Response
+            {
+            public:
+                /**
+                 * Constructor.
+                 */
+                Int32Response() :
+                    value(0)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~Int32Response()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Get received value.
+                 *
+                 * @return Received bool value.
+                 */
+                int32_t GetValue() const
+                {
+                    return value;
+                }
+
+                /**
+                 * Read data if response status is ResponseStatus::SUCCESS.
+                 *
+                 * @param reader Reader.
+                 */
+                virtual void ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&);
+
+            private:
+                /** Value. */
+                int32_t value;
+            };
+
+            /**
+             * Cache SQL fields query response.
+             */
+            class SqlFieldsQueryResponse : public Response
+            {
+            public:
+                /**
+                 * Constructor.
+                 */
+                SqlFieldsQueryResponse() :
+                    cursorId(0),
+                    cursorPage(new cache::query::CursorPage())
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~SqlFieldsQueryResponse()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Get cursor ID.
+                 *
+                 * @return Cursor ID.
+                 */
+                int64_t GetCursorId() const
+                {
+                    return cursorId;
+                }
+
+                /**
+                 * Get columns.
+                 *
+                 * @return Column names.
+                 */
+                const std::vector<std::string>& GetColumns() const
+                {
+                    return columns;
+                }
+
+                /**
+                 * Get cursor page.
+                 * @return Cursor page.
+                 */
+                cache::query::SP_CursorPage GetCursorPage() const
+                {
+                    return cursorPage;
+                }
+
+                /**
+                 * Read data if response status is ResponseStatus::SUCCESS.
+                 *
+                 * @param reader Reader.
+                 */
+                virtual void ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&);
+
+            private:
+                /** Cursor ID. */
+                int64_t cursorId;
+
+                /** Column names. */
+                std::vector<std::string> columns;
+
+                /** Cursor Page. */
+                cache::query::SP_CursorPage cursorPage;
+            };
+
+            /**
+             * Cache SQL fields cursor get page response.
+             */
+            class SqlFieldsCursorGetPageResponse : public Response
+            {
+            public:
+                /**
+                 * Constructor.
+                 */
+                SqlFieldsCursorGetPageResponse() :
+                    cursorPage(new cache::query::CursorPage())
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~SqlFieldsCursorGetPageResponse()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Get cursor page.
+                 * @return Cursor page.
+                 */
+                cache::query::SP_CursorPage GetCursorPage() const
+                {
+                    return cursorPage;
+                }
+
+                /**
+                 * Read data if response status is ResponseStatus::SUCCESS.
+                 *
+                 * @param reader Reader.
+                 */
+                virtual void ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&);
+
+            private:
+                /** Cursor Page. */
+                cache::query::SP_CursorPage cursorPage;
             };
         }
     }

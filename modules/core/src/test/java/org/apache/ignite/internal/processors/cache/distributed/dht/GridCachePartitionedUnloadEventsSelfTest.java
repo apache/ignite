@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.CacheRebalancingEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -61,6 +62,8 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
         ccfgEvtsDisabled.setEventsDisabled(true);
 
         cfg.setCacheConfiguration(ccfg, ccfgEvtsDisabled);
+
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return cfg;
     }
@@ -113,7 +116,7 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
 
         checkObjectUnloadEvents(objEvts, g1, g2Keys);
 
-        Collection <Event> partEvts =
+        Collection<Event> partEvts =
             g1.events().localQuery(F.<Event>alwaysTrue(), EVT_CACHE_REBALANCE_PART_UNLOADED);
 
         checkPartitionUnloadEvents(partEvts, g1, dht(g2.cache(DEFAULT_CACHE_NAME)).topology().localPartitions());
@@ -154,8 +157,7 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
 
             assertNotNull("Unexpected partition: " + part, F.find(parts, null,
                 new IgnitePredicate<GridDhtLocalPartition>() {
-                    @Override
-                    public boolean apply(GridDhtLocalPartition e) {
+                    @Override public boolean apply(GridDhtLocalPartition e) {
                         return e.id() == part;
                     }
                 }));

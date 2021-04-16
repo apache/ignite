@@ -123,14 +123,14 @@ public class GridCacheOffheapUpdateSelfTest extends GridCommonAbstractTest {
 
             ClusterNode locNode = grid.cluster().localNode();
 
-            for (;key < 30; key++) {
+            for (; key < 30; key++) {
                 if (!grid.affinity(DEFAULT_CACHE_NAME).isPrimary(locNode, key) && !grid.affinity(DEFAULT_CACHE_NAME).isBackup(locNode, key))
                     break;
             }
 
             assertEquals(10, cache.get(key));
 
-            if(((IgniteCacheProxy)cache).context().config().getAtomicityMode() != CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT) {
+            if (((IgniteCacheProxy)cache).context().config().getAtomicityMode() != CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT) {
                 try (Transaction ignored = grid.transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
                     assertEquals(10, cache.get(key));
                 }

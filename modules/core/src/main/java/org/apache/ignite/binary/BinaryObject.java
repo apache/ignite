@@ -134,6 +134,17 @@ public interface BinaryObject extends Serializable, Cloneable {
     public <T> T deserialize() throws BinaryObjectException;
 
     /**
+     * Gets fully deserialized instance of binary object. If <code>ldr</code> was not specified, configured class loader
+     * will be used {@link org.apache.ignite.configuration.IgniteConfiguration#getClassLoader}.
+     *
+     * @param ldr Class loader.
+     * @return Fully deserialized instance of binary object.
+     * @throws BinaryInvalidTypeException If class doesn't exist.
+     * @throws BinaryObjectException In case of any other error.
+     */
+    public <T> T deserialize(ClassLoader ldr) throws BinaryObjectException;
+
+    /**
      * Copies this binary object.
      *
      * @return Copy of this binary object.
@@ -170,4 +181,10 @@ public interface BinaryObject extends Serializable, Cloneable {
      * @throws BinaryObjectException If object is not enum.
      */
     public String enumName() throws BinaryObjectException;
+
+    /**
+     * Get the size of the object
+     * @return Size of the object
+     */
+    public int size();
 }

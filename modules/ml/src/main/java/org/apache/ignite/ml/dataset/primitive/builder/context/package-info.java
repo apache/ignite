@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains partition {@code context} builders.
  */
+
 package org.apache.ignite.ml.dataset.primitive.builder.context;

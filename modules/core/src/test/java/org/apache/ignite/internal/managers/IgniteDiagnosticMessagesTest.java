@@ -22,19 +22,25 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Pattern;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
@@ -59,17 +65,16 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
  *
  */
 public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
-    /** */
-    private boolean client;
-
     /** */
     private Integer connectionsPerNode;
 
@@ -91,8 +96,6 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
 
         if (connectionsPerNode != null)
             ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setConnectionsPerNode(connectionsPerNode);
-
-        cfg.setClientMode(client);
 
         if (strLog != null) {
             cfg.setGridLogger(strLog);
@@ -179,6 +182,8 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
             startGrid(0);
 
             GridStringLogger strLog = this.strLog = new GridStringLogger();
+
+            strLog.logLength(1024 * 100);
 
             startGrid(1);
 
@@ -377,6 +382,103 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Tests that {@link org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockFuture} timeout object
+     * dumps debug info to log.
+     *
+     * @throws Exception If fails.
+     */
+    @Test
+    public void testTimeOutTxLock() throws Exception {
+        final int longOpDumpTimeout = 500;
+
+        ListeningTestLogger testLog = new ListeningTestLogger(false, log);
+
+        IgniteLogger oldLog = GridTestUtils.getFieldValue(GridDhtLockFuture.class, "log");
+
+        GridTestUtils.setFieldValue(GridDhtLockFuture.class, "log", testLog);
+
+        try {
+            IgniteEx grid1 = startGrid(0);
+
+            LogListener lsnr = LogListener
+                    .matches(Pattern.compile("Transaction tx=GridNearTxLocal \\[.*\\] timed out, can't acquire lock for"))
+                    .andMatches(Pattern.compile(".*xid=.*, xidVer=.*, nearXid=.*, nearXidVer=.*, label=lock, " +
+                            "nearNodeId=" + grid1.cluster().localNode().id() + ".*"))
+                    .build();
+
+            testLog.registerListener(lsnr);
+
+            this.testLog = testLog;
+
+            IgniteEx grid2 = startGrid(1);
+
+            grid2.context().cache().context().tm().longOperationsDumpTimeout(longOpDumpTimeout);
+
+            awaitPartitionMapExchange();
+
+            emulateTxLockTimeout(grid1, grid2);
+
+            assertTrue(lsnr.check());
+        }
+        finally {
+            GridTestUtils.setFieldValue(GridDhtLockFuture.class, "log", oldLog);
+        }
+    }
+
+    /**
+     * Ensure that dumpLongRunningTransaction doesn't block scheduler.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDumpLongRunningOperationDoesntBlockTimeoutWorker() throws Exception {
+        long longOpsDumpTimeout = 100;
+
+        IgniteEx ignite = startGrid(0);
+
+        IgniteCache cache = ignite.createCache(new CacheConfiguration<>("txCache").
+            setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
+
+        ignite.transactions().txStart(PESSIMISTIC, SERIALIZABLE);
+
+        cache.put(1, 1);
+
+        // Wait for some time for transaction to be considered as long running.
+        Thread.sleep(longOpsDumpTimeout * 2);
+
+        // That will allow to block dumpLongRunningTransaction on line
+        // {@code ClusterGroup nearNode = ignite.cluster().forNodeId(nearNodeId);}
+        ignite.context().gateway().writeLock();
+
+        try {
+            ignite.context().cache().context().tm().longOperationsDumpTimeout(100);
+
+            // Wait for some time to guarantee start dumping long running transaction.
+            Thread.sleep(longOpsDumpTimeout * 2);
+
+            AtomicBoolean schedulerAssertionFlag = new AtomicBoolean(false);
+
+            CountDownLatch scheduleLatch = new CountDownLatch(1);
+
+            ignite.context().timeout().schedule(
+                () -> {
+                    schedulerAssertionFlag.set(true);
+                    scheduleLatch.countDown();
+                },
+                0,
+                -1);
+
+            scheduleLatch.await(5_000, TimeUnit.MILLISECONDS);
+
+            // Ensure that dumpLongRunning transaction doesn't block scheduler.
+            assertTrue(schedulerAssertionFlag.get());
+        }
+        finally {
+            ignite.context().gateway().writeUnlock();
+        }
+    }
+
+    /**
      * @param atomicityMode Cache atomicity mode.
      * @throws Exception If failed.
      */
@@ -571,11 +673,8 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     private void checkBasicDiagnosticInfo(CacheAtomicityMode atomicityMode) throws Exception {
         startGrids(3);
 
-        client = true;
-
-        startGrid(3);
-
-        startGrid(4);
+        startClientGrid(3);
+        startClientGrid(4);
 
         CacheConfiguration ccfg = cacheConfiguration(atomicityMode).setCacheMode(REPLICATED);
 
@@ -637,5 +736,62 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
                 }
             }
         }
+    }
+
+    /**
+     * Emulates tx lock timeout.
+     *
+     * @param node1 First node.
+     * @param node2 Second node.
+     * @throws Exception If failed.
+     */
+    private void emulateTxLockTimeout(Ignite node1, Ignite node2) throws Exception {
+        node1.createCache(cacheConfiguration(TRANSACTIONAL).setBackups(1));
+
+        final CountDownLatch l1 = new CountDownLatch(1);
+        final CountDownLatch l2 = new CountDownLatch(1);
+
+        IgniteInternalFuture<?> fut1 = runAsync(new Runnable() {
+            @Override public void run() {
+                try {
+                    try (Transaction tx = node1.transactions().withLabel("lock")
+                            .txStart(PESSIMISTIC, REPEATABLE_READ, 60_000, 2)) {
+                        node1.cache(DEFAULT_CACHE_NAME).put(1, 10);
+
+                        l1.countDown();
+
+                        U.awaitQuiet(l2);
+
+                        U.sleep(100);
+
+                        tx.commit();
+                    }
+                }
+                catch (Exception e) {
+                    log.error("Failed on node1", e);
+                }
+            }
+        }, "First");
+
+        IgniteInternalFuture<?> fut2 = runAsync(new Runnable() {
+            @Override public void run() {
+                try (Transaction tx = node2.transactions().withLabel("lock")
+                        .txStart(PESSIMISTIC, REPEATABLE_READ, 2000L, 2)) {
+                    U.awaitQuiet(l1);
+
+                    node2.cache(DEFAULT_CACHE_NAME).put(1, 20);
+
+                    tx.commit();
+                }
+                catch (Exception e) {
+                    log.error("Failed on node2 " + node2.cluster().localNode().id(), e);
+
+                    l2.countDown();
+                }
+            }
+        }, "Second");
+
+        fut1.get();
+        fut2.get();
     }
 }

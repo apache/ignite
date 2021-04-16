@@ -175,7 +175,7 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
             for (int g = 0; g < gridCount(); g++)
                 assertNull(grid(g).cache(DEFAULT_CACHE_NAME).get(key));
 
-            try (IgniteDataStreamer<TestKey, TestValue> streamer  = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
+            try (IgniteDataStreamer<TestKey, TestValue> streamer = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
                 streamer.addData(key, val);
             }
 
@@ -183,7 +183,7 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
 
             cache.remove(key);
 
-            try (IgniteDataStreamer<TestKey, TestValue> streamer  = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
+            try (IgniteDataStreamer<TestKey, TestValue> streamer = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
                 streamer.allowOverwrite(true);
 
                 streamer.addData(key, val);
@@ -343,7 +343,7 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
             for (int g = 0; g < gridCount(); g++)
                 assertNull(grid(g).cache(DEFAULT_CACHE_NAME).get(key));
 
-            try (IgniteDataStreamer<TestKey, TestValue> streamer  = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
+            try (IgniteDataStreamer<TestKey, TestValue> streamer = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
                 streamer.addData(key, val);
             }
 
@@ -351,7 +351,7 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
 
             cache.remove(key);
 
-            try (IgniteDataStreamer<TestKey, TestValue> streamer  = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
+            try (IgniteDataStreamer<TestKey, TestValue> streamer = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
                 streamer.allowOverwrite(true);
 
                 streamer.addData(key, val);

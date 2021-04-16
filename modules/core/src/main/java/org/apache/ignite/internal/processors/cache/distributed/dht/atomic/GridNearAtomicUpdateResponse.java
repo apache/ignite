@@ -165,7 +165,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
      *
      * @param err Error.
      */
-    public void error(IgniteCheckedException err){
+    public void error(IgniteCheckedException err) {
         if (errs == null)
             errs = new UpdateErrors();
 

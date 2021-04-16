@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
@@ -50,6 +49,9 @@ public class GridCacheTwoStepQuery {
     private final boolean distributedJoins;
 
     /** */
+    private final boolean replicatedOnly;
+
+    /** */
     private final boolean skipMergeTbl;
 
     /** */
@@ -64,15 +66,26 @@ public class GridCacheTwoStepQuery {
     /** */
     private final boolean mvccEnabled;
 
-    /** {@code FOR UPDATE} flag. */
-    private final boolean forUpdate;
-
     /** Number of positional arguments in the sql. */
     private final int paramsCnt;
 
+    /** True if need to treat replicated as partitioned (for outer joins). */
+    private final boolean treatReplicatedAsPartitioned;
+
     /**
-     * @param originalSql Original query SQL.
-     * @param tbls Tables in query.
+     * @param originalSql Original SQL.
+     * @param paramsCnt Parameters count.
+     * @param tbls Tables.
+     * @param rdc Reduce query.
+     * @param mapQrys Map query.
+     * @param skipMergeTbl Skip merge table flag.
+     * @param explain Explain flag.
+     * @param distributedJoins Distributed joins flag.
+     * @param replicatedOnly Replicated only flag.
+     * @param derivedPartitions Derived partitions.
+     * @param cacheIds Cache ids.
+     * @param mvccEnabled Mvcc flag.
+     * @param locSplit Local split flag.
      */
     public GridCacheTwoStepQuery(
         String originalSql,
@@ -83,25 +96,29 @@ public class GridCacheTwoStepQuery {
         boolean skipMergeTbl,
         boolean explain,
         boolean distributedJoins,
-        boolean forUpdate,
+        boolean replicatedOnly,
         PartitionResult derivedPartitions,
         List<Integer> cacheIds,
         boolean mvccEnabled,
-        boolean locSplit
+        boolean locSplit,
+        boolean treatReplicatedAsPartitioned
     ) {
+        assert !F.isEmpty(mapQrys);
+
         this.originalSql = originalSql;
         this.paramsCnt = paramsCnt;
         this.tbls = tbls;
         this.rdc = rdc;
-        this.mapQrys = F.isEmpty(mapQrys) ? Collections.emptyList() : mapQrys;
         this.skipMergeTbl = skipMergeTbl;
         this.explain = explain;
         this.distributedJoins = distributedJoins;
-        this.forUpdate = forUpdate;
         this.derivedPartitions = derivedPartitions;
         this.cacheIds = cacheIds;
         this.mvccEnabled = mvccEnabled;
         this.locSplit = locSplit;
+        this.mapQrys = mapQrys;
+        this.replicatedOnly = replicatedOnly;
+        this.treatReplicatedAsPartitioned = treatReplicatedAsPartitioned;
     }
 
     /**
@@ -133,12 +150,7 @@ public class GridCacheTwoStepQuery {
     public boolean isReplicatedOnly() {
         assert !mapQrys.isEmpty();
 
-        for (GridCacheSqlQuery mapQry : mapQrys) {
-            if (mapQry.isPartitioned())
-                return false;
-        }
-
-        return true;
+        return replicatedOnly;
     }
 
     /**
@@ -219,17 +231,17 @@ public class GridCacheTwoStepQuery {
     }
 
     /**
-     * @return {@code FOR UPDATE} flag.
-     */
-    public boolean forUpdate() {
-        return forUpdate;
-    }
-
-    /**
      * @return Number of parameters
      */
     public int parametersCount() {
         return paramsCnt;
+    }
+
+    /**
+     * @return {@code true} if need to treat replicated as partitioned (for outer joins).
+     */
+    public boolean treatReplicatedAsPartitioned() {
+        return treatReplicatedAsPartitioned;
     }
 
     /** {@inheritDoc} */

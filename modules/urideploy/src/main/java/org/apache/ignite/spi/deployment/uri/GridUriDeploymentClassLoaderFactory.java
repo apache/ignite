@@ -28,9 +28,9 @@ import org.apache.ignite.spi.IgniteSpiException;
 
 /**
  * Factory class to create class loader that loads classes and resources from
- * the GAR file or "unpacked" GAR file (GAR directory).
+ * the deployment archive or "unpacked" deployment archive (package directory).
  * <p>
- * Class loader scans GAR file or GAR directory first and than if
+ * Class loader scans deployment archive or directory first and than if
  * class/resource was not found scans all JAR files.
  * It is assumed that all libraries are in the {@link #DFLT_LIBS_DIR_PATH}
  * directory.
@@ -41,7 +41,7 @@ class GridUriDeploymentClassLoaderFactory {
 
     /**
      * @param parent Parent class loader.
-     * @param file GAR file or directory with unpacked GAR file.
+     * @param file Deployment archive or directory with an unpacked deployment archive.
      * @param log Logger.
      * @return Class Loader.
      * @throws org.apache.ignite.spi.IgniteSpiException In case of any error.
@@ -82,7 +82,7 @@ class GridUriDeploymentClassLoaderFactory {
             return new GridUriDeploymentClassLoader(urls.toArray(new URL[urls.size()]), parent);
         }
         catch (MalformedURLException e) {
-            throw new IgniteSpiException("Failed to create class loader for GAR file: " + file, e);
+            throw new IgniteSpiException("Failed to create class loader for a package: " + file, e);
         }
     }
 

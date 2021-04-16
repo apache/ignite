@@ -36,7 +36,6 @@ import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.custom.DummyEventFilterFactory;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -48,15 +47,6 @@ import org.junit.Test;
 public class ContinuousQueryMarshallerTest extends GridCommonAbstractTest {
     /** */
     public static final String CACHE_NAME = "test-cache";
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(final String gridName) throws Exception {
-        final IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setClientMode(gridName.contains("client"));
-
-        return cfg;
-    }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -91,7 +81,7 @@ public class ContinuousQueryMarshallerTest extends GridCommonAbstractTest {
         for (int i = 0; i < 10; i++)
             cache.put(i, new MarshallerCheckingEntry(String.valueOf(i)));
 
-        final Ignite node2 = startGrid(node2Name);
+        final Ignite node2 = "client".equals(node2Name) ? startClientGrid(node2Name) : startGrid(node2Name);
 
         final ContinuousQuery<Integer, MarshallerCheckingEntry> qry = new ContinuousQuery<>();
 

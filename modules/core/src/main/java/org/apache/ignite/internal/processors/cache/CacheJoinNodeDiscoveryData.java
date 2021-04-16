@@ -57,7 +57,8 @@ public class CacheJoinNodeDiscoveryData implements Serializable {
         IgniteUuid cacheDeploymentId,
         Map<String, CacheJoinNodeDiscoveryData.CacheInfo> caches,
         Map<String, CacheJoinNodeDiscoveryData.CacheInfo> templates,
-        boolean startCaches) {
+        boolean startCaches
+    ) {
         this.cacheDeploymentId = cacheDeploymentId;
         this.caches = caches;
         this.templates = templates;
@@ -159,6 +160,13 @@ public class CacheJoinNodeDiscoveryData implements Serializable {
          */
         public boolean isStaticallyConfigured() {
             return staticallyConfigured;
+        }
+
+        /**
+         * @return Long which bits represent some flags.
+         */
+        public long getFlags() {
+            return flags;
         }
 
         /**

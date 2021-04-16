@@ -33,4 +33,4 @@ import org.apache.ignite.internal.util.lang.IgniteClosure2X;
 public abstract class CX2<E1, E2, R> extends IgniteClosure2X<E1, E2, R> {
     /** */
     private static final long serialVersionUID = 0L;
- /* No-op. */ }
+}

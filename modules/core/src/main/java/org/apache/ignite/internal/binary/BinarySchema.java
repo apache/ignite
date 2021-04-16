@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
-
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.Externalizable;
@@ -29,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Schema describing binary object content. We rely on the following assumptions:

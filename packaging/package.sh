@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
-set -o nounset
-set -o errexit
-set -o pipefail
-set -o errtrace
-set -o functrace
+if [ ! -z "${IGNITE_SCRIPT_STRICT_MODE:-}" ]
+then
+    set -o nounset
+    set -o errexit
+    set -o pipefail
+    set -o errtrace
+    set -o functrace
+fi
 
 cd "$(dirname "${BASH_SOURCE[0]}")"    # Run from the script's root
 

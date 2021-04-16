@@ -53,7 +53,7 @@ public final class GridJarClassLoader extends SecureClassLoader {
      * @throws IOException If fies can't be read,
      */
     public static synchronized GridJarClassLoader getInstance(List<String> files, ClassLoader parent)
-        throws IOException{
+        throws IOException {
         if (instance == null)
             instance = new GridJarClassLoader(files, parent);
 
@@ -153,7 +153,7 @@ public final class GridJarClassLoader extends SecureClassLoader {
      * @param jarName Name of the JAR file.
      * @throws IOException If read failed.
      */
-    private void loadClassBytes(JarInputStream jis, String jarName)  throws IOException {
+    private void loadClassBytes(JarInputStream jis, String jarName) throws IOException {
         BufferedInputStream jarBuf = new BufferedInputStream(jis);
         ByteArrayOutputStream jarOut = new ByteArrayOutputStream();
 

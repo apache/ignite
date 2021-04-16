@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
@@ -83,7 +84,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 IgniteInstanceName = GridName,
-                SpringConfigUrl = "config\\native-client-test-cache-store.xml",
+                SpringConfigUrl = Path.Combine("Config", "native-client-test-cache-store.xml"),
             });
         }
 
@@ -182,10 +183,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             var cache = GetCache();
 
             Assert.AreEqual(0, cache.GetSize());
+            Assert.AreEqual(0, cache.GetSizeLongAsync().Result);
 
             cache.LocalLoadCacheAsync(new CacheEntryFilter(), 100, 10).Wait();
 
             Assert.AreEqual(5, cache.GetSizeAsync().Result);
+            Assert.AreEqual(5, cache.GetSizeLongAsync().Result);
 
             for (int i = 105; i < 110; i++)
             {

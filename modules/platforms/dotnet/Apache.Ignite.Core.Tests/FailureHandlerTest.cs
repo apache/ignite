@@ -96,8 +96,7 @@ namespace Apache.Ignite.Core.Tests
                 configFile = "config\\ignite-halthandler-dotnet-cfg.xml";
             }
             
-            var proc = new IgniteProcess("-jvmClasspath=" + TestUtils.CreateTestClasspath(),
-                "-configFileName=" + configFile);
+            var proc = new IgniteProcess("-configFileName=" + configFile);
 
             Assert.IsTrue(proc.Alive);
 

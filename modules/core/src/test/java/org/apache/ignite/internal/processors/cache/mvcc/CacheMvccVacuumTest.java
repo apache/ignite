@@ -172,6 +172,7 @@ public class CacheMvccVacuumTest extends CacheMvccAbstractTest {
 
         Ignite node0 = startGrid(0);
 
+        node0.cluster().baselineAutoAdjustEnabled(false);
         ensureNoVacuum(node0);
 
         node0.cluster().active(true);
@@ -205,6 +206,7 @@ public class CacheMvccVacuumTest extends CacheMvccAbstractTest {
         Ignite node0 = startGrid(0);
         Ignite node1 = startGrid(1);
 
+        node0.cluster().baselineAutoAdjustEnabled(false);
         node0.cluster().active(true);
 
         IgniteCache<Object, Object> cache = node0.createCache(
@@ -242,6 +244,8 @@ public class CacheMvccVacuumTest extends CacheMvccAbstractTest {
 
         Ignite node0 = startGrid(0);
         Ignite node1 = startGrid(1);
+
+        node0.cluster().baselineAutoAdjustEnabled(false);
 
         ensureNoVacuum(node0);
         ensureNoVacuum(node1);

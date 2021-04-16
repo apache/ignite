@@ -57,15 +57,12 @@ void Main()
 		persons[5] = new Person { OrgId = 3, Name = "Christopher Adams" };
 
         // SQL query
-        orgs.Query(new SqlQuery(typeof(Organization), "size < ?", 100000)).Dump("Organizations with size less than 100K");
+        orgs.Query(new SqlFieldsQuery("select * from Organization where size < ?", 100000)).Dump("Organizations with size less than 100K");
 		
 		// SQL query with join
 		const string orgName = "Apache";
-		persons.Query(new SqlQuery(typeof(Person), "from Person, \"orgs-sql\".Organization where Person.OrgId = \"orgs-sql\".Organization._key and \"orgs-sql\".Organization.Name = ?", orgName))
+		persons.Query(new SqlFieldsQuery("select Person.name from Person, \"orgs-sql\".Organization where Person.OrgId = \"orgs-sql\".Organization._key and \"orgs-sql\".Organization.Name = ?", orgName))
 			.Dump("Persons working for " + orgName);
-
-		// Fields query
-		orgs.Query(new SqlFieldsQuery("select name, size from Organization")).Dump("Fields query");
 
 		// Full text query
 		persons.Query(new TextQuery(typeof(Person), "Chris*")).Dump("Persons starting with 'Chris'");

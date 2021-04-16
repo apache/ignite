@@ -44,9 +44,12 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
@@ -96,6 +99,8 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
 
         cfg.setConnectorConfiguration(new ConnectorConfiguration());
 
+        cfg.setSqlConfiguration(new SqlConfiguration().setSqlSchemas("PREDEFINED_SCHEMAS_1", "PREDEFINED_SCHEMAS_2"));
+
         return cfg;
     }
 
@@ -104,7 +109,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      */
     protected CacheConfiguration cacheConfiguration(@NotNull String name) {
-        CacheConfiguration<?,?> cache = defaultCacheConfiguration();
+        CacheConfiguration<?, ?> cache = defaultCacheConfiguration();
 
         cache.setName(name);
         cache.setCacheMode(PARTITIONED);
@@ -182,6 +187,79 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Check that meta data of PreparedStatement and ResultSet's one are equal.
+     */
+    @Test
+    public void testPreparedStatementMetaData() throws Exception {
+        // Perform checks few times due to query/plan caching.
+        for (int i = 0; i < 3; i++) {
+            try (Connection conn = DriverManager.getConnection(BASE_URL)) {
+                String select = "select p.name, o.id as orgId from \"pers\".Person p, \"org\".Organization o where p.orgId = o.id";
+
+                ResultSetMetaData rsMeta = conn.createStatement().executeQuery(select).getMetaData();
+                ResultSetMetaData psMeta = conn.prepareStatement(select).getMetaData();
+
+                assertEquals(rsMeta.getColumnCount(), rsMeta.getColumnCount());
+
+                for (int j = 1; j <= rsMeta.getColumnCount(); j++) {
+                    assertEquals(rsMeta.getTableName(j), psMeta.getTableName(j));
+                    assertEquals(rsMeta.getColumnName(j), psMeta.getColumnName(j));
+                    assertEquals(rsMeta.getColumnLabel(j), psMeta.getColumnLabel(j));
+                    assertEquals(rsMeta.getColumnType(j), psMeta.getColumnType(j));
+                    assertEquals(rsMeta.getColumnTypeName(j), psMeta.getColumnTypeName(j));
+                    assertEquals(rsMeta.getColumnClassName(j), psMeta.getColumnClassName(j));
+                }
+            }
+        }
+    }
+
+    /**
+     * Check that non-select statements have null metadata.
+     */
+    @Test
+    public void testPreparedStatementMetaDataNegative() throws Exception {
+        // Perform checks few times due to query/plan caching.
+        for (int i = 0; i < 3; i++) {
+            // Check h2 dml statement.
+            try (Connection conn = DriverManager.getConnection(BASE_URL)) {
+                String update = "update \"pers\".Person set name = 'weird' where orgId < 0";
+
+                ResultSetMetaData psMeta = conn.prepareStatement(update).getMetaData();
+
+                assertNull(psMeta);
+            }
+
+            // H2 ddl statement.
+            try (Connection conn = DriverManager.getConnection(BASE_URL)) {
+                String update = "CREATE TABLE DDL_METADATA_TAB (ID INT PRIMARY KEY, VAL INT)";
+
+                ResultSetMetaData psMeta = conn.prepareStatement(update).getMetaData();
+
+                assertNull(psMeta);
+            }
+
+            // And native parser statement.
+            try (Connection conn = DriverManager.getConnection(BASE_URL)) {
+                String nativeCmd = "create index my_idx on PUBLIC.TEST(name)";
+
+                ResultSetMetaData psMeta = conn.prepareStatement(nativeCmd).getMetaData();
+
+                assertNull(psMeta);
+            }
+
+            // Non parsable.
+            try (Connection conn = DriverManager.getConnection(BASE_URL)) {
+                conn.setSchema("\"pers\"");
+
+                PreparedStatement notCorrect = conn.prepareStatement("select * from NotExistingTable;");
+
+                GridTestUtils.assertThrows(log(), notCorrect::getMetaData, SQLException.class,
+                    "Table \"NOTEXISTINGTABLE\" not found");
+            }
+        }
+    }
+
+    /**
      * @throws Exception If failed.
      */
     @Test
@@ -213,6 +291,95 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             assert meta.getColumnType(2) == DATE;
             assert "DATE".equals(meta.getColumnTypeName(2));
             assert "java.sql.Date".equals(meta.getColumnClassName(2));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testGetTableTypes() throws Exception {
+        try (Connection conn = DriverManager.getConnection(BASE_URL)) {
+            DatabaseMetaData meta = conn.getMetaData();
+
+            ResultSet rs = meta.getTableTypes();
+
+            assertTrue(rs.next());
+
+            assertEquals("TABLE", rs.getString("TABLE_TYPE"));
+
+            assertTrue(rs.next());
+
+            assertEquals("VIEW", rs.getString("TABLE_TYPE"));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testGetAllView() throws Exception {
+        Set<String> expViews = new HashSet<>(Arrays.asList(
+            "BASELINE_NODES",
+            "CACHES",
+            "CACHE_GROUPS",
+            "INDEXES",
+            "LOCAL_CACHE_GROUPS_IO",
+            "SQL_QUERIES_HISTORY",
+            "SQL_QUERIES",
+            "SCAN_QUERIES",
+            "NODES",
+            "NODE_ATTRIBUTES",
+            "NODE_METRICS",
+            "SCHEMAS",
+            "TABLES",
+            "TASKS",
+            "JOBS",
+            "SERVICES",
+            "CLIENT_CONNECTIONS",
+            "TRANSACTIONS",
+            "VIEWS",
+            "TABLE_COLUMNS",
+            "VIEW_COLUMNS",
+            "CONTINUOUS_QUERIES",
+            "STRIPED_THREADPOOL_QUEUE",
+            "DATASTREAM_THREADPOOL_QUEUE",
+            "CACHE_GROUP_PAGE_LISTS",
+            "PARTITION_STATES",
+            "BINARY_METADATA",
+            "DISTRIBUTED_METASTORAGE",
+            "METRICS",
+            "DS_QUEUES",
+            "DS_SETS",
+            "DS_ATOMICSEQUENCES",
+            "DS_ATOMICLONGS",
+            "DS_ATOMICREFERENCES",
+            "DS_ATOMICSTAMPED",
+            "DS_COUNTDOWNLATCHES",
+            "DS_SEMAPHORES",
+            "DS_REENTRANTLOCKS"
+        ));
+
+        Set<String> actViews = new HashSet<>();
+
+        try (Connection conn = DriverManager.getConnection(BASE_URL)) {
+            DatabaseMetaData meta = conn.getMetaData();
+
+            ResultSet rs = meta.getTables(null, null, "%", new String[]{"VIEW"});
+
+            while (rs.next()) {
+                assertEquals("VIEW", rs.getString("TABLE_TYPE"));
+
+                assertEquals(JdbcUtils.CATALOG_NAME, rs.getString("TABLE_CAT"));
+
+                assertEquals(QueryUtils.SCHEMA_SYS, rs.getString("TABLE_SCHEM"));
+
+                actViews.add(rs.getString("TABLE_NAME"));
+            }
+
+            assertFalse(rs.next());
+
+            assertEquals(expViews, actViews);
         }
     }
 
@@ -290,6 +457,21 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             assertIsEmpty(meta.getSuperTables(invalidCat, "%", "%"));
             assertIsEmpty(meta.getSchemas(invalidCat, null));
             assertIsEmpty(meta.getPseudoColumns(invalidCat, null, "%", ""));
+        }
+    }
+
+    /**
+     * Check JDBC support flags.
+     */
+    @Test
+    public void testCheckSupports() throws SQLException {
+        try (Connection conn = DriverManager.getConnection(BASE_URL)) {
+            DatabaseMetaData meta = conn.getMetaData();
+
+            assertTrue(meta.supportsANSI92EntryLevelSQL());
+            assertTrue(meta.supportsAlterTableWithAddColumn());
+            assertTrue(meta.supportsAlterTableWithDropColumn());
+            assertTrue(meta.nullPlusNonNullIsNull());
         }
     }
 
@@ -478,7 +660,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
 
             Set<String> actualPks = new HashSet<>(expectedPks.size());
 
-            while(rs.next()) {
+            while (rs.next()) {
                 actualPks.add(rs.getString("TABLE_SCHEM") +
                     '.' + rs.getString("TABLE_NAME") +
                     '.' + rs.getString("PK_NAME") +
@@ -494,23 +676,72 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testParametersMetadata() throws Exception {
+        // Perform checks few times due to query/plan caching.
+        for (int i = 0; i < 3; i++) {
+            // No parameters statement.
+            try (Connection conn = DriverManager.getConnection(BASE_URL)) {
+                conn.setSchema("\"pers\"");
+
+                PreparedStatement noParams = conn.prepareStatement("select * from Person;");
+                ParameterMetaData params = noParams.getParameterMetaData();
+
+                assertEquals("Parameters should be empty.", 0, params.getParameterCount());
+            }
+
+            // Selects.
+            try (Connection conn = DriverManager.getConnection(BASE_URL)) {
+                conn.setSchema("\"pers\"");
+
+                PreparedStatement selectStmt = conn.prepareStatement("select orgId from Person p where p.name > ? and p.orgId > ?");
+
+                ParameterMetaData meta = selectStmt.getParameterMetaData();
+
+                assertNotNull(meta);
+
+                assertEquals(2, meta.getParameterCount());
+
+                assertEquals(Types.VARCHAR, meta.getParameterType(1));
+                assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(1));
+                assertEquals(Integer.MAX_VALUE, meta.getPrecision(1));
+
+                assertEquals(Types.INTEGER, meta.getParameterType(2));
+                assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(2));
+            }
+
+            // Updates.
+            try (Connection conn = DriverManager.getConnection(BASE_URL)) {
+                conn.setSchema("\"pers\"");
+
+                PreparedStatement updateStmt = conn.prepareStatement("update Person p set orgId = 42 where p.name > ? and p.orgId > ?");
+
+                ParameterMetaData meta = updateStmt.getParameterMetaData();
+
+                assertNotNull(meta);
+
+                assertEquals(2, meta.getParameterCount());
+
+                assertEquals(Types.VARCHAR, meta.getParameterType(1));
+                assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(1));
+                assertEquals(Integer.MAX_VALUE, meta.getPrecision(1));
+
+                assertEquals(Types.INTEGER, meta.getParameterType(2));
+                assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(2));
+            }
+        }
+    }
+
+    /**
+     * Check that parameters metadata throws correct exception on non-parsable statement.
+     */
+    @Test
+    public void testParametersMetadataNegative() throws Exception {
         try (Connection conn = DriverManager.getConnection(BASE_URL)) {
-            conn.setSchema("pers");
+            conn.setSchema("\"pers\"");
 
-            PreparedStatement stmt = conn.prepareStatement("select orgId from Person p where p.name > ? and p.orgId > ?");
+            PreparedStatement notCorrect = conn.prepareStatement("select * from NotExistingTable;");
 
-            ParameterMetaData meta = stmt.getParameterMetaData();
-
-            assertNotNull(meta);
-
-            assertEquals(2, meta.getParameterCount());
-
-            assertEquals(Types.VARCHAR, meta.getParameterType(1));
-            assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(1));
-            assertEquals(Integer.MAX_VALUE, meta.getPrecision(1));
-
-            assertEquals(Types.INTEGER, meta.getParameterType(2));
-            assertEquals(ParameterMetaData.parameterNullableUnknown, meta.isNullable(2));
+            GridTestUtils.assertThrows(log(), notCorrect::getParameterMetaData, SQLException.class,
+                "Table \"NOTEXISTINGTABLE\" not found");
         }
     }
 
@@ -522,7 +753,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
         try (Connection conn = DriverManager.getConnection(BASE_URL)) {
             ResultSet rs = conn.getMetaData().getSchemas();
 
-            Set<String> expectedSchemas = new HashSet<>(Arrays.asList("pers", "org", "metaTest", "dep", "PUBLIC"));
+            Set<String> expectedSchemas = new HashSet<>(Arrays.asList("pers", "org", "metaTest", "dep", "PUBLIC", "SYS", "PREDEFINED_CLIENT_SCHEMA"));
 
             Set<String> schemas = new HashSet<>();
 

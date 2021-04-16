@@ -173,7 +173,7 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(S.INCLUDE_SENSITIVE ? getClass().getSimpleName() : "CacheObject",
+        return S.toString(S.includeSensitive() ? getClass().getSimpleName() : "CacheObject",
             "val", val, true,
             "hasValBytes", valBytes != null, false);
     }

@@ -68,7 +68,6 @@ public class IgniteCacheConfigurationPrimitiveTypesSelfTest extends GridCommonAb
         boolean bool = true;
         cacheBoolean.put(bool, bool);
 
-
         assertEquals(cacheByte.query(new SqlQuery<>(Byte.class, "1 = 1")).getAll().size(), 1);
         assertEquals(cacheShort.query(new SqlQuery<>(Short.class, "1 = 1")).getAll().size(), 1);
         assertEquals(cacheInt.query(new SqlQuery<>(Integer.class, "1 = 1")).getAll().size(), 1);

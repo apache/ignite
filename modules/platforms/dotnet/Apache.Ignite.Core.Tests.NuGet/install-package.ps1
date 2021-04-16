@@ -14,11 +14,11 @@ rmdir packages -Force -Recurse
 # Detect NuGet
 $ng = "nuget"
 if ((Get-Command $ng -ErrorAction SilentlyContinue) -eq $null) { 
-    $ng = ".\nuget.exe"
+    $ng = "$PSScriptRoot\..\nuget.exe"
 
     if (-not (Test-Path $ng)) {
         echo "Downloading NuGet..."
-        (New-Object System.Net.WebClient).DownloadFile("https://dist.nuget.org/win-x86-commandline/v3.3.0/nuget.exe", "nuget.exe");    
+        (New-Object System.Net.WebClient).DownloadFile("https://dist.nuget.org/win-x86-commandline/v5.3.1/nuget.exe", $ng)    
     }
 }
 

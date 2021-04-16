@@ -66,10 +66,12 @@ namespace Apache.Ignite.Core.Impl
             Exs["java.lang.IllegalStateException"] = (c, m, e, i) => new InvalidOperationException(m, e);
             Exs["java.lang.UnsupportedOperationException"] = (c, m, e, i) => new NotSupportedException(m, e);
             Exs["java.lang.InterruptedException"] = (c, m, e, i) => new ThreadInterruptedException(m, e);
+            Exs["java.lang.IllegalMonitorStateException"] = (c, m, e, i) => new SynchronizationLockException(m, e);
 
             // Generic Ignite exceptions.
             Exs["org.apache.ignite.IgniteException"] = (c, m, e, i) => new IgniteException(m, e);
             Exs["org.apache.ignite.IgniteCheckedException"] = (c, m, e, i) => new IgniteException(m, e);
+            Exs["org.apache.ignite.IgniteIllegalStateException"] = (c, m, e, i) => new IgniteIllegalStateException(m, e);
             Exs["org.apache.ignite.IgniteClientDisconnectedException"] = (c, m, e, i) => new ClientDisconnectedException(m, e, i.GetCluster().ClientReconnectTask);
             Exs["org.apache.ignite.internal.IgniteClientDisconnectedCheckedException"] = (c, m, e, i) => new ClientDisconnectedException(m, e, i.GetCluster().ClientReconnectTask);
             Exs["org.apache.ignite.binary.BinaryObjectException"] = (c, m, e, i) => new BinaryObjectException(m, e);
@@ -94,6 +96,7 @@ namespace Apache.Ignite.Core.Impl
 
             // Transaction exceptions.
             Exs["org.apache.ignite.transactions.TransactionOptimisticException"] = (c, m, e, i) => new TransactionOptimisticException(m, e);
+            Exs["org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException"] = (c, m, e, i) => new TransactionOptimisticException(m, e);
             Exs["org.apache.ignite.transactions.TransactionTimeoutException"] = (c, m, e, i) => new TransactionTimeoutException(m, e);
             Exs["org.apache.ignite.transactions.TransactionRollbackException"] = (c, m, e, i) => new TransactionRollbackException(m, e);
             Exs["org.apache.ignite.transactions.TransactionHeuristicException"] = (c, m, e, i) => new TransactionHeuristicException(m, e);
@@ -156,7 +159,7 @@ namespace Apache.Ignite.Core.Impl
                 if (match.Success && Exs.TryGetValue(match.Groups[1].Value, out innerCtor))
                 {
                     return ctor(clsName, msg,
-                        innerCtor(match.Groups[1].Value, match.Groups[2].Value, innerException, ignite), 
+                        innerCtor(match.Groups[1].Value, match.Groups[2].Value, innerException, ignite),
                         ignite);
                 }
 
@@ -199,7 +202,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="reader">Reader.</param>
         /// <returns>CachePartialUpdateException.</returns>
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        private static Exception ProcessCachePartialUpdateException(IIgniteInternal ignite, string msg, 
+        private static Exception ProcessCachePartialUpdateException(IIgniteInternal ignite, string msg,
             string stackTrace, BinaryReader reader)
         {
             if (reader == null)

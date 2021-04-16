@@ -118,14 +118,14 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
     /**
      * @return {@code True} if message data is compressed.
      */
-    protected final boolean compressed() {
+    public final boolean compressed() {
         return (flags & COMPRESSED_FLAG_MASK) != 0;
     }
 
     /**
      * @param compressed {@code True} if message data is compressed.
      */
-    protected final void compressed(boolean compressed) {
+    public final void compressed(boolean compressed) {
         flags = compressed ? (byte)(flags | COMPRESSED_FLAG_MASK) : (byte)(flags & ~COMPRESSED_FLAG_MASK);
     }
 

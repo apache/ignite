@@ -43,6 +43,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL;
@@ -116,11 +117,11 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
             Ignite ignite3 = startGrid(3);
 
             ClassLoader ldr1 = new URLClassLoader(
-                new URL[] {new URL ( GridTestProperties.getProperty("p2p.uri.cls")) }, getClass().getClassLoader());
+                new URL[] {new URL(GridTestProperties.getProperty("p2p.uri.cls"))}, getClass().getClassLoader());
             ClassLoader ldr2 = new URLClassLoader(
-                new URL[] {new URL ( GridTestProperties.getProperty("p2p.uri.cls")) }, getClass().getClassLoader());
+                new URL[] {new URL(GridTestProperties.getProperty("p2p.uri.cls"))}, getClass().getClassLoader());
             ClassLoader ldr3 = new URLClassLoader(
-                new URL[] {new URL ( GridTestProperties.getProperty("p2p.uri.cls")) }, getClass().getClassLoader());
+                new URL[] {new URL(GridTestProperties.getProperty("p2p.uri.cls"))}, getClass().getClassLoader());
 
             Class taskCls = ldr1.loadClass("org.apache.ignite.tests.p2p.P2PTestTaskExternalPath1");
 
@@ -157,9 +158,9 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
             Ignite ignite2 = startGrid(2);
 
             ClassLoader ldr1 = new URLClassLoader(
-                new URL[] {new URL ( GridTestProperties.getProperty("p2p.uri.cls")) }, getClass().getClassLoader());
+                new URL[] {new URL(GridTestProperties.getProperty("p2p.uri.cls"))}, getClass().getClassLoader());
             ClassLoader ldr2 = new URLClassLoader(
-                new URL[] {new URL ( GridTestProperties.getProperty("p2p.uri.cls")) }, getClass().getClassLoader());
+                new URL[] {new URL(GridTestProperties.getProperty("p2p.uri.cls"))}, getClass().getClassLoader());
 
             Class task1 = ldr1.loadClass("org.apache.ignite.tests.p2p.P2PTestTaskExternalPath1");
             Class task2 = ldr2.loadClass("org.apache.ignite.tests.p2p.P2PTestTaskExternalPath1");
@@ -256,7 +257,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
                 @Override public void run() {
                     stop.set(true);
                 }
-            }, 10, TimeUnit.SECONDS);
+            }, 5, TimeUnit.SECONDS);
 
             fut.get();
         } finally {
@@ -332,7 +333,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
      */
     public static class TestTask extends ComputeTaskAdapter<UUID, Serializable> {
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(final List<ClusterNode> subgrid, UUID arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(final List<ClusterNode> subgrid, UUID arg) {
             taskLdr = getClass().getClassLoader();
 
             for (ClusterNode node : subgrid) {

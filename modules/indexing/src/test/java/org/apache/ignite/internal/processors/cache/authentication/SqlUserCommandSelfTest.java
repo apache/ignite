@@ -39,18 +39,12 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
     /** Nodes count. */
     private static final int NODES_COUNT = 3;
 
-    /** Client node. */
-    private static final int CLI_NODE = NODES_COUNT - 1;
-
     /** Authorization context for default user. */
     private AuthorizationContext actxDflt;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        if (getTestIgniteInstanceIndex(igniteInstanceName) == CLI_NODE)
-            cfg.setClientMode(true);
 
         cfg.setAuthenticationEnabled(true);
 
@@ -71,7 +65,9 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
 
         U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", true);
 
-        startGrids(NODES_COUNT);
+        startGrids(NODES_COUNT - 1);
+
+        startClientGrid(NODES_COUNT - 1);
 
         grid(0).cluster().active(true);
 

@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains some utils for ML module.
  */
+
 package org.apache.ignite.ml.util;

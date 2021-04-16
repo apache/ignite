@@ -17,8 +17,8 @@
 
 package org.apache.ignite.ml.math.primitives.matrix;
 
-import org.apache.ignite.ml.math.exceptions.CardinalityException;
-import org.apache.ignite.ml.math.exceptions.SingularMatrixException;
+import org.apache.ignite.ml.math.exceptions.math.CardinalityException;
+import org.apache.ignite.ml.math.exceptions.math.SingularMatrixException;
 import org.apache.ignite.ml.math.primitives.matrix.impl.DenseMatrix;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
@@ -34,12 +34,16 @@ import static org.junit.Assert.assertEquals;
 public class LUDecompositionTest {
     /** */
     private Matrix testL;
+
     /** */
     private Matrix testU;
+
     /** */
     private Matrix testP;
+
     /** */
     private Matrix testMatrix;
+
     /** */
     private int[] rawPivot;
 

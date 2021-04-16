@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
@@ -28,7 +29,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.ml.composition.CompositionUtils;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
@@ -41,10 +41,10 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
 import org.apache.ignite.ml.math.util.MapUtil;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.LabeledVectorSet;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
-import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 
 /**
@@ -64,9 +64,9 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
     private DistanceMeasure distance = new EuclideanDistance();
 
     /** {@inheritDoc} */
-    @Override public <K, V> KMeansModel fit(DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, Double> extractor) {
-        return updateModel(null, datasetBuilder, extractor);
+    @Override public <K, V> KMeansModel fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder,
+        Preprocessor<K, V> preprocessor) {
+        return updateModel(null, datasetBuilder, preprocessor);
     }
 
     /** {@inheritDoc} */
@@ -76,24 +76,19 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
 
     /** {@inheritDoc} */
     @Override protected <K, V> KMeansModel updateModel(KMeansModel mdl, DatasetBuilder<K, V> datasetBuilder,
-        FeatureLabelExtractor<K, V, Double> extractor) {
+        Preprocessor<K, V> preprocessor) {
         assert datasetBuilder != null;
 
-        IgniteBiFunction<K, V, Vector> featureExtractor = CompositionUtils.asFeatureExtractor(extractor);
-        IgniteBiFunction<K, V, Double> lbExtractor = CompositionUtils.asLabelExtractor(extractor);
-
-        PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<Double, LabeledVector>> partDataBuilder =
-            new LabeledDatasetPartitionDataBuilderOnHeap<>(
-                featureExtractor,
-                lbExtractor
-            );
+        PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<LabeledVector>> partDataBuilder =
+            new LabeledDatasetPartitionDataBuilderOnHeap<>(preprocessor);
 
         Vector[] centers;
 
-        try (Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset = datasetBuilder.build(
+        try (Dataset<EmptyContext, LabeledVectorSet<LabeledVector>> dataset = datasetBuilder.build(
             envBuilder,
             (env, upstream, upstreamSize) -> new EmptyContext(),
-            partDataBuilder
+            partDataBuilder,
+            learningEnvironment()
         )) {
             final Integer cols = dataset.compute(org.apache.ignite.ml.structures.Dataset::colSize, (a, b) -> {
                 if (a == null)
@@ -107,7 +102,7 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
                 return getLastTrainedModelOrThrowEmptyDatasetException(mdl);
 
             centers = Optional.ofNullable(mdl)
-                .map(KMeansModel::getCenters)
+                .map(KMeansModel::centers)
                 .orElseGet(() -> initClusterCentersRandomly(dataset, k));
 
             boolean converged = false;
@@ -120,13 +115,13 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
 
                 converged = true;
 
-                for (Integer ind : totalRes.sums.keySet()) {
-                    Vector massCenter = totalRes.sums.get(ind).times(1.0 / totalRes.counts.get(ind));
+                for (Map.Entry<Integer, Vector> entry : totalRes.sums.entrySet()) {
+                    Vector massCenter = entry.getValue().times(1.0 / totalRes.counts.get(entry.getKey()));
 
-                    if (converged && distance.compute(massCenter, centers[ind]) > epsilon * epsilon)
+                    if (converged && distance.compute(massCenter, centers[entry.getKey()]) > epsilon * epsilon)
                         converged = false;
 
-                    newCentroids[ind] = massCenter;
+                    newCentroids[entry.getKey()] = massCenter;
                 }
 
                 iteration++;
@@ -144,7 +139,7 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
 
     /** {@inheritDoc} */
     @Override public boolean isUpdateable(KMeansModel mdl) {
-        return mdl.getCenters().length == k && mdl.distanceMeasure().equals(distance);
+        return mdl.centers().length == k && mdl.distanceMeasure().equals(distance);
     }
 
     /**
@@ -156,7 +151,7 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
      * @return Helper data to calculate the new centroids.
      */
     private TotalCostAndCounts calcDataForNewCentroids(Vector[] centers,
-        Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset, int cols) {
+        Dataset<EmptyContext, LabeledVectorSet<LabeledVector>> dataset, int cols) {
         final Vector[] finalCenters = centers;
 
         return dataset.compute(data -> {
@@ -219,7 +214,7 @@ public class KMeansTrainer extends SingleLabelDatasetTrainer<KMeansModel> {
      * @param k Amount of clusters.
      * @return K cluster centers.
      */
-    private Vector[] initClusterCentersRandomly(Dataset<EmptyContext, LabeledVectorSet<Double, LabeledVector>> dataset,
+    private Vector[] initClusterCentersRandomly(Dataset<EmptyContext, LabeledVectorSet<LabeledVector>> dataset,
         int k) {
         Vector[] initCenters = new DenseVector[k];
 

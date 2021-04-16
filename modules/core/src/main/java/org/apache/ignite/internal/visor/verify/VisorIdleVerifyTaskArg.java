@@ -25,6 +25,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
+import static java.util.Objects.nonNull;
+import static org.apache.ignite.internal.visor.verify.CacheFilterEnum.DEFAULT;
+
 /**
  * Arguments for task {@link VisorIdleVerifyTask}.
  * <br/>
@@ -42,6 +45,12 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
     /** Check CRC */
     private boolean checkCrc;
 
+    /** */
+    private boolean skipZeros;
+
+    /** Cache kind. */
+    private CacheFilterEnum cacheFilterEnum = DEFAULT;
+
     /**
      * Default constructor.
      */
@@ -52,12 +61,24 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
     /**
      * @param caches Caches.
      * @param excludeCaches Exclude caches or group.
+     * @param skipZeros Skip zeros partitions.
+     * @param cacheFilterEnum Cache kind, require non null.
      * @param checkCrc Check CRC sum on stored pages on disk.
      */
-    public VisorIdleVerifyTaskArg(Set<String> caches, Set<String> excludeCaches, boolean checkCrc) {
+    public VisorIdleVerifyTaskArg(
+        Set<String> caches,
+        Set<String> excludeCaches,
+        boolean skipZeros,
+        CacheFilterEnum cacheFilterEnum,
+        boolean checkCrc
+    ) {
+        assert nonNull(cacheFilterEnum) : "Cache filter can't be null";
+
         this.caches = caches;
         this.excludeCaches = excludeCaches;
+        this.skipZeros = skipZeros;
         this.checkCrc = checkCrc;
+        this.cacheFilterEnum = cacheFilterEnum;
     }
 
     /**
@@ -65,39 +86,38 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
      * @param checkCrc Check CRC sum on stored pages on disk.
      */
     public VisorIdleVerifyTaskArg(Set<String> caches, boolean checkCrc) {
-        this.caches = caches;
-        this.checkCrc = checkCrc;
+        this(caches, null, false, DEFAULT, false);
     }
 
     /**
      * @param caches Caches.
      */
     public VisorIdleVerifyTaskArg(Set<String> caches) {
-        this.caches = caches;
+        this(caches, null, false, DEFAULT, false);
     }
 
     /** */
-    public boolean isCheckCrc() {
+    public boolean checkCrc() {
         return checkCrc;
     }
 
     /**
      * @return Caches.
      */
-    public Set<String> getCaches() {
+    public Set<String> caches() {
         return caches;
     }
 
     /**
      * @return Exclude caches or groups.
      */
-    public Set<String> getExcludeCaches() {
+    public Set<String> excludeCaches() {
         return excludeCaches;
     }
 
     /** {@inheritDoc} */
     @Override public byte getProtocolVersion() {
-        return V3;
+        return V4;
     }
 
     /** {@inheritDoc} */
@@ -114,6 +134,10 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
             U.writeCollection(out, excludeCaches);
 
             out.writeBoolean(checkCrc);
+
+            out.writeBoolean(skipZeros);
+
+            U.writeEnum(out, cacheFilterEnum);
         }
     }
 
@@ -136,6 +160,12 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
 
             if (protoVer >= V3)
                 checkCrc = in.readBoolean();
+
+            if (protoVer >= V4) {
+                skipZeros = in.readBoolean();
+
+                cacheFilterEnum = CacheFilterEnum.fromOrdinal(in.readByte());
+            }
         }
     }
 
@@ -147,6 +177,32 @@ public class VisorIdleVerifyTaskArg extends VisorDataTransferObject {
     /** */
     protected void checkCrc(boolean checkCrc) {
         this.checkCrc = checkCrc;
+    }
+
+    /**
+     * @return Skip zeros partitions.
+     */
+    public boolean skipZeros() {
+        return skipZeros;
+    }
+
+    /** */
+    protected void skipZeros(boolean skipZeros) {
+        this.skipZeros = skipZeros;
+    }
+
+    /** */
+    protected void cacheFilterEnum(CacheFilterEnum cacheFilterEnum) {
+        assert nonNull(cacheFilterEnum);
+
+        this.cacheFilterEnum = cacheFilterEnum;
+    }
+
+    /**
+     * @return Kind fo cache.
+     */
+    public CacheFilterEnum cacheFilterEnum() {
+        return cacheFilterEnum;
     }
 
     /** {@inheritDoc} */

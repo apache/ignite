@@ -22,6 +22,7 @@
 #include <ignite/jni/java.h>
 #include <ignite/jni/utils.h>
 #include <ignite/ignite_configuration.h>
+#include <ignite/guid.h>
 
 #include <ignite/impl/interop/interop_memory.h>
 #include <ignite/impl/binary/binary_type_manager.h>
@@ -29,17 +30,28 @@
 
 namespace ignite
 {
+    /* Forward declaration. */
+    class Ignite;
+
     namespace impl
     {
         /* Forward declarations. */
+        class IgniteEnvironment;
         class IgniteBindingImpl;
         class ModuleManager;
+        class ClusterNodesHolder;
+        namespace cluster {
+            class ClusterNodeImpl;
+        }
+
+        typedef common::concurrent::SharedPointer<IgniteEnvironment> SP_IgniteEnvironment;
 
         /**
          * Defines environment in which Ignite operates.
          */
         class IGNITE_IMPORT_EXPORT IgniteEnvironment
         {
+            typedef common::concurrent::SharedPointer<cluster::ClusterNodeImpl> SP_ClusterNodeImpl;
         public:
             /**
              * Default memory block allocation size.
@@ -101,7 +113,7 @@ namespace ignite
              * @param memPtr Memory pointer.
              * @param proc Processor instance.
              */
-            void OnStartCallback(long long memPtr, jobject proc);
+            void OnStartCallback(int64_t memPtr, jobject proc);
 
             /**
              * Continuous query listener apply callback.
@@ -124,6 +136,29 @@ namespace ignite
              * @param mem Memory with data.
              */
             int64_t OnContinuousQueryFilterApply(common::concurrent::SharedPointer<interop::InteropMemory>& mem);
+
+            /**
+             * Callback on future result recieved.
+             *
+             * @param handle Task handle.
+             * @param mem Memory with data.
+             */
+            int64_t OnFutureResult(int64_t handle, common::concurrent::SharedPointer<interop::InteropMemory> &mem);
+
+            /**
+             * Callback on future error recieved.
+             *
+             * @param handle Task handle.
+             * @param mem Memory with data.
+             */
+            int64_t OnFutureError(int64_t handle, common::concurrent::SharedPointer<interop::InteropMemory>& mem);
+
+            /**
+             * Callback on compute function execute request.
+             *
+             * @param mem Memory with data.
+             */
+            int64_t OnComputeFuncExecute(common::concurrent::SharedPointer<interop::InteropMemory>& mem);
 
             /**
              * Cache Invoke callback.
@@ -189,6 +224,20 @@ namespace ignite
              * @return Type updater.
              */
             binary::BinaryTypeUpdater* GetTypeUpdater();
+
+            /**
+             * Get local cluster node implementation.
+             *
+             * @return Cluster node implementation or NULL if does not exist.
+             */
+            SP_ClusterNodeImpl GetLocalNode();
+
+            /**
+             * Get cluster node implementation by id.
+             *
+             * @return Cluster node implementation or NULL if does not exist.
+             */
+            SP_ClusterNodeImpl GetNode(Guid Id);
 
             /**
              * Notify processor that Ignite instance has started.
@@ -278,6 +327,23 @@ namespace ignite
              */
             int32_t ComputeTaskJobResult(common::concurrent::SharedPointer<interop::InteropMemory>& mem);
 
+            /**
+             * Get pointer to ignite node.
+             *
+             * @return Pointer to ignite node.
+             */
+            ignite::Ignite* GetIgnite();
+
+            /**
+             * InLongOutLong callback.
+             * Allow access to private nodes member.
+             *
+             * @param target Target environment.
+             * @param type Operation type.
+             * @param val Value.
+             */
+            friend int64_t IGNITE_CALL InLongOutLong(void* target, int type, int64_t val);
+
         private:
             /** Node configuration. */
             IgniteConfiguration* cfg;
@@ -308,6 +374,12 @@ namespace ignite
 
             /** Module manager. */
             common::concurrent::SharedPointer<ModuleManager> moduleMgr;
+
+            /** Cluster nodes. */
+            common::concurrent::SharedPointer<ClusterNodesHolder> nodes;
+
+            /** Ignite node. */
+            ignite::Ignite* ignite;
 
             IGNITE_NO_COPY_ASSIGNMENT(IgniteEnvironment);
         };

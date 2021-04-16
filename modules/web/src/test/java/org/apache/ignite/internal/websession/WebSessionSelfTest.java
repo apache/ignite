@@ -17,11 +17,23 @@
 
 package org.apache.ignite.internal.websession;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.Externalizable;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.io.Serializable;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
-import java.util.*;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -36,14 +48,14 @@ import javax.servlet.http.HttpSession;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.events.Event;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.eclipse.jetty.security.HashLoginService;
@@ -117,6 +129,11 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
     @Test
     public void testImplicitlyAttributeModification() throws Exception {
         testImplicitlyModification("ignite-webapp-config.xml");
+    }
+
+    @Test
+    public void testSessionCookie() throws Exception {
+        testSessionCookie("/modules/core/src/test/config/websession/example-cache.xml");
     }
 
     /**
@@ -479,6 +496,122 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Tests session cookie.
+     *
+     * @param cfg Configuration.
+     * @throws Exception If failed.
+     */
+    private void testSessionCookie(String cfg) throws Exception {
+        Server srv = null;
+        String sesId;
+
+        try {
+            srv = startServerWithLoginService(TEST_JETTY_PORT, cfg, null, new SessionLoginServlet());
+
+            URLConnection conn = new URL("http://localhost:" + TEST_JETTY_PORT + "/ignitetest/test").openConnection();
+
+            conn.connect();
+
+            String sesIdCookie1 = getSessionIdFromCookie(conn);
+
+            X.println(">>>", "Initial session Cookie: " + sesIdCookie1, ">>>");
+
+            assertTrue(sesIdCookie1.contains(".node0"));
+
+            try (BufferedReader rdr = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                sesId = rdr.readLine();
+
+                if (!keepBinary()) {
+                    IgniteCache<String, HttpSession> cache = G.ignite().cache(getCacheName());
+
+                    assertNotNull(cache);
+
+                    HttpSession ses = cache.get(sesId);
+
+                    assertNotNull(ses);
+
+                    assertEquals("val1", ses.getAttribute("key1"));
+                }
+                else {
+                    final IgniteCache<String, WebSessionEntity> cache = G.ignite().cache(getCacheName());
+
+                    assertNotNull(cache);
+
+                    final WebSessionEntity entity = cache.get(sesId);
+
+                    assertNotNull(entity);
+
+                    final byte[] data = entity.attributes().get("key1");
+
+                    assertNotNull(data);
+
+                    final Marshaller marshaller = G.ignite().configuration().getMarshaller();
+
+                    final String val = marshaller.unmarshal(data, getClass().getClassLoader());
+
+                    assertEquals("val1", val);
+                }
+            }
+
+            URLConnection conn2 = new URL("http://localhost:" + TEST_JETTY_PORT + "/ignitetest/login").openConnection();
+
+            HttpURLConnection con = (HttpURLConnection) conn2;
+
+            con.addRequestProperty("Cookie", "JSESSIONID=" + sesIdCookie1);
+
+            con.setRequestMethod("POST");
+
+            con.setDoOutput(true);
+
+            String sesIdCookie2 = getSessionIdFromCookie(con);
+
+            X.println(">>>", "Logged In session Cookie: " + sesIdCookie2, ">>>");
+
+            assertTrue(sesIdCookie2.contains(".node0"));
+
+            try (BufferedReader rdr = new BufferedReader(new InputStreamReader(con.getInputStream()))) {
+                String sesId2 = rdr.readLine();
+
+                if (!keepBinary()) {
+                    IgniteCache<String, HttpSession> cache = G.ignite().cache(getCacheName());
+
+                    assertNotNull(cache);
+
+                    HttpSession ses = cache.get(sesId2);
+
+                    assertNotNull(ses);
+
+                    assertEquals("val1", ses.getAttribute("key1"));
+
+                }
+                else {
+                    final IgniteCache<String, WebSessionEntity> cache = G.ignite().cache(getCacheName());
+
+                    assertNotNull(cache);
+
+                    final WebSessionEntity entity = cache.get(sesId2);
+
+                    assertNotNull(entity);
+
+                    final byte[] data = entity.attributes().get("key1");
+
+                    assertNotNull(data);
+
+                    final Marshaller marshaller = G.ignite().configuration().getMarshaller();
+
+                    final String val = marshaller.unmarshal(data, getClass().getClassLoader());
+
+                    assertEquals("val1", val);
+
+                }
+            }
+        }
+        finally {
+             stopServerWithLoginService(srv);
+        }
+    }
+
+     /**
      * Tests invalidated sessions.
      *
      * @throws Exception Exception If failed.
@@ -909,8 +1042,8 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
      * @param srv Server.
      * @throws Exception In case of error.
      */
-    private void stopServerWithLoginService(@Nullable Server srv) throws Exception{
-        if (srv != null){
+    private void stopServerWithLoginService(@Nullable Server srv) throws Exception {
+        if (srv != null) {
             srv.stop();
             File realmFile = new File("/tmp/realm.properties");
             realmFile.delete();
@@ -918,7 +1051,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
     }
 
     /** Creates a realm file to store test user credentials */
-    private void createRealm() throws Exception{
+    private void createRealm() throws Exception {
         File realmFile = new File("/tmp/realm.properties");
         FileWriter fileWriter = new FileWriter(realmFile);
         fileWriter.append("admin:admin");
@@ -948,7 +1081,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
                 for (String headerValue : headerFieldValue) {
                     String[] fields = headerValue.split(";");
                     sessionCookieValue = fields[0];
-                    sesId = sessionCookieValue.substring(sessionCookieValue.indexOf("=")+1,
+                    sesId = sessionCookieValue.substring(sessionCookieValue.indexOf("=") + 1,
                             sessionCookieValue.length());
                 }
             }
@@ -1150,6 +1283,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
                 res.getWriter().flush();
             }
         }
+
         /** {@inheritDoc} */
         @Override protected void doPost(HttpServletRequest req, HttpServletResponse res)
                 throws ServletException, IOException {

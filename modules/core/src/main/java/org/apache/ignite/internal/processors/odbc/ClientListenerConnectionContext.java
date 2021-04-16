@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -41,16 +42,18 @@ public interface ClientListenerConnectionContext {
     /**
      * @return Current context version.
      */
-    ClientListenerProtocolVersion currentVersion();
+    ClientListenerProtocolVersion defaultVersion();
 
     /**
      * Initialize from handshake message.
      *
+     *
+     * @param ses NIO session.
      * @param ver Protocol version.
      * @param reader Reader set to the configuration part of the handshake message.
      * @throws IgniteCheckedException On error.
      */
-    void initializeFromHandshake(ClientListenerProtocolVersion ver, BinaryReaderExImpl reader)
+    void initializeFromHandshake(GridNioSession ses, ClientListenerProtocolVersion ver, BinaryReaderExImpl reader)
         throws IgniteCheckedException;
 
     /**

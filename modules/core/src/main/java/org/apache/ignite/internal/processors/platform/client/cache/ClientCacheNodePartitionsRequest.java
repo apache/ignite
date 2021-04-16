@@ -24,14 +24,15 @@ import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.processors.odbc.ClientConnectableNodePartitions;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
+import org.apache.ignite.internal.processors.platform.client.ClientConnectableNodePartitions;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
  * Cluster node list request.
- * Currently used to request list of nodes, to calculate affinity on the client side.
+ * Used to request list of nodes, to calculate affinity on the client side.
+ * Deprecated since 1.3.0. Replaced with {@link ClientCachePartitionsRequest}.
  */
 public class ClientCacheNodePartitionsRequest extends ClientCacheRequest {
     /**

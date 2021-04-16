@@ -17,18 +17,17 @@
 
 package org.apache.ignite.internal.processors.bulkload;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.bulkload.pipeline.CharsetDecoderBlock;
-import org.apache.ignite.internal.processors.bulkload.pipeline.CsvLineProcessorBlock;
-import org.apache.ignite.internal.processors.bulkload.pipeline.PipelineBlock;
-import org.apache.ignite.internal.processors.bulkload.pipeline.StrListAppenderBlock;
-import org.apache.ignite.internal.processors.bulkload.pipeline.LineSplitterBlock;
-
 import java.nio.charset.Charset;
 import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.UnsupportedCharsetException;
 import java.util.LinkedList;
 import java.util.List;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.bulkload.pipeline.CharsetDecoderBlock;
+import org.apache.ignite.internal.processors.bulkload.pipeline.CsvLineProcessorBlock;
+import org.apache.ignite.internal.processors.bulkload.pipeline.LineSplitterBlock;
+import org.apache.ignite.internal.processors.bulkload.pipeline.PipelineBlock;
+import org.apache.ignite.internal.processors.bulkload.pipeline.StrListAppenderBlock;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 
 /** CSV parser for COPY command. */

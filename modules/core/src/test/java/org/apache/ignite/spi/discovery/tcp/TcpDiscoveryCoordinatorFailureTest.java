@@ -36,19 +36,17 @@ import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  *
  */
 @SuppressWarnings("deprecation")
-@RunWith(JUnit4.class)
 public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(false)
@@ -89,6 +87,11 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
         }
 
         return cfg;
+    }
+
+    /** */
+    @Override protected long getTestTimeout() {
+        return 70_000;
     }
 
     /**
@@ -283,8 +286,11 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
             byte[] data,
             long timeout
         ) throws IOException {
-            if (isDrop(msg))
-                return;
+            if (isDrop(msg)) {
+                // Replace logic routine message with a stub to update last-sent-time to avoid segmentation on
+                // connRecoveryTimeout.
+                msg = new TcpDiscoveryConnectionCheckMessage(locNode);
+            }
 
             super.writeToSocket(sock, msg, data, timeout);
         }
@@ -295,8 +301,11 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
             TcpDiscoveryAbstractMessage msg,
             long timeout
         ) throws IOException, IgniteCheckedException {
-            if (isDrop(msg))
-                return;
+            if (isDrop(msg)) {
+                // Replace logic routine message with a stub to update last-sent-time to avoid segmentation on
+                // connRecoveryTimeout.
+                msg = new TcpDiscoveryConnectionCheckMessage(locNode);
+            }
 
             super.writeToSocket(sock, msg, timeout);
         }
@@ -309,8 +318,11 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
             TcpDiscoveryAbstractMessage msg,
             long timeout
         ) throws IOException, IgniteCheckedException {
-            if (isDrop(msg))
-                return;
+            if (isDrop(msg)) {
+                // Replace logic routine message with a stub to update last-sent-time to avoid segmentation on
+                // connRecoveryTimeout.
+                msg = new TcpDiscoveryConnectionCheckMessage(locNode);
+            }
 
             super.writeToSocket(node, sock, out, msg, timeout);
         }
@@ -322,8 +334,11 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
             TcpDiscoveryAbstractMessage msg,
             long timeout
         ) throws IOException, IgniteCheckedException {
-            if (isDrop(msg))
-                return;
+            if (isDrop(msg)) {
+                // Replace logic routine message with a stub to update last-sent-time to avoid segmentation on
+                // connRecoveryTimeout.
+                msg = new TcpDiscoveryConnectionCheckMessage(locNode);
+            }
 
             super.writeToSocket(sock, out, msg, timeout);
         }
@@ -335,8 +350,11 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
             int res,
             long timeout
         ) throws IOException {
-            if (isDrop(msg))
-                return;
+            if (isDrop(msg)) {
+                // Replace logic routine message with a stub to update last-sent-time to avoid segmentation on
+                // connRecoveryTimeout.
+                msg = new TcpDiscoveryConnectionCheckMessage(locNode);
+            }
 
             super.writeToSocket(msg, sock, res, timeout);
         }

@@ -143,6 +143,14 @@ namespace Apache.Ignite.Service
         }
 
         /// <summary>
+        /// Runs the service.
+        /// </summary>
+        internal static void Run(IgniteConfiguration cfg)
+        {
+            ServiceBase.Run(new IgniteService(cfg));
+        }
+
+        /// <summary>
         /// Native service installation.
         /// </summary>
         /// <param name="args">Arguments.</param>

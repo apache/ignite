@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.h2.dml;
 
+import java.sql.SQLException;
+import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import javax.cache.processor.EntryProcessor;
-import java.sql.SQLException;
 
 /**
  * Result of splitting keys whose processing resulted into an exception from those skipped by

@@ -17,10 +17,10 @@
 
 package org.apache.ignite.cache.store.cassandra.session;
 
+import java.util.concurrent.Callable;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.SimpleStatement;
 import com.datastax.driver.core.Statement;
-import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.store.cassandra.persistence.PersistenceController;

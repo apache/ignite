@@ -23,10 +23,15 @@
 #include <algorithm>
 #include <stdexcept>
 
-#include "ignite/jni/utils.h"
-#include "ignite/common/concurrent.h"
-#include "ignite/jni/java.h"
+#include <ignite/jni/utils.h>
+#include <ignite/common/concurrent.h>
+#include <ignite/jni/java.h>
 #include <ignite/ignite_error.h>
+#include <ignite/common/utils.h>
+
+#ifndef JNI_VERSION_9
+#define JNI_VERSION_9 0x00090000
+#endif // JNI_VERSION_9
 
 #define IGNITE_SAFE_PROC_NO_ARG(jniEnv, envPtr, type, field) { \
     JniHandlers* hnds = reinterpret_cast<JniHandlers*>(envPtr); \
@@ -94,7 +99,18 @@ namespace ignite
     {
         namespace java
         {
-            namespace gcc = ignite::common::concurrent;
+            namespace icc = ignite::common::concurrent;
+
+            bool IGNITE_IMPORT_EXPORT IsJava9OrLater()
+            {
+                JavaVMInitArgs args;
+
+                memset(&args, 0, sizeof(args));
+
+                args.version = JNI_VERSION_9;
+
+                return JNI_GetDefaultJavaVMInitArgs(&args) == JNI_OK;
+            }
 
             /* --- Startup exception. --- */
             class JvmException : public std::exception {
@@ -114,26 +130,6 @@ namespace ignite
                 }
             };
 
-            /**
-             * Heloper function to copy characters.
-             *
-             * @param src Source.
-             * @return Result.
-             */
-            char* CopyChars(const char* src)
-            {
-                if (src)
-                {
-                    size_t len = strlen(src);
-                    char* dest = new char[len + 1];
-                    strcpy(dest, src);
-                    *(dest + len) = 0;
-                    return dest;
-                }
-                else
-                    return NULL;
-            }
-
             JniErrorInfo::JniErrorInfo() : code(IGNITE_JNI_ERR_SUCCESS), errCls(NULL), errMsg(NULL)
             {
                 // No-op.
@@ -141,14 +137,14 @@ namespace ignite
 
             JniErrorInfo::JniErrorInfo(int code, const char* errCls, const char* errMsg) : code(code)
             {
-                this->errCls = CopyChars(errCls);
-                this->errMsg = CopyChars(errMsg);
+                this->errCls = common::CopyChars(errCls);
+                this->errMsg = common::CopyChars(errMsg);
             }
 
             JniErrorInfo::JniErrorInfo(const JniErrorInfo& other) : code(other.code)
             {
-                this->errCls = CopyChars(other.errCls);
-                this->errMsg = CopyChars(other.errMsg);
+                this->errCls = common::CopyChars(other.errCls);
+                this->errMsg = common::CopyChars(other.errMsg);
             }
 
             JniErrorInfo& JniErrorInfo::operator=(const JniErrorInfo& other)
@@ -159,17 +155,9 @@ namespace ignite
                     JniErrorInfo tmp(other);
 
                     // 2. Swap with temp.
-                    int code0 = code;
-                    char* errCls0 = errCls;
-                    char* errMsg0 = errMsg;
-
-                    code = tmp.code;
-                    errCls = tmp.errCls;
-                    errMsg = tmp.errMsg;
-
-                    tmp.code = code0;
-                    tmp.errCls = errCls0;
-                    tmp.errMsg = errMsg0;
+                    std::swap(code, tmp.code);
+                    std::swap(errCls, tmp.errCls);
+                    std::swap(errMsg, tmp.errMsg);
                 }
 
                 return *this;
@@ -177,11 +165,8 @@ namespace ignite
 
             JniErrorInfo::~JniErrorInfo()
             {
-                if (errCls)
-                    delete[] errCls;
-
-                if (errMsg)
-                    delete[] errMsg;
+                delete[] errCls;
+                delete[] errMsg;
             }
 
             /**
@@ -207,7 +192,7 @@ namespace ignite
                 /** Target reference. */
                 jobject ref;
 
-                IGNITE_NO_COPY_ASSIGNMENT(JniGlobalRefGuard)
+                IGNITE_NO_COPY_ASSIGNMENT(JniGlobalRefGuard);
             };
 
             const char* C_THROWABLE = "java/lang/Throwable";
@@ -255,8 +240,8 @@ namespace ignite
             JniMethod M_PLATFORM_IGNITION_STOP_ALL = JniMethod("stopAll", "(Z)V", true);
 
             /* STATIC STATE. */
-            gcc::CriticalSection JVM_LOCK;
-            gcc::CriticalSection CONSOLE_LOCK;
+            icc::CriticalSection JVM_LOCK;
+            icc::CriticalSection CONSOLE_LOCK;
             JniJvm JVM;
             bool PRINT_EXCEPTION = false;
             std::vector<ConsoleWriteHandler> consoleWriteHandlers;
@@ -393,7 +378,7 @@ namespace ignite
             }
 
             bool JniJavaMembers::WriteErrorInfo(JNIEnv* env, char** errClsName, int* errClsNameLen, char** errMsg,
-				int* errMsgLen, char** stackTrace, int* stackTraceLen) {
+                int* errMsgLen, char** stackTrace, int* stackTraceLen) {
                 if (env && env->ExceptionCheck()) {
                     if (m_Class_getName && m_Throwable_getMessage) {
                         jthrowable err = env->ExceptionOccurred();
@@ -524,7 +509,7 @@ namespace ignite
 
             void RegisterNatives(JNIEnv* env) {
                 {
-					JNINativeMethod methods[5];
+                    JNINativeMethod methods[5];
 
                     int idx = 0;
 
@@ -641,7 +626,7 @@ namespace ignite
                     if (JVM.GetJvm())
                         ctx = new JniContext(&JVM, hnds);
                 }
-                catch (JvmException)
+                catch (const JvmException&)
                 {
                     char* errClsNameChars = NULL;
                     char* errMsgChars = NULL;
@@ -649,7 +634,7 @@ namespace ignite
 
                     // Read error info if possible.
                     javaMembers.WriteErrorInfo(env, &errClsNameChars, &errClsNameLen, &errMsgChars, &errMsgLen,
-						&stackTraceChars, &stackTraceLen);
+                        &stackTraceChars, &stackTraceLen);
 
                     if (errClsNameChars) {
                         errClsName = errClsNameChars;
@@ -701,7 +686,7 @@ namespace ignite
                 return ctx;
             }
 
-            int JniContext::Reallocate(long long memPtr, int cap) {
+            int JniContext::Reallocate(int64_t memPtr, int cap) {
                 JavaVM* jvm = JVM.GetJvm();
 
                 JNIEnv* env;
@@ -725,7 +710,7 @@ namespace ignite
             }
 
             void JniContext::Detach() {
-                gcc::Memory::Fence();
+                icc::Memory::Fence();
 
                 if (JVM.GetJvm()) {
                     JNIEnv* env;
@@ -737,11 +722,11 @@ namespace ignite
                 }
             }
 
-            void JniContext::IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr) {
+            void JniContext::IgnitionStart(char* cfgPath, char* name, int factoryId, int64_t dataPtr) {
                 return IgnitionStart(cfgPath, name, factoryId, dataPtr, NULL);
             }
 
-            void JniContext::IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr, JniErrorInfo* errInfo)
+            void JniContext::IgnitionStart(char* cfgPath, char* name, int factoryId, int64_t dataPtr, JniErrorInfo* errInfo)
             {
                 JNIEnv* env = Attach();
 
@@ -754,25 +739,25 @@ namespace ignite
                     cfgPath0,
                     name0,
                     factoryId,
-                    reinterpret_cast<long long>(&hnds),
+                    reinterpret_cast<int64_t>(&hnds),
                     dataPtr
                 );
 
                 ExceptionCheck(env, errInfo);
             }
             
-            long long JniContext::IgnitionEnvironmentPointer(char* name)
+            int64_t JniContext::IgnitionEnvironmentPointer(char* name)
             {
                 return IgnitionEnvironmentPointer(name, NULL);
             }
 
-            long long JniContext::IgnitionEnvironmentPointer(char* name, JniErrorInfo* errInfo)
+            int64_t JniContext::IgnitionEnvironmentPointer(char* name, JniErrorInfo* errInfo)
             {
                 JNIEnv* env = Attach();
 
                 jstring name0 = env->NewStringUTF(name);
 
-                long long res = env->CallStaticLongMethod(jvm->GetMembers().c_PlatformIgnition,
+                int64_t res = env->CallStaticLongMethod(jvm->GetMembers().c_PlatformIgnition,
                     jvm->GetMembers().m_PlatformIgnition_environmentPointer, name0);
 
                 ExceptionCheck(env, errInfo);
@@ -814,27 +799,27 @@ namespace ignite
                 ExceptionCheck(env, errInfo);
             }
 
-            long long JniContext::TargetInLongOutLong(jobject obj, int opType, long long val, JniErrorInfo* err) {
+            int64_t JniContext::TargetInLongOutLong(jobject obj, int opType, int64_t val, JniErrorInfo* err) {
                 JNIEnv* env = Attach();
 
-                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformTarget_inLongOutLong, opType, val);
+                int64_t res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformTarget_inLongOutLong, opType, val);
 
                 ExceptionCheck(env, err);
 
                 return res;
             }
 
-            long long JniContext::TargetInStreamOutLong(jobject obj, int opType, long long memPtr, JniErrorInfo* err) {
+            int64_t JniContext::TargetInStreamOutLong(jobject obj, int opType, int64_t memPtr, JniErrorInfo* err) {
                 JNIEnv* env = Attach();
 
-                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformTarget_inStreamOutLong, opType, memPtr);
+                int64_t res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformTarget_inStreamOutLong, opType, memPtr);
 
                 ExceptionCheck(env, err);
 
                 return res;
             }
 
-            void JniContext::TargetInStreamOutStream(jobject obj, int opType, long long inMemPtr, long long outMemPtr, JniErrorInfo* err) {
+            void JniContext::TargetInStreamOutStream(jobject obj, int opType, int64_t inMemPtr, int64_t outMemPtr, JniErrorInfo* err) {
                 JNIEnv* env = Attach();
 
                 env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformTarget_inStreamOutStream, opType, inMemPtr, outMemPtr);
@@ -842,7 +827,7 @@ namespace ignite
                 ExceptionCheck(env, err);
             }
 
-           jobject JniContext::TargetInStreamOutObject(jobject obj, int opType, long long memPtr, JniErrorInfo* err) {
+           jobject JniContext::TargetInStreamOutObject(jobject obj, int opType, int64_t memPtr, JniErrorInfo* err) {
                 JNIEnv* env = Attach();
 
                 jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformTarget_inStreamOutObject, opType, memPtr);
@@ -852,7 +837,7 @@ namespace ignite
                 return LocalToGlobal(env, res);
             }
 
-            jobject JniContext::TargetInObjectStreamOutObjectStream(jobject obj, int opType, void* arg, long long inMemPtr, long long outMemPtr, JniErrorInfo* err) {
+            jobject JniContext::TargetInObjectStreamOutObjectStream(jobject obj, int opType, void* arg, int64_t inMemPtr, int64_t outMemPtr, JniErrorInfo* err) {
                 JNIEnv* env = Attach();
 
                 jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformTarget_inObjectStreamOutObjectStream, opType, arg, inMemPtr, outMemPtr);
@@ -862,7 +847,7 @@ namespace ignite
                 return LocalToGlobal(env, res);
             }
 
-            void JniContext::TargetOutStream(jobject obj, int opType, long long memPtr, JniErrorInfo* err) {
+            void JniContext::TargetOutStream(jobject obj, int opType, int64_t memPtr, JniErrorInfo* err) {
                 JNIEnv* env = Attach();
 
                 env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformTarget_outStream, opType, memPtr);
@@ -881,7 +866,7 @@ namespace ignite
                 return LocalToGlobal(env, res);
             }
 
-            void JniContext::TargetInStreamAsync(jobject obj, int opType, long long memPtr, JniErrorInfo* err) {
+            void JniContext::TargetInStreamAsync(jobject obj, int opType, int64_t memPtr, JniErrorInfo* err) {
                 JNIEnv* env = Attach();
 
                 env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformTarget_inStreamAsync, opType, memPtr);
@@ -889,7 +874,7 @@ namespace ignite
                 ExceptionCheck(env, err);
             }
 
-            jobject JniContext::TargetInStreamOutObjectAsync(jobject obj, int opType, long long memPtr, JniErrorInfo* err) {
+            jobject JniContext::TargetInStreamOutObjectAsync(jobject obj, int opType, int64_t memPtr, JniErrorInfo* err) {
                 JNIEnv* env = Attach();
 
                 jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformTarget_inStreamOutObjectAsync, opType, memPtr);
@@ -899,7 +884,7 @@ namespace ignite
                 return LocalToGlobal(env, res);
             }
 
-            jobject JniContext::CacheOutOpQueryCursor(jobject obj, int type, long long memPtr, JniErrorInfo* err) {
+            jobject JniContext::CacheOutOpQueryCursor(jobject obj, int type, int64_t memPtr, JniErrorInfo* err) {
                 JNIEnv* env = Attach();
 
                 jobject res = env->CallObjectMethod(
@@ -910,7 +895,7 @@ namespace ignite
                 return LocalToGlobal(env, res);
             }
 
-            jobject JniContext::CacheOutOpContinuousQuery(jobject obj, int type, long long memPtr, JniErrorInfo* err) {
+            jobject JniContext::CacheOutOpContinuousQuery(jobject obj, int type, int64_t memPtr, JniErrorInfo* err) {
                 JNIEnv* env = Attach();
 
                 jobject res = env->CallObjectMethod(
@@ -921,7 +906,7 @@ namespace ignite
                 return LocalToGlobal(env, res);
             }
 
-			jobject JniContext::Acquire(jobject obj)
+            jobject JniContext::Acquire(jobject obj)
             {
                 if (obj) {
 
@@ -1066,7 +1051,7 @@ namespace ignite
 
                         if (hnds.error)
                             hnds.error(hnds.target, IGNITE_JNI_ERR_GENERIC, clsName0.c_str(), clsNameLen, msg0.c_str(),
-								msgLen, trace0.c_str(), traceLen, errBytesNative, errBytesLen);
+                                msgLen, trace0.c_str(), traceLen, errBytesNative, errBytesLen);
 
                         env->ReleaseByteArrayElements(errData, errBytesNative, JNI_ABORT);
                     }
@@ -1074,7 +1059,7 @@ namespace ignite
                     {
                         if (hnds.error)
                             hnds.error(hnds.target, IGNITE_JNI_ERR_GENERIC, clsName0.c_str(), clsNameLen, msg0.c_str(),
-								msgLen, trace0.c_str(), traceLen, NULL, 0);
+                                msgLen, trace0.c_str(), traceLen, NULL, 0);
                     }
 
                     env->DeleteLocalRef(err);
@@ -1099,7 +1084,7 @@ namespace ignite
                     return NULL;
             }
 
-            JNIEXPORT void JNICALL JniConsoleWrite(JNIEnv *env, jclass cls, jstring str, jboolean isErr) {
+            JNIEXPORT void JNICALL JniConsoleWrite(JNIEnv *env, jclass, jstring str, jboolean isErr) {
                 CONSOLE_LOCK.Enter();
 
                 if (consoleWriteHandlers.size() > 0) {
@@ -1116,7 +1101,7 @@ namespace ignite
                 CONSOLE_LOCK.Leave();
             }
 
-            JNIEXPORT void JNICALL JniLoggerLog(JNIEnv *env, jclass cls, jlong envPtr, jint level, jstring message, jstring category, jstring errorInfo, jlong memPtr) {
+            JNIEXPORT void JNICALL JniLoggerLog(JNIEnv *env, jclass, jlong envPtr, jint level, jstring message, jstring category, jstring errorInfo, jlong memPtr) {
                 int messageLen;
                 char* messageChars = StringToChars(env, message, &messageLen);
 
@@ -1138,15 +1123,15 @@ namespace ignite
                     delete[] errorInfoChars;
             }
 
-            JNIEXPORT jboolean JNICALL JniLoggerIsLevelEnabled(JNIEnv *env, jclass cls, jlong envPtr, jint level) {
+            JNIEXPORT jboolean JNICALL JniLoggerIsLevelEnabled(JNIEnv *env, jclass, jlong envPtr, jint level) {
                 IGNITE_SAFE_FUNC(env, envPtr, LoggerIsLevelEnabledHandler, loggerIsLevelEnabled, level);
             }
 
-            JNIEXPORT jlong JNICALL JniInLongOutLong(JNIEnv *env, jclass cls, jlong envPtr, jint type, jlong val) {
+            JNIEXPORT jlong JNICALL JniInLongOutLong(JNIEnv *env, jclass, jlong envPtr, jint type, jlong val) {
                 IGNITE_SAFE_FUNC(env, envPtr, InLongOutLongHandler, inLongOutLong, type, val);
             }
 
-            JNIEXPORT jlong JNICALL JniInLongLongLongObjectOutLong(JNIEnv *env, jclass cls, jlong envPtr, jint type, jlong val1, jlong val2, jlong val3, jobject arg) {
+            JNIEXPORT jlong JNICALL JniInLongLongLongObjectOutLong(JNIEnv *env, jclass, jlong envPtr, jint type, jlong val1, jlong val2, jlong val3, jobject arg) {
                 IGNITE_SAFE_FUNC(env, envPtr, InLongLongLongObjectOutLongHandler, inLongLongLongObjectOutLong, type, val1, val2, val3, arg);
             }
         }

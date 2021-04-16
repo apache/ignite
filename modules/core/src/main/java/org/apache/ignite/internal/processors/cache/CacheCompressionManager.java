@@ -25,6 +25,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.compress.CompressionProcessor.checkCompressionLevelBounds;
@@ -45,13 +46,19 @@ public class CacheCompressionManager extends GridCacheManagerAdapter {
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
-        compressProc = cctx.kernalContext().compress();
-
         CacheConfiguration cfg = cctx.config();
 
-        diskPageCompression = cfg.getDiskPageCompression();
+        if (cctx.kernalContext().clientNode() || !CU.isPersistentCache(cfg, cctx.gridConfig().getDataStorageConfiguration())) {
+            diskPageCompression = DiskPageCompression.DISABLED;
 
-        if (diskPageCompression != null) {
+            return;
+        }
+
+        compressProc = cctx.kernalContext().compress();
+
+        diskPageCompression = cctx.kernalContext().config().isClientMode() ? null : cfg.getDiskPageCompression();
+
+        if (diskPageCompression != DiskPageCompression.DISABLED) {
             if (!cctx.dataRegion().config().isPersistenceEnabled())
                 throw new IgniteCheckedException("Disk page compression makes sense only with enabled persistence.");
 
@@ -82,7 +89,7 @@ public class CacheCompressionManager extends GridCacheManagerAdapter {
      * @throws IgniteCheckedException If failed.
      */
     public ByteBuffer compressPage(ByteBuffer page, PageStore store) throws IgniteCheckedException {
-        if (diskPageCompression == null)
+        if (diskPageCompression == DiskPageCompression.DISABLED)
             return page;
 
         int blockSize = store.getBlockSize();

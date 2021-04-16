@@ -20,10 +20,12 @@ package org.apache.ignite.internal.processors.platform.client;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 
+import static org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature.PARTITION_AWARENESS;
+
 /**
  * Thin client response.
  */
-public class ClientResponse extends ClientListenerResponse {
+public class ClientResponse extends ClientListenerResponse implements ClientOutgoingMessage {
     /** Request id. */
     private final long reqId;
 
@@ -64,15 +66,48 @@ public class ClientResponse extends ClientListenerResponse {
     }
 
     /**
-     * Encodes the response data.
+     * Encodes the response data. Used when response result depends on the specific affinity version.
+     * @param ctx Connection context.
+     * @param writer Writer.
+     * @param affinityVer Affinity version.
      */
-    public void encode(BinaryRawWriterEx writer) {
+    public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer,
+        ClientAffinityTopologyVersion affinityVer) {
         writer.writeLong(reqId);
+
+        ClientProtocolContext protocolCtx = ctx.currentProtocolContext();
+
+        assert protocolCtx != null;
+
+        if (protocolCtx.isFeatureSupported(PARTITION_AWARENESS)) {
+            boolean error = status() != ClientStatus.SUCCESS;
+
+            short flags = ClientFlag.makeFlags(error, affinityVer.isChanged());
+
+            writer.writeShort(flags);
+
+            if (affinityVer.isChanged())
+                affinityVer.write(writer);
+
+            // If no return flag is set, no additional data is written to a payload.
+            if (!error)
+                return;
+        }
+
         writer.writeInt(status());
 
         if (status() != ClientStatus.SUCCESS) {
             writer.writeString(error());
         }
+    }
+
+    /**
+     * Encodes the response data.
+     * @param ctx Connection context.
+     * @param writer Writer.
+     */
+    @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
+        encode(ctx, writer, ctx.checkAffinityTopologyVersion());
     }
 
     /**

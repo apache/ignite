@@ -249,7 +249,6 @@ public class TxRecordSerializer {
         buf.putLong(rec.timestamp());
     }
 
-
     /**
      * Returns size of marshalled {@link TxRecord} in bytes.
      *

@@ -50,6 +50,8 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.resource.GridNoImplicitInjection;
+import org.apache.ignite.internal.processors.security.OperationSecurityContext;
+import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -960,9 +962,11 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             final GridWorkerFuture<R> fut = new GridWorkerFuture<>();
 
+            final SecurityContext secCtx = ctx.security().securityContext();
+
             GridWorker w = new GridWorker(ctx.igniteInstanceName(), "closure-proc-worker", log) {
                 @Override protected void body() {
-                    try {
+                    try (OperationSecurityContext s = ctx.security().withContext(secCtx)) {
                         if (ldr != null)
                             fut.onDone(U.wrapThreadLoader(ldr, c));
                         else
@@ -1030,7 +1034,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param plc Policy to choose executor pool.
      * @return Future.
      */
-    public  <R> IgniteInternalFuture<R> callLocalSafe(Callable<R> c, byte plc) {
+    public <R> IgniteInternalFuture<R> callLocalSafe(Callable<R> c, byte plc) {
         try {
             return callLocal(c, plc);
         }
@@ -1195,14 +1199,11 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private T1(GridClosureCallMode mode, Collection<? extends Runnable> jobs) {
             super(U.peerDeployAware0(jobs));
 
-            t = F.<
-                GridClosureCallMode,
-                Collection<? extends Runnable>
-                >t(mode, jobs);
+            t = F.t(mode, jobs);
         }
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg) {
             return absMap(t.get1(), t.get2(), subgrid, lb);
         }
     }
@@ -1233,7 +1234,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg) {
             return absMap(t.get1(), F.asList(t.get2()), subgrid, lb);
         }
     }
@@ -1253,8 +1254,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         /** */
         private GridTuple3<GridClosureCallMode,
             Collection<? extends Callable<R1>>,
-            IgniteReducer<R1, R2>
-            > t;
+            IgniteReducer<R1, R2>> t;
 
         /**
          *
@@ -1265,15 +1265,11 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private T3(GridClosureCallMode mode, Collection<? extends Callable<R1>> jobs, IgniteReducer<R1, R2> rdc) {
             super(U.peerDeployAware0(jobs));
 
-            t = F.<
-                GridClosureCallMode,
-                Collection<? extends Callable<R1>>,
-                IgniteReducer<R1, R2>
-                >t(mode, jobs, rdc);
+            t = F.t(mode, jobs, rdc);
         }
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg) {
             return outMap(t.get1(), t.get2(), subgrid, lb);
         }
 
@@ -1335,7 +1331,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg) {
             return Collections.singletonMap(job(job), node);
         }
 
@@ -1399,7 +1395,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg) {
             return Collections.singletonMap(job(job), node);
         }
 
@@ -1462,7 +1458,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg) {
             return outMap(mode, jobs, subgrid, lb);
         }
 
@@ -1498,7 +1494,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg) {
             return outMap(t.get1(), F.asList(t.get2()), subgrid, lb);
         }
 
@@ -1540,7 +1536,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg) {
             ComputeJob job = job(this.job, this.arg);
 
             ClusterNode node = lb.getBalancedNode(job, null);
@@ -1587,7 +1583,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg) {
             try {
                 JobMapper mapper = new JobMapper(args.size());
 
@@ -1645,7 +1641,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg) {
             try {
                 JobMapper mapper = new JobMapper(args.size());
 
@@ -1700,7 +1696,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable T arg) {
+        @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable T arg) {
             if (F.isEmpty(subgrid))
                 return Collections.emptyMap();
 

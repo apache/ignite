@@ -30,6 +30,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException
 import org.apache.ignite.internal.processors.cache.CacheStoppedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.util.GridIntList;
@@ -77,7 +78,7 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
 
     /** {@inheritDoc} */
     @Nullable @Override public GridIntList cacheIds() {
-        return  GridIntList.asList(cacheCtx.cacheId());
+        return GridIntList.asList(cacheCtx.cacheId());
     }
 
     /** {@inheritDoc} */
@@ -125,7 +126,14 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
         if (cacheCtx == null)
             return null;
 
-        Throwable err = topFut.validateCache(cacheCtx, recovery, read, null, entry);
+        Throwable err = null;
+
+        if (entry != null) {
+            // An entry is a singleton list here, so a key is taken from a first element.
+            KeyCacheObject key = entry.get(0).key();
+
+            err = topFut.validateCache(cacheCtx, recovery, read, key, null);
+        }
 
         if (err != null) {
             return new IgniteCheckedException(
@@ -155,8 +163,8 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
 
         if (cacheCtx.topology().stopping()) {
             fut.onDone(
-                cctx.cache().isCacheRestarting(cacheCtx.name())?
-                    new IgniteCacheRestartingException(cacheCtx.name()):
+                cctx.cache().isCacheRestarting(cacheCtx.name()) ?
+                    new IgniteCacheRestartingException(cacheCtx.name()) :
                     new CacheStoppedException(cacheCtx.name()));
 
             return null;
@@ -292,6 +300,11 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
         assert this.entry == null : "Entry already set [cur=" + this.entry + ", new=" + entry + ']';
 
         this.entry = Collections.singletonList(entry);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void removeEntry(IgniteTxKey key) {
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */

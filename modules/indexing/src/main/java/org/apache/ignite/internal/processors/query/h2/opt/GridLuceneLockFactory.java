@@ -82,8 +82,7 @@ public class GridLuceneLockFactory extends LockFactory {
         }
 
         /** {@inheritDoc} */
-        @Override
-        public String toString() {
+        @Override public String toString() {
             return super.toString() + ": " + lockName;
         }
     }

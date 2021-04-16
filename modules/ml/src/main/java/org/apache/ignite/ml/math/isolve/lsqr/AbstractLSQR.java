@@ -17,8 +17,8 @@
 
 package org.apache.ignite.ml.math.isolve.lsqr;
 
-import com.github.fommil.netlib.BLAS;
 import java.util.Arrays;
+import com.github.fommil.netlib.BLAS;
 
 /**
  * Basic implementation of the LSQR algorithm without assumptions about dataset storage format or data processing
@@ -79,7 +79,7 @@ public abstract class AbstractLSQR {
     public LSQRResult solve(double damp, double atol, double btol, double conlim, double iterLim, boolean calcVar,
         double[] x0) {
         Integer n = getColumns();
-        if(n == null)
+        if (n == null)
             return null;
 
         if (iterLim < 0)
@@ -149,7 +149,7 @@ public abstract class AbstractLSQR {
 
         // Main iteration loop.
         while (itn < iterLim) {
-            itn = itn + 1;
+            itn += 1;
 
             // Perform the next step of the bidiagonalization to obtain the
             // next  beta, u, alfa, v.  These satisfy the relations
@@ -203,7 +203,7 @@ public abstract class AbstractLSQR {
             blas.dscal(w.length, t2, w, 1);
             blas.daxpy(w.length, 1, v, 1, w, 1);
 
-            ddnorm = ddnorm + Math.pow(blas.dnrm2(dk.length, dk, 1), 2);
+            ddnorm += Math.pow(blas.dnrm2(dk.length, dk, 1), 2);
 
             if (calcVar)
                 blas.daxpy(var.length, 1.0, pow2(dk), 1, var, 1);
@@ -220,14 +220,14 @@ public abstract class AbstractLSQR {
             cs2 = gambar / gamma;
             sn2 = theta / gamma;
             z = rhs / gamma;
-            xxnorm = xxnorm + Math.pow(z, 2);
+            xxnorm += Math.pow(z, 2);
 
             // Test for convergence.
             // First, estimate the condition of the matrix  Abar,
             // and the norms of  rbar  and  Abar'rbar.
             acond = anorm * Math.sqrt(ddnorm);
             double res1 = Math.pow(phibar, 2);
-            res2 = res2 + Math.pow(psi, 2);
+            res2 += Math.pow(psi, 2);
             rnorm = Math.sqrt(res1 + res2);
             arnorm = alfa * Math.abs(tau);
 

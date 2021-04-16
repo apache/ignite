@@ -33,6 +33,9 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.function.Consumer;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
@@ -55,13 +58,14 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.h2.CommandProcessor;
 import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.CommandProcessor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.h2.jdbc.JdbcSQLException;
@@ -91,6 +95,9 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /** Cache with backups. */
     private static final String CACHE_NAME_BACKUPS = CACHE_NAME + "_backups";
 
+    /** Name of the cache that has query parallelism = 7 in it configuration. */
+    private static final String CACHE_NAME_PARALLELISM_7 = CACHE_NAME + "_parallelism";
+
     /** Number of backups for backup test. */
     private static final int DFLT_BACKUPS = 2;
 
@@ -107,6 +114,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_ASYNC));
 
         client().addCacheConfiguration(cacheConfiguration().setName(CACHE_NAME_BACKUPS).setBackups(DFLT_BACKUPS));
+
+        client().addCacheConfiguration(cacheConfiguration().setName(CACHE_NAME_PARALLELISM_7).setQueryParallelism(7));
     }
 
     /** {@inheritDoc} */
@@ -124,6 +133,12 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         execute("DROP TABLE IF EXISTS PUBLIC.\"City\"");
         execute("DROP TABLE IF EXISTS PUBLIC.\"NameTest\"");
         execute("DROP TABLE IF EXISTS PUBLIC.\"BackupTest\"");
+
+        execute("DROP TABLE IF EXISTS PUBLIC.QP_CUSTOM");
+        execute("DROP TABLE IF EXISTS PUBLIC.QP_DEFAULT");
+        execute("DROP TABLE IF EXISTS PUBLIC.QP_DEFAULT_EXPLICIT");
+        execute("DROP TABLE IF EXISTS PUBLIC.QP_DEFAULT_FROM_TEMPLATE");
+        execute("DROP TABLE IF EXISTS PUBLIC.QP_OVERWRITE_TEMPLATE");
 
         super.afterTest();
     }
@@ -312,22 +327,57 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
-     * Test that attempting to create a cache with a pre-existing name yields an error.
+     * Test creating table over existing cache (enabling query).
+     */
+    @Test
+    public void testCreateTableOnExistingCache() {
+        String cacheName = "new";
+
+        try {
+            client().getOrCreateCache(cacheName);
+
+            doTestCustomNames("new", null, null);
+
+            String createTemplate = "CREATE TABLE \"%s\" (id int primary key, x varchar) WITH " +
+                "\"wrap_key,wrap_value,cache_name=%s\"";
+
+            // Fail to create table with same name.
+            GridTestUtils.assertThrows(null, () -> {
+                execute(client(), String.format(createTemplate, "NameTest", cacheName));
+
+                return null;
+            }, IgniteSQLException.class, "Table already exists: NameTest");
+
+            // Fail to create table with different name on indexed cache.
+            GridTestUtils.assertThrows(null, () -> {
+                execute(client(), String.format(createTemplate, "NameTest1", cacheName));
+
+                return null;
+            }, IgniteSQLException.class, "Cache is already indexed: " + cacheName);
+        }
+        finally {
+            client().destroyCache("new");
+        }
+    }
+
+    /**
+     * Test creating table over existing LOCAL cache fails (enabling query).
      * @throws Exception if failed.
      */
     @Test
-    public void testDuplicateCustomCacheName() throws Exception {
-        client().getOrCreateCache("new");
+    public void testCreateTableOnExistingLocalCache() throws Exception {
+        client().getOrCreateCache(new CacheConfiguration<>("local").setCacheMode(CacheMode.LOCAL));
 
         try {
             GridTestUtils.assertThrows(null, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    doTestCustomNames("new", null, null);return null;
+                    doTestCustomNames("local", null, null);
+                    return null;
                 }
-            }, IgniteSQLException.class, "Table already exists: NameTest");
+            }, IgniteSQLException.class, "Schema changes are not supported for LOCAL cache");
         }
         finally {
-            client().destroyCache("new");
+            client().destroyCache("local");
         }
     }
 
@@ -545,6 +595,55 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
+     * Test parallelism WITH create table command parameter.
+     */
+    @Test
+    public void testQueryParallelism() {
+        execute("CREATE TABLE QP_DEFAULT (id INT PRIMARY KEY, val INT)");
+        assertQueryParallelism("QP_DEFAULT", 1);
+
+        execute("CREATE TABLE QP_DEFAULT_EXPLICIT (id INT PRIMARY KEY, val INT) WITH \"parallelism = 1 \"");
+        assertQueryParallelism("QP_DEFAULT_EXPLICIT", 1);
+
+        execute("CREATE TABLE QP_CUSTOM (id INT PRIMARY KEY, val INT) WITH \"parallelism = 42 \"");
+        assertQueryParallelism("QP_CUSTOM", 42);
+
+        execute("CREATE TABLE QP_DEFAULT_FROM_TEMPLATE (id INT PRIMARY KEY, val INT) " +
+            "WITH \"template = " + CACHE_NAME_PARALLELISM_7 + " \"");
+        assertQueryParallelism("QP_DEFAULT_FROM_TEMPLATE", 7);
+
+        execute("CREATE TABLE QP_OVERWRITE_TEMPLATE (id INT PRIMARY KEY, val INT) " +
+            "WITH \"parallelism = 42, template = " + CACHE_NAME_PARALLELISM_7 + " \"");
+        assertQueryParallelism("QP_OVERWRITE_TEMPLATE", 42);
+    }
+
+    /**
+     * @param tblName Table name.
+     * @param expParallelism Expected degree of parallelism.
+     */
+    @SuppressWarnings("unchecked")
+    private void assertQueryParallelism(String tblName, final int expParallelism) {
+        final String cacheName = "SQL_PUBLIC_" + tblName;
+
+        testAllNodes(node -> {
+            CacheConfiguration cfg = node.cache(cacheName).getConfiguration(CacheConfiguration.class);
+
+            assertEquals("Node: " + node + "; Query parallelism is wrong.", expParallelism, cfg.getQueryParallelism());
+        });
+    }
+
+    /**
+     * Perform closure that asserts the invariant on all the nodes.
+     */
+    private void testAllNodes(Consumer<? super Ignite> clos) {
+        for (int i = 0; i < 4; i++) {
+            IgniteEx node = grid(i);
+
+            clos.accept(node);
+        }
+    }
+
+    /**
      * Test that {@code CREATE TABLE} with given template cache name actually creates new cache,
      * H2 table and type descriptor on all nodes, optionally with cache type check.
      * @param tplCacheName Template cache name.
@@ -651,6 +750,27 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
+     * Negative test that is trying to set incorrect parallelism value: empty, negative, zero or non-integer.
+     */
+    @Test
+    public void testQueryParallelismNegative() {
+        assertCreateTableWithParamsThrows("parallelism = 0",
+            "\"PARALLELISM\" must be positive: 0");
+
+        assertCreateTableWithParamsThrows("parallelism = -5",
+            "\"PARALLELISM\" must be positive: -5");
+
+        assertCreateTableWithParamsThrows("parallelism = 3.14",
+            "Parameter value must be an integer [name=PARALLELISM, value=3.14]");
+
+        assertCreateTableWithParamsThrows("parallelism =",
+            "Parameter value cannot be empty: PARALLELISM");
+
+        assertCreateTableWithParamsThrows("parallelism = Five please",
+            "Parameter value must be an integer [name=PARALLELISM, value=Five please]");
+    }
+
+    /**
      * Test that attempting to omit mandatory value of BACKUPS parameter yields an error.
      */
     @Test
@@ -672,7 +792,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     @Test
     public void testInvalidAtomicity() {
         assertCreateTableWithParamsThrows("atomicity=InvalidValue",
-            "Invalid value of \"ATOMICITY\" parameter (should be either TRANSACTIONAL or ATOMIC): InvalidValue");
+            "Invalid value of \"ATOMICITY\" parameter (should be either TRANSACTIONAL, ATOMIC, " +
+            "TRANSACTIONAL_SNAPSHOT): InvalidValue");
     }
 
     /**
@@ -716,6 +837,39 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         execute("CREATE TABLE IF NOT EXISTS \"Person\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
             "\"template=cache\"");
+    }
+
+    /**
+     * Regression test for "if not exists" in case custom schema is used. Creates the same "schema.table" specifying sql
+     * schema implicitly and explicitly.
+     */
+    @Test
+    public void testCreateTableIfNotExistsCustomSchema() {
+        Ignite ignite = grid(0);
+
+        IgniteCache cache = ignite.getOrCreateCache(new CacheConfiguration<>("test").setSqlSchema("\"test\""));
+
+        String createTblNoSchema = "CREATE TABLE IF NOT EXISTS City(id LONG PRIMARY KEY, name VARCHAR)";
+
+        String createTblExplicitSchema = "CREATE TABLE IF NOT EXISTS \"test\".City(id LONG PRIMARY KEY, name1 VARCHAR);";
+
+        // Schema is "test" due to cache name implicitly:
+        cache.query(new SqlFieldsQuery(createTblNoSchema));
+        cache.query(new SqlFieldsQuery(createTblNoSchema));
+
+        // Schema is "test" because it is specified in the text of the sql query.
+        cache.query(new SqlFieldsQuery(createTblExplicitSchema));
+        cache.query(new SqlFieldsQuery(createTblExplicitSchema));
+
+        // Schema is "test", because it is specified in SqlFieldsQuery field.
+        cache.query(new SqlFieldsQuery(createTblNoSchema).setSchema("test"));
+        cache.query(new SqlFieldsQuery(createTblNoSchema).setSchema("test"));
+
+        //only one City table should be created.
+        List<List<?>> cityTabs = cache.query(new SqlFieldsQuery(
+            "SELECT SCHEMA_NAME, TABLE_NAME FROM SYS.TABLES WHERE TABLE_NAME = 'CITY';")).getAll();
+
+        assertEqualsCollections(Collections.singletonList(Arrays.asList("test", "CITY")), cityTabs);
     }
 
     /**
@@ -763,7 +917,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     @Test
     public void testDropTableFromClient() throws Exception {
-        execute(grid(0),"CREATE TABLE IF NOT EXISTS \"Person\" (\"id\" int, \"city\" varchar," +
+        execute(grid(0), "CREATE TABLE IF NOT EXISTS \"Person\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
             "\"template=cache\"");
 
@@ -835,6 +989,63 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     @Test
     public void testDropMissingTableIfExists() throws Exception {
         execute("DROP TABLE IF EXISTS \"City\"");
+    }
+
+    /**
+     * Tests that attempt to {@code DROP TABLE} that is enabled dynamically will fail.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDropTableEnabledDynamically() throws Exception {
+        String cacheName = "new";
+        String tableName = "NewTable";
+        String createSql = "CREATE TABLE \"" + tableName + "\" (id int primary key, x varchar) WITH " +
+            "\"wrap_key,wrap_value,cache_name=" + cacheName + "\"";
+
+        try {
+            client().getOrCreateCache(cacheName);
+
+            execute(client(), createSql);
+
+            GridTestUtils.assertThrows(null, () -> {
+                execute("DROP TABLE \"" + tableName + "\"");
+
+                return null;
+            }, IgniteSQLException.class, "Only cache created with CREATE TABLE may be removed with DROP TABLE");
+        }
+        finally {
+            client().destroyCache(cacheName);
+        }
+    }
+
+    /**
+     * Tests that after destroying cache with table enabled dynamically that table also is removed.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testTableEnabledDynamicallyNotExistsIfCacheDestroyed() throws Exception {
+        String cacheName = "new";
+        String tableName = "NewTable";
+        String createSql = "CREATE TABLE \"" + tableName + "\" (id int primary key, x varchar) WITH " +
+            "\"wrap_key,wrap_value,cache_name=" + cacheName + "\"";
+
+        client().getOrCreateCache(cacheName);
+
+        execute(client(), createSql);
+
+        client().destroyCache(cacheName);
+
+        for (Ignite g: G.allGrids()) {
+            IgniteEx node = (IgniteEx)g;
+
+            QueryTypeDescriptorImpl desc = type(node, cacheName, tableName);
+
+            assertNull(desc);
+
+            assertTrue(execute(g, "SELECT * FROM SYS.TABLES WHERE table_name = '" + tableName + "'").isEmpty());
+        }
     }
 
     /**
@@ -925,7 +1136,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 e.setValueType("City");
 
                 queryProcessor(client()).dynamicTableCreate("PUBLIC", e, CacheMode.PARTITIONED.name(), null, null, null,
-                    null, CacheAtomicityMode.ATOMIC, null, 10, false, false);
+                    null, CacheAtomicityMode.ATOMIC, null, 10, false, false, null);
 
                 return null;
             }
@@ -941,7 +1152,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         execute(grid(0), "CREATE TABLE \"Person\" (id int primary key, name varchar)");
 
         GridTestUtils.assertThrows(null, new Callable<Object>() {
-            @Override  public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 execute(client(), "CREATE TABLE \"Person\" (id int primary key, name varchar)");
 
                 return null;
@@ -1406,7 +1617,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
             execute(sql);
 
-            if(testUuid)
+            if (testUuid)
                 execute("INSERT INTO T(\"id\", \"x\") values('" + guid.toString() + "', '" + guid.toString() + "')");
             else
                 execute("INSERT INTO T(\"id\", \"x\") values(1, 'a')");
@@ -1416,7 +1627,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             List<Object> resData = new ArrayList<>();
 
             try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")) {
-                try (ResultSet colsRs = conn.getMetaData().getColumns(null, QueryUtils.DFLT_SCHEMA, "T", ".*")) {
+                try (ResultSet colsRs = conn.getMetaData().getColumns(null, QueryUtils.DFLT_SCHEMA, "T", "%")) {
                     while (colsRs.next())
                         resCols.put(colsRs.getString("COLUMN_NAME"),
                             DataType.getTypeClassName(DataType.convertSQLTypeToValueType(colsRs
@@ -1446,8 +1657,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
             assertEquals(expCols, resCols);
 
-            assertEqualsCollections(testUuid ? Arrays.asList(guid, guid) : Arrays.asList(1, "a")
-                    , resData);
+            assertEqualsCollections(testUuid ? Arrays.asList(guid, guid) : Arrays.asList(1, "a"), resData);
 
             Object key = createKeyForWrapTest(testUuid ? guid : 1, wrapKey);
 

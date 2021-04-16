@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -84,6 +85,8 @@ public class GridCacheEvictionLockUnlockSelfTest extends GridCommonAbstractTest 
             cc.setBackups(1);
 
         c.setCacheConfiguration(cc);
+
+        c.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return c;
     }

@@ -17,22 +17,30 @@
 
 package org.apache.ignite.examples.ml.dataset.model;
 
-/** Person model. */
+/**
+ * Person model.
+ */
 public class Person {
-    /** Name. */
+    /**
+     * Name.
+     */
     private final String name;
 
-    /** Age. */
+    /**
+     * Age.
+     */
     private final double age;
 
-    /** Salary. */
+    /**
+     * Salary.
+     */
     private final double salary;
 
     /**
      * Constructs a new instance of person.
      *
-     * @param name Name.
-     * @param age Age.
+     * @param name   Name.
+     * @param age    Age.
      * @param salary Salary.
      */
     public Person(String name, double age, double salary) {
@@ -41,17 +49,23 @@ public class Person {
         this.salary = salary;
     }
 
-    /** */
+    /**
+     *
+     */
     public String getName() {
         return name;
     }
 
-    /** */
+    /**
+     *
+     */
     public double getAge() {
         return age;
     }
 
-    /** */
+    /**
+     *
+     */
     public double getSalary() {
         return salary;
     }

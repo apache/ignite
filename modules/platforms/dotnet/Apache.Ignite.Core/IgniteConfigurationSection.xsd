@@ -118,6 +118,16 @@
         </xs:restriction>
     </xs:simpleType>
 
+    <xs:simpleType name="diskPageCompression" final="restriction">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Disabled" />
+            <xs:enumeration value="SkipGarbage" />
+            <xs:enumeration value="Zstd" />
+            <xs:enumeration value="Lz4" />
+            <xs:enumeration value="Snappy" />
+        </xs:restriction>
+    </xs:simpleType>
+
     <xs:element name="igniteConfiguration">
         <xs:annotation>
             <xs:documentation>Ignite configuration root.</xs:documentation>
@@ -253,6 +263,18 @@
                                     </xs:attribute>
                                 </xs:complexType>
                             </xs:element>
+                            <xs:element name="timestampConverter" minOccurs="0">
+                                <xs:annotation>
+                                    <xs:documentation>Default date time converter.</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:attribute name="type" type="xs:string" use="required">
+                                        <xs:annotation>
+                                            <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                </xs:complexType>
+                            </xs:element>
                         </xs:all>
                         <xs:attribute name="keepDeserialized" type="xs:boolean">
                             <xs:annotation>
@@ -262,6 +284,11 @@
                         <xs:attribute name="compactFooter" type="xs:boolean">
                             <xs:annotation>
                                 <xs:documentation>Compact footer flag.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="forceTimestamp" type="xs:boolean">
+                            <xs:annotation>
+                                <xs:documentation>Force timestamp flag.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
                     </xs:complexType>
@@ -528,6 +555,28 @@
                                                 </xs:attribute>
                                             </xs:complexType>
                                         </xs:element>
+                                        <xs:element name="platformCacheConfiguration" minOccurs="0">
+                                            <xs:annotation>
+                                                <xs:documentation>Platform cache configuration.</xs:documentation>
+                                            </xs:annotation>
+                                            <xs:complexType>
+                                                <xs:attribute name="keyTypeName" type="xs:string">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Fully-qualified platform type name of the cache key used for the local map. When not set, object-based map is used, which can reduce performance and increase allocations due to boxing.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                                <xs:attribute name="valueTypeName" type="xs:string">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Fully-qualified platform type name of the cache value used for the local map. When not set, object-based map is used, which can reduce performance and increase allocations due to boxing.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                                <xs:attribute name="keepBinary" type="xs:boolean">
+                                                    <xs:annotation>
+                                                        <xs:documentation>Whether platform cache should store keys and values in binary form.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                            </xs:complexType>
+                                        </xs:element>
                                         <xs:element name="evictionPolicy" minOccurs="0">
                                             <xs:annotation>
                                                 <xs:documentation>Eviction policy. Null value means disabled evictions.</xs:documentation>
@@ -562,6 +611,32 @@
                                                 <xs:documentation>Affinity function to provide mapping from keys to nodes.</xs:documentation>
                                             </xs:annotation>
                                             <xs:complexType>
+                                                <xs:all>
+                                                    <xs:element name="affinityBackupFilter" minOccurs="0">
+                                                        <xs:annotation>
+                                                            <xs:documentation>Optional backup filter. If provided, then backups will be selected from all nodes that pass this filter.</xs:documentation>
+                                                        </xs:annotation>
+                                                        <xs:complexType>
+                                                            <xs:all>
+                                                                <xs:element name="attributeNames" minOccurs="0">
+                                                                    <xs:annotation>
+                                                                        <xs:documentation>Attribute names for the backup filter.</xs:documentation>
+                                                                    </xs:annotation>
+                                                                    <xs:complexType>
+                                                                        <xs:sequence>
+                                                                            <xs:element maxOccurs="unbounded" name="string" type="xs:string" />
+                                                                        </xs:sequence>
+                                                                    </xs:complexType>
+                                                                </xs:element>
+                                                            </xs:all>
+                                                            <xs:attribute name="type" type="xs:string" use="required">
+                                                                <xs:annotation>
+                                                                    <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                                                                </xs:annotation>
+                                                            </xs:attribute>
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                </xs:all>
                                                 <xs:attribute name="partitions" type="xs:int">
                                                     <xs:annotation>
                                                         <xs:documentation>Number of partitions.</xs:documentation>
@@ -590,6 +665,18 @@
                                                     </xs:annotation>
                                                 </xs:attribute>
                                             </xs:complexType>
+                                        </xs:element>
+                                        <xs:element name="nodeFilter" minOccurs="0" maxOccurs="1">
+                                          <xs:annotation>
+                                            <xs:documentation>Node filter to match selected nodes. Only predefined AttributeNodeFilter is supported.</xs:documentation>
+                                          </xs:annotation>
+                                          <xs:complexType>
+                                            <xs:attribute name="type" type="xs:string" use="required">
+                                              <xs:annotation>
+                                                <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                                              </xs:annotation>
+                                            </xs:attribute>
+                                          </xs:complexType>
                                         </xs:element>
                                         <xs:element name="keyConfiguration" minOccurs="0">
                                             <xs:annotation>
@@ -883,7 +970,7 @@
                 </xs:element>
                 <xs:element name="assemblies" minOccurs="0">
                     <xs:annotation>
-                        <xs:documentation>List of additional .Net assemblies to load on Ignite start. Each item can be either fully qualified assembly name, path to assembly to DLL or path to a directory when assemblies reside.</xs:documentation>
+                        <xs:documentation>List of additional .NET assemblies to load on Ignite start. Each item can be either fully qualified assembly name, path to assembly to DLL or path to a directory when assemblies reside.</xs:documentation>
                     </xs:annotation>
                     <xs:complexType>
                         <xs:sequence>
@@ -1469,6 +1556,25 @@
                         <xs:documentation>Client connector configuration (JDBC, ODBC, thin clients).</xs:documentation>
                     </xs:annotation>
                     <xs:complexType>
+                        <xs:all>
+                            <xs:element name="thinClientConfiguration" minOccurs="0">
+                                <xs:annotation>
+                                    <xs:documentation>Thin client specific configuration.</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:attribute name="maxActiveTxPerConnection" type="xs:int">
+                                        <xs:annotation>
+                                            <xs:documentation>Active transactions count per connection limit.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="maxActiveComputeTasksPerConnection" type="xs:int">
+                                        <xs:annotation>
+                                            <xs:documentation>Active compute tasks per connection limit. Or 0 if compute grid functionality is disabled for thin clients.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
                         <xs:attribute name="port" type="xs:int">
                             <xs:annotation>
                                 <xs:documentation>Connector port.</xs:documentation>
@@ -1512,6 +1618,11 @@
                         <xs:attribute name="idleTimeout" type="xs:string">
                             <xs:annotation>
                                 <xs:documentation>Idle timeout for client connections on the server side. If no packets come within idle timeout, the connection is closed by the server. Zero or negative for no timeout.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="handshakeTimeout" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Handshake timeout for client connections on the server side. If no successful handshake is performed within this timeout upon successful establishment of TCP connection, the connection is closed by the server. Zero or negative for no timeout.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
                         <xs:attribute name="thinClientEnabled" type="xs:boolean">
@@ -1714,6 +1825,13 @@
                                             <xs:documentation>Size of the checkpointing page buffer.</xs:documentation>
                                         </xs:annotation>
                                     </xs:attribute>
+                                    <xs:attribute name="lazyMemoryAllocation" type="xs:boolean">
+                                        <xs:annotation>
+                                            <xs:documentation>
+                                                Enable lazy memory allocation.
+                                            </xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
                                 </xs:complexType>
                             </xs:element>
                             <xs:element name="dataRegionConfigurations">
@@ -1785,6 +1903,13 @@
                                                 <xs:attribute name="checkpointPageBufferSize" type="xs:long">
                                                     <xs:annotation>
                                                         <xs:documentation>Size of the checkpointing page buffer.</xs:documentation>
+                                                    </xs:annotation>
+                                                </xs:attribute>
+                                                <xs:attribute name="lazyMemoryAllocation" type="xs:boolean">
+                                                    <xs:annotation>
+                                                        <xs:documentation>
+                                                            Enable lazy memory allocation.
+                                                        </xs:documentation>
                                                     </xs:annotation>
                                                 </xs:attribute>
                                             </xs:complexType>
@@ -1933,6 +2058,16 @@
                                 <xs:documentation>
                                     Timeout for checkpoint read lock acquisition.
                                 </xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walPageCompression" type="diskPageCompression">
+                            <xs:annotation>
+                                <xs:documentation>Compression algorithm for WAL page snapshot records.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="walPageCompressionLevel" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Compression level for WAL page snapshot records.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
                     </xs:complexType>
@@ -2091,6 +2226,32 @@
                     <xs:complexType>
                         <xs:sequence>
                             <xs:element maxOccurs="unbounded" name="string" type="xs:string" />
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="executorConfiguration" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>Custom executor configuration for compute tasks.</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="executorConfiguration" maxOccurs="unbounded" minOccurs="0">
+                                <xs:annotation>
+                                    <xs:documentation>Thread pool configuration for compute tasks.</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:attribute type="xs:string" name="name" use="required">
+                                        <xs:annotation>
+                                            <xs:documentation>Thread pool name.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute type="xs:int" name="size" use="required">
+                                        <xs:annotation>
+                                            <xs:documentation>Thread pool size.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                </xs:complexType>
+                            </xs:element>
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>
@@ -2337,6 +2498,11 @@
                     <xs:documentation>Number of SQL query history elements to keep in memory.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="javaPeerClassLoadingEnabled" type="xs:boolean">
+              <xs:annotation>
+                <xs:documentation>Indicates whether Java peer class loading is enabled.</xs:documentation>
+              </xs:annotation>
+            </xs:attribute>
             <xs:attribute name="clientConnectorConfigurationEnabled" type="xs:boolean">
                 <xs:annotation>
                     <xs:documentation>Whether client connector should be enabled (allow thin clients, ODBC and JDBC drivers to work with Ignite).</xs:documentation>
@@ -2346,21 +2512,6 @@
               <xs:annotation>
                 <xs:documentation>Whether Java console output should be redirected to Console.Out and Console.Error.</xs:documentation>
               </xs:annotation>
-            </xs:attribute>
-            <xs:attribute name="initBaselineAutoAdjustEnabled" type="xs:boolean">
-                <xs:annotation>
-                    <xs:documentation>Initial value of manual baseline control or auto adjusting baseline.</xs:documentation>
-                </xs:annotation>
-            </xs:attribute>
-            <xs:attribute name="initBaselineAutoAdjustTimeout" type="xs:long">
-                <xs:annotation>
-                    <xs:documentation>Initial value of time which we would wait before the actual topology change since last discovery event.</xs:documentation>
-                </xs:annotation>
-            </xs:attribute>
-            <xs:attribute name="initBaselineAutoAdjustMaxTimeout" type="xs:long">
-                <xs:annotation>
-                    <xs:documentation>Initial value of time which we would wait from the first discovery event in the chain(node join/exit).</xs:documentation>
-                </xs:annotation>
             </xs:attribute>
         </xs:complexType>
     </xs:element>

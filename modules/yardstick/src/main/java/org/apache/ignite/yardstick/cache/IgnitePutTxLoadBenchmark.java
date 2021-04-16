@@ -74,7 +74,7 @@ public class IgnitePutTxLoadBenchmark extends IgniteCacheAbstractBenchmark<Integ
 
             Collections.sort(keyList);
 
-            for (int i = 0; i < args.scaleFactor(); i++){
+            for (int i = 0; i < args.scaleFactor(); i++) {
                 IgniteCache<Object, Object> curCache = cacheList.get(random.nextInt(cacheList.size()));
                 curCache.put(keyList.get(i), val);
             }
@@ -107,10 +107,10 @@ public class IgnitePutTxLoadBenchmark extends IgniteCacheAbstractBenchmark<Integ
      * @param lgth String length
      * @return String for inserting in cache
      */
-    private String createVal(int lgth){
+    private String createVal(int lgth) {
         StringBuilder sb = new StringBuilder(lgth);
 
-        for(int i = 0; i < lgth; i++)
+        for (int i = 0; i < lgth; i++)
             sb.append('x');
 
         return sb.toString();

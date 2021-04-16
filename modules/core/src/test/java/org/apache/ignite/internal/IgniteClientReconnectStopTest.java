@@ -46,9 +46,7 @@ public class IgniteClientReconnectStopTest extends IgniteClientReconnectAbstract
      */
     @Test
     public void testStopWhenDisconnected() throws Exception {
-        clientMode = true;
-
-        Ignite client = startGrid(serverCount());
+        Ignite client = startClientGrid(serverCount());
 
         assertTrue(client.cluster().localNode().isClient());
 

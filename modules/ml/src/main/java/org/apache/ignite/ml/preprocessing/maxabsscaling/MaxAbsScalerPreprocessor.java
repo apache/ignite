@@ -17,8 +17,11 @@
 
 package org.apache.ignite.ml.preprocessing.maxabsscaling;
 
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
+import java.util.Collections;
+import java.util.List;
+import org.apache.ignite.ml.environment.deploy.DeployableObject;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
+import org.apache.ignite.ml.structures.LabeledVector;
 
 /**
  * The preprocessing function that makes maxabsscaling, transforms features to the scale {@code [-1,+1]}. From
@@ -31,7 +34,7 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class MaxAbsScalerPreprocessor<K, V> implements IgniteBiFunction<K, V, Vector> {
+public final class MaxAbsScalerPreprocessor<K, V> implements Preprocessor<K, V>, DeployableObject {
     /** */
     private static final long serialVersionUID = 1L;
 
@@ -39,7 +42,7 @@ public class MaxAbsScalerPreprocessor<K, V> implements IgniteBiFunction<K, V, Ve
     private final double[] maxAbs;
 
     /** Base preprocessor. */
-    private final IgniteBiFunction<K, V, Vector> basePreprocessor;
+    private final Preprocessor<K, V> basePreprocessor;
 
     /**
      * Constructs a new instance of maxabsscaling preprocessor.
@@ -47,7 +50,7 @@ public class MaxAbsScalerPreprocessor<K, V> implements IgniteBiFunction<K, V, Ve
      * @param maxAbs Maximal absolute values.
      * @param basePreprocessor Base preprocessor.
      */
-    public MaxAbsScalerPreprocessor(double[] maxAbs, IgniteBiFunction<K, V, Vector> basePreprocessor) {
+    public MaxAbsScalerPreprocessor(double[] maxAbs, Preprocessor<K, V> basePreprocessor) {
         this.maxAbs = maxAbs;
         this.basePreprocessor = basePreprocessor;
     }
@@ -59,8 +62,8 @@ public class MaxAbsScalerPreprocessor<K, V> implements IgniteBiFunction<K, V, Ve
      * @param v Value.
      * @return Preprocessed row.
      */
-    @Override public Vector apply(K k, V v) {
-        Vector res = basePreprocessor.apply(k, v);
+    @Override public LabeledVector apply(K k, V v) {
+        LabeledVector res = basePreprocessor.apply(k, v);
 
         assert res.size() == maxAbs.length;
 
@@ -73,5 +76,10 @@ public class MaxAbsScalerPreprocessor<K, V> implements IgniteBiFunction<K, V, Ve
     /** */
     public double[] getMaxAbs() {
         return maxAbs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Object> getDependencies() {
+        return Collections.singletonList(basePreprocessor);
     }
 }

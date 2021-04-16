@@ -72,8 +72,6 @@ public class GridCacheQueryBean {
      * @return Transformer.
      */
     @Nullable public IgniteClosure<?, ?> transform() {
-
-
         return trans;
     }
 

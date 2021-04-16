@@ -37,6 +37,9 @@
     <ClCompile Include="..\..\src\row_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\cursor_binding_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\cursor_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
@@ -190,6 +193,9 @@
     <ClCompile Include="..\..\..\odbc\src\ssl_mode.cpp">
       <Filter>Externals</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\test_server.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\test_type.h">
@@ -208,6 +214,9 @@
       <Filter>Code\CacheTypes</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\odbc_test_suite.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\test_server.h">
       <Filter>Code</Filter>
     </ClInclude>
   </ItemGroup>

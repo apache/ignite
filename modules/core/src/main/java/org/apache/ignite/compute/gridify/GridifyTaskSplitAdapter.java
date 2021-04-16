@@ -33,6 +33,4 @@ import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 public abstract class GridifyTaskSplitAdapter<R> extends ComputeTaskSplitAdapter<GridifyArgument, R> {
     /** */
     private static final long serialVersionUID = 0L;
-
-    // No-op.
 }

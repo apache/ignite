@@ -112,7 +112,7 @@ public class GridJtaLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSel
 
         ccfg.setName(CACHE_NAME);
 
-        switch (tmConfigurationType){
+        switch (tmConfigurationType) {
             case CACHE_LOOKUP:
                 ccfg.setTransactionManagerLookupClassName(TestTxLookup.class.getName());
                 break;
@@ -146,7 +146,7 @@ public class GridJtaLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSel
         // No-op, see anothre tests.
     }
 
-    /** {@inheritDoc} */
+    /** */
     @Test
     public void testCacheLookupLifecycleAware() throws Exception {
         tmConfigurationType = TmConfigurationType.CACHE_LOOKUP;
@@ -154,7 +154,7 @@ public class GridJtaLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSel
         checkLifecycleAware();
     }
 
-    /** {@inheritDoc} */
+    /** */
     @Test
     public void testGlobalLookupLifecycleAware() throws Exception {
         tmConfigurationType = TmConfigurationType.GLOBAL_LOOKUP;
@@ -162,7 +162,7 @@ public class GridJtaLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSel
         checkLifecycleAware();
     }
 
-    /** {@inheritDoc} */
+    /** */
     @Test
     public void testFactoryLifecycleAware() throws Exception {
         tmConfigurationType = TmConfigurationType.FACTORY;
@@ -192,5 +192,6 @@ public class GridJtaLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSel
         GLOBAL_LOOKUP,
 
         /** */
-        FACTORY}
+        FACTORY
+    }
 }

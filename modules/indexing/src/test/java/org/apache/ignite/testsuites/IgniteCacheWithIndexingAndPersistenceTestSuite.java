@@ -18,7 +18,8 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.cache.StartCachesInParallelTest;
-import org.apache.ignite.util.GridCommandHandlerIndexingTest;
+import org.apache.ignite.internal.processors.cache.index.IoStatisticsBasicIndexSelfTest;
+import org.apache.ignite.internal.processors.query.CleanupIndexTreeCheckpointFailoverTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -27,8 +28,9 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    GridCommandHandlerIndexingTest.class,
-    StartCachesInParallelTest.class
+    StartCachesInParallelTest.class,
+    IoStatisticsBasicIndexSelfTest.class,
+    CleanupIndexTreeCheckpointFailoverTest.class
 })
 public class IgniteCacheWithIndexingAndPersistenceTestSuite {
 }

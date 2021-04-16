@@ -248,7 +248,7 @@ final class TestMemcacheClient {
         rdr.start();
     }
 
-    /** {@inheritDoc} */
+    /** */
     public void shutdown() throws IgniteCheckedException {
         try {
             if (rdr != null) {
@@ -786,7 +786,6 @@ final class TestMemcacheClient {
             return (T)obj;
         }
     }
-
 
     private static class Data {
         /** Bytes. */

@@ -53,11 +53,12 @@ public class GridAffinityMappedTest extends GridCommonAbstractTest {
         else {
             assert igniteInstanceName.endsWith("2") || igniteInstanceName.endsWith("3");
 
-            CacheConfiguration cacheCfg = defaultCacheConfiguration();
+            CacheConfiguration<Object, Object> cacheCfg = defaultCacheConfiguration();
 
             cacheCfg.setCacheMode(PARTITIONED);
             cacheCfg.setAffinity(new MockCacheAffinityFunction());
             cacheCfg.setAffinityMapper(new MockCacheAffinityKeyMapper());
+            cacheCfg.setNodeFilter(node -> node.attribute(GridCacheModuloAffinityFunction.IDX_ATTR) != null);
 
             cfg.setCacheConfiguration(cacheCfg);
             cfg.setUserAttributes(F.asMap(GridCacheModuloAffinityFunction.IDX_ATTR,
@@ -78,17 +79,15 @@ public class GridAffinityMappedTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     @Test
-    public void testMappedAffinity() throws IgniteCheckedException {
+    public void testMappedAffinity() throws IgniteCheckedException, InterruptedException {
         Ignite g1 = grid(1);
         Ignite g2 = grid(2);
         Ignite g3 = grid(3);
 
-        assert g1.configuration().getCacheConfiguration().length == 0;
-        assert g2.configuration().getCacheConfiguration()[0].getCacheMode() == PARTITIONED;
-        assert g3.configuration().getCacheConfiguration()[0].getCacheMode() == PARTITIONED;
-
         ClusterNode first = g2.cluster().localNode();
         ClusterNode second = g3.cluster().localNode();
+
+        awaitPartitionMapExchange(true, true, null);
 
         //When MockCacheAfinity and MockCacheAffinityKeyMapper are set to cache configuration we expect the following.
         //Key 0 is mapped to partition 0, first node.
@@ -103,12 +102,12 @@ public class GridAffinityMappedTest extends GridCommonAbstractTest {
         UUID id1 = g1.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(1).id();
 
         assertNotNull(id1);
-        assertEquals(second.id(),  id1);
+        assertEquals(second.id(), id1);
 
         UUID id2 = g1.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(2).id();
 
         assertNotNull(id2);
-        assertEquals(first.id(),  id2);
+        assertEquals(first.id(), id2);
     }
 
     /**
@@ -140,7 +139,7 @@ public class GridAffinityMappedTest extends GridCommonAbstractTest {
     private static class MockCacheAffinityKeyMapper implements AffinityKeyMapper {
         /** {@inheritDoc} */
         @Override public Object affinityKey(Object key) {
-            return key instanceof Integer ? 1 == (Integer)key ? key : 0 : key;
+            return key instanceof Integer ? ((1 == (Integer)key) ? key : 0) : key;
         }
 
         /** {@inheritDoc} */

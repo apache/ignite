@@ -17,15 +17,16 @@
 
 package org.apache.ignite.ml;
 
+import java.io.Serializable;
+import java.util.stream.IntStream;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
-import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.junit.Assert;
-
-import java.util.stream.IntStream;
 
 import static org.junit.Assert.assertTrue;
 
@@ -35,7 +36,6 @@ public class TestUtils {
      * Collection of static methods used in math unit tests.
      */
     private TestUtils() {
-        super();
     }
 
     /**
@@ -133,7 +133,7 @@ public class TestUtils {
 
         Matrix delta = exp.minus(actual);
 
-        if (TestUtils.maximumAbsoluteRowSum(delta) >= tolerance) {
+        if (maximumAbsoluteRowSum(delta) >= tolerance) {
             String msgBuff = msg + "\nExpected: " + exp +
                 "\nObserved: " + actual +
                 "\nexpected - observed: " + delta;
@@ -360,7 +360,7 @@ public class TestUtils {
     /**
      * Gets test learning environment builder.
      *
-     * @return test learning environment builder.
+     * @return Test learning environment builder.
      */
     public static LearningEnvironmentBuilder testEnvBuilder() {
         return testEnvBuilder(123L);
@@ -370,7 +370,7 @@ public class TestUtils {
      * Gets test learning environment builder with a given seed.
      *
      * @param seed Seed.
-     * @return test learning environment builder.
+     * @return Test learning environment builder.
      */
     public static LearningEnvironmentBuilder testEnvBuilder(long seed) {
         return LearningEnvironmentBuilder.defaultBuilder().withRNGSeed(seed);
@@ -447,10 +447,14 @@ public class TestUtils {
      */
     public static <I, O, M extends IgniteModel<I, O>, L> DatasetTrainer<M, L> constantTrainer(M ml) {
         return new DatasetTrainer<M, L>() {
-            /** {@inheritDoc} */
-            @Override public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder,
-                FeatureLabelExtractor<K, V, L> extractor) {
+            /** */
+            public <K, V, C extends Serializable> M fit(DatasetBuilder<K, V> datasetBuilder,
+                Vectorizer<K, V, C, L> extractor) {
                 return ml;
+            }
+
+            @Override public <K, V> M fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> preprocessor) {
+                return null;
             }
 
             /** {@inheritDoc} */
@@ -458,9 +462,14 @@ public class TestUtils {
                 return true;
             }
 
-            /** {@inheritDoc} */
-            @Override public <K, V> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
-                FeatureLabelExtractor<K, V, L> extractor) {
+            @Override protected <K, V> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
+                Preprocessor<K, V> preprocessor) {
+                return null;
+            }
+
+            /** */
+            public <K, V, C extends Serializable> M updateModel(M mdl, DatasetBuilder<K, V> datasetBuilder,
+                Vectorizer<K, V, C, L> extractor) {
                 return ml;
             }
         };

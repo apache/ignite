@@ -17,23 +17,25 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.IgniteMBeansManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
@@ -85,14 +87,16 @@ public interface GridQueryIndexing {
      * @param cliCtx Client context.
      * @param keepBinary Keep binary flag.
      * @param failOnMultipleStmts Whether an exception should be thrown for multiple statements query.
-     * @param tracker Query tracker.
-     * @param registerAsNewQry {@code true} In case it's new query which should be registered as running query,
-     * {@code false} otherwise.
      * @return Cursor.
      */
-    public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
-        SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts, MvccQueryTracker tracker,
-        GridQueryCancel cancel, boolean registerAsNewQry);
+    public List<FieldsQueryCursor<List<?>>> querySqlFields(
+        String schemaName,
+        SqlFieldsQuery qry,
+        SqlClientContext cliCtx,
+        boolean keepBinary,
+        boolean failOnMultipleStmts,
+        GridQueryCancel cancel
+    );
 
     /**
      * Execute an INSERT statement using data streamer as receiver.
@@ -101,11 +105,12 @@ public interface GridQueryIndexing {
      * @param qry Query.
      * @param params Query parameters.
      * @param streamer Data streamer to feed data to.
+     * @param qryInitiatorId Query initiator ID.
      * @return Update counter.
      * @throws IgniteCheckedException If failed.
      */
     public long streamUpdateQuery(String schemaName, String qry, @Nullable Object[] params,
-        IgniteDataStreamer<?, ?> streamer) throws IgniteCheckedException;
+        IgniteDataStreamer<?, ?> streamer, String qryInitiatorId) throws IgniteCheckedException;
 
     /**
      * Execute a batched INSERT statement using data streamer as receiver.
@@ -114,11 +119,12 @@ public interface GridQueryIndexing {
      * @param qry Query.
      * @param params Query parameters.
      * @param cliCtx Client connection context.
+     * @param qryInitiatorId Query initiator ID.
      * @return Update counters.
      * @throws IgniteCheckedException If failed.
      */
     public List<Long> streamBatchedUpdateQuery(String schemaName, String qry, List<Object[]> params,
-        SqlClientContext cliCtx) throws IgniteCheckedException;
+        SqlClientContext cliCtx, String qryInitiatorId) throws IgniteCheckedException;
 
     /**
      * Executes text query.
@@ -128,10 +134,11 @@ public interface GridQueryIndexing {
      * @param qry Text query.
      * @param typeName Type name.
      * @param filter Cache name and key filter.    @return Queried rows.
+     * @param limit Limits response records count. If 0 or less, the limit considered to be Integer.MAX_VALUE, that is virtually no limit.
      * @throws IgniteCheckedException If failed.
      */
     public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryLocalText(String schemaName, String cacheName,
-        String qry, String typeName, IndexingQueryFilter filter) throws IgniteCheckedException;
+        String qry, String typeName, IndexingQueryFilter filter, int limit) throws IgniteCheckedException;
 
     /**
      * Create new index locally.
@@ -249,6 +256,27 @@ public interface GridQueryIndexing {
         boolean isSql) throws IgniteCheckedException;
 
     /**
+     * Jdbc parameters metadata of the specified query.
+     *
+     * @param schemaName the default schema name for query.
+     * @param sql Sql query.
+     * @return metadata describing all the parameters, even in case of multi-statement.
+     * @throws SQLException if failed to get meta.
+     */
+    public List<JdbcParameterMeta> parameterMetaData(String schemaName, SqlFieldsQuery sql) throws IgniteSQLException;
+
+    /**
+     * Metadata of the result set that is returned if specified query gets executed.
+     *
+     * @param schemaName the default schema name for query.
+     * @param sql Sql query.
+     * @return metadata or {@code null} if provided query is multi-statement or id it's not a SELECT statement.
+     * @throws SQLException if failed to get meta.
+     */
+    @Nullable public List<GridQueryFieldMetadata> resultMetaData(String schemaName, SqlFieldsQuery sql)
+        throws IgniteSQLException;
+
+    /**
      * Updates index. Note that key is unique for cache, so if cache contains multiple indexes
      * the key should be removed from indexes other than one being updated.
      *
@@ -277,12 +305,11 @@ public interface GridQueryIndexing {
         throws IgniteCheckedException;
 
     /**
-     * Rebuild indexes for the given cache if necessary.
+     * Mark as rebuild needed for the given cache.
      *
      * @param cctx Cache context.
-     * @return Future completed when index rebuild finished.
      */
-    public IgniteInternalFuture<?> rebuildIndexesFromHash(GridCacheContext cctx);
+    public void markAsRebuildNeeded(GridCacheContext cctx, boolean val);
 
     /**
      * Returns backup filter.
@@ -299,15 +326,6 @@ public interface GridQueryIndexing {
      * @param reconnectFut Reconnect future.
      */
     public void onDisconnected(IgniteFuture<?> reconnectFut);
-
-    /**
-     * Prepare native statement to retrieve JDBC metadata from.
-     *
-     * @param schemaName Schema name.
-     * @param sql Query.
-     * @return {@link PreparedStatement} from underlying engine to supply metadata to Prepared - most likely H2.
-     */
-    public PreparedStatement prepareNativeStatement(String schemaName, String sql) throws SQLException;
 
     /**
      * Collect queries that already running more than specified duration.
@@ -338,19 +356,19 @@ public interface GridQueryIndexing {
     public String schema(String cacheName);
 
     /**
-     * Check if passed statement is insert statement eligible for streaming, throw an {@link IgniteSQLException} if not.
+     * Gets database schemas names.
      *
-     * @param nativeStmt Native statement.
+     * @return Schema names.
      */
-    public void checkStatementStreamable(PreparedStatement nativeStmt);
+    public Set<String> schemasNames();
 
     /**
-     * Return row cache cleaner.
+     * Whether passed sql statement is single insert statement eligible for streaming.
      *
-     * @param cacheGroupId Cache group id.
-     * @return Row cache cleaner.
+     * @param schemaName name of the schema.
+     * @param sql sql statement.
      */
-    public GridQueryRowCacheCleaner rowCacheCleaner(int cacheGroupId);
+    public boolean isStreamableInsertStatement(String schemaName, SqlFieldsQuery sql) throws SQLException;
 
     /**
      * Return context for registered cache info.
@@ -361,6 +379,13 @@ public interface GridQueryIndexing {
     @Nullable public GridCacheContextInfo registeredCacheInfo(String cacheName);
 
     /**
+     * Clear cache info and clear parser cache on call cache.close() on client node.
+     *
+     * @param cacheName Cache name to clear.
+     */
+    public void closeCacheOnClient(String cacheName);
+
+    /**
      * Initialize table's cache context created for not started cache.
      *
      * @param ctx Cache context.
@@ -369,4 +394,57 @@ public interface GridQueryIndexing {
      * @return {@code true} If context has been initialized.
      */
     public boolean initCacheContext(GridCacheContext ctx) throws IgniteCheckedException;
+
+    /**
+     * Register SQL JMX beans.
+     *
+     * @param mbMgr Ignite MXBean manager.
+     * @throws IgniteCheckedException On bean registration error.
+     */
+    void registerMxBeans(IgniteMBeansManager mbMgr) throws IgniteCheckedException;
+
+    /**
+     * Return table information filtered by given patterns.
+     *
+     * @param schemaNamePtrn Filter by schema name. Can be {@code null} to don't use the filter.
+     * @param tblNamePtrn Filter by table name. Can be {@code null} to don't use the filter.
+     * @param tblTypes Filter by table type. As Of now supported only 'TABLES' and 'VIEWS'.
+     * Can be {@code null} or empty to don't use the filter.
+     *
+     * @return Column information filtered by given patterns.
+     */
+    Collection<TableInformation> tablesInformation(String schemaNamePtrn, String tblNamePtrn, String... tblTypes);
+
+    /**
+     * Return column information filtered by given patterns.
+     *
+     * @param schemaNamePtrn Filter by schema name. Can be {@code null} to don't use the filter.
+     * @param tblNamePtrn Filter by table name. Can be {@code null} to don't use the filter.
+     * @param colNamePtrn Filter by column name. Can be {@code null} to don't use the filter.
+     *
+     * @return Column information filtered by given patterns.
+     */
+    Collection<ColumnInformation> columnsInformation(String schemaNamePtrn, String tblNamePtrn, String colNamePtrn);
+
+    /**
+     * Return index size by schema, table and index name.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @param idxName Index name.
+     * @return Index size (Number of elements) or {@code 0} if index not found.
+     */
+    default long indexSize(String schemaName, String tblName, String idxName) throws IgniteCheckedException {
+        return 0;
+    }
+
+    /**
+     * Information about secondary indexes efficient (actual) inline size.
+     *
+     * @return Map with inline sizes. The key of entry is a full index name (with schema and table name), the value of
+     * entry is a inline size.
+     */
+    default Map<String, Integer> secondaryIndexesInlineSize() {
+        return Collections.emptyMap();
+    }
 }

@@ -17,18 +17,20 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Connection;
 import java.sql.Date;
+import java.sql.ParameterMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.sql.Types;
-import java.text.MessageFormat;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.sql.Types;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -37,8 +39,9 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
-
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
@@ -50,6 +53,7 @@ import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -60,12 +64,11 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
-import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
+import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
 import org.apache.ignite.internal.util.GridStringBuilder;
-import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -73,8 +76,10 @@ import org.h2.engine.Session;
 import org.h2.jdbc.JdbcConnection;
 import org.h2.result.Row;
 import org.h2.result.SortOrder;
+import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.util.LocalDateTimeUtils;
+import org.h2.value.CompareMode;
 import org.h2.value.DataType;
 import org.h2.value.Value;
 import org.h2.value.ValueArray;
@@ -95,10 +100,11 @@ import org.h2.value.ValueString;
 import org.h2.value.ValueTime;
 import org.h2.value.ValueTimestamp;
 import org.h2.value.ValueUuid;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import javax.cache.CacheException;
-
+import static java.sql.ResultSetMetaData.columnNullableUnknown;
+import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_COL;
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
 import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_NAME;
 
@@ -106,29 +112,42 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_N
  * H2 utility methods.
  */
 public class H2Utils {
+    /** Query context H2 variable name. */
+    public static final String QCTX_VARIABLE_NAME = "_IGNITE_QUERY_CONTEXT";
+
+    /**
+     * The default precision for a char/varchar value.
+     */
+    static final int STRING_DEFAULT_PRECISION = Integer.MAX_VALUE;
+
+    /**
+     * The default precision for a decimal value.
+     */
+    static final int DECIMAL_DEFAULT_PRECISION = 65535;
+
+    /** */
+    public static final IndexColumn[] EMPTY_COLUMNS = new IndexColumn[0];
+
+    /**
+     * The default scale for a decimal value.
+     */
+    static final int DECIMAL_DEFAULT_SCALE = 32767;
+
     /** Dummy metadata for update result. */
     public static final List<GridQueryFieldMetadata> UPDATE_RESULT_META =
-        Collections.singletonList(new H2SqlFieldMetadata(null, null, "UPDATED", Long.class.getName(), -1, -1));
+        Collections.singletonList(new H2SqlFieldMetadata(null, null, "UPDATED", Long.class.getName(), -1, -1,
+                columnNullableUnknown));
 
     /** Spatial index class name. */
     private static final String SPATIAL_IDX_CLS =
         "org.apache.ignite.internal.processors.query.h2.opt.GridH2SpatialIndex";
 
+    /** Spatial index factory class name. */
+    private static final String SPATIAL_IDX_FACTORY_CLS =
+        "org.apache.ignite.internal.processors.query.h2.opt.GeoSpatialUtils";
+
     /** Quotation character. */
     private static final char ESC_CH = '\"';
-
-    /** Empty cursor. */
-    public static final GridCursor<H2Row> EMPTY_CURSOR = new GridCursor<H2Row>() {
-        /** {@inheritDoc} */
-        @Override public boolean next() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public H2Row get() {
-            return null;
-        }
-    };
 
     /**
      * @param c1 First column.
@@ -231,9 +250,25 @@ public class H2Utils {
             .a(fullTblName)
             .a(" (");
 
+        sb.a(indexColumnsSql(h2Idx.getIndexColumns()));
+
+        sb.a(')');
+
+        return sb.toString();
+    }
+
+    /**
+     * Generate String represenation of given indexed columns.
+     *
+     * @param idxCols Indexed columns.
+     * @return String represenation of given indexed columns.
+     */
+    public static String indexColumnsSql(IndexColumn[] idxCols) {
+        GridStringBuilder sb = new SB();
+
         boolean first = true;
 
-        for (IndexColumn col : h2Idx.getIndexColumns()) {
+        for (IndexColumn col : idxCols) {
             if (first)
                 first = false;
             else
@@ -241,8 +276,6 @@ public class H2Utils {
 
             sb.a(withQuotes(col.columnName)).a(" ").a(col.sortType == SortOrder.ASCENDING ? "ASC" : "DESC");
         }
-
-        sb.a(')');
 
         return sb.toString();
     }
@@ -286,22 +319,13 @@ public class H2Utils {
      * @param cols Columns.
      */
     @SuppressWarnings("ConstantConditions")
-    public static GridH2IndexBase createSpatialIndex(GridH2Table tbl, String idxName, IndexColumn[] cols) {
+    public static GridH2IndexBase createSpatialIndex(GridH2Table tbl, String idxName, List<IndexColumn> cols) {
         try {
-            Class<?> cls = Class.forName(SPATIAL_IDX_CLS);
+            Class<?> fctCls = Class.forName(SPATIAL_IDX_FACTORY_CLS);
 
-            Constructor<?> ctor = cls.getConstructor(
-                GridH2Table.class,
-                String.class,
-                Integer.TYPE,
-                IndexColumn[].class);
+            Method fctMethod = fctCls.getMethod("createIndex", GridH2Table.class, String.class, List.class);
 
-            if (!ctor.isAccessible())
-                ctor.setAccessible(true);
-
-            final int segments = tbl.rowDescriptor().context().config().getQueryParallelism();
-
-            return (GridH2IndexBase)ctor.newInstance(tbl, idxName, segments, cols);
+            return (GridH2IndexBase) fctMethod.invoke(null, tbl, idxName, cols);
         }
         catch (Exception e) {
             throw new IgniteException("Failed to instantiate: " + SPATIAL_IDX_CLS, e);
@@ -333,14 +357,48 @@ public class H2Utils {
             String type = rsMeta.getColumnClassName(i);
             int precision = rsMeta.getPrecision(i);
             int scale = rsMeta.getScale(i);
+            int nullability = rsMeta.isNullable(i);
 
             if (type == null) // Expression always returns NULL.
                 type = Void.class.getName();
 
-            meta.add(new H2SqlFieldMetadata(schemaName, typeName, name, type, precision, scale));
+            meta.add(new H2SqlFieldMetadata(schemaName, typeName, name, type, precision, scale, nullability));
         }
 
         return meta;
+    }
+
+    /**
+     * Converts h2 parameters metadata to Ignite one.
+     *
+     * @param h2ParamsMeta parameters metadata returned by h2.
+     * @return Descriptions of the parameters.
+     */
+    public static List<JdbcParameterMeta> parametersMeta(ParameterMetaData h2ParamsMeta) throws IgniteCheckedException {
+        try {
+            int paramsSize = h2ParamsMeta.getParameterCount();
+
+            if (paramsSize == 0)
+                return Collections.emptyList();
+
+            ArrayList<JdbcParameterMeta> params = new ArrayList<>(paramsSize);
+
+            for (int i = 1; i <= paramsSize; i++)
+                params.add(new JdbcParameterMeta(h2ParamsMeta, i));
+
+            return params;
+        }
+        catch (SQLException e) {
+            throw new IgniteCheckedException("Failed to get parameters metadata", e);
+        }
+    }
+
+    /**
+     * @param c Connection.
+     * @return Session.
+     */
+    public static Session session(H2PooledConnection c) {
+        return session(c.connection());
     }
 
     /**
@@ -353,21 +411,27 @@ public class H2Utils {
 
     /**
      * @param conn Connection to use.
+     * @param qctx Query context.
      * @param distributedJoins If distributed joins are enabled.
      * @param enforceJoinOrder Enforce join order of tables.
      */
-    public static void setupConnection(Connection conn, boolean distributedJoins, boolean enforceJoinOrder) {
-        setupConnection(conn,distributedJoins, enforceJoinOrder, false);
+    public static void setupConnection(H2PooledConnection conn, QueryContext qctx,
+        boolean distributedJoins, boolean enforceJoinOrder) {
+        assert qctx != null;
+
+        setupConnection(conn, qctx, distributedJoins, enforceJoinOrder, false);
     }
 
     /**
      * @param conn Connection to use.
+     * @param qctx Query context.
      * @param distributedJoins If distributed joins are enabled.
      * @param enforceJoinOrder Enforce join order of tables.
      * @param lazy Lazy query execution mode.
      */
     public static void setupConnection(
-        Connection conn,
+        H2PooledConnection conn,
+        QueryContext qctx,
         boolean distributedJoins,
         boolean enforceJoinOrder,
         boolean lazy
@@ -377,6 +441,45 @@ public class H2Utils {
         s.setForceJoinOrder(enforceJoinOrder);
         s.setJoinBatchEnabled(distributedJoins);
         s.setLazyQueryExecution(lazy);
+
+        QueryContext oldCtx = (QueryContext)s.getVariable(QCTX_VARIABLE_NAME).getObject();
+
+        assert oldCtx == null || oldCtx == qctx : oldCtx;
+
+        s.setVariable(QCTX_VARIABLE_NAME, new ValueRuntimeSimpleObject<>(qctx));
+
+        // Hack with thread local context is used only for H2 methods that is called without Session object.
+        // e.g. GridH2Table.getRowCountApproximation (used only on optimization phase, after parse).
+        QueryContext.threadLocal(qctx);
+    }
+
+    /**
+     * Clean up session for further reuse.
+     *
+     * @param conn Connection to use.
+     */
+    public static void resetSession(H2PooledConnection conn) {
+        Session s = session(conn);
+
+        s.setVariable(QCTX_VARIABLE_NAME, ValueNull.INSTANCE);
+    }
+
+    /**
+     * @param conn Connection to use.
+     * @return Query context.
+     */
+    public static QueryContext context(H2PooledConnection conn) {
+        Session s = session(conn);
+
+        return context(s);
+    }
+
+    /**
+     * @param ses Session.
+     * @return Query context.
+     */
+    public static QueryContext context(Session ses) {
+        return (QueryContext)ses.getVariable(QCTX_VARIABLE_NAME).getObject();
     }
 
     /**
@@ -414,8 +517,8 @@ public class H2Utils {
      */
     @SuppressWarnings("unchecked")
     public static QueryCursorImpl<List<?>> zeroCursor() {
-        QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(Collections.singletonList
-            (Collections.singletonList(0L)), null, false);
+        QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(Collections.singletonList(
+            Collections.singletonList(0L)), null, false, false);
 
         resCur.fieldsMeta(UPDATE_RESULT_META);
 
@@ -586,8 +689,13 @@ public class H2Utils {
     private static String dbTypeFromClass(Class<?> cls, int precision, int scale) {
         String dbType = H2DatabaseType.fromClass(cls).dBTypeAsString();
 
-        if (precision != -1 && dbType.equalsIgnoreCase(H2DatabaseType.VARCHAR.dBTypeAsString()))
-            return dbType + "(" + precision + ")";
+        if (precision != -1 && scale != -1 && dbType.equalsIgnoreCase(H2DatabaseType.DECIMAL.dBTypeAsString()))
+            return dbType + "(" + precision + ", " + scale + ')';
+
+        if (precision != -1 && (
+                dbType.equalsIgnoreCase(H2DatabaseType.VARCHAR.dBTypeAsString())
+                        || dbType.equalsIgnoreCase(H2DatabaseType.DECIMAL.dBTypeAsString())))
+            return dbType + '(' + precision + ')';
 
         return dbType;
     }
@@ -643,7 +751,7 @@ public class H2Utils {
                 (upper.startsWith("WHERE") || upper.startsWith("ORDER") || upper.startsWith("LIMIT") ?
                     " " : " WHERE ");
 
-        if(tableAlias != null)
+        if (tableAlias != null)
             t = tableAlias;
 
         qry = "SELECT " + t + "." + KEY_FIELD_NAME + ", " + t + "." + VAL_FIELD_NAME + from + qry;
@@ -818,16 +926,12 @@ public class H2Utils {
      *
      * @param idx Indexing.
      * @param cacheIds Cache IDs.
-     * @param mvccEnabled MVCC enabled flag.
-     * @param forUpdate For update flag.
      * @param tbls Tables.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     public static void checkQuery(
         IgniteH2Indexing idx,
         List<Integer> cacheIds,
-        boolean mvccEnabled,
-        boolean forUpdate,
         Collection<QueryTable> tbls
     ) {
         GridCacheSharedContext sharedCtx = idx.kernalContext().cache().context();
@@ -853,17 +957,6 @@ public class H2Utils {
             }
         }
 
-        // Check FOR UPDATE invariants: only one table, MVCC is there.
-        if (forUpdate) {
-            if (cacheIds.size() != 1)
-                throw new IgniteSQLException("SELECT FOR UPDATE is supported only for queries " +
-                    "that involve single transactional cache.");
-
-            if (!mvccEnabled)
-                throw new IgniteSQLException("SELECT FOR UPDATE query requires transactional cache " +
-                    "with MVCC enabled.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-        }
-
         // Check for joins between system views and normal tables.
         if (!F.isEmpty(tbls)) {
             for (QueryTable tbl : tbls) {
@@ -875,6 +968,229 @@ public class H2Utils {
                     else
                         return;
                 }
+            }
+        }
+    }
+
+    /**
+     * Create list of index columns. Where possible _KEY columns will be unwrapped.
+     *
+     * @param tbl GridH2Table instance
+     * @param idxCols List of index columns.
+     *
+     * @return Array of key and affinity columns. Key's, if it possible, splitted into simple components.
+     */
+    @NotNull public static IndexColumn[] unwrapKeyColumns(GridH2Table tbl, IndexColumn[] idxCols) {
+        ArrayList<IndexColumn> keyCols = new ArrayList<>();
+
+        boolean isSql = tbl.rowDescriptor().tableDescriptor().sql();
+
+        if (!isSql)
+            return idxCols;
+
+        GridQueryTypeDescriptor type = tbl.rowDescriptor().type();
+
+        for (IndexColumn idxCol : idxCols) {
+            if (idxCol.column.getColumnId() == KEY_COL) {
+                if (QueryUtils.isSqlType(type.keyClass())) {
+                    int altKeyColId = tbl.rowDescriptor().getAlternativeColumnId(QueryUtils.KEY_COL);
+
+                    //Remap simple key to alternative column.
+                    IndexColumn idxKeyCol = new IndexColumn();
+
+                    idxKeyCol.column = tbl.getColumn(altKeyColId);
+                    idxKeyCol.columnName = idxKeyCol.column.getName();
+                    idxKeyCol.sortType = idxCol.sortType;
+
+                    keyCols.add(idxKeyCol);
+                }
+                else {
+                    boolean added = false;
+
+                    for (String propName : type.fields().keySet()) {
+                        GridQueryProperty prop = type.property(propName);
+
+                        if (prop.key()) {
+                            added = true;
+
+                            Column col = tbl.getColumn(propName);
+
+                            keyCols.add(tbl.indexColumn(col.getColumnId(), SortOrder.ASCENDING));
+                        }
+                    }
+
+                    // If key is object but the user has not specified any particular columns,
+                    // we have to fall back to whole-key index.
+                    if (!added)
+                        keyCols.add(idxCol);
+                }
+            } else
+                keyCols.add(idxCol);
+        }
+
+        return keyCols.toArray(new IndexColumn[0]);
+    }
+
+    /**
+     * @param <T>
+     */
+    public static class ValueRuntimeSimpleObject<T> extends Value {
+        /** */
+        private final T val;
+
+        /**
+         * @param val Object.
+         */
+        public ValueRuntimeSimpleObject(T val) {
+            this.val = val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getSQL() {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getType() {
+            return Value.JAVA_OBJECT;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getPrecision() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getDisplaySize() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getString() {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object getObject() {
+            return val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void set(PreparedStatement prep, int parameterIndex) throws SQLException {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override protected int compareSecure(Value v, CompareMode mode) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+            ValueRuntimeSimpleObject<?> object = (ValueRuntimeSimpleObject<?>)o;
+            return Objects.equals(val, object.val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(val);
+        }
+    }
+
+    /**
+     * @param cls Class.
+     * @param fldName Fld name.
+     */
+    public static <T, R> Getter<T, R> getter(Class<? extends T> cls, String fldName) {
+        Field field;
+
+        try {
+            field = cls.getDeclaredField(fldName);
+        }
+        catch (NoSuchFieldException e) {
+            throw new RuntimeException(e);
+        }
+
+        field.setAccessible(true);
+
+        return new Getter<>(field);
+    }
+
+    /**
+     * Field getter.
+     */
+    public static class Getter<T, R> {
+        /** */
+        private final Field fld;
+
+        /**
+         * @param fld Fld.
+         */
+        private Getter(Field fld) {
+            this.fld = fld;
+        }
+
+        /**
+         * @param obj Object.
+         * @return Result.
+         */
+        public R get(T obj) {
+            try {
+                return (R)fld.get(obj);
+            }
+            catch (IllegalAccessException e) {
+                throw new IgniteException(e);
+            }
+        }
+    }
+
+    /**
+     * @param cls Class.
+     * @param fldName Fld name.
+     */
+    public static <T, R> Setter<T, R> setter(Class<? extends T> cls, String fldName) {
+        Field field;
+
+        try {
+            field = cls.getDeclaredField(fldName);
+        }
+        catch (NoSuchFieldException e) {
+            throw new RuntimeException(e);
+        }
+
+        field.setAccessible(true);
+
+        return new Setter<>(field);
+    }
+
+    /**
+     * Field getter.
+     */
+    public static class Setter<T, R> {
+        /** */
+        private final Field fld;
+
+        /**
+         * @param fld Fld.
+         */
+        private Setter(Field fld) {
+            this.fld = fld;
+        }
+
+        /**
+         * @param obj Object.
+         * @param val Value.
+         */
+        public void set(T obj, R val) {
+            try {
+                fld.set(obj, val);
+            }
+            catch (IllegalAccessException e) {
+                throw new IgniteException(e);
             }
         }
     }

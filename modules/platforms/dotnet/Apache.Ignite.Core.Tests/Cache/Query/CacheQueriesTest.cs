@@ -24,6 +24,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Text;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -68,7 +70,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 });
             }
         }
-        
+
         /// <summary>
         /// Gets the name mapper.
         /// </summary>
@@ -87,7 +89,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         [SetUp]
         public void BeforeTest()
@@ -96,7 +98,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         [TearDown]
         public void AfterTest()
@@ -125,7 +127,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <returns></returns>
         private static ICache<int, QueryPerson> Cache()
@@ -139,6 +141,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestValidationSql()
         {
+#pragma warning disable 618
             // 1. No sql.
             Assert.Throws<ArgumentException>(() =>
                 { Cache().Query(new SqlQuery(typeof(QueryPerson), null)); });
@@ -146,6 +149,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             // 2. No type.
             Assert.Throws<ArgumentException>(() =>
                 { Cache().Query(new SqlQuery((string)null, "age >= 50")); });
+#pragma warning restore 618
         }
 
         /// <summary>
@@ -184,7 +188,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Cache().Put(1, new QueryPerson("Petrov", 40));
             Cache().Put(1, new QueryPerson("Sidorov", 50));
 
+#pragma warning disable 618
             SqlQuery qry = new SqlQuery(typeof(QueryPerson), "age >= 20");
+#pragma warning restore 618
 
             // 1. Test GetAll().
             using (IQueryCursor<ICacheEntry<int, QueryPerson>> cursor = Cache().Query(qry))
@@ -212,6 +218,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [SuppressMessage("ReSharper", "UnusedVariable")]
         public void TestEnumerator()
         {
+#pragma warning disable 618
             Cache().Put(1, new QueryPerson("Ivanov", 30));
             Cache().Put(2, new QueryPerson("Petrov", 40));
             Cache().Put(3, new QueryPerson("Sidorov", 50));
@@ -219,7 +226,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             // 1. Empty result set.
             using (IQueryCursor<ICacheEntry<int, QueryPerson>> cursor =
-                    Cache().Query(new SqlQuery(typeof(QueryPerson), "age = 100")))
+                Cache().Query(new SqlQuery(typeof(QueryPerson), "age = 100")))
             {
                 IEnumerator<ICacheEntry<int, QueryPerson>> e = cursor.GetEnumerator();
 
@@ -251,6 +258,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             // 4. Page size if less than result set.
             qry.PageSize = 2;
             CheckEnumeratorQuery(qry);
+#pragma warning restore 618
         }
 
         /// <summary>
@@ -259,18 +267,18 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestSqlQueryArguments()
         {
+#pragma warning disable 618
             Cache().Put(1, new QueryPerson("Ivanov", 30));
             Cache().Put(2, new QueryPerson("Petrov", 40));
             Cache().Put(3, new QueryPerson("Sidorov", 50));
 
             // 1. Empty result set.
-            using (
-                IQueryCursor<ICacheEntry<int, QueryPerson>> cursor =
-                    Cache().Query(new SqlQuery(typeof(QueryPerson), "age < ?", 50)))
+            using (var cursor = Cache().Query(new SqlQuery(typeof(QueryPerson), "age < ?", 50)))
             {
                 foreach (ICacheEntry<int, QueryPerson> entry in cursor.GetAll())
                     Assert.IsTrue(entry.Key == 1 || entry.Key == 2);
             }
+#pragma warning restore 618
         }
 
         /// <summary>
@@ -295,6 +303,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// Check query result for enumerator test.
         /// </summary>
         /// <param name="qry">QUery.</param>
+#pragma warning disable 618
         private void CheckEnumeratorQuery(SqlQuery qry)
         {
             using (IQueryCursor<ICacheEntry<int, QueryPerson>> cursor = Cache().Query(qry))
@@ -333,12 +342,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 Assert.IsTrue(first && second && third);
             }
         }
+#pragma warning restore 618
 
         /// <summary>
         /// Check SQL query.
         /// </summary>
         [Test]
-        public void TestSqlQuery([Values(true, false)] bool loc, [Values(true, false)] bool keepBinary, 
+        public void TestSqlQuery([Values(true, false)] bool loc, [Values(true, false)] bool keepBinary,
             [Values(true, false)] bool distrJoin)
         {
             var cache = Cache();
@@ -347,14 +357,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var exp = PopulateCache(cache, loc, MaxItemCnt, x => x < 50);
 
             // 2. Validate results.
+#pragma warning disable 618
             var qry = new SqlQuery(typeof(QueryPerson), "age < 50", loc)
             {
                 EnableDistributedJoins = distrJoin,
-#pragma warning disable 618
                 ReplicatedOnly = false,
-#pragma warning restore 618
                 Timeout = TimeSpan.FromSeconds(3)
             };
+#pragma warning restore 618
 
             Assert.AreEqual(string.Format("SqlQuery [Sql=age < 50, Arguments=[], Local={0}, " +
                                           "PageSize=1024, EnableDistributedJoins={1}, Timeout={2}, " +
@@ -367,7 +377,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// Check SQL fields query.
         /// </summary>
         [Test]
-        public void TestSqlFieldsQuery([Values(true, false)] bool loc, [Values(true, false)] bool distrJoin, 
+        public void TestSqlFieldsQuery([Values(true, false)] bool loc, [Values(true, false)] bool distrJoin,
             [Values(true, false)] bool enforceJoinOrder, [Values(true, false)] bool lazy)
         {
             int cnt = MaxItemCnt;
@@ -510,6 +520,41 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
+        /// Checks that scan query is thread-safe and throws correct exception when disposed from another thread.
+        /// </summary>
+        [Test]
+        public void TestScanQueryDisposedFromAnotherThreadThrowsObjectDisposedException()
+        {
+            var cache = GetIgnite().GetOrCreateCache<int, int>(TestUtils.TestName);
+
+            const int totalCount = 10000;
+            cache.PutAll(Enumerable.Range(1, totalCount).ToDictionary(x => x, x => x));
+
+            var scanQuery = new ScanQuery<int, int>
+            {
+                Filter = new ScanQueryFilter<int> {AcceptAll = true}
+            };
+
+            var cursor = cache.Query(scanQuery);
+
+            long count = 0;
+            Task.Factory.StartNew(() =>
+            {
+                // ReSharper disable once AccessToModifiedClosure
+                while (Interlocked.Read(ref count) < totalCount / 10) { }
+                cursor.Dispose();
+            });
+
+            Assert.Throws<ObjectDisposedException>(() =>
+            {
+                foreach (var unused in cursor)
+                {
+                    Interlocked.Increment(ref count);
+                }
+            });
+        }
+
+        /// <summary>
         /// Tests that query attempt on non-indexed cache causes an exception.
         /// </summary>
         [Test]
@@ -524,7 +569,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 "Use setIndexedTypes or setTypeMetadata methods on CacheConfiguration to enable.", err.Message);
 
             // SQL query.
+#pragma warning disable 618
             err = Assert.Throws<IgniteException>(() => cache.Query(new SqlQuery(typeof(QueryPerson), "age < 50")));
+#pragma warning restore 618
 
             Assert.AreEqual("Failed to find SQL table for type: QueryPerson", err.Message);
         }
@@ -562,7 +609,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             // Exception
             exp = PopulateCache(cache, loc, cnt, x => x < 50);
             qry = new ScanQuery<int, TV>(new ScanQueryFilter<TV> {ThrowErr = true});
-            
+
             var ex = Assert.Throws<IgniteException>(() => ValidateQueryResults(cache, qry, exp, keepBinary));
             Assert.AreEqual(ScanQueryFilter<TV>.ErrMessage, ex.Message);
         }
@@ -611,7 +658,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
                 ValidateQueryResults(cache, qry, exp0, keepBinary);
             }
-            
+
         }
 
         /// <summary>
@@ -744,7 +791,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             cache[1] = new QueryPerson("John", 33);
 
             row = cache.Query(new SqlFieldsQuery("select * from QueryPerson")).GetAll()[0];
-            
+
             Assert.AreEqual(3, row.Count);
             Assert.AreEqual(33, row[0]);
             Assert.AreEqual(1, row[1]);
@@ -767,10 +814,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var cache = Cache();
             PopulateCache(cache, false, 30000, x => true);
 
+#pragma warning disable 618
             var sqlQry = new SqlQuery(typeof(QueryPerson), "WHERE age < 2000")
             {
                 Timeout = TimeSpan.FromMilliseconds(1)
             };
+#pragma warning restore 618
 
             // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
             var ex = Assert.Throws<CacheException>(() => cache.Query(sqlQry).ToArray());
@@ -812,7 +861,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var names = cur.FieldNames;
 
             Assert.AreEqual(new[] {"AGE", "NAME" }, names);
-            
+
             cur.Dispose();
             Assert.AreSame(names, cur.FieldNames);
 
@@ -829,8 +878,108 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             qry.Sql = "SELECT 1, AGE FROM QueryPerson";
             cur = cache.Query(qry);
             cur.Dispose();
-            
+
             Assert.AreEqual(new[] { "1", "AGE" }, cur.FieldNames);
+        }
+
+        /// <summary>
+        /// Tests the FieldsMetadata property.
+        /// </summary>
+        [Test]
+        public void TestFieldsMetadata()
+        {
+            var cache = Cache();
+            PopulateCache(cache, false, 5, x => true);
+
+            // Get before iteration.
+            var qry = new SqlFieldsQuery("SELECT * FROM QueryPerson");
+            var cur = cache.Query(qry);
+            var metas = cur.Fields;
+
+            ValidateFieldsMetadata(
+                metas,
+                new[] {"AGE", "NAME"},
+                new[] {typeof(int), typeof(string)},
+                new[] {"java.lang.Integer", "java.lang.String"}
+            );
+
+            cur.Dispose();
+            Assert.AreSame(metas, cur.Fields);
+
+            Assert.Throws<NotSupportedException>(() => cur.Fields.Add(default(IQueryCursorField)));
+
+            // Custom order, key-val, get after iteration.
+            qry.Sql = "SELECT NAME, _key, AGE, _val FROM QueryPerson";
+            cur = cache.Query(qry);
+            cur.GetAll();
+
+            ValidateFieldsMetadata(
+                cur.Fields,
+                new[] {"NAME", "_KEY", "AGE", "_VAL"},
+                new[] {typeof(string), typeof(object), typeof(int), typeof(object)},
+                new[] {"java.lang.String", "java.lang.Object", "java.lang.Integer", "java.lang.Object"}
+            );
+
+            // Get after disposal.
+            qry.Sql = "SELECT 1, AGE FROM QueryPerson";
+            cur = cache.Query(qry);
+            cur.Dispose();
+
+            ValidateFieldsMetadata(
+                cur.Fields,
+                new[] {"1", "AGE"},
+                new[] {typeof(int), typeof(int)},
+                new[] {"java.lang.Integer", "java.lang.Integer"}
+            );
+        }
+
+        /// <summary>
+        /// Tests <see cref="SqlFieldsQuery.Partitions"/> argument propagation and validation.
+        /// </summary>
+        [Test]
+        public void TestPartitionsValidation()
+        {
+            var cache = Cache();
+            var qry = new SqlFieldsQuery("SELECT * FROM QueryPerson") { Partitions = new int[0] };
+
+            var ex = Assert.Throws<ArgumentException>(() => cache.Query(qry).GetAll());
+            StringAssert.EndsWith("Partitions must not be empty.", ex.Message);
+
+            qry.Partitions = new[] {-1, -2};
+            ex = Assert.Throws<ArgumentException>(() => cache.Query(qry).GetAll());
+            StringAssert.EndsWith("Illegal partition", ex.Message);
+        }
+
+        /// <summary>
+        /// Tests <see cref="SqlFieldsQuery.UpdateBatchSize"/> argument propagation and validation.
+        /// </summary>
+        [Test]
+        public void TestUpdateBatchSizeValidation()
+        {
+            var cache = Cache();
+            var qry = new SqlFieldsQuery("SELECT * FROM QueryPerson") { UpdateBatchSize = -1 };
+
+            var ex = Assert.Throws<ArgumentException>(() => cache.Query(qry).GetAll());
+            StringAssert.EndsWith("updateBatchSize cannot be lower than 1", ex.Message);
+        }
+
+        /// <summary>
+        /// Validates fields metadata collection
+        /// </summary>
+        /// <param name="metadata">Metadata</param>
+        /// <param name="expectedNames">Expected field names</param>
+        /// <param name="expectedTypes">Expected field types</param>
+        /// <param name="expectedJavaTypeNames">Expected java type names</param>
+        private static void ValidateFieldsMetadata(
+            IList<IQueryCursorField> metadata,
+            string[] expectedNames,
+            Type[] expectedTypes,
+            string[] expectedJavaTypeNames
+        )
+        {
+            Assert.AreEqual(expectedNames, metadata.Select(m => m.Name));
+            Assert.AreEqual(expectedTypes, metadata.Select(m => m.Type));
+            Assert.AreEqual(expectedJavaTypeNames, metadata.Select(m => m.JavaTypeName));
         }
 
         /// <summary>
@@ -926,7 +1075,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Asserts that all expected entries have been received.
         /// </summary>
-        private static void AssertMissingExpectedKeys(ICollection<int> exp, ICache<int, QueryPerson> cache, 
+        private static void AssertMissingExpectedKeys(ICollection<int> exp, ICache<int, QueryPerson> cache,
             IList<ICacheEntry<int, object>> all)
         {
             if (exp.Count == 0)
@@ -939,7 +1088,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             {
                 var part = aff.GetPartition(key);
                 sb.AppendFormat(
-                    "Query did not return expected key '{0}' (exists: {1}), partition '{2}', partition nodes: ", 
+                    "Query did not return expected key '{0}' (exists: {1}), partition '{2}', partition nodes: ",
                     key, cache.Get(key) != null, part);
 
                 var partNodes = aff.MapPartitionToPrimaryAndBackups(part);
@@ -1034,6 +1183,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         // Error flag
         public bool ThrowErr { get; set; }
 
+        // Error flag
+        public bool AcceptAll { get; set; }
+
         // Injection test
         [InstanceResource]
         public IIgnite Ignite { get; set; }
@@ -1046,7 +1198,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             if (ThrowErr)
                 throw new Exception(ErrMessage);
 
-            return entry.Key < 50;
+            return entry.Key < 50 || AcceptAll;
         }
     }
 

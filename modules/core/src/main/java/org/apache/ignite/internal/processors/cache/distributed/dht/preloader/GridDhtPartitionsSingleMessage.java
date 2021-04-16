@@ -41,13 +41,15 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Information about partitions of a single node.
+ * Information about partitions of a single node. <br>
+ *
+ * Sent in response to {@link GridDhtPartitionsSingleRequest} and during processing partitions exchange future.
  */
 public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Local partitions. */
+    /** Local partitions. Serialized as {@link #partsBytes}, may be compressed. */
     @GridToStringInclude
     @GridDirectTransient
     private Map<Integer, GridDhtPartitionMap> parts;
@@ -56,7 +58,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     @GridDirectMap(keyType = Integer.class, valueType = Integer.class)
     private Map<Integer, Integer> dupPartsData;
 
-    /** Serialized partitions. */
+    /** Serialized local partitions. Unmarshalled to {@link #parts}. */
     private byte[] partsBytes;
 
     /** Partitions update counters. */
@@ -95,10 +97,6 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     private boolean client;
 
     /** */
-    @GridDirectTransient
-    private transient boolean compress;
-
-    /** */
     @GridDirectCollection(Integer.class)
     private Collection<Integer> grpsAffRequest;
 
@@ -106,8 +104,8 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     private long exchangeStartTime;
 
     /**
-     * Exchange finish message, sent to new coordinator when it tries to
-     * restore state after previous coordinator failed during exchange.
+     * Exchange finish message, sent to new coordinator when it tries to restore state after previous coordinator failed
+     * during exchange.
      */
     private GridDhtPartitionsFullMessage finishMsg;
 
@@ -127,11 +125,13 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     public GridDhtPartitionsSingleMessage(GridDhtPartitionExchangeId exchId,
         boolean client,
         @Nullable GridCacheVersion lastVer,
-        boolean compress) {
+        boolean compress
+    ) {
         super(exchId, lastVer);
 
+        compressed(compress);
+
         this.client = client;
-        this.compress = compress;
     }
 
     /**
@@ -186,7 +186,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         parts.put(cacheId, locMap);
 
         if (dupDataCache != null) {
-            assert compress;
+            assert compressed();
             assert F.isEmpty(locMap.map());
             assert parts.containsKey(dupDataCache);
 
@@ -332,8 +332,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         this.exchangeStartTime = exchangeStartTime;
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
@@ -365,9 +364,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
             if (err != null && errBytes == null)
                 errBytes0 = U.marshal(ctx, err);
 
-            if (compress) {
-                assert !compressed();
-
+            if (compressed()) {
                 try {
                     byte[] partsBytesZip = U.zip(partsBytes0);
                     byte[] partCntrsBytesZip = U.zip(partCntrsBytes0);
@@ -380,8 +377,6 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
                     partHistCntrsBytes0 = partHistCntrsBytesZip;
                     partsSizesBytes0 = partsSizesBytesZip;
                     errBytes0 = exBytesZip;
-
-                    compressed(true);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(ctx.logger(getClass()), "Failed to compress partitions data: " + e, e);

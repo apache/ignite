@@ -24,6 +24,8 @@ import java.util.Set;
 import org.h2.util.StatementBuilder;
 import org.h2.util.StringUtils;
 
+import static org.apache.ignite.internal.processors.query.QueryUtils.delimeter;
+
 /**
  * Plain SELECT query.
  */
@@ -60,6 +62,13 @@ public class GridSqlSelect extends GridSqlQuery {
 
     /** */
     private boolean isForUpdate;
+
+    /** Used only for SELECT based on UPDATE.
+     * It cannot be lazy when updated columns are used in the conditions.
+     * In this case index based on these columns may be chosen to scan and some rows may be updated
+     * more than once time.
+     */
+    private boolean canBeLazy;
 
     /**
      * @param colIdx Column index as for {@link #column(int)}.
@@ -135,6 +144,8 @@ public class GridSqlSelect extends GridSqlQuery {
 
     /** {@inheritDoc} */
     @Override public String getSQL() {
+        char delim = delimeter();
+
         StatementBuilder buff = new StatementBuilder(explain() ? "EXPLAIN SELECT" : "SELECT");
 
         if (distinct)
@@ -142,18 +153,18 @@ public class GridSqlSelect extends GridSqlQuery {
 
         for (GridSqlAst expression : columns(true)) {
             buff.appendExceptFirst(",");
-            buff.append('\n');
+            buff.append(delim);
             buff.append(expression.getSQL());
         }
 
         if (from != null)
-            buff.append("\nFROM ").append(from.getSQL());
+            buff.append(delim).append("FROM ").append(from.getSQL());
 
         if (where != null)
-            buff.append("\nWHERE ").append(StringUtils.unEnclose(where.getSQL()));
+            buff.append(delim).append("WHERE ").append(StringUtils.unEnclose(where.getSQL()));
 
         if (grpCols != null) {
-            buff.append("\nGROUP BY ");
+            buff.append(delim).append("GROUP BY ");
 
             buff.resetCount();
 
@@ -165,7 +176,7 @@ public class GridSqlSelect extends GridSqlQuery {
         }
 
         if (havingCol >= 0) {
-            buff.append("\nHAVING ");
+            buff.append(delim).append("HAVING ");
 
             addAlias(buff, cols.get(havingCol));
         }
@@ -173,7 +184,7 @@ public class GridSqlSelect extends GridSqlQuery {
         getSortLimitSQL(buff);
 
         if (isForUpdate)
-            buff.append("\nFOR UPDATE");
+            buff.append(delim).append("FOR UPDATE");
 
         return buff.toString();
     }
@@ -412,5 +423,48 @@ public class GridSqlSelect extends GridSqlQuery {
         }
 
         aliases.add((GridSqlAlias)from);
+    }
+
+    /**
+     * @return Copy of this select for SELECT FOR UPDATE specific tasks.
+     */
+    public GridSqlSelect copySelectForUpdate() {
+        assert isForUpdate && !distinct && havingCol < 0 && grpCols == null; // Not supported by SFU.
+
+        GridSqlSelect copy = new GridSqlSelect();
+
+        copy.from(from())
+            .where(where());
+
+        int vis = visibleColumns();
+
+        for (int i = 0; i < columns(false).size(); i++)
+            copy.addColumn(column(i), i < vis);
+
+        if (!sort().isEmpty()) {
+            for (GridSqlSortColumn sortCol : sort())
+                copy.addSort(sortCol);
+        }
+
+        return copy;
+    }
+
+    /**
+     * @param canBeLazy see {@link #canBeLazy()}.
+     */
+    public void canBeLazy(boolean canBeLazy) {
+        this.canBeLazy = canBeLazy;
+    }
+
+    /**
+     * Used only for SELECT based on UPDATE.
+     * It cannot be lazy when updated columns are used in the conditions.
+     * In this case index based on these columns may be chosen to scan and some rows may be updated
+     * more than once time.
+     *
+     * @return {@code true} is lazy flag is applicable.
+     */
+    public boolean canBeLazy() {
+        return canBeLazy;
     }
 }

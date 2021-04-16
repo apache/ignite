@@ -21,9 +21,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -35,13 +32,10 @@ import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests affinity history assignment diff calculation for history assignment.
  */
-@RunWith(JUnit4.class)
 public class GridHistoryAffinityAssignmentTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -60,7 +54,7 @@ public class GridHistoryAffinityAssignmentTest extends GridCommonAbstractTest {
         List<List<ClusterNode>> curr = new ArrayList<>();
         List<List<ClusterNode>> ideal = new ArrayList<>();
 
-        for(int i = 0; i < cnt; i++) {
+        for (int i = 0; i < cnt; i++) {
             List<ClusterNode> nodes = Arrays.asList(new GridTestNode(UUID.randomUUID()), new GridTestNode(UUID.randomUUID()));
             curr.add(nodes);
             ideal.add(Arrays.asList(nodes.get(1), nodes.get(0)));
@@ -68,13 +62,13 @@ public class GridHistoryAffinityAssignmentTest extends GridCommonAbstractTest {
 
         AffinityTopologyVersion topVer = new AffinityTopologyVersion(1, 0);
         HistoryAffinityAssignment lateAssign =
-            new HistoryAffinityAssignment(new GridAffinityAssignmentV2(topVer, curr, ideal), 1);
+            new HistoryAffinityAssignmentImpl(new GridAffinityAssignmentV2(topVer, curr, ideal), 1);
 
         assertEquals("Late", curr, lateAssign.assignment());
         assertEquals("Ideal late", ideal, lateAssign.idealAssignment());
 
         HistoryAffinityAssignment idealAssign = new
-            HistoryAffinityAssignment(new GridAffinityAssignmentV2(topVer, ideal, ideal), 1);
+            HistoryAffinityAssignmentImpl(new GridAffinityAssignmentV2(topVer, ideal, ideal), 1);
 
         assertSame(idealAssign.assignment(), idealAssign.idealAssignment());
 

@@ -18,4 +18,5 @@
 /**
  * Contains session pool implenetation for Cassandra sessions
  */
+
 package org.apache.ignite.cache.store.cassandra.session.pool;

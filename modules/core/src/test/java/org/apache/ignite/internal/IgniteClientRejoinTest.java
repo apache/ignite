@@ -48,12 +48,16 @@ import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 
 /**
  * Tests client to be able restore connection to cluster if coordination is not available.
  */
+@WithSystemProperty(key = IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK, value = "true")
 public class IgniteClientRejoinTest extends GridCommonAbstractTest {
     /** Block. */
     private volatile boolean block;
@@ -66,16 +70,6 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
 
     /** Client reconnect disabled. */
     private boolean clientReconnectDisabled;
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty("IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK", "true");
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        System.clearProperty("IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK");
-    }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -103,8 +97,6 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
 
             dspi.setJoinTimeout(60_000);
             dspi.setClientReconnectDisabled(clientReconnectDisabled);
-
-            cfg.setClientMode(true);
         }
 
         // TODO: IGNITE-4833
@@ -131,7 +123,7 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
         final int CLIENTS_NUM = 5;
 
         for (int i = 0; i < CLIENTS_NUM; i++)
-            clientNodes.add(startGrid("client" + i));
+            clientNodes.add(startClientGrid("client" + i));
 
         blockAll = true;
 
@@ -229,7 +221,7 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
                             }
                         });
 
-                    return startGrid(nodeName, optimize(cfg), null);
+                    return startClientGrid(nodeName, optimize(cfg));
                 }
             });
 
@@ -303,7 +295,7 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
 
                     String igniteInstanceName = "client" + idx;
 
-                    return startGrid(igniteInstanceName, getConfiguration(igniteInstanceName)
+                    return startClientGrid(igniteInstanceName, getConfiguration(igniteInstanceName)
                         .setFailureHandler(new TestFailureHandler(true, failureHndLatch)));
                 }
             });

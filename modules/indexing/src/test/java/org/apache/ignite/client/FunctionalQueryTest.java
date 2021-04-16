@@ -18,6 +18,7 @@
 package org.apache.ignite.client;
 
 import java.lang.invoke.SerializedLambda;
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -41,7 +42,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * Thin client functional tests.
@@ -233,6 +235,65 @@ public class FunctionalQueryTest {
                     assertEquals(0, res2.size());
                 }
             }
+        }
+    }
+
+    /** */
+    @Test
+    public void testMixedQueryAndCacheApiOperations() throws Exception {
+        try (Ignite ignored = Ignition.start(Config.getServerConfiguration());
+             IgniteClient client = Ignition.startClient(
+                 new ClientConfiguration().setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(true))
+                     .setAddresses(Config.SERVER))
+        ) {
+            String cacheName = "PersonCache";
+
+            client.query(
+                new SqlFieldsQuery(String.format(
+                    "CREATE TABLE IF NOT EXISTS Person (key INT PRIMARY KEY, name VARCHAR) WITH \"VALUE_TYPE=%s,CACHE_NAME=%s\"",
+                    Person.class.getName(), cacheName
+                )).setSchema("PUBLIC")
+            ).getAll();
+
+            client.query(new SqlFieldsQuery("INSERT INTO Person(key, name) VALUES(?, ?)")
+                .setArgs(1, "Person 1")
+                .setSchema("PUBLIC")
+            ).getAll();
+
+            ClientCache<Integer, Person> cache = client.cache(cacheName);
+
+            cache.put(2, new Person(2, "Person 2"));
+
+            assertEquals("Person 1", cache.get(1).getName());
+
+            assertEquals("Person 2", client.query(
+                new SqlFieldsQuery("SELECT name FROM PUBLIC.Person WHERE key = 2")).getAll().get(0).get(0));
+        }
+    }
+
+    /** Tests {@link SqlFieldsQuery} parameter validation. */
+    @Test
+    public void testSqlParameterValidation() throws Exception {
+        try (Ignite ignored = Ignition.start(Config.getServerConfiguration());
+             IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))
+        ) {
+            // Set fields with reflection to bypass client-side validation and verify server-side check.
+            SqlFieldsQuery qry = new SqlFieldsQuery("SELECT * FROM Person");
+
+            Field updateBatchSize = SqlFieldsQuery.class.getDeclaredField("updateBatchSize");
+            updateBatchSize.setAccessible(true);
+            updateBatchSize.setInt(qry, -1);
+
+            GridTestUtils.assertThrowsAnyCause(null, () -> client.query(qry).getAll(),
+                    ClientException.class, "updateBatchSize cannot be lower than 1");
+
+            Field parts = SqlFieldsQuery.class.getDeclaredField("parts");
+            parts.setAccessible(true);
+            parts.set(qry, new int[] {-1});
+            qry.setUpdateBatchSize(2);
+
+            GridTestUtils.assertThrowsAnyCause(null, () -> client.query(qry).getAll(),
+                    ClientException.class, "Illegal partition");
         }
     }
 

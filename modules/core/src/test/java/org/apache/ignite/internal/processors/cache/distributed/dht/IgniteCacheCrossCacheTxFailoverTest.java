@@ -52,8 +52,8 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
 import static org.apache.ignite.testframework.GridTestUtils.SF;
+import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -82,9 +82,6 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (igniteInstanceName.equals(getTestIgniteInstanceName(GRID_CNT - 1)))
-            cfg.setClientMode(true);
-
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         return cfg;
@@ -94,7 +91,8 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGrids(4);
+        startGrids(GRID_CNT - 1);
+        startClientGrid(GRID_CNT - 1);
     }
 
     /**
@@ -297,7 +295,7 @@ public class IgniteCacheCrossCacheTxFailoverTest extends GridCommonAbstractTest 
                 }
             }, 10, "tx-thread");
 
-            long stopTime = System.currentTimeMillis() + SF.applyLB(3 * 60_000, 20_000);
+            long stopTime = System.currentTimeMillis() + SF.applyLB((int)TEST_TIME, 20_000);
 
             long topVer = ignite0.cluster().topologyVersion();
 

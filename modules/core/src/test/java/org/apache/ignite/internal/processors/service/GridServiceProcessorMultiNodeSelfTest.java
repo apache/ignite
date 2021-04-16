@@ -127,7 +127,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
     @Test
     public void testDeployOnEachNodeButClientUpdateTopology() throws Exception {
         // Prestart client node.
-        Ignite client = startGrid("client", getConfiguration("client").setClientMode(true));
+        Ignite client = startClientGrid("client", getConfiguration("client"));
 
         try {
             final String name = "serviceOnEachNodeButClientUpdateTopology";
@@ -193,7 +193,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
     @Test
     public void testDeployOnEachProjectionNodeUpdateTopology() throws Exception {
         // Prestart client node.
-        Ignite client = startGrid("client", getConfiguration("client").setClientMode(true));
+        Ignite client = startClientGrid("client", getConfiguration("client"));
 
         try {
             final String name = "serviceOnEachProjectionNodeUpdateTopology";
@@ -261,7 +261,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
     @Test
     public void testDeployOnEachNodeUpdateTopology() throws Exception {
         // Prestart client node.
-        Ignite client = startGrid("client", getConfiguration("client").setClientMode(true));
+        Ignite client = startClientGrid("client", getConfiguration("client"));
 
         try {
             final String name = "serviceOnEachNodeUpdateTopology";

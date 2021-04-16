@@ -22,9 +22,11 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.Callable;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -154,5 +156,116 @@ public class QueryEntityValidationSelfTest extends AbstractIndexingCommonTest {
                 return null;
             }
         }, IgniteCheckedException.class, "Duplicate index name");
+    }
+
+    /**
+     * Test class for sql queryable test key.
+     */
+    private static class TestKey {
+        /** Non-unique id. */
+        @QuerySqlField
+        int notUniqueId;
+    }
+
+    /**
+     * Test class for sql queryable test value.
+     */
+    private static class TestValue {
+        /** Field with nested queryable field. */
+        @QuerySqlField
+        TestValueField field;
+    }
+
+    /**
+     * Test class for nested sql queryable field.
+     */
+    private static class TestValueField {
+        /** Not unique id. */
+        @QuerySqlField
+        int notUniqueId;
+    }
+
+    /**
+     * Test duplicated nested annotations.
+     */
+    @Test
+    public void testNestedDuplicatedAnnotations() {
+        final CacheConfiguration<TestKey, TestValue> ccfg = new CacheConfiguration<TestKey, TestValue>().setName(CACHE_NAME);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() {
+                ccfg.setIndexedTypes(TestKey.class, TestValue.class);
+
+                return null;
+            }
+        }, CacheException.class, "Property with name 'notUniqueId' already exists");
+    }
+
+    /**
+     * Test class for sql queryable test key with unique annotation's name property.
+     */
+    private static class TestKeyWithUniqueName {
+        /** Non-unique id. */
+        @QuerySqlField(name = "Name1")
+        int notUniqueId;
+    }
+
+    /**
+     * Test class for sql queryable test value with unique annotation's name property.
+     */
+    private static class TestValueWithUniqueName {
+        /** Not unique id. */
+        @QuerySqlField(name = "Name2")
+        int notUniqueId;
+    }
+
+    /**
+     * Test to check validation of known fields names with unique QuerySqlField annotation's name properties
+     *
+     * Steps:
+     * 1) Create 2 classes with same field name, but with different name property for QuerySqlField annotation
+     * 2) Check that CacheConfiguration.setIndexedTypes() works correctly
+     */
+    @Test
+    public void testUniqueNameInAnnotation() {
+        final CacheConfiguration<TestKeyWithUniqueName, TestValueWithUniqueName> ccfg = new CacheConfiguration<TestKeyWithUniqueName, TestValueWithUniqueName>().setName(CACHE_NAME);
+
+        assertNotNull(ccfg.setIndexedTypes(TestKeyWithUniqueName.class, TestValueWithUniqueName.class));
+    }
+
+    /**
+     * Test class for sql queryable test key with not unique annotation's name property.
+     */
+    private static class TestKeyWithNotUniqueName {
+        /** Unique id. */
+        @QuerySqlField(name = "Name3")
+        int uniqueId1;
+    }
+
+    /**
+     * Test class for sql queryable test value with not unique annotation's name property.
+     */
+    private static class TestValueWithNotUniqueName {
+        /** Unique id. */
+        @QuerySqlField(name = "Name3")
+        int uniqueId2;
+    }
+
+    /**
+     * Test to check validation of known fields names with not unique QuerySqlField annotation's name properties
+     *
+     * Steps:
+     * 1) Create 2 classes with different field names and with same name property for QuerySqlField annotation
+     * 2) Check that CacheConfiguration.setIndexedTypes() fails with "Property with name ... already exists" exception
+     */
+    @Test
+    public void testNotUniqueNameInAnnotation() {
+        final CacheConfiguration<TestKeyWithNotUniqueName, TestValueWithNotUniqueName> ccfg = new CacheConfiguration<TestKeyWithNotUniqueName, TestValueWithNotUniqueName>().setName(CACHE_NAME);
+
+        GridTestUtils.assertThrows(log, (Callable<Void>)() -> {
+            ccfg.setIndexedTypes(TestKeyWithNotUniqueName.class, TestValueWithNotUniqueName.class);
+
+            return null;
+        }, CacheException.class, "Property with name 'Name3' already exists");
     }
 }

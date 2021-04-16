@@ -33,12 +33,16 @@ import org.apache.ignite.ml.math.util.MatrixUtil;
 public class DenseMatrixStorage implements MatrixStorage {
     /** Backing data array. */
     private double[] data;
+
     /** Amount of rows in the matrix. */
     private int rows;
+
     /** Amount of columns in the matrix. */
     private int cols;
+
     /** Mode specifying if this matrix is row-major or column-major. */
     private int stoMode;
+
     /** Index mapper */
     private IgniteIntIntToIntBiFunction idxMapper;
 
@@ -113,23 +117,8 @@ public class DenseMatrixStorage implements MatrixStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isSequentialAccess() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isDense() {
         return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isRandomAccess() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isDistributed() {
-        return false;
     }
 
     /** {@inheritDoc} */
@@ -193,8 +182,8 @@ public class DenseMatrixStorage implements MatrixStorage {
         data = (double[])in.readObject();
     }
 
-    /** Get the access mode of this storage. */
-    public int accessMode() {
+    /** {@inheritDoc} */
+    @Override public int accessMode() {
         return stoMode;
     }
 

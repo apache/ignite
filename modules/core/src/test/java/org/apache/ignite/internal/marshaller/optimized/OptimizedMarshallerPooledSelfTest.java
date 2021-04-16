@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.marshaller.optimized;
 
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerSelfTest;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 

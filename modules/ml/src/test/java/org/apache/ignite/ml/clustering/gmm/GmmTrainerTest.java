@@ -21,12 +21,10 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.common.TrainerTest;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
-import org.apache.ignite.ml.math.primitives.vector.impl.DenseVector;
-import org.apache.ignite.ml.structures.LabeledVector;
-import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -53,16 +51,16 @@ public class GmmTrainerTest extends TrainerTest {
             .withInitialMeans(Arrays.asList(
                 VectorUtils.of(1.0, 2.0),
                 VectorUtils.of(-1.0, -2.0)));
-        GmmModel model = trainer.fit(
+
+        GmmModel mdl = trainer.fit(
             new LocalDatasetBuilder<>(data, parts),
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[2]
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
-        Assert.assertEquals(2, model.countOfComponents());
-        Assert.assertEquals(2, model.dimension());
-        Assert.assertArrayEquals(new double[] {1.33, 1.33}, model.distributions().get(0).mean().asArray(), 1e-2);
-        Assert.assertArrayEquals(new double[] {-1.33, -1.33}, model.distributions().get(1).mean().asArray(), 1e-2);
+        Assert.assertEquals(2, mdl.countOfComponents());
+        Assert.assertEquals(2, mdl.dimension());
+        Assert.assertArrayEquals(new double[] {1.33, 1.33}, mdl.distributions().get(0).mean().asArray(), 1e-2);
+        Assert.assertArrayEquals(new double[] {-1.33, -1.33}, mdl.distributions().get(1).mean().asArray(), 1e-2);
     }
 
     /** */
@@ -74,8 +72,7 @@ public class GmmTrainerTest extends TrainerTest {
         try {
             trainer.fit(
                 new LocalDatasetBuilder<>(new HashMap<>(), parts),
-                (k, v) -> new DenseVector(2),
-                (k, v) -> 1.0
+                new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
             );
         }
         catch (RuntimeException e) {
@@ -90,26 +87,20 @@ public class GmmTrainerTest extends TrainerTest {
             .withInitialMeans(Arrays.asList(
                 VectorUtils.of(1.0, 2.0),
                 VectorUtils.of(-1.0, -2.0)));
-        GmmModel model = trainer.fit(
+
+        GmmModel mdl = trainer.fit(
             new LocalDatasetBuilder<>(data, parts),
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[2]
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
-        model = trainer.updateModel(model,
+        mdl = trainer.updateModel(mdl,
             new LocalDatasetBuilder<>(new HashMap<>(), parts),
-            new FeatureLabelExtractor<Double, Vector, Double>() {
-                private static final long serialVersionUID = -7245682432641745217L;
-
-                @Override public LabeledVector<Double> extract(Double aDouble, Vector vector) {
-                    return new LabeledVector<>(new DenseVector(2), 1.0);
-                }
-            }
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
-        Assert.assertEquals(2, model.countOfComponents());
-        Assert.assertEquals(2, model.dimension());
-        Assert.assertArrayEquals(new double[] {1.33, 1.33}, model.distributions().get(0).mean().asArray(), 1e-2);
-        Assert.assertArrayEquals(new double[] {-1.33, -1.33}, model.distributions().get(1).mean().asArray(), 1e-2);
+        Assert.assertEquals(2, mdl.countOfComponents());
+        Assert.assertEquals(2, mdl.dimension());
+        Assert.assertArrayEquals(new double[] {1.33, 1.33}, mdl.distributions().get(0).mean().asArray(), 1e-2);
+        Assert.assertArrayEquals(new double[] {-1.33, -1.33}, mdl.distributions().get(1).mean().asArray(), 1e-2);
     }
 }

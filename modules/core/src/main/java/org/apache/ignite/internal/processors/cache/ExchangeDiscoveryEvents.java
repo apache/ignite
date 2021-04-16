@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheEvent;
@@ -57,13 +59,13 @@ public class ExchangeDiscoveryEvents {
     private DiscoveryEvent lastSrvEvt;
 
     /** All events. */
-    private List<DiscoveryEvent> evts = new ArrayList<>();
+    private Collection<DiscoveryEvent> evts = new ConcurrentLinkedQueue<>();
 
-    /** Server join flag. */
-    private boolean srvJoin;
+    /** Joined server nodes. */
+    private Collection<ClusterNode> joinedSrvNodes = new ConcurrentLinkedQueue<>();
 
-    /** Sever left flag. */
-    private boolean srvLeft;
+    /** Left server nodes. */
+    private Collection<ClusterNode> leftSrvNodes = new ConcurrentLinkedQueue<>();
 
     /**
      * @param fut Current exchange future.
@@ -85,9 +87,7 @@ public class ExchangeDiscoveryEvents {
      * @return {@code True} if has join event for give node.
      */
     public boolean nodeJoined(UUID nodeId) {
-        for (int i = 0; i < evts.size(); i++) {
-            DiscoveryEvent evt = evts.get(i);
-
+        for (DiscoveryEvent evt : evts) {
             if (evt.type() == EVT_NODE_JOINED && nodeId.equals(evt.eventNode().id()))
                 return true;
         }
@@ -125,17 +125,17 @@ public class ExchangeDiscoveryEvents {
 
             srvEvtTopVer = new AffinityTopologyVersion(evt.topologyVersion(), 0);
 
-            if (evt.type()== EVT_NODE_JOINED)
-                srvJoin = true;
+            if (evt.type() == EVT_NODE_JOINED)
+                joinedSrvNodes.add(evt.eventNode());
             else if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED)
-                srvLeft = !node.isClient();
+                leftSrvNodes.add(evt.eventNode());
         }
     }
 
     /**
      * @return All events.
      */
-    public List<DiscoveryEvent> events() {
+    public Collection<DiscoveryEvent> events() {
         return evts;
     }
 
@@ -144,7 +144,7 @@ public class ExchangeDiscoveryEvents {
      * @return {@code True} if given event is {@link EventType#EVT_NODE_FAILED} or {@link EventType#EVT_NODE_LEFT}.
      */
     public static boolean serverLeftEvent(DiscoveryEvent evt) {
-        return  ((evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT) && !evt.eventNode().isClient());
+        return ((evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT) && !evt.eventNode().isClient());
     }
 
     /**
@@ -152,7 +152,7 @@ public class ExchangeDiscoveryEvents {
      * @return {@code True} if given event is {@link EventType#EVT_NODE_JOINED}.
      */
     public static boolean serverJoinEvent(DiscoveryEvent evt) {
-        return  (evt.type() == EVT_NODE_JOINED && !evt.eventNode().isClient());
+        return (evt.type() == EVT_NODE_JOINED && !evt.eventNode().isClient());
     }
 
     /**
@@ -180,14 +180,28 @@ public class ExchangeDiscoveryEvents {
      * @return {@code True} if has event for server join.
      */
     public boolean hasServerJoin() {
-        return srvJoin;
+        return !joinedSrvNodes.isEmpty();
     }
 
     /**
      * @return {@code True} if has event for server leave.
      */
     public boolean hasServerLeft() {
-        return srvLeft;
+        return !leftSrvNodes.isEmpty();
+    }
+
+    /**
+     *
+     */
+    public Collection<ClusterNode> joinedServerNodes() {
+        return joinedSrvNodes;
+    }
+
+    /**
+     *
+     */
+    public Collection<ClusterNode> leftServerNodes() {
+        return leftSrvNodes;
     }
 
     /**

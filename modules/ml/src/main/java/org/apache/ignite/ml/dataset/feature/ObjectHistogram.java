@@ -60,9 +60,9 @@ public abstract class ObjectHistogram<T> implements Histogram<T, ObjectHistogram
         TreeMap<Integer, Double> res = new TreeMap<>();
 
         double accum = 0.0;
-        for (Integer bucket : hist.keySet()) {
-            accum += hist.get(bucket);
-            res.put(bucket, accum);
+        for (Map.Entry<Integer, Double> entry : hist.entrySet()) {
+            accum += entry.getValue();
+            res.put(entry.getKey(), accum);
         }
 
         return res;
@@ -71,7 +71,7 @@ public abstract class ObjectHistogram<T> implements Histogram<T, ObjectHistogram
     /** {@inheritDoc} */
     @Override public ObjectHistogram<T> plus(ObjectHistogram<T> other) {
         ObjectHistogram<T> res = newInstance();
-        addTo(this.hist, res.hist);
+        addTo(hist, res.hist);
         addTo(other.hist, res.hist);
         return res;
     }
@@ -93,13 +93,13 @@ public abstract class ObjectHistogram<T> implements Histogram<T, ObjectHistogram
     @Override public boolean isEqualTo(ObjectHistogram<T> other) {
         Set<Integer> totalBuckets = new HashSet<>(buckets());
         totalBuckets.addAll(other.buckets());
-        if(totalBuckets.size() != buckets().size())
+        if (totalBuckets.size() != buckets().size())
             return false;
 
-        for(Integer bucketId : totalBuckets) {
+        for (Integer bucketId : totalBuckets) {
             double leftVal = hist.get(bucketId);
             double rightVal = other.hist.get(bucketId);
-            if(Math.abs(leftVal - rightVal) > 0.001)
+            if (Math.abs(leftVal - rightVal) > 0.001)
                 return false;
         }
 
@@ -118,14 +118,14 @@ public abstract class ObjectHistogram<T> implements Histogram<T, ObjectHistogram
      * Counter mapping.
      *
      * @param obj Object.
-     * @return counter.
+     * @return Counter.
      */
     public abstract Double mapToCounter(T obj);
 
     /**
      * Creates an instance of ObjectHistogram from child class.
      *
-     * @return object histogram.
+     * @return Object histogram.
      */
     public abstract ObjectHistogram<T> newInstance();
 }

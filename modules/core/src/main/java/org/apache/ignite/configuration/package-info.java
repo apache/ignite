@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains configuration-related classes.
  */
+
 package org.apache.ignite.configuration;

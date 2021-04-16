@@ -20,19 +20,25 @@ package org.apache.ignite.spi.discovery.tcp;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.Collections;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.query.DummyQueryIndexing;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
 import org.junit.Test;
 
 /**
@@ -45,6 +51,9 @@ import org.junit.Test;
 public class TcpDiscoveryFailedJoinTest extends GridCommonAbstractTest {
     /** */
     private static final int FAIL_PORT = 47503;
+
+    /** */
+    private static final int BIND_PORT = 47511;
 
     /** */
     private SpiFailType failType = SpiFailType.REFUSE;
@@ -63,22 +72,49 @@ public class TcpDiscoveryFailedJoinTest extends GridCommonAbstractTest {
 
         discoSpi.setIpFinder(finder);
         discoSpi.setNetworkTimeout(2_000);
+        discoSpi.setForceServerMode(gridName.contains("client") && gridName.contains("server"));
 
         cfg.setDiscoverySpi(discoSpi);
 
-        if (gridName.contains("client")) {
-            cfg.setClientMode(true);
+        if (gridName.contains("failingNode")) {
+            GridQueryProcessor.idxCls = FailingIndexing.class;
 
-            discoSpi.setForceServerMode(gridName.contains("server"));
+            cfg.setLocalHost("127.0.0.1");
         }
 
         return cfg;
     }
 
-    /** */
-    @After
-    public void afterTest() throws Exception {
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
         stopAllGrids();
+
+        GridQueryProcessor.idxCls = null;
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testPortReleasedAfterFailure() throws Exception {
+        try {
+            startGrid("failingNode-" + BIND_PORT);
+
+            fail("Node start should fail");
+        }
+        catch (Exception e) {
+            // Expected exception. Check that BIND_PORT can be re-bound.
+            ServerSocket sock = new ServerSocket();
+
+            try {
+                sock.setReuseAddress(true);
+
+                sock.bind(new InetSocketAddress("127.0.0.1", BIND_PORT));
+            }
+            finally {
+                U.close(sock, log);
+            }
+        }
     }
 
     /**
@@ -98,7 +134,7 @@ public class TcpDiscoveryFailedJoinTest extends GridCommonAbstractTest {
         assertStartFailed("client_server-47503");
 
         // Regular client starts normally.
-        startGrid("client-47503");
+        startClientGrid("client-47503");
     }
 
     /**
@@ -118,7 +154,7 @@ public class TcpDiscoveryFailedJoinTest extends GridCommonAbstractTest {
         assertStartFailed("client_server-47503");
 
         // Regular client starts normally.
-        startGrid("client-47503");
+        startClientGrid("client-47503");
     }
 
     /**
@@ -127,7 +163,10 @@ public class TcpDiscoveryFailedJoinTest extends GridCommonAbstractTest {
     private void assertStartFailed(final String name) {
         //noinspection ThrowableNotThrown
         GridTestUtils.assertThrows(log, () -> {
-            startGrid(name);
+            if (name.contains("client"))
+                startClientGrid(name);
+            else
+                startGrid(name);
 
             return null;
         }, IgniteCheckedException.class, null);
@@ -193,6 +232,18 @@ public class TcpDiscoveryFailedJoinTest extends GridCommonAbstractTest {
             long timeout) throws IOException {
             if (sock.getPort() != FAIL_PORT)
                 super.writeToSocket(msg, sock, res, timeout);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class FailingIndexing extends DummyQueryIndexing {
+        /** {@inheritDoc} */
+        @Override public void start(GridKernalContext ctx, GridSpinBusyLock busyLock) {
+            ctx.discovery().consistentId();
+
+            throw new IgniteException("Failed to start");
         }
     }
 

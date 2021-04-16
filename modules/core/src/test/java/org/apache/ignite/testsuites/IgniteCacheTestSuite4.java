@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.CacheGetEntryOptimisticSerial
 import org.apache.ignite.internal.processors.cache.CacheGetEntryPessimisticReadCommittedSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheGetEntryPessimisticRepeatableReadSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheGetEntryPessimisticSerializableSelfTest;
+import org.apache.ignite.internal.processors.cache.CacheGetRemoveSkipStoreTest;
 import org.apache.ignite.internal.processors.cache.CacheOffheapMapEntrySelfTest;
 import org.apache.ignite.internal.processors.cache.CacheReadThroughAtomicRestartSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheReadThroughLocalAtomicRestartSelfTest;
@@ -56,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMultinodeUpdateAtomi
 import org.apache.ignite.internal.processors.cache.GridCacheMultinodeUpdateNearEnabledNoBackupsSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheMultinodeUpdateNearEnabledSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheMultinodeUpdateSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheProcessorActiveTxTest;
 import org.apache.ignite.internal.processors.cache.GridCacheStoreManagerDeserializationTest;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionMultinodeTest;
 import org.apache.ignite.internal.processors.cache.GridLocalCacheStoreManagerDeserializationTest;
@@ -85,7 +87,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheTxPreloadNoWriteTe
 import org.apache.ignite.internal.processors.cache.IgniteCacheTxReplicatedPeekModesTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheTxStoreValueTest;
 import org.apache.ignite.internal.processors.cache.IgniteClientCacheInitializationFailTest;
-import org.apache.ignite.internal.processors.cache.IgniteDiscoveryDataHandlingInNewClusterTest;
+import org.apache.ignite.internal.processors.cache.IgniteDiscoDataHandlingInNewClusterTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheFilterTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheMultinodeTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartCoordinatorFailoverTest;
@@ -157,6 +159,7 @@ import org.apache.ignite.internal.processors.cache.version.CacheVersionedEntryPa
 import org.apache.ignite.internal.processors.cache.version.CacheVersionedEntryPartitionedTransactionalSelfTest;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionedEntryReplicatedAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionedEntryReplicatedTransactionalSelfTest;
+import org.apache.ignite.internal.processors.query.ScanQueriesTopologyMappingTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
@@ -207,6 +210,7 @@ public class IgniteCacheTestSuite4 {
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheTxNoReadThroughTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheTxNearEnabledNoReadThroughTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheTxLocalNoReadThroughTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheGetRemoveSkipStoreTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheAtomicNoLoadPreviousValueTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheAtomicNearEnabledNoLoadPreviousValueTest.class, ignoredTests);
@@ -258,9 +262,10 @@ public class IgniteCacheTestSuite4 {
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheCreatePutTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheStartOnJoinTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheStartTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, IgniteDiscoveryDataHandlingInNewClusterTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteDiscoDataHandlingInNewClusterTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheDiscoveryDataConcurrentJoinTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteClientCacheInitializationFailTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, ScanQueriesTopologyMappingTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheFailedUpdateResponseTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, GridCacheTxLoadFromStoreOnLockSelfTest.class, ignoredTests);
@@ -357,6 +362,8 @@ public class IgniteCacheTestSuite4 {
         GridTestUtils.addTestIfNeeded(suite, CacheResultIsNotNullOnPartitionLossTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, CacheEventWithTxLabelTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, GridCacheProcessorActiveTxTest.class, ignoredTests);
 
         return suite;
     }

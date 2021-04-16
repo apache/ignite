@@ -29,7 +29,6 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
@@ -38,16 +37,6 @@ import org.junit.Test;
 
 /** */
 public class CacheQueryMemoryLeakTest extends AbstractIndexingCommonTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration igniteCfg = super.getConfiguration(igniteInstanceName);
-
-        if (igniteInstanceName.equals("client"))
-            igniteCfg.setClientMode(true);
-
-        return igniteCfg;
-    }
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
@@ -60,8 +49,8 @@ public class CacheQueryMemoryLeakTest extends AbstractIndexingCommonTest {
      */
     @Test
     public void testResultIsMultipleOfPage() throws Exception {
-        IgniteEx srv = (IgniteEx)startGrid("server");
-        Ignite client = startGrid("client");
+        IgniteEx srv = startGrid("server");
+        Ignite client = startClientGrid("client");
 
         IgniteCache<Integer, Person> cache = startPeopleCache(client);
 

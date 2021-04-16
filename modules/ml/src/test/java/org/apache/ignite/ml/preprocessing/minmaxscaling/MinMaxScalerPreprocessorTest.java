@@ -17,8 +17,8 @@
 
 package org.apache.ignite.ml.preprocessing.minmaxscaling;
 
-import org.apache.ignite.ml.math.primitives.vector.Vector;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -37,21 +37,23 @@ public class MinMaxScalerPreprocessorTest {
             {0., 22., 300.}
         };
 
-        MinMaxScalerPreprocessor<Integer, Vector> preprocessor = new MinMaxScalerPreprocessor<>(
+        Vectorizer<Integer, double[], Integer, Double> vectorizer = new DoubleArrayVectorizer<>(0, 1, 2);
+
+        MinMaxScalerPreprocessor<Integer, double[]> preprocessor = new MinMaxScalerPreprocessor<>(
             new double[] {0, 4, 1},
             new double[] {4, 22, 300},
-            (k, v) -> v
+            vectorizer
         );
 
         double[][] standardData = new double[][]{
-            {2. / 4, (4. - 4.) / 18.,  0.},
-            {1. / 4, (8. - 4.) / 18.,  (22. - 1.) / 299.},
-            {1.,     (10. - 4.) / 18., (100. - 1.) / 299.},
-            {0.,     (22. - 4.) / 18., (300. - 1.) / 299.}
+            {2. / 4, (4. - 4.) / 18., 0.},
+            {1. / 4, (8. - 4.) / 18., (22. - 1.) / 299.},
+            {1., (10. - 4.) / 18., (100. - 1.) / 299.},
+            {0., (22. - 4.) / 18., (300. - 1.) / 299.}
         };
 
        for (int i = 0; i < data.length; i++)
-           assertArrayEquals(standardData[i], preprocessor.apply(i, VectorUtils.of(data[i])).asArray(), 1e-8);
+           assertArrayEquals(standardData[i], preprocessor.apply(i, data[i]).features().asArray(), 1e-8);
     }
 
     /** Test {@code apply()} method with division by zero. */
@@ -59,15 +61,15 @@ public class MinMaxScalerPreprocessorTest {
     public void testApplyDivisionByZero() {
         double[][] data = new double[][]{{1.}, {1.}, {1.}, {1.}};
 
-        MinMaxScalerPreprocessor<Integer, Vector> preprocessor = new MinMaxScalerPreprocessor<>(
+        MinMaxScalerPreprocessor<Integer, double[]> preprocessor = new MinMaxScalerPreprocessor<>(
             new double[] {1.},
             new double[] {1.},
-            (k, v) -> v
+            new DoubleArrayVectorizer<>(0)
         );
 
         double[][] standardData = new double[][]{{0.}, {0.}, {0.}, {0.}};
 
         for (int i = 0; i < data.length; i++)
-            assertArrayEquals(standardData[i], preprocessor.apply(i, VectorUtils.of(data[i])).asArray(), 1e-8);
+            assertArrayEquals(standardData[i], preprocessor.apply(i, data[i]).features().asArray(), 1e-8);
     }
 }

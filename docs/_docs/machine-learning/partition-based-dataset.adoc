@@ -1,0 +1,100 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Partition Based Dataset
+
+== Overview
+
+Partition-Based Dataset is an abstraction layer on top of the Apache Ignite storage and computational capabilities that allow us to build algorithms in accordance with link:machine-learning/machine-learning#section-zero-etl-and-massive-scalability[zero ETL] and link:machine-learning/machine-learning#section-fault-tolerance-and-continuous-learning[fault tolerance] principles.
+
+A main idea behind the partition-based datasets is the classic MapReduce approach implemented using the Compute Grid in Ignite.
+
+The most important advantage of MapReduce is the ability to perform computations on data distributed across the cluster without involving significant data transfers over the network. This idea is adopted in the partition-based datasets in the following way:
+
+  * Every dataset is spread across partitions;
+  * Partitions hold a persistent *training context* and recoverable *training data* stored locally on every node;
+  * Computations needed to be performed on a dataset splits on *Map* operations which executes on every partition and *Reduce* operations which reduces results of *Map* operations to one final result.
+
+**Training Context (Partition Context)** is a persistent part of the partition which is kept in an Apache Ignite, so that all changes made in this part will be consistently maintained until a partition-based dataset is closed. Training context survives node failures but requires additional time to read and write, so it should be used only when it's not possible to use partition data.
+
+**Training Data (Partition Data)** is a part of the partition that can be recovered from the upstream data and context at any time. Because of this, it is not necessary to maintain partition data in some persistent storage, so that partition data is kept on every node in local storage (On-Heap, Off-Heap or even in GPU memory) and in case of node failure is recovered from upstream data and context on another node.
+
+Why have partitions been selected as dataset and learning building blocks instead of cluster nodes?
+
+One of the fundamental ideas of an Apache Ignite is that partitions are atomic, which means that they cannot be split between multiple nodes for more details). As a result in the case of rebalancing or node failure, a partition will be recovered on another node with the same data it contained on the previous node.
+
+In case of a machine learning algorithm, it's vital​ because most of the ML algorithms are iterative and require some context maintained between iterations. This context cannot be split or merged and should be maintained in a consistent state during the whole learning process.
+
+== Usage
+
+To build a partition-based dataset you need to specify:
+
+* Upstream Data Source which can be an Ignite Cache or just a Map with data;
+* Partition Context Builder that defines how to build a partition context from upstream data rows corresponding to this partition;
+* Partition Data Builder that defines how to build partition data from upstream data rows corresponding to this partition.
+
+
+.Cache-based Dataset
+[source, java]
+----
+Dataset<MyPartitionContext, MyPartitionData> dataset =
+    new CacheBasedDatasetBuilder<>(
+        ignite,                            // Upstream Data Source
+        upstreamCache
+    ).build(
+        new MyPartitionContextBuilder<>(), // Training Context Builder
+        new MyPartitionDataBuilder<>()     // Training Data Builder
+    );
+----
+
+
+.Local Dataset
+[source, java]
+----
+Dataset<MyPartitionContext, MyPartitionData> dataset =
+    new LocalDatasetBuilder<>(
+        upstreamMap,                       // Upstream Data Source
+        10
+    ).build(
+        new MyPartitionContextBuilder<>(), // Partition Context Builder
+        new MyPartitionDataBuilder<>()     // Partition Data Builder
+    );
+----
+
+After this you are able to perform different computations on this dataset in a MapReduce manner.
+
+
+[source, java]
+----
+int numerOfRows = dataset.compute(
+    (partitionData, partitionIdx) -> partitionData.getRows(),
+    (a, b) -> a == null ? b : a + b
+);
+----
+
+And, finally, when all computations are completed it's important to close the dataset and free resources.
+
+
+[source, java]
+----
+dataset.close();
+----
+
+== Example
+
+To see how the Partition Based Dataset can be used in practice, try this https://github.com/apache/ignite/blob/master/examples/src/main/java/org/apache/ignite/examples/ml/dataset/AlgorithmSpecificDatasetExample.java[example] that is available on GitHub and delivered with every Apache Ignite distribution.
+
+
+
+

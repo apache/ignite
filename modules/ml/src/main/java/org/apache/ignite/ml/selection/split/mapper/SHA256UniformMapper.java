@@ -31,7 +31,7 @@ import java.util.Random;
  * @param <K> Type of a key.
  * @param <V> Type of a value.
  */
-public class SHA256UniformMapper<K, V> implements UniformMapper<K,V> {
+public class SHA256UniformMapper<K, V> implements UniformMapper<K, V> {
     /** */
     private static final long serialVersionUID = -8179630783617088803L;
 
@@ -72,7 +72,7 @@ public class SHA256UniformMapper<K, V> implements UniformMapper<K,V> {
         for (int i = 0; i < 8; i++)
             resByte = (byte)(resByte << 1 | ((hashByte >> shuffleStgy.get(i)) & 0x1));
 
-        return  1.0 * (resByte & 0xFF) / 256;
+        return 1.0 * (resByte & 0xFF) / 256;
     }
 
     /**

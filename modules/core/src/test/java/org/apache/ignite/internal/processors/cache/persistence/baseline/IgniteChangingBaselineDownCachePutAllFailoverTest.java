@@ -69,6 +69,7 @@ public class IgniteChangingBaselineDownCachePutAllFailoverTest extends CachePutA
 
         startGrids(GRIDS_COUNT);
 
+        grid(0).cluster().baselineAutoAdjustEnabled(false);
         grid(0).active(true);
 
         awaitPartitionMapExchange();

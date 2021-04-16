@@ -39,6 +39,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.util.GridHandleTable;
 import org.apache.ignite.internal.util.io.GridDataOutput;
 import org.apache.ignite.internal.util.typedef.F;
@@ -63,7 +64,7 @@ import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshalle
 /**
  * Optimized object output stream.
  */
-class OptimizedObjectOutputStream extends ObjectOutputStream {
+public class OptimizedObjectOutputStream extends ObjectOutputStream {
     /** */
     private final GridHandleTable handles = new GridHandleTable(10, 3.00f);
 
@@ -201,6 +202,7 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
                 OptimizedClassDescriptor desc = classDescriptor(
                     clsMap,
                     obj instanceof Object[] ? Object[].class : obj.getClass(),
+                    GridBinaryMarshaller.USE_CACHE.get(),
                     ctx,
                     mapper);
 
@@ -228,6 +230,7 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
 
                     desc = classDescriptor(clsMap,
                         obj instanceof Object[] ? Object[].class : obj.getClass(),
+                        GridBinaryMarshaller.USE_CACHE.get(),
                         ctx,
                         mapper);
                 }
@@ -241,7 +244,7 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
                     else
                         desc.write(this, obj);
                 }
-                catch (IOException e){
+                catch (IOException e) {
                     throw new IOException("Failed to serialize object [typeName=" +
                         desc.describedClass().getName() + ']', e);
                 }
@@ -818,6 +821,7 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
 
         /** Fields info. */
         private final OptimizedClassDescriptor.ClassFields curFields;
+
         /** Values. */
         private final IgniteBiTuple<OptimizedFieldType, Object>[] objs;
 

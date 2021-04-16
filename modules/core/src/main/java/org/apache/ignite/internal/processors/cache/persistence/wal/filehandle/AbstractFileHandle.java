@@ -41,7 +41,7 @@ public abstract class AbstractFileHandle {
     /**
      * @return Absolute WAL segment file index (incremental counter).
      */
-    public long getSegmentId(){
+    public long getSegmentId() {
         return segmentIdx;
     }
 }

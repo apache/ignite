@@ -17,9 +17,12 @@
 
 package org.apache.ignite.ml.pipeline;
 
+import java.util.Collections;
+import java.util.List;
 import org.apache.ignite.ml.IgniteModel;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
+import org.apache.ignite.ml.environment.deploy.DeployableObject;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 
 /**
  * Wraps the model produced by {@link Pipeline}.
@@ -27,15 +30,12 @@ import org.apache.ignite.ml.math.primitives.vector.Vector;
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class PipelineMdl<K, V> implements IgniteModel<Vector, Double> {
+public final class PipelineMdl<K, V> implements IgniteModel<Vector, Double>, DeployableObject {
     /** Internal model produced by {@link Pipeline}. */
     private IgniteModel<Vector, Double> internalMdl;
 
-    /** Feature extractor. */
-    private IgniteBiFunction<K, V, Vector> featureExtractor;
-
-    /** Label extractor. */
-    private IgniteBiFunction<K, V, Double> lbExtractor;
+    /** Final preprocessor. */
+    private Preprocessor<K, V> preprocessor;
 
     /** */
     @Override public Double predict(Vector vector) {
@@ -43,13 +43,8 @@ public class PipelineMdl<K, V> implements IgniteModel<Vector, Double> {
     }
 
     /** */
-    public IgniteBiFunction<K, V, Vector> getFeatureExtractor() {
-        return featureExtractor;
-    }
-
-    /** */
-    public IgniteBiFunction<K, V, Double> getLabelExtractor() {
-        return lbExtractor;
+    public Preprocessor<K, V> getPreprocessor() {
+        return preprocessor;
     }
 
     /** */
@@ -64,14 +59,8 @@ public class PipelineMdl<K, V> implements IgniteModel<Vector, Double> {
     }
 
     /** */
-    public PipelineMdl<K, V> withFeatureExtractor(IgniteBiFunction featureExtractor) {
-        this.featureExtractor = featureExtractor;
-        return this;
-    }
-
-    /** */
-    public PipelineMdl<K, V> withLabelExtractor(IgniteBiFunction<K, V, Double> lbExtractor) {
-        this.lbExtractor = lbExtractor;
+    public PipelineMdl<K, V> withPreprocessor(Preprocessor<K, V> preprocessor) {
+        this.preprocessor = preprocessor;
         return this;
     }
 
@@ -80,5 +69,10 @@ public class PipelineMdl<K, V> implements IgniteModel<Vector, Double> {
         return "PipelineMdl{" +
             "internalMdl=" + internalMdl +
             '}';
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Object> getDependencies() {
+        return Collections.singletonList(preprocessor);
     }
 }

@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Cluster group example.
  */
+
 package org.apache.ignite.examples.cluster;

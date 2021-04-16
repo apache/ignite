@@ -17,11 +17,29 @@
 
 package org.apache.ignite.internal.processors.platform.utils;
 
+import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import javax.cache.CacheException;
+import javax.cache.event.CacheEntryEvent;
+import javax.cache.event.CacheEntryListenerException;
+import javax.cache.event.EventType;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -55,26 +73,10 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.logger.NullLogger;
 import org.jetbrains.annotations.Nullable;
-
-import javax.cache.CacheException;
-import javax.cache.event.CacheEntryEvent;
-import javax.cache.event.CacheEntryListenerException;
-import java.lang.reflect.Field;
-import java.math.BigDecimal;
-import java.security.Timestamp;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PREFIX;
 
@@ -83,7 +85,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PREFIX;
  */
 public class PlatformUtils {
     /** Node attribute: platform. */
-    public static final String ATTR_PLATFORM = ATTR_PREFIX  + ".platform";
+    public static final String ATTR_PLATFORM = ATTR_PREFIX + ".platform";
 
     /** Platform: CPP. */
     public static final String PLATFORM_CPP = "cpp";
@@ -611,6 +613,23 @@ public class PlatformUtils {
         writer.writeObjectDetached(evt.getKey());
         writer.writeObjectDetached(evt.getOldValue());
         writer.writeObjectDetached(evt.getValue());
+        writeEventType(writer, evt.getEventType());
+    }
+
+    /**
+     * Write event type to the writer.
+     * @param writer Writer.
+     * @param evtType Type of event.
+     */
+    private static void writeEventType(BinaryRawWriterEx writer, EventType evtType) {
+        switch (evtType) {
+            case CREATED: writer.writeByte((byte) 0); break;
+            case UPDATED: writer.writeByte((byte) 1); break;
+            case REMOVED: writer.writeByte((byte) 2); break;
+            case EXPIRED: writer.writeByte((byte) 3); break;
+            default:
+                throw new IllegalArgumentException("Unknown event type: " + evtType);
+        }
     }
 
     /**
@@ -692,7 +711,7 @@ public class PlatformUtils {
     }
 
     /**
-     * Get GridGain platform processor.
+     * Get platform processor.
      *
      * @param grid Ignite instance.
      * @return Platform processor.
@@ -813,12 +832,26 @@ public class PlatformUtils {
      */
     public static Object readInvocationResult(PlatformContext ctx, BinaryRawReaderEx reader)
         throws IgniteCheckedException {
+        return readInvocationResult(ctx, reader, false);
+    }
+
+    /**
+     * Reads invocation result (of a job/service/etc) using a common protocol.
+     *
+     * @param ctx Platform context.
+     * @param reader Reader.
+     * @param deserialize If {@code true} deserialize invocation result.
+     * @return Result.
+     * @throws IgniteCheckedException When invocation result is an error.
+     */
+    public static Object readInvocationResult(PlatformContext ctx, BinaryRawReaderEx reader, boolean deserialize)
+            throws IgniteCheckedException {
         // 1. Read success flag.
         boolean success = reader.readBoolean();
 
         if (success)
             // 2. Return result as is.
-            return reader.readObjectDetached();
+            return deserialize ? reader.readObject() : reader.readObjectDetached();
         else {
             // 3. Read whether exception is in form of object or string.
             boolean hasException = reader.readBoolean();
@@ -855,7 +888,7 @@ public class PlatformUtils {
 
         marsh.setContext(new MarshallerContextImpl(null, null));
 
-        ctx.configure(marsh, new IgniteConfiguration());
+        ctx.configure(marsh);
 
         return new GridBinaryMarshaller(ctx);
     }
@@ -956,6 +989,9 @@ public class PlatformUtils {
      * @return Result.
      */
     public static Object[] unwrapBinariesInArray(Object[] arr) {
+        if (arr.getClass().getComponentType() != Object.class)
+            return arr;
+
         Object[] res = new Object[arr.length];
 
         for (int i = 0; i < arr.length; i++)
@@ -978,6 +1014,7 @@ public class PlatformUtils {
 
         return map0;
     }
+
     /**
      * Create Java object.
      *
@@ -1179,8 +1216,7 @@ public class PlatformUtils {
 
         Map<String, BinaryFieldMetadata> fields = readLinkedMap(reader,
                 new PlatformReaderBiClosure<String, BinaryFieldMetadata>() {
-                    @Override
-                    public IgniteBiTuple<String, BinaryFieldMetadata> read(BinaryRawReaderEx reader) {
+                    @Override public IgniteBiTuple<String, BinaryFieldMetadata> read(BinaryRawReaderEx reader) {
                         String name = reader.readString();
                         int typeId = reader.readInt();
                         int fieldId = reader.readInt();
@@ -1265,6 +1301,39 @@ public class PlatformUtils {
         }
 
         return attrs;
+    }
+
+    /**
+     * Write binary productVersion.
+     *
+     * @param out Writer.
+     * @param productVersion IgniteProductVersion.
+     */
+    public static void writeNodeVersion(BinaryRawWriterEx out, IgniteProductVersion productVersion) {
+        out.writeByte(productVersion.major());
+        out.writeByte(productVersion.minor());
+        out.writeByte(productVersion.maintenance());
+        out.writeString(productVersion.stage());
+        out.writeLong(productVersion.revisionTimestamp());
+        out.writeByteArray(productVersion.revisionHash());
+    }
+
+    /**
+     * Reads collection of strings.
+     *
+     * @param reader Reader.
+     */
+    public static Collection<String> readStrings(BinaryRawReader reader) {
+        assert reader != null;
+
+        int cnt = reader.readInt();
+
+        Collection<String> strings = new ArrayList<>(cnt);
+
+        for (int i = 0; i < cnt; i++)
+            strings.add(reader.readString());
+
+        return strings;
     }
 
     /**

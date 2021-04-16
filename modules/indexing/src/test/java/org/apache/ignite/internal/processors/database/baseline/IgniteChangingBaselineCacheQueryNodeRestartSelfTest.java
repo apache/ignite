@@ -16,7 +16,6 @@
  */
 package org.apache.ignite.internal.processors.database.baseline;
 
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.Callable;
@@ -58,6 +57,7 @@ public class IgniteChangingBaselineCacheQueryNodeRestartSelfTest extends IgniteC
 
         initStoreStrategy();
 
+        grid(0).cluster().baselineAutoAdjustEnabled(false);
         grid(0).cluster().active(true);
 
         awaitPartitionMapExchange();
@@ -97,11 +97,12 @@ public class IgniteChangingBaselineCacheQueryNodeRestartSelfTest extends IgniteC
                         lastOpChangeUp = true;
                     }
 
-                    grid(0).cluster().setBaselineTopology(baselineNodes(grid(0).cluster().forServers().nodes()));
+                    resetBaselineTopology();
 
                     Thread.sleep(baselineTopChangeInterval);
 
-                    int c = restartCnt.incrementAndGet();
+                    //Only stopping node triggers Rebalance.
+                    int c = lastOpChangeUp ? restartCnt.get() : restartCnt.incrementAndGet();
 
                     if (c % logFreq == 0)
                         info("BaselineTopology changes: " + c);

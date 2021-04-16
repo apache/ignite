@@ -17,12 +17,12 @@
 
 package org.apache.ignite.ml.regressions.linear;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import org.apache.ignite.ml.common.TrainerTest;
-import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
+import org.apache.ignite.ml.dataset.feature.extractor.Vectorizer;
+import org.apache.ignite.ml.dataset.feature.extractor.impl.DoubleArrayVectorizer;
 import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -54,17 +54,16 @@ public class LinearRegressionLSQRTrainerTest extends TrainerTest {
         LinearRegressionModel mdl = trainer.fit(
             data,
             parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[4]
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
         assertArrayEquals(
             new double[]{72.26948107, 15.95144674, 24.07403921, 66.73038781},
-            mdl.getWeights().getStorage().data(),
+            mdl.weights().getStorage().data(),
             1e-6
         );
 
-        assertEquals(2.8421709430404007e-14, mdl.getIntercept(), 1e-6);
+        assertEquals(2.8421709430404007e-14, mdl.intercept(), 1e-6);
     }
 
     /**
@@ -93,13 +92,12 @@ public class LinearRegressionLSQRTrainerTest extends TrainerTest {
         LinearRegressionModel mdl = trainer.fit(
             data,
             parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[coef.length]
+            new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST)
         );
 
-        assertArrayEquals(coef, mdl.getWeights().getStorage().data(), 1e-6);
+        assertArrayEquals(coef, mdl.weights().getStorage().data(), 1e-6);
 
-        assertEquals(intercept, mdl.getIntercept(), 1e-6);
+        assertEquals(intercept, mdl.intercept(), 1e-6);
     }
 
     /** */
@@ -123,33 +121,31 @@ public class LinearRegressionLSQRTrainerTest extends TrainerTest {
 
         LinearRegressionLSQRTrainer trainer = new LinearRegressionLSQRTrainer();
 
+        Vectorizer<Integer, double[], Integer, Double> vectorizer = new DoubleArrayVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.LAST);
         LinearRegressionModel originalMdl = trainer.fit(
             data,
             parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[coef.length]
+            vectorizer
         );
 
         LinearRegressionModel updatedOnSameDS = trainer.update(
             originalMdl,
             data,
             parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[coef.length]
+            vectorizer
         );
 
         LinearRegressionModel updatedOnEmptyDS = trainer.update(
             originalMdl,
-            new HashMap<Integer, double[]>(),
+            new HashMap<>(),
             parts,
-            (k, v) -> VectorUtils.of(Arrays.copyOfRange(v, 0, v.length - 1)),
-            (k, v) -> v[coef.length]
+            vectorizer
         );
 
-        assertArrayEquals(originalMdl.getWeights().getStorage().data(), updatedOnSameDS.getWeights().getStorage().data(), 1e-6);
-        assertEquals(originalMdl.getIntercept(), updatedOnSameDS.getIntercept(), 1e-6);
+        assertArrayEquals(originalMdl.weights().getStorage().data(), updatedOnSameDS.weights().getStorage().data(), 1e-6);
+        assertEquals(originalMdl.intercept(), updatedOnSameDS.intercept(), 1e-6);
 
-        assertArrayEquals(originalMdl.getWeights().getStorage().data(), updatedOnEmptyDS.getWeights().getStorage().data(), 1e-6);
-        assertEquals(originalMdl.getIntercept(), updatedOnEmptyDS.getIntercept(), 1e-6);
+        assertArrayEquals(originalMdl.weights().getStorage().data(), updatedOnEmptyDS.weights().getStorage().data(), 1e-6);
+        assertEquals(originalMdl.intercept(), updatedOnEmptyDS.intercept(), 1e-6);
     }
 }

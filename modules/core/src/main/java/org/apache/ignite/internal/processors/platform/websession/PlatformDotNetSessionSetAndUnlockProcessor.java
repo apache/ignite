@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.processors.platform.websession;
 
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.UUID;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
@@ -25,12 +30,6 @@ import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.internal.util.typedef.internal.S;
-
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.MutableEntry;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.UUID;
 
 /**
  * Processor to unlock and optionally update the session.
