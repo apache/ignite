@@ -129,7 +129,7 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
             descriptors.add(
                 new KeyValDescriptor(QueryUtils.KEY_FIELD_NAME, typeDesc.keyClass(), true, QueryUtils.KEY_COL) {
                     @Override public Object defaultValue() {
-                        return IgniteUuid.randomUuid();
+                        return IgniteUuid.randomUuid().toString();
                     }
                 }
             );
