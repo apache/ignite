@@ -182,10 +182,15 @@ public class ContinuousQueryView {
     public String remoteTransformer() {
         CacheContinuousQueryHandler hnd0 = cacheHandler();
 
-        if (hnd0 == null || hnd0.getTransformer() == null)
-            return null;
+        try {
+            if (hnd0 == null || hnd0.getTransformer() == null)
+                return null;
 
-        return toStringSafe(hnd0.getTransformer());
+            return toStringSafe(hnd0.getTransformer());
+        }
+        catch (IgniteCheckedException e) {
+            return null;
+        }
     }
 
     /**
