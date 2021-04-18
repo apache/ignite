@@ -676,13 +676,32 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 ctx.resource().injectGeneric(nodeFilter);
 
             if (nodeFilter == null || nodeFilter.apply(ctx.discovery().localNode())) {
-                    registerHandler(srcNodeId,
-                        routineId,
-                        hnd,
-                        bufSize,
-                        interval,
-                        autoUnsubscribe,
-                        false);
+                registerHandler(srcNodeId,
+                    routineId,
+                    hnd,
+                    bufSize,
+                    interval,
+                    autoUnsubscribe,
+                    false);
+
+                if (ctx.config().isPeerClassLoadingEnabled()) {
+                    // Peer class loading cannot be performed before a node joins, so we delay the deployment.
+                    // Run the deployment task in the system pool to avoid blocking of the discovery thread.
+                    ctx.discovery().localJoinFuture().listen(f -> ctx.closure().runLocalSafe((GridPlainRunnable)() -> {
+                        try {
+                            hnd.p2pUnmarshal(srcNodeId, ctx);
+                        }
+                        catch (IgniteCheckedException | IgniteException e) {
+                            U.error(log, "Failed to unmarshal continuous routine handler [" +
+                                "routineId=" + routineId +
+                                ", srcNodeId=" + srcNodeId + ']', e);
+
+                            ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+
+                            unregisterHandler(routineId, hnd, false);
+                        }
+                    }));
+                }
             }
             else {
                 if (log.isDebugEnabled()) {
@@ -698,25 +717,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 ", srcNodeId=" + srcNodeId + ']', e);
 
             ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
-        }
-
-        if (ctx.config().isPeerClassLoadingEnabled()) {
-            // Peer class loading cannot be performed before a node joins, so we delay the deployment.
-            // Run the deployment task in the system pool to avoid blocking of the discovery thread.
-            ctx.discovery().localJoinFuture().listen(f -> ctx.closure().runLocalSafe((GridPlainRunnable)() -> {
-                try {
-                    hnd.p2pUnmarshal(srcNodeId, ctx);
-                }
-                catch (IgniteCheckedException | IgniteException e) {
-                    U.error(log, "Failed to unmarshal continuous routine handler [" +
-                        "routineId=" + routineId +
-                        ", srcNodeId=" + srcNodeId + ']', e);
-
-                    ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
-
-                    unregisterHandler(routineId, hnd, false);
-                }
-            }));
         }
     }
 
@@ -1419,8 +1419,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                     data.p2pUnmarshal(marsh, U.resolveClassLoader(dep.classLoader(), ctx.config()));
                 }
-
-                hnd.p2pUnmarshal(node.id(), ctx);
             }
         }
         catch (IgniteCheckedException e) {
@@ -1456,9 +1454,25 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     ctx.resource().injectGeneric(prjPred);
 
                 if ((prjPred == null || prjPred.apply(ctx.discovery().node(ctx.localNodeId()))) &&
-                    !locInfos.containsKey(routineId))
+                    !locInfos.containsKey(routineId)) {
+                    if (ctx.config().isPeerClassLoadingEnabled())
+                        hnd.p2pUnmarshal(node.id(), ctx);
+
                     registerHandler(node.id(), routineId, hnd, data.bufferSize(), data.interval(),
                         data.autoUnsubscribe(), false);
+
+                    // Load partition counters.
+                    if (err == null && hnd.isQuery()) {
+                        GridCacheProcessor proc = ctx.cache();
+
+                        if (proc != null) {
+                            GridCacheAdapter cache = ctx.cache().internalCache(hnd.cacheName());
+
+                            if (cache != null && !cache.isLocal() && cache.context().userCache())
+                                req.addUpdateCounters(ctx.localNodeId(), hnd.updateCounters());
+                        }
+                    }
+                }
 
                 if (!data.autoUnsubscribe())
                     // Register routine locally.
@@ -1469,18 +1483,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 err = e;
 
                 U.error(log, "Failed to register handler [nodeId=" + node.id() + ", routineId=" + routineId + ']', e);
-            }
-        }
-
-        // Load partition counters.
-        if (err == null && hnd.isQuery()) {
-            GridCacheProcessor proc = ctx.cache();
-
-            if (proc != null) {
-                GridCacheAdapter cache = ctx.cache().internalCache(hnd.cacheName());
-
-                if (cache != null && !cache.isLocal() && cache.context().userCache())
-                    req.addUpdateCounters(ctx.localNodeId(), hnd.updateCounters());
             }
         }
 
