@@ -93,6 +93,15 @@ public interface GridContinuousHandler extends Externalizable, Cloneable {
     public void p2pUnmarshal(UUID nodeId, GridKernalContext ctx) throws IgniteCheckedException;
 
     /**
+     * Checks whether p2p context is valid.
+     *
+     * @param ctx Kernal context.
+     * @return Whether p2p context is valid.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public boolean p2pContextValid(GridKernalContext ctx) throws IgniteCheckedException;
+
+    /**
      * Creates new batch.
      *
      * @return New batch.

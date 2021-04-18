@@ -32,6 +32,8 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.internal.util.IgniteUtils.validateDeploymentInfo;
+
 /**
  * Deployable object.
  */
@@ -95,6 +97,14 @@ class CacheContinuousQueryDeployableObject implements Externalizable {
             throw new IgniteDeploymentCheckedException("Failed to obtain deployment for class: " + clsName);
 
         return U.unmarshal(ctx, bytes, U.resolveClassLoader(dep.classLoader(), ctx.config()));
+    }
+
+    /**
+     * @param ctx Kernal context.
+     * @return Whether deployable object is valid in current context.
+     */
+    boolean isValid(GridKernalContext ctx) {
+        return validateDeploymentInfo(ctx, depInfo, clsName);
     }
 
     /** {@inheritDoc} */

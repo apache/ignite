@@ -138,6 +138,11 @@ public class CacheContinuousQueryHandlerV2<K, V> extends CacheContinuousQueryHan
     }
 
     /** {@inheritDoc} */
+    @Override public boolean p2pContextValid(GridKernalContext ctx) throws IgniteCheckedException {
+        return super.p2pContextValid(ctx) && (rmtFilterFactoryDep == null || rmtFilterFactoryDep.isValid(ctx));
+    }
+
+    /** {@inheritDoc} */
     @Override public GridContinuousHandler clone() {
         return super.clone();
     }
