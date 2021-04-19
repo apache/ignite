@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.Comparator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -162,15 +163,21 @@ public class GridH2ValueCacheObject extends Value {
             return o1.getClass().getName().compareTo(o2.getClass().getName());
         }
 
-        // Compare hash codes.
-        int h1 = hashCode();
-        int h2 = v.hashCode();
+        return compareHash(o1, o2, (v1, v2) -> Bits.compareNotNullSigned(((Value)v1).getBytesNoCopy(),
+            ((Value)v2).getBytesNoCopy()));
+    }
+
+    /** Compare hash codes. */
+    public static int compareHash(Object o1, Object o2, Comparator<Object> comp) {
+        int h1 = o1.hashCode();
+        int h2 = o2.hashCode();
 
         if (h1 == h2) {
             if (o1.equals(o2))
                 return 0;
 
-            return Bits.compareNotNullSigned(getBytesNoCopy(), v.getBytesNoCopy());
+            return comp == null ? Bits.compareNotNullSigned(JdbcUtils.serialize(o1, null),
+                JdbcUtils.serialize(o2, null)) : comp.compare(o1, o2);
         }
 
         return h1 > h2 ? 1 : -1;
