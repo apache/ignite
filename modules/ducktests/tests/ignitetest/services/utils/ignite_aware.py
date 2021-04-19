@@ -84,16 +84,8 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         self.shutdown_timeout_sec = shutdown_timeout_sec
         self.thin_client_config = thin_client_config
 
-        if self.thin_client_config:
-            self.start_ignite = IgniteAwareService.StartIgnite.THIN_CLIENT
-        else:
-            if self.config:
-                self.start_ignite = IgniteAwareService.StartIgnite.NODE
-            else:
-                self.start_ignite = IgniteAwareService.StartIgnite.NONE
-
         self.spec = resolve_spec(self, context, config, main_java_class,
-                                 self.start_ignite, thin_client_config, **kwargs)
+                                 self.mode, thin_client_config, **kwargs)
         self.init_logs_attribute()
 
         self.disconnected_nodes = []
@@ -105,6 +97,16 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
             return self.config.version
         else:
             return self.thin_client_config.version
+
+    @property
+    def mode(self):
+        if self.thin_client_config:
+            return IgniteAwareService.StartIgnite.THIN_CLIENT
+        else:
+            if self.config:
+                return IgniteAwareService.StartIgnite.NODE
+            else:
+                return IgniteAwareService.StartIgnite.NONE
 
     @property
     def project(self):
@@ -144,7 +146,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
         Awaits start finished.
         """
-        if self.start_ignite in (IgniteAwareService.StartIgnite.NONE, IgniteAwareService.StartIgnite.THIN_CLIENT):
+        if self.mode in (IgniteAwareService.StartIgnite.NONE, IgniteAwareService.StartIgnite.THIN_CLIENT):
             return
 
         self.logger.info("Waiting for IgniteAware(s) to start ...")

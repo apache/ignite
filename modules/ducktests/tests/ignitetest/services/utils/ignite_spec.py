@@ -31,7 +31,7 @@ from ignitetest.utils.version import DEV_BRANCH
 
 
 # pylint: disable=R0913
-def resolve_spec(service, context, config, main_java_class, start_ignite, thin_client_config=None, **kwargs):
+def resolve_spec(service, context, config, main_java_class, mode, thin_client_config=None, **kwargs):
     """
     Resolve Spec classes for IgniteService and IgniteApplicationService
     """
@@ -55,7 +55,7 @@ def resolve_spec(service, context, config, main_java_class, start_ignite, thin_c
     if is_impl("IgniteApplicationService"):
         return _resolve_spec("AppSpec", ApacheIgniteApplicationSpec)(path_aware=service, context=context, config=config,
                                                                      main_java_class=main_java_class,
-                                                                     start_ignite=start_ignite,
+                                                                     mode=mode,
                                                                      thin_client_config=thin_client_config, **kwargs)
 
     raise Exception("There is no specification for class %s" % type(service))
@@ -214,7 +214,7 @@ class ApacheIgniteApplicationSpec(IgniteApplicationSpec):
     Implementation IgniteApplicationSpec for Apache Ignite project
     """
     # pylint: disable=too-many-arguments
-    def __init__(self, context, modules, main_java_class, java_class_name, params, start_ignite, **kwargs):
+    def __init__(self, context, modules, main_java_class, java_class_name, params, mode, **kwargs):
         super().__init__(project=context.globals.get("project", "ignite"), **kwargs)
         self.context = context
 
@@ -241,7 +241,7 @@ class ApacheIgniteApplicationSpec(IgniteApplicationSpec):
                             "-DIGNITE_ALLOW_ATOMIC_OPS_IN_TX=false"])
 
         self.args = [
-            str(start_ignite.name),
+            str(mode.name),
             java_class_name,
             self.path_aware.config_file,
             str(base64.b64encode(json.dumps(params).encode('utf-8')), 'utf-8')
