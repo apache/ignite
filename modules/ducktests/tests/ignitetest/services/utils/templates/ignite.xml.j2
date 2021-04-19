@@ -124,6 +124,10 @@
             <property name="includeEventTypes" ref="{{ config.include_event_types }}"/>
         {% endif %}
 
+        {% if config.event_storage_spi %}
+            <property name="eventStorageSpi" ref="{{ config.event_storage_spi }}"/>
+        {% endif %}
+
         {{ misc_utils.plugins(config) }}
 
     </bean>

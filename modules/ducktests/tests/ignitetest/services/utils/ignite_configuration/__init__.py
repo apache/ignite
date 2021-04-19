@@ -60,6 +60,7 @@ class IgniteConfiguration(NamedTuple):
     rebalance_throttle: int = None
     local_event_listeners: str = None
     include_event_types: str = None
+    event_storage_spi: str = None
 
 
 class IgniteClientConfiguration(IgniteConfiguration):
