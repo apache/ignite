@@ -159,7 +159,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
                     return RelFieldCollation.compare(c1, c2, nullComparison);
                 }
                 else
-                    return GridH2ValueCacheObject.compareHash(obj1, obj2, null);
+                    return GridH2ValueCacheObject.compareHashOrBytes(obj1, obj2, null);
             };
         }
 
