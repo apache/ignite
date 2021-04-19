@@ -92,7 +92,8 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
             else:
                 self.start_ignite = IgniteAwareService.StartIgnite.NONE
 
-        self.spec = resolve_spec(self, context, config, main_java_class, self.start_ignite, thin_client_config, **kwargs)
+        self.spec = resolve_spec(self, context, config, main_java_class,
+                                 self.start_ignite, thin_client_config, **kwargs)
         self.init_logs_attribute()
 
         self.disconnected_nodes = []

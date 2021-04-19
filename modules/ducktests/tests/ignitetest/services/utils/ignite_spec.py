@@ -30,6 +30,7 @@ from ignitetest.services.utils.path import get_home_dir, get_module_path
 from ignitetest.utils.version import DEV_BRANCH
 
 
+# pylint: disable=R0913
 def resolve_spec(service, context, config, main_java_class, start_ignite, thin_client_config=None, **kwargs):
     """
     Resolve Spec classes for IgniteService and IgniteApplicationService
