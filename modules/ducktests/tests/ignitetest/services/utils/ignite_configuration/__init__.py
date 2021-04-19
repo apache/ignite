@@ -16,7 +16,7 @@
 """
 This module contains IgniteConfiguration classes and utilities.
 """
-
+import socket
 from typing import NamedTuple
 
 from ignitetest.services.utils.ignite_configuration.communication import CommunicationSpi, TcpCommunicationSpi
@@ -24,7 +24,8 @@ from ignitetest.services.utils.ssl.client_connector_configuration import ClientC
 from ignitetest.services.utils.ssl.connector_configuration import ConnectorConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import DiscoverySpi, TcpDiscoverySpi
-from ignitetest.services.utils.ssl.ssl_params import SslParams
+from ignitetest.services.utils.ssl.ssl_params import SslParams, is_ssl_enabled, get_ssl_params, IGNITE_CLIENT_ALIAS, \
+    IGNITE_SERVER_ALIAS
 from ignitetest.utils.version import IgniteVersion, DEV_BRANCH
 
 
@@ -54,6 +55,40 @@ class IgniteConfiguration(NamedTuple):
     rebalance_batch_size: int = None
     rebalance_batches_prefetch_count: int = None
     rebalance_throttle: int = None
+
+    def _prepare_ssl(self, globals):
+        """
+        Updates ssl configuration from globals.
+        """
+        ssl_params = None
+        if self.ssl_params is None and is_ssl_enabled(globals):
+            ssl_params = get_ssl_params(
+                globals,
+                IGNITE_CLIENT_ALIAS if self.client_mode else IGNITE_SERVER_ALIAS
+            )
+        if ssl_params:
+            return self._replace(ssl_params=ssl_params,
+                                 connector_configuration=ConnectorConfiguration(ssl_enabled=True,
+                                                                                ssl_params=ssl_params))
+        return self
+
+    def _prepare_discovery(self, node, cluster):
+        """
+        Updates discovery configuration from globals.
+        """
+        if not self.consistent_id:
+            config = self._replace(consistent_id=node.account.externally_routable_ip)
+        else:
+            config = self
+
+        config = config._replace(local_host=socket.gethostbyname(node.account.hostname))
+        config.discovery_spi.prepare_on_start(cluster=cluster)
+        return config
+
+    def prepare_for_env(self, globals, node, cluster):
+        config = self._prepare_ssl(globals)
+
+        return config._prepare_discovery(node, cluster)
 
 
 class IgniteClientConfiguration(IgniteConfiguration):
