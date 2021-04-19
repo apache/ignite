@@ -44,13 +44,13 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
     The base class to build services aware of Ignite.
     """
     @constructible
-    class ApplicationMode(Enum):
+    class ApplicationMode(IntEnum):
         """
         Application start mode.
         """
-        NODE = auto()
-        THIN_CLIENT = auto()
-        NONE = auto()
+        NODE = 0
+        THIN_CLIENT = 1
+        NONE = 2
 
     @constructible
     class NetPart(IntEnum):
@@ -192,7 +192,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
     def _prepare_configs(self, node):
         if self.config:
-            config = self.config.prepare_for_env(globals=self.globals, node=node, cluster=self)
+            config = self.config.prepare_for_env(test_globals=self.globals, node=node, cluster=self)
 
         for name, template in self.spec.config_templates:
             config_txt = template.render(config_dir=self.config_dir, work_dir=self.work_dir, config=config,
