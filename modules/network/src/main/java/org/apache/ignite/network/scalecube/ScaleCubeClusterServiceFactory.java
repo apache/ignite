@@ -32,6 +32,7 @@ import org.apache.ignite.network.NetworkConfigurationException;
 
 /**
  * {@link ClusterServiceFactory} implementation that uses ScaleCube for messaging and topology services.
+ * TODO: IGNITE-14538: This factory should use ScaleCube configuration instead of default parameters.
  */
 public class ScaleCubeClusterServiceFactory implements ClusterServiceFactory {
     /** {@inheritDoc} */
@@ -53,7 +54,7 @@ public class ScaleCubeClusterServiceFactory implements ClusterServiceFactory {
             })
             .config(opts -> opts.memberAlias(context.getName()))
             .transport(opts -> opts.port(context.getPort()))
-            .membership(opts -> opts.seedMembers(parseAddresses(context.getMemberAddresses())));
+            .membership(opts -> opts.seedMembers(parseAddresses(context.getMemberAddresses())).suspicionMult(1));
 
         // resolve cyclic dependencies
         messagingService.setCluster(cluster);

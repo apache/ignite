@@ -52,32 +52,59 @@ final class ScaleCubeTopologyService extends AbstractTopologyService {
      */
     void onMembershipEvent(MembershipEvent event) {
         ClusterNode member = fromMember(event.member());
-        for (TopologyEventHandler handler : getEventHandlers()) {
-            switch (event.type()) {
-                case ADDED:
-                    members.put(member.name(), member);
 
-                    handler.onAppeared(member);
+        String memberName = member.name();
 
-                    break;
+        switch (event.type()) {
+            case ADDED:
+                members.put(memberName, member);
 
-                case LEAVING:
-                    members.remove(member.name());
+                fireAppearedEvent(member);
 
-                    handler.onDisappeared(member);
+                break;
 
-                    break;
+            case LEAVING:
+                members.remove(memberName);
 
-                case REMOVED:
-                case UPDATED:
-                    // No-op.
-                    break;
+                fireDisappearedEvent(member);
 
-                default:
-                    throw new IgniteInternalException("This event is not supported: event = " + event);
+                break;
 
-            }
+            case REMOVED:
+                // In case if member left non-gracefully, without sending LEAVING event.
+                if (members.remove(memberName) != null)
+                    fireDisappearedEvent(member);
+
+                break;
+
+            case UPDATED:
+                // No-op.
+                break;
+
+            default:
+                throw new IgniteInternalException("This event is not supported: event = " + event);
+
         }
+    }
+
+    /**
+     * Fire a cluster member appearance event.
+     *
+     * @param member Appeared cluster member.
+     */
+    private void fireAppearedEvent(ClusterNode member) {
+        for (TopologyEventHandler handler : getEventHandlers())
+            handler.onAppeared(member);
+    }
+
+    /**
+     * Fire a cluster member disappearance event.
+     *
+     * @param member Disappeared cluster member.
+     */
+    private void fireDisappearedEvent(ClusterNode member) {
+        for (TopologyEventHandler handler : getEventHandlers())
+            handler.onDisappeared(member);
     }
 
     /** {@inheritDoc} */
