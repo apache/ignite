@@ -23,7 +23,7 @@ import sys
 import time
 from abc import ABCMeta
 from datetime import datetime
-from enum import IntEnum, Enum, auto
+from enum import IntEnum
 from threading import Thread
 
 from ducktape.cluster.remoteaccount import RemoteCommandError
