@@ -193,9 +193,9 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
         super().init_persistent(node)
 
-        self._prepare_config(node)
+        self._prepare_configs(node)
 
-    def _prepare_config(self, node):
+    def _prepare_configs(self, node):
         if not self.config.consistent_id:
             config = self.config._replace(consistent_id=node.account.externally_routable_ip)
         else:
