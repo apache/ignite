@@ -81,12 +81,8 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         self.start_ignite = kwargs.get("start_ignite", True)
 
     @property
-    def version(self):
-        return self.config.version
-
-    @property
-    def project(self):
-        return self.spec.project
+    def product(self):
+        return str(self.config.version)
 
     @property
     def globals(self):
@@ -193,11 +189,9 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
         super().init_persistent(node)
 
-        node_config = self._prepare_config(node)
+        self._prepare_configs(node)
 
-        node.account.create_file(self.config_file, node_config)
-
-    def _prepare_config(self, node):
+    def _prepare_configs(self, node):
         if not self.config.consistent_id:
             config = self.config._replace(consistent_id=node.account.externally_routable_ip)
         else:
@@ -207,14 +201,14 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
         config.discovery_spi.prepare_on_start(cluster=self)
 
-        node_config = self.spec.config_template.render(config_dir=self.config_dir, work_dir=self.work_dir,
-                                                       config=config)
+        for name, template in self.spec.config_templates:
+            config_txt = template.render(config_dir=self.config_dir, work_dir=self.work_dir, config=config)
+
+            node.account.create_file(os.path.join(self.config_dir, name), config_txt)
+
+            self.logger.debug("Config %s for node %s: %s" % (name, node.account.hostname, config_txt))
 
         setattr(node, "consistent_id", node.account.externally_routable_ip)
-
-        self.logger.debug("Config for node %s: %s" % (node.account.hostname, node_config))
-
-        return node_config
 
     def pids(self, node):
         """

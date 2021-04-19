@@ -17,14 +17,14 @@
 Checks custom parametrizers.
 """
 
-import itertools
 from unittest.mock import Mock
 
+import itertools
 import pytest
 from ducktape.mark import parametrized, parametrize, matrix, ignore
 from ducktape.mark.mark_expander import MarkedFunctionExpander
-from ignitetest.utils import ignite_versions, ignore_if
 
+from ignitetest.utils import ignite_versions, ignore_if
 from ignitetest.utils._mark import IgniteVersionParametrize
 from ignitetest.utils.version import IgniteVersion, V_2_8_0, V_2_8_1, V_2_7_6, DEV_BRANCH
 
@@ -137,6 +137,36 @@ class CheckIgniteVersions:
             context_list = expand_function(func=function, sess_ctx=mock_session_ctx(global_args=global_args))
 
             self._check_injection(context_list, versions=versions, global_args=global_args, pairs=True)
+
+    @pytest.mark.parametrize(
+        ['versions', 'global_args', 'result'],
+        [pytest.param(['2.9.9', 'ignite-2.9.9', 'fork-2.9.9', 'dev', 'ignite-dev', 'fork-dev'],
+                      {'project': 'superfork'},
+                      ['superfork-2.9.9', 'ignite-2.9.9', 'fork-2.9.9', 'superfork-dev', 'ignite-dev', 'fork-dev']),
+         pytest.param(['2.9.9', 'ignite-2.9.9', 'fork-2.9.9', 'dev', 'ignite-dev', 'fork-dev'],
+                      {},  # project: ignite (default)
+                      ['ignite-2.9.9', 'ignite-2.9.9', 'fork-2.9.9', 'ignite-dev', 'ignite-dev', 'fork-dev']),
+         pytest.param(['10.4.42', '0.6.53', 'fork-me'],  # ignored
+                      {'project': 'superfork',
+                       'ignite_versions': ['2.9.9', 'ignite-2.9.9', 'fork-2.9.9', 'dev', 'ignite-dev', 'fork-dev']},
+                      ['superfork-2.9.9', 'ignite-2.9.9', 'fork-2.9.9', 'superfork-dev', 'ignite-dev', 'fork-dev'])])
+    def check_project_injection(self, versions, global_args, result):  # pylint: disable=R0201
+        """
+        Checks joining project to the version.
+        """
+
+        @ignite_versions(*versions, version_prefix='ver')
+        def function(ver):
+            return IgniteVersion(ver)
+
+        context_list = expand_function(func=function, sess_ctx=mock_session_ctx(global_args=global_args))
+
+        check_versions = list(map(IgniteVersion, result))
+
+        assert len(check_versions) == len(context_list)
+
+        for i, ctx in enumerate(reversed(context_list)):
+            assert ctx.function() == check_versions[i]
 
     def check_with_others_marks(self):  # pylint: disable=R0201
         """

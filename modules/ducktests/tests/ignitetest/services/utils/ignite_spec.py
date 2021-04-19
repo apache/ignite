@@ -23,9 +23,10 @@ import json
 import os
 from abc import ABCMeta, abstractmethod
 
-from ignitetest.services.utils.config_template import IgniteClientConfigTemplate, IgniteServerConfigTemplate
+from ignitetest.services.utils.config_template import IgniteClientConfigTemplate, IgniteServerConfigTemplate, \
+    IgniteLoggerConfigTemplate
 from ignitetest.services.utils.jvm_utils import create_jvm_settings, merge_jvm_settings
-from ignitetest.services.utils.path import get_home_dir, get_module_path
+from ignitetest.services.utils.path import get_home_dir, get_module_path, IgnitePathAware
 from ignitetest.utils.version import DEV_BRANCH
 
 
@@ -61,9 +62,10 @@ class IgniteSpec(metaclass=ABCMeta):
     """
     This class is a basic Spec
     """
+
     # pylint: disable=R0913
-    def __init__(self, path_aware, config, project, jvm_opts=None, full_jvm_opts=None):
-        self.project = project
+    def __init__(self, path_aware, config, jvm_opts=None, full_jvm_opts=None):
+        self.config = config
         self.path_aware = path_aware
         self.envs = {}
 
@@ -76,34 +78,33 @@ class IgniteSpec(metaclass=ABCMeta):
             self.jvm_opts = create_jvm_settings(opts=jvm_opts,
                                                 gc_dump_path=os.path.join(path_aware.log_dir, "ignite_gc.log"),
                                                 oom_path=os.path.join(path_aware.log_dir, "ignite_out_of_mem.hprof"))
-        self.config = config
-        self.version = config.version
 
     @property
-    def config_template(self):
+    def config_templates(self):
         """
         :return: config that service will use to start on a node
         """
-        if self.config.client_mode:
-            return IgniteClientConfigTemplate()
-        return IgniteServerConfigTemplate()
+        return [
+            (IgnitePathAware.IGNITE_LOG_CONFIG_NAME, IgniteLoggerConfigTemplate()),
+            (IgnitePathAware.IGNITE_CONFIG_NAME,
+             IgniteClientConfigTemplate() if self.config.client_mode else IgniteServerConfigTemplate())
+        ]
 
-    def __home(self, version=None, project=None):
+    def __home(self, product=None):
         """
         Get home directory for current spec.
         """
-        project = project if project else self.project
-        version = version if version else self.version
-        return get_home_dir(self.path_aware.install_root, project, version)
+        product = product if product else str(self.config.version)
+        return get_home_dir(self.path_aware.install_root, product)
 
     def _module(self, name):
         """
         Get module path for current spec.
         """
         if name == "ducktests":
-            return get_module_path(self.__home(DEV_BRANCH, project="ignite"), name, DEV_BRANCH)
+            return get_module_path(self.__home(str(DEV_BRANCH)), name, DEV_BRANCH.is_dev)
 
-        return get_module_path(self.__home(self.version), name, self.version)
+        return get_module_path(self.__home(), name, self.config.version.is_dev)
 
     @abstractmethod
     def command(self, node):
@@ -156,7 +157,6 @@ class IgniteApplicationSpec(IgniteSpec):
     def _app_args(self):
         return ",".join(self.args)
 
-    # pylint: disable=W0221
     def command(self, node):
         cmd = "%s %s %s %s 2>&1 | tee -a %s &" % \
               (self._envs(),
@@ -173,7 +173,8 @@ class ApacheIgniteNodeSpec(IgniteNodeSpec):
     Implementation IgniteNodeSpec for Apache Ignite project
     """
     def __init__(self, context, modules, **kwargs):
-        super().__init__(project=context.globals.get("project", "ignite"), **kwargs)
+        super().__init__(**kwargs)
+        self.context = context
 
         libs = (modules or [])
         libs.append("log4j")
@@ -198,7 +199,7 @@ class ApacheIgniteApplicationSpec(IgniteApplicationSpec):
     """
     # pylint: disable=too-many-arguments
     def __init__(self, context, modules, main_java_class, java_class_name, params, start_ignite, **kwargs):
-        super().__init__(project=context.globals.get("project", "ignite"), **kwargs)
+        super().__init__(**kwargs)
         self.context = context
 
         libs = modules or []
@@ -231,8 +232,7 @@ class ApacheIgniteApplicationSpec(IgniteApplicationSpec):
         ]
 
     def __jackson(self):
-        version = self.version
-        if not version.is_dev:
+        if not self.config.version.is_dev:
             aws = self._module("aws")
             return self.context.cluster.nodes[0].account.ssh_capture(
                 "ls -d %s/* | grep jackson | tr '\n' ':' | sed 's/.$//'" % aws)
