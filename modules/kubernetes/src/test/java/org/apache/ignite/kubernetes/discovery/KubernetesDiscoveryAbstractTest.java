@@ -15,17 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client;
+package org.apache.ignite.kubernetes.discovery;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.stream.Collectors;
-import org.apache.ignite.Ignition;
-import org.apache.ignite.configuration.ClientConfiguration;
+
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.kubernetes.configuration.KubernetesConnectionConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.kubernetes.TcpDiscoveryKubernetesIpFinder;
@@ -33,7 +31,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Test;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
 
@@ -41,8 +38,8 @@ import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.HttpResponse.response;
 
-/** Test that thin client connects to cluster with {@link ThinClientKubernetesAddressFinder}. */
-public class TestClusterClientConnection extends GridCommonAbstractTest {
+/** Super class for Kubernetes discovery tests. */
+public abstract class KubernetesDiscoveryAbstractTest extends GridCommonAbstractTest {
     /** Mock of kubernetes API. */
     private static ClientAndServer mockServer;
 
@@ -71,28 +68,8 @@ public class TestClusterClientConnection extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testClientConnectsToCluster() throws Exception {
-        mockServerResponse();
-
-        IgniteEx crd = startGrid(getConfiguration());
-        String crdAddr = crd.localNode().addresses().iterator().next();
-
-        mockServerResponse(crdAddr);
-
-        ClientConfiguration ccfg = new ClientConfiguration();
-        ccfg.setAddressesFinder(new ThinClientKubernetesAddressFinder(prepareConfiguration()));
-
-        IgniteClient client = Ignition.startClient(ccfg);
-
-        ClientCache cache = client.createCache("cache");
-        cache.put(1, 2);
-        assertEquals(2, cache.get(1));
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration() throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration();
+    protected IgniteConfiguration getConfiguration(String instanceName, Boolean clientMode) throws Exception {
+        IgniteConfiguration cfg = getConfiguration();
 
         KubernetesConnectionConfiguration kccfg = prepareConfiguration();
         TcpDiscoveryKubernetesIpFinder ipFinder = new TcpDiscoveryKubernetesIpFinder(kccfg);
@@ -102,13 +79,30 @@ public class TestClusterClientConnection extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoverySpi);
 
-        cfg.setIgniteInstanceName(getTestIgniteInstanceName());
+        cfg.setGridLogger(log);
+
+        cfg.setIgniteInstanceName(instanceName);
+        cfg.setClientMode(clientMode);
 
         return cfg;
     }
 
-    /** */
-    private void mockServerResponse(String... addrs) {
+    /**
+     * Mocks HTTP server response.
+     *
+     * @param addrs Address list to return.
+     */
+    protected final void mockServerResponse(String... addrs) {
+        mockServerResponse(1, addrs);
+    }
+
+    /**
+     * Mocks HTTP server response.
+     *
+     * @param times How many times mock should return value.
+     * @param addrs Address list to return.
+     */
+    protected final void mockServerResponse(int times, String... addrs) {
         String ipAddrs = Arrays.stream(addrs)
             .map(addr -> String.format("{\"ip\":\"%s\"}", addr))
             .collect(Collectors.joining(","));
@@ -118,7 +112,7 @@ public class TestClusterClientConnection extends GridCommonAbstractTest {
                 request()
                     .withMethod("GET")
                     .withPath(String.format("/api/v1/namespaces/%s/endpoints/%s", namespace, service)),
-                Times.exactly(1)
+                Times.exactly(times)
             )
             .respond(
                 response()
@@ -136,8 +130,8 @@ public class TestClusterClientConnection extends GridCommonAbstractTest {
     }
 
     /** */
-    private KubernetesConnectionConfiguration prepareConfiguration()
-        throws IOException
+    protected final KubernetesConnectionConfiguration prepareConfiguration()
+            throws IOException
     {
         File account = File.createTempFile("kubernetes-test-account", "");
         FileWriter fw = new FileWriter(account);
