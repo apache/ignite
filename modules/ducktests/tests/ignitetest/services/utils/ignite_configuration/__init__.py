@@ -29,6 +29,7 @@ from ignitetest.services.utils.ssl.ssl_params import SslParams, is_ssl_enabled, 
 from ignitetest.utils.version import IgniteVersion, DEV_BRANCH
 
 
+# pylint: disable=no-member
 class IgniteConfiguration(NamedTuple):
     """
     Ignite configuration.
@@ -56,14 +57,14 @@ class IgniteConfiguration(NamedTuple):
     rebalance_batches_prefetch_count: int = None
     rebalance_throttle: int = None
 
-    def _prepare_ssl(self, globals):
+    def __prepare_ssl(self, global_ctx):
         """
         Updates ssl configuration from globals.
         """
         ssl_params = None
-        if self.ssl_params is None and is_ssl_enabled(globals):
+        if self.ssl_params is None and is_ssl_enabled(global_ctx):
             ssl_params = get_ssl_params(
-                globals,
+                global_ctx,
                 IGNITE_CLIENT_ALIAS if self.client_mode else IGNITE_SERVER_ALIAS
             )
         if ssl_params:
@@ -72,7 +73,7 @@ class IgniteConfiguration(NamedTuple):
                                                                                 ssl_params=ssl_params))
         return self
 
-    def _prepare_discovery(self, node, cluster):
+    def __prepare_discovery(self, node, cluster):
         """
         Updates discovery configuration based on current environment.
         """
@@ -86,8 +87,12 @@ class IgniteConfiguration(NamedTuple):
 
         return config
 
-    def prepare_for_env(self, globals, node, cluster):
-        return self._prepare_ssl(globals)._prepare_discovery(node, cluster)
+    # pylint: disable=protected-access
+    def prepare_for_env(self, global_ctx, node, cluster):
+        """
+        Updates configuration based on current environment.
+        """
+        return self.__prepare_ssl(global_ctx).__prepare_discovery(node, cluster)
 
 
 class IgniteClientConfiguration(IgniteConfiguration):

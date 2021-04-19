@@ -38,7 +38,7 @@ from ignitetest.services.utils.path import IgnitePathAware
 from ignitetest.utils.enum import constructible
 
 
-# pylint: disable=R0902
+# pylint: disable=R0902,too-many-public-methods
 class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABCMeta):
     """
     The base class to build services aware of Ignite.
