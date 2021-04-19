@@ -23,11 +23,11 @@ import json
 import os
 from abc import ABCMeta, abstractmethod
 
-from ignitetest.services.utils.config_template import IgniteClientConfigTemplate, IgniteServerConfigTemplate, IgniteLoggerConfigTemplate
+from ignitetest.services.utils.config_template import IgniteClientConfigTemplate, IgniteServerConfigTemplate, \
+    IgniteLoggerConfigTemplate
 from ignitetest.services.utils.jvm_utils import create_jvm_settings, merge_jvm_settings
 from ignitetest.services.utils.path import get_home_dir, get_module_path, IgnitePathAware
 from ignitetest.utils.version import DEV_BRANCH
-
 
 
 def resolve_spec(service, context, config, main_java_class, **kwargs):

@@ -20,7 +20,6 @@ This module contains classes that represent persistent artifacts of tests
 import os
 from abc import abstractmethod, ABCMeta
 
-from ignitetest.services.utils.config_template import IgniteLoggerConfigTemplate
 from ignitetest.utils.version import DEV_BRANCH
 
 
