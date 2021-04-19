@@ -19,7 +19,6 @@ This module contains the base class to build services aware of Ignite.
 import os
 import re
 import signal
-import socket
 import sys
 import time
 from abc import ABCMeta
@@ -36,14 +35,10 @@ from ignitetest.services.utils.ignite_spec import resolve_spec
 from ignitetest.services.utils.jmx_utils import ignite_jmx_mixin
 from ignitetest.services.utils.log_utils import monitor_log
 from ignitetest.services.utils.path import IgnitePathAware
-# pylint: disable=too-many-public-methods
-from ignitetest.services.utils.ssl.connector_configuration import ConnectorConfiguration
-from ignitetest.services.utils.ssl.ssl_params import get_ssl_params, is_ssl_enabled, IGNITE_SERVER_ALIAS, \
-    IGNITE_CLIENT_ALIAS
 from ignitetest.utils.enum import constructible
 
 
-# pylint: disable=R0902
+# pylint: disable=R0902,too-many-public-methods
 class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABCMeta):
     """
     The base class to build services aware of Ignite.
@@ -92,27 +87,11 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
         Starts in async way.
         """
-        self.update_ssl_config_with_globals()
         super().start(**kwargs)
 
     def start(self, **kwargs):
         self.start_async(**kwargs)
         self.await_started()
-
-    def update_ssl_config_with_globals(self):
-        """
-        Update ssl configuration from globals.
-        """
-        ssl_params = None
-        if self.config.ssl_params is None and is_ssl_enabled(self.globals):
-            ssl_params = get_ssl_params(
-                self.globals,
-                IGNITE_CLIENT_ALIAS if self.config.client_mode else IGNITE_SERVER_ALIAS
-            )
-        if ssl_params:
-            self.config = self.config._replace(ssl_params=ssl_params,
-                                               connector_configuration=ConnectorConfiguration(
-                                                   ssl_enabled=True, ssl_params=ssl_params))
 
     def await_started(self):
         """
@@ -192,14 +171,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         self._prepare_configs(node)
 
     def _prepare_configs(self, node):
-        if not self.config.consistent_id:
-            config = self.config._replace(consistent_id=node.account.externally_routable_ip)
-        else:
-            config = self.config
-
-        config = config._replace(local_host=socket.gethostbyname(node.account.hostname))
-
-        config.discovery_spi.prepare_on_start(cluster=self)
+        config = self.config.prepare_for_env(globals=self.globals, node=node, cluster=self)
 
         for name, template in self.spec.config_templates:
             config_txt = template.render(config_dir=self.config_dir, work_dir=self.work_dir, config=config)
