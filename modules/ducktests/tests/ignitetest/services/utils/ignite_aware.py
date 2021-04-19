@@ -205,12 +205,12 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
         config.discovery_spi.prepare_on_start(cluster=self)
 
-        for template in self.spec.config_templates:
-            config_txt = template[1].render(config_dir=self.config_dir, work_dir=self.work_dir, config=config)
+        for name, template in self.spec.config_templates:
+            config_txt = template.render(config_dir=self.config_dir, work_dir=self.work_dir, config=config)
 
-            node.account.create_file(os.path.join(self.config_dir, template[0]), config_txt)
+            node.account.create_file(os.path.join(self.config_dir, name), config_txt)
 
-            self.logger.debug("Config %s for node %s: %s" % (template[0], node.account.hostname, config_txt))
+            self.logger.debug("Config %s for node %s: %s" % (name, node.account.hostname, config_txt))
 
         setattr(node, "consistent_id", node.account.externally_routable_ip)
 
