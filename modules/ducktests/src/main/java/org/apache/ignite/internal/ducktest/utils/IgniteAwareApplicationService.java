@@ -38,18 +38,17 @@ public class IgniteAwareApplicationService {
     /** Logger. */
     private static final Logger log = LogManager.getLogger(IgniteAwareApplicationService.class.getName());
 
-    /**
-     * Ignite start modes.
-     */
+    /** Ignite start modes. */
     protected enum StartIgniteMode {
         /** Ignite mode = node. */
         NODE,
+
         /** Ignite start mode = thin client. */
         THIN_CLIENT,
+
         /** Ignite mode = node. */
         NONE
     }
-
 
     /**
      * @param args Args.
