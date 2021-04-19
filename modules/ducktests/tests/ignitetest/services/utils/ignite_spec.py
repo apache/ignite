@@ -84,10 +84,13 @@ class IgniteSpec(metaclass=ABCMeta):
 
         self.config = config
         self.thin_client_config = thin_client_config
-        if self.config:
-            self.version = config.version
-        else:
-            self.version = thin_client_config.version
+
+    @property
+    def version(self):
+        """
+        :return: version
+        """
+        return self.config.version if self.config else self.thin_client_config.version
 
     @property
     def config_templates(self):
@@ -118,7 +121,7 @@ class IgniteSpec(metaclass=ABCMeta):
         """
         Get home directory for current spec.
         """
-        product = product if product else str(self.config.version)
+        product = product if product else str(self.version)
         return get_home_dir(self.path_aware.install_root, product)
 
     def _module(self, name):
@@ -128,7 +131,7 @@ class IgniteSpec(metaclass=ABCMeta):
         if name == "ducktests":
             return get_module_path(self.__home(str(DEV_BRANCH)), name, DEV_BRANCH.is_dev)
 
-        return get_module_path(self.__home(), name, self.config.version.is_dev)
+        return get_module_path(self.__home(), name, self.version.is_dev)
 
     @abstractmethod
     def command(self, node):
@@ -256,7 +259,7 @@ class ApacheIgniteApplicationSpec(IgniteApplicationSpec):
         ]
 
     def __jackson(self):
-        if not self.config.version.is_dev:
+        if not self.version.is_dev:
             aws = self._module("aws")
             return self.context.cluster.nodes[0].account.ssh_capture(
                 "ls -d %s/* | grep jackson | tr '\n' ':' | sed 's/.$//'" % aws)

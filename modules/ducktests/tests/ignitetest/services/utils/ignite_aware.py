@@ -191,6 +191,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         self._prepare_configs(node)
 
     def _prepare_configs(self, node):
+        config = None
         if self.config:
             config = self.config.prepare_for_env(test_globals=self.globals, node=node, cluster=self)
 
