@@ -54,6 +54,7 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
@@ -246,10 +247,8 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
      * @throws Exception If failed.
      */
     @Test
-    public void testCacheStartFailOnNodeLeft() throws Exception {
-        int keysCnt = 10_000;
-
-        startGridsWithSnapshot(3, keysCnt, true);
+    public void testNodeLeftDuringCacheStartOnExchangeInit() throws Exception {
+        startGridsWithSnapshot(3, CACHE_KEYS_RANGE, true);
 
         BlockingCustomMessageDiscoverySpi discoSpi = discoSpi(grid(0));
 
@@ -265,6 +264,67 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
         discoSpi.unblock();
 
         GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), ClusterTopologyCheckedException.class, null);
+
+        ensureCacheDirEmpty(dfltCacheCfg);
+    }
+
+    /**
+     * Ensures that the cache is not started if non-coordinator node left during the exchange.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testNodeLeftDuringCacheStartOnExchangeFinish() throws Exception {
+        checkNodeLeftOnExchangeFinish(
+            false, ClusterTopologyCheckedException.class, "Required node has left the cluster");
+    }
+
+    /**
+     * Ensures that the cache is not started if the coordinator left during the exchange.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCrdLeftDuringCacheStartOnExchangeFinish() throws Exception {
+        checkNodeLeftOnExchangeFinish(
+            true, IgniteCheckedException.class, "Operation has been cancelled (node is stopping)");
+    }
+
+    /**
+     * @param crdStop {@code True} to stop coordinator node.
+     * @param expCls Expected exception class.
+     * @param expMsg Expected exception message.
+     * @throws Exception If failed.
+     */
+    private void checkNodeLeftOnExchangeFinish(
+        boolean crdStop,
+        Class<? extends Throwable> expCls,
+        String expMsg
+    ) throws Exception {
+        startGridsWithSnapshot(3, CACHE_KEYS_RANGE, true);
+
+        TestRecordingCommunicationSpi node1spi = TestRecordingCommunicationSpi.spi(grid(1));
+        TestRecordingCommunicationSpi node2spi = TestRecordingCommunicationSpi.spi(grid(2));
+
+        node1spi.blockMessages((node, msg) -> msg instanceof GridDhtPartitionsSingleMessage);
+        node2spi.blockMessages((node, msg) -> msg instanceof GridDhtPartitionsSingleMessage);
+
+        IgniteFuture<Void> fut =
+            grid(1).snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(dfltCacheCfg.getName()));
+
+        node1spi.waitForBlocked();
+        node2spi.waitForBlocked();
+
+        stopGrid(crdStop ? 0 : 2, true);
+
+        node1spi.stopBlock();
+
+        if (crdStop)
+            node2spi.stopBlock();
+
+        GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), expCls, expMsg);
+
+        awaitPartitionMapExchange();
 
         ensureCacheDirEmpty(dfltCacheCfg);
     }

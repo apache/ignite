@@ -3827,28 +3827,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             return;
 
         try {
-            if (dynamicCacheStartExchange() && isRollbackSupported()) {
-                if (!F.isEmpty(exchangeGlobalExceptions)) {
-                    sendExchangeFailureMessage();
+            if (!F.isEmpty(exchangeGlobalExceptions) && dynamicCacheStartExchange() && isRollbackSupported()) {
+                sendExchangeFailureMessage();
 
-                    return;
-                }
-
-                for (UUID nodeId : exchActions.cacheStartRequiredAliveNodes()) {
-                    ClusterNode node = cctx.discovery().node(nodeId);
-
-                    if (node != null &&
-                        cctx.discovery().alive(node) &&
-                        CU.baselineNode(node, cctx.kernalContext().state().clusterState()))
-                        continue;
-
-                    exchangeGlobalExceptions.put(cctx.localNodeId(), new ClusterTopologyCheckedException(
-                        "Required node has left the cluster [nodeId=" + nodeId + ']'));
-
-                    sendExchangeFailureMessage();
-
-                    return;
-                }
+                return;
             }
 
             AffinityTopologyVersion resTopVer = exchCtx.events().topologyVersion();
@@ -5144,6 +5126,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                             if (crd0 == null)
                                 finishState = new FinishState(null, initialVersion(), null);
+
+                            if (dynamicCacheStartExchange() &&
+                                exchActions.cacheStartRequiredAliveNodes().contains(node.id())) {
+                                exchangeGlobalExceptions.put(cctx.localNodeId(), new ClusterTopologyCheckedException(
+                                    "Required node has left the cluster [nodeId=" + node.id() + ']'));
+                            }
                         }
 
                         if (crd0 == null) {
