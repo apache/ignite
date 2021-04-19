@@ -224,12 +224,9 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
             config.discovery_spi.prepare_on_start(cluster=self)
 
-            #node_config = self.spec.thin_client_config_template.render(config_dir=self.config_dir,
-            #                                                           work_dir=self.work_dir,
-            #                                                           config=self.thin_client_config)
-
         for name, template in self.spec.config_templates:
-            config_txt = template.render(config_dir=self.config_dir, work_dir=self.work_dir, config=config)
+            config_txt = template.render(config_dir=self.config_dir, work_dir=self.work_dir, config=config,
+                                         thin_client_config=self.thin_client_config)
 
             node.account.create_file(os.path.join(self.config_dir, name), config_txt)
 
