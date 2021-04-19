@@ -20,7 +20,6 @@ This module contains classes that represent persistent artifacts of tests
 import os
 from abc import abstractmethod, ABCMeta
 
-from ignitetest.services.utils.config_template import IgniteLoggerConfigTemplate
 from ignitetest.utils.version import DEV_BRANCH
 
 
@@ -152,23 +151,17 @@ class IgnitePathAware(PathAware, metaclass=ABCMeta):
     """
     This class contains Ignite path configs.
     """
-    def init_persistent(self, node):
-        """
-        Init persistent directory.
-        :param node: Ignite service node.
-        """
-        super().init_persistent(node)
+    IGNITE_CONFIG_NAME = "ignite-config.xml"
 
-        logger_config = IgniteLoggerConfigTemplate().render(work_dir=self.work_dir)
-        node.account.create_file(self.log_config_file, logger_config)
+    IGNITE_LOG_CONFIG_NAME = "ignite-log4j.xml"
 
     @property
     def config_file(self):
-        return os.path.join(self.config_dir, "ignite-config.xml")
+        return os.path.join(self.config_dir, IgnitePathAware.IGNITE_CONFIG_NAME)
 
     @property
     def log_config_file(self):
-        return os.path.join(self.config_dir, "ignite-log4j.xml")
+        return os.path.join(self.config_dir, IgnitePathAware.IGNITE_LOG_CONFIG_NAME)
 
     @property
     def database_dir(self):
