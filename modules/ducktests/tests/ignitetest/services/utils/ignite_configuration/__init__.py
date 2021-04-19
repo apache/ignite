@@ -57,14 +57,14 @@ class IgniteConfiguration(NamedTuple):
     rebalance_batches_prefetch_count: int = None
     rebalance_throttle: int = None
 
-    def __prepare_ssl(self, global_ctx):
+    def __prepare_ssl(self, test_globals):
         """
         Updates ssl configuration from globals.
         """
         ssl_params = None
-        if self.ssl_params is None and is_ssl_enabled(global_ctx):
+        if self.ssl_params is None and is_ssl_enabled(test_globals):
             ssl_params = get_ssl_params(
-                global_ctx,
+                test_globals,
                 IGNITE_CLIENT_ALIAS if self.client_mode else IGNITE_SERVER_ALIAS
             )
         if ssl_params:
@@ -88,11 +88,11 @@ class IgniteConfiguration(NamedTuple):
         return config
 
     # pylint: disable=protected-access
-    def prepare_for_env(self, global_ctx, node, cluster):
+    def prepare_for_env(self, test_globals, node, cluster):
         """
         Updates configuration based on current environment.
         """
-        return self.__prepare_ssl(global_ctx).__prepare_discovery(node, cluster)
+        return self.__prepare_ssl(test_globals).__prepare_discovery(node, cluster)
 
 
 class IgniteClientConfiguration(IgniteConfiguration):
