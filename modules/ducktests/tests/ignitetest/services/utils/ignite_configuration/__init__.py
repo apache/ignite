@@ -74,7 +74,7 @@ class IgniteConfiguration(NamedTuple):
 
     def _prepare_discovery(self, node, cluster):
         """
-        Updates discovery configuration from globals.
+        Updates discovery configuration based on current environment.
         """
         if not self.consistent_id:
             config = self._replace(consistent_id=node.account.externally_routable_ip)
