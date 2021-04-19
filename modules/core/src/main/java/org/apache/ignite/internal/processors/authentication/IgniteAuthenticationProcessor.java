@@ -57,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.Metas
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
+import org.apache.ignite.internal.processors.security.IgniteSecurityProcessor;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.security.UserOptions;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -96,6 +97,7 @@ import static org.apache.ignite.internal.processors.authentication.UserManagemen
 import static org.apache.ignite.plugin.security.SecurityPermission.ALTER_USER;
 import static org.apache.ignite.plugin.security.SecurityPermission.CREATE_USER;
 import static org.apache.ignite.plugin.security.SecurityPermission.DROP_USER;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
 import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_CLIENT;
 import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_NODE;
 
@@ -298,6 +300,12 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         UUID subjId;
 
         if (ctx.clientNode()) {
+            if (ctx.discovery().aliveServerNodes().isEmpty()) {
+                throw new IgniteAccessControlException("No alive server node was found to which the authentication" +
+                    " operation could be delegated. It is possible that the client node has been started with the" +
+                    " \"forceServerMode\" flag enabled and no server node had been started yet.");
+            }
+
             AuthenticateFuture fut;
 
             do {
@@ -633,8 +641,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                     && !ctx.discovery().allNodes().isEmpty()
                     && ctx.discovery().aliveServerNodes().isEmpty()) {
                     U.warn(log, "Cannot find the server coordinator node. "
-                        + "Possible a client is started with forceServerMode=true. " +
-                        "Security warning: user authentication will be disabled on the client.");
+                        + "Possible a client is started with forceServerMode=true.");
                 }
                 else
                     assert res != null;
@@ -943,7 +950,15 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         // No-op.
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     *
+     * This method works with the assumption that {@link SecurityContext} associated with the Ignite node is stored in
+     * node attributes and is obtained automatically by the Ignite using the node ID
+     * (see {@link IgniteSecurityProcessor#withContext(java.util.UUID))}. Since we use the node ID as the subject ID
+     * during node authentication, this method is used for obtaining security context for thin clients only.
+     * Note that the returned security context does not contain the address of the security subject.
+     */
     @Override public SecurityContext securityContext(UUID subjId) {
         User user = users.get(subjId);
 
@@ -1380,7 +1395,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
         /** {@inheritDoc} */
         @Override public SecurityPermissionSet permissions() {
-            return null;
+            return ALLOW_ALL;
         }
 
         /** {@inheritDoc} */
