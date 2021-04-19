@@ -24,7 +24,7 @@ import sys
 import time
 from abc import ABCMeta
 from datetime import datetime
-from enum import IntEnum
+from enum import IntEnum, Enum, auto
 from threading import Thread
 
 from ducktape.cluster.remoteaccount import RemoteCommandError
@@ -43,21 +43,20 @@ from ignitetest.services.utils.ssl.ssl_params import get_ssl_params, is_ssl_enab
 from ignitetest.utils.enum import constructible
 
 
-@constructible
-class StartIgnite(IntEnum):
-    """
-    Start Ignite mode.
-    """
-    NODE = 0
-    THIN_CLIENT = 1
-    NONE = 2
-
-
 # pylint: disable=R0902
 class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABCMeta):
     """
     The base class to build services aware of Ignite.
     """
+    @constructible
+    class ApplicationMode(Enum):
+        """
+        Application start mode.
+        """
+        NODE = auto()
+        THIN_CLIENT = auto()
+        NONE = auto()
+
     @constructible
     class NetPart(IntEnum):
         """
@@ -93,10 +92,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
     @property
     def product(self):
-        if not self.thin_client_config:
-            return str(self.config.version)
-        else:
-            return str(self.thin_client_config.version)
+        return str(self.config.version if self.config else self.thin_client_config.version)
 
     @property
     def mode(self):
@@ -104,9 +100,9 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         Start Ignite mode definition.
         """
         if self.thin_client_config:
-            return StartIgnite.THIN_CLIENT
+            return IgniteAwareService.ApplicationMode.THIN_CLIENT
         else:
-            return StartIgnite.NODE if self.config else StartIgnite.NONE
+            return IgniteAwareService.ApplicationMode.NODE if self.config else IgniteAwareService.ApplicationMode.NONE
 
 
     @property
@@ -143,7 +139,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
         Awaits start finished.
         """
-        if self.mode in (StartIgnite.NONE, StartIgnite.THIN_CLIENT):
+        if self.mode in (IgniteAwareService.ApplicationMode.NONE, IgniteAwareService.ApplicationMode.THIN_CLIENT):
             return
 
         self.logger.info("Waiting for IgniteAware(s) to start ...")
