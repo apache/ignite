@@ -99,7 +99,6 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
         return IgniteAwareService.ApplicationMode.NODE if self.config else IgniteAwareService.ApplicationMode.NONE
 
-
     @property
     def globals(self):
         return self.context.globals
