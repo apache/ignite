@@ -37,10 +37,6 @@ import org.apache.log4j.Logger;
 public class IgniteAwareApplicationService {
     /** Logger. */
     private static final Logger log = LogManager.getLogger(IgniteAwareApplicationService.class.getName());
-    /** Ignite mode = node. */
-    public static final String IGNITE_START_NODE = "NODE";
-    /** Ignite start mode = thin client. */
-    public static final String IGNITE_START_THIN_CLIENT = "THIN_CLIENT";
 
     /**
      * Ignite start modes.
