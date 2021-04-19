@@ -94,12 +94,16 @@ class IgniteSpec(metaclass=ABCMeta):
         """
         :return: config that service will use to start on a node
         """
-        return [
-            (IgnitePathAware.IGNITE_LOG_CONFIG_NAME, IgniteLoggerConfigTemplate()),
-            (IgnitePathAware.IGNITE_CONFIG_NAME,
-             IgniteClientConfigTemplate() if self.config.client_mode else IgniteServerConfigTemplate())
-        ]
+        config_templates = [(IgnitePathAware.IGNITE_LOG_CONFIG_NAME, IgniteLoggerConfigTemplate())]
 
+        if self.config:
+            config_templates.append((IgnitePathAware.IGNITE_CONFIG_NAME,
+                                     IgniteClientConfigTemplate() if self.config.client_mode
+                                     else IgniteServerConfigTemplate()))
+        else:
+            config_templates.append((IgnitePathAware.IGNITE_THIN_CLIENT_CONFIG_NAME, IgniteThinClientConfigTemplate()))
+
+        return config_templates
 
     @property
     def thin_client_config_template(self):
@@ -247,7 +251,7 @@ class ApacheIgniteApplicationSpec(IgniteApplicationSpec):
         self.args = [
             str(mode.name),
             java_class_name,
-            self.path_aware.config_file,
+            self.path_aware.config_file if self.config else self.path_aware.thin_client_config_file,
             str(base64.b64encode(json.dumps(params).encode('utf-8')), 'utf-8')
         ]
 
