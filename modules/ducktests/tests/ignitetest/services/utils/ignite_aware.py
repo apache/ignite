@@ -91,13 +91,12 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
         self.disconnected_nodes = []
 
-    # pylint: disable=R1705
     @property
-    def version(self):
+    def product(self):
         if not self.thin_client_config:
-            return self.config.version
+            return str(self.config.version)
         else:
-            return self.thin_client_config.version
+            return str(self.thin_client_config.version)
 
     @property
     def mode(self):
@@ -108,10 +107,6 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
             return StartIgnite.THIN_CLIENT
         else:
             return StartIgnite.NODE if self.config else StartIgnite.NONE
-
-    @property
-    def project(self):
-        return self.spec.project
 
     @property
     def globals(self):
@@ -218,11 +213,9 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
         super().init_persistent(node)
 
-        node_config = self._prepare_config(node)
+        self._prepare_configs(node)
 
-        node.account.create_file(self.config_file, node_config)
-
-    def _prepare_config(self, node):
+    def _prepare_configs(self, node):
         if not self.thin_client_config:
             if not self.config.consistent_id:
                 config = self.config._replace(consistent_id=node.account.externally_routable_ip)
@@ -233,18 +226,18 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
             config.discovery_spi.prepare_on_start(cluster=self)
 
-            node_config = self.spec.config_template.render(config_dir=self.config_dir, work_dir=self.work_dir,
-                                                           config=config)
-        else:
-            node_config = self.spec.thin_client_config_template.render(config_dir=self.config_dir,
-                                                                       work_dir=self.work_dir,
-                                                                       config=self.thin_client_config)
+            #node_config = self.spec.thin_client_config_template.render(config_dir=self.config_dir,
+            #                                                           work_dir=self.work_dir,
+            #                                                           config=self.thin_client_config)
+
+        for name, template in self.spec.config_templates:
+            config_txt = template.render(config_dir=self.config_dir, work_dir=self.work_dir, config=config)
+
+            node.account.create_file(os.path.join(self.config_dir, name), config_txt)
+
+            self.logger.debug("Config %s for node %s: %s" % (name, node.account.hostname, config_txt))
 
         setattr(node, "consistent_id", node.account.externally_routable_ip)
-
-        self.logger.debug("Config for node %s: %s" % (node.account.hostname, node_config))
-
-        return node_config
 
     def pids(self, node):
         """
