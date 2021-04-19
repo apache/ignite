@@ -44,7 +44,7 @@ public class IgniteAwareApplicationService {
     protected enum StartIgniteMode {
         /** Ignite mode = node. */
         NODE,
-        /** gnite start mode = thin client. */
+        /** Ignite start mode = thin client. */
         THIN_CLIENT,
         /** Ignite mode = node. */
         NONE

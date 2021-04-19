@@ -43,6 +43,16 @@ from ignitetest.services.utils.ssl.ssl_params import get_ssl_params, is_ssl_enab
 from ignitetest.utils.enum import constructible
 
 
+@constructible
+class StartIgnite(IntEnum):
+    """
+    Start Ignite mode.
+    """
+    NODE = 0
+    THIN_CLIENT = 1
+    NONE = 2
+
+
 # pylint: disable=R0902
 class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABCMeta):
     """
@@ -56,15 +66,6 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         INPUT = 0
         OUTPUT = 1
         ALL = 2
-
-    @constructible
-    class StartIgnite(IntEnum):
-        """
-        Network part to emulate failure.
-        """
-        NODE = 0
-        THIN_CLIENT = 1
-        NONE = 2
 
     # pylint: disable=R0913
     def __init__(self, context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, main_java_class,
@@ -100,13 +101,13 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
     @property
     def mode(self):
+        """
+        Start Ignite mode definition.
+        """
         if self.thin_client_config:
-            return IgniteAwareService.StartIgnite.THIN_CLIENT
+            return StartIgnite.THIN_CLIENT
         else:
-            if self.config:
-                return IgniteAwareService.StartIgnite.NODE
-            else:
-                return IgniteAwareService.StartIgnite.NONE
+            return StartIgnite.NODE if self.config else StartIgnite.NONE
 
     @property
     def project(self):
@@ -146,7 +147,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
         Awaits start finished.
         """
-        if self.mode in (IgniteAwareService.StartIgnite.NONE, IgniteAwareService.StartIgnite.THIN_CLIENT):
+        if self.mode in (StartIgnite.NONE, StartIgnite.THIN_CLIENT):
             return
 
         self.logger.info("Waiting for IgniteAware(s) to start ...")
