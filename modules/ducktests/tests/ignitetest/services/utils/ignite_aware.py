@@ -108,6 +108,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         else:
             return StartIgnite.NODE if self.config else StartIgnite.NONE
 
+
     @property
     def globals(self):
         return self.context.globals
@@ -214,6 +215,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         super().init_persistent(node)
 
         self._prepare_configs(node)
+
 
     def _prepare_configs(self, node):
         if not self.thin_client_config:

@@ -81,6 +81,7 @@ class IgniteSpec(metaclass=ABCMeta):
             self.jvm_opts = create_jvm_settings(opts=jvm_opts,
                                                 gc_dump_path=os.path.join(path_aware.log_dir, "ignite_gc.log"),
                                                 oom_path=os.path.join(path_aware.log_dir, "ignite_out_of_mem.hprof"))
+
         self.config = config
         self.thin_client_config = thin_client_config
         if self.config:
@@ -98,6 +99,7 @@ class IgniteSpec(metaclass=ABCMeta):
             (IgnitePathAware.IGNITE_CONFIG_NAME,
              IgniteClientConfigTemplate() if self.config.client_mode else IgniteServerConfigTemplate())
         ]
+
 
     @property
     def thin_client_config_template(self):
