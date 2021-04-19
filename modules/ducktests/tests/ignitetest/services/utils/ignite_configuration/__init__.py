@@ -83,12 +83,11 @@ class IgniteConfiguration(NamedTuple):
 
         config = config._replace(local_host=socket.gethostbyname(node.account.hostname))
         config.discovery_spi.prepare_on_start(cluster=cluster)
+
         return config
 
     def prepare_for_env(self, globals, node, cluster):
-        config = self._prepare_ssl(globals)
-
-        return config._prepare_discovery(node, cluster)
+        return self._prepare_ssl(globals)._prepare_discovery(node, cluster)
 
 
 class IgniteClientConfiguration(IgniteConfiguration):
