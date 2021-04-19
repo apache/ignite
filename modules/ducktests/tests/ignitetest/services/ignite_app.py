@@ -36,8 +36,7 @@ class IgniteApplicationService(IgniteAwareService):
     APP_BROKEN_EVT_MSG = "IGNITE_APPLICATION_BROKEN"
 
     # pylint: disable=R0913
-    def __init__(self, context, config, java_class_name,
-                 num_nodes=1, params="", startup_timeout_sec=60,
+    def __init__(self, context, config, java_class_name, num_nodes=1, params="", startup_timeout_sec=60,
                  shutdown_timeout_sec=10, modules=None, main_java_class=SERVICE_JAVA_CLASS_NAME, jvm_opts=None,
                  full_jvm_opts=None, thin_client_config=None):
         super().__init__(context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, main_java_class,
