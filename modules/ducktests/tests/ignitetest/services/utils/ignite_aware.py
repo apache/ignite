@@ -96,8 +96,8 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
         if self.thin_client_config:
             return IgniteAwareService.ApplicationMode.THIN_CLIENT
-        else:
-            return IgniteAwareService.ApplicationMode.NODE if self.config else IgniteAwareService.ApplicationMode.NONE
+
+        return IgniteAwareService.ApplicationMode.NODE if self.config else IgniteAwareService.ApplicationMode.NONE
 
 
     @property
