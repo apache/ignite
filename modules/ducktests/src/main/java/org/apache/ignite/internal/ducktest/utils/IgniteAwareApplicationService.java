@@ -38,9 +38,22 @@ public class IgniteAwareApplicationService {
     /** Logger. */
     private static final Logger log = LogManager.getLogger(IgniteAwareApplicationService.class.getName());
     /** Ignite mode = node. */
-    public static final String IGNITE_START_NODE = "StartIgnite.NODE";
+    public static final String IGNITE_START_NODE = "NODE";
     /** Ignite start mode = thin client. */
-    public static final String IGNITE_START_THIN_CLIENT = "StartIgnite.THIN_CLIENT";
+    public static final String IGNITE_START_THIN_CLIENT = "THIN_CLIENT";
+
+    /**
+     * Ignite start modes.
+     */
+    protected enum startIgniteMode {
+        /** Ignite mode = node. */
+        NODE,
+        /** gnite start mode = thin client. */
+        THIN_CLIENT,
+        /** Ignite mode = node. */
+        NONE
+    }
+
 
     /**
      * @param args Args.
@@ -66,7 +79,7 @@ public class IgniteAwareApplicationService {
 
         app.cfgPath = cfgPath;
 
-        if (startIgnite.equals(IGNITE_START_NODE)) {
+        if (startIgnite.equals(startIgniteMode.NODE.toString())) {
             log.info("Starting Ignite node...");
 
             IgniteBiTuple<IgniteConfiguration, GridSpringResourceContext> cfgs = IgnitionEx.loadConfiguration(cfgPath);
@@ -82,7 +95,7 @@ public class IgniteAwareApplicationService {
                 log.info("Ignite instance closed. [interrupted=" + Thread.currentThread().isInterrupted() + "]");
             }
         }
-        else if (startIgnite.equals(IGNITE_START_THIN_CLIENT)) {
+        else if (startIgnite.equals(startIgniteMode.THIN_CLIENT.toString())) {
             log.info("Starting thin client...");
 
             ClientConfiguration cfg = IgnitionEx.loadSpringBean(cfgPath, "thin.client.cfg");

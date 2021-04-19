@@ -240,7 +240,7 @@ class ApacheIgniteApplicationSpec(IgniteApplicationSpec):
                             "-DIGNITE_ALLOW_ATOMIC_OPS_IN_TX=false"])
 
         self.args = [
-            str(start_ignite),
+            str(start_ignite.name),
             java_class_name,
             self.path_aware.config_file,
             str(base64.b64encode(json.dumps(params).encode('utf-8')), 'utf-8')
