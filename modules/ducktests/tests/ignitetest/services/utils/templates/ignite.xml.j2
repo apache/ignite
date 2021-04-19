@@ -116,8 +116,13 @@
         </property>
         {% endif %}
 
-        <property name="localEventListeners" ref="eventListeners"/>
-        <property name="includeEventTypes" ref="eventTypes"/>
+        {% if config.local_event_listeners %}
+            <property name="localEventListeners" ref="{{ config.local_event_listeners }}"/>
+        {% endif %}
+
+        {% if config.include_event_types %}
+            <property name="includeEventTypes" ref="{{ config.include_event_types }}"/>
+        {% endif %}
 
         {{ misc_utils.plugins(config) }}
 
