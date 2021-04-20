@@ -1,6 +1,7 @@
 # name: test/sql/types/decimal/cast_from_decimal.test
 # description: Test casting from decimal to numeric
 # group: [decimal]
+# Ignore: https://issues.apache.org/jira/browse/IGNITE-14589
 
 statement ok
 PRAGMA enable_verification

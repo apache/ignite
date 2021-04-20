@@ -1,6 +1,7 @@
 # name: test/sql/types/string/test_scan_big_varchar.test_slow
 # description: Test scanning many big varchar strings with limited memory
 # group: [string]
+# Ignore: https://issues.apache.org/jira/browse/IGNITE-14553
 
 statement error
 PRAGMA memory_limit=100000000

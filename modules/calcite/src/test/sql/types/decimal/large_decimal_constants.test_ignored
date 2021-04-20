@@ -1,6 +1,7 @@
 # name: test/sql/types/decimal/large_decimal_constants.test
 # description: Test large decimal constants
 # group: [decimal]
+# Ignore: https://issues.apache.org/jira/browse/IGNITE-14596
 
 query IIIII
 SELECT 42.1, -10239814.1, 1049185157.12345, 102398294123451814.12345, -49238409238403918140294812084.12490812490
