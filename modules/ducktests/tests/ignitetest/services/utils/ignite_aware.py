@@ -44,15 +44,6 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
     The base class to build services aware of Ignite.
     """
     @constructible
-    class ApplicationMode(IntEnum):
-        """
-        Application start mode.
-        """
-        NODE = 0
-        THIN_CLIENT = 1
-        NONE = 2
-
-    @constructible
     class NetPart(IntEnum):
         """
         Network part to emulate failure.
@@ -63,7 +54,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
     # pylint: disable=R0913
     def __init__(self, context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, main_java_class,
-                 thin_client_config=None, **kwargs):
+                 **kwargs):
         """
         **kwargs are params that passed to IgniteSpec
         """
@@ -77,27 +68,15 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         self.main_java_class = main_java_class
         self.startup_timeout_sec = startup_timeout_sec
         self.shutdown_timeout_sec = shutdown_timeout_sec
-        self.thin_client_config = thin_client_config
 
-        self.spec = resolve_spec(self, context, config, main_java_class,
-                                 self.mode, thin_client_config, **kwargs)
+        self.spec = resolve_spec(self, context, config, main_java_class, **kwargs)
         self.init_logs_attribute()
 
         self.disconnected_nodes = []
 
     @property
     def product(self):
-        return str(self.config.version if self.config else self.thin_client_config.version)
-
-    @property
-    def mode(self):
-        """
-        Start Ignite mode definition.
-        """
-        if self.thin_client_config:
-            return IgniteAwareService.ApplicationMode.THIN_CLIENT
-
-        return IgniteAwareService.ApplicationMode.NODE if self.config else IgniteAwareService.ApplicationMode.NONE
+        return str(self.config.version)
 
     @property
     def globals(self):
@@ -117,7 +96,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
         Awaits start finished.
         """
-        if self.mode in (IgniteAwareService.ApplicationMode.NONE, IgniteAwareService.ApplicationMode.THIN_CLIENT):
+        if self.config.mode in (IgniteAwareService.ApplicationMode.NONE, IgniteAwareService.ApplicationMode.THIN_CLIENT):
             return
 
         self.logger.info("Waiting for IgniteAware(s) to start ...")
@@ -191,13 +170,10 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         self._prepare_configs(node)
 
     def _prepare_configs(self, node):
-        config = None
-        if self.config:
-            config = self.config.prepare_for_env(test_globals=self.globals, node=node, cluster=self)
+        config = self.config.prepare_for_env(test_globals=self.globals, node=node, cluster=self)
 
         for name, template in self.spec.config_templates:
-            config_txt = template.render(config_dir=self.config_dir, work_dir=self.work_dir, config=config,
-                                         thin_client_config=self.thin_client_config)
+            config_txt = template.render(config_dir=self.config_dir, work_dir=self.work_dir, config=config)
 
             node.account.create_file(os.path.join(self.config_dir, name), config_txt)
 

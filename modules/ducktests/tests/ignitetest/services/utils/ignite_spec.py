@@ -25,13 +25,13 @@ from abc import ABCMeta, abstractmethod
 
 from ignitetest.services.utils.config_template import IgniteClientConfigTemplate, IgniteServerConfigTemplate, \
     IgniteLoggerConfigTemplate, IgniteThinClientConfigTemplate
+from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.services.utils.jvm_utils import create_jvm_settings, merge_jvm_settings
 from ignitetest.services.utils.path import get_home_dir, get_module_path, IgnitePathAware
 from ignitetest.utils.version import DEV_BRANCH
 
 
-# pylint: disable=R0913
-def resolve_spec(service, context, config, main_java_class, mode, thin_client_config=None, **kwargs):
+def resolve_spec(service, context, config, main_java_class, **kwargs):
     """
     Resolve Spec classes for IgniteService and IgniteApplicationService
     """
@@ -54,9 +54,7 @@ def resolve_spec(service, context, config, main_java_class, mode, thin_client_co
 
     if is_impl("IgniteApplicationService"):
         return _resolve_spec("AppSpec", ApacheIgniteApplicationSpec)(path_aware=service, context=context, config=config,
-                                                                     main_java_class=main_java_class,
-                                                                     mode=mode,
-                                                                     thin_client_config=thin_client_config, **kwargs)
+                                                                     main_java_class=main_java_class, **kwargs)
 
     raise Exception("There is no specification for class %s" % type(service))
 
@@ -67,7 +65,7 @@ class IgniteSpec(metaclass=ABCMeta):
     """
 
     # pylint: disable=R0913
-    def __init__(self, path_aware, config, thin_client_config=None, jvm_opts=None, full_jvm_opts=None):
+    def __init__(self, path_aware, config, jvm_opts=None, full_jvm_opts=None):
         self.config = config
         self.path_aware = path_aware
         self.envs = {}
@@ -82,16 +80,6 @@ class IgniteSpec(metaclass=ABCMeta):
                                                 gc_dump_path=os.path.join(path_aware.log_dir, "ignite_gc.log"),
                                                 oom_path=os.path.join(path_aware.log_dir, "ignite_out_of_mem.hprof"))
 
-        self.config = config
-        self.thin_client_config = thin_client_config
-
-    @property
-    def version(self):
-        """
-        :return: version
-        """
-        return self.config.version if self.config else self.thin_client_config.version
-
     @property
     def config_templates(self):
         """
@@ -99,7 +87,7 @@ class IgniteSpec(metaclass=ABCMeta):
         """
         config_templates = [(IgnitePathAware.IGNITE_LOG_CONFIG_NAME, IgniteLoggerConfigTemplate())]
 
-        if self.config:
+        if isinstance(self.config, IgniteConfiguration):
             config_templates.append((IgnitePathAware.IGNITE_CONFIG_NAME,
                                      IgniteClientConfigTemplate() if self.config.client_mode
                                      else IgniteServerConfigTemplate()))
@@ -108,20 +96,11 @@ class IgniteSpec(metaclass=ABCMeta):
 
         return config_templates
 
-    @property
-    def thin_client_config_template(self):
-        """
-        :return: thin client config that service will use to start on a node
-        """
-        if self.thin_client_config:
-            return IgniteThinClientConfigTemplate()
-        return None
-
     def __home(self, product=None):
         """
         Get home directory for current spec.
         """
-        product = product if product else str(self.version)
+        product = product if product else str(self.config.version)
         return get_home_dir(self.path_aware.install_root, product)
 
     def _module(self, name):
@@ -131,7 +110,7 @@ class IgniteSpec(metaclass=ABCMeta):
         if name == "ducktests":
             return get_module_path(self.__home(str(DEV_BRANCH)), name, DEV_BRANCH.is_dev)
 
-        return get_module_path(self.__home(), name, self.version.is_dev)
+        return get_module_path(self.__home(), name, self.config.version.is_dev)
 
     @abstractmethod
     def command(self, node):
@@ -254,12 +233,13 @@ class ApacheIgniteApplicationSpec(IgniteApplicationSpec):
         self.args = [
             str(mode.name),
             java_class_name,
-            self.path_aware.config_file if self.config else self.path_aware.thin_client_config_file,
+            self.path_aware.config_file if isinstance(self.config,
+                                                      IgniteConfiguration) else self.path_aware.thin_client_config_file,
             str(base64.b64encode(json.dumps(params).encode('utf-8')), 'utf-8')
         ]
 
     def __jackson(self):
-        if not self.version.is_dev:
+        if not self.config.version.is_dev:
             aws = self._module("aws")
             return self.context.cluster.nodes[0].account.ssh_capture(
                 "ls -d %s/* | grep jackson | tr '\n' ':' | sed 's/.$//'" % aws)
