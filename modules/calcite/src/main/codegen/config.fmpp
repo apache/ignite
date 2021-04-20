@@ -306,6 +306,7 @@ data: {
       "LEADING"
 #     "LEAVE" # not a keyword in Calcite
 #     "LEFT"
+      "LENGTH"
       "LEVEL"
       "LIKE"
       "LIKE_REGEX"
