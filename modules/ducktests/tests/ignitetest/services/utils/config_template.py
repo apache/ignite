@@ -22,6 +22,7 @@ from jinja2 import FileSystemLoader, Environment
 
 DEFAULT_CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
 DEFAULT_IGNITE_CONF = os.path.join(DEFAULT_CONFIG_PATH, "ignite.xml.j2")
+DEFAULT_THIN_CLIENT_CONF = os.path.join(DEFAULT_CONFIG_PATH, "thin_client_config.xml.j2")
 
 
 class ConfigTemplate:
@@ -63,6 +64,14 @@ class IgniteClientConfigTemplate(ConfigTemplate):
     def __init__(self, path=DEFAULT_IGNITE_CONF):
         super().__init__(path)
         self.default_params.update(client_mode=True)
+
+
+class IgniteThinClientConfigTemplate(ConfigTemplate):
+    """
+    Ignite client node configuration.
+    """
+    def __init__(self, path=DEFAULT_THIN_CLIENT_CONF):
+        super().__init__(path)
 
 
 class IgniteLoggerConfigTemplate(ConfigTemplate):

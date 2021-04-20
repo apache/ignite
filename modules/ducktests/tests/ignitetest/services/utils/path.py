@@ -153,14 +153,29 @@ class IgnitePathAware(PathAware, metaclass=ABCMeta):
     """
     IGNITE_CONFIG_NAME = "ignite-config.xml"
 
+    IGNITE_THIN_CLIENT_CONFIG_NAME = "ignite-thin-config.xml"
+
     IGNITE_LOG_CONFIG_NAME = "ignite-log4j.xml"
 
     @property
     def config_file(self):
+        """
+        :return: path to config file
+        """
         return os.path.join(self.config_dir, IgnitePathAware.IGNITE_CONFIG_NAME)
 
     @property
+    def thin_client_config_file(self):
+        """
+        :return: path to thin client config file
+        """
+        return os.path.join(self.config_dir, IgnitePathAware.IGNITE_THIN_CLIENT_CONFIG_NAME)
+
+    @property
     def log_config_file(self):
+        """
+        :return: path to log config file
+        """
         return os.path.join(self.config_dir, IgnitePathAware.IGNITE_LOG_CONFIG_NAME)
 
     @property

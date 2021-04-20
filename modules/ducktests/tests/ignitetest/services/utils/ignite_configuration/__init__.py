@@ -19,6 +19,7 @@ This module contains IgniteConfiguration classes and utilities.
 import socket
 from typing import NamedTuple
 
+from ignitetest.services.utils import IgniteServiceType
 from ignitetest.services.utils.ignite_configuration.communication import CommunicationSpi, TcpCommunicationSpi
 from ignitetest.services.utils.ssl.client_connector_configuration import ClientConnectorConfiguration
 from ignitetest.services.utils.ssl.connector_configuration import ConnectorConfiguration
@@ -94,9 +95,38 @@ class IgniteConfiguration(NamedTuple):
         """
         return self.__prepare_ssl(test_globals).__prepare_discovery(node, cluster)
 
+    @property
+    def service_type(self):
+        """
+        Application mode.
+        """
+        return IgniteServiceType.NODE
+
 
 class IgniteClientConfiguration(IgniteConfiguration):
     """
     Ignite client configuration.
     """
     client_mode = True
+
+
+class IgniteThinClientConfiguration(NamedTuple):
+    """
+    Thin client configuration.
+    """
+    addresses: str = None
+    version: IgniteVersion = DEV_BRANCH
+
+    # pylint: disable=unused-argument
+    def prepare_for_env(self, test_globals, node, cluster):
+        """
+        Updates configuration based on current environment.
+        """
+        return self
+
+    @property
+    def service_type(self):
+        """
+        Application mode.
+        """
+        return IgniteServiceType.THIN_CLIENT
