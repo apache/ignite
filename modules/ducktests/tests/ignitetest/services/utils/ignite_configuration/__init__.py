@@ -17,9 +17,9 @@
 This module contains IgniteConfiguration classes and utilities.
 """
 import socket
-from enum import IntEnum
 from typing import NamedTuple
 
+from ignitetest.services.utils import ApplicationMode
 from ignitetest.services.utils.ignite_configuration.communication import CommunicationSpi, TcpCommunicationSpi
 from ignitetest.services.utils.ssl.client_connector_configuration import ClientConnectorConfiguration
 from ignitetest.services.utils.ssl.connector_configuration import ConnectorConfiguration
@@ -27,7 +27,6 @@ from ignitetest.services.utils.ignite_configuration.data_storage import DataStor
 from ignitetest.services.utils.ignite_configuration.discovery import DiscoverySpi, TcpDiscoverySpi
 from ignitetest.services.utils.ssl.ssl_params import SslParams, is_ssl_enabled, get_ssl_params, IGNITE_CLIENT_ALIAS, \
     IGNITE_SERVER_ALIAS
-from ignitetest.utils.enum import constructible
 from ignitetest.utils.version import IgniteVersion, DEV_BRANCH
 
 
@@ -58,10 +57,6 @@ class IgniteConfiguration(NamedTuple):
     rebalance_batch_size: int = None
     rebalance_batches_prefetch_count: int = None
     rebalance_throttle: int = None
-
-    @property
-    def mode(self):
-        return ApplicationMode.NODE
 
     def __prepare_ssl(self, test_globals):
         """
@@ -100,21 +95,19 @@ class IgniteConfiguration(NamedTuple):
         """
         return self.__prepare_ssl(test_globals).__prepare_discovery(node, cluster)
 
+    @property
+    def mode(self):
+        """
+        Application mode.
+        """
+        return ApplicationMode.NODE
+
 
 class IgniteClientConfiguration(IgniteConfiguration):
     """
     Ignite client configuration.
     """
     client_mode = True
-
-    @property
-    def mode(self):
-        return ApplicationMode.THIN_CLIENT
-
-    def prepare_for_env(self, test_globals, node, cluster):
-        """
-        Updates configuration based on current environment.
-        """
 
 
 class ThinClientConfiguration(NamedTuple):
@@ -124,12 +117,15 @@ class ThinClientConfiguration(NamedTuple):
     addresses: str = None
     version: IgniteVersion = DEV_BRANCH
 
+    def prepare_for_env(self, test_globals, node, cluster):
+        """
+        Updates configuration based on current environment.
+        """
+        return self
 
-@constructible
-class ApplicationMode(IntEnum):
-    """
-    Application start mode.
-    """
-    NODE = 0
-    THIN_CLIENT = 1
-    NONE = 2
+    @property
+    def mode(self):
+        """
+        Application mode.
+        """
+        return ApplicationMode.THIN_CLIENT

@@ -29,6 +29,7 @@ from threading import Thread
 from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.utils.util import wait_until
 
+from ignitetest.services.utils import ApplicationMode
 from ignitetest.services.utils.background_thread import BackgroundThreadService
 from ignitetest.services.utils.concurrent import CountDownLatch, AtomicValue
 from ignitetest.services.utils.ignite_spec import resolve_spec
@@ -96,7 +97,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
         Awaits start finished.
         """
-        if self.config.mode in (IgniteAwareService.ApplicationMode.NONE, IgniteAwareService.ApplicationMode.THIN_CLIENT):
+        if self.config.mode in (ApplicationMode.NONE, ApplicationMode.THIN_CLIENT):
             return
 
         self.logger.info("Waiting for IgniteAware(s) to start ...")

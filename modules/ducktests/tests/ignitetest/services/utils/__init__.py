@@ -12,3 +12,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from enum import IntEnum
+
+from ignitetest.utils.enum import constructible
+
+
+@constructible
+class ApplicationMode(IntEnum):
+    """
+    Application start mode.
+    """
+    NODE = 0
+    THIN_CLIENT = 1
+    NONE = 2
+

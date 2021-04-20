@@ -23,9 +23,9 @@ import json
 import os
 from abc import ABCMeta, abstractmethod
 
+from ignitetest.services.utils import ApplicationMode
 from ignitetest.services.utils.config_template import IgniteClientConfigTemplate, IgniteServerConfigTemplate, \
     IgniteLoggerConfigTemplate, IgniteThinClientConfigTemplate
-from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.services.utils.jvm_utils import create_jvm_settings, merge_jvm_settings
 from ignitetest.services.utils.path import get_home_dir, get_module_path, IgnitePathAware
 from ignitetest.utils.version import DEV_BRANCH
@@ -87,7 +87,7 @@ class IgniteSpec(metaclass=ABCMeta):
         """
         config_templates = [(IgnitePathAware.IGNITE_LOG_CONFIG_NAME, IgniteLoggerConfigTemplate())]
 
-        if isinstance(self.config, IgniteConfiguration):
+        if self.config.mode == ApplicationMode.NODE:
             config_templates.append((IgnitePathAware.IGNITE_CONFIG_NAME,
                                      IgniteClientConfigTemplate() if self.config.client_mode
                                      else IgniteServerConfigTemplate()))
@@ -204,7 +204,7 @@ class ApacheIgniteApplicationSpec(IgniteApplicationSpec):
     Implementation IgniteApplicationSpec for Apache Ignite project
     """
     # pylint: disable=too-many-arguments
-    def __init__(self, context, modules, main_java_class, java_class_name, params, mode, **kwargs):
+    def __init__(self, context, modules, main_java_class, java_class_name, params, **kwargs):
         super().__init__(**kwargs)
         self.context = context
 
@@ -230,11 +230,13 @@ class ApacheIgniteApplicationSpec(IgniteApplicationSpec):
                             "-ea",
                             "-DIGNITE_ALLOW_ATOMIC_OPS_IN_TX=false"])
 
+        config_file = self.path_aware.config_file if self.config.mode == ApplicationMode.NODE \
+            else self.path_aware.thin_client_config_file
+
         self.args = [
-            str(mode.name),
+            str(self.config.mode.name),
             java_class_name,
-            self.path_aware.config_file if isinstance(self.config,
-                                                      IgniteConfiguration) else self.path_aware.thin_client_config_file,
+            config_file,
             str(base64.b64encode(json.dumps(params).encode('utf-8')), 'utf-8')
         ]
 
