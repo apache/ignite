@@ -73,8 +73,9 @@ public class IndexForceRebuildTask extends VisorOneNodeTask<IndexForceRebuildTas
             Set<IndexRebuildStatusInfoContainer> rebuildIdxCaches =
                 ignite.context().cache().publicCaches()
                     .stream()
-                    .filter(c -> !c.indexReadyFuture().isDone())
-                    .map(this::fromIgniteCache)
+                    .filter(cache -> !cache.indexReadyFuture().isDone())
+                    .map(cache -> cache.getConfiguration(CacheConfiguration.class))
+                    .map(IndexRebuildStatusInfoContainer::new)
                     .collect(Collectors.toSet());
 
             if (arg.cacheNames() == null && arg.cacheGrps() == null) {
@@ -126,12 +127,6 @@ public class IndexForceRebuildTask extends VisorOneNodeTask<IndexForceRebuildTas
                     .collect(Collectors.toSet());
 
             return new IndexForceRebuildTaskRes(cachesWithStartedRebuild, rebuildIdxCaches, notFoundCache);
-
-        }
-
-        /** */
-        private IndexRebuildStatusInfoContainer fromIgniteCache(IgniteCache c) {
-            return new IndexRebuildStatusInfoContainer((CacheConfiguration)c.getConfiguration(CacheConfiguration.class));
         }
     }
 }
