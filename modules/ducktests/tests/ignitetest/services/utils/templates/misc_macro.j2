@@ -27,10 +27,10 @@
     {% if config.plugins %}
         <property name="pluginProviders">
             <list>
-        {% for plugin in config.plugins %}
-            {% import plugin.template_path as plugin_template -%}
-            {{ plugin_template.apply(config, plugin) }}
-        {% endfor %}
+            {% for plugin in config.plugins %}
+                {% import plugin.template_path as plugin_template -%}
+                {{ plugin_template.apply(config, plugin) }}
+            {% endfor %}
             </list>
         </property>
     {% endif %}

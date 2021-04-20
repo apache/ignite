@@ -98,22 +98,22 @@
                     <property name="port" value="{{ config.client_connector_configuration.port }}"/>
                     <property name="sslEnabled" value="{{ config.client_connector_configuration.ssl_enabled }}"/>
                     {% if config.client_connector_configuration.ssl_enabled %}
-                    <property name="sslContextFactory">
-                        {{ ssl_params_util.ssl_params(config.client_connector_configuration.ssl_params) }}
-                    </property>
-                    <property name="useIgniteSslContextFactory" value="{{ config.client_connector_configuration.use_ignite_ssl_context_factory }}"/>
-                    <property name="sslClientAuth" value="{{ config.client_connector_configuration.ssl_client_auth }}"/>
+                        <property name="sslContextFactory">
+                            {{ ssl_params_util.ssl_params(config.client_connector_configuration.ssl_params) }}
+                        </property>
+                        <property name="useIgniteSslContextFactory" value="{{ config.client_connector_configuration.use_ignite_ssl_context_factory }}"/>
+                        <property name="sslClientAuth" value="{{ config.client_connector_configuration.ssl_client_auth }}"/>
                     {% endif %}
                 </bean>
             </property>
         {% endif %}
 
         {% if config.binary_configuration %}
-        <property name="binaryConfiguration">
-            <bean class="org.apache.ignite.configuration.BinaryConfiguration">
-                <property name="compactFooter" value="{{ config.binary_configuration.compact_footer }}"/>
-            </bean>
-        </property>
+            <property name="binaryConfiguration">
+                <bean class="org.apache.ignite.configuration.BinaryConfiguration">
+                    <property name="compactFooter" value="{{ config.binary_configuration.compact_footer }}"/>
+                </bean>
+            </property>
         {% endif %}
 
         {% if config.local_event_listeners %}
