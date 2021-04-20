@@ -117,6 +117,7 @@ class ThinClientConfiguration(NamedTuple):
     addresses: str = None
     version: IgniteVersion = DEV_BRANCH
 
+    # pylint: disable=unused-argument
     def prepare_for_env(self, test_globals, node, cluster):
         """
         Updates configuration based on current environment.
