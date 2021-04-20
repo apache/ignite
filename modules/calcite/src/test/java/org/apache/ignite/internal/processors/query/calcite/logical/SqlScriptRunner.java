@@ -315,7 +315,6 @@ public class SqlScriptRunner {
         }
     }
 
-
     /** */
     private class Statement extends Command {
         /** */
@@ -540,7 +539,7 @@ public class SqlScriptRunner {
 
                 if (row.size() != expectedRow.size()) {
                     throw new AssertionError("Invalid columns count at " + posDesc +
-                        ". [expected=" + expectedRes + ", actual=" + res+ ']');
+                        ". [expected=" + expectedRes + ", actual=" + res + ']');
                 }
 
                 for (int j = 0; j < expectedRow.size(); ++j) {
