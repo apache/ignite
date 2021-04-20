@@ -19,13 +19,11 @@ package org.apache.ignite.util;
 
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.TreeMultimap;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -35,13 +33,9 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
-import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx;
-import org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.StopRebuildIndexConsumer;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheFuture;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexOperationCancellationToken;
@@ -54,15 +48,12 @@ import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.MessageOrderLogListener;
 import org.apache.ignite.util.GridCommandHandlerIndexingUtils.Person;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Assume;
 import org.junit.Test;
 
 import static java.lang.String.valueOf;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
-import static org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.addCacheRowConsumer;
-import static org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.nodeName;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -789,8 +780,20 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
 
         injectTestSystemOut();
 
-        forceRebuildIndices(F.asList(CACHE_NAME_1_1), grid);
+        String outputStr;
 
         forceRebuildIndices(F.asList(CACHE_NAME_1_1), grid);
+
+        outputStr = testOut.toString();
+
+        validateOutputIndicesRebuildWasStarted(outputStr, ImmutableMultimap.of(GRP_NAME_1, CACHE_NAME_1_1));
+
+        assertFalse(outputStr.contains("WARNING: These caches have indexes rebuilding in progress:"));
+
+        forceRebuildIndices(F.asList(CACHE_NAME_1_1), grid);
+
+        validateOutputIndicesRebuildWasStarted(outputStr, ImmutableMultimap.of(GRP_NAME_1, CACHE_NAME_1_1));
+
+        assertFalse(outputStr.contains("WARNING: These caches have indexes rebuilding in progress:"));
     }
 }
