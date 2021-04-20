@@ -103,7 +103,10 @@ public class IgniteAwareApplicationService {
             finally {
                 log.info("Thin client instance closed. [interrupted=" + Thread.currentThread().isInterrupted() + "]");
             }
-        } else
+        }
+        else if (svcType == IgniteServiceType.NONE)
             app.start(jsonNode);
+        else
+            throw new IllegalArgumentException("Unknown service type " + svcType);
     }
 }

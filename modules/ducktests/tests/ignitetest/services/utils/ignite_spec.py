@@ -85,6 +85,9 @@ class IgniteSpec(metaclass=ABCMeta):
         """
         :return: config that service will use to start on a node
         """
+        if self.config.service_type == IgniteServiceType.NONE:
+            return []
+
         config_templates = [(IgnitePathAware.IGNITE_LOG_CONFIG_NAME, IgniteLoggerConfigTemplate())]
 
         if self.config.service_type == IgniteServiceType.NODE:
