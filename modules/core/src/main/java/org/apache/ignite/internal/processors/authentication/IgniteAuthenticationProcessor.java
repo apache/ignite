@@ -955,7 +955,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      *
      * This method works with the assumption that {@link SecurityContext} associated with the Ignite node is stored in
      * node attributes and is obtained automatically by the Ignite using the node ID
-     * (see {@link IgniteSecurityProcessor#withContext(java.util.UUID))}. Since we use the node ID as the subject ID
+     * (see {@link IgniteSecurityProcessor#withContext(java.util.UUID)}). Since we use the node ID as the subject ID
      * during node authentication, this method is used for obtaining security context for thin clients only.
      * Note that the returned security context does not contain the address of the security subject.
      */
