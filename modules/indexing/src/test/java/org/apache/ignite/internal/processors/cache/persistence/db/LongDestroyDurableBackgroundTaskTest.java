@@ -684,13 +684,15 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
     }
 
     /**
-     * Tests that task removed from metastorage in beginning of next checkpoint.
+     * Tests that completed task removed from metastorage in the ending of next checkpoint.
      *
      * @throws Exception If failed.
      */
     @Test
     public void testIndexDeletionTaskRemovedAfterCheckpointFinished() throws Exception {
         prepareAndPopulateCluster(1, false, true);
+
+        assertFalse(durableBackgroundTaskTestLsnr.check());
 
         awaitLatch(pendingDelLatch, "Test timed out: failed to await for durable background task completion.");
 
@@ -831,8 +833,12 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
         }
 
         /** {@inheritDoc} */
-        @Override public void onMarkCheckpointBegin(Context ctx) {
-            /* No op. */
+        @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
+            savedTasks.clear();
+
+            metastorage.iterate(STORE_DURABLE_BACKGROUND_TASK_PREFIX,
+                (key, val) -> savedTasks.add(key),
+                true);
         }
 
         /** {@inheritDoc} */
@@ -841,10 +847,8 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
         }
 
         /** {@inheritDoc} */
-        @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
-            metastorage.iterate(STORE_DURABLE_BACKGROUND_TASK_PREFIX,
-                    (key, val) -> savedTasks.add(key),
-                    true);
+        @Override public void beforeCheckpointBegin(Context ctx) {
+            /* No op. */
         }
     }
 }
