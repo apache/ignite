@@ -78,11 +78,11 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
  * Distributed process to restore cache group from the snapshot.
  */
 public class SnapshotRestoreProcess {
+    /** Temporary cache directory prefix. */
+    public static final String TMP_CACHE_DIR_PREFIX = ".tmp.snp.restore.";
+
     /** Reject operation message. */
     private static final String OP_REJECT_MSG = "Cache group restore operation was rejected. ";
-
-    /** Temporary cache directory prefix. */
-    private static final String TMP_CACHE_DIR_PREFIX = ".tmp.snp.restore.";
 
     /** Kernal context. */
     private final GridKernalContext ctx;
@@ -562,7 +562,7 @@ public class SnapshotRestoreProcess {
                                 ", target=" + target + "]");
                         }
 
-                        Files.copy(snpFile.toPath(), target.toPath());
+                        IgniteSnapshotManager.copy(snapshotMgr.ioFactory(), snpFile, target, snpFile.length());
                     }
                     catch (Throwable t) {
                         errHnd.accept(t);

@@ -1391,6 +1391,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
+     * @return Factory to create IO interface over a page stores.
+     */
+    FileIOFactory ioFactory() {
+        return ioFactory;
+    }
+
+    /**
      * @return Relative configured path of persistence data storage directory for the local node.
      * Example: {@code snapshotWorkDir/db/IgniteNodeName0}
      */

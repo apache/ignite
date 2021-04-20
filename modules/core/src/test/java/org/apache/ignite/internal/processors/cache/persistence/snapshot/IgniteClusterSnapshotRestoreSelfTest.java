@@ -18,6 +18,9 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.OpenOption;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -26,6 +29,7 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntSupplier;
 import org.apache.ignite.Ignite;
@@ -40,6 +44,7 @@ import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.CacheExistsException;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -50,24 +55,32 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreProcess.TMP_CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_START;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -96,6 +109,9 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
 
     /** Cache value builder. */
     private Function<Integer, Object> valBuilder = new IndexedValueBuilder();
+
+    /** {@code true} if node should be started in separate jvm. */
+    protected volatile boolean jvm;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
@@ -637,6 +653,73 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
 
     /** @throws Exception If failed. */
     @Test
+    public void testNodeFailDuringFilesCopy() throws Exception {
+        dfltCacheCfg.setCacheMode(CacheMode.REPLICATED);
+
+        IgniteEx ignite = startGridsWithSnapshot(3, CACHE_KEYS_RANGE);
+
+        CountDownLatch stopLatch = new CountDownLatch(1);
+        CountDownLatch failLatch = new CountDownLatch(1);
+
+        File node2dbDir = ((FilePageStoreManager)grid(2).context().cache().context().pageStore()).
+            cacheWorkDir(dfltCacheCfg).getParentFile();
+
+        TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(1));
+
+        spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage &&
+            ((SingleNodeMessage<?>)msg).type() == RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE.ordinal());
+
+        grid(2).context().cache().context().snapshotMgr().ioFactory(
+            new CustomFileIOFactory(new RandomAccessFileIOFactory(),
+                file -> {
+                    String expPath = Paths.get(CACHE_DIR_PREFIX + dfltCacheCfg.getName(), "part-5.bin").toString();
+
+                    if (file.getPath().endsWith(expPath)) {
+                        stopLatch.countDown();
+
+                        try {
+                            U.await(failLatch, TIMEOUT, TimeUnit.MILLISECONDS);
+                        }
+                        catch (IgniteInterruptedCheckedException ignore) {
+                            // No-op.
+                        }
+
+                        throw new RuntimeException(new ClusterTopologyCheckedException("Expected"));
+                    }
+                }));
+
+        IgniteInternalFuture<Object> stopFut = runAsync(() -> {
+            U.await(stopLatch, TIMEOUT, TimeUnit.MILLISECONDS);
+
+            ((IgniteDiscoverySpi)grid(2).configuration().getDiscoverySpi()).simulateNodeFailure();
+
+            failLatch.countDown();
+
+            stopGrid(2, true);
+
+            spi.stopBlock();
+
+            return null;
+        });
+
+        IgniteFuture<Void> fut =
+            ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(dfltCacheCfg.getName()));
+
+        stopFut.get(TIMEOUT);
+
+        GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), ClusterTopologyCheckedException.class, null);
+
+        File[] files = node2dbDir.listFiles(file -> file.getName().startsWith(TMP_CACHE_DIR_PREFIX));
+        assertEquals("A temp directory with potentially corrupted files must exist.", 1, files.length);
+
+        startGrid(2);
+
+        files = node2dbDir.listFiles(file -> file.getName().startsWith(TMP_CACHE_DIR_PREFIX));
+        assertEquals("A temp directory should be removed at node startup", 0, files.length);
+    }
+
+    /** @throws Exception If failed. */
+    @Test
     public void testNodeJoinDuringRestore() throws Exception {
         Ignite ignite = startGridsWithSnapshot(2, CACHE_KEYS_RANGE);
 
@@ -941,6 +1024,38 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
             builder.setField("name", String.valueOf(key));
 
             return builder.build();
+        }
+    }
+
+    /**
+     * Custom I/O factory to preprocessing created files.
+     */
+    private static class CustomFileIOFactory implements FileIOFactory {
+        /** Serial version UID. */
+        private static final long serialVersionUID = 0L;
+
+        /** Delegate factory. */
+        private final FileIOFactory delegate;
+
+        /** Preprocessor for created files. */
+        private final Consumer<File> hnd;
+
+        /**
+         * @param delegate Delegate factory.
+         * @param hnd Preprocessor for created files.
+         */
+        public CustomFileIOFactory(FileIOFactory delegate, Consumer<File> hnd) {
+            this.delegate = delegate;
+            this.hnd = hnd;
+        }
+
+        /** {@inheritDoc} */
+        @Override public FileIO create(File file, OpenOption... modes) throws IOException {
+            FileIO delegate = this.delegate.create(file, modes);
+
+            hnd.accept(file);
+
+            return delegate;
         }
     }
 }
