@@ -19,7 +19,9 @@ package org.apache.ignite.internal.visor.cache.index;
 
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -116,11 +118,14 @@ public class IndexForceRebuildTask extends VisorOneNodeTask<IndexForceRebuildTas
          * @return Set of caches info with indices being rebuilt.
          */
         private Set<IndexRebuildStatusInfoContainer> getCachesWithIndicesBeingRebuilt() {
+
+            Function<IgniteCache<?, ?>, IndexRebuildStatusInfoContainer> cacheToInfo;
+            cacheToInfo = c -> new IndexRebuildStatusInfoContainer(c.getConfiguration(CacheConfiguration.class));
+
             return ignite.context().cache().publicCaches()
                 .stream()
                 .filter(cache -> !cache.indexReadyFuture().isDone())
-                .map(cache -> cache.getConfiguration(CacheConfiguration.class))
-                .map(IndexRebuildStatusInfoContainer::new)
+                .map(cacheToInfo)
                 .collect(Collectors.toSet());
         }
 
