@@ -73,7 +73,7 @@ SELECT * FROM test ORDER BY id;
 4	NULL
 
 statement ok
-UPDATE test SET a=id WHERE id != 3
+UPDATE test SET a=id WHERE id <> 3
 
 query II
 SELECT * FROM test ORDER BY id;
@@ -84,7 +84,7 @@ SELECT * FROM test ORDER BY id;
 4	4
 
 statement ok
-UPDATE test SET a=NULL WHERE id != 3
+UPDATE test SET a=NULL WHERE id <> 3
 
 query II
 SELECT * FROM test ORDER BY id;
@@ -95,7 +95,7 @@ SELECT * FROM test ORDER BY id;
 4	NULL
 
 statement ok
-UPDATE test SET a=3 WHERE id != 2
+UPDATE test SET a=3 WHERE id <> 2
 
 query II
 SELECT * FROM test ORDER BY id;
@@ -106,7 +106,7 @@ SELECT * FROM test ORDER BY id;
 4	3
 
 statement ok
-UPDATE test SET a=7 WHERE id != 3
+UPDATE test SET a=7 WHERE id <> 3
 
 query II
 SELECT * FROM test ORDER BY id;

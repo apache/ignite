@@ -109,19 +109,6 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         }
     }
 
-    /** */
-    @Test
-    public void testDefaultKeyWithUpdateOps() throws IgniteInterruptedCheckedException {
-        sql("CREATE TABLE test (id INTEGER, a INTEGER);", true);
-        sql("INSERT INTO test VALUES (1, 1), (2, 2), (3, 3), (4, NULL);", true);
-        sql("SELECT * FROM test ORDER BY id;");
-        sql("UPDATE test SET a=CASE WHEN id=1 THEN 7 ELSE NULL END WHERE id <= 2", true);
-        sql("SELECT * FROM test ORDER BY id;");
-        sql("UPDATE test SET a=17 WHERE id > 2", true);
-        sql("SELECT * FROM test ORDER BY id;");
-        sql("UPDATE test SET a=CASE WHEN id=4 THEN 1 ELSE NULL END", true);
-    }
-
     /**
      * Test verifies that replicated cache with specified cache group
      * could be properly mapped on server nodes.
