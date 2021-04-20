@@ -63,14 +63,14 @@ public class MinusNode<Row> extends AbstractNode<Row> {
      * @param ctx Execution context.
      */
     public MinusNode(ExecutionContext<Row> ctx, RelDataType rowType, AggregateType type, boolean all,
-        RowFactory<Row> rowFactory, int sourcesCnt) {
+        RowFactory<Row> rowFactory) {
         super(ctx, rowType);
 
         this.all = all;
         this.type = type;
         this.rowFactory = rowFactory;
 
-        grouping = new Grouping(sourcesCnt);
+        grouping = new Grouping();
     }
 
     /** {@inheritDoc} */
@@ -111,6 +111,14 @@ public class MinusNode<Row> extends AbstractNode<Row> {
         assert curSrcIdx == idx;
 
         checkState();
+
+        if (type == AggregateType.SINGLE && grouping.isEmpty()) {
+            requested = 0;
+
+            downstream().end();
+
+            return;
+        }
 
         curSrcIdx++;
 
@@ -194,18 +202,17 @@ public class MinusNode<Row> extends AbstractNode<Row> {
 
     /** */
     private class Grouping {
-        /** */
+        /**
+         * Value in this map will always have 2 elements, first - count of keys in the first set, second - count of
+         * keys in all sets except first.
+         */
         private final Map<GroupKey, int[]> groups = new HashMap<>();
 
         /** */
         private final RowHandler<Row> hnd;
 
-        /** Count of sets (input sources). */
-        private final int setsCnt;
-
         /** */
-        private Grouping(int setsCnt) {
-            this.setsCnt = setsCnt;
+        private Grouping() {
             hnd = context().rowHandler();
         }
 
@@ -216,8 +223,10 @@ public class MinusNode<Row> extends AbstractNode<Row> {
 
                 addOnReducer(row);
             }
-            else
+            else if (type == AggregateType.MAP)
                 addOnMapper(row, setIdx);
+            else
+                addOnSingle(row, setIdx);
         }
 
         /**
@@ -231,21 +240,56 @@ public class MinusNode<Row> extends AbstractNode<Row> {
             else if (type == AggregateType.MAP)
                 return getOnMapper(cnt);
             else
-                return getOnReducer(cnt);
+                return getOnSingleOrReducer(cnt);
+        }
+
+        /** */
+        private GroupKey key(Row row) {
+            int size = hnd.columnCount(row);
+
+            Object[] fields = new Object[size];
+
+            for (int i = 0; i < size; i++)
+                fields[i] = hnd.get(i, row);
+
+            return new GroupKey(fields);
+        }
+
+        /** */
+        private void addOnSingle(Row row, int setIdx) {
+            int[] cntrs;
+
+            GroupKey key = key(row);
+
+            if (setIdx == 0) {
+                cntrs = groups.computeIfAbsent(key, k -> new int[2]);
+
+                cntrs[0]++;
+            }
+            else {
+                cntrs = groups.get(key);
+
+                if (cntrs != null) {
+                    cntrs[1]++;
+
+                    if (cntrs[1] >= cntrs[0])
+                        groups.remove(key);
+                }
+            }
         }
 
         /** */
         private void addOnMapper(Row row, int setIdx) {
-            int[] cntrs = groups.computeIfAbsent(new GroupKey(hnd.getColumns(row)), k -> new int[setsCnt]);
+            int[] cntrs = groups.computeIfAbsent(key(row), k -> new int[2]);
 
-            cntrs[setIdx]++;
+            cntrs[setIdx == 0 ? 0 : 1]++;
         }
 
         /** */
         private void addOnReducer(Row row) {
             GroupKey grpKey = (GroupKey)hnd.get(0, row);
 
-            int[] cntrs = groups.computeIfAbsent(grpKey, k -> new int[setsCnt]);
+            int[] cntrs = groups.computeIfAbsent(grpKey, k -> new int[2]);
 
             int[] cntrsMap = (int[])hnd.get(1, row);
 
@@ -260,10 +304,15 @@ public class MinusNode<Row> extends AbstractNode<Row> {
             int amount = Math.min(cnt, groups.size());
             List<Row> res = new ArrayList<>(amount);
 
-            for (int i = 0; i < amount; i++) {
+            while (amount > 0 && it.hasNext()) {
                 Map.Entry<GroupKey, int[]> entry = it.next();
 
-                res.add(rowFactory.create(entry.getKey(), entry.getValue()));
+                // Skip row if it doesn't affect the final result.
+                if (entry.getValue()[0] != entry.getValue()[1]) {
+                    res.add(rowFactory.create(entry.getKey(), entry.getValue()));
+
+                    amount--;
+                }
 
                 it.remove();
             }
@@ -272,7 +321,7 @@ public class MinusNode<Row> extends AbstractNode<Row> {
         }
 
         /** */
-        private List<Row> getOnReducer(int cnt) {
+        private List<Row> getOnSingleOrReducer(int cnt) {
             Iterator<Map.Entry<GroupKey, int[]>> it = groups.entrySet().iterator();
 
             List<Row> res = new ArrayList<>(cnt);
@@ -280,7 +329,15 @@ public class MinusNode<Row> extends AbstractNode<Row> {
             while (it.hasNext() && cnt > 0) {
                 Map.Entry<GroupKey, int[]> entry = it.next();
 
-                Row row = rowFactory.create(entry.getKey().fields());
+                GroupKey key = entry.getKey();
+
+                Object[] fields = new Object[key.fieldsCount()];
+
+                for (int i = 0; i < fields.length; i++)
+                    fields[i] = key.field(i);
+
+                Row row = rowFactory.create(fields);
+
                 int[] cntrs = entry.getValue();
 
                 int availableRows = availableRows(entry.getValue());
@@ -310,18 +367,12 @@ public class MinusNode<Row> extends AbstractNode<Row> {
 
         /** */
         private int availableRows(int[] cntrs) {
-            int cnt = 0;
+            assert cntrs.length == 2;
 
-            for (int i = 1; i < cntrs.length; i++)
-                cnt -= cntrs[i];
-
-            if (all) {
-                cnt += cntrs[0];
-
-                return Math.max(cnt, 0);
-            }
+            if (all)
+                return Math.max(cntrs[0] - cntrs[1], 0);
             else
-                return cnt == 0 ? 1 : 0;
+                return cntrs[1] == 0 ? 1 : 0;
         }
 
         /** */

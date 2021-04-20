@@ -129,6 +129,6 @@ public class IgniteSingleMinus extends IgniteMinusBase {
 
     /** {@inheritDoc} */
     @Override protected int aggregateFieldsCount() {
-        return getInput(0).getRowType().getFieldCount() + getInputs().size();
+        return getInput(0).getRowType().getFieldCount() + COUNTER_FIELDS_CNT;
     }
 }

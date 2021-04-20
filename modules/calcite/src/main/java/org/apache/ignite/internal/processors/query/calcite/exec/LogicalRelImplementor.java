@@ -85,6 +85,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceS
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteSingleHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteSingleSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteMapMinus;
+import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteMinusBase;
 import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteReduceMinus;
 import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteSingleMinus;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
@@ -429,43 +430,28 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteSingleMinus rel) {
-        RelDataType rowType = rel.getRowType();
-
-        RowFactory<Row> rowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rowType);
-
-        List<Node<Row>> inputs = Commons.transform(rel.getInputs(), this::visit);
-
-        MinusNode<Row> node = new MinusNode<>(ctx, rowType, AggregateType.SINGLE, rel.all, rowFactory, inputs.size());
-
-        node.register(inputs);
-
-        return node;
+        return visit(rel, AggregateType.SINGLE);
     }
 
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteMapMinus rel) {
-        RelDataType rowType = rel.getRowType();
-
-        RowFactory<Row> rowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rowType);
-
-        List<Node<Row>> inputs = Commons.transform(rel.getInputs(), this::visit);
-
-        MinusNode<Row> node = new MinusNode<>(ctx, rowType, AggregateType.MAP, rel.all, rowFactory, inputs.size());
-
-        node.register(inputs);
-
-        return node;
+        return visit(rel, AggregateType.MAP);
     }
 
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteReduceMinus rel) {
+        return visit(rel, AggregateType.REDUCE);
+    }
+
+    /** Visit IgniteMinus rel. */
+    private Node<Row> visit(IgniteMinusBase rel, AggregateType aggType) {
         RelDataType rowType = rel.getRowType();
 
         RowFactory<Row> rowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rowType);
 
         List<Node<Row>> inputs = Commons.transform(rel.getInputs(), this::visit);
 
-        MinusNode<Row> node = new MinusNode<>(ctx, rowType, AggregateType.REDUCE, rel.all, rowFactory, rel.mapInputsCount());
+        MinusNode<Row> node = new MinusNode<>(ctx, rowType, aggType, rel.all, rowFactory);
 
         node.register(inputs);
 

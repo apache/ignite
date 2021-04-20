@@ -41,8 +41,8 @@ public class GroupKey {
     }
 
     /** */
-    public Object[] fields() {
-        return fields;
+    public int fieldsCount() {
+        return fields.length;
     }
 
     /** {@inheritDoc} */

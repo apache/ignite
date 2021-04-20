@@ -28,7 +28,6 @@ import org.apache.ignite.internal.processors.query.calcite.planner.PlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.SortAggregatePlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.SortedIndexSpoolPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.TableSpoolPlannerTest;
-import org.apache.ignite.internal.processors.query.calcite.planner.UnionPlannerTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 

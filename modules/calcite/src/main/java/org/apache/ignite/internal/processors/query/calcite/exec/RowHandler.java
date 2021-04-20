@@ -41,9 +41,6 @@ public interface RowHandler<Row> {
     int columnCount(Row row);
 
     /** */
-    Object[] getColumns(Row row);
-
-    /** */
     default RowFactory<Row> factory(IgniteTypeFactory typeFactory, RelDataType rowType) {
         if (rowType.isStruct())
             return factory(typeFactory, RelOptUtil.getFieldTypeList(rowType));

@@ -40,6 +40,9 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
  * Base class for physical MINUS (EXCEPT) set op.
  */
 public abstract class IgniteMinusBase extends Minus implements TraitsAwareIgniteRel {
+    /** Count of counter fields used to aggregate results. */
+    protected static final int COUNTER_FIELDS_CNT = 2;
+
     /** */
     IgniteMinusBase(RelOptCluster cluster, RelTraitSet traits, List<RelNode> inputs, boolean all) {
         super(cluster, traits, inputs, all);

@@ -41,22 +41,17 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
  * Physical node for REDUCE phase of MINUS (EXCEPT) operator.
  */
 public class IgniteReduceMinus extends IgniteMinusBase {
-    /** Count of inputs of corresponding map rel node. */
-    private final int mapInputsCnt;
-
     /** */
     public IgniteReduceMinus(
         RelOptCluster cluster,
         RelTraitSet traitSet,
         RelNode input,
         boolean all,
-        RelDataType rowType,
-        int mapInputsCnt
+        RelDataType rowType
     ) {
         super(cluster, traitSet, ImmutableList.of(input), all);
 
         this.rowType = rowType;
-        this.mapInputsCnt = mapInputsCnt;
     }
 
     /** */
@@ -66,16 +61,14 @@ public class IgniteReduceMinus extends IgniteMinusBase {
             input.getTraitSet().replace(IgniteConvention.INSTANCE),
             input.getInput(),
             input.getBoolean("all", false),
-            input.getRowType("rowType"),
-            (Integer)input.get("mapInputsCnt")
+            input.getRowType("rowType")
         );
     }
 
     /** {@inheritDoc} */
     @Override public RelWriter explainTerms(RelWriter pw) {
         super.explainTerms(pw)
-            .itemIf("rowType", rowType, pw.getDetailLevel() == SqlExplainLevel.ALL_ATTRIBUTES)
-            .item("mapInputsCnt", mapInputsCnt);
+            .itemIf("rowType", rowType, pw.getDetailLevel() == SqlExplainLevel.ALL_ATTRIBUTES);
 
         return pw;
     }
@@ -122,12 +115,12 @@ public class IgniteReduceMinus extends IgniteMinusBase {
 
     /** {@inheritDoc} */
     @Override public SetOp copy(RelTraitSet traitSet, List<RelNode> inputs, boolean all) {
-        return new IgniteReduceMinus(getCluster(), traitSet, sole(inputs), all, rowType, mapInputsCnt);
+        return new IgniteReduceMinus(getCluster(), traitSet, sole(inputs), all, rowType);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteReduceMinus clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteReduceMinus(cluster, getTraitSet(), sole(inputs), all, rowType, mapInputsCnt);
+        return new IgniteReduceMinus(cluster, getTraitSet(), sole(inputs), all, rowType);
     }
 
     /** {@inheritDoc} */
@@ -135,15 +128,8 @@ public class IgniteReduceMinus extends IgniteMinusBase {
         return visitor.visit(this);
     }
 
-    /**
-     * Get count of inputs of corresponding map rel node.
-     */
-    public int mapInputsCount() {
-        return mapInputsCnt;
-    }
-
     /** {@inheritDoc} */
     @Override protected int aggregateFieldsCount() {
-        return rowType.getFieldCount() + mapInputsCnt;
+        return rowType.getFieldCount() + COUNTER_FIELDS_CNT;
     }
 }

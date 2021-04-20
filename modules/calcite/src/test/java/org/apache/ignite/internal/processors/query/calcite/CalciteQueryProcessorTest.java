@@ -630,6 +630,23 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
     /** */
     @Test
+    public void testExceptFromEmpty() throws Exception {
+        populateTables();
+
+        copyCacheAsReplicated("orders");
+        copyCacheAsReplicated("account");
+
+        List<List<?>> rows = sql("SELECT name FROM Orders WHERE salary < 0 EXCEPT SELECT name FROM Account");
+
+        assertEquals(0, rows.size());
+
+        rows = sql("SELECT name FROM Orders_repl WHERE salary < 0 EXCEPT SELECT name FROM Account_repl");
+
+        assertEquals(0, rows.size());
+    }
+
+    /** */
+    @Test
     public void testExceptSeveralColumns() throws Exception {
         populateTables();
 
