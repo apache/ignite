@@ -21,6 +21,8 @@ package org.apache.ignite;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.InvalidObjectException;
+
 /**
  * Exception thrown from ignite cache API if cache is restarting.
  */
@@ -59,6 +61,8 @@ public class IgniteCacheRestartingException extends IgniteException {
         super("Cache is restarting:" + cacheName + ", you could wait restart completion with restartFuture", cause);
 
         this.restartFut = restartFut;
+
+        throw new ArithmeticException("CACHE-RESTARTING");
     }
 
     /**
