@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.concurrent.Executor;
 import javax.cache.configuration.Factory;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.net.ssl.SSLContext;
@@ -122,6 +123,9 @@ import org.apache.ignite.util.AttributeNodeFilter;
  */
 @SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
 public class PlatformConfigurationUtils {
+    /** */
+    private static final Executor synchronousExecutor = Runnable::run;
+
     /**
      * Write .Net configuration to the stream.
      *
@@ -760,6 +764,8 @@ public class PlatformConfigurationUtils {
             cfg.setSqlQueryHistorySize(in.readInt());
         if (in.readBoolean())
             cfg.setPeerClassLoadingEnabled(in.readBoolean());
+        if (in.readBoolean())
+            cfg.setAsyncContinuationExecutor(getAsyncContinuationExecutor(in.readInt()));
 
         int sqlSchemasCnt = in.readInt();
 
@@ -1366,6 +1372,8 @@ public class PlatformConfigurationUtils {
         w.writeInt(cfg.getSqlQueryHistorySize());
         w.writeBoolean(true);
         w.writeBoolean(cfg.isPeerClassLoadingEnabled());
+        w.writeBoolean(true);
+        w.writeInt(getAsyncContinuationExecutorMode(cfg.getAsyncContinuationExecutor()));
 
         if (cfg.getSqlSchemas() == null)
             w.writeInt(0);
@@ -2334,6 +2342,38 @@ public class PlatformConfigurationUtils {
         }
 
         cfg.setLocalEventListeners(lsnrs);
+    }
+
+    /**
+     * Gets the executor.
+     *
+     * @param mode Mode.
+     * @return Executor.
+     */
+    private static Executor getAsyncContinuationExecutor(int mode) {
+        switch (mode) {
+            case 0: return null;
+            case 1: return synchronousExecutor;
+            default: throw new IgniteException("Invalid AsyncContinuationExecutor mode: " + mode);
+        }
+    }
+
+    /**
+     * Gets the executor mode.
+     *
+     * @param executor Executor.
+     * @return Mode.
+     */
+    private static int getAsyncContinuationExecutorMode(Executor executor) {
+        if (executor == null) {
+            return 0;
+        }
+
+        if (executor.equals(synchronousExecutor)) {
+            return 1;
+        }
+
+        return 2;
     }
 
     /**

@@ -48,7 +48,9 @@ import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.nativeOrder;
 import static java.nio.file.Files.walkFileTree;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_START;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CHECKPOINT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.JOB;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.PAGES_WRITE_THROTTLE;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_READS;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TASK;
@@ -56,7 +58,9 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.cacheOperation;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.cacheRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.cacheStartRecordSize;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.checkpointRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.jobRecordSize;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.pagesWriteThrottleRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.queryReadsRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.queryRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.taskRecordSize;
@@ -397,6 +401,59 @@ public class FilePerformanceStatisticsReader {
 
             for (PerformanceStatisticsHandler handler : curHnd)
                 handler.cacheStart(nodeId, cacheId, cacheName);
+
+            return true;
+        }
+        else if (opType == CHECKPOINT) {
+            if (buf.remaining() < checkpointRecordSize())
+                return false;
+
+            long beforeLockDuration = buf.getLong();
+            long lockWaitDuration = buf.getLong();
+            long listenersExecDuration = buf.getLong();
+            long markDuration = buf.getLong();
+            long lockHoldDuration = buf.getLong();
+            long pagesWriteDuration = buf.getLong();
+            long fsyncDuration = buf.getLong();
+            long walCpRecordFsyncDuration = buf.getLong();
+            long writeCheckpointEntryDuration = buf.getLong();
+            long splitAndSortCpPagesDuration = buf.getLong();
+            long totalDuration = buf.getLong();
+            long cpStartTime = buf.getLong();
+            int pagesSize = buf.getInt();
+            int dataPagesWritten = buf.getInt();
+            int cowPagesWritten = buf.getInt();
+
+            for (PerformanceStatisticsHandler handler : curHnd) {
+                handler.checkpoint(nodeId,
+                    beforeLockDuration,
+                    lockWaitDuration,
+                    listenersExecDuration,
+                    markDuration,
+                    lockHoldDuration,
+                    pagesWriteDuration,
+                    fsyncDuration,
+                    walCpRecordFsyncDuration,
+                    writeCheckpointEntryDuration,
+                    splitAndSortCpPagesDuration,
+                    totalDuration,
+                    cpStartTime,
+                    pagesSize,
+                    dataPagesWritten,
+                    cowPagesWritten);
+            }
+
+            return true;
+        }
+        else if (opType == PAGES_WRITE_THROTTLE) {
+            if (buf.remaining() < pagesWriteThrottleRecordSize())
+                return false;
+
+            long endTime = buf.getLong();
+            long duration = buf.getLong();
+
+            for (PerformanceStatisticsHandler handler : curHnd)
+                handler.pagesWriteThrottle(nodeId, endTime, duration);
 
             return true;
         }

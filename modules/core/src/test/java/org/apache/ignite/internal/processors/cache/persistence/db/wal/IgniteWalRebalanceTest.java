@@ -31,6 +31,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -64,7 +65,11 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.crc.WalTestUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
@@ -75,6 +80,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAhea
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -90,8 +96,11 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
 
 /**
  * Historical WAL rebalance base test.
@@ -140,8 +149,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
                     .setPersistenceEnabled(true)
-                    .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
-            );
+                    .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE));
 
         cfg.setDataStorageConfiguration(dbCfg);
 
@@ -976,6 +984,189 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
             "Both messages should require historical rebalance [" +
                 "msg=" + demandMsgsForSupplier2.get(0) + ", msg=" + demandMsgsForSupplier2.get(1) + ']',
                 histPred.apply(demandMsgsForSupplier2.get(0)) && histPred.apply(demandMsgsForSupplier2.get(1)));
+    }
+
+    /**
+     * Tests that owning partitions (that are trigged by rebalance future) cannot be mapped to a new rebalance future
+     * that was created by RebalanceReassignExchangeTask.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testRebalanceReassignAndOwnPartitions() throws Exception {
+        backups = 3;
+
+        IgniteEx supplier1 = startGrid(0);
+        IgniteEx supplier2 = startGrid(1);
+        IgniteEx demander = startGrid(2);
+
+        supplier1.cluster().state(ACTIVE);
+
+        String cacheName1 = "test-cache-1";
+        String cacheName2 = "test-cache-2";
+
+        IgniteCache<Integer, IndexedObject> c1 = supplier1.getOrCreateCache(
+            new CacheConfiguration<Integer, IndexedObject>(cacheName1)
+                .setBackups(backups)
+                .setAffinity(new RendezvousAffinityFunction(false, PARTS_CNT))
+                .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+                .setRebalanceOrder(10));
+
+        IgniteCache<Integer, IndexedObject> c2 = supplier1.getOrCreateCache(
+            new CacheConfiguration<Integer, IndexedObject>(cacheName2)
+                .setBackups(backups)
+                .setAffinity(new RendezvousAffinityFunction(false, PARTS_CNT))
+                .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+                .setRebalanceOrder(20));
+
+        // Fill initial data.
+        final int entryCnt = PARTS_CNT * 200;
+        final int preloadEntryCnt = PARTS_CNT * 400;
+
+        for (int k = 0; k < preloadEntryCnt; k++) {
+            c1.put(k, new IndexedObject(k));
+
+            c2.put(k, new IndexedObject(k));
+        }
+
+        forceCheckpoint();
+
+        stopGrid(2);
+
+        // Rewrite data to trigger further rebalance.
+        // Make sure that all partitions will be updated in order to disable wal locally for preloading.
+        // Updating entryCnt keys allows to trigger historical rebalance.
+        // This is an easy way to emulate missing partitions on the first rebalance.
+        for (int i = 0; i < entryCnt; i++)
+            c1.put(i, new IndexedObject(i));
+
+        // Full rebalance for the cacheName2.
+        for (int i = 0; i < preloadEntryCnt; i++)
+            c2.put(i, new IndexedObject(i));
+
+        // Delay rebalance process for specified groups.
+        blockMsgPred = (node, msg) -> {
+            if (msg instanceof GridDhtPartitionDemandMessage) {
+                GridDhtPartitionDemandMessage msg0 = (GridDhtPartitionDemandMessage)msg;
+
+                return msg0.groupId() == CU.cacheId(cacheName1) || msg0.groupId() == CU.cacheId(cacheName2);
+            }
+
+            return false;
+        };
+
+        // Emulate missing partitions and trigger RebalanceReassignExchangeTask which should re-trigger a new rebalance.
+        FailingIOFactory ioFactory = injectFailingIOFactory(supplier1);
+
+        demander = startGrid(2);
+
+        TestRecordingCommunicationSpi demanderSpi = TestRecordingCommunicationSpi.spi(grid(2));
+
+        // Wait until demander starts rebalancning.
+        demanderSpi.waitForBlocked();
+
+        // Need to start a client node in order to block RebalanceReassignExchangeTask (and do not change the affinity)
+        // until cacheName2 triggers a checkpoint after rebalancing.
+        CountDownLatch blockClientJoin = new CountDownLatch(1);
+        CountDownLatch unblockClientJoin = new CountDownLatch(1);
+
+        demander.context().cache().context().exchange().registerExchangeAwareComponent(new PartitionsExchangeAware() {
+            @Override public void onInitBeforeTopologyLock(GridDhtPartitionsExchangeFuture fut) {
+                blockClientJoin.countDown();
+
+                try {
+                    if (!unblockClientJoin.await(getTestTimeout(), MILLISECONDS))
+                        throw new IgniteException("Failed to wait for client node joinning the cluster.");
+                }
+                catch (InterruptedException e) {
+                    throw new IgniteException("Unexpected exception.", e);
+                }
+            }
+        });
+
+        startClientGrid(4);
+
+        // Wait for a checkpoint after rebalancing cacheName2.
+        CountDownLatch blockCheckpoint = new CountDownLatch(1);
+        CountDownLatch unblockCheckpoint = new CountDownLatch(1);
+
+        ((GridCacheDatabaseSharedManager) demander
+            .context()
+            .cache()
+            .context()
+            .database())
+            .addCheckpointListener(new CheckpointListener() {
+                /** {@inheritDoc} */
+                @Override public void onCheckpointBegin(Context ctx) throws IgniteCheckedException {
+                    if (!ctx.progress().reason().contains(String.valueOf(CU.cacheId(cacheName2))))
+                        return;
+
+                    blockCheckpoint.countDown();
+
+                    try {
+                        if (!unblockCheckpoint.await(getTestTimeout(), MILLISECONDS))
+                            throw new IgniteCheckedException("Failed to wait for unblocking checkpointer.");
+                    }
+                    catch (InterruptedException e) {
+                        throw new IgniteCheckedException("Unexpected exception", e);
+                    }
+                }
+
+                /** {@inheritDoc} */
+                @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
+                }
+
+                /** {@inheritDoc} */
+                @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
+                }
+            });
+
+        // Unblock the first rebalance.
+        demanderSpi.stopBlock();
+
+        // Wait for start of the checkpoint after rebalancing cacheName2.
+        assertTrue("Failed to wait for checkpoint.", blockCheckpoint.await(getTestTimeout(), MILLISECONDS));
+
+        // Block the second rebalancing.
+        demanderSpi.blockMessages((node, msg) -> {
+            if (msg instanceof GridDhtPartitionDemandMessage) {
+                GridDhtPartitionDemandMessage msg0 = (GridDhtPartitionDemandMessage)msg;
+
+                return msg0.groupId() == CU.cacheId(cacheName1);
+            }
+
+            return false;
+        });
+
+        ioFactory.reset();
+
+        // Let's unblock client exchange and, therefore, handling of RebalanceReassignExchangeTask,
+        // which is already scheduled.
+        unblockClientJoin.countDown();
+
+        // Wait for starting the second rebalance (new chain of rebalance futures should be created at this point).
+        demanderSpi.waitForBlocked();
+
+        GridFutureAdapter checkpointFut = ((GridCacheDatabaseSharedManager) demander
+            .context()
+            .cache()
+            .context()
+            .database())
+            .getCheckpointer()
+            .currentProgress()
+            .futureFor(FINISHED);
+
+        // Unblock checkpointer.
+        unblockCheckpoint.countDown();
+
+        assertTrue(
+            "Failed to wait for a checkpoint.",
+            GridTestUtils.waitForCondition(() -> checkpointFut.isDone(), getTestTimeout()));
+
+        // Well, there is a race between we unblock rebalance and the current checkpoint executes all its listeners.
+        demanderSpi.stopBlock();
+
+        awaitPartitionMapExchange(false, true, null);
     }
 
     /**

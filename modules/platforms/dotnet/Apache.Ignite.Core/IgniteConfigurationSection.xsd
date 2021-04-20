@@ -128,6 +128,13 @@
         </xs:restriction>
     </xs:simpleType>
 
+    <xs:simpleType name="asyncContinuationExecutor" final="restriction">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="ThreadPool" />
+            <xs:enumeration value="UnsafeSynchronous" />
+        </xs:restriction>
+    </xs:simpleType>
+
     <xs:element name="igniteConfiguration">
         <xs:annotation>
             <xs:documentation>Ignite configuration root.</xs:documentation>
@@ -2516,6 +2523,11 @@
             <xs:attribute name="redirectJavaConsoleOutput" type="xs:boolean">
               <xs:annotation>
                 <xs:documentation>Whether Java console output should be redirected to Console.Out and Console.Error.</xs:documentation>
+              </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="asyncContinuationExecutor" type="asyncContinuationExecutor">
+              <xs:annotation>
+                <xs:documentation>Async continuation behavior.</xs:documentation>
               </xs:annotation>
             </xs:attribute>
         </xs:complexType>
