@@ -20,7 +20,7 @@ from ducktape.mark import matrix
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
-from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, ThinClientConfiguration
+from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, IgniteThinClientConfiguration
 from ignitetest.services.utils.ssl.client_connector_configuration import ClientConnectorConfiguration
 from ignitetest.utils import cluster
 from ignitetest.utils.ignite_test import IgniteTest
@@ -51,8 +51,8 @@ class ThinClientTest(IgniteTest):
         addresses = ignite.nodes[0].account.hostname + ":" + str(server_config.client_connector_configuration.port)
 
         thin_clients = IgniteApplicationService(self.test_context,
-                                                ThinClientConfiguration(addresses=addresses,
-                                                                        version=IgniteVersion(thin_client_version)),
+                                                IgniteThinClientConfiguration(addresses=addresses,
+                                                                              version=IgniteVersion(thin_client_version)),
                                                 java_class_name=self.JAVA_CLIENT_CLASS_NAME,
                                                 num_nodes=1)
 

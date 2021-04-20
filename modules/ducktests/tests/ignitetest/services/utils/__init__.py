@@ -22,7 +22,7 @@ from ignitetest.utils.enum import constructible
 
 
 @constructible
-class ApplicationMode(IntEnum):
+class IgniteServiceType(IntEnum):
     """
     Application start mode.
     """

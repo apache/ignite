@@ -23,7 +23,7 @@ import json
 import os
 from abc import ABCMeta, abstractmethod
 
-from ignitetest.services.utils import ApplicationMode
+from ignitetest.services.utils import IgniteServiceType
 from ignitetest.services.utils.config_template import IgniteClientConfigTemplate, IgniteServerConfigTemplate, \
     IgniteLoggerConfigTemplate, IgniteThinClientConfigTemplate
 from ignitetest.services.utils.jvm_utils import create_jvm_settings, merge_jvm_settings
@@ -87,7 +87,7 @@ class IgniteSpec(metaclass=ABCMeta):
         """
         config_templates = [(IgnitePathAware.IGNITE_LOG_CONFIG_NAME, IgniteLoggerConfigTemplate())]
 
-        if self.config.mode == ApplicationMode.NODE:
+        if self.config.service_type == IgniteServiceType.NODE:
             config_templates.append((IgnitePathAware.IGNITE_CONFIG_NAME,
                                      IgniteClientConfigTemplate() if self.config.client_mode
                                      else IgniteServerConfigTemplate()))
@@ -230,11 +230,11 @@ class ApacheIgniteApplicationSpec(IgniteApplicationSpec):
                             "-ea",
                             "-DIGNITE_ALLOW_ATOMIC_OPS_IN_TX=false"])
 
-        config_file = self.path_aware.config_file if self.config.mode == ApplicationMode.NODE \
+        config_file = self.path_aware.config_file if self.config.service_type == IgniteServiceType.NODE \
             else self.path_aware.thin_client_config_file
 
         self.args = [
-            str(self.config.mode.name),
+            str(self.config.service_type.name),
             java_class_name,
             config_file,
             str(base64.b64encode(json.dumps(params).encode('utf-8')), 'utf-8')
