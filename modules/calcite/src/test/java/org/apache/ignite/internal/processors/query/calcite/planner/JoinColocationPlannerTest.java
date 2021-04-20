@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
-import java.util.Collection;
 import java.util.List;
 
 import org.apache.calcite.plan.RelOptUtil;
@@ -38,10 +37,9 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.hamcrest.CustomMatcher;
-import org.hamcrest.Matcher;
 import org.junit.Test;
 
+import static org.apache.ignite.testframework.GridTestUtils.hasSize;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
@@ -270,19 +268,5 @@ public class JoinColocationPlannerTest extends AbstractPlannerTest {
             schema.addTable(tbl.name(), tbl);
 
         return schema;
-    }
-
-    /**
-     * Matcher to verify size of the collection.
-     *
-     * @param size Required size.
-     * @return {@code true} in case collection is not null and has an exactly the same size.
-     */
-    private static <T extends Collection<?>> Matcher<T> hasSize(int size) {
-        return new CustomMatcher<T>("should be non empty with size=" + size) {
-            @Override public boolean matches(Object item) {
-                return item instanceof Collection && ((Collection<?>)item).size() == size;
-            }
-        };
     }
 }
