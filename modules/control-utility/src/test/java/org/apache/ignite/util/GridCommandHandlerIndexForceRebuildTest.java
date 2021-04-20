@@ -17,8 +17,6 @@
 
 package org.apache.ignite.util;
 
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.Multimap;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -28,6 +26,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.Multimap;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -727,7 +727,6 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
 
         return idxRebuildFuts.get(cacheId);
     }
-
 
     /**
      * Force rebuilds indices for chosen caches, and waits until rebuild process is complete.
