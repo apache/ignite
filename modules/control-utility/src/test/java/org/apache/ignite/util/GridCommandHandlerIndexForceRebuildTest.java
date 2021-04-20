@@ -583,25 +583,6 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
     }
 
     /**
-     * Validated control.sh utility output for {@link #testGroupNamesArg()}.
-     */
-    private void validateTestCacheGroupArgOutput() {
-        String outputStr = testOut.toString();
-
-        assertTrue(outputStr.contains("WARNING: These cache groups were not found:\n" +
-            "  " + GRP_NAME_NON_EXISTING));
-
-        assertTrue(outputStr.contains("WARNING: These caches have indexes rebuilding in progress:\n" +
-            "  groupName=" + GRP_NAME_1 + ", cacheName=" + CACHE_NAME_1_2));
-
-        assertTrue(outputStr.contains("Indexes rebuild was started for these caches:\n" +
-            "  groupName=" + GRP_NAME_1 + ", cacheName=" + CACHE_NAME_1_1 + "\n" +
-            "  groupName=" + GRP_NAME_2 + ", cacheName=" + CACHE_NAME_2_1));
-
-        assertEquals("Unexpected number of lines in output.", 20, outputStr.split("\n").length);
-    }
-
-    /**
      * Triggers indexes rebuild for ALL caches on grid node with index {@code igniteIdx}.
      *
      * @param igniteIdx Node index.
@@ -753,6 +734,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
      *
      * @param cacheNames Cache names need indices to rebuild.
      * @param grid Ignite node.
+     * @throws Exception if failed.
      */
     private void forceRebuildIndices(Iterable<String> cacheNames, IgniteEx grid) throws Exception {
         String cacheNamesArg = String.join(",", cacheNames);
