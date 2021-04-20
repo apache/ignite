@@ -84,8 +84,13 @@ public class CacheIndexesForceRebuild extends AbstractCommand<CacheIndexesForceR
         final UUID nodeId = args.nodeId;
 
         try (GridClient client = Command.startClient(clientCfg)) {
-            taskRes = TaskExecutor.executeTaskByNameOnNode(client, IndexForceRebuildTask.class.getName(), taskArg,
-                nodeId, clientCfg);
+            taskRes = TaskExecutor.executeTaskByNameOnNode(
+                client,
+                IndexForceRebuildTask.class.getName(),
+                taskArg,
+                nodeId,
+                clientCfg
+            );
         }
 
         printResult(taskRes, logger);
