@@ -21,8 +21,6 @@ package org.apache.ignite;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.InvalidObjectException;
-
 /**
  * Exception thrown from ignite cache API if cache is restarting.
  */
