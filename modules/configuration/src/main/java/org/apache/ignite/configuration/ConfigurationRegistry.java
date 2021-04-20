@@ -123,8 +123,8 @@ public class ConfigurationRegistry {
     }
 
     /** */
-    public CompletableFuture<?> change(List<String> path, ConfigurationSource changesSource, ConfigurationStorage storage) {
-        return changer.changeX(path, changesSource, storage);
+    public CompletableFuture<Void> change(ConfigurationSource changesSource, ConfigurationStorage storage) {
+        return changer.change(changesSource, storage);
     }
 
     /** */

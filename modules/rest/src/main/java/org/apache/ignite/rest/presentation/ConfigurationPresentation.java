@@ -40,12 +40,6 @@ public interface ConfigurationPresentation<R> {
     /**
      * Converts and applies configuration update request to system configuration.
      *
-     * Note: for simplisity on this stage of development it is supposed that update request
-     * contains only one root to update despite of multiroot configuration is supported.
-     *
-     * To support updating multiple roots at once more logic should be implemented including
-     * support in {@link FormatConverter} subclasses.
-     *
      * @param configUpdate Configuration update request in representation form.
      */
     void update(R configUpdate);

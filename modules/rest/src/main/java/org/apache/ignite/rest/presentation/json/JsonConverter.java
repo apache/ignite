@@ -17,41 +17,30 @@
 
 package org.apache.ignite.rest.presentation.json;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import java.io.Reader;
 import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 import org.apache.ignite.configuration.tree.ConfigurationSource;
 import org.apache.ignite.configuration.tree.ConfigurationVisitor;
 import org.apache.ignite.configuration.tree.ConstructableTreeNode;
 import org.apache.ignite.configuration.tree.InnerNode;
 import org.apache.ignite.configuration.tree.NamedListNode;
-import org.apache.ignite.rest.presentation.FormatConverter;
 import org.jetbrains.annotations.NotNull;
 
+import static org.apache.ignite.configuration.internal.util.ConfigurationUtil.join;
+
 /** */
-public class JsonConverter implements FormatConverter {
-    /** */
-    private final Gson gson = new Gson();
-
-    /** {@inheritDoc} */
-    @Override public String convertTo(Object obj) {
-        return gson.toJson(obj);
-    }
-
+public class JsonConverter {
     /** */
     public static ConfigurationVisitor<JsonElement> jsonVisitor() {
         return new ConfigurationVisitor<JsonElement>() {
@@ -108,10 +97,12 @@ public class JsonConverter implements FormatConverter {
                 if (!valClass.isArray())
                     return toJsonPrimitive(val);
 
-                JsonArray jsonArray = new JsonArray();
+                int size = Array.getLength(val);
 
-                for (int i = 0; i < Array.getLength(val); i++)
-                    jsonArray.add(toJsonPrimitive(Array.get(val, i)));
+                JsonArray jsonArray = new JsonArray(size);
+
+                for (int idx = 0; idx < size; idx++)
+                    jsonArray.add(toJsonPrimitive(Array.get(val, idx)));
 
                 return jsonArray;
             }
@@ -127,12 +118,9 @@ public class JsonConverter implements FormatConverter {
                 if (val instanceof String)
                     return new JsonPrimitive((String)val);
 
-                if (val instanceof Number)
-                    return new JsonPrimitive((Number)val);
+                assert val instanceof Number : val.getClass();
 
-                assert false : val;
-
-                throw new IllegalArgumentException(val.getClass().getCanonicalName());
+                return new JsonPrimitive((Number)val);
             }
 
             /**
@@ -148,14 +136,19 @@ public class JsonConverter implements FormatConverter {
         };
     }
 
-    /** */
+    /**
+     * @param jsonElement JSON that has to be converted to the configuration source.
+     * @return JSON-based configuration source.
+     */
     public static ConfigurationSource jsonSource(JsonElement jsonElement) {
-        //TODO IGNITE-14372 Finish this implementation.
+        if (!jsonElement.isJsonObject())
+            throw new IllegalArgumentException("JSON object is expected as a configuration source");
+
         return new JsonObjectConfigurationSource(new ArrayList<>(), jsonElement.getAsJsonObject());
     }
 
     private static class JsonObjectConfigurationSource implements ConfigurationSource {
-        /** Shared. */
+        /** */
         private final List<String> path;
 
         /** */
@@ -166,10 +159,15 @@ public class JsonConverter implements FormatConverter {
             this.jsonObject = jsonObject;
         }
 
+        /** {@inheritDoc} */
         @Override public <T> T unwrap(Class<T> clazz) {
-            throw new IllegalArgumentException(""); //TODO IGNITE-14372 Implement.
+            throw new IllegalArgumentException(
+                "'" + clazz.getSimpleName() + "' is expected as a type for '"
+                    + join(path) + "' configuration value"
+            );
         }
 
+        /** {@inheritDoc} */
         @Override public void descend(ConstructableTreeNode node) {
             for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
                 String key = entry.getKey();
@@ -177,8 +175,13 @@ public class JsonConverter implements FormatConverter {
                 JsonElement jsonElement = entry.getValue();
 
                 try {
-                    if (jsonElement.isJsonArray() || jsonElement.isJsonPrimitive())
+                    if (jsonElement.isJsonArray() || jsonElement.isJsonPrimitive()) {
+                        List<String> path = new ArrayList<>(this.path.size() + 1);
+                        path.addAll(this.path);
+                        path.add(key);
+
                         node.construct(key, new JsonPrimitiveConfigurationSource(path, jsonElement));
+                    }
                     else if (jsonElement.isJsonNull()) {
                         node.construct(key, null);
                     }
@@ -193,7 +196,16 @@ public class JsonConverter implements FormatConverter {
                     }
                 }
                 catch (NoSuchElementException e) {
-                    throw new IllegalArgumentException(""); //TODO IGNITE-14372 Update comment.
+                    if (path.isEmpty()) {
+                        throw new IllegalArgumentException(
+                            "'" + key + "' configuration root doesn't exist"
+                        );
+                    }
+                    else {
+                        throw new IllegalArgumentException(
+                            "'" + join(path) + "' configuration doesn't have '" + key + "' subconfiguration"
+                        );
+                    }
                 }
             }
         }
@@ -205,37 +217,113 @@ public class JsonConverter implements FormatConverter {
         private final JsonElement jsonLeaf;
 
         private JsonPrimitiveConfigurationSource(List<String> path, JsonElement jsonLeaf) {
+            assert !path.isEmpty();
+
             this.path = path;
             this.jsonLeaf = jsonLeaf;
         }
 
+        /** {@inheritDoc} */
         @Override public <T> T unwrap(Class<T> clazz) {
-            if (clazz.isArray() != jsonLeaf.isJsonArray())
-                throw new IllegalArgumentException(""); //TODO IGNITE-14372 Update comment.
+            if (clazz.isArray()) {
+                if (!jsonLeaf.isJsonArray())
+                    throw wrongTypeException(clazz, -1);
 
-            if (!clazz.isArray())
-                return unwrap(jsonLeaf.getAsJsonPrimitive(), clazz);
+                JsonArray jsonArray = jsonLeaf.getAsJsonArray();
+                int size = jsonArray.size();
 
-            return null;
+                Class<?> componentType = clazz.getComponentType();
+                Class<?> boxedComponentType = box(componentType);
+
+                Object resArray = Array.newInstance(componentType, size);
+
+                for (int idx = 0; idx < size; idx++) {
+                    JsonElement element = jsonArray.get(idx);
+
+                    if (!element.isJsonPrimitive())
+                        throw wrongTypeException(boxedComponentType, idx);
+
+                    Array.set(resArray, idx, unwrap(element.getAsJsonPrimitive(), boxedComponentType, idx));
+                }
+
+                return (T)resArray;
+            }
+            else {
+                if (jsonLeaf.isJsonArray())
+                    throw wrongTypeException(clazz, -1);
+
+                return unwrap(jsonLeaf.getAsJsonPrimitive(), clazz, -1);
+            }
         }
 
+        /** {@inheritDoc} */
         @Override public void descend(ConstructableTreeNode node) {
-            throw new IllegalArgumentException(""); //TODO IGNITE-14372 Update comment.
+            throw new IllegalArgumentException(
+                "'" + join(path) + "' is expected to be a composite configuration node, not a single value"
+            );
         }
 
-        private <T> T unwrap(JsonPrimitive jsonPrimitive, Class<T> clazz) {
+        @NotNull private <T> IllegalArgumentException wrongTypeException(Class<T> clazz, int idx) {
+            return new IllegalArgumentException(
+                "'" + unbox(clazz).getSimpleName() + "' is expected as a type for '"
+                    + join(path) + (idx == -1 ? "" : ("[" + idx + "]")) + "' configuration value"
+            );
+        }
+
+        /**
+         * @param clazz Class object.
+         * @return Same object of it doesn't represent primitive class, boxed version otherwise.
+         */
+        private static Class<?> box(Class<?> clazz) {
+            if (!clazz.isPrimitive())
+                return clazz;
+
+            switch (clazz.getName()) {
+                case "boolean":
+                    return Boolean.class;
+
+                case "int":
+                    return Integer.class;
+
+                case "long":
+                    return Long.class;
+
+                default:
+                    assert clazz == double.class;
+
+                    return Double.class;
+            }
+        }
+
+        private static Class<?> unbox(Class<?> clazz) {
+            assert !clazz.isPrimitive();
+
+            if (clazz == Boolean.class)
+                return boolean.class;
+            else if (clazz == Integer.class)
+                return int.class;
+            else if (clazz == Long.class)
+                return long.class;
+            else if (clazz == Double.class)
+                return double.class;
+            else
+                return clazz;
+        }
+
+        private <T> T unwrap(JsonPrimitive jsonPrimitive, Class<T> clazz, int idx) {
             assert !clazz.isArray();
+            assert !clazz.isPrimitive();
 
             if (clazz == String.class) {
                 if (!jsonPrimitive.isString())
-                    throw new IllegalArgumentException(""); //TODO IGNITE-14372 Update comment.
+                    throw wrongTypeException(clazz, idx);
 
                 return clazz.cast(jsonPrimitive.getAsString());
             }
 
             if (Number.class.isAssignableFrom(clazz)) {
                 if (!jsonPrimitive.isNumber())
-                    throw new IllegalArgumentException(""); //TODO IGNITE-14372 Update comment.
+                    throw wrongTypeException(clazz, idx);
 
                 if (clazz == Double.class)
                     return clazz.cast(jsonPrimitive.getAsDouble());
@@ -243,63 +331,26 @@ public class JsonConverter implements FormatConverter {
                 if (clazz == Long.class)
                     return clazz.cast(jsonPrimitive.getAsLong());
 
-                if (clazz == Integer.class) {
-                    long longValue = jsonPrimitive.getAsLong();
+                assert clazz == Integer.class;
 
-                    if (longValue < Integer.MIN_VALUE || longValue > Integer.MAX_VALUE)
-                        throw new IllegalArgumentException(""); //TODO IGNITE-14372 Update comment.
+                long longValue = jsonPrimitive.getAsLong();
 
-                    return clazz.cast((int)longValue);
+                if (longValue < Integer.MIN_VALUE || longValue > Integer.MAX_VALUE) {
+                    throw new IllegalArgumentException(
+                        "'" + join(path) + "' has integer type"
+                            + " and the value " + longValue + " is out of bounds"
+                    );
                 }
 
-                throw new AssertionError(clazz);
+                return clazz.cast((int)longValue);
             }
 
-            if (clazz == Boolean.class) {
-                if (!jsonPrimitive.isBoolean())
-                    throw new IllegalArgumentException(""); //TODO IGNITE-14372 Update comment.
+            assert clazz == Boolean.class;
 
-                return clazz.cast(jsonPrimitive.getAsBoolean());
-            }
+            if (!jsonPrimitive.isBoolean())
+                throw wrongTypeException(clazz, idx);
 
-            throw new IllegalArgumentException(""); //TODO IGNITE-14372 Update comment.
+            return clazz.cast(jsonPrimitive.getAsBoolean());
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public String convertTo(String rootName, Object src) {
-        Map<String, Object> res = new HashMap<>();
-
-        res.put(rootName, src);
-
-        return gson.toJson(res);
-    }
-
-    /** {@inheritDoc} */
-    @Override public String rootName(String source) {
-        Map<String, Object> map = gson.fromJson(source, Map.class);
-
-        // Peek only first root for simplicity. See comment in ConfigurationPresentation#update for more context.
-        Optional<String> firstOpt = map.keySet().stream().findFirst();
-
-        return firstOpt.isPresent() ? firstOpt.get() : null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Object convertFrom(String source, String rootName, Class<?> clazz) {
-        Map map = gson.fromJson(source, Map.class);
-
-        String root = gson.toJson(map.get(rootName));
-
-        return gson.fromJson(root, clazz);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T> T convertFrom(Reader source, String rootName, Class<T> clazz) {
-        Map map = gson.fromJson(source, Map.class);
-
-        String root = gson.toJson(map.get(rootName));
-
-        return gson.fromJson(root, clazz);
     }
 }

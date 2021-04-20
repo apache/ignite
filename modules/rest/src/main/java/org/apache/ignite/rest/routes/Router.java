@@ -93,6 +93,7 @@ public class Router {
      * PUT query helper.
      *
      * @param route Route.
+     * @param acceptType Accept type.
      * @param hnd Actual handler of the request.
      * @return Router
      */

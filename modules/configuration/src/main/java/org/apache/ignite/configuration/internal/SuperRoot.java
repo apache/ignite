@@ -17,6 +17,7 @@
 
 package org.apache.ignite.configuration.internal;
 
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.SortedMap;
@@ -55,17 +56,19 @@ public final class SuperRoot extends InnerNode {
     }
 
     /** */
+    public SuperRoot(Map<String, RootKey<?, ?>> rootKeys, List<SuperRoot> superRoots) {
+        this(rootKeys);
+
+        for (SuperRoot superRoot : superRoots)
+            roots.putAll(superRoot.roots);
+    }
+
+    /** */
     public void addRoot(RootKey<?, ?> rootKey, InnerNode root) {
         assert !roots.containsKey(rootKey.key()) : rootKey.key() + " : " + roots;
         assert allRootKeys.get(rootKey.key()) == rootKey : rootKey.key() + " : " + allRootKeys;
 
         roots.put(rootKey.key(), root);
-    }
-
-    /** */
-    public void append(SuperRoot otherRoot) {
-        //TODO IGNITE-14372 Revisit API of the super root.
-        roots.putAll(otherRoot.roots);
     }
 
     /** */

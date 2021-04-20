@@ -17,28 +17,29 @@
 
 package org.apache.ignite.rest.presentation.json;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import java.util.Collections;
-import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import org.apache.ignite.configuration.ConfigurationRegistry;
+import org.apache.ignite.configuration.internal.util.ConfigurationUtil;
 import org.apache.ignite.rest.presentation.ConfigurationPresentation;
 
 /** */
 public class JsonPresentation implements ConfigurationPresentation<String> {
     /** */
-    private final JsonConverter converter = new JsonConverter();
+    private final ConfigurationRegistry sysCfg;
 
-    /** */
-    public JsonPresentation() {
+    /**
+     * @param sysCfg Configuration registry.
+     */
+    public JsonPresentation(ConfigurationRegistry sysCfg) {
+        this.sysCfg = sysCfg;
     }
 
     /** {@inheritDoc} */
     @Override public String represent() {
-        Map<String, ?> preparedMap = Collections.emptyMap();
-//        configsMap.entrySet().stream().collect(Collectors.toMap(
-//            e -> e.getKey(),
-//            e -> e.getValue().getRoot().value()
-//        ));
-
-        return converter.convertTo(preparedMap);
+        return sysCfg.represent(Collections.emptyList(), JsonConverter.jsonVisitor()).toString();
     }
 
     /** {@inheritDoc} */
@@ -46,26 +47,21 @@ public class JsonPresentation implements ConfigurationPresentation<String> {
         if (path == null || path.isEmpty())
             return represent();
 
-//        String root = path.contains(".") ? path.substring(0, path.indexOf('.')) : path;
-//
-//        Configurator<? extends DynamicConfiguration<?, ?, ?>> configurator = configsMap.get(root);
-//
-//        ConfigurationProperty<Object, Object> prop = configurator.getInternal(BaseSelectors.find(path));
-//
-//        return converter.convertTo(prop.value());
-        return "";
+        return sysCfg.represent(ConfigurationUtil.split(path), JsonConverter.jsonVisitor()).toString();
     }
 
     /** {@inheritDoc} */
     @Override public void update(String configUpdate) {
-        String root = converter.rootName(configUpdate);
+        JsonElement jsonUpdate = JsonParser.parseString(configUpdate);
 
-        if (root == null) {
-            throw new IllegalArgumentException("Invalid request, no root in request: " + configUpdate);
+        try {
+            sysCfg.change(JsonConverter.jsonSource(jsonUpdate), null).get();
         }
-
-//        Object updateObj = converter.convertFrom(configUpdate, root, configurator.getChangeType());
-
-//        configurator.set(BaseSelectors.find(root), updateObj);
+        catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        catch (ExecutionException e) {
+            throw new RuntimeException(e.getCause());
+        }
     }
 }

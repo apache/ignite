@@ -37,6 +37,7 @@ import org.apache.ignite.configuration.storage.ConfigurationType;
 import org.apache.ignite.configuration.storage.Data;
 import org.apache.ignite.configuration.storage.StorageException;
 import org.apache.ignite.configuration.tree.ConfigurationSource;
+import org.apache.ignite.configuration.tree.ConfigurationVisitor;
 import org.apache.ignite.configuration.tree.InnerNode;
 import org.apache.ignite.configuration.validation.ConfigurationValidationException;
 import org.apache.ignite.configuration.validation.ValidationIssue;
@@ -44,6 +45,7 @@ import org.apache.ignite.configuration.validation.Validator;
 import org.jetbrains.annotations.NotNull;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.configuration.internal.util.ConfigurationUtil.addDefaults;
 import static org.apache.ignite.configuration.internal.util.ConfigurationUtil.cleanupMatchingValues;
 import static org.apache.ignite.configuration.internal.util.ConfigurationUtil.fillFromPrefixMap;
@@ -210,19 +212,44 @@ public final class ConfigurationChanger {
         }
     }
 
-    /** Temporary until the IGNITE-14372 */
-    public CompletableFuture<?> changeX(
-        List<String> path,
+    /** */
+    public CompletableFuture<Void> change(
         ConfigurationSource source,
         ConfigurationStorage storage
     ) {
-        assert path.isEmpty() : "Path support is not yet implemented.";
-
         SuperRoot superRoot = new SuperRoot(rootKeys);
 
         source.descend(superRoot);
 
-        return changeInternally(superRoot, storage);
+        Set<ConfigurationType> storagesTypes = new HashSet<>();
+
+        superRoot.traverseChildren(new ConfigurationVisitor<Object>() {
+            @Override public Object visitInnerNode(String key, InnerNode node) {
+                RootKey<?, ?> rootKey = rootKeys.get(key);
+
+                return storagesTypes.add(rootKey.type());
+            }
+        });
+
+        assert !storagesTypes.isEmpty();
+
+        if (storagesTypes.size() != 1) {
+            return CompletableFuture.failedFuture(
+                new ConfigurationChangeException(
+                    "Cannot handle change request with configuration patches belonging to different storages."
+                )
+            );
+        }
+
+        ConfigurationStorage actualStorage = storageInstances.get(storagesTypes.iterator().next());
+
+        if (storage != null && storage != actualStorage) {
+            return CompletableFuture.failedFuture(
+                new ConfigurationChangeException("Mismatched storage passed.")
+            );
+        }
+
+        return changeInternally(superRoot, actualStorage);
     }
 
     /** Stop component. */
@@ -264,12 +291,7 @@ public final class ConfigurationChanger {
 
     /** */
     public SuperRoot mergedSuperRoot() {
-        SuperRoot mergedSuperRoot = new SuperRoot(rootKeys);
-
-        for (StorageRoots storageRoots : storagesRootsMap.values())
-            mergedSuperRoot.append(storageRoots.roots);
-
-        return mergedSuperRoot;
+        return new SuperRoot(rootKeys, storagesRootsMap.values().stream().map(roots -> roots.roots).collect(toList()));
     }
 
     /**

@@ -19,7 +19,6 @@ package org.apache.ignite.configuration;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import java.util.Collections;
 import java.util.concurrent.ExecutionException;
 import org.apache.ignite.configuration.extended.LocalConfiguration;
 import org.apache.ignite.rest.configuration.InMemoryConfigurationStorage;
@@ -52,7 +51,7 @@ public class ConfigurationModule {
         JsonObject jsonCfg = JsonParser.parseString(jsonStr).getAsJsonObject();
 
         try {
-            confRegistry.change(Collections.emptyList(), JsonConverter.jsonSource(jsonCfg), storage).get();
+            confRegistry.change(JsonConverter.jsonSource(jsonCfg), storage).get();
         }
         catch (ExecutionException e) {
             throw new RuntimeException(e.getCause());
