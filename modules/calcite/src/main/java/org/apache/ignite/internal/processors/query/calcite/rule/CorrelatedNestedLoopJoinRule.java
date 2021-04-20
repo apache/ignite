@@ -187,6 +187,6 @@ public class CorrelatedNestedLoopJoinRule extends ConverterRule {
 
     /** */
     private static boolean preMatch(Join join) {
-        return join.getJoinType() == JoinRelType.INNER; // TODO LEFT, SEMI, ANTI
+        return join.getJoinType() == JoinRelType.INNER || join.getJoinType() == JoinRelType.LEFT; // TODO SEMI, ANTI
     }
 }
