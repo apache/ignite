@@ -52,7 +52,8 @@ class ThinClientTest(IgniteTest):
 
         thin_clients = IgniteApplicationService(self.test_context,
                                                 IgniteThinClientConfiguration(addresses=addresses,
-                                                                              version=IgniteVersion(thin_client_version)),
+                                                                              version=IgniteVersion(
+                                                                                  thin_client_version)),
                                                 java_class_name=self.JAVA_CLIENT_CLASS_NAME,
                                                 num_nodes=1)
 
