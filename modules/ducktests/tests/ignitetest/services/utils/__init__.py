@@ -29,4 +29,3 @@ class IgniteServiceType(IntEnum):
     NODE = 0
     THIN_CLIENT = 1
     NONE = 2
-
