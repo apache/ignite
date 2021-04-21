@@ -54,7 +54,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         ALL = 2
 
     # pylint: disable=R0913
-    def __init__(self, context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, main_java_class,
+    def __init__(self, context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, main_java_class, modules,
                  **kwargs):
         """
         **kwargs are params that passed to IgniteSpec
@@ -69,8 +69,9 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         self.main_java_class = main_java_class
         self.startup_timeout_sec = startup_timeout_sec
         self.shutdown_timeout_sec = shutdown_timeout_sec
+        self.modules = modules
 
-        self.spec = resolve_spec(self, context, config, main_java_class, **kwargs)
+        self.spec = resolve_spec(self, **kwargs)
         self.init_logs_attribute()
 
         self.disconnected_nodes = []
@@ -113,7 +114,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
         wait_until(lambda: self.alive(node), timeout_sec=10)
 
-        ignite_jmx_mixin(node, self.spec, self.pids(node))
+        ignite_jmx_mixin(node, self)
 
     def stop_async(self, force_stop=False, **kwargs):
         """
