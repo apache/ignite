@@ -1,0 +1,12 @@
+# name: test/sql/filter/test_constant_comparisons.test_
+# description: Test expressions with constant comparisons
+# group: [filter]
+# Ignore: https://issues.apache.org/jira/browse/IGNITE-14617
+
+statement ok
+PRAGMA enable_verification
+
+query I
+SELECT CASE WHEN 1 THEN 13 ELSE 12 END;
+----
+13
