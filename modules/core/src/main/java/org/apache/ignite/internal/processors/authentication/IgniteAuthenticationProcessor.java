@@ -171,8 +171,8 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         super(ctx);
     }
 
-    /** Starts security processor. */
-    public void onPluginProviderStart() throws IgniteCheckedException {
+    /** Callback that is called after all Ignite processors started but before discovery manager start. */
+    public void onIgniteProcessorsStarted() throws IgniteCheckedException {
         if (!GridCacheUtils.isPersistenceEnabled(ctx.config())) {
             throw new IgniteCheckedException("Authentication can be enabled only for cluster with enabled persistence."
                 + " Check the DataRegionConfiguration");

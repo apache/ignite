@@ -133,7 +133,6 @@ import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
-import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationPluginProvider;
 import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
 import org.apache.ignite.internal.processors.cache.CacheConfigurationOverride;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -1080,7 +1079,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         // Ack configuration.
         ackSpis();
 
-        List<PluginProvider> plugins = getPluginProviders(cfg);
+        List<PluginProvider> plugins = cfg.getPluginProviders() != null && cfg.getPluginProviders().length > 0 ?
+           Arrays.asList(cfg.getPluginProviders()) : U.allPluginProviders();
 
         // Spin out SPIs & managers.
         try {
@@ -1268,6 +1268,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 startProcessor(new DistributedMetaStorageImpl(ctx));
                 startProcessor(new DistributedConfigurationProcessor(ctx));
                 startProcessor(new DurableBackgroundTasksProcessor(ctx));
+
+                if (cfg.isAuthenticationEnabled()) {
+                    IgniteSecurityProcessor sec = (IgniteSecurityProcessor)ctx.security();
+
+                    ((IgniteAuthenticationProcessor)sec.securityProcessor()).onIgniteProcessorsStarted();
+                }
 
                 startTimer.finishGlobalStage("Start processors");
 
@@ -4352,7 +4358,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             return (T)new GridClusterStateProcessor(ctx);
 
         if (cls.equals(GridSecurityProcessor.class))
-            return null;
+            return ctx.config().isAuthenticationEnabled() ? (T)new IgniteAuthenticationProcessor(ctx) : null;
 
         if (cls.equals(IgniteRestProcessor.class))
             return (T)new GridRestProcessor(ctx);
@@ -4652,18 +4658,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ClusterState newState = ClusterState.valueOf(state);
 
         cluster().state(newState);
-    }
-
-    /** Gets configured plugin providers. */
-    private List<PluginProvider> getPluginProviders(IgniteConfiguration cfg) {
-        List<PluginProvider> plugins = cfg.getPluginProviders() != null && cfg.getPluginProviders().length > 0
-            ? new ArrayList<>(Arrays.asList(cfg.getPluginProviders()))
-            : U.allPluginProviders();
-
-        if (cfg.isAuthenticationEnabled())
-            plugins.add(new IgniteAuthenticationPluginProvider());
-
-        return plugins;
     }
 
     /** {@inheritDoc} */
