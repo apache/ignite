@@ -1272,7 +1272,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 if (cfg.isAuthenticationEnabled()) {
                     IgniteSecurityProcessor sec = (IgniteSecurityProcessor)ctx.security();
 
-                    ((IgniteAuthenticationProcessor)sec.securityProcessor()).onIgniteProcessorsStarted();
+                    ((IgniteAuthenticationProcessor)sec.securityProcessor()).afterStart();
                 }
 
                 startTimer.finishGlobalStage("Start processors");

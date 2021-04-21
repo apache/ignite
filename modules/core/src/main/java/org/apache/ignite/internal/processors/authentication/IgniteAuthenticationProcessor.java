@@ -172,7 +172,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     }
 
     /** Callback that is called after all Ignite processors started but before discovery manager start. */
-    public void onIgniteProcessorsStarted() throws IgniteCheckedException {
+    public void afterStart() throws IgniteCheckedException {
         if (!GridCacheUtils.isPersistenceEnabled(ctx.config())) {
             throw new IgniteCheckedException("Authentication can be enabled only for cluster with enabled persistence."
                 + " Check the DataRegionConfiguration");
