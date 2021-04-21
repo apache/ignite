@@ -158,8 +158,16 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
                     final Comparable c2 = (Comparable)obj2;
                     return RelFieldCollation.compare(c1, c2, nullComparison);
                 }
-                else
-                    return GridH2ValueCacheObject.compareHashOrBytes(obj1, obj2, null);
+                else {
+                    if (obj1 == obj2)
+                        return 0;
+                    else if (obj1 == null)
+                        return nullComparison;
+                    else if (obj2 == null)
+                        return -nullComparison;
+                    else
+                        return GridH2ValueCacheObject.compareHashOrBytes(obj1, obj2, null);
+                }
             };
         }
 
