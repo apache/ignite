@@ -22,7 +22,6 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -160,9 +159,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
     /** Node activate future. */
     private final GridFutureAdapter<Void> activateFut = new GridFutureAdapter<>();
-
-    /** User management operations. */
-    private final EnumSet<SecurityPermission> userOps = EnumSet.of(CREATE_USER, DROP_USER, ALTER_USER);
 
     /**
      * @param ctx Kernal context.
@@ -923,7 +919,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void authorize(String name, SecurityPermission perm, SecurityContext securityCtx) throws SecurityException {
-        if (!userOps.contains(perm))
+        if (perm != CREATE_USER && perm != DROP_USER && perm != ALTER_USER)
             return;
 
         SecuritySubject subj = ctx.security().securityContext().subject();
