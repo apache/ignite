@@ -182,7 +182,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
             self.logger.debug("Config %s for node %s: %s" % (name, node.account.hostname, config_txt))
 
-            setattr(node, "consistent_id", node.account.externally_routable_ip)
+        setattr(node, "consistent_id", node.account.externally_routable_ip)
 
     def pids(self, node):
         """
