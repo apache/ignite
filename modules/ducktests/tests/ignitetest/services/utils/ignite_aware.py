@@ -19,13 +19,13 @@ This module contains the base class to build services aware of Ignite.
 import os
 import re
 import signal
+import sys
+import time
 from abc import ABCMeta
 from datetime import datetime
 from enum import IntEnum
 from threading import Thread
 
-import sys
-import time
 from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.utils.util import wait_until
 
