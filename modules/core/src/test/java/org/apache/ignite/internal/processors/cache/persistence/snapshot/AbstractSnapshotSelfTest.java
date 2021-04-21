@@ -184,7 +184,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
      * @param ccfg Default cache configuration.
      * @return Cache configuration.
      */
-    protected static <K, V> CacheConfiguration<K, V> txCacheConfig(CacheConfiguration<K, V> ccfg) {
+    protected <K, V> CacheConfiguration<K, V> txCacheConfig(CacheConfiguration<K, V> ccfg) {
         return ccfg.setCacheMode(CacheMode.PARTITIONED)
             .setBackups(2)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)

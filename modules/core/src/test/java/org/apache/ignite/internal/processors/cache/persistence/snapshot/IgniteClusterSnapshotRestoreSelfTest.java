@@ -23,8 +23,6 @@ import java.nio.file.OpenOption;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -38,17 +36,12 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteSnapshot;
-import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.CacheExistsException;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -64,10 +57,8 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -88,12 +79,9 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 /**
  * Snapshot restore tests.
  */
-public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTest {
-    /** Timeout. */
-    private static final long TIMEOUT = 15_000;
-
+public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotRestoreBaseTest {
     /** Type name used for binary and SQL. */
-    private static final String TYPE_NAME = IndexedObject.class.getName();
+    private static final String TYPE_NAME = "CustomType";
 
     /** Cache 1 name. */
     private static final String CACHE1 = "cache1";
@@ -108,10 +96,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
     private CacheConfiguration<?, ?>[] cacheCfgs;
 
     /** Cache value builder. */
-    private Function<Integer, Object> valBuilder = new IndexedValueBuilder();
-
-    /** {@code true} if node should be started in separate jvm. */
-    protected volatile boolean jvm;
+    private Function<Integer, Object> valBuilder = String::valueOf;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
@@ -119,40 +104,13 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
 
         if (cacheCfgs != null)
             cfg.setCacheConfiguration(cacheCfgs);
-        else if (dfltCacheCfg != null) {
-            dfltCacheCfg.setSqlIndexMaxInlineSize(255);
-            dfltCacheCfg.setSqlSchema("PUBLIC");
-            dfltCacheCfg.setQueryEntities(Collections.singletonList(queryEntity(TYPE_NAME)));
-        }
 
         return cfg;
     }
 
-    /**
-     * @param typeName Type name.
-     */
-    private QueryEntity queryEntity(String typeName) {
-        return new QueryEntity()
-            .setKeyType(Integer.class.getName())
-            .setValueType(typeName)
-            .setFields(new LinkedHashMap<>(F.asMap("id", Integer.class.getName(), "name", String.class.getName())))
-            .setIndexes(Collections.singletonList(new QueryIndex("id")));
-    }
-
-    /** @throws Exception If failed. */
-    @Test
-    public void testBasicClusterSnapshotRestore() throws Exception {
-        int keysCnt = 10_000;
-
-        IgniteEx client = startGridsWithSnapshot(2, keysCnt, true);
-
-        grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(dfltCacheCfg.getName())).get(TIMEOUT);
-
-        IgniteCache<Object, Object> cache = client.cache(dfltCacheCfg.getName());
-
-        assertTrue(cache.indexReadyFuture().isDone());
-
-        checkCacheKeys(cache, keysCnt);
+    /** {@inheritDoc} */
+    @Override protected Function<Integer, Object> valueBuilder() {
+        return valBuilder;
     }
 
     /** @throws Exception If failed. */
@@ -347,31 +305,6 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
 
     /** @throws Exception If failed. */
     @Test
-    public void testBasicClusterSnapshotRestoreWithMetadata() throws Exception {
-        int keysCnt = 10_000;
-
-        valBuilder = new BinaryValueBuilder(0, TYPE_NAME);
-
-        IgniteEx ignite = startGridsWithSnapshot(2, keysCnt);
-
-        // Remove metadata.
-        int typeId = ignite.context().cacheObjects().typeId(TYPE_NAME);
-
-        ignite.context().cacheObjects().removeType(typeId);
-
-        forceCheckpoint();
-
-        ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(dfltCacheCfg.getName())).get(TIMEOUT);
-
-        IgniteCache<Object, Object> cache = ignite.cache(dfltCacheCfg.getName()).withKeepBinary();
-
-        assertTrue(cache.indexReadyFuture().isDone());
-
-        checkCacheKeys(cache, keysCnt);
-    }
-
-    /** @throws Exception If failed. */
-    @Test
     public void testClusterSnapshotRestoreRejectOnInActiveCluster() throws Exception {
         IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, valBuilder, dfltCacheCfg);
 
@@ -388,55 +321,8 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
 
     /** @throws Exception If failed. */
     @Test
-    public void testClusterSnapshotRestoreOnBiggerTopology() throws Exception {
-        int nodesCnt = 4;
-
-        int keysCnt = 10_000;
-
-        valBuilder = new BinaryValueBuilder(0, TYPE_NAME);
-
-        startGridsWithCache(nodesCnt - 2, keysCnt, valBuilder, dfltCacheCfg);
-
-        grid(0).snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
-
-        startGrid(nodesCnt - 2);
-
-        IgniteEx ignite = startGrid(nodesCnt - 1);
-
-        resetBaselineTopology();
-
-        awaitPartitionMapExchange();
-
-        ignite.cache(dfltCacheCfg.getName()).destroy();
-
-        awaitPartitionMapExchange();
-
-        // Remove metadata.
-        int typeId = ignite.context().cacheObjects().typeId(TYPE_NAME);
-
-        ignite.context().cacheObjects().removeType(typeId);
-
-        forceCheckpoint();
-
-        // Restore from an empty node.
-        ignite.snapshot().restoreSnapshot(
-            SNAPSHOT_NAME, Collections.singleton(dfltCacheCfg.getName())).get(TIMEOUT);
-
-        IgniteCache<Object, Object> cache = ignite.cache(dfltCacheCfg.getName()).withKeepBinary();
-
-        assertTrue(cache.indexReadyFuture().isDone());
-
-        awaitPartitionMapExchange();
-
-        checkCacheKeys(cache, keysCnt);
-    }
-
-    /** @throws Exception If failed. */
-    @Test
     public void testClusterSnapshotRestoreOnSmallerTopology() throws Exception {
-        int keysCnt = 10_000;
-
-        startGridsWithSnapshot(2, keysCnt, true);
+        startGridsWithSnapshot(2, CACHE_KEYS_RANGE, true);
 
         stopGrid(1);
 
@@ -493,7 +379,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
     /** @throws Exception If failed. */
     @Test
     public void testIncompatibleMetasUpdate() throws Exception {
-        valBuilder = new BinaryValueBuilder(0, TYPE_NAME);
+        valBuilder = new BinaryValueBuilder(TYPE_NAME);
 
         IgniteEx ignite = startGridsWithSnapshot(2, CACHE_KEYS_RANGE);
 
@@ -846,38 +732,6 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
     }
 
     /**
-     * @param nodesCnt Nodes count.
-     * @param keysCnt Number of keys to create.
-     * @return Ignite coordinator instance.
-     * @throws Exception if failed.
-     */
-    private IgniteEx startGridsWithSnapshot(int nodesCnt, int keysCnt) throws Exception {
-        return startGridsWithSnapshot(nodesCnt, keysCnt, false);
-    }
-
-    /**
-     * @param nodesCnt Nodes count.
-     * @param keysCnt Number of keys to create.
-     * @param startClient {@code True} to start an additional client node.
-     * @return Ignite coordinator instance.
-     * @throws Exception if failed.
-     */
-    private IgniteEx startGridsWithSnapshot(int nodesCnt, int keysCnt, boolean startClient) throws Exception {
-        IgniteEx ignite = startGridsWithCache(nodesCnt, keysCnt, valBuilder, dfltCacheCfg.setBackups(0));
-
-        if (startClient)
-            ignite = startClientGrid("client");
-
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
-
-        ignite.cache(dfltCacheCfg.getName()).destroy();
-
-        awaitPartitionMapExchange();
-
-        return ignite;
-    }
-
-    /**
      * @param spi Test communication spi.
      * @param restorePhase The type of distributed process on which communication is blocked.
      * @param grpName Cache group name.
@@ -898,121 +752,6 @@ public class IgniteClusterSnapshotRestoreSelfTest extends AbstractSnapshotSelfTe
         spi.waitForBlocked();
 
         return fut;
-    }
-
-    /**
-     * @param cache Cache.
-     * @param startIdx The initial value of the number for the key.
-     * @param cnt Number of entries to put in the cache.
-     */
-    private void putKeys(IgniteCache<Integer, Object> cache, int startIdx, int cnt) {
-        for (int i = startIdx; i < (startIdx + cnt); i++)
-            cache.put(i, valBuilder.apply(i));
-    }
-
-    /**
-     * @param cache Cache.
-     * @param keysCnt Expected number of keys.
-     */
-    private void checkCacheKeys(IgniteCache<Object, Object> cache, int keysCnt) {
-        assertEquals(keysCnt, cache.size());
-
-        for (int i = 0; i < keysCnt; i++)
-            assertEquals(valBuilder.apply(i), cache.get(i));
-
-        //noinspection unchecked
-        if (!grid(0).context().query().moduleEnabled() ||
-            F.isEmpty(cache.getConfiguration(CacheConfiguration.class).getQueryEntities()))
-            return;
-
-        String tblName = new BinaryBasicNameMapper(true).typeName(TYPE_NAME);
-
-        for (Ignite grid : G.allGrids()) {
-            GridQueryProcessor qry = ((IgniteEx)grid).context().query();
-
-            // Make sure  SQL works fine.
-            assertEquals((long)keysCnt, qry.querySqlFields(new SqlFieldsQuery(
-                "SELECT count(*) FROM " + tblName), true).getAll().get(0).get(0));
-
-            // Make sure the index is in use.
-            String explainPlan = (String)qry.querySqlFields(new SqlFieldsQuery(
-                "explain SELECT * FROM " + tblName + " WHERE id < 10"), true).getAll().get(0).get(0);
-
-            assertTrue("id=" + grid.cluster().localNode().id() + "\n" + explainPlan, explainPlan.contains("ID_ASC_IDX"));
-        }
-    }
-
-    /** */
-    private static class IndexedValueBuilder implements Function<Integer, Object> {
-        /** {@inheritDoc} */
-        @Override public Object apply(Integer key) {
-            return new IndexedObject(key, "Person number #" + key);
-        }
-    }
-
-    /** */
-    private static class IndexedObject {
-        /** Id. */
-        @QuerySqlField(index = true)
-        private final int id;
-
-        /** Name. */
-        @QuerySqlField
-        private final String name;
-
-        /**
-         * @param id Id.
-         */
-        public IndexedObject(int id, String name) {
-            this.id = id;
-            this.name = name;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            IndexedObject obj = (IndexedObject)o;
-
-            return id == obj.id && Objects.equals(name, obj.name);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return Objects.hash(name, id);
-        }
-    }
-
-    /** */
-    private class BinaryValueBuilder implements Function<Integer, Object> {
-        /** Ignite node index. */
-        private final int nodeIdx;
-
-        /** Binary type name. */
-        private final String typeName;
-
-        /**
-         * @param nodeIdx Ignite node index.
-         * @param typeName Binary type name.
-         */
-        BinaryValueBuilder(int nodeIdx, String typeName) {
-            this.nodeIdx = nodeIdx;
-            this.typeName = typeName;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object apply(Integer key) {
-            BinaryObjectBuilder builder = grid(nodeIdx).binary().builder(typeName);
-
-            builder.setField("id", key);
-            builder.setField("name", String.valueOf(key));
-
-            return builder.build();
-        }
     }
 
     /**

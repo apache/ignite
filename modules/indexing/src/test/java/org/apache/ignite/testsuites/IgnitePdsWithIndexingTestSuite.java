@@ -29,7 +29,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.IndexingMultit
 import org.apache.ignite.internal.processors.cache.persistence.db.LongDestroyDurableBackgroundTaskTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.MultipleParallelCacheDeleteDeadlockTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotCheckWithIndexesTest;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotRestoreSelfTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotRestoreWithIndexingTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotWithIndexesTest;
 import org.apache.ignite.internal.processors.database.IgniteDbMultiNodeWithIndexingPutGetTest;
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodeWithIndexingPutGetTest;
@@ -68,7 +68,7 @@ import org.junit.runners.Suite;
     IgnitePdsIndexingDefragmentationTest.class,
     StopRebuildIndexTest.class,
     ForceRebuildIndexTest.class,
-    IgniteClusterSnapshotRestoreSelfTest.class
+    IgniteClusterSnapshotRestoreWithIndexingTest.class
 })
 public class IgnitePdsWithIndexingTestSuite {
 }

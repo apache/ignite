@@ -119,7 +119,7 @@ public class IgniteClusterSnapshotCheckWithIndexesTest extends AbstractSnapshotS
      * @param cacheName Cache name.
      * @return Cache configuration.
      */
-    private static CacheConfiguration<Integer, Account> txFilteredCache(String cacheName) {
+    private CacheConfiguration<Integer, Account> txFilteredCache(String cacheName) {
         return txCacheConfig(new CacheConfiguration<Integer, Account>(cacheName))
             .setCacheMode(CacheMode.REPLICATED)
             .setQueryEntities(singletonList(new QueryEntity(Integer.class.getName(), Account.class.getName())));
