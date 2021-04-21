@@ -663,14 +663,14 @@ public class CommandProcessor {
 
                 ctx.security().authorize(addCmd.userName(), CREATE_USER);
 
-                ctx.security().createUser(addCmd.userName(), addCmd.userOptions());
+                ctx.security().createUser(addCmd.userName(), addCmd.password());
             }
             else if (cmd instanceof SqlAlterUserCommand) {
                 SqlAlterUserCommand altCmd = (SqlAlterUserCommand)cmd;
 
                 ctx.security().authorize(altCmd.userName(), ALTER_USER);
 
-                ctx.security().alterUser(altCmd.userName(), altCmd.userOptions());
+                ctx.security().alterUser(altCmd.userName(), altCmd.password());
             }
             else if (cmd instanceof SqlDropUserCommand) {
                 SqlDropUserCommand dropCmd = (SqlDropUserCommand)cmd;

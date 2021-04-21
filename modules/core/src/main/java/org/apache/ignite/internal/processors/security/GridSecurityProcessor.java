@@ -135,24 +135,24 @@ public interface GridSecurityProcessor extends GridProcessor {
     }
 
     /**
-     * Creates user with the specified login and options.
+     * Creates user with the specified login and password.
      *
      * @param login Login of the user to be created.
-     * @param opts User options.
+     * @param pwd User password.
      * @throws IgniteCheckedException If error occurred.
      */
-    public default void createUser(String login, UserOptions opts) throws IgniteCheckedException {
+    public default void createUser(String login, String pwd) throws IgniteCheckedException {
         throw new UnsupportedOperationException();
     }
 
     /**
-     * Alters specified options of user with the specified login.
+     * Alters password of user with the specified login.
      *
-     * @param login Login of the user which options should be altered.
-     * @param opts User options.
+     * @param login Login of the user which password should be altered.
+     * @param pwd User password to alter.
      * @throws IgniteCheckedException If error occurred.
      */
-    public default void alterUser(String login, UserOptions opts) throws IgniteCheckedException {
+    public default void alterUser(String login, String pwd) throws IgniteCheckedException {
         throw new UnsupportedOperationException();
     }
 

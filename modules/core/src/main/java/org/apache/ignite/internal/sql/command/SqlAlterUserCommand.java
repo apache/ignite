@@ -17,10 +17,8 @@
 
 package org.apache.ignite.internal.sql.command;
 
-import org.apache.ignite.internal.processors.security.UserOptions;
 import org.apache.ignite.internal.sql.SqlLexer;
 import org.apache.ignite.internal.sql.SqlParserUtils;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import static org.apache.ignite.internal.sql.SqlKeyword.PASSWORD;
@@ -35,9 +33,8 @@ public class SqlAlterUserCommand implements SqlCommand {
     /** User name. */
     private String userName;
 
-    /** User options. */
-    @GridToStringExclude
-    private UserOptions opts;
+    /** User's password. */
+    private String passwd;
 
     /** {@inheritDoc} */
     @Override public String schemaName() {
@@ -56,20 +53,21 @@ public class SqlAlterUserCommand implements SqlCommand {
         return userName;
     }
 
-    /** User options. */
-    public UserOptions userOptions() {
-        return opts;
+    /**
+     * @return User's password.
+     */
+    public String password() {
+        return passwd;
     }
 
     /** {@inheritDoc} */
     @Override public SqlCommand parse(SqlLexer lex) {
         userName = SqlParserUtils.parseUsername(lex);
-        opts = new UserOptions();
 
         skipIfMatchesKeyword(lex, WITH);
         skipIfMatchesKeyword(lex, PASSWORD);
 
-        opts.password(parseString(lex));
+        passwd = parseString(lex);
 
         return this;
     }

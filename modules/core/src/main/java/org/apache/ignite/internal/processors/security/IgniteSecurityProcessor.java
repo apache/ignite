@@ -353,13 +353,13 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
     }
 
     /** {@inheritDoc} */
-    @Override public void createUser(String login, UserOptions opts) throws IgniteCheckedException {
-        secPrc.createUser(login, opts);
+    @Override public void createUser(String login, String pwd) throws IgniteCheckedException {
+        secPrc.createUser(login, pwd);
     }
 
     /** {@inheritDoc} */
-    @Override public void alterUser(String login, UserOptions opts) throws IgniteCheckedException {
-        secPrc.alterUser(login, opts);
+    @Override public void alterUser(String login, String pwd) throws IgniteCheckedException {
+        secPrc.alterUser(login, pwd);
     }
 
     /** {@inheritDoc} */

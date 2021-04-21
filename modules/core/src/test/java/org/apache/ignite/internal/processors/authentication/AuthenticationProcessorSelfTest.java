@@ -29,7 +29,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
-import org.apache.ignite.internal.processors.security.UserOptions;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -520,15 +519,13 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
     /** Creates user with specified login and password. */
     public static void createUser(IgniteEx ignite, SecurityContext secCtx, String login, String pwd)
         throws IgniteCheckedException {
-        withSecurityContext(ignite, secCtx, ign ->
-            ign.context().security().createUser(login, new UserOptions().password(pwd)));
+        withSecurityContext(ignite, secCtx, ign -> ign.context().security().createUser(login, pwd));
     }
 
     /** Alters password of the user with the specified login. */
     public static void alterUserPassword(IgniteEx ignite, SecurityContext secCtx, String login, String newPwd)
         throws IgniteCheckedException {
-        withSecurityContext(ignite, secCtx, ign ->
-            ign.context().security().alterUser(login, new UserOptions().password(newPwd)));
+        withSecurityContext(ignite, secCtx, ign -> ign.context().security().alterUser(login, newPwd));
     }
 
     /** Drops the user with specified login. */

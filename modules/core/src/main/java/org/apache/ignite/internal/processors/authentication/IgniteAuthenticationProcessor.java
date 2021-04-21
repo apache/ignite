@@ -59,7 +59,6 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadW
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
 import org.apache.ignite.internal.processors.security.IgniteSecurityProcessor;
 import org.apache.ignite.internal.processors.security.SecurityContext;
-import org.apache.ignite.internal.processors.security.UserOptions;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -350,12 +349,10 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void createUser(String login, UserOptions opts) throws IgniteCheckedException {
-        String pwd = opts.password();
+    @Override public void createUser(String login, String passwd) throws IgniteCheckedException {
+        validate(login, passwd);
 
-        validate(login, pwd);
-
-        UserManagementOperation op = new UserManagementOperation(User.create(login, pwd), ADD);
+        UserManagementOperation op = new UserManagementOperation(User.create(login, passwd), ADD);
 
         execUserOperation(op).get();
     }
@@ -368,8 +365,8 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void alterUser(String login, UserOptions opts) throws IgniteCheckedException {
-        UserManagementOperation op = new UserManagementOperation(User.create(login, opts.password()), UPDATE);
+    @Override public void alterUser(String login, String passwd) throws IgniteCheckedException {
+        UserManagementOperation op = new UserManagementOperation(User.create(login, passwd), UPDATE);
 
         execUserOperation(op).get();
     }
