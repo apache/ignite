@@ -33,8 +33,11 @@ import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.apache.ignite.thread.IgniteThread;
 import org.junit.Test;
+
+import static java.util.Objects.*;
 
 /**
  *
@@ -48,6 +51,9 @@ public class GridCacheRebalancingUnmarshallingFailedSelfTest extends GridCommonA
 
     /** */
     private volatile Marshaller marshaller;
+
+    /** */
+    private final ThisCustomTestLogger customLog = new ThisCustomTestLogger();
 
     /** Test key 1. */
     private static class TestKey implements Externalizable {
@@ -115,6 +121,7 @@ public class GridCacheRebalancingUnmarshallingFailedSelfTest extends GridCommonA
 
         iCfg.setCacheConfiguration(cfg);
         iCfg.setMarshaller(marshaller);
+        iCfg.setGridLogger(customLog);
 
         return iCfg;
     }
@@ -176,6 +183,10 @@ public class GridCacheRebalancingUnmarshallingFailedSelfTest extends GridCommonA
 
         for (int i = 50; i < 100; i++)
             assertNull(grid(1).cache(CACHE).get(new TestKey(String.valueOf(i))));
+
+        assertEquals(1, customLog.unmarshErrorCnt());
+        assertTrue(customLog.containsE());
+        assertTrue(customLog.errorMsg().contains("unavailablePartitions"));
     }
 
     /** {@inheritDoc} */
@@ -184,4 +195,40 @@ public class GridCacheRebalancingUnmarshallingFailedSelfTest extends GridCommonA
 
         stopAllGrids();
     }
+
+    /** Logger to check error message */
+    private static class ThisCustomTestLogger extends GridTestLog4jLogger {
+        /** Unmarshaling error message count. */
+        int unmarshErrorCnt = 0;
+
+        /** Error message */
+        String errorMsg;
+
+        /** Do message print with trace */
+        boolean containsE;
+
+        /** {@inheritDoc} */
+        @Override public void error(String msg, Throwable e) {
+            super.error(msg, e);
+
+            if (msg.contains("Rebalancing routine has failed")) {
+                unmarshErrorCnt++;
+
+                errorMsg = msg;
+
+                containsE = nonNull(e);
+            }
+        }
+
+        /** */
+        public int unmarshErrorCnt() { return unmarshErrorCnt; }
+
+        /** */
+        public String errorMsg() { return errorMsg; }
+
+        /** */
+        public boolean containsE() { return containsE; }
+    }
+
+
 }

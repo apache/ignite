@@ -539,6 +539,7 @@ public class GridDhtPartitionDemander {
 
             // Check whether there were error during supplying process.
             Throwable msgExc = null;
+
             final GridDhtPartitionTopology top = grp.topology();
 
             if (supplyMsg.classError() != null)
@@ -548,12 +549,14 @@ public class GridDhtPartitionDemander {
 
             if (msgExc != null) {
                 GridDhtPartitionMap partMap = top.localPartitionMap();
+
                 Set<Integer> unstableParts = supplyMsg.infos().keySet().stream()
                     .filter(p -> partMap.get(p) == MOVING)
                     .collect(Collectors.toSet());
 
-                U.error(log, "Rebalancing routine has failed [" + demandRoutineInfo(nodeId, supplyMsg) + "]" +
-                    ", Partitions could be unavailable for reading " + S.compact(unstableParts), msgExc);
+                U.error(log, "Rebalancing routine has failed, some partitions could be unavailable for reading" +
+                    " [" + demandRoutineInfo(nodeId, supplyMsg) +
+                    ", unavailablePartitions=" + S.compact(unstableParts) + "]", msgExc);
 
                 fut.error(nodeId);
 
