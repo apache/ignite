@@ -93,9 +93,6 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
         if (discoSpi instanceof TcpDiscoverySpi)
             ((TcpDiscoverySpi)discoSpi).setNetworkTimeout(1000);
 
-        if (igniteInstanceName.contains("client"))
-            cfg.setClientMode(true);
-
         return cfg;
     }
 
@@ -170,9 +167,9 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
         String key = "key";
         String value = "value";
 
-        GridTestUtils.runAsync(() -> startGrid(clientName));
+        GridTestUtils.runAsync(() -> startClientGrid(clientName));
 
-        GridTestUtils.waitForCondition(() -> {
+        boolean dmsStarted = GridTestUtils.waitForCondition(() -> {
             try {
                 IgniteKernal clientGrid = IgnitionEx.gridx(clientName);
 
@@ -182,6 +179,8 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
                 return false;
             }
         }, 20_000);
+
+        assertTrue(dmsStarted);
 
         IgniteKernal cl0 = IgnitionEx.gridx("client0");
 
