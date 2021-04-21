@@ -151,7 +151,7 @@ class IgniteSpec(metaclass=ABCMeta):
             'USER_LIBS': ":".join(self.libs())
         }
 
-    def config(self):
+    def config_file_path(self):
         """
         :return: path to project configuration file
         """
@@ -179,7 +179,7 @@ class IgniteNodeSpec(IgniteSpec):
               (envs_to_exports(self.envs()),
                self.service.script("ignite.sh"),
                self._jvm_opts(),
-               self.config(),
+               self.config_file_path(),
                node.log_file)
 
         return cmd
@@ -201,7 +201,7 @@ class IgniteApplicationSpec(IgniteSpec):
         args = [
             str(self.service.config.service_type.name),
             self.service.java_class_name,
-            self.config(),
+            self.config_file_path(),
             str(base64.b64encode(json.dumps(self.service.params).encode('utf-8')), 'utf-8')
         ]
 
@@ -214,7 +214,7 @@ class IgniteApplicationSpec(IgniteSpec):
 
         return cmd
 
-    def config(self):
+    def config_file_path(self):
         return self.service.config_file if self.service.config.service_type == IgniteServiceType.NODE \
             else self.service.thin_client_config_file
 
