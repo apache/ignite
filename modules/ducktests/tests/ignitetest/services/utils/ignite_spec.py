@@ -112,7 +112,7 @@ class IgniteSpec(metaclass=ABCMeta):
         """
         Get home directory for current spec.
         """
-        product = product if product else str(self.service.config.version)
+        product = product if product else self.service.product
         return get_home_dir(self.service.install_root, product)
 
     def _module(self, name):
