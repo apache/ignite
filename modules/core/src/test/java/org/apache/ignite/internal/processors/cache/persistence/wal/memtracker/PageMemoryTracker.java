@@ -180,8 +180,8 @@ public class PageMemoryTracker implements IgnitePlugin {
                     return res;
                 }
 
-                @Override public void resumeLogging(WALPointer lastPtr, boolean switchSegmentRecReached) throws IgniteCheckedException {
-                    super.resumeLogging(lastPtr, switchSegmentRecReached);
+                @Override public void resumeLogging(WALPointer lastPtr) throws IgniteCheckedException {
+                    super.resumeLogging(lastPtr);
 
                     if (lastPtr == null)
                         emptyPds = true;
