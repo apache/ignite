@@ -20,9 +20,12 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
 import org.apache.ignite.testsuites.IgniteAzureTestSuite;
+import org.junit.Test;
 
 public class TcpDiscoveryAzureBlobStoreIpFinderSelfTest
         extends TcpDiscoveryIpFinderAbstractSelfTest<TcpDiscoveryAzureBlobStoreIpFinder> {
@@ -87,5 +90,38 @@ public class TcpDiscoveryAzureBlobStoreIpFinderSelfTest
             throw new Exception("Failed to initialize IP finder.");
 
         return finder;
+    }
+
+    @Test
+    public void testFilterRegex() throws Exception {
+        TcpDiscoveryAzureBlobStoreIpFinder finder = new TcpDiscoveryAzureBlobStoreIpFinder();
+
+        injectLogger(finder);
+
+        assert finder.isShared() : "Ip finder must be shared by default.";
+
+        finder.setAccountName(IgniteAzureTestSuite.getAccountName());
+        finder.setAccountKey(IgniteAzureTestSuite.getAccountKey());
+        finder.setAccountEndpoint(IgniteAzureTestSuite.getEndpoint());
+
+        finder.setContainerName(containerName);
+
+        finder.registerAddresses(ImmutableList.of(
+                new InetSocketAddress("192.168.0.1", TcpDiscoverySpi.DFLT_PORT),
+                new InetSocketAddress("192.168.0.2", TcpDiscoverySpi.DFLT_PORT),
+                new InetSocketAddress("192.168.0.3", TcpDiscoverySpi.DFLT_PORT),
+                new InetSocketAddress("192.168.0.4", TcpDiscoverySpi.DFLT_PORT),
+                new InetSocketAddress("192.165.0.1", TcpDiscoverySpi.DFLT_PORT),
+                new InetSocketAddress("192.165.0.2", TcpDiscoverySpi.DFLT_PORT),
+                new InetSocketAddress("192.165.0.3", TcpDiscoverySpi.DFLT_PORT)));
+
+        finder.setRegex("^192\\.165\\.0\\.1#47500$");
+
+        Collection<InetSocketAddress> returnedIpAddresses = finder.getRegisteredAddresses();
+
+        if (returnedIpAddresses.isEmpty())
+            throw new Exception("Failed to initialize IP finder.");
+
+        assertTrue(returnedIpAddresses.size() == 6);
     }
 }

@@ -18,7 +18,12 @@
 package org.apache.ignite.spi.discovery.tcp.ipfinder;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -35,6 +40,9 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 public abstract class TcpDiscoveryIpFinderAdapter implements TcpDiscoveryIpFinder {
     /** Shared flag. */
     private boolean shared;
+
+    /** Set of Regexes to use to filter IPs */
+    private List<Pattern> regexList;
 
     /** SPI context. */
     @GridToStringExclude
@@ -71,6 +79,24 @@ public abstract class TcpDiscoveryIpFinderAdapter implements TcpDiscoveryIpFinde
         return shared;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean isIpAddressAllowed(String ipAddress) {
+
+        if (regexList == null) {
+            return true;
+        }
+
+        for (Pattern pattern : regexList) {
+            Matcher matcher = pattern.matcher(ipAddress);
+
+            if (matcher.matches()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     /**
      * Sets shared flag. If {@code true} then it is expected that IP addresses registered
      * with IP finder will be seen by IP finders on all other nodes.
@@ -81,6 +107,21 @@ public abstract class TcpDiscoveryIpFinderAdapter implements TcpDiscoveryIpFinde
     @IgniteSpiConfiguration(optional = true)
     public TcpDiscoveryIpFinderAdapter setShared(boolean shared) {
         this.shared = shared;
+
+        return this;
+    }
+
+    /**
+     * Adds a regex for filtering IPs
+     */
+    @IgniteSpiConfiguration(optional = true)
+    public TcpDiscoveryIpFinderAdapter setRegex(String regex) {
+        if (regexList == null)
+            regexList = new ArrayList<>();
+
+        Pattern pattern = Pattern.compile(regex);
+
+        regexList.add(pattern);
 
         return this;
     }

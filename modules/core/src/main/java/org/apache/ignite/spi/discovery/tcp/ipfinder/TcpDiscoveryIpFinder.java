@@ -100,6 +100,14 @@ public interface TcpDiscoveryIpFinder {
     public void unregisterAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException;
 
     /**
+     * Filters given IP address through filter regexes, if any
+     *
+     * @param ipAddress Address to check
+     * @return true if allowed, false otherwise
+     */
+    public boolean isIpAddressAllowed(String ipAddress);
+
+    /**
      * Closes this IP finder and releases any system resources associated with it.
      */
     public void close();

@@ -133,6 +133,9 @@ public class TcpDiscoveryAzureBlobStoreIpFinder extends TcpDiscoveryIpFinderAdap
                 break;
             }
 
+            if (!isIpAddressAllowed(blobItem.getName()))
+                continue;
+
             try {
                 if (!blobItem.isDeleted()) {
                     addrs.add(addrFromString(blobItem.getName()));
@@ -371,6 +374,13 @@ public class TcpDiscoveryAzureBlobStoreIpFinder extends TcpDiscoveryIpFinderAdap
     /** {@inheritDoc} */
     @Override public TcpDiscoveryAzureBlobStoreIpFinder setShared(boolean shared) {
         super.setShared(shared);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public TcpDiscoveryAzureBlobStoreIpFinder setRegex(String regex) {
+        super.setRegex(regex);
 
         return this;
     }
