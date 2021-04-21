@@ -208,7 +208,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
     /** {@inheritDoc} */
     @Override public RelNode convert(SqlNode sql) {
-        return rel(sql).project();
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -216,7 +216,6 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         SqlToRelConverter sqlToRelConverter = sqlToRelConverter(validator(), catalogReader, sqlToRelConverterCfg);
         RelRoot root = sqlToRelConverter.convertQuery(sql, false, true);
         root = root.withRel(sqlToRelConverter.decorrelate(sql, root.rel));
-        root = root.withRel(root.project());
         root = trimUnusedFields(root);
 
         return root;

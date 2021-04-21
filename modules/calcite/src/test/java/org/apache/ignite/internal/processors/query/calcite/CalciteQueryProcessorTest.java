@@ -135,6 +135,11 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         cache.put(1, "1");
         cache.put(2, "2");
 
+        assertQuery(client, "select val from tbl order by id")
+            .returns("1")
+            .returns("2")
+            .check();
+
         assertQuery(client, "select id, val from tbl")
             .returns(1, "1")
             .returns(2, "2")
@@ -459,6 +464,26 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
          */
 
         awaitPartitionMapExchange(true, true, null);
+    }
+
+    /** */
+    @Test
+    public void testOrderingByColumnOutsideSelectList() throws InterruptedException {
+        populateTables();
+
+        assertQuery(client, "select salary from account order by _key desc")
+            .returns(13d)
+            .returns(13d)
+            .returns(13d)
+            .returns(12d)
+            .returns(11d)
+            .returns(10d)
+            .check();
+
+        assertQuery(client, "select name, sum(salary) from account group by name order by count(salary)")
+            .returns("Roman", 46d)
+            .returns("Igor1", 26d)
+            .check();
     }
 
     /** */
