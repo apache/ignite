@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Root package for decision tree impurity measures and calculators.
  */
+
 package org.apache.ignite.ml.tree.impurity;

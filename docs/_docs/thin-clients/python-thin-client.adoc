@@ -1,0 +1,488 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Python Thin Client
+
+:sourceFileDir: code-snippets/python
+
+== Prerequisites
+
+Python 3.4 or above.
+
+== Installation
+
+You can install the Python thin client either using `pip` or from a zip archive.
+
+=== Using PIP
+
+The python thin client package is called `pyignite`. You can install it using the following command:
+
+include::includes/install-python-pip.adoc[]
+
+=== Using ZIP Archive
+
+The thin client can be installed from the zip archive available for download from the Apache Ignite website:
+
+*  Download the link:https://ignite.apache.org/download.cgi#binaries[Apache Ignite Python Thin Client,window=_blank].
+*  Unpack the archive and navigate to the root folder.
+*  Install the client using the command below.
+
+
+[tabs]
+--
+tab:pip3[]
+[source,shell]
+----
+pip3 install .
+----
+
+tab:pip[]
+[source,shell]
+----
+pip install .
+----
+--
+
+This will install `pyignite` in your environment in the so-called "develop" or "editable" mode. Learn more
+about the mode from the https://pip.pypa.io/en/stable/reference/pip_install/#editable-installs[official documentation,window=_blank].
+
+Check the `requirements` folder and install additional requirements, if needed, using the following command:
+
+
+[tabs]
+--
+tab:pip3[]
+[source,shell]
+----
+pip3 install -r requirements/<your task>.txt
+----
+tab:pip[]
+[source,shell]
+----
+pip install -r requirements/<your task>.txt
+----
+--
+
+Refer to the https://setuptools.readthedocs.io/en/latest/[Setuptools manual] for more details about `setup.py` usage.
+
+== Connecting to Cluster
+
+The ZIP distribution package contains runnable examples that demonstrate basic usage scenarios of the Python thin client.
+The examples are located in the `{client_dir}/examples` directory.
+
+The following code snippet shows how to connect to a cluster from the Python thin client:
+
+[source, python]
+-------------------------------------------------------------------------------
+include::{sourceFileDir}/connect.py[tag=example-block,indent=0]
+-------------------------------------------------------------------------------
+
+== Client Failover
+
+You can configure the client to automatically fail over to another node if the connection to the current node fails or times out.
+
+When the connection fails, the client propagates the initial exception (`OSError` or `SocketError`), but keeps its constructor’s parameters intact and tries to reconnect transparently.
+When the client fails to reconnect, it throws a special `ReconnectError` exception.
+
+In the following example, the client is given the addresses of three cluster nodes.
+
+[source, python]
+-------------------------------------------------------------------------------
+include::{sourceFileDir}/client_reconnect.py[tag=example-block,indent=0]
+-------------------------------------------------------------------------------
+
+
+== Partition Awareness
+
+include::includes/partition-awareness.adoc[]
+
+To enable partition awareness, set the `partition_aware` parameter to true in the client constructor and provide
+addresses of all the server nodes in the connection string.
+
+
+[source, python]
+----
+client = Client(partition_aware=True)
+nodes = [
+    ('127.0.0.1', 10800),
+    ('217.29.2.1', 10800),
+    ('200.10.33.1', 10800),
+]
+
+client.connect(nodes)
+----
+
+== Creating a Cache
+
+You can get an instance of a cache using one of the following methods:
+
+* `get_cache(settings)` — creates a local Cache object with the given name or set of parameters. The cache must exist in the cluster; otherwise, an exception will be thrown when you attempt to perform operations on that cache.
+* `create_cache(settings)` — creates a cache with the given name or set of parameters.
+* `get_or_create_cache(settings)` — returns an existing cache or creates it if the cache does not exist.
+
+Each method accepts a cache name or a dictionary of properties that represents a cache configuration.
+
+[source, python]
+-------------------------------------------------------------------------------
+include::{sourceFileDir}/create_cache.py[tag=example-block,indent=0]
+-------------------------------------------------------------------------------
+
+Here is an example of creating a cache with a set of properties:
+
+[source, python]
+-------------------------------------------------------------------------------
+include::{sourceFileDir}/create_cache_with_properties.py[tag=example-block,indent=0]
+-------------------------------------------------------------------------------
+
+See the next section for the list of supported cache properties.
+
+=== Cache Configuration
+The list of property keys that you can specify are provided in the `prop_codes` module.
+
+[cols="3,1,5",opts="header",stripes=even,width="100%"]
+|===
+|Property name | Type | Description
+
+|PROP_NAME
+|str
+|Cache name. This is the only required property.
+
+|PROP_CACHE_MODE
+|int
+a| link:data-modeling/data-partitioning#partitionedreplicated-mode[Cache mode]:
+
+* REPLICATED=1,
+* PARTITIONED=2
+
+|PROP_CACHE_ATOMICITY_MODE
+|int
+a|link:configuring-caches/atomicity-modes[Cache atomicity mode]:
+
+* TRANSACTIONAL=0,
+* ATOMIC=1
+
+|PROP_BACKUPS_NUMBER
+|int
+|link:data-modeling/data-partitioning#backup-partitions[Number of backup partitions].
+
+|PROP_WRITE_SYNCHRONIZATION_MODE
+|int
+a|Write synchronization mode:
+
+* FULL_SYNC=0,
+* FULL_ASYNC=1,
+* PRIMARY_SYNC=2
+
+|PROP_COPY_ON_READ
+|bool
+|The copy on read flag. The default value is `true`.
+
+|PROP_READ_FROM_BACKUP
+|bool
+|The flag indicating whether entries will be read from the local backup partitions, when available, or will always be requested from the primary partitions. The default value is `true`.
+
+|PROP_DATA_REGION_NAME
+|str
+| link:memory-configuration/data-regions[Data region] name.
+
+|PROP_IS_ONHEAP_CACHE_ENABLED
+|bool
+|Enable link:configuring-caches/on-heap-caching[on-heap caching] for the cache.
+
+|PROP_QUERY_ENTITIES
+|list
+|A list of query entities. See the <<Query Entities>> section below for details.)
+
+|PROP_QUERY_PARALLELISM
+|int
+|link:{javadoc_base_url}/org/apache/ignite/configuration/CacheConfiguration.html#getQueryParallelism[Query parallelism,window=_blank]
+
+|PROP_QUERY_DETAIL_METRIC_SIZE
+|int
+|Query detail metric size
+
+|PROP_SQL_SCHEMA
+|str
+|SQL Schema
+
+|PROP_SQL_INDEX_INLINE_MAX_SIZE
+|int
+|SQL index inline maximum size
+
+|PROP_SQL_ESCAPE_ALL
+|bool
+|Turns on SQL escapes
+
+|PROP_MAX_QUERY_ITERATORS
+|int
+
+|Maximum number of query iterators
+
+|PROP_REBALANCE_MODE
+|int
+a|Rebalancing mode:
+
+- SYNC=0,
+- ASYNC=1,
+- NONE=2
+
+|PROP_REBALANCE_DELAY
+|int
+|Rebalancing delay (ms)
+
+|PROP_REBALANCE_TIMEOUT
+|int
+|Rebalancing timeout (ms)
+
+|PROP_REBALANCE_BATCH_SIZE
+|int
+|Rebalancing batch size
+
+|PROP_REBALANCE_BATCHES_PREFETCH_COUNT
+|int
+|Rebalancing prefetch count
+
+|PROP_REBALANCE_ORDER
+|int
+|Rebalancing order
+
+|PROP_REBALANCE_THROTTLE
+|int
+|Rebalancing throttle interval (ms)
+
+|PROP_GROUP_NAME
+|str
+|Group name
+
+|PROP_CACHE_KEY_CONFIGURATION
+|list
+|Cache Key Configuration
+(see <<Cache key>>)
+
+|PROP_DEFAULT_LOCK_TIMEOUT
+|int
+|Default lock timeout (ms)
+
+|PROP_MAX_CONCURRENT_ASYNC_OPERATIONS
+|int
+|Maximum number of concurrent asynchronous operations
+
+|PROP_PARTITION_LOSS_POLICY
+|int
+a|link:configuring-caches/partition-loss-policy[Partition loss policy]:
+
+- READ_ONLY_SAFE=0,
+- READ_ONLY_ALL=1,
+- READ_WRITE_SAFE=2,
+- READ_WRITE_ALL=3,
+- IGNORE=4
+
+|PROP_EAGER_TTL
+|bool
+|link:configuring-caches/expiry-policies#eager-ttl[Eager TTL]
+
+|PROP_STATISTICS_ENABLED
+|bool
+|The flag that enables statistics.
+|===
+
+==== Query Entities
+Query entities are objects that describe link:SQL/sql-api#configuring-queryable-fields[queryable fields], i.e. the fields of the cache objects that can be queried using SQL queries.
+
+- `table_name`: SQL table name.
+- `key_field_name`: name of the key field.
+- `key_type_name`: name of the key type (Java type or complex object).
+- `value_field_name`: name of the value field.
+- `value_type_name`: name of the value type.
+- `field_name_aliases`: a list of 0 or more dicts of aliases (see <<Field Name Aliases>>).
+- `query_fields`: a list of 0 or more query field names (see <<Query Fields>>).
+- `query_indexes`: a list of 0 or more query indexes (see <<Query Indexes>>).
+
+
+===== Field Name Aliases
+Field name aliases are used to give a convenient name for the full property name (object.name -> objectName).
+
+- `field_name`: field name.
+- `alias`: alias (str).
+
+===== Query Fields
+Query fields define the fields that are queryable.
+
+- `name`: field name.
+- `type_name`: name of Java type or complex object.
+- `is_key_field`: (optional) boolean value, False by default.
+- `is_notnull_constraint_field`: boolean value.
+- `default_value`: (optional) anything that can be converted to type_name type. None (Null) by default.
+- `precision`:  (optional) decimal precision: total number of digits in decimal value. Defaults to -1 (use cluster default). Ignored for non-decimal SQL types (other than java.math.BigDecimal).
+- `scale`: (optional) decimal precision: number of digits after the decimal point. Defaults to -1 (use cluster default). Ignored for non-decimal SQL types.
+
+===== Query Indexes
+Query indexes define the fields that will be indexed.
+
+- `index_name`: index name.
+- `index_type`: index type code as an integer value in unsigned byte range.
+- `inline_size`: integer value.
+- `fields`: a list of 0 or more indexed fields (see Fields).
+
+===== Fields
+
+- `name`: field name.
+- `is_descending`: (optional) boolean value; False by default.
+
+===== Cache key
+
+- `type_name`: name of the complex object.
+- `affinity_key_field_name`: name of the affinity key field.
+
+////
+== Data Type Mapping
+
+*TODO*
+////
+
+== Using Key-Value API
+
+The `pyignite.cache.Cache` class provides methods for working with cache entries by using key-value operations, such as put, get, put all, get all, replace, and others.
+The following example shows how to do that:
+
+[source, python]
+-------------------------------------------------------------------------------
+include::{sourceFileDir}/basic_operations.py[tag=example-block,indent=0]
+-------------------------------------------------------------------------------
+
+=== Using type hints
+The pyignite methods that deal with a single value or key have an additional optional parameter, either `value_hint` or `key_hint`, that accepts a parser/constructor class.
+Nearly any structure element (inside dict or list) can be replaced with a 2-tuple `(the element, type hint)`.
+
+[source, python]
+----
+include::{sourceFileDir}/type_hints.py[tag=example-block,indent=0]
+----
+
+=== Asynchronous Execution
+
+
+== Scan Queries
+The `scan()` method of the cache object can be used to get all objects from the cache. It returns a generator that yields
+`(key,value)` tuples. You can iterate through the generated pairs as follows:
+
+[source, python]
+-------------------------------------------------------------------------------
+include::{sourceFileDir}/scan.py[tag=!dict, tag=example-block, indent=0]
+-------------------------------------------------------------------------------
+
+Alternatively, you can convert the generator to a dictionary in one go:
+
+[source, python]
+-------------------------------------------------------------------------------
+include::{sourceFileDir}/scan.py[tag=dict, indent=0]
+-------------------------------------------------------------------------------
+
+NOTE: Be cautious: if the cache contains a large set of data, the dictionary may consume too much memory!
+
+== Executing SQL Statements
+
+The Python thin client supports all link:sql-reference/index[SQL commands] that are supported by Ignite.
+The commands are executed via the `sql()` method of the cache object.
+The `sql()` method returns a generator that yields the resulting rows.
+
+Refer to the link:sql-reference/index[SQL Reference] section for the list of supported commands.
+
+[source, python]
+-------------------------------------------------------------------------------
+include::{sourceFileDir}/sql.py[tag=!field-names,indent=0]
+-------------------------------------------------------------------------------
+
+////
+TODO
+The `sql()` method supports a number of parameters that
+
+
+[cols="",opts="header", width="100%"]
+|===
+| Parameter | Description
+| `query_str` |
+| `page_size` |
+| `query_args` |
+| `schema` |
+| `statement_type` |
+| `distributed_joins` |
+| `local` |
+| `replicated_only` |
+| `enforce_join_order` |
+| `collocated` |
+| `lazy` |
+| `include_field_names` |
+| `max_rows` |
+| `timeout` |
+|===
+////
+
+The `sql()` method returns a generator that yields the resulting rows.
+
+Note that if you set the `include_field_names` argument to `True`, the `sql()` method will generate a list of column names in the first yield. You can access the field names using the `next` function of Python.
+
+[source, python]
+----
+include::{sourceFileDir}/sql.py[tag=field-names,indent=0]
+----
+
+== Security
+
+=== SSL/TLS
+To use encrypted communication between the thin client and the cluster, you have to enable SSL/TLS both in the cluster configuration and the client configuration.
+Refer to the link:thin-clients/getting-started-with-thin-clients#enabling-ssltls-for-thin-clients[Enabling SSL/TLS for Thin Clients] section for the instruction on the cluster configuration.
+
+Here is an example configuration for enabling SSL in the thin client:
+[source, python]
+----
+include::{sourceFileDir}/client_ssl.py[tag=example-block,indent=0]
+----
+
+Supported parameters:
+
+[cols="1,2",opts="autowidth,header",width="100%"]
+|===
+| Parameter |  Description
+| `use_ssl` | Set to True to enable SSL/TLS on the client.
+| `ssl_keyfile` | Path to the file containing the SSL key.
+| `ssl_certfile` | Path to the file containing the SSL certificate.
+| `ssl_ca_certfile` | The path to the file with trusted certificates.
+| `ssl_cert_reqs` a|
+* `ssl.CERT_NONE` − remote certificate is ignored (default),
+* `ssl.CERT_OPTIONAL` − remote certificate will be validated,
+if provided,
+* `ssl.CERT_REQUIRED` − valid remote certificate is required,
+
+| `ssl_version` |
+| `ssl_ciphers`  |
+|===
+
+=== Authentication
+Configure link:security/authentication[authentication on the cluster side] and provide a valid user name and password in the client configuration.
+
+[source, python]
+----
+include::{sourceFileDir}/auth.py[tag=!no-ssl,indent=0]
+----
+
+Note that supplying credentials automatically turns SSL on.
+This is because sending credentials over an insecure channel is not a best practice and is strongly discouraged.
+If you still want to use authentication without securing the connection, simply disable SSL when creating the client object:
+
+[source, python]
+----
+include::{sourceFileDir}/auth.py[tag=no-ssl,indent=0]
+----
+

@@ -25,6 +25,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
@@ -51,6 +52,8 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
 
         cfg.setMetricsUpdateFrequency(500);
         cfg.setDeploymentMode(depMode);
+
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return cfg;
     }

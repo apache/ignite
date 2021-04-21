@@ -21,7 +21,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
  * Tests for byte array values in PARTITIONED-ONLY caches with P2P enabled.
  */
 public class GridCachePartitionedOnlyP2PEnabledByteArrayValuesSelfTest extends
-    GridCacheAbstractPartitionedOnlyByteArrayValuesSelfTest{
+    GridCacheAbstractPartitionedOnlyByteArrayValuesSelfTest {
     /** {@inheritDoc} */
     @Override protected boolean peerClassLoading() {
         return true;

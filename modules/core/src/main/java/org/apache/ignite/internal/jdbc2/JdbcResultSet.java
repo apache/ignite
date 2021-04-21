@@ -228,7 +228,7 @@ public class JdbcResultSet implements ResultSet {
 
         // Connections from new clients send queries with new tasks, so we have to continue in the same manner
         JdbcQueryTask qryTask = JdbcQueryTaskV3.createTask(loc ? ignite : null, conn.cacheName(), conn.schemaName(),
-            null,true, loc, null, fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(),
+            null, true, loc, null, fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(),
             conn.isDistributedJoins(), conn.isEnforceJoinOrder(), conn.isLazy(), updateMetadata, false);
 
         try {
@@ -252,9 +252,6 @@ public class JdbcResultSet implements ResultSet {
 
     /** {@inheritDoc} */
     @Override public void close() throws SQLException {
-        if (uuid != null)
-            stmt.resSets.remove(this);
-
         closeInternal();
     }
 
@@ -263,9 +260,20 @@ public class JdbcResultSet implements ResultSet {
      * If this result set is associated with locally executed query then query cursor will also closed.
      * @throws SQLException On error.
      */
-    void closeInternal() throws SQLException  {
-        if (((JdbcConnection)stmt.getConnection()).nodeId() == null && uuid != null)
-            JdbcQueryTask.remove(uuid);
+    void closeInternal() throws SQLException {
+        if (uuid != null) {
+            if (((JdbcConnection)stmt.getConnection()).nodeId() == null)
+                JdbcQueryTask.remove(uuid);
+            else {
+                JdbcConnection conn = (JdbcConnection)stmt.getConnection();
+
+                if (conn.isCloseCursorTaskSupported()) {
+                    Ignite ignite = conn.ignite();
+
+                    ignite.compute(ignite.cluster().forNodeId(conn.nodeId())).call(new JdbcCloseCursorTask(uuid));
+                }
+            }
+        }
 
         closed = true;
     }
@@ -1819,7 +1827,7 @@ public class JdbcResultSet implements ResultSet {
 
             Class<?> cls = val.getClass();
 
-            if (targetCls == cls)
+            if (targetCls.isAssignableFrom(cls))
                 return val;
             else
                 throw new SQLException("Cannot convert to " + targetCls.getName() + ": " + val,

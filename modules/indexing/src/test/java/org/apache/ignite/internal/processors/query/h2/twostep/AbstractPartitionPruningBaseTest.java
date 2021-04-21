@@ -45,14 +45,11 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Base class for partition pruning tests.
  */
 @SuppressWarnings("deprecation")
-@RunWith(JUnit4.class)
 public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstractTest {
     /** Number of intercepted requests. */
     private static final AtomicInteger INTERCEPTED_REQS = new AtomicInteger();
@@ -85,7 +82,7 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
         startGrid(getConfiguration("srv2"));
         startGrid(getConfiguration("srv3"));
 
-        startGrid(getConfiguration(CLI_NAME).setClientMode(true));
+        startClientGrid(getConfiguration(CLI_NAME));
 
         client().cluster().active(true);
     }
@@ -480,7 +477,7 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
                             INTERCEPTED_PARTS.add(part);
                     }
                 }
-                else if(msg0.message() instanceof GridNearTxQueryEnlistRequest) {
+                else if (msg0.message() instanceof GridNearTxQueryEnlistRequest) {
                     INTERCEPTED_NODES.add(node);
                     INTERCEPTED_REQS.incrementAndGet();
 

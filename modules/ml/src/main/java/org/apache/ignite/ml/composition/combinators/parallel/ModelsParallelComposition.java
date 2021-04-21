@@ -30,7 +30,7 @@ import org.apache.ignite.ml.IgniteModel;
  * @param <I> Type of submodel input.
  * @param <O> Type of submodel output.
  */
-public class ModelsParallelComposition<I, O> implements IgniteModel<I, List<O>> {
+public final class ModelsParallelComposition<I, O> implements IgniteModel<I, List<O>> {
     /** List of submodels. */
     private final List<IgniteModel<I, O>> submodels;
 

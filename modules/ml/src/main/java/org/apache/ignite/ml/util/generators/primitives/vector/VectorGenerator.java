@@ -34,7 +34,7 @@ import org.apache.ignite.ml.util.generators.DataStreamGenerator;
 import org.apache.ignite.ml.util.generators.primitives.scalar.RandomProducer;
 
 /**
- * Basic interface for pseudorandom vectors generators.
+ * Basic interface for pseudo-random vectors generators.
  */
 public interface VectorGenerator extends Supplier<Vector> {
     /**
@@ -209,9 +209,9 @@ public interface VectorGenerator extends Supplier<Vector> {
     }
 
     /**
-     * Conterts vectors generator to unlabeled data stream generator.
+     * Convert vectors generator to unlabeled data stream generator.
      *
-     * @return data stream generator.
+     * @return Data stream generator.
      */
     public default DataStreamGenerator asDataStream() {
         final VectorGenerator gen = this;

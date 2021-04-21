@@ -36,6 +36,7 @@ import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -74,9 +75,7 @@ public class ClientReconnectContinuousQueryTest extends GridCommonAbstractTest {
         commSpi.setSlowClientQueueLimit(50);
         commSpi.setIdleConnectionTimeout(300_000);
 
-        if (getTestIgniteInstanceName(CLIENT_IDX).equals(gridName))
-            cfg.setClientMode(true);
-        else {
+        if (!getTestIgniteInstanceName(CLIENT_IDX).equals(gridName)) {
             CacheConfiguration ccfg = defaultCacheConfiguration();
 
             ccfg.setAtomicityMode(atomicityMode());
@@ -106,9 +105,9 @@ public class ClientReconnectContinuousQueryTest extends GridCommonAbstractTest {
     @Test
     public void testClientReconnect() throws Exception {
         try {
-            startGrids(2);
+            startGrid(0);
 
-            final IgniteEx client = grid(CLIENT_IDX);
+            final IgniteEx client = startClientGrid(CLIENT_IDX);
 
             client.events().localListen(new DisconnectListener(), EventType.EVT_CLIENT_NODE_DISCONNECTED);
 
@@ -219,7 +218,7 @@ public class ClientReconnectContinuousQueryTest extends GridCommonAbstractTest {
 
         TcpCommunicationSpi commSpi = (TcpCommunicationSpi)((Object[])U.field(ioMgr, "spis"))[0];
 
-        GridNioServer nioSrvr = U.field(commSpi, "nioSrvr");
+        GridNioServer nioSrvr = ((GridNioServerWrapper)U.field(commSpi, "nioSrvWrapper")).nio();
 
         GridTestUtils.setFieldValue(nioSrvr, "skipRead", skip);
     }

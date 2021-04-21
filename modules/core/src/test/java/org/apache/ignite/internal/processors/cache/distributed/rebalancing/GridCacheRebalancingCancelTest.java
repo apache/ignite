@@ -89,7 +89,7 @@ public class GridCacheRebalancingCancelTest extends GridCommonAbstractTest {
 
         String igniteClntName = getTestIgniteInstanceName(2);
 
-        startGrid(igniteClntName, optimize(getConfiguration(igniteClntName).setClientMode(true)));
+        startClientGrid(igniteClntName, optimize(getConfiguration(igniteClntName)));
 
         // Resend delayed rebalance messages.
         TestRecordingCommunicationSpi.spi(ignite0).stopBlock(true);

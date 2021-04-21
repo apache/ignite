@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcPrimaryKeyMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcTableMeta;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.util.typedef.F;
 
 import static java.sql.DatabaseMetaData.columnNullable;
 import static java.sql.DatabaseMetaData.tableIndexOther;
@@ -51,12 +52,19 @@ import static java.sql.Types.TIME;
 import static java.sql.Types.TIMESTAMP;
 import static java.sql.Types.TINYINT;
 import static java.sql.Types.VARCHAR;
+
 /**
  * Utility methods for JDBC driver.
  */
 public class JdbcUtils {
     /** The only possible name for catalog. */
     public static final String CATALOG_NAME = "IGNITE";
+
+    /** Name of TABLE type. */
+    public static final String TYPE_TABLE = "TABLE";
+
+    /** Name of VIEW type. */
+    public static final String TYPE_VIEW = "VIEW";
 
     /**
      * Converts Java class name to type from {@link Types}.
@@ -160,7 +168,6 @@ public class JdbcUtils {
     static boolean isSqlType(Class<?> cls) {
         return QueryUtils.isSqlType(cls) || cls == URL.class;
     }
-
 
     /**
      * Convert exception to {@link SQLException}.
@@ -299,7 +306,7 @@ public class JdbcUtils {
         row.add(CATALOG_NAME);
         row.add(tblMeta.schemaName());
         row.add(tblMeta.tableName());
-        row.add("TABLE");
+        row.add(tblMeta.tableType());
         row.add(null);
         row.add(null);
         row.add(null);
@@ -308,5 +315,25 @@ public class JdbcUtils {
         row.add(null);
 
         return row;
+    }
+
+    /**
+     * Normalize schema name. If it is quoted - unquote and leave as is, otherwise - convert to upper case.
+     *
+     * @param schemaName Schema name.
+     * @return Normalized schema name.
+     */
+    public static String normalizeSchema(String schemaName) {
+        if (F.isEmpty(schemaName))
+            return QueryUtils.DFLT_SCHEMA;
+
+        String res;
+
+        if (schemaName.startsWith("\"") && schemaName.endsWith("\""))
+            res = schemaName.substring(1, schemaName.length() - 1);
+        else
+            res = schemaName.toUpperCase();
+
+        return res;
     }
 }

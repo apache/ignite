@@ -19,4 +19,5 @@
  * Contains resource injection annotations. Annotations are used to inject resources
  * into user defined code such as grid tasks, grid jobs and SPI implementations.
  */
+
 package org.apache.ignite.resources;

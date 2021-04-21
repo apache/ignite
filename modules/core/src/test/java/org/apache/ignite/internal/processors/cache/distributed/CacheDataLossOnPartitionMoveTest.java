@@ -97,6 +97,16 @@ public class CacheDataLossOnPartitionMoveTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+    }
+
     /**
      * @param name Name.
      */
@@ -124,10 +134,11 @@ public class CacheDataLossOnPartitionMoveTest extends GridCommonAbstractTest {
         try {
             Ignite ignite = startGridsMultiThreaded(GRIDS_CNT / 2, false);
 
+            ignite.cluster().baselineAutoAdjustEnabled(false);
             ignite.cluster().active(true);
 
             List<Integer> toCp = movingKeysAfterJoin(ignite, DEFAULT_CACHE_NAME, 1,
-                node -> ((GridTestNode)node).setAttribute(GRP_ATTR, ODD_GRP));
+                node -> ((GridTestNode)node).setAttribute(GRP_ATTR, ODD_GRP), null);
 
             int blockPartId = ignite.affinity(DEFAULT_CACHE_NAME).partition(toCp.get(0));
 
@@ -175,7 +186,7 @@ public class CacheDataLossOnPartitionMoveTest extends GridCommonAbstractTest {
 
             int i = 0;
 
-            while(i < GRIDS_CNT / 2) {
+            while (i < GRIDS_CNT / 2) {
                 stopGrid(GRIDS_CNT / 2 + i);
 
                 i++;

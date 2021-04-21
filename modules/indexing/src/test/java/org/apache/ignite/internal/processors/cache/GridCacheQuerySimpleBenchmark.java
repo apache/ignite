@@ -37,11 +37,14 @@ import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  *
  */
+// Benchmark.
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-13728")
 public class GridCacheQuerySimpleBenchmark extends GridCommonAbstractTest {
     /** */
     private Ignite ignite;
@@ -50,7 +53,7 @@ public class GridCacheQuerySimpleBenchmark extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration<?,?> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
+        CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setName("offheap-cache");
         ccfg.setCacheMode(CacheMode.PARTITIONED);
@@ -88,7 +91,7 @@ public class GridCacheQuerySimpleBenchmark extends GridCommonAbstractTest {
     public void testPerformance() throws Exception {
         Random rnd = new GridRandom();
 
-        final IgniteCache<Long,Person> c = ignite.cache("offheap-cache");
+        final IgniteCache<Long, Person> c = ignite.cache("offheap-cache");
 
         X.println("___ PUT start");
 

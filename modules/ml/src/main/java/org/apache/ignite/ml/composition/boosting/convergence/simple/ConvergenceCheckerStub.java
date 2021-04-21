@@ -25,18 +25,17 @@ import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.FeatureMatrixWithLabelsOnHeapData;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.environment.LearningEnvironmentBuilder;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 
 /**
- * This strategy skip estimating error on dataset step.
- * According to this strategy, training will stop after reaching the maximum number of iterations.
+ * This strategy skip estimating error on dataset step. According to this strategy, training will stop after reaching
+ * the maximum number of iterations.
  *
  * @param <K> Type of a key in upstream data.
  * @param <V> Type of a value in upstream data.
  */
-public class ConvergenceCheckerStub<K,V> extends ConvergenceChecker<K,V> {
+public class ConvergenceCheckerStub<K, V> extends ConvergenceChecker<K, V> {
     /** Serial version uid. */
     private static final long serialVersionUID = 8534776439755210864L;
 
@@ -47,21 +46,18 @@ public class ConvergenceCheckerStub<K,V> extends ConvergenceChecker<K,V> {
      * @param externalLbToInternalMapping External label to internal mapping.
      * @param loss Loss function.
      * @param datasetBuilder Dataset builder.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
+     * @param preprocessor Preprocessor.
+     * @param precision Precision.
      */
-    public ConvergenceCheckerStub(long sampleSize,
-        IgniteFunction<Double, Double> externalLbToInternalMapping, Loss loss,
-        DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor) {
+    public ConvergenceCheckerStub(long sampleSize, IgniteFunction externalLbToInternalMapping, Loss loss,
+        DatasetBuilder datasetBuilder, Preprocessor<K, V> preprocessor, double precision) {
 
-        super(sampleSize, externalLbToInternalMapping, loss, datasetBuilder,
-            featureExtractor, lbExtractor, 0.0);
+        super(sampleSize, externalLbToInternalMapping, loss, datasetBuilder, preprocessor, 0.0);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isConverged(LearningEnvironmentBuilder envBuilder, DatasetBuilder<K, V> datasetBuilder, ModelsComposition currMdl) {
+    @Override public boolean isConverged(LearningEnvironmentBuilder envBuilder, DatasetBuilder<K, V> datasetBuilder,
+        ModelsComposition currMdl) {
         return false;
     }
 
@@ -72,7 +68,8 @@ public class ConvergenceCheckerStub<K,V> extends ConvergenceChecker<K,V> {
     }
 
     /** {@inheritDoc} */
-    @Override public Double computeMeanErrorOnDataset(Dataset<EmptyContext, ? extends FeatureMatrixWithLabelsOnHeapData> dataset,
+    @Override public Double computeMeanErrorOnDataset(
+        Dataset<EmptyContext, ? extends FeatureMatrixWithLabelsOnHeapData> dataset,
         ModelsComposition mdl) {
 
         throw new UnsupportedOperationException();

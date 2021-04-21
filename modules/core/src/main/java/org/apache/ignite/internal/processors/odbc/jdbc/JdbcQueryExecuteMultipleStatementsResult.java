@@ -23,7 +23,6 @@ import java.util.List;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -81,20 +80,22 @@ public class JdbcQueryExecuteMultipleStatementsResult extends JdbcResult {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer,
-        ClientListenerProtocolVersion ver) throws BinaryObjectException {
-        super.writeBinary(writer, ver);
+    @Override public void writeBinary(
+        BinaryWriterExImpl writer,
+        JdbcProtocolContext protoCtx
+    ) throws BinaryObjectException {
+        super.writeBinary(writer, protoCtx);
 
         if (results != null && !results.isEmpty()) {
             writer.writeInt(results.size());
 
             for (JdbcResultInfo r : results)
-                r.writeBinary(writer, ver);
+                r.writeBinary(writer, protoCtx);
 
             if (results.get(0).isQuery()) {
                 writer.writeBoolean(last);
 
-                JdbcUtils.writeItems(writer, items);
+                JdbcUtils.writeItems(writer, items, protoCtx);
             }
         }
         else
@@ -103,9 +104,11 @@ public class JdbcQueryExecuteMultipleStatementsResult extends JdbcResult {
 
 
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader,
-        ClientListenerProtocolVersion ver) throws BinaryObjectException {
-        super.readBinary(reader, ver);
+    @Override public void readBinary(
+        BinaryReaderExImpl reader,
+        JdbcProtocolContext protoCtx
+    ) throws BinaryObjectException {
+        super.readBinary(reader, protoCtx);
 
         int cnt = reader.readInt();
 
@@ -117,7 +120,7 @@ public class JdbcQueryExecuteMultipleStatementsResult extends JdbcResult {
             for (int i = 0; i < cnt; ++i) {
                 JdbcResultInfo r = new JdbcResultInfo();
 
-                r.readBinary(reader, ver);
+                r.readBinary(reader, protoCtx);
 
                 results.add(r);
             }
@@ -125,7 +128,7 @@ public class JdbcQueryExecuteMultipleStatementsResult extends JdbcResult {
             if (results.get(0).isQuery()) {
                 last = reader.readBoolean();
 
-                items = JdbcUtils.readItems(reader);
+                items = JdbcUtils.readItems(reader, protoCtx);
             }
         }
     }

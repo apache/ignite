@@ -257,13 +257,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
             waitRemoteTxs,
             mvccSnapshot,
             updCntrs);
-
-        if (updateIdxs != null && !updateIdxs.isEmpty()) {
-            partUpdateCnt = new GridLongList(updateIdxs.size());
-
-            for (Long idx : updateIdxs)
-                partUpdateCnt.add(idx);
-        }
     }
 
     /**
@@ -276,7 +269,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     /**
      * @return Partition update counters.
      */
-    public GridLongList partUpdateCounters(){
+    public GridLongList partUpdateCounters() {
         return partUpdateCnt;
     }
 

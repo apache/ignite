@@ -45,7 +45,6 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -86,9 +85,6 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
     public static final int ITERATION_CNT = 100;
 
     /** */
-    private boolean client;
-
-    /** */
     private static ConcurrentMap<UUID, BlockingQueue<Cache.Entry<TestKey, TestValue>>>
         afterPutEvts = new ConcurrentHashMap<>();
 
@@ -97,23 +93,12 @@ public class CacheInterceptorPartitionCounterRandomOperationsTest extends GridCo
         afterRmvEvts = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(client);
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         startGridsMultiThreaded(NODES - 1);
 
-        client = true;
-
-        startGrid(NODES - 1);
+        startClientGrid(NODES - 1);
     }
 
     /** {@inheritDoc} */

@@ -59,7 +59,7 @@ public class MvccSnapshotSearchRow extends MvccSearchRow implements MvccTreeClos
      */
     public MvccSnapshotSearchRow(GridCacheContext cctx, KeyCacheObject key,
         MvccSnapshot snapshot) {
-        super(cctx.cacheId(), key, snapshot.coordinatorVersion(), snapshot.counter(), Integer.MAX_VALUE);
+        super(cctx.cacheId(), key, snapshot.coordinatorVersion(), snapshot.counter(), MvccUtils.MVCC_READ_OP_CNTR);
 
         this.cctx = cctx;
 

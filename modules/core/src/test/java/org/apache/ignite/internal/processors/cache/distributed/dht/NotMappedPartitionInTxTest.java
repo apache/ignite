@@ -60,9 +60,6 @@ public class NotMappedPartitionInTxTest extends GridCommonAbstractTest {
     /** Test key. */
     private static final String TEST_KEY = "key";
 
-    /** Is client. */
-    private boolean isClient;
-
     /** Atomicity mode. */
     private CacheAtomicityMode atomicityMode = CacheAtomicityMode.TRANSACTIONAL;
 
@@ -76,7 +73,6 @@ public class NotMappedPartitionInTxTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         return super.getConfiguration(gridName)
-            .setClientMode(isClient)
             .setCacheConfiguration(
                 new CacheConfiguration(CACHE)
                     .setAtomicityMode(atomicityMode)
@@ -92,11 +88,9 @@ public class NotMappedPartitionInTxTest extends GridCommonAbstractTest {
     @Test
     public void testOneServerTx() throws Exception {
         try {
-            isClient = false;
             startGrid(0);
 
-            isClient = true;
-            final IgniteEx client = startGrid(1);
+            final IgniteEx client = startClientGrid(1);
 
             checkNotMapped(client, OPTIMISTIC, REPEATABLE_READ);
 
@@ -117,11 +111,9 @@ public class NotMappedPartitionInTxTest extends GridCommonAbstractTest {
         try {
             atomicityMode = CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 
-            isClient = false;
             startGrid(0);
 
-            isClient = true;
-            final IgniteEx client = startGrid(1);
+            final IgniteEx client = startClientGrid(1);
 
             checkNotMapped(client, PESSIMISTIC, REPEATABLE_READ);
         }
@@ -136,11 +128,9 @@ public class NotMappedPartitionInTxTest extends GridCommonAbstractTest {
     @Test
     public void testFourServersTx() throws Exception {
         try {
-            isClient = false;
             startGridsMultiThreaded(4);
 
-            isClient = true;
-            final IgniteEx client = startGrid(4);
+            final IgniteEx client = startClientGrid(4);
 
             checkNotMapped(client, OPTIMISTIC, REPEATABLE_READ);
 
@@ -161,11 +151,9 @@ public class NotMappedPartitionInTxTest extends GridCommonAbstractTest {
         try {
             atomicityMode = CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 
-            isClient = false;
             startGridsMultiThreaded(4);
 
-            isClient = true;
-            final IgniteEx client = startGrid(4);
+            final IgniteEx client = startClientGrid(4);
 
             checkNotMapped(client, PESSIMISTIC, REPEATABLE_READ);
         }
@@ -186,7 +174,6 @@ public class NotMappedPartitionInTxTest extends GridCommonAbstractTest {
         else
             msg = concurrency == PESSIMISTIC ? "Failed to lock keys (all partition nodes left the grid)" :
                 "Failed to map keys to nodes (partition is not mapped to any node";
-
 
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
             @Override public Void call() {

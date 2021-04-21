@@ -111,7 +111,7 @@ public abstract class JUnit3TestLegacySupport extends JUnit3TestLegacyAssert {
      * @deprecated This method is deprecated. Instead of invoking or overriding it, it is recommended to make your own
      * method with {@code @BeforeClass} annotation.
      */
-    // TODO IGNITE-11240 consider adding @Deprecated annotation after start/stop grid is made more convenient.
+    @Deprecated
     protected void beforeTestsStarted() throws Exception {
         // No-op.
     }
@@ -126,7 +126,7 @@ public abstract class JUnit3TestLegacySupport extends JUnit3TestLegacyAssert {
      * @deprecated This method is deprecated. Instead of invoking or overriding it, it is recommended to make your own
      * method with {@code @AfterClass} annotation.
      */
-    // TODO IGNITE-11240 consider adding @Deprecated annotation after start/stop grid is made more convenient.
+    @Deprecated
     protected void afterTestsStopped() throws Exception {
         // No-op.
     }

@@ -35,7 +35,7 @@ public class PartitionDataStorageTest {
         AtomicLong cnt = new AtomicLong();
 
         for (int i = 0; i < 10; i++) {
-            Integer res = (Integer) dataStorage.computeDataIfAbsent(0, () -> {
+            Integer res = dataStorage.computeDataIfAbsent(0, () -> {
                 cnt.incrementAndGet();
 
                 return 42;

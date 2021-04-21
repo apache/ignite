@@ -34,13 +34,13 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
-import org.apache.ignite.internal.processors.cache.distributed.dht.CompoundLockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxAbstractEnlistFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
+import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -154,9 +154,7 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
             else if (fut != null) {
                 // Wait for previous future.
                 assert fut instanceof GridNearTxAbstractEnlistFuture
-                    || fut instanceof GridDhtTxAbstractEnlistFuture
-                    || fut instanceof CompoundLockFuture
-                    || fut instanceof GridNearTxSelectForUpdateFuture : fut;
+                    || fut instanceof GridDhtTxAbstractEnlistFuture : fut;
 
                 // Terminate this future if parent future is terminated by rollback.
                 if (!fut.isDone()) {
@@ -311,8 +309,8 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
         try {
             if (cctx.topology().stopping()) {
                 onDone(
-                    cctx.shared().cache().isCacheRestarting(cctx.name())?
-                        new IgniteCacheRestartingException(cctx.name()):
+                    cctx.shared().cache().isCacheRestarting(cctx.name()) ?
+                        new IgniteCacheRestartingException(cctx.name()) :
                         new CacheStoppedException(cctx.name()));
 
                 return;
@@ -358,6 +356,11 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
             if (topLocked)
                 cctx.topology().readUnlock();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean onCancelled() {
+        return onDone(null, asyncRollbackException(), false);
     }
 
     /** {@inheritDoc} */
@@ -448,6 +451,13 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
     @NotNull protected IgniteTxTimeoutCheckedException timeoutException() {
         return new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout for " +
             "transaction [timeout=" + timeout + ", tx=" + tx + ']');
+    }
+
+    /**
+     * @return Async rollback exception.
+     */
+    @NotNull private IgniteTxRollbackCheckedException asyncRollbackException() {
+        return new IgniteTxRollbackCheckedException("Transaction was asynchronously rolled back [tx=" + tx + ']');
     }
 
     /**

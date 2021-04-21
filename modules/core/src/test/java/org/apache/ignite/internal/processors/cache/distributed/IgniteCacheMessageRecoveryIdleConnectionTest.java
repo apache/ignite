@@ -131,7 +131,7 @@ public class IgniteCacheMessageRecoveryIdleConnectionTest extends GridCommonAbst
                 }
                 catch (IgniteException e) {
                     log.error("Failed to execute update, will dump debug information" +
-                        " [err=" + e+ ", iter=" + iter + ']', e);
+                        " [err=" + e + ", iter=" + iter + ']', e);
 
                     List<Ignite> nodes = IgnitionEx.allGridsx();
 

@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Impl.Services
     using System.Reflection;
     using System.Reflection.Emit;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Common;
     using ProxyAction = System.Func<System.Reflection.MethodBase, object[], object>;
 
     /// <summary>
@@ -276,8 +277,7 @@ namespace Apache.Ignite.Core.Impl.Services
             // Load result.
             if (method.ReturnType != typeof(void))
             {
-                if (method.ReturnType.IsValueType)
-                    gen.Emit(OpCodes.Unbox_Any, method.ReturnType);
+                EmitReturn(gen, method);
             }
             else
             {
@@ -286,6 +286,53 @@ namespace Apache.Ignite.Core.Impl.Services
             }
             //exit
             gen.Emit(OpCodes.Ret);
+        }
+
+        /// <summary>
+        /// Emits the returned value, converting as necessary.
+        /// </summary>
+        private static void EmitReturn(ILGenerator gen, MethodInfo method)
+        {
+            if (method.ReturnType == typeof(sbyte))
+            {
+                gen.Emit(OpCodes.Unbox_Any, typeof(byte));
+                gen.Emit(OpCodes.Conv_I1);
+            }
+            else if (method.ReturnType == typeof(ushort))
+            {
+                gen.Emit(OpCodes.Unbox_Any, typeof(short));
+                gen.Emit(OpCodes.Conv_U2);
+            }
+            else if (method.ReturnType == typeof(uint))
+            {
+                gen.Emit(OpCodes.Unbox_Any, typeof(int));
+                gen.Emit(OpCodes.Conv_U4);
+            }
+            else if (method.ReturnType == typeof(ulong))
+            {
+                gen.Emit(OpCodes.Unbox_Any, typeof(long));
+                gen.Emit(OpCodes.Conv_U8);
+            }
+            else if (method.ReturnType == typeof(sbyte[]))
+            {
+                gen.Emit(OpCodes.Call, DelegateConverter.ConvertToSbyteArrayMethod);
+            }
+            else if (method.ReturnType == typeof(ushort[]))
+            {
+                gen.Emit(OpCodes.Call, DelegateConverter.ConvertToUshortArrayMethod);
+            }
+            else if (method.ReturnType == typeof(uint[]))
+            {
+                gen.Emit(OpCodes.Call, DelegateConverter.ConvertToUintArrayMethod);
+            }
+            else if (method.ReturnType == typeof(ulong[]))
+            {
+                gen.Emit(OpCodes.Call, DelegateConverter.ConvertToUlongArrayMethod);
+            }
+            else if (method.ReturnType.IsValueType)
+            {
+                gen.Emit(OpCodes.Unbox_Any, method.ReturnType);
+            }
         }
 
         /// <summary>

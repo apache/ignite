@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
@@ -124,7 +124,7 @@ public class AtomicPutAllChangingTopologyTest extends GridCommonAbstractTest {
 
                 log.info("Created cache.");
 
-                Map<Integer, Integer> data = new HashMap<>(CACHE_SIZE);
+                Map<Integer, Integer> data = new TreeMap<>();
 
                 for (int i = 0; i < CACHE_SIZE; i++)
                     data.put(i, i);

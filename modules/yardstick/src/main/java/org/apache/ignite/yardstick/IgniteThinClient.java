@@ -56,7 +56,7 @@ public class IgniteThinClient {
         this.client = client;
     }
 
-    /** {@inheritDoc} */
+    /** */
     public IgniteClient start(BenchmarkConfiguration cfg, String host) throws Exception {
         IgniteBenchmarkArguments args = new IgniteBenchmarkArguments();
 

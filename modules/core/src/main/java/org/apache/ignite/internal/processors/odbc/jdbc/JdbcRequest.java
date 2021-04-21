@@ -24,17 +24,15 @@ import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestNoId;
-
-import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_8_0;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * JDBC request.
  */
 public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBinarylizable {
     /** Execute sql query request. */
-    static final byte QRY_EXEC = 2;
+    public static final byte QRY_EXEC = 2;
 
     /** Fetch query results request. */
     static final byte QRY_FETCH = 3;
@@ -43,28 +41,28 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
     static final byte QRY_CLOSE = 4;
 
     /** Get query columns metadata request. */
-    static final byte QRY_META = 5;
+    public static final byte QRY_META = 5;
 
     /** Batch queries. */
     public static final byte BATCH_EXEC = 6;
 
     /** Get tables metadata request. */
-    static final byte META_TABLES = 7;
+    public static final byte META_TABLES = 7;
 
     /** Get columns metadata request. */
-    static final byte META_COLUMNS = 8;
+    public static final byte META_COLUMNS = 8;
 
     /** Get indexes metadata request. */
-    static final byte META_INDEXES = 9;
+    public static final byte META_INDEXES = 9;
 
     /** Get SQL query parameters metadata request. */
-    static final byte META_PARAMS = 10;
+    public static final byte META_PARAMS = 10;
 
     /** Get primary keys metadata request. */
-    static final byte META_PRIMARY_KEYS = 11;
+    public static final byte META_PRIMARY_KEYS = 11;
 
     /** Get schemas metadata request. */
-    static final byte META_SCHEMAS = 12;
+    public static final byte META_SCHEMAS = 12;
 
     /** Send a batch of a data from client to server. */
     static final byte BULK_LOAD_BATCH = 13;
@@ -74,6 +72,21 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
 
     /** Execute cancel request. */
     static final byte QRY_CANCEL = 15;
+
+    /** Get cache partitions distributions. */
+    public static final byte CACHE_PARTITIONS = 16;
+
+    /** Get binary type schema request. */
+    public static final byte BINARY_TYPE_GET = 17;
+
+    /** Update binary type schema request. */
+    public static final byte BINARY_TYPE_PUT = 18;
+
+    /** Get binary type name request. */
+    public static final byte BINARY_TYPE_NAME_GET = 19;
+
+    /** Update binary type name request. */
+    public static final byte BINARY_TYPE_NAME_PUT = 20;
 
     /** Request Id generator. */
     private static final AtomicLong REQ_ID_GENERATOR = new AtomicLong();
@@ -94,19 +107,23 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer,
-        ClientListenerProtocolVersion ver) throws BinaryObjectException {
+    @Override public void writeBinary(
+        BinaryWriterExImpl writer,
+        JdbcProtocolContext protoCtx
+    ) throws BinaryObjectException {
         writer.writeByte(type);
 
-        if (ver.compareTo(VER_2_8_0) >= 0)
+        if (protoCtx.isAffinityAwarenessSupported())
             writer.writeLong(reqId);
     }
 
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader,
-        ClientListenerProtocolVersion ver) throws BinaryObjectException {
+    @Override public void readBinary(
+        BinaryReaderExImpl reader,
+        JdbcProtocolContext protoCtx
+    ) throws BinaryObjectException {
 
-        if (ver.compareTo(VER_2_8_0) >= 0)
+        if (protoCtx.isAffinityAwarenessSupported())
             reqId = reader.readLong();
     }
 
@@ -124,17 +141,19 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
 
     /**
      * @param reader Binary reader.
-     * @param ver Protocol version.
+     * @param protoCtx Protocol context.
      * @return Request object.
      * @throws BinaryObjectException On error.
      */
-    public static JdbcRequest readRequest(BinaryReaderExImpl reader,
-        ClientListenerProtocolVersion ver) throws BinaryObjectException {
+    public static JdbcRequest readRequest(
+        BinaryReaderExImpl reader,
+        JdbcProtocolContext protoCtx
+    ) throws BinaryObjectException {
         int reqType = reader.readByte();
 
         JdbcRequest req;
 
-        switch(reqType) {
+        switch (reqType) {
             case QRY_EXEC:
                 req = new JdbcQueryExecuteRequest();
 
@@ -205,11 +224,36 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
 
                 break;
 
+            case CACHE_PARTITIONS:
+                req = new JdbcCachePartitionsRequest();
+
+                break;
+
+            case BINARY_TYPE_NAME_PUT:
+                req = new JdbcBinaryTypeNamePutRequest();
+
+                break;
+
+            case BINARY_TYPE_NAME_GET:
+                req = new JdbcBinaryTypeNameGetRequest();
+
+                break;
+
+            case BINARY_TYPE_PUT:
+                req = new JdbcBinaryTypePutRequest();
+
+                break;
+
+            case BINARY_TYPE_GET:
+                req = new JdbcBinaryTypeGetRequest();
+
+                break;
+
             default:
                 throw new IgniteException("Unknown SQL listener request ID: [request ID=" + reqType + ']');
         }
 
-        req.readBinary(reader, ver);
+        req.readBinary(reader, protoCtx);
 
         return req;
     }
@@ -236,5 +280,10 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
         stream.position(1);
 
         return stream.readLong();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(JdbcRequest.class, this);
     }
 }

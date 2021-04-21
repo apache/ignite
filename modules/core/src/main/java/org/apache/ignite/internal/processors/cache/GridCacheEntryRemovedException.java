@@ -23,6 +23,4 @@ package org.apache.ignite.internal.processors.cache;
 public class GridCacheEntryRemovedException extends Exception {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /* No-op. */
 }

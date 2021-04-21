@@ -76,7 +76,7 @@ public class GridSetWrapper<E> extends GridSerializableSet<E> {
      *
      * @return Wrapped map.
      */
-    protected final <T extends Map<E, Object>> T  map() {
+    protected final <T extends Map<E, Object>> T map() {
         return (T)map;
     }
 

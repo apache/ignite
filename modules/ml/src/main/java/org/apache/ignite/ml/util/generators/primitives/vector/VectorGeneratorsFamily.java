@@ -55,7 +55,7 @@ public class VectorGeneratorsFamily implements VectorGenerator {
     }
 
     /**
-     * @return pseudo random vector with parent distribution id.
+     * @return Pseudo random vector with parent distribution id.
      */
     public VectorWithDistributionId getWithId() {
         int id = selector.getInt();
@@ -150,12 +150,14 @@ public class VectorGeneratorsFamily implements VectorGenerator {
             double sumOfWeigts = weights.stream().mapToDouble(x -> x).sum();
             double[] probs = weights.stream().mapToDouble(w -> w / sumOfWeigts).toArray();
 
-            List<VectorGenerator> mappedFamilily = family.stream().map(mapper).collect(Collectors.toList());
-            return new VectorGeneratorsFamily(mappedFamilily, new DiscreteRandomProducer(seed, probs));
+            List<VectorGenerator> mappedFamily = family.stream().map(mapper).collect(Collectors.toList());
+            return new VectorGeneratorsFamily(mappedFamily, new DiscreteRandomProducer(seed, probs));
         }
     }
 
-    /** */
+    /**
+     * Container for vector and distribution id.
+     */
     public static class VectorWithDistributionId {
         /** Vector. */
         private final Vector vector;
@@ -164,6 +166,8 @@ public class VectorGeneratorsFamily implements VectorGenerator {
         private final int distributionId;
 
         /**
+         * Creates an instance of VectorWithDistributionId.
+         *
          * @param vector Vector.
          * @param distributionId Distribution id.
          */

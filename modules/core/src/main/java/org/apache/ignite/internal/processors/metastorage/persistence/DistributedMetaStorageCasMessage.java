@@ -57,11 +57,11 @@ class DistributedMetaStorageCasMessage extends DistributedMetaStorageUpdateMessa
 
     /** {@inheritDoc} */
     @Override @Nullable public DiscoveryCustomMessage ackMessage() {
-        return new DistributedMetaStorageCasAckMessage(requestId(), isActive(), matches);
+        return new DistributedMetaStorageCasAckMessage(requestId(), errorMessage(), matches);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(DistributedMetaStorageCasMessage.class, this);
+        return S.toString(DistributedMetaStorageCasMessage.class, this, super.toString());
     }
 }

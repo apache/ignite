@@ -34,15 +34,9 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     /** */
     private String nodeVer;
 
-    /** */
-    private boolean clientMode;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        if (clientMode)
-            cfg.setClientMode(true);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi() {
             @Override public void setNodeAttributes(Map<String, Object> attrs,
@@ -62,8 +56,6 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        clientMode = false;
-
         stopAllGrids();
     }
 
@@ -106,9 +98,8 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
 
         try {
             nodeVer = "1.0.1";
-            clientMode = true;
 
-            startGrid(1);
+            startClientGrid(1);
 
             fail("Exception has not been thrown.");
         }

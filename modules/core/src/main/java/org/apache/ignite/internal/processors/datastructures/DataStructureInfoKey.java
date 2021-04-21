@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
-import org.apache.ignite.internal.processors.cache.GridCacheInternal;
-
 import java.io.Serializable;
+import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 
 /**
  * Key used to store in utility cache information about created data structures.

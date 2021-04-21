@@ -79,11 +79,8 @@ public class AffinityClientNodeSelfTest extends GridCommonAbstractTest {
         ccfg5.setBackups(1);
         ccfg5.setName(CACHE5);
 
-        if (igniteInstanceName.equals(getTestIgniteInstanceName(NODE_CNT - 1))) {
-            cfg.setClientMode(true);
-
+        if (igniteInstanceName.equals(getTestIgniteInstanceName(NODE_CNT - 1)))
             cfg.setCacheConfiguration(ccfg5);
-        }
         else
             cfg.setCacheConfiguration(ccfg1, ccfg2, ccfg4);
 
@@ -96,7 +93,7 @@ public class AffinityClientNodeSelfTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(NODE_CNT - 1);
 
-        startGrid(NODE_CNT - 1); // Start client after servers.
+        startClientGrid(NODE_CNT - 1); // Start client after servers.
     }
 
     /**

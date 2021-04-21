@@ -16,7 +16,6 @@
  */
 
 /**
- * <!-- Package description. -->
- * Examples for data stream generators.
+ * <!-- Package description. --> Examples for data stream generators.
  */
 package org.apache.ignite.examples.ml.util.generators;

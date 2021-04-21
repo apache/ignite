@@ -17,38 +17,107 @@
 
 package org.apache.ignite.internal.processors.metastorage.persistence;
 
-import java.io.Serializable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.Arrays;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
-@SuppressWarnings("PublicField")
-class DistributedMetaStorageHistoryItem implements Serializable {
-    /** */
-    public static final DistributedMetaStorageHistoryItem[] EMPTY_ARRAY = {};
-
+final class DistributedMetaStorageHistoryItem extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    @GridToStringInclude
-    public final String key;
+    public static final DistributedMetaStorageHistoryItem[] EMPTY_ARRAY = {};
 
     /** */
     @GridToStringInclude
-    public final byte[] valBytes;
+    private String[] keys;
+
+    /** */
+    @GridToStringInclude
+    private byte[][] valBytesArr;
+
+    /** */
+    private transient long longHash;
+
+    /** Default constructor for deserialization. */
+    public DistributedMetaStorageHistoryItem() {
+        // No-op.
+    }
 
     /** */
     public DistributedMetaStorageHistoryItem(String key, byte[] valBytes) {
-        this.key = key;
-        this.valBytes = valBytes;
+        keys = new String[] {key};
+        valBytesArr = new byte[][] {valBytes};
+    }
+
+    /** */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    public DistributedMetaStorageHistoryItem(String[] keys, byte[][] valBytesArr) {
+        assert keys.length > 0;
+        assert keys.length == valBytesArr.length;
+
+        this.keys = keys;
+        this.valBytesArr = valBytesArr;
     }
 
     /** */
     public long estimateSize() {
+        int len = keys.length;
+
+        // 8L = 2 int sizes. Plus all int sizes of strings and byte arrays.
+        long size = 8L + 8L * len;
+
         // String encoding is ignored to make estimation faster. 2 "size" values added as well.
-        return 8 + key.length() * 2 + (valBytes == null ? 0 : valBytes.length);
+        for (int i = 0; i < len; i++)
+            size += keys[i].length() * 2 + (valBytesArr[i] == null ? 0 : valBytesArr[i].length);
+
+        return size;
+    }
+
+    /**
+     * Array of keys modified in this update.
+     */
+    public String[] keys() {
+        //noinspection AssignmentOrReturnOfFieldWithMutableType
+        return keys;
+    }
+
+    /**
+     * Array of serialized values corresponded to {@link #keys()} in the same order.
+     */
+    public byte[][] valuesBytesArray() {
+        //noinspection AssignmentOrReturnOfFieldWithMutableType
+        return valBytesArr;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        out.writeInt(keys.length);
+
+        for (int i = 0; i < keys.length; i++) {
+            U.writeString(out, keys[i]);
+
+            U.writeByteArray(out, valBytesArr[i]);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException {
+        int len = in.readInt();
+
+        keys = new String[len];
+        valBytesArr = new byte[len][];
+
+        for (int i = 0; i < len; i++) {
+            keys[i] = U.readString(in);
+            valBytesArr[i] = U.readByteArray(in);
+        }
     }
 
     /** {@inheritDoc} */
@@ -61,12 +130,39 @@ class DistributedMetaStorageHistoryItem implements Serializable {
 
         DistributedMetaStorageHistoryItem item = (DistributedMetaStorageHistoryItem)o;
 
-        return key.equals(item.key) && Arrays.equals(valBytes, item.valBytes);
+        return Arrays.equals(keys, item.keys) && Arrays.deepEquals(valBytesArr, item.valBytesArr);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return 31 * key.hashCode() + Arrays.hashCode(valBytes);
+        return Long.hashCode(longHash());
+    }
+
+    /** Long hash. */
+    public long longHash() {
+        long hash = longHash;
+
+        if (hash == 0L) {
+            hash = 1L;
+
+            for (String key : keys)
+                hash = hash * 31L + key.hashCode();
+
+            for (byte[] valBytes : valBytesArr) {
+                if (valBytes == null)
+                    hash *= 31L;
+                else
+                    for (byte b : valBytes)
+                        hash = hash * 31L + b;
+            }
+
+            if (hash == 0L)
+                hash = 1L; // Avoid rehashing.
+
+            longHash = hash;
+        }
+
+        return hash;
     }
 
     /** {@inheritDoc} */

@@ -23,6 +23,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -48,6 +49,9 @@ public class StoredCacheData implements Serializable {
     /** SQL flag - {@code true} if cache was created with {@code CREATE TABLE}. */
     private boolean sql;
 
+    /** Cache configuration enrichment. */
+    private CacheConfigurationEnrichment cacheConfigurationEnrichment;
+
     /**
      * Constructor.
      *
@@ -58,6 +62,16 @@ public class StoredCacheData implements Serializable {
 
         this.ccfg = ccfg;
         this.qryEntities = ccfg.getQueryEntities();
+    }
+
+    /**
+     * @param cacheData Cache data.
+     */
+    public StoredCacheData(StoredCacheData cacheData) {
+        this.ccfg = cacheData.ccfg;
+        this.qryEntities = cacheData.qryEntities;
+        this.sql = cacheData.sql;
+        this.cacheConfigurationEnrichment = cacheData.cacheConfigurationEnrichment;
     }
 
     /**
@@ -100,6 +114,61 @@ public class StoredCacheData implements Serializable {
      */
     public StoredCacheData sql(boolean sql) {
         this.sql = sql;
+
+        return this;
+    }
+
+    /**
+     * @param ccfgEnrichment Configuration enrichment.
+     */
+    public StoredCacheData cacheConfigurationEnrichment(CacheConfigurationEnrichment ccfgEnrichment) {
+        this.cacheConfigurationEnrichment = ccfgEnrichment;
+
+        return this;
+    }
+
+    /**
+     * @return Configuration enrichment.
+     */
+    public CacheConfigurationEnrichment cacheConfigurationEnrichment() {
+        return cacheConfigurationEnrichment;
+    }
+
+    /**
+     * @return {@code true} if configuration enrichment is available.
+     */
+    public boolean hasOldCacheConfigurationFormat() {
+        return cacheConfigurationEnrichment == null;
+    }
+
+    /**
+     * Splits the corresponding cache configuration into parts with the given splitter.
+     *
+     * @param splitter Cache configuration splitter.
+     */
+    public StoredCacheData withSplittedCacheConfig(CacheConfigurationSplitter splitter) {
+        if (cacheConfigurationEnrichment != null)
+            return this;
+
+        T2<CacheConfiguration, CacheConfigurationEnrichment> splitCfg = splitter.split(ccfg);
+
+        ccfg = splitCfg.get1();
+        cacheConfigurationEnrichment = splitCfg.get2();
+
+        return this;
+    }
+
+    /**
+     * @param enricher Cache configuration enricher.
+     * @return Cache data with fully enriched cache configuration.
+     */
+    public StoredCacheData withOldCacheConfig(CacheConfigurationEnricher enricher) {
+        if (cacheConfigurationEnrichment == null)
+            return this;
+
+        ccfg = enricher.enrichFully(ccfg, cacheConfigurationEnrichment);
+
+        cacheConfigurationEnrichment = null;
 
         return this;
     }

@@ -27,7 +27,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /**
  *
  */
-public class CacheContinuousQueryAsyncFailoverMvccTxSelfTest  extends CacheContinuousQueryFailoverAbstractSelfTest {
+public class CacheContinuousQueryAsyncFailoverMvccTxSelfTest extends CacheContinuousQueryFailoverAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return PARTITIONED;

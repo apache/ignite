@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.util.Collection;
 import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -24,8 +25,6 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-
-import java.util.Collection;
 import org.jetbrains.annotations.Nullable;
 
 /**

@@ -29,9 +29,9 @@ public class TxRollbackAsyncNearCacheTest extends TxRollbackAsyncTest {
     }
 
     /** {@inheritDoc} */
-    @Override public void setUp() throws Exception {
+    @Override protected void beforeTest() throws Exception {
         MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.NEAR_CACHE);
 
-        super.setUp();
+        super.beforeTest();
     }
 }

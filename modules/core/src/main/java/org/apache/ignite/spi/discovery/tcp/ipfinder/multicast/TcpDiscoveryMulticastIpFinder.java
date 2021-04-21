@@ -464,7 +464,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
         try {
             locAddrs = U.resolveLocalAddresses(U.resolveLocalHost(locAddr)).get1();
         }
-        catch (IOException | IgniteCheckedException e) {
+        catch (IOException e) {
             throw new IgniteSpiException("Failed to resolve local addresses [locAddr=" + locAddr + ']', e);
         }
 
@@ -605,10 +605,10 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
                         continue;
                     }
 
-                    long rcvEnd = U.currentTimeMillis() + resWaitTime;
+                    long rcvStartNanos = System.nanoTime();
 
                     try {
-                        while (U.currentTimeMillis() < rcvEnd) { // Try to receive multiple responses.
+                        while (U.millisSinceNanos(rcvStartNanos) < resWaitTime) { // Try to receive multiple responses.
                             sock.receive(resPckt);
 
                             byte[] data = resPckt.getData();

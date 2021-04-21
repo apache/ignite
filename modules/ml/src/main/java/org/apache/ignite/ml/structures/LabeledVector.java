@@ -35,7 +35,6 @@ public class LabeledVector<L> extends DatasetRow<Vector> {
      * Default constructor.
      */
     public LabeledVector() {
-        super();
     }
 
     /**
@@ -98,5 +97,9 @@ public class LabeledVector<L> extends DatasetRow<Vector> {
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         vector = (Vector)in.readObject();
         lb = (L)in.readObject();
+    }
+
+    public L getLb() {
+        return lb;
     }
 }

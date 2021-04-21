@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import java.io.Serializable;
 import java.util.Collections;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import javax.cache.configuration.Factory;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryEventFilter;
@@ -30,6 +32,8 @@ import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.TestFailureHandler;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -63,14 +67,16 @@ public class GridCacheContinuousQueryNodesFilteringTest extends GridCommonAbstra
     @Test
     public void testNodeWithAttributeFailure() throws Exception {
         try (Ignite node1 = startNodeWithCache()) {
-            GridStringLogger log = new GridStringLogger();
+            CountDownLatch latch = new CountDownLatch(1);
 
-            try (Ignite node2 = startGrid("node2", getConfiguration("node2", true, log))) {
-                fail();
-            }
-            catch (IgniteException ignored) {
-                assertTrue(log.toString().contains("Class not found for continuous query remote filter " +
-                    "[name=org.apache.ignite.tests.p2p.CacheDeploymentEntryEventFilter]"));
+            FailureHandler failHnd = new TestFailureHandler(false, latch);
+
+            IgniteConfiguration node2Cfg = getConfiguration("node2", true, null)
+                .setFailureHandler(failHnd);
+
+            try (Ignite node2 = startGrid(node2Cfg)) {
+                assertTrue("Failure handler hasn't been invoked on the joined node.",
+                    latch.await(5, TimeUnit.SECONDS));
             }
         }
     }

@@ -37,6 +37,7 @@ import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -47,6 +48,8 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  *
  */
+// Test have a special version for Binary Marshaller.
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-9214")
 public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
     /** Null reference size (optimized marshaller writes one byte for null reference). */
     private static final int NULL_REF_SIZE = 1;
@@ -140,7 +143,11 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
         Marshaller marsh = createStandaloneBinaryMarshaller();
 
         marsh.setContext(new MarshallerContext() {
-            @Override public boolean registerClassName(byte platformId, int typeId, String clsName) {
+            @Override public boolean registerClassName(
+                byte platformId,
+                int typeId,
+                String clsName
+            ) {
                 return true;
             }
 

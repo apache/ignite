@@ -26,17 +26,17 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteBinary;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -48,9 +48,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *
  */
 public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCommonAbstractTest {
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -66,8 +63,6 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
         cfg.setCacheConfiguration(ccfg);
-
-        cfg.setClientMode(client);
 
         return cfg;
     }
@@ -134,9 +129,7 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
             stop.set(true);
         }
 
-        client = true;
-
-        startGridsMultiThreaded(2, 5);
+        startClientGridsMultiThreaded(2, 5);
 
         fut.get();
 
@@ -194,8 +187,6 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
             cache.put(i, builder.build());
         }
 
-        client = true;
-
         final CyclicBarrier barrier = new CyclicBarrier(6);
 
         final AtomicInteger startIdx = new AtomicInteger(4);
@@ -204,7 +195,7 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
             @Override public Object call() throws Exception {
                 barrier.await();
 
-                Ignite ignite = startGrid(startIdx.getAndIncrement());
+                Ignite ignite = startClientGrid(startIdx.getAndIncrement());
 
                 assertTrue(ignite.configuration().isClientMode());
 
@@ -267,13 +258,9 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
      */
     @Test
     public void testClientStartsFirst() throws Exception {
-        client = true;
-
-        final Ignite ignite0 = startGrid(0);
+        final Ignite ignite0 = startClientGrid(0);
 
         assertTrue(ignite0.configuration().isClientMode());
-
-        client = false;
 
         Ignite ignite1 = startGrid(1);
 

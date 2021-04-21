@@ -96,7 +96,7 @@ public interface FileInput extends ByteBufferBackedDataInput {
 
             int val = crc.getValue();
 
-            int writtenCrc =  this.readInt();
+            int writtenCrc = this.readInt();
 
             if ((val ^ writtenCrc) != 0 && !skipCheck) {
                 // If it last message we will skip it (EOF will be thrown).

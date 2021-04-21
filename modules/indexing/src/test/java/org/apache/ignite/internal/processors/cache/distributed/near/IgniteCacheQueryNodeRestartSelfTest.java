@@ -83,6 +83,7 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTe
         );
 
         c.setCacheConfiguration(cc);
+        c.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return c;
     }
@@ -100,6 +101,8 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTe
         final int logFreq = 50;
 
         final IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        grid(0).cluster().baselineAutoAdjustEnabled(false);
 
         assert cache != null;
 
@@ -120,7 +123,7 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTe
 
                     Set<Integer> keys = new HashSet<>();
 
-                    for (Cache.Entry<Integer,Integer> entry : res)
+                    for (Cache.Entry<Integer, Integer> entry : res)
                         keys.add(entry.getKey());
 
                     if (KEY_CNT > keys.size()) {
@@ -167,7 +170,7 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTe
 
         info("Awaiting rebalance events [restartCnt=" + restartCnt.get() + ']');
 
-        boolean success = lsnr.awaitEvents(GRID_CNT * 2 * restartCnt.get(), 15000);
+        boolean success = lsnr.awaitEvents(countRebalances(GRID_CNT, restartCnt.get()), 15000);
 
         for (int i = 0; i < GRID_CNT; i++)
             grid(i).events().stopLocalListen(lsnr, EventType.EVT_CACHE_REBALANCE_STOPPED);
@@ -176,13 +179,21 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTe
     }
 
     /**
+     * This method calculates coutn of Rebalances will be stopped.
+     *
+     * @param nodes Count of nodes into cluster.
+     * @param restarts Count of restarts separete node that was happened.
+     * @return Count of Rebalance events which will be triggered.
+     */
+    protected int countRebalances(int nodes, int restarts) {
+        return nodes * restarts;
+    }
+
+    /**
      *
      */
     protected IgniteInternalFuture createRestartAction(final AtomicBoolean done, final AtomicInteger restartCnt) throws Exception {
         return multithreadedAsync(new Callable<Object>() {
-            /** */
-            private final long nodeLifeTime = 2 * 1000;
-
             /** */
             private final int logFreq = 50;
 
@@ -193,9 +204,11 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTe
 
                     startGrid(idx);
 
-                    Thread.sleep(nodeLifeTime);
+                    resetBaselineTopology();
 
                     stopGrid(idx);
+
+                    resetBaselineTopology();
 
                     int c = restartCnt.incrementAndGet();
 

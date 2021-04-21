@@ -142,7 +142,7 @@ public abstract class ClientAbstractConnectivitySelfTest extends GridCommonAbstr
     public void testResolveReachableOneAddress() throws Exception {
         InetAddress addr = InetAddress.getByAddress(new byte[] {127, 0, 0, 1} );
 
-        List <InetAddress> filtered = IgniteUtils.filterReachable(Collections.singletonList(addr));
+        List<InetAddress> filtered = IgniteUtils.filterReachable(Collections.singletonList(addr));
 
         assertEquals(1, filtered.size());
         assertEquals(addr, filtered.get(0));

@@ -35,7 +35,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 
 /**
- * Partition map.
+ * Partition map from single node.
  */
 public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Externalizable {
     /** */

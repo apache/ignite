@@ -41,6 +41,7 @@ public class QueryEntityIndexDescriptor implements GridQueryIndexDescriptor {
                 return o1.get2() < o2.get2() ? -1 : 1;
             }
         });
+
     /** */
     private final QueryIndexType type;
 

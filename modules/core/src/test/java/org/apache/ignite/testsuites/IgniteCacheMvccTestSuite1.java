@@ -41,8 +41,6 @@ import org.apache.ignite.internal.processors.cache.CacheAffinityCallSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheDeferredDeleteQueueTest;
 import org.apache.ignite.internal.processors.cache.CacheDeferredDeleteSanitySelfTest;
 import org.apache.ignite.internal.processors.cache.CacheMvccTxFastFinishTest;
-import org.apache.ignite.internal.processors.cache.CacheNamesSelfTest;
-import org.apache.ignite.internal.processors.cache.CacheNamesWithSpecialCharactersTest;
 import org.apache.ignite.internal.processors.cache.CacheTxFastFinishTest;
 import org.apache.ignite.internal.processors.cache.DataStorageConfigurationValidationTest;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityApiSelfTest;
@@ -65,6 +63,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheReplicatedLocalStore
 import org.apache.ignite.internal.processors.cache.GridCacheStopSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheTcpClientDiscoveryMultiThreadedTest;
 import org.apache.ignite.internal.processors.cache.GridDataStorageConfigurationConsistencySelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicConcurrentUnorderedUpdateAllTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicInvokeTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicLocalInvokeTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicLocalWithStoreInvokeTest;
@@ -108,6 +107,7 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheMessag
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheMessageWriteTimeoutTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheAtomicNearCacheSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePartitionsStateValidatorSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePartitionsUpdateCountersAndSizeTest;
 import org.apache.ignite.internal.processors.cache.expiry.IgniteCacheAtomicLocalExpiryPolicyTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheEntryProcessorExternalizableFailedTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheEntryProcessorNonSerializableTest;
@@ -153,6 +153,7 @@ public class IgniteCacheMvccTestSuite1 {
         ignoredTests.add(IgniteCacheAtomicWithStoreInvokeTest.class);
         ignoredTests.add(IgniteCacheAtomicLocalInvokeTest.class);
         ignoredTests.add(IgniteCacheAtomicLocalWithStoreInvokeTest.class);
+        ignoredTests.add(IgniteCacheAtomicConcurrentUnorderedUpdateAllTest.class);
         ignoredTests.add(GridCachePartitionedLocalStoreSelfTest.class);
         ignoredTests.add(GridCacheReplicatedLocalStoreSelfTest.class);
         ignoredTests.add(CacheStoreReadFromBackupTest.class);
@@ -198,8 +199,6 @@ public class IgniteCacheMvccTestSuite1 {
         ignoredTests.add(GridCacheAffinityMapperSelfTest.class);
         ignoredTests.add(GridCacheAffinityApiSelfTest.class);
 
-        ignoredTests.add(CacheNamesSelfTest.class);
-        ignoredTests.add(CacheNamesWithSpecialCharactersTest.class);
         ignoredTests.add(GridCacheConfigurationValidationSelfTest.class);
 
         ignoredTests.add(GridDataStorageConfigurationConsistencySelfTest.class);
@@ -217,6 +216,7 @@ public class IgniteCacheMvccTestSuite1 {
         ignoredTests.add(GridCacheLifecycleAwareSelfTest.class);
         ignoredTests.add(IgniteCacheMessageWriteTimeoutTest.class);
         ignoredTests.add(GridCachePartitionsStateValidatorSelfTest.class);
+        ignoredTests.add(GridCachePartitionsUpdateCountersAndSizeTest.class);
         ignoredTests.add(IgniteVariousConnectionNumberTest.class);
         ignoredTests.add(IgniteIncompleteCacheObjectSelfTest.class);
 

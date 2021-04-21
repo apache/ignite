@@ -31,7 +31,7 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactArray;
 /**
  * Data transfer object for node lifecycle configuration properties.
  */
-public class VisorLifecycleConfiguration extends VisorDataTransferObject{
+public class VisorLifecycleConfiguration extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 

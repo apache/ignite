@@ -16,7 +16,7 @@
  */
 
 /**
- * This package contain cache with persitence implementation. <br>
+ * This package contain cache with persistence implementation. <br>
  * See also
  * <a href="https://github.com/apache/ignite/tree/master/modules/core/src/main/java/org/apache/ignite/internal/processors/cache/persistence">GitHub Package Readme</a>
  */

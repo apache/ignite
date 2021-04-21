@@ -17,9 +17,8 @@
 
 package org.apache.ignite.platform.dotnet;
 
-import org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetCacheStore;
-
 import javax.cache.configuration.Factory;
+import org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetCacheStore;
 
 /**
  * Cache store factory that wraps native factory object.

@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.standbycluster.join.persistence;
 
-import org.apache.ignite.internal.processors.cache.persistence.standbycluster.join.JoinActiveNodeToInActiveCluster;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.persistence.standbycluster.join.JoinActiveNodeToInActiveCluster;
 
 /**
  *

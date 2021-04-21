@@ -19,7 +19,13 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
+import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
+import java.nio.file.StandardOpenOption;
+import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -32,6 +38,7 @@ import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.failure.AbstractFailureHandler;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteEx;
@@ -39,6 +46,8 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
+import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
+import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
@@ -51,7 +60,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -108,6 +116,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
                     .setMaxSize(100 * 1024 * 1024)
                     .setPersistenceEnabled(true)
             )
+            .setWalMode(WALMode.FSYNC)
             .setFileIOFactory(failingFileIOFactory);
 
         cfg.setDataStorageConfiguration(memCfg);
@@ -236,7 +245,8 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
 
         MetaStorage metaStorage = ignite.context().cache().context().database().metaStorage();
 
-        corruptTreeRoot(ignite, (PageMemoryEx)metaStorage.pageMemory(), METASTORAGE_CACHE_ID, PageIdAllocator.METASTORE_PARTITION);
+        corruptTreeRoot(ignite, (PageMemoryEx)metaStorage.pageMemory(), METASTORAGE_CACHE_ID,
+            PageIdAllocator.METASTORE_PARTITION);
 
         stopGrid(0);
 
@@ -334,9 +344,18 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
     public void testReadOnlyMetaStore() throws Exception {
         IgniteEx ignite0 = startGrid(0);
 
+        AtomicReference<File> readOnlyFile = new AtomicReference<>();
+
+        failingFileIOFactory.createClosure((file, options) -> {
+            if (Arrays.asList(options).contains(StandardOpenOption.WRITE) && file.equals(readOnlyFile.get()))
+                throw new IOException("File is readonly.");
+
+            return null;
+        });
+
         ignite0.cluster().active(true);
 
-        IgniteInternalCache cache = ignite0.cachex(CACHE_NAME1);
+        IgniteInternalCache<Integer, Integer> cache = ignite0.cachex(CACHE_NAME1);
 
         cache.put(1, 1);
 
@@ -348,29 +367,23 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
         File metaStoreDir = new File(workDir, MetaStorage.METASTORAGE_CACHE_NAME.toLowerCase());
         File metaStoreFile = new File(metaStoreDir, String.format(FilePageStoreManager.PART_FILE_TEMPLATE, 0));
 
-        metaStoreFile.setWritable(false);
+        readOnlyFile.set(metaStoreFile);
 
-        try {
-            IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
-                @Override public void run() {
-                    try {
-                        ignite0.cluster().active(true);
-                    }
-                    catch (Exception ignore) {
-                        // No-op.
-                    }
+        IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
+            @Override public void run() {
+                try {
+                    ignite0.cluster().active(true);
                 }
-            });
+                catch (Exception ignore) {
+                    // No-op.
+                }
+            }
+        });
 
-            waitFailure(IOException.class);
+        waitFailure(IOException.class);
 
-            fut.cancel();
-        }
-        finally {
-            metaStoreFile.setWritable(true);
-        }
+        fut.cancel();
     }
-
 
     /**
      * Test node invalidation due to checkpoint error.
@@ -379,9 +392,18 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
     public void testCheckpointFailure() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        failingFileIOFactory.createClosure(new IgniteBiClosure<File, OpenOption[], FileIO>() {
+        ignite.cluster().active(true);
+
+        forceCheckpoint(); // Trigger empty checkpoint to make sure initial checkpoint on node start will finish.
+
+        ignite.cache(CACHE_NAME1).put(0, 0); // Mark some pages as dirty.
+
+        AtomicBoolean fail = new AtomicBoolean(true);
+        AtomicReference<FileIO> ref = new AtomicReference<>();
+
+        failingFileIOFactory.createClosure(new IgniteBiClosureX<File, OpenOption[], FileIO>() {
             @Override public FileIO apply(File file, OpenOption[] options) {
-                if (file.getName().indexOf("-END.bin") >= 0) {
+                if (file.getName().contains("-END.bin")) {
                     FileIO delegate;
 
                     try {
@@ -391,27 +413,78 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
                         return null;
                     }
 
-                    return new FileIODecorator(delegate) {
+                    FileIODecorator dec = new FileIODecorator(delegate) {
                         @Override public void close() throws IOException {
-                            throw new IOException("Checkpoint failed");
+                            if (fail.get())
+                                throw new IOException("Checkpoint failed");
+                            else
+                                super.close();
                         }
                     };
+
+                    ref.set(dec);
+
+                    return dec;
                 }
 
                 return null;
             }
         });
 
+        try {
+            try {
+                forceCheckpoint(ignite);
+            }
+            catch (Exception ignore) {
+                // No-op.
+            }
+
+            waitFailure(IOException.class);
+        }
+        finally {
+            fail.set(false);
+            ref.get().close(); // Release file for any test outcome.
+        }
+    }
+
+    /**
+     * Test node invalidation due to error on WAL write header.
+     */
+    @Test
+    public void testWalFsyncWriteHeaderFailure() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
         ignite.cluster().active(true);
 
+        ignite.cache(CACHE_NAME1).put(0, 0);
+
+        failingFileIOFactory.createClosure((file, options) -> {
+            FileIO delegate = failingFileIOFactory.delegateFactory().create(file, options);
+
+            if (file.getName().endsWith(".wal")) {
+                return new FileIODecorator(delegate) {
+                    @Override public int write(ByteBuffer srcBuf) throws IOException {
+                        throw new IOException("No space left on device");
+                    }
+                };
+            }
+
+            return delegate;
+        });
+
+        ignite.context().cache().context().database().checkpointReadLock();
+
         try {
-            forceCheckpoint(ignite);
+            ignite.context().cache().context().wal().log(new CheckpointRecord(null), RolloverType.NEXT_SEGMENT);
         }
-        catch (Exception ignore) {
+        catch (StorageException expected) {
             // No-op.
         }
+        finally {
+            ignite.context().cache().context().database().checkpointReadUnlock();
+        }
 
-        waitFailure(IOException.class);
+        waitFailure(StorageException.class);
     }
 
     /**
@@ -464,7 +537,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
         private final FileIOFactory delegateFactory = new RandomAccessFileIOFactory();
 
         /** Create FileIO closure. */
-        private volatile IgniteBiClosure<File, OpenOption[], FileIO> createClo;
+        private volatile IgniteBiClosureX<File, OpenOption[], FileIO> createClo;
 
         /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... openOption) throws IOException {
@@ -478,7 +551,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
         /**
          * @param createClo FileIO create closure.
          */
-        public void createClosure(IgniteBiClosure<File, OpenOption[], FileIO> createClo) {
+        public void createClosure(IgniteBiClosureX<File, OpenOption[], FileIO> createClo) {
             this.createClo = createClo;
         }
 
@@ -488,5 +561,11 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
         public FileIOFactory delegateFactory() {
             return delegateFactory;
         }
+    }
+
+    /** */
+    private interface IgniteBiClosureX<E1, E2, R> extends Serializable {
+        /** */
+        R apply(E1 e1, E2 e2) throws IOException;
     }
 }

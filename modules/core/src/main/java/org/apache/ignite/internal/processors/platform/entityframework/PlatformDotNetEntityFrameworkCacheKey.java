@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.entityframework;
 
+import java.util.Arrays;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
@@ -24,8 +25,6 @@ import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.Arrays;
 
 /**
  * EntityFramework cache key: query + versions.

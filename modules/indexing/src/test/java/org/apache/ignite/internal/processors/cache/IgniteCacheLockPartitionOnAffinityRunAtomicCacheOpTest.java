@@ -42,14 +42,19 @@ import org.junit.Test;
 public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends IgniteCacheLockPartitionOnAffinityRunAbstractTest {
     /** Atomic cache. */
     private static final String ATOMIC_CACHE = "atomic";
+
     /** Transact cache. */
     private static final String TRANSACT_CACHE = "transact";
+
     /** Transact cache. */
     private static final long TEST_TIMEOUT = 10 * 60_000;
+
     /** Keys count. */
     private static int KEYS_CNT = 100;
+
     /** Keys count. */
     private static int PARTS_CNT = 16;
+
     /** Key. */
     private static AtomicInteger key = new AtomicInteger(0);
 
@@ -71,6 +76,9 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
                     for (int i = GRID_CNT - RESTARTED_NODE_CNT; i < GRID_CNT; ++i)
                         startGrid(i);
 
+                    // Wait for rebalancing to prevent data loss.
+                    awaitPartitionMapExchange();
+
                     GridTestUtils.waitForCondition(new GridAbsPredicate() {
                         @Override public boolean apply() {
                             return !stopRestartThread.get();
@@ -80,14 +88,6 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
                 return null;
             }
         }, "restart-node");
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
-        ccfg.setBackups(0);
-
-        return  ccfg;
     }
 
     /**
@@ -254,7 +254,6 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
             cache.clear();
         }
     }
-
 
     /**
      *

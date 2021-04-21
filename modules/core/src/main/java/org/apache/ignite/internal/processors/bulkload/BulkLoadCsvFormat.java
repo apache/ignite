@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.processors.bulkload;
 
+import java.util.regex.Pattern;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.regex.Pattern;
 
 /**
  * A placeholder for bulk load CSV format parser options.

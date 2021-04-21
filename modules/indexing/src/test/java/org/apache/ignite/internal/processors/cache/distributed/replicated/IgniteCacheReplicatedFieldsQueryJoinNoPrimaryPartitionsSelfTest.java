@@ -24,7 +24,6 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -57,8 +56,6 @@ public class IgniteCacheReplicatedFieldsQueryJoinNoPrimaryPartitionsSelfTest ext
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setClientMode(F.eq(NODE_CLI, igniteInstanceName));
-
         CacheConfiguration<Integer, PartValue> ccfg1 = new CacheConfiguration<>(CACHE_PARTITIONED);
 
         ccfg1.setCacheMode(PARTITIONED);
@@ -85,7 +82,7 @@ public class IgniteCacheReplicatedFieldsQueryJoinNoPrimaryPartitionsSelfTest ext
     @Override protected void beforeTest() throws Exception {
         startGridsMultiThreaded(3);
 
-        Ignite cli = startGrid(NODE_CLI);
+        Ignite cli = startClientGrid(NODE_CLI);
 
         for (int i = 0; i < REP_CNT; i++)
             cli.cache(CACHE_REPLICATED).put(i, new RepValue(i));

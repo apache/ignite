@@ -172,7 +172,8 @@ public class MLPluginProvider implements PluginProvider<MLPluginConfiguration> {
 
         ignite.getOrCreateCache(storageCfg);
 
-        log.info("ML model storage is ready");
+        if (log.isInfoEnabled())
+            log.info("ML model storage is ready");
     }
 
     /**
@@ -190,6 +191,7 @@ public class MLPluginProvider implements PluginProvider<MLPluginConfiguration> {
 
         ignite.getOrCreateCache(storageCfg);
 
-        log.info("ML model descriptor storage is ready");
+        if (log.isInfoEnabled())
+            log.info("ML model descriptor storage is ready");
     }
 }

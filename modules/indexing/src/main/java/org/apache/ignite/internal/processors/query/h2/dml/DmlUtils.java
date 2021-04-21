@@ -29,10 +29,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
@@ -41,11 +44,13 @@ import org.apache.ignite.internal.processors.query.h2.DmlStatementsProcessor;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
+import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.transactions.TransactionDuplicateKeyException;
 import org.h2.util.DateTimeUtils;
 import org.h2.util.LocalDateTimeUtils;
@@ -56,6 +61,8 @@ import org.h2.value.ValueTimestamp;
 
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.DUPLICATE_KEY;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.createJdbcSqlException;
+import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_CACHE_UPDATES;
+import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_CACHE_UPDATE;
 
 /**
  * DML utility methods.
@@ -71,7 +78,8 @@ public class DmlUtils {
      * @return Converted object.
      */
     @SuppressWarnings({"ConstantConditions", "SuspiciousSystemArraycopy"})
-    public static Object convert(Object val, GridH2RowDescriptor desc, Class<?> expCls, int type) {
+    public static Object convert(Object val, GridH2RowDescriptor desc, Class<?> expCls,
+        int type, String columnName) {
         if (val == null)
             return null;
 
@@ -131,8 +139,8 @@ public class DmlUtils {
             return res;
         }
         catch (Exception e) {
-            throw new IgniteSQLException("Value conversion failed [from=" + currCls.getName() + ", to=" +
-                expCls.getName() +']', IgniteQueryErrorCode.CONVERSION_FAILED, e);
+            throw new IgniteSQLException("Value conversion failed [column=" + columnName + ", from=" + currCls.getName() + ", to=" +
+                expCls.getName() + ']', IgniteQueryErrorCode.CONVERSION_FAILED, e);
         }
     }
 
@@ -189,10 +197,16 @@ public class DmlUtils {
         if (plan.rowCount() == 1) {
             IgniteBiTuple t = plan.processRow(cursor.iterator().next());
 
-            if (cctx.cache().putIfAbsent(t.getKey(), t.getValue()))
-                return 1;
-            else
-                throw new TransactionDuplicateKeyException("Duplicate key during INSERT [key=" + t.getKey() + ']');
+            try (
+                MTC.TraceSurroundings ignored = MTC.support(cctx.kernalContext().tracing()
+                    .create(SQL_CACHE_UPDATE, MTC.span())
+                    .addTag(SQL_CACHE_UPDATES, () -> "1"))
+            ) {
+                if (cctx.cache().putIfAbsent(t.getKey(), t.getValue()))
+                    return 1;
+                else
+                    throw new TransactionDuplicateKeyException("Duplicate key during INSERT [key=" + t.getKey() + ']');
+            }
         }
         else {
             // Keys that failed to INSERT due to duplication.
@@ -201,7 +215,7 @@ public class DmlUtils {
             for (List<?> row : cursor) {
                 final IgniteBiTuple keyValPair = plan.processRow(row);
 
-                sender.add(keyValPair.getKey(), new DmlStatementsProcessor.InsertEntryProcessor(keyValPair.getValue()),  0);
+                sender.add(keyValPair.getKey(), new DmlStatementsProcessor.InsertEntryProcessor(keyValPair.getValue()), 0);
             }
 
             sender.flush();
@@ -275,7 +289,8 @@ public class DmlUtils {
             throw new IgniteSQLException(resEx);
         }
 
-        return new UpdateResult(sender.updateCount(), sender.failedKeys().toArray());
+        return new UpdateResult(sender.updateCount(), sender.failedKeys().toArray(),
+            cursor instanceof QueryCursorImpl ? ((QueryCursorImpl) cursor).partitionResult() : null);
     }
 
     /**
@@ -293,7 +308,13 @@ public class DmlUtils {
         if (plan.rowCount() == 1) {
             IgniteBiTuple t = plan.processRow(cursor.iterator().next());
 
-            cctx.cache().put(t.getKey(), t.getValue());
+            try (
+                MTC.TraceSurroundings ignored = MTC.support(cctx.kernalContext().tracing()
+                    .create(SQL_CACHE_UPDATE, MTC.span())
+                    .addTag(SQL_CACHE_UPDATES, () -> "1"))
+            ) {
+                cctx.cache().put(t.getKey(), t.getValue());
+            }
 
             return 1;
         }
@@ -310,12 +331,18 @@ public class DmlUtils {
                 rows.put(t.getKey(), t.getValue());
 
                 if ((pageSize > 0 && rows.size() == pageSize) || !it.hasNext()) {
-                    cctx.cache().putAll(rows);
+                    try (
+                        MTC.TraceSurroundings ignored = MTC.support(cctx.kernalContext().tracing()
+                            .create(SQL_CACHE_UPDATE, MTC.span())
+                            .addTag(SQL_CACHE_UPDATES, () -> Integer.toString(rows.size())))
+                    ) {
+                        cctx.cache().putAll(rows);
 
-                    resCnt += rows.size();
+                        resCnt += rows.size();
 
-                    if (it.hasNext())
-                        rows.clear();
+                        if (it.hasNext())
+                            rows.clear();
+                    }
                 }
             }
 
@@ -339,9 +366,16 @@ public class DmlUtils {
             if (row.size() != 2)
                 continue;
 
+            Object key = row.get(0);
+
+            ClusterNode node = sender.primaryNodeByKey(key);
+
+            IgniteInClosure<MutableEntry<Object, Object>> rmvC =
+                DmlStatementsProcessor.getRemoveClosure(node, key);
+
             sender.add(
-                row.get(0),
-                new DmlStatementsProcessor.ModifyingEntryProcessor(row.get(1), DmlStatementsProcessor.RMV),
+                key,
+                new DmlStatementsProcessor.ModifyingEntryProcessor(row.get(1), rmvC),
                 0
             );
         }
@@ -367,7 +401,8 @@ public class DmlUtils {
             throw new IgniteSQLException(resEx);
         }
 
-        return new UpdateResult(sender.updateCount(), sender.failedKeys().toArray());
+        return new UpdateResult(sender.updateCount(), sender.failedKeys().toArray(),
+            cursor instanceof QueryCursorImpl ? ((QueryCursorImpl) cursor).partitionResult() : null);
     }
 
     /**
@@ -475,7 +510,7 @@ public class DmlUtils {
         for (int i = 0; i < cntPerRow.length; i++ ) {
             int cnt = cntPerRow[i];
 
-            res.add(new UpdateResult(cnt , X.EMPTY_OBJECT_ARRAY));
+            res.add(new UpdateResult(cnt, X.EMPTY_OBJECT_ARRAY));
         }
 
         return res;
@@ -520,7 +555,7 @@ public class DmlUtils {
 
             if (opCtx == null)
                 // Mimics behavior of GridCacheAdapter#keepBinary and GridCacheProxyImpl#keepBinary
-                newOpCtx = new CacheOperationContext(false, null, true, null, false, null, false, true);
+                newOpCtx = new CacheOperationContext(false, null, true, null, false, null, false, false, true);
             else if (!opCtx.isKeepBinary())
                 newOpCtx = opCtx.keepBinary();
 

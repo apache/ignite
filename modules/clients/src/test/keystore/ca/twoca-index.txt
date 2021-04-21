@@ -1,0 +1,5 @@
+V	391107193746Z		01	unknown	/CN=thinClient
+V	391107193747Z		02	unknown	/CN=thinServer
+V	391107193751Z		03	unknown	/CN=node02
+V	391107193753Z		04	unknown	/CN=node03
+V	191106193754Z		05	unknown	/CN=node02old

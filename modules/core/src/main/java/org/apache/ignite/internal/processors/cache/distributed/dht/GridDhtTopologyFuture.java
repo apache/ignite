@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import java.util.Collection;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
@@ -77,9 +78,9 @@ public interface GridDhtTopologyFuture extends IgniteInternalFuture<AffinityTopo
      * @param read {@code True} if validating read operation, {@code false} if validating write.
      * @param key Key (optimization to avoid collection creation).
      * @param keys Keys involved in a cache operation.
-     * @return valid ot not.
+     * @return Not null exception if a cache is in invalid state.
      */
-    @Nullable public Throwable validateCache(
+    @Nullable public CacheInvalidStateException validateCache(
         GridCacheContext cctx,
         boolean recovery,
         boolean read,

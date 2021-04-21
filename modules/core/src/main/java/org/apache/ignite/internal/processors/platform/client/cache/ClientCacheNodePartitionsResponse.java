@@ -19,11 +19,13 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 
 import java.util.Collection;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.processors.odbc.ClientConnectableNodePartitions;
+import org.apache.ignite.internal.processors.platform.client.ClientConnectableNodePartitions;
+import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
  * Client cache nodes partitions response.
+ * Deprecated since 1.3.0. Replaced with {@link ClientCachePartitionsResponse}.
  */
 class ClientCacheNodePartitionsResponse extends ClientResponse {
     /** Node partitions. */
@@ -42,8 +44,8 @@ class ClientCacheNodePartitionsResponse extends ClientResponse {
     }
 
     /** {@inheritDoc} */
-    @Override public void encode(BinaryRawWriterEx writer) {
-        super.encode(writer);
+    @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
+        super.encode(ctx, writer);
 
         writer.writeInt(nodeParts.size());
 

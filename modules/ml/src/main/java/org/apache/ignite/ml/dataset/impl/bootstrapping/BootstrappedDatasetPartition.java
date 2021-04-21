@@ -50,7 +50,7 @@ public class BootstrappedDatasetPartition implements AutoCloseable, Iterable<Boo
     /**
      * Returns rows count.
      *
-     * @return rows count.
+     * @return Rows count.
      */
     public int getRowsCount() {
         return vectors.length;
@@ -62,7 +62,7 @@ public class BootstrappedDatasetPartition implements AutoCloseable, Iterable<Boo
     }
 
     /** {@inheritDoc} */
-    @Override public void close() throws Exception {
+    @Override public void close() {
         //NOP
     }
 }

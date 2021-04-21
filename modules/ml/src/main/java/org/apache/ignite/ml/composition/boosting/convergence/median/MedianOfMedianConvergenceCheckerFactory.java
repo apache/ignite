@@ -21,9 +21,8 @@ import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceChecker;
 import org.apache.ignite.ml.composition.boosting.convergence.ConvergenceCheckerFactory;
 import org.apache.ignite.ml.composition.boosting.loss.Loss;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 
 /**
  * Factory for {@link MedianOfMedianConvergenceChecker}.
@@ -39,9 +38,9 @@ public class MedianOfMedianConvergenceCheckerFactory extends ConvergenceCheckerF
     /** {@inheritDoc} */
     @Override public <K, V> ConvergenceChecker<K, V> create(long sampleSize,
         IgniteFunction<Double, Double> externalLbToInternalMapping, Loss loss, DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+        Preprocessor<K, V> preprocessor) {
 
         return new MedianOfMedianConvergenceChecker<>(sampleSize, externalLbToInternalMapping, loss,
-            datasetBuilder, featureExtractor, lbExtractor, precision);
+            datasetBuilder, preprocessor, precision);
     }
 }

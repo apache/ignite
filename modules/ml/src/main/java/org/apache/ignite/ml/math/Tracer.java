@@ -104,7 +104,8 @@ public class Tracer {
     public static void showAscii(Vector vec, IgniteLogger log, String fmt) {
         String cls = vec.getClass().getSimpleName();
 
-        log.info(String.format(LOCALE, "%s(%d) [%s]", cls, vec.size(), mkString(vec, fmt)));
+        if (log.isInfoEnabled())
+            log.info(String.format(LOCALE, "%s(%d) [%s]", cls, vec.size(), mkString(vec, fmt)));
     }
 
     /**
@@ -211,10 +212,12 @@ public class Tracer {
         int rows = mtx.rowSize();
         int cols = mtx.columnSize();
 
-        log.info(String.format(LOCALE, "%s(%dx%d)", cls, rows, cols));
+        if (log.isInfoEnabled()) {
+            log.info(String.format(LOCALE, "%s(%dx%d)", cls, rows, cols));
 
-        for (int row = 0; row < rows; row++)
-            log.info(rowStr(mtx, row, fmt));
+            for (int row = 0; row < rows; row++)
+                log.info(rowStr(mtx, row, fmt));
+        }
     }
 
     /**
@@ -340,7 +343,7 @@ public class Tracer {
      * @param generator Datastream generator.
      * @param limit Count of points that should be taken from dataset.
      * @param xIdx Index of dimension for abscissa representation.
-     * @throws IOException
+     * @throws IOException IOException.
      */
     public static void showRegressionDatasetInHtml(String name, DataStreamGenerator generator, int limit,
         int xIdx) throws IOException {
@@ -356,7 +359,7 @@ public class Tracer {
      * @param generator Datastream generator.
      * @param limit Count of points that should be taken from dataset.
      * @param xIdx Index of dimension for abscissa representation.
-     * @throws IOException
+     * @throws IOException IOException.
      */
     public static void showRegressionDatasetInHtml(DataStreamGenerator generator, int limit,
         int xIdx) throws IOException {
@@ -372,7 +375,7 @@ public class Tracer {
      * @param xIdx Index of dimension for abscissa representation.
      * @param yIdx Index of dimension for ordinate representation.
      * @param isLabeled if isLabeled == true then colors will be used for separate different classes on plane.
-     * @throws IOException
+     * @throws IOException IOException.
      */
     public static void showClassificationDatasetHtml(DataStreamGenerator generator, int limit,
         int xIdx, int yIdx, boolean isLabeled) throws IOException {
@@ -389,7 +392,7 @@ public class Tracer {
      * @param xIdx Index of dimension for abscissa representation.
      * @param yIdx Index of dimension for ordinate representation.
      * @param isLabeled if isLabeled == true then colors will be used for separate different classes on plane.
-     * @throws IOException
+     * @throws IOException IOException.
      */
     public static void showClassificationDatasetHtml(String name, DataStreamGenerator generator, int limit,
         int xIdx, int yIdx, boolean isLabeled) throws IOException {
@@ -412,22 +415,22 @@ public class Tracer {
     /**
      * @param name Dataset name for showing.
      * @param values List of vectors are taken from dataset generator.
-     * @param xIndex Index of abscissa in vector.
+     * @param xIdx Index of abscissa in vector.
      * @param yGetter Getter of ordinate value from vector.
      * @param colorGetter Getter of collor for showing.
-     * @throws IOException
+     * @throws IOException IOException.
      */
     private static void showVectorsHtml(String name, List<LabeledVector<Double>> values,
-        int xIndex, Function<LabeledVector<Double>, Double> yGetter,
+        int xIdx, Function<LabeledVector<Double>, Double> yGetter,
         Function<LabeledVector<Double>, Color> colorGetter) throws IOException {
 
-        if(!isBrowseSupported())
+        if (!isBrowseSupported())
             return;
 
         String tmpl = fileToString("d3-dataset-template.html");
 
         String data = values.stream().map(v -> {
-            double x = v.features().get(xIndex);
+            double x = v.features().get(xIdx);
             double y = yGetter.apply(v);
             Color c = colorGetter.apply(v);
 

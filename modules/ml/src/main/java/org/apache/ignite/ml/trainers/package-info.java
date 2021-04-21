@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains model trainers.
  */
+
 package org.apache.ignite.ml.trainers;

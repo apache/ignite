@@ -117,7 +117,7 @@ public class CacheWeakQueryIteratorsHolder<V> {
     /**
      * Cancel all cache queries.
      */
-    public void clearQueries(){
+    public void clearQueries() {
         for (AutoCloseable rsrc : refs.values()) {
             try {
                 rsrc.close();
@@ -129,7 +129,6 @@ public class CacheWeakQueryIteratorsHolder<V> {
 
         refs.clear();
     }
-
 
     /**
      * Iterator based of {@link CacheQueryFuture}.
@@ -289,7 +288,7 @@ public class CacheWeakQueryIteratorsHolder<V> {
             try {
                 next = iter.nextX();
             }
-            catch (NoSuchElementException e){
+            catch (NoSuchElementException e) {
                 clearWeakReference();
 
                 throw e;

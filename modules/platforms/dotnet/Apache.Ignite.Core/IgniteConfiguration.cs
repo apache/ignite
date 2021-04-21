@@ -45,7 +45,6 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Failure;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Ssl;
     using Apache.Ignite.Core.Lifecycle;
@@ -157,7 +156,7 @@ namespace Apache.Ignite.Core
         private bool? _isDaemon;
 
         /** */
-        private bool? _clientMode;
+        private bool? _javaPeerClassLoadingEnabled;
 
         /** */
         private TimeSpan? _failureDetectionTimeout;
@@ -216,17 +215,14 @@ namespace Apache.Ignite.Core
         /** MVCC vacuum thread count. */
         private int? _mvccVacuumThreadCnt;
 
-        /** */
-        private bool? _initBaselineAutoAdjustEnabled;
-
-        /** Initial value of time which we would wait before the actual topology change since last discovery event. */
-        private long? _initBaselineAutoAdjustTimeout;
-
-        /** Initial value of time which we would wait from the first discovery event in the chain(node join/exit). */
-        private long? _initBaselineAutoAdjustMaxTimeout;
-
         /** SQL query history size. */
         private int? _sqlQueryHistorySize;
+
+        /** */
+        private bool? _clientMode;
+
+        /** */
+        private AsyncContinuationExecutor? _asyncContinuationExecutor;
 
         /// <summary>
         /// Default network retry count.
@@ -264,21 +260,6 @@ namespace Apache.Ignite.Core
         public const int DefaultMvccVacuumThreadCount = 2;
 
         /// <summary>
-        /// Default value for <see cref="InitBaselineAutoAdjustEnabled"/> property.
-        /// </summary>
-        public const bool DefaultInitBaselineAutoAdjustEnabled = false;
-
-        /// <summary>
-        /// Default value for <see cref="InitBaselineAutoAdjustTimeout"/> property.
-        /// </summary>
-        public const long DefaultInitBaselineAutoAdjustTimeout = 0;
-
-        /// <summary>
-        /// Default value for <see cref="InitBaselineAutoAdjustMaxTimeout"/> property.
-        /// </summary>
-        public const long DefaultInitBaselineAutoAdjustMaxTimeout = 0;
-
-        /// <summary>
         /// Default value for <see cref="SqlQueryHistorySize"/> property.
         /// </summary>
         public const int DefaultSqlQueryHistorySize = 1000;
@@ -306,13 +287,13 @@ namespace Apache.Ignite.Core
             {
                 var marsh = BinaryUtils.Marshaller;
 
-                configuration.Write(marsh.StartMarshal(stream), ClientSocket.CurrentProtocolVersion);
+                configuration.Write(marsh.StartMarshal(stream));
 
                 stream.SynchronizeOutput();
 
                 stream.Seek(0, SeekOrigin.Begin);
 
-                ReadCore(marsh.StartUnmarshal(stream), ClientSocket.CurrentProtocolVersion);
+                ReadCore(marsh.StartUnmarshal(stream));
             }
 
             CopyLocalProperties(configuration);
@@ -323,14 +304,12 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <param name="binaryReader">The binary reader.</param>
         /// <param name="baseConfig">The base configuration.</param>
-        /// <param name="srvVer">Server version.</param>
-        internal IgniteConfiguration(BinaryReader binaryReader, IgniteConfiguration baseConfig,
-            ClientProtocolVersion srvVer)
+        internal IgniteConfiguration(BinaryReader binaryReader, IgniteConfiguration baseConfig)
         {
             Debug.Assert(binaryReader != null);
             Debug.Assert(baseConfig != null);
 
-            Read(binaryReader, srvVer);
+            Read(binaryReader);
             CopyLocalProperties(baseConfig);
         }
 
@@ -338,8 +317,7 @@ namespace Apache.Ignite.Core
         /// Writes this instance to a writer.
         /// </summary>
         /// <param name="writer">The writer.</param>
-        /// <param name="srvVer">Server version.</param>
-        internal void Write(BinaryWriter writer, ClientProtocolVersion srvVer)
+        internal void Write(BinaryWriter writer)
         {
             Debug.Assert(writer != null);
 
@@ -365,13 +343,12 @@ namespace Apache.Ignite.Core
             writer.WriteLongNullable(_mvccVacuumFreq);
             writer.WriteIntNullable(_mvccVacuumThreadCnt);
             writer.WriteTimeSpanAsLongNullable(_sysWorkerBlockedTimeout);
-            writer.WriteBooleanNullable(_initBaselineAutoAdjustEnabled);
-            writer.WriteLongNullable(_initBaselineAutoAdjustTimeout);
-            writer.WriteLongNullable(_initBaselineAutoAdjustMaxTimeout);
             writer.WriteIntNullable(_sqlQueryHistorySize);
+            writer.WriteBooleanNullable(_javaPeerClassLoadingEnabled);
+            writer.WriteIntNullable((int?) _asyncContinuationExecutor);
 
             if (SqlSchemas == null)
-                writer.WriteInt(-1);
+                writer.WriteInt(0);
             else
             {
                 writer.WriteInt(SqlSchemas.Count);
@@ -396,7 +373,7 @@ namespace Apache.Ignite.Core
             writer.WriteIntNullable(_queryThreadPoolSize);
 
             // Cache config
-            writer.WriteCollectionRaw(CacheConfiguration, srvVer);
+            writer.WriteCollectionRaw(CacheConfiguration);
 
             // Discovery config
             var disco = DiscoverySpi;
@@ -647,6 +624,20 @@ namespace Apache.Ignite.Core
                 }
             }
 
+            if (ExecutorConfiguration == null)
+            {
+                writer.WriteInt(0);
+            }
+            else
+            {
+                writer.WriteInt(ExecutorConfiguration.Count);
+                foreach (var exec in ExecutorConfiguration)
+                {
+                    writer.WriteString(exec.Name);
+                    writer.WriteInt(exec.Size);
+                }
+            }
+
             // Plugins (should be last).
             if (PluginConfigurations != null)
             {
@@ -735,8 +726,7 @@ namespace Apache.Ignite.Core
         /// Reads data from specified reader into current instance.
         /// </summary>
         /// <param name="r">The binary reader.</param>
-        /// <param name="srvVer">Server version.</param>
-        private void ReadCore(BinaryReader r, ClientProtocolVersion srvVer)
+        private void ReadCore(BinaryReader r)
         {
             // Simple properties
             _clientMode = r.ReadBooleanNullable();
@@ -759,16 +749,13 @@ namespace Apache.Ignite.Core
             _mvccVacuumFreq = r.ReadLongNullable();
             _mvccVacuumThreadCnt = r.ReadIntNullable();
             _sysWorkerBlockedTimeout = r.ReadTimeSpanNullable();
-            _initBaselineAutoAdjustEnabled = r.ReadBooleanNullable();
-            _initBaselineAutoAdjustTimeout = r.ReadLongNullable();
-            _initBaselineAutoAdjustMaxTimeout = r.ReadLongNullable();
             _sqlQueryHistorySize = r.ReadIntNullable();
+            _javaPeerClassLoadingEnabled = r.ReadBooleanNullable();
+            _asyncContinuationExecutor = (AsyncContinuationExecutor?) r.ReadIntNullable();
 
             int sqlSchemasCnt = r.ReadInt();
 
-            if (sqlSchemasCnt == -1)
-                SqlSchemas = null;
-            else
+            if (sqlSchemasCnt > 0)
             {
                 SqlSchemas = new List<string>(sqlSchemasCnt);
 
@@ -790,13 +777,13 @@ namespace Apache.Ignite.Core
             _queryThreadPoolSize = r.ReadIntNullable();
 
             // Cache config
-            CacheConfiguration = r.ReadCollectionRaw(x => new CacheConfiguration(x, srvVer));
+            CacheConfiguration = r.ReadCollectionRaw(x => new CacheConfiguration(x));
 
             // Discovery config
             DiscoverySpi = r.ReadBoolean() ? new TcpDiscoverySpi(r) : null;
 
-            EncryptionSpi = (srvVer.CompareTo(ClientSocket.Ver120) >= 0 && r.ReadBoolean()) ?
-                new KeystoreEncryptionSpi(r) : null;
+            // Encryption config
+            EncryptionSpi = r.ReadBoolean() ? new KeystoreEncryptionSpi(r) : null;
 
             // Communication config
             CommunicationSpi = r.ReadBoolean() ? new TcpCommunicationSpi(r) : null;
@@ -899,7 +886,7 @@ namespace Apache.Ignite.Core
             // SSL context factory.
             SslContextFactory = SslFactorySerializer.Read(r);
 
-            //Failure handler.
+            // Failure handler.
             if (r.ReadBoolean())
             {
                 switch (r.ReadByte())
@@ -929,16 +916,31 @@ namespace Apache.Ignite.Core
             {
                 FailureHandler = null;
             }
+
+            // Executor configuration.
+            var count = r.ReadInt();
+            if (count >= 0)
+            {
+                ExecutorConfiguration = new List<ExecutorConfiguration>(count);
+
+                for (var i = 0; i < count; i++)
+                {
+                    ExecutorConfiguration.Add(new ExecutorConfiguration
+                    {
+                        Name = r.ReadString(),
+                        Size = r.ReadInt()
+                    });
+                }
+            }
         }
 
         /// <summary>
         /// Reads data from specified reader into current instance.
         /// </summary>
         /// <param name="binaryReader">The binary reader.</param>
-        /// <param name="srvVer">Server version.</param>
-        private void Read(BinaryReader binaryReader, ClientProtocolVersion srvVer)
+        private void Read(BinaryReader binaryReader)
         {
-            ReadCore(binaryReader, srvVer);
+            ReadCore(binaryReader);
 
             // Misc
             IgniteHome = binaryReader.ReadString();
@@ -1082,7 +1084,7 @@ namespace Apache.Ignite.Core
         public ICollection<string> JvmOptions { get; set; }
 
         /// <summary>
-        /// List of additional .Net assemblies to load on Ignite start. Each item can be either
+        /// List of additional .NET assemblies to load on Ignite start. Each item can be either
         /// fully qualified assembly name, path to assembly to DLL or path to a directory when
         /// assemblies reside.
         /// </summary>
@@ -1657,9 +1659,12 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
+        /// This is an experimental feature. Transactional SQL is currently in a beta status.
+        /// <para/>
         /// Time interval between MVCC vacuum runs in milliseconds.
         /// </summary>
         [DefaultValue(DefaultMvccVacuumFrequency)]
+        [IgniteExperimentalAttribute]
         public long MvccVacuumFrequency
         {
             get { return _mvccVacuumFreq ?? DefaultMvccVacuumFrequency; }
@@ -1667,9 +1672,12 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
+        /// This is an experimental feature. Transactional SQL is currently in a beta status.
+        /// <para/>
         /// Number of MVCC vacuum threads.
         /// </summary>
         [DefaultValue(DefaultMvccVacuumThreadCount)]
+        [IgniteExperimentalAttribute]
         public int MvccVacuumThreadCount
         {
             get { return _mvccVacuumThreadCnt ?? DefaultMvccVacuumThreadCount; }
@@ -1710,33 +1718,36 @@ namespace Apache.Ignite.Core
         public ICollection<string> SqlSchemas { get; set; }
 
         /// <summary>
-        /// Initial value of manual baseline control or auto adjusting baseline.
+        /// Gets or sets custom executor configuration for compute tasks.
         /// </summary>
-        [DefaultValue(DefaultInitBaselineAutoAdjustEnabled)]
-        public bool InitBaselineAutoAdjustEnabled
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public ICollection<ExecutorConfiguration> ExecutorConfiguration { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether peer class loading is enabled for <b>Java</b> side.
+        /// <para/>
+        /// When peer class loading is enabled and task is not deployed on local node,
+        /// local node will try to load classes from the node that initiated task execution.
+        /// <para/>
+        /// <b>Important!</b>
+        /// <see cref="PeerAssemblyLoadingMode"/>
+        /// and peer class loading in Java are two distinct and independent features.
+        /// <para />
+        /// </summary>
+        public bool JavaPeerClassLoadingEnabled
         {
-            get { return _initBaselineAutoAdjustEnabled ?? DefaultInitBaselineAutoAdjustEnabled; }
-            set { _initBaselineAutoAdjustEnabled = value; }
+            get { return _javaPeerClassLoadingEnabled ?? default(bool); }
+            set { _javaPeerClassLoadingEnabled = value; }
         }
 
         /// <summary>
-        /// Initial value of time which we would wait before the actual topology change since last discovery event.
+        /// Gets or sets the async continuation behavior.
+        /// See <see cref="Apache.Ignite.Core.Configuration.AsyncContinuationExecutor"/> members for more details.
         /// </summary>
-        [DefaultValue(DefaultInitBaselineAutoAdjustTimeout)]
-        public long InitBaselineAutoAdjustTimeout
+        public AsyncContinuationExecutor AsyncContinuationExecutor
         {
-            get { return _initBaselineAutoAdjustTimeout ?? DefaultInitBaselineAutoAdjustTimeout; }
-            set { _initBaselineAutoAdjustTimeout = value; }
-        }
-
-        /// <summary>
-        /// Initial value of time which we would wait from the first discovery event in the chain(node join/exit).
-        /// </summary>
-        [DefaultValue(DefaultInitBaselineAutoAdjustMaxTimeout)]
-        public long InitBaselineAutoAdjustMaxTimeout
-        {
-            get { return _initBaselineAutoAdjustMaxTimeout ?? DefaultInitBaselineAutoAdjustMaxTimeout; }
-            set { _initBaselineAutoAdjustMaxTimeout = value; }
+            get { return _asyncContinuationExecutor ?? default(AsyncContinuationExecutor); }
+            set { _asyncContinuationExecutor = value; }
         }
     }
 }

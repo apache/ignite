@@ -27,8 +27,11 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.mxbean.MetricsMxBean;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_ASYNC_FILE_IO_FACTORY;
 
 /**
  * A durable memory configuration for an Apache Ignite node. The durable memory is a manageable off-heap based memory
@@ -68,6 +71,9 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DATA_STORA
 public class DataStorageConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Value used for making WAL archive size unlimited */
+    public static final long UNLIMITED_WAL_ARCHIVE = -1;
 
     /** Default data region start size (256 MB). */
     public static final long DFLT_DATA_REGION_INITIAL_SIZE = 256L * 1024 * 1024;
@@ -158,6 +164,12 @@ public class DataStorageConfiguration implements Serializable {
     /** Default wal archive directory. */
     public static final String DFLT_WAL_ARCHIVE_PATH = "db/wal/archive";
 
+    /** Default path (relative to working directory) of binary metadata folder */
+    public static final String DFLT_BINARY_METADATA_PATH = "db/binary_meta";
+
+    /** Default path (relative to working directory) of marshaller mappings folder */
+    public static final String DFLT_MARSHALLER_PATH = "db/marshaller";
+
     /** Default write throttling enabled. */
     public static final boolean DFLT_WRITE_THROTTLING_ENABLED = false;
 
@@ -166,6 +178,15 @@ public class DataStorageConfiguration implements Serializable {
 
     /** Default wal compaction level. */
     public static final int DFLT_WAL_COMPACTION_LEVEL = Deflater.BEST_SPEED;
+
+    /** Default defragmentation thread pool size. */
+    public static final int DFLT_DEFRAGMENTATION_THREAD_POOL_SIZE = 4;
+
+    /** Default compression algorithm for WAL page snapshot records. */
+    public static final DiskPageCompression DFLT_WAL_PAGE_COMPRESSION = DiskPageCompression.DISABLED;
+
+    /** @see IgniteSystemProperties#IGNITE_USE_ASYNC_FILE_IO_FACTORY */
+    public static final boolean DFLT_USE_ASYNC_FILE_IO_FACTORY = true;
 
     /** Initial size of a memory chunk reserved for system cache. */
     private long sysRegionInitSize = DFLT_SYS_REG_INIT_SIZE;
@@ -246,7 +267,7 @@ public class DataStorageConfiguration implements Serializable {
 
     /** Factory to provide I/O interface for data storage files */
     private FileIOFactory fileIOFactory =
-        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_USE_ASYNC_FILE_IO_FACTORY, true) ?
+        IgniteSystemProperties.getBoolean(IGNITE_USE_ASYNC_FILE_IO_FACTORY, DFLT_USE_ASYNC_FILE_IO_FACTORY) ?
             new AsyncFileIOFactory() : new RandomAccessFileIOFactory();
 
     /**
@@ -289,6 +310,28 @@ public class DataStorageConfiguration implements Serializable {
 
     /** Timeout for checkpoint read lock acquisition. */
     private Long checkpointReadLockTimeout;
+
+    /** Compression algorithm for WAL page snapshot records. */
+    private DiskPageCompression walPageCompression = DFLT_WAL_PAGE_COMPRESSION;
+
+    /** Compression level for WAL page snapshot records. */
+    private Integer walPageCompressionLevel;
+
+    /** Default warm-up configuration. */
+    @Nullable private WarmUpConfiguration dfltWarmUpCfg;
+
+    /** Encryption configuration. */
+    private EncryptionConfiguration encCfg = new EncryptionConfiguration();
+
+    /** Maximum number of partitions which can be defragmented at the same time. */
+    private int defragmentationThreadPoolSize = DFLT_DEFRAGMENTATION_THREAD_POOL_SIZE;
+
+    /**
+     * Creates valid durable memory configuration with all default values.
+     */
+    @SuppressWarnings("RedundantNoArgConstructor")
+    public DataStorageConfiguration() {
+    }
 
     /**
      * Initial size of a data region reserved for system cache.
@@ -354,7 +397,8 @@ public class DataStorageConfiguration implements Serializable {
     /**
      * Changes the page size.
      *
-     * @param pageSize Page size in bytes. If value is not set (or zero), {@link #DFLT_PAGE_SIZE} will be used.
+     * @param pageSize Page size in bytes. Supported values are: {@code 1024}, {@code 2048}, {@code 4096}, {@code 8192}
+     * and {@code 16384}. If value is not set (or zero), {@link #DFLT_PAGE_SIZE} ({@code 4096}) will be used.
      * @see #MIN_PAGE_SIZE
      * @see #MAX_PAGE_SIZE
      */
@@ -393,17 +437,20 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * Returns the number of concurrent segments in Ignite internal page mapping tables. By default equals
-     * to the number of available CPUs.
+     * Returns the number of concurrent segments in Ignite internal page mapping tables.
      *
-     * @return Mapping table concurrency level.
+     * By default equals to the number of available CPUs.
+     *
+     * @return Mapping table concurrency level(always greater than 0).
      */
     public int getConcurrencyLevel() {
-        return concLvl;
+        return concLvl <= 0 ? Runtime.getRuntime().availableProcessors() : concLvl;
     }
 
     /**
      * Sets the number of concurrent segments in Ignite internal page mapping tables.
+     *
+     * If value is not positive, the number of available CPUs will be used.
      *
      * @param concLvl Mapping table concurrency level.
      */
@@ -454,7 +501,7 @@ public class DataStorageConfiguration implements Serializable {
     /**
      * Gets checkpoint frequency.
      *
-     * @return checkpoint frequency in milliseconds.
+     * @return Checkpoint frequency in milliseconds.
      */
     public long getCheckpointFrequency() {
         return checkpointFreq <= 0 ? DFLT_CHECKPOINT_FREQ : checkpointFreq;
@@ -464,7 +511,9 @@ public class DataStorageConfiguration implements Serializable {
      * Sets the checkpoint frequency which is a minimal interval when the dirty pages will be written
      * to the Persistent Store. If the rate is high, checkpoint will be triggered more frequently.
      *
-     * @param checkpointFreq checkpoint frequency in milliseconds.
+     * If value is not positive, {@link #DFLT_CHECKPOINT_FREQ} will be used.
+     *
+     * @param checkpointFreq Checkpoint frequency in milliseconds.
      * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setCheckpointFrequency(long checkpointFreq) {
@@ -552,21 +601,28 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * Gets a max allowed size of WAL archives. In bytes.
+     * Gets a max allowed size(in bytes) of WAL archives.
      *
-     * @return max size of WAL archive directory.
+     * @return max size(in bytes) of WAL archive directory(greater than 0, or {@link #UNLIMITED_WAL_ARCHIVE} if
+     * WAL archive size is unlimited).
      */
     public long getMaxWalArchiveSize() {
-        return maxWalArchiveSize <= 0 ? DFLT_WAL_ARCHIVE_MAX_SIZE : maxWalArchiveSize;
+        return maxWalArchiveSize;
     }
 
     /**
-     * Sets a max allowed size of WAL archives. In bytes
+     * Sets a max allowed size(in bytes) of WAL archives.
      *
-     * @param walArchiveMaxSize max size of WAL archive directory.
+     * If value is not positive or {@link #UNLIMITED_WAL_ARCHIVE}, {@link #DFLT_WAL_ARCHIVE_MAX_SIZE} will be used.
+     *
+     * @param walArchiveMaxSize max size(in bytes) of WAL archive directory.
      * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setMaxWalArchiveSize(long walArchiveMaxSize) {
+        if (walArchiveMaxSize != UNLIMITED_WAL_ARCHIVE)
+            A.ensure(walArchiveMaxSize > 0, "Max WAL archive size can be only greater than 0 " +
+                "or must be equal to " + UNLIMITED_WAL_ARCHIVE + " (to be unlimited)");
+
         this.maxWalArchiveSize = walArchiveMaxSize;
 
         return this;
@@ -585,29 +641,32 @@ public class DataStorageConfiguration implements Serializable {
      * Sets a number of WAL segments to work with. For performance reasons,
      * the whole WAL is split into files of fixed length called segments.
      *
-     * @param walSegments Number of WAL segments.
+     * @param walSegments Number of WAL segments. Value must be greater than 1.
      * @return {@code this} for chaining.
      */
     public DataStorageConfiguration setWalSegments(int walSegments) {
+        if (walSegments != 0)
+            A.ensure(walSegments > 1, "Number of WAL segments must be greater than 1.");
+
         this.walSegments = walSegments;
 
         return this;
     }
 
     /**
-     * Gets size of a WAL segment in bytes.
+     * Gets size(in bytes) of a WAL segment.
      *
-     * @return WAL segment size.
+     * @return WAL segment size(in bytes).
      */
     public int getWalSegmentSize() {
         return walSegmentSize == 0 ? DFLT_WAL_SEGMENT_SIZE : walSegmentSize;
     }
 
     /**
-     * Sets size of a WAL segment.
+     * Sets size(in bytes) of a WAL segment.
      * If value is not set (or zero), {@link #DFLT_WAL_SEGMENT_SIZE} will be used.
      *
-     * @param walSegmentSize WAL segment size. Value must be between 512Kb and 2Gb.
+     * @param walSegmentSize WAL segment size(in bytes). Value must be between 512Kb and 2Gb.
      * @return {@code This} for chaining.
      */
     public DataStorageConfiguration setWalSegmentSize(int walSegmentSize) {
@@ -707,7 +766,9 @@ public class DataStorageConfiguration implements Serializable {
      * hits will be tracked. Default value is {@link #DFLT_RATE_TIME_INTERVAL_MILLIS}.
      *
      * @return Time interval in milliseconds.
+     * @deprecated Use {@link MetricsMxBean#configureHitRateMetric(String, long)} instead.
      */
+    @Deprecated
     public long getMetricsRateTimeInterval() {
         return metricsRateTimeInterval;
     }
@@ -717,7 +778,9 @@ public class DataStorageConfiguration implements Serializable {
      * hits will be tracked.
      *
      * @param metricsRateTimeInterval Time interval in milliseconds.
+     * @deprecated Use {@link MetricsMxBean#configureHitRateMetric(String, long)} instead.
      */
+    @Deprecated
     public DataStorageConfiguration setMetricsRateTimeInterval(long metricsRateTimeInterval) {
         this.metricsRateTimeInterval = metricsRateTimeInterval;
 
@@ -729,7 +792,9 @@ public class DataStorageConfiguration implements Serializable {
      * Default value is {@link #DFLT_SUB_INTERVALS}.
      *
      * @return The number of sub-intervals for history tracking.
+     * @deprecated Use {@link MetricsMxBean#configureHitRateMetric(String, long)} instead.
      */
+    @Deprecated
     public int getMetricsSubIntervalCount() {
         return metricsSubIntervalCnt;
     }
@@ -738,7 +803,9 @@ public class DataStorageConfiguration implements Serializable {
      * Sets the number of sub-intervals to split the {@link #getMetricsRateTimeInterval()} into to track the update history.
      *
      * @param metricsSubIntervalCnt The number of sub-intervals for history tracking.
+     * @deprecated Use {@link MetricsMxBean#configureHitRateMetric(String, long)} instead.
      */
+    @Deprecated
     public DataStorageConfiguration setMetricsSubIntervalCount(int metricsSubIntervalCnt) {
         this.metricsSubIntervalCnt = metricsSubIntervalCnt;
 
@@ -793,17 +860,20 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * Property defines size of WAL buffer.
+     * Property defines size(in bytes) of WAL buffer.
      * Each WAL record will be serialized to this buffer before write in WAL file.
      *
-     * @return WAL buffer size.
+     * @return WAL buffer size(in bytes).
      */
     public int getWalBufferSize() {
         return walBuffSize <= 0 ? getWalSegmentSize() / 4 : walBuffSize;
     }
 
     /**
-     * @param walBuffSize WAL buffer size.
+     * Property defines size(in bytes) of WAL buffer.
+     * If value isn't positive it calculation will be based on {@link #getWalSegmentSize()}.
+     *
+     * @param walBuffSize WAL buffer size(in bytes).
      */
     public DataStorageConfiguration setWalBufferSize(int walBuffSize) {
         this.walBuffSize = walBuffSize;
@@ -1019,6 +1089,118 @@ public class DataStorageConfiguration implements Serializable {
         this.checkpointReadLockTimeout = checkpointReadLockTimeout;
 
         return this;
+    }
+
+    /**
+     * Gets compression algorithm for WAL page snapshot records.
+     *
+     * @return Page compression algorithm.
+     */
+    public DiskPageCompression getWalPageCompression() {
+        return walPageCompression == null ? DFLT_WAL_PAGE_COMPRESSION : walPageCompression;
+    }
+
+    /**
+     * Sets compression algorithm for WAL page snapshot records.
+     *
+     * @param walPageCompression Page compression algorithm.
+     * @return {@code this} for chaining.
+     */
+    public DataStorageConfiguration setWalPageCompression(DiskPageCompression walPageCompression) {
+        this.walPageCompression = walPageCompression;
+
+        return this;
+    }
+
+    /**
+     * Gets {@link #getWalPageCompression algorithm} specific WAL page compression level.
+     *
+     * @return WAL page snapshots compression level or {@code null} for default.
+     */
+    public Integer getWalPageCompressionLevel() {
+        return walPageCompressionLevel;
+    }
+
+    /**
+     * Sets {@link #setWalPageCompression algorithm} specific page compression level.
+     *
+     * @param walPageCompressionLevel Disk page compression level or {@code null} to use default.
+     *      {@link DiskPageCompression#ZSTD Zstd}: from {@code -131072} to {@code 22} (default {@code 3}).
+     *      {@link DiskPageCompression#LZ4 LZ4}: from {@code 0} to {@code 17} (default {@code 0}).
+     * @return {@code this} for chaining.
+     */
+    public DataStorageConfiguration setWalPageCompressionLevel(Integer walPageCompressionLevel) {
+        this.walPageCompressionLevel = walPageCompressionLevel;
+
+        return this;
+    }
+
+    /**
+     * Gets encryyption configuration.
+     *
+     * @return Encryption configuration.
+     */
+    public EncryptionConfiguration getEncryptionConfiguration() {
+        return encCfg;
+    }
+
+    /**
+     * Sets encryption configuration.
+     *
+     * @param encCfg Encryption configuration.
+     * @return {@code this} for chaining.
+     */
+    public DataStorageConfiguration setEncryptionConfiguration(EncryptionConfiguration encCfg) {
+        this.encCfg = encCfg;
+
+        return this;
+    }
+
+    /**
+     * Sets default warm-up configuration.
+     *
+     * @param dfltWarmUpCfg Default warm-up configuration. To assign a special
+     *      warm-up configuration for a data region, use
+     *      {@link DataRegionConfiguration#setWarmUpConfiguration}.
+     * @return {@code this} for chaining.
+     */
+    public DataStorageConfiguration setDefaultWarmUpConfiguration(@Nullable WarmUpConfiguration dfltWarmUpCfg) {
+        this.dfltWarmUpCfg = dfltWarmUpCfg;
+
+        return this;
+    }
+
+    /**
+     * Gets default warm-up configuration.
+     *
+     * @return Default warm-up configuration.
+     */
+    @Nullable public WarmUpConfiguration getDefaultWarmUpConfiguration() {
+        return dfltWarmUpCfg;
+    }
+
+    /**
+     * Sets maximum number of partitions which can be defragmented at the same time.
+     *
+     * @param defragmentationThreadPoolSize Maximum number of partitions which can be defragmented at the same time.
+     *      Default is {@link DataStorageConfiguration#DFLT_DEFRAGMENTATION_THREAD_POOL_SIZE}.
+     * @return {@code this} for chaining.
+     */
+    public DataStorageConfiguration setDefragmentationThreadPoolSize(int defragmentationThreadPoolSize) {
+        A.ensure(defragmentationThreadPoolSize > 1, "Defragmentation thread pool size must be greater or equal to 1.");
+
+        this.defragmentationThreadPoolSize = defragmentationThreadPoolSize;
+
+        return this;
+    }
+
+    /**
+     * Maximum number of partitions which can be defragmented at the same time.
+     *
+     * @return Thread pool size for defragmentation.
+     */
+    public int getDefragmentationThreadPoolSize() {
+        return defragmentationThreadPoolSize;
     }
 
     /** {@inheritDoc} */

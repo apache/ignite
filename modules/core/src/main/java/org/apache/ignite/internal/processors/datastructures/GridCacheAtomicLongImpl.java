@@ -31,9 +31,9 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
@@ -84,8 +84,8 @@ public final class GridCacheAtomicLongImpl extends AtomicDataStructureProxy<Grid
 
             return val.get();
         }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+        catch (IgniteException | IgniteCheckedException e) {
+            throw checkRemovedAfterFail(e);
         }
     }
 
@@ -93,18 +93,15 @@ public final class GridCacheAtomicLongImpl extends AtomicDataStructureProxy<Grid
     @Override public long incrementAndGet() {
         checkRemoved();
 
-        try{
+        try {
             EntryProcessorResult<Long> res = cacheView.invoke(key, IncrementAndGetProcessor.INSTANCE);
 
             assert res != null && res.get() != null : res;
 
             return res.get();
         }
-        catch (EntryProcessorException e) {
-            throw new IgniteException(e.getMessage(), e);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+        catch (EntryProcessorException | IgniteCheckedException e) {
+            throw checkRemovedAfterFail(e);
         }
     }
 
@@ -119,11 +116,8 @@ public final class GridCacheAtomicLongImpl extends AtomicDataStructureProxy<Grid
 
             return res.get();
         }
-        catch (EntryProcessorException e) {
-            throw new IgniteException(e.getMessage(), e);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+        catch (EntryProcessorException | IgniteCheckedException e) {
+            throw checkRemovedAfterFail(e);
         }
     }
 
@@ -138,11 +132,8 @@ public final class GridCacheAtomicLongImpl extends AtomicDataStructureProxy<Grid
 
             return res.get();
         }
-        catch (EntryProcessorException e) {
-            throw new IgniteException(e.getMessage(), e);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+        catch (EntryProcessorException | IgniteCheckedException e) {
+            throw checkRemovedAfterFail(e);
         }
     }
 
@@ -157,11 +148,8 @@ public final class GridCacheAtomicLongImpl extends AtomicDataStructureProxy<Grid
 
             return res.get();
         }
-        catch (EntryProcessorException e) {
-            throw new IgniteException(e.getMessage(), e);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+        catch (EntryProcessorException | IgniteCheckedException e) {
+            throw checkRemovedAfterFail(e);
         }
     }
 
@@ -176,11 +164,8 @@ public final class GridCacheAtomicLongImpl extends AtomicDataStructureProxy<Grid
 
             return res.get();
         }
-        catch (EntryProcessorException e) {
-            throw new IgniteException(e.getMessage(), e);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+        catch (EntryProcessorException | IgniteCheckedException e) {
+            throw checkRemovedAfterFail(e);
         }
     }
 
@@ -195,11 +180,8 @@ public final class GridCacheAtomicLongImpl extends AtomicDataStructureProxy<Grid
 
             return res.get();
         }
-        catch (EntryProcessorException e) {
-            throw new IgniteException(e.getMessage(), e);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+        catch (EntryProcessorException | IgniteCheckedException e) {
+            throw checkRemovedAfterFail(e);
         }
     }
 
@@ -214,11 +196,8 @@ public final class GridCacheAtomicLongImpl extends AtomicDataStructureProxy<Grid
 
             return res.get();
         }
-        catch (EntryProcessorException e) {
-            throw new IgniteException(e.getMessage(), e);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+        catch (EntryProcessorException | IgniteCheckedException e) {
+            throw checkRemovedAfterFail(e);
         }
     }
 
@@ -233,11 +212,8 @@ public final class GridCacheAtomicLongImpl extends AtomicDataStructureProxy<Grid
 
             return res.get() == expVal;
         }
-        catch (EntryProcessorException e) {
-            throw new IgniteException(e.getMessage(), e);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+        catch (EntryProcessorException | IgniteCheckedException e) {
+            throw checkRemovedAfterFail(e);
         }
     }
 
@@ -256,11 +232,8 @@ public final class GridCacheAtomicLongImpl extends AtomicDataStructureProxy<Grid
 
             return res.get();
         }
-        catch (EntryProcessorException e) {
-            throw new IgniteException(e.getMessage(), e);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
+        catch (EntryProcessorException | IgniteCheckedException e) {
+            throw checkRemovedAfterFail(e);
         }
     }
 

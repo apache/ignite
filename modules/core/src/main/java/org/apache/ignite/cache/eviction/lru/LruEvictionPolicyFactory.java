@@ -68,5 +68,4 @@ public class LruEvictionPolicyFactory<K, V> extends AbstractEvictionPolicyFactor
 
         return policy;
     }
-
 }

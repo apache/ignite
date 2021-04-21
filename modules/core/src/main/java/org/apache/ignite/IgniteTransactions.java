@@ -118,10 +118,19 @@ public interface IgniteTransactions {
 
     /**
      * Returns instance of Ignite Transactions to mark a transaction with a special label.
+     * The label can be obtained via {@link Transaction#label()} method.
      *
      * @param lb label.
      * @return {@code This} for chaining.
      * @throws NullPointerException if label is null.
+     * @see Transaction#label()
      */
     public IgniteTransactions withLabel(String lb);
+
+    /**
+     * Returns an instance of {@code IgniteTransactions} tran will trace every transaction.
+     *
+     * @return Trace-enabled transactions intance.
+     */
+    public IgniteTransactions withTracing();
 }

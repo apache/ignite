@@ -32,12 +32,15 @@ namespace Apache.Ignite.Core.Tests.ApiParity
     /// </summary>
     public static class ParityTest
     {
+        /** Test ignore reason: we should not fail builds due to new APIs being added in Java. */
+        public const string IgnoreReason = "API parity tests are supposed to be run manually.";
+
         /** Property regex. */
-        private static readonly Regex JavaPropertyRegex = 
+        private static readonly Regex JavaPropertyRegex =
             new Regex("(@Deprecated)?\\s+public [^=^\r^\n]+ (\\w+)\\(\\) {", RegexOptions.Compiled);
 
         /** Interface method regex. */
-        private static readonly Regex JavaInterfaceMethodRegex = 
+        private static readonly Regex JavaInterfaceMethodRegex =
             new Regex("(@Deprecated)?\\s+(@Override)?\\s+public [^=^\r^\n]+ (\\w+)\\(.*?\\)",
                 RegexOptions.Compiled | RegexOptions.Singleline);
 
@@ -52,8 +55,8 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         /// <summary>
         /// Tests the configuration parity.
         /// </summary>
-        public static void CheckConfigurationParity(string javaFilePath, 
-            Type type, 
+        public static void CheckConfigurationParity(string javaFilePath,
+            Type type,
             IEnumerable<string> excludedProperties = null,
             IEnumerable<string> knownMissingProperties = null,
             Dictionary<string, string> knownMappings = null)
@@ -72,8 +75,8 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         /// <summary>
         /// Tests the configuration parity.
         /// </summary>
-        public static void CheckInterfaceParity(string javaFilePath, 
-            Type type, 
+        public static void CheckInterfaceParity(string javaFilePath,
+            Type type,
             IEnumerable<string> excludedMembers = null,
             IEnumerable<string> knownMissingMembers = null,
             Dictionary<string, string> knownMappings = null)
@@ -121,7 +124,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         {
             javaFilePath = javaFilePath.Replace('\\', Path.DirectorySeparatorChar);
 
-            var path = Path.Combine(IgniteHome.Resolve(null), javaFilePath);
+            var path = Path.Combine(IgniteHome.Resolve(), javaFilePath);
             Assert.IsTrue(File.Exists(path), path);
 
             return path;
@@ -130,8 +133,8 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         /// <summary>
         /// Checks the parity.
         /// </summary>
-        private static void CheckParity(Type type, IEnumerable<string> knownMissingMembers, 
-            IDictionary<string, string> knownMappings, IEnumerable<string> javaMethods, 
+        private static void CheckParity(Type type, IEnumerable<string> knownMissingMembers,
+            IDictionary<string, string> knownMappings, IEnumerable<string> javaMethods,
             IDictionary<string, MemberInfo> dotNetMembers)
         {
             var missingMembers = javaMethods
@@ -148,7 +151,10 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             {
                 if (!knownMissing.ContainsKey(javaMissingProp.Key))
                 {
-                    sb.AppendFormat("{0}.{1} member is missing in .NET.\n", type.Name, javaMissingProp.Key);
+                    sb.AppendFormat("{0}.{1} member is missing in .NET.\n" +
+                                    "For new functionality please file a .NET ticket and update MissingProperties " +
+                                    "array accordingly with a link to that ticket.\n", type.Name, javaMissingProp.Key);
+
                     codeSb.AppendFormat("\"{0}\", ", javaMissingProp.Key);
                 }
             }
@@ -175,6 +181,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         {
             var text = File.ReadAllText(path);
 
+            // ReSharper disable once RedundantEnumerableCastCall
             return JavaPropertyRegex.Matches(text)
                 .OfType<Match>()
                 .Where(m => m.Groups[1].Value == string.Empty)
@@ -190,6 +197,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         {
             var text = File.ReadAllText(path);
 
+            // ReSharper disable once RedundantEnumerableCastCall
             return JavaInterfaceMethodRegex.Matches(text)
                 .OfType<Match>()
                 .Where(m => m.Groups[1].Value == string.Empty)
@@ -200,13 +208,13 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         /// <summary>
         /// Gets the name variants for a property.
         /// </summary>
-        private static IEnumerable<string> GetNameVariants(string javaPropertyName, 
+        private static IEnumerable<string> GetNameVariants(string javaPropertyName,
             IDictionary<string, string> knownMappings)
         {
             yield return javaPropertyName;
-            
+
             yield return "get" + javaPropertyName;
-            
+
             yield return "is" + javaPropertyName;
 
             yield return javaPropertyName.Replace("PoolSize", "ThreadPoolSize");
@@ -217,7 +225,6 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             }
 
             string map;
-
             if (knownMappings != null && knownMappings.TryGetValue(javaPropertyName, out map))
             {
                 yield return map;

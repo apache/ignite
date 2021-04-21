@@ -16,7 +16,7 @@
  */
 
 /**
- * <!-- Package description. -->
- * SVM examples.
+ * <!-- Package description. --> SVM examples.
  */
+
 package org.apache.ignite.examples.ml.svm;

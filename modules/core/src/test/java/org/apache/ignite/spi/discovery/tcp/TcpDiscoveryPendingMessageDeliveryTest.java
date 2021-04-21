@@ -320,11 +320,6 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
         }
 
         /** {@inheritDoc} */
-        @Override public boolean stopProcess() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
         @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer,
             DiscoCache discoCache) {
             throw new UnsupportedOperationException();

@@ -109,6 +109,7 @@ public class IgniteRebalanceScheduleResendPartitionsTest extends GridCommonAbstr
     public void test() throws Exception {
         Ignite ig0 = startGrids(3);
 
+        ig0.cluster().baselineAutoAdjustEnabled(false);
         ig0.cluster().active(true);
 
         int entries = 100_000;
@@ -124,16 +125,19 @@ public class IgniteRebalanceScheduleResendPartitionsTest extends GridCommonAbstr
 
         AtomicInteger cnt = new AtomicInteger();
 
-        CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch awaitlatch = new CountDownLatch(1);
+        AtomicBoolean done = new AtomicBoolean();
 
         runAsync(() -> {
             try {
-                latch.await();
+                awaitlatch.await();
 
                 // Sleep should be less that full awaitPartitionMapExchange().
                 Thread.sleep(super.getPartitionMapExchangeTimeout());
 
                 log.info("Await completed, continue rebalance.");
+
+                done.set(true);
 
                 unwrapSPI(ig3).resume();
             }
@@ -151,10 +155,13 @@ public class IgniteRebalanceScheduleResendPartitionsTest extends GridCommonAbstr
 
             // Continue after baseline changed exchange occurred.
             if (msg.exchangeId() != null)
-                latch.countDown();
+                awaitlatch.countDown();
 
-            if (prevMessageComparator.prevEquals(msg))
+            if (!done.get() && prevMessageComparator.prevEquals(msg)) {
+                System.out.println("Equals messages, prev=" + prevMessageComparator.prev + " , curr=" + msg);
+
                 cnt.incrementAndGet();
+            }
         });
 
         ig3.cluster().setBaselineTopology(ig3.context().discovery().topologyVersion());

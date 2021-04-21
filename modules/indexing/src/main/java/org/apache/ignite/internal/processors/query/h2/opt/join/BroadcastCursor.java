@@ -17,16 +17,15 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt.join;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.Map;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.h2.index.Cursor;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
-
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.Map;
 
 /**
  * Merge cursor from multiple nodes.

@@ -1,5 +1,0 @@
-*.log.*
-.npmrc
-public/stylesheets/*.css
-build/
-node_modules/

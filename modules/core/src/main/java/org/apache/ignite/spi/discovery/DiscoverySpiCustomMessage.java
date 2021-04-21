@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.discovery;
 
 import java.io.Serializable;
-
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.jetbrains.annotations.Nullable;
@@ -47,6 +46,9 @@ public interface DiscoverySpiCustomMessage extends Serializable {
      * message, it is sent to all nodes.
      *
      * @return {@code True} if message should not be sent to all nodes.
+     *
+     * @deprecated Is not used anymore and will be removed at 3.0.
      */
+    @Deprecated
     public boolean stopProcess();
 }

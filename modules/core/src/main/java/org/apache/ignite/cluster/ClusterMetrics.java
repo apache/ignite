@@ -374,7 +374,7 @@ public interface ClusterMetrics {
     public int getTotalCpus();
 
     /**
-     * Returns the CPU usage usage in {@code [0, 1]} range.
+     * Returns the CPU usage in {@code [0, 1]} range.
      * The exact way how this number is calculated depends on SPI implementation.
      * <p>
      * If the CPU usage is not available, a negative value is returned.
@@ -694,4 +694,11 @@ public interface ClusterMetrics {
      * @return Total number of nodes.
      */
     public int getTotalNodes();
+
+    /**
+     * Gets execution duration for current partition map exchange in milliseconds.
+     *
+     * @return Gets execution duration for current partition map exchange in milliseconds. {@code 0} if there is no running PME.
+     */
+    public long getCurrentPmeDuration();
 }

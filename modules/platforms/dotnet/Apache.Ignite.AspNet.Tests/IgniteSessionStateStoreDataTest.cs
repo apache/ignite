@@ -18,6 +18,7 @@
 namespace Apache.Ignite.AspNet.Tests
 {
     using System;
+    using System.Diagnostics;
     using System.IO;
     using System.Reflection;
     using System.Web;
@@ -39,8 +40,9 @@ namespace Apache.Ignite.AspNet.Tests
         {
             // Modification method is internal.
             var statics = new HttpStaticObjectsCollection();
-            statics.GetType().GetMethod("Add", BindingFlags.Instance | BindingFlags.NonPublic)
-                .Invoke(statics, new object[] { "int", typeof(int), false });
+            var methodInfo = statics.GetType().GetMethod("Add", BindingFlags.Instance | BindingFlags.NonPublic);
+            Debug.Assert(methodInfo != null);
+            methodInfo.Invoke(statics, new object[] { "int", typeof(int), false });
 
             var data = new IgniteSessionStateStoreData(statics, 44);
 

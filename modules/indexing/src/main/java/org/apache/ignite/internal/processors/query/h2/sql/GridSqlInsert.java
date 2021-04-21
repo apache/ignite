@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 import java.util.List;
 import org.h2.util.StatementBuilder;
 
+import static org.apache.ignite.internal.processors.query.QueryUtils.delimeter;
+
 /** */
 public class GridSqlInsert extends GridSqlStatement {
     /** */
@@ -48,18 +50,20 @@ public class GridSqlInsert extends GridSqlStatement {
 
     /** {@inheritDoc} */
     @Override public String getSQL() {
+        char delim = delimeter();
+
         StatementBuilder buff = new StatementBuilder(explain() ? "EXPLAIN " : "");
         buff.append("INSERT")
-            .append("\nINTO ")
+            .append(delim).append("INTO ")
             .append(into.getSQL())
             .append('(');
 
         for (GridSqlColumn col : cols) {
-            buff.appendExceptFirst(", ");
-            buff.append('\n')
+            buff.appendExceptFirst(",");
+            buff.append(delim)
                 .append(col.getSQL());
         }
-        buff.append("\n)\n");
+        buff.append(delim).append(')').append(delim);
 
         if (direct)
             buff.append("DIRECT ");
@@ -68,11 +72,11 @@ public class GridSqlInsert extends GridSqlStatement {
             buff.append("SORTED ");
 
         if (!rows.isEmpty()) {
-            buff.append("VALUES\n");
+            buff.append("VALUES").append(delim);
             StatementBuilder valuesBuff = new StatementBuilder();
 
             for (GridSqlElement[] row : rows()) {
-                valuesBuff.appendExceptFirst(",\n");
+                valuesBuff.appendExceptFirst("," + delim);
                 StatementBuilder rowBuff = new StatementBuilder("(");
                 for (GridSqlElement e : row) {
                     rowBuff.appendExceptFirst(", ");
@@ -84,7 +88,7 @@ public class GridSqlInsert extends GridSqlStatement {
             buff.append(valuesBuff.toString());
         }
         else
-            buff.append('\n')
+            buff.append(delim)
                 .append(qry.getSQL());
 
         return buff.toString();

@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.file;
 
-import com.sun.jna.Native;
-import com.sun.jna.NativeLong;
-import com.sun.jna.Pointer;
 import java.io.File;
 import java.io.IOException;
 import java.nio.BufferOverflowException;
@@ -31,6 +28,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReferenceArray;
+import com.sun.jna.Native;
+import com.sun.jna.NativeLong;
+import com.sun.jna.Pointer;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.processors.compress.FileSystemUtils;
@@ -241,8 +241,8 @@ public class AlignedBuffersDirectFileIO extends AbstractFileIO {
         ByteBuffer alignedBuf = useTlb ? tlbOnePageAligned.get() : AlignedBuffers.allocate(ioBlockSize, size);
 
         try {
-            assert alignedBuf.position() == 0: "Temporary aligned buffer is in incorrect state: position is set incorrectly";
-            assert alignedBuf.limit() == size: "Temporary aligned buffer is in incorrect state: limit is set incorrectly";
+            assert alignedBuf.position() == 0 : "Temporary aligned buffer is in incorrect state: position is set incorrectly";
+            assert alignedBuf.limit() == size : "Temporary aligned buffer is in incorrect state: limit is set incorrectly";
 
             int loaded = readIntoAlignedBuffer(alignedBuf, filePosition);
 

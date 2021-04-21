@@ -16,7 +16,7 @@
  */
 package org.apache.ignite.internal.processors.cache.ttl;
 
-import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.CacheMode;
 
 /**
  * TTL test with offheap.

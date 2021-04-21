@@ -60,7 +60,7 @@ public class GridNioBenchmarkClient {
     private final ExecutorService exec;
 
     /** */
-    private final byte[] buf = new byte[(int)(65536*1.5)];
+    private final byte[] buf = new byte[(int)(65536 * 1.5)];
 
     /**
      * @param connCnt Connections count.
@@ -85,7 +85,7 @@ public class GridNioBenchmarkClient {
         for (int i = 0; i < connCnt; i++)
             exec.execute(new ClientThread());
 
-        Thread.sleep(5*60*1000);
+        Thread.sleep(5 * 60 * 1000);
 
         exec.shutdownNow();
     }
@@ -138,9 +138,9 @@ public class GridNioBenchmarkClient {
 
                 long duration = System.currentTimeMillis() - start;
 
-                long mb = bytes/1048576;
+                long mb = bytes / 1048576;
 
-                X.println("Thread finished [MB=" + bytes/1048576 + ", MB/s=" + ((double)mb)*1000/duration + "]");
+                X.println("Thread finished [MB=" + bytes / 1048576 + ", MB/s=" + ((double)mb) * 1000 / duration + "]");
             }
             catch (IOException e) {
                 e.printStackTrace();

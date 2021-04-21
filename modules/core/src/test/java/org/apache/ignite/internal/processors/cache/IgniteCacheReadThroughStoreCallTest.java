@@ -32,7 +32,6 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -59,21 +58,9 @@ public class IgniteCacheReadThroughStoreCallTest extends GridCommonAbstractTest 
     private static final Map<Object, Object> storeMap = new ConcurrentHashMap<>();
 
     /** */
-    protected boolean client;
-
-    /** */
     @Before
     public void beforeIgniteCacheReadThroughStoreCallTest() {
         MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(client);
-
-        return cfg;
     }
 
     /** {@inheritDoc} */
@@ -92,9 +79,7 @@ public class IgniteCacheReadThroughStoreCallTest extends GridCommonAbstractTest 
     public void testMultiNode() throws Exception {
         startGridsMultiThreaded(4);
 
-        client = true;
-
-        startGrid(4);
+        startClientGrid(4);
 
         checkLoadCount(cacheConfiguration(PARTITIONED, ATOMIC, 0));
 

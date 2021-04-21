@@ -18,6 +18,7 @@
 package org.apache.ignite.marshaller;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 
@@ -34,10 +35,33 @@ public interface MarshallerContext {
      * @param platformId Id of a platform (java, .NET, etc.) to register mapping for.
      * @param typeId Type ID.
      * @param clsName Class name.
+     * @param failIfUnregistered If {@code true} then throw {@link UnregisteredBinaryTypeException} with
+     *      registration future instead of synchronously awaiting for its completion.
      * @return {@code True} if mapping was registered successfully.
      * @throws IgniteCheckedException In case of error.
      */
-    public boolean registerClassName(byte platformId, int typeId, String clsName) throws IgniteCheckedException;
+    public default boolean registerClassName(
+        byte platformId,
+        int typeId,
+        String clsName,
+        boolean failIfUnregistered
+    ) throws IgniteCheckedException {
+        return registerClassName(platformId, typeId, clsName);
+    }
+
+    /**
+     * Same as {@link MarshallerContext#registerClassName(byte, int, java.lang.String, boolean)} but with shortened
+     * parameters list.
+     *
+     * @deprecated Use {@link MarshallerContext#registerClassName(byte, int, java.lang.String, boolean)} instead.
+     *      This particular method will be deleted in future releases.
+     */
+    @Deprecated
+    public boolean registerClassName(
+        byte platformId,
+        int typeId,
+        String clsName
+    ) throws IgniteCheckedException;
 
     /**
      * Method to register typeId->class name mapping in marshaller context <b>on local node only</b>.
@@ -65,7 +89,6 @@ public interface MarshallerContext {
      * @throws IgniteCheckedException In case of any other error.
      */
     public Class getClass(int typeId, ClassLoader ldr) throws ClassNotFoundException, IgniteCheckedException;
-
 
     /**
      * Gets class name for provided (platformId, typeId) pair.

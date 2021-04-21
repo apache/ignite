@@ -53,6 +53,18 @@ public abstract class IgniteDataTransferObject implements Externalizable {
     /** Version 5. */
     protected static final byte V5 = 5;
 
+    /** Version 6. */
+    protected static final byte V6 = 6;
+
+    /** Version 7. */
+    protected static final byte V7 = 7;
+
+    /** Version 8. */
+    protected static final byte V8 = 8;
+
+    /** Version 9. */
+    protected static final byte V9 = 9;
+
     /**
      * @param col Source collection.
      * @param <T> Collection type.
@@ -94,7 +106,7 @@ public abstract class IgniteDataTransferObject implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        int hdr = MAGIC  + getProtocolVersion();
+        int hdr = MAGIC + getProtocolVersion();
 
         out.writeInt(hdr);
 

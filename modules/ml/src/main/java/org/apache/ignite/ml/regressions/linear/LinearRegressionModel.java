@@ -17,26 +17,35 @@
 
 package org.apache.ignite.ml.regressions.linear;
 
-import java.io.Serializable;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Objects;
+import java.util.UUID;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.IgniteModel;
+import org.apache.ignite.ml.inference.json.JSONModel;
+import org.apache.ignite.ml.inference.json.JSONWritable;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
+import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 
 /**
  * Simple linear regression model which predicts result value Y as a linear combination of input variables:
  * Y = weights * X + intercept.
  */
-public class LinearRegressionModel implements IgniteModel<Vector, Double>, Exportable<LinearRegressionModel>, Serializable {
+public final class LinearRegressionModel implements IgniteModel<Vector, Double>, Exportable<LinearRegressionModel>,
+    JSONWritable {
     /** */
     private static final long serialVersionUID = -105984600091550226L;
 
     /** Multiplier of the objects's vector required to make prediction.  */
-    private final Vector weights;
+    private Vector weights;
 
     /** Intercept of the linear regression model */
-    private final double intercept;
+    private double intercept;
 
     /** */
     public LinearRegressionModel(Vector weights, double intercept) {
@@ -45,13 +54,39 @@ public class LinearRegressionModel implements IgniteModel<Vector, Double>, Expor
     }
 
     /** */
-    public Vector getWeights() {
+    private LinearRegressionModel() {
+    }
+
+    /** */
+    public Vector weights() {
         return weights;
     }
 
     /** */
-    public double getIntercept() {
+    public double intercept() {
         return intercept;
+    }
+
+    /**
+     * Set up the weights.
+     *
+     * @param weights The parameter value.
+     * @return Model with new weights parameter value.
+     */
+    public LinearRegressionModel withWeights(Vector weights) {
+        this.weights = weights;
+        return this;
+    }
+
+    /**
+     * Set up the intercept.
+     *
+     * @param intercept The parameter value.
+     * @return Model with new intercept parameter value.
+     */
+    public LinearRegressionModel withIntercept(double intercept) {
+        this.intercept = intercept;
+        return this;
     }
 
     /** {@inheritDoc} */
@@ -108,5 +143,73 @@ public class LinearRegressionModel implements IgniteModel<Vector, Double>, Expor
     /** {@inheritDoc} */
     @Override public String toString(boolean pretty) {
         return toString();
+    }
+
+    /** Loads LinearRegressionModel from JSON file. */
+    public static LinearRegressionModel fromJSON(Path path) {
+        ObjectMapper mapper = new ObjectMapper();
+
+        LinearRegressionModelJSONExportModel linearRegressionJSONExportModel;
+        try {
+            linearRegressionJSONExportModel = mapper
+                    .readValue(new File(path.toAbsolutePath().toString()), LinearRegressionModelJSONExportModel.class);
+
+            return linearRegressionJSONExportModel.convert();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void toJSON(Path path) {
+        ObjectMapper mapper = new ObjectMapper();
+            try {
+                LinearRegressionModelJSONExportModel exportModel = new LinearRegressionModelJSONExportModel(
+                    System.currentTimeMillis(),
+                    "linreg_" + UUID.randomUUID().toString(),
+                    LinearRegressionModel.class.getSimpleName()
+                );
+                exportModel.intercept = intercept;
+                exportModel.weights = weights.asArray();
+
+                File file = new File(path.toAbsolutePath().toString());
+                mapper.writeValue(file, exportModel);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+    }
+
+    /**  */
+    public static class LinearRegressionModelJSONExportModel extends JSONModel {
+        /**
+         * Multiplier of the objects's vector required to make prediction.
+         */
+        public double[] weights;
+
+        /**
+         * Intercept of the linear regression model.
+         */
+        public double intercept;
+
+        /** */
+        public LinearRegressionModelJSONExportModel(Long timestamp, String uid, String modelClass) {
+            super(timestamp, uid, modelClass);
+        }
+
+        /** */
+        @JsonCreator
+        public LinearRegressionModelJSONExportModel() {
+        }
+
+        /** {@inheritDoc} */
+        @Override public LinearRegressionModel convert() {
+            LinearRegressionModel linRegMdl = new LinearRegressionModel();
+            linRegMdl.withWeights(VectorUtils.of(weights));
+            linRegMdl.withIntercept(intercept);
+
+            return linRegMdl;
+        }
     }
 }

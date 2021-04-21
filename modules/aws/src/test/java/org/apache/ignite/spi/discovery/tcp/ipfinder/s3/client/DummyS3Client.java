@@ -17,6 +17,17 @@
 
 package org.apache.ignite.spi.discovery.tcp.ipfinder.s3.client;
 
+import java.io.File;
+import java.io.InputStream;
+import java.net.URL;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import com.amazonaws.AmazonWebServiceRequest;
 import com.amazonaws.HttpMethod;
 import com.amazonaws.SdkClientException;
@@ -146,17 +157,6 @@ import com.amazonaws.services.s3.model.analytics.AnalyticsConfiguration;
 import com.amazonaws.services.s3.model.inventory.InventoryConfiguration;
 import com.amazonaws.services.s3.model.metrics.MetricsConfiguration;
 import com.amazonaws.services.s3.waiters.AmazonS3Waiters;
-import java.io.File;
-import java.io.InputStream;
-import java.net.URL;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Class to simulate the functionality of {@link AmazonS3Client}.

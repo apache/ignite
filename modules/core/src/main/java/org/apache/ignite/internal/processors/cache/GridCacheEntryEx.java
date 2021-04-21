@@ -40,7 +40,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.processors.dr.GridDrType;
-import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheFilter;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.lang.IgniteUuid;
@@ -792,6 +791,42 @@ public interface GridCacheEntryEx {
      * @throws IgniteCheckedException In case of error.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
+    default boolean initialValue(CacheObject val,
+        GridCacheVersion ver,
+        @Nullable MvccVersion mvccVer,
+        @Nullable MvccVersion newMvccVer,
+        byte mvccTxState,
+        byte newMvccTxState,
+        long ttl,
+        long expireTime,
+        boolean preload,
+        AffinityTopologyVersion topVer,
+        GridDrType drType,
+        boolean fromStore) throws IgniteCheckedException, GridCacheEntryRemovedException {
+        return initialValue(val, ver, null, null, TxState.NA, TxState.NA,
+            ttl, expireTime, preload, topVer, drType, fromStore, null);
+    }
+
+    /**
+     * Sets new value if current version is <tt>0</tt>
+     *
+     * @param val New value.
+     * @param ver Version to use.
+     * @param mvccVer Mvcc version.
+     * @param newMvccVer New mvcc version.
+     * @param mvccTxState Tx state hint for mvcc version.
+     * @param newMvccTxState Tx state hint for new mvcc version.
+     * @param ttl Time to live.
+     * @param expireTime Expiration time.
+     * @param preload Flag indicating whether entry is being preloaded.
+     * @param topVer Topology version.
+     * @param drType DR type.
+     * @param fromStore {@code True} if value was loaded from store.
+     * @param row Pre-created data row, associated with this cache entry.
+     * @return {@code True} if initial value was set.
+     * @throws IgniteCheckedException In case of error.
+     * @throws GridCacheEntryRemovedException If entry was removed.
+     */
     public boolean initialValue(CacheObject val,
         GridCacheVersion ver,
         @Nullable MvccVersion mvccVer,
@@ -803,7 +838,8 @@ public interface GridCacheEntryEx {
         boolean preload,
         AffinityTopologyVersion topVer,
         GridDrType drType,
-        boolean fromStore) throws IgniteCheckedException, GridCacheEntryRemovedException;
+        boolean fromStore,
+        @Nullable CacheDataRow row) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
      * Create versioned entry for this cache entry.
@@ -1002,13 +1038,13 @@ public interface GridCacheEntryEx {
     /**
      * Update index from within entry lock, passing key, value, and expiration time to provided closure.
      *
-     * @param filter Row filter.
      * @param clo Closure to apply to key, value, and expiration time.
      * @throws IgniteCheckedException If failed.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    public void updateIndex(SchemaIndexCacheFilter filter, SchemaIndexCacheVisitorClosure clo)
-        throws IgniteCheckedException, GridCacheEntryRemovedException;
+    public void updateIndex(
+        SchemaIndexCacheVisitorClosure clo
+    ) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
      * @return Expire time, without accounting for transactions or removals.
@@ -1168,6 +1204,17 @@ public interface GridCacheEntryEx {
     public void unlockEntry();
 
     /**
+     * Locks entry to protect from concurrent access. Intended to be used instead of inherent java synchronization. This
+     * allows to separate locking from unlocking in time and/or code units.
+     *
+     * @param timeout period of waiting in millis;
+     * @return {@code true} if the lock was free and was acquired by the current thread, or the lock was already held by
+     * the current thread; and {@code false} if the waiting time elapsed before the lock could be acquired
+     * @see GridCacheEntryEx#unlockEntry().
+     */
+    public boolean tryLockEntry(long timeout);
+
+    /**
      * Tests whether the entry is locked currently.
      *
      * @see GridCacheEntryEx#lockEntry().
@@ -1200,6 +1247,17 @@ public interface GridCacheEntryEx {
         MvccSnapshot mvccVer,
         IgniteUuid futId,
         int batchNum)
+        throws IgniteCheckedException, GridCacheEntryRemovedException;
+
+    /**
+     * Apply entry history if not exists.
+     *
+     * @param entries Entries.
+     * @return {@code True} if initial value was set.
+     * @throws IgniteCheckedException, If failed.
+     * @throws GridCacheEntryRemovedException, If entry has been removed.
+     */
+    public boolean mvccPreloadEntry(List<GridCacheMvccEntryInfo> entries)
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**

@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Impl.Compute
     using System.Linq;
     using System.Runtime.Serialization;
     using System.Threading;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
@@ -34,6 +35,7 @@ namespace Apache.Ignite.Core.Impl.Compute
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Compute.Closure;
+    using Apache.Ignite.Core.Impl.Deployment;
 
     /// <summary>
     /// Compute implementation.
@@ -41,9 +43,6 @@ namespace Apache.Ignite.Core.Impl.Compute
     [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable")]
     internal class ComputeImpl : PlatformTargetAdapter
     {
-        /** */
-        private const int OpAffinity = 1;
-
         /** */
         private const int OpBroadcast = 2;
 
@@ -67,6 +66,21 @@ namespace Apache.Ignite.Core.Impl.Compute
 
         /** */
         private const int OpWithNoResultCache = 9;
+
+        /** */
+        private const int OpWithExecutor = 10;
+
+        /** */
+        private const int OpAffinityCallPartition = 11;
+
+        /** */
+        private const int OpAffinityRunPartition = 12;
+
+        /** */
+        private const int OpAffinityCall = 13;
+
+        /** */
+        private const int OpAffinityRun = 14;
 
         /** Underlying projection. */
         private readonly ClusterGroupImpl _prj;
@@ -139,6 +153,18 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /// <summary>
+        /// Returns a new <see cref="ComputeImpl"/> instance associated with a specified executor.
+        /// </summary>
+        /// <param name="executorName">Executor name.</param>
+        /// <returns>New <see cref="ComputeImpl"/> instance associated with a specified executor.</returns>
+        public ComputeImpl WithExecutor(string executorName)
+        {
+            var target = DoOutOpObject(OpWithExecutor, w => w.WriteString(executorName));
+
+            return new ComputeImpl(target, _prj, _keepBinary.Value);
+        }
+
+        /// <summary>
         /// Executes given Java task on the grid projection. If task for given name has not been deployed yet,
         /// then 'taskName' will be used as task class name to auto-deploy the task.
         /// </summary>
@@ -147,6 +173,10 @@ namespace Apache.Ignite.Core.Impl.Compute
             IgniteArgumentCheck.NotNullOrEmpty(taskName, "taskName");
 
             ICollection<IClusterNode> nodes = _prj.Predicate == null ? null : _prj.GetNodes();
+            
+            bool locRegisterSameJavaType = Marshaller.RegisterSameJavaTypeTl.Value;
+
+            Marshaller.RegisterSameJavaTypeTl.Value = true;
 
             try
             {
@@ -155,6 +185,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             finally
             {
                 _keepBinary.Value = false;
+                Marshaller.RegisterSameJavaTypeTl.Value = locRegisterSameJavaType;
             }
         }
 
@@ -169,6 +200,10 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             ICollection<IClusterNode> nodes = _prj.Predicate == null ? null : _prj.GetNodes();
 
+            bool locRegisterSameJavaType = Marshaller.RegisterSameJavaTypeTl.Value;
+
+            Marshaller.RegisterSameJavaTypeTl.Value = true;
+
             try
             {
                 return DoOutOpObjectAsync<TReduceRes>(OpExecAsync, w => WriteTask(w, taskName, taskArg, nodes));
@@ -176,6 +211,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             finally
             {
                 _keepBinary.Value = false;
+                Marshaller.RegisterSameJavaTypeTl.Value = locRegisterSameJavaType;
             }
         }
 
@@ -241,22 +277,6 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             return ExecuteClosures0(new ComputeSingleClosureTask<object, TJobRes, TJobRes>(),
                 new ComputeOutFuncJob(clo.ToNonGeneric()), null, false);
-        }
-
-        /// <summary>
-        /// Executes provided delegate on a node in this grid projection. The result of the
-        /// job execution is returned from the result closure.
-        /// </summary>
-        /// <param name="func">Func to execute.</param>
-        /// <returns>Job result for this execution.</returns>
-        public Future<TJobRes> Execute<TJobRes>(Func<TJobRes> func)
-        {
-            IgniteArgumentCheck.NotNull(func, "func");
-
-            var wrappedFunc = new ComputeOutFuncWrapper(func, () => func());
-
-            return ExecuteClosures0(new ComputeSingleClosureTask<object, TJobRes, TJobRes>(),
-                new ComputeOutFuncJob(wrappedFunc), null, false);
         }
 
         /// <summary>
@@ -456,9 +476,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             IgniteArgumentCheck.NotNull(cacheName, "cacheName");
             IgniteArgumentCheck.NotNull(action, "action");
 
-            return ExecuteClosures0(new ComputeSingleClosureTask<object, object, object>(),
-                new ComputeActionJob(action), opId: OpAffinity,
-                writeAction: w => WriteAffinity(w, cacheName, affinityKey));
+            return DoAffinityOp<object>(cacheName, null, affinityKey, action, OpAffinityRun);
         }
 
         /// <summary>
@@ -475,9 +493,86 @@ namespace Apache.Ignite.Core.Impl.Compute
             IgniteArgumentCheck.NotNull(cacheName, "cacheName");
             IgniteArgumentCheck.NotNull(clo, "clo");
 
-            return ExecuteClosures0(new ComputeSingleClosureTask<object, TJobRes, TJobRes>(),
-                new ComputeOutFuncJob(clo.ToNonGeneric()), opId: OpAffinity,
-                writeAction: w => WriteAffinity(w, cacheName, affinityKey));
+            return DoAffinityOp<TJobRes>(cacheName, null, affinityKey, clo, OpAffinityCall);
+        }
+
+        /// <summary>
+        /// Executes given func on a node where specified partition is located.
+        /// </summary>
+        /// <param name="cacheNames">Cache names. First cache is used for co-location.</param>
+        /// <param name="partition">Partition.</param>
+        /// <param name="func">Func to execute.</param>
+        /// <typeparam name="TJobRes">Result type.</typeparam>
+        /// <returns>Result.</returns>
+        public Future<TJobRes> AffinityCall<TJobRes>(IEnumerable<string> cacheNames, int partition,
+            IComputeFunc<TJobRes> func)
+        {
+            return DoAffinityOp<TJobRes>(cacheNames, partition, null, func, OpAffinityCallPartition);
+        }
+
+        /// <summary>
+        /// Executes given func on a node where specified partition is located.
+        /// </summary>
+        /// <param name="cacheNames">Cache names. First cache is used for co-location.</param>
+        /// <param name="partition">Partition.</param>
+        /// <param name="func">Func to execute.</param>
+        /// <returns>Result.</returns>
+        public Future<object> AffinityRun(IEnumerable<string> cacheNames, int partition, IComputeAction func)
+        {
+            return DoAffinityOp<object>(cacheNames, partition, null, func, OpAffinityRunPartition);
+        }
+
+        /// <summary>
+        /// Performs affinity operation with.
+        /// </summary>
+        private Future<TJobRes> DoAffinityOp<TJobRes>(object cacheNames, int? partition, object key, object func, int op)
+        {
+            IgniteArgumentCheck.NotNull(cacheNames, "cacheNames");
+            IgniteArgumentCheck.NotNull(func, "func");
+            
+            var handleRegistry = Marshaller.Ignite.HandleRegistry;
+            var handle = handleRegistry.Allocate(func);
+
+            try
+            {
+                var fut = DoOutOpObjectAsync<TJobRes>(op, w =>
+                {
+                    var cacheName = cacheNames as string;
+                    if (cacheName != null)
+                    {
+                        w.WriteString(cacheName);
+                    }
+                    else
+                    {
+                        var cacheCount = w.WriteStrings((IEnumerable<string>) cacheNames);
+                        if (cacheCount == 0)
+                        {
+                            throw new ArgumentException("cacheNames can not be empty", "cacheNames");
+                        }
+                    }
+
+                    if (partition != null)
+                    {
+                        w.WriteInt(partition.Value);
+                    }
+                    else
+                    {
+                        w.WriteObjectDetached(key);
+                    }
+
+                    w.WriteWithPeerDeployment(func);
+                    w.WriteLong(handle);
+                });
+
+                fut.Task.ContWith(_ => handleRegistry.Release(handle), TaskContinuationOptions.ExecuteSynchronously);
+
+                return fut;
+            }
+            catch
+            {
+                handleRegistry.Release(handle);
+                throw;
+            }
         }
 
         /** <inheritDoc /> */
@@ -647,19 +742,6 @@ namespace Apache.Ignite.Core.Impl.Compute
                 foreach (IClusterNode node in nodes)
                     writer.WriteGuid(node.Id);
             }
-        }
-
-        /// <summary>
-        /// Writes the affinity info.
-        /// </summary>
-        /// <param name="writer">The writer.</param>
-        /// <param name="cacheName">Name of the cache to use for affinity co-location.</param>
-        /// <param name="affinityKey">Affinity key.</param>
-        private static void WriteAffinity(BinaryWriter writer, string cacheName, object affinityKey)
-        {
-            writer.WriteString(cacheName);
-
-            writer.WriteObject(affinityKey);
         }
 
         /// <summary>

@@ -21,7 +21,8 @@ import java.util.List;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResultMarshaler;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -43,6 +44,9 @@ public class JdbcQueryExecuteResult extends JdbcResult {
     /** Update count. */
     private long updateCnt;
 
+    /** Partition result. */
+    private PartitionResult partRes;
+
     /**
      * Constructor.
      */
@@ -54,27 +58,31 @@ public class JdbcQueryExecuteResult extends JdbcResult {
      * @param cursorId Cursor ID.
      * @param items Query result rows.
      * @param last Flag indicates the query has no unfetched results.
+     * @param partRes partition result to use for best affort affinity on the client side.
      */
-    JdbcQueryExecuteResult(long cursorId, List<List<Object>> items, boolean last) {
+    JdbcQueryExecuteResult(long cursorId, List<List<Object>> items, boolean last, PartitionResult partRes) {
         super(QRY_EXEC);
 
         this.cursorId = cursorId;
         this.items = items;
         this.last = last;
-        this.isQuery = true;
+        isQuery = true;
+        this.partRes = partRes;
     }
 
     /**
      * @param cursorId Cursor ID.
      * @param updateCnt Update count for DML queries.
+     * @param partRes partition result to use for best affort affinity on the client side.
      */
-    public JdbcQueryExecuteResult(long cursorId, long updateCnt) {
+    public JdbcQueryExecuteResult(long cursorId, long updateCnt, PartitionResult partRes) {
         super(QRY_EXEC);
 
         this.cursorId = cursorId;
-        this.last = true;
-        this.isQuery = false;
+        last = true;
+        isQuery = false;
         this.updateCnt = updateCnt;
+        this.partRes = partRes;
     }
 
     /**
@@ -113,9 +121,11 @@ public class JdbcQueryExecuteResult extends JdbcResult {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinary(BinaryWriterExImpl writer,
-        ClientListenerProtocolVersion ver) throws BinaryObjectException {
-        super.writeBinary(writer, ver);
+    @Override public void writeBinary(
+        BinaryWriterExImpl writer,
+        JdbcProtocolContext protoCtx
+    ) throws BinaryObjectException {
+        super.writeBinary(writer, protoCtx);
 
         writer.writeLong(cursorId);
         writer.writeBoolean(isQuery);
@@ -125,17 +135,23 @@ public class JdbcQueryExecuteResult extends JdbcResult {
 
             writer.writeBoolean(last);
 
-            JdbcUtils.writeItems(writer, items);
+            JdbcUtils.writeItems(writer, items, protoCtx);
         }
         else
             writer.writeLong(updateCnt);
+
+        writer.writeBoolean(partRes != null);
+
+        if (protoCtx.isAffinityAwarenessSupported() && partRes != null)
+            PartitionResultMarshaler.marshal(writer, partRes);
     }
 
-
     /** {@inheritDoc} */
-    @Override public void readBinary(BinaryReaderExImpl reader,
-        ClientListenerProtocolVersion ver) throws BinaryObjectException {
-        super.readBinary(reader, ver);
+    @Override public void readBinary(
+        BinaryReaderExImpl reader,
+        JdbcProtocolContext protoCtx
+    ) throws BinaryObjectException {
+        super.readBinary(reader, protoCtx);
 
         cursorId = reader.readLong();
         isQuery = reader.readBoolean();
@@ -143,17 +159,27 @@ public class JdbcQueryExecuteResult extends JdbcResult {
         if (isQuery) {
             last = reader.readBoolean();
 
-            items = JdbcUtils.readItems(reader);
+            items = JdbcUtils.readItems(reader, protoCtx);
         }
         else {
             last = true;
 
             updateCnt = reader.readLong();
         }
+
+        if (protoCtx.isAffinityAwarenessSupported() && reader.readBoolean())
+            partRes = PartitionResultMarshaler.unmarshal(reader);
+    }
+
+    /**
+     * @return Partition result.
+     */
+    public PartitionResult partitionResult() {
+        return partRes;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(JdbcQueryExecuteResult.class, this);
+        return S.toString(JdbcQueryExecuteResult.class, this, super.toString());
     }
 }

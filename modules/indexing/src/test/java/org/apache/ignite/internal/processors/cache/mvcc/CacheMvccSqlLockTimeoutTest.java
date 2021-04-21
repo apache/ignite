@@ -187,6 +187,7 @@ public class CacheMvccSqlLockTimeoutTest extends CacheMvccAbstractTest {
     private static class TimeoutChecker {
         /** */
         final IgniteEx ignite;
+
         /** */
         final String cacheName;
 
@@ -240,7 +241,7 @@ public class CacheMvccSqlLockTimeoutTest extends CacheMvccAbstractTest {
                     CompletableFuture.runAsync(() -> {
                         SqlFieldsQuery qry = new SqlFieldsQuery(sql).setArgs(key);
 
-                        try (Transaction tx2 = txStartMode == TxStartMode.EXPLICIT ? startTx(timeoutMode): null) {
+                        try (Transaction tx2 = txStartMode == TxStartMode.EXPLICIT ? startTx(timeoutMode) : null) {
                             if (timeoutMode == TimeoutMode.STMT)
                                 qry.setTimeout(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
 

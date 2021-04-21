@@ -67,9 +67,7 @@ public class Log4j2LoggerVerboseModeSelfTest {
             System.setOut(new PrintStream(testOut));
             System.setErr(new PrintStream(testErr));
 
-
             System.setProperty("IGNITE_QUIET", "false");
-
 
             try (Ignite ignite = G.start(getConfiguration("verboseLogGrid", LOG_PATH_VERBOSE_TEST))) {
 

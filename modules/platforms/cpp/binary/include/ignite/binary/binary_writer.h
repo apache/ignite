@@ -37,7 +37,7 @@ namespace ignite
         /**
          * Binary writer.
          *
-         * This class implemented as a reference to an implementation so copying
+         * This class is implemented as a reference to an implementation so copying
          * of this class instance will only create another reference to the same
          * underlying object.
          *
@@ -307,6 +307,14 @@ namespace ignite
             BinaryStringArrayWriter WriteStringArray(const char* fieldName);
 
             /**
+             * Write binary enum entry.
+             *
+             * @param fieldName Field name.
+             * @param entry Binary enum entry.
+             */
+            void WriteBinaryEnum(const char* fieldName, BinaryEnumEntry entry);
+
+            /**
              * Write NULL value.
              *
              * @param fieldName Field name.
@@ -448,6 +456,20 @@ namespace ignite
             void WriteObject(const char* fieldName, const T& val)
             {
                 impl->WriteObject<T>(fieldName, val);
+            }
+
+            /**
+             * Write enum entry.
+             *
+             * @param fieldName Field name.
+             * @param val Binary enum entry.
+             *
+             * @trapam T Enum type. BinaryEnum class template should be specialized for the type.
+             */
+            template<typename T>
+            void WriteEnum(const char* fieldName, T val)
+            {
+                impl->WriteEnum(fieldName, val);
             }
 
             /**

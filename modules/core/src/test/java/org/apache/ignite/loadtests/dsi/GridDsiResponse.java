@@ -44,7 +44,7 @@ public class GridDsiResponse implements Serializable {
      * @param terminalId Terminal ID.
      * @return Cache key.
      */
-    public Object getCacheKey(String terminalId){
+    public Object getCacheKey(String terminalId) {
         //return new AffinityKey<String>("RESPONSE:" + id.toString(), terminalId);
         return new ResponseKey(id, terminalId);
     }

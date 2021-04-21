@@ -63,6 +63,7 @@ public class TxWalStat {
      */
     private final LruMap<String> cacheIdsWeightedNodesInTx = new LruMap<>(POPULAR_COMBINATION_MAP_MAX_SIZE,
         USAGES_CNT_EVICT_PROHIBITED * 90);
+
     /**
      * Cache IDs combination involved in Tx, weighted using total nodes in Tx. Used to search popular combinations
      * mostly involved into highly distributive transactions.
@@ -243,6 +244,7 @@ public class TxWalStat {
     private static class TxOccurrence {
         /** Primary nodes count from TX record. */
         private int nodes;
+
         /** Primary + backup nodes count from TX record. */
         private int totalNodes;
 
@@ -284,6 +286,7 @@ public class TxWalStat {
          * anyway.
          */
         private int evictProhibited;
+
         /**
          * Evicted count. Number of entries removed during statistic accumulation. Zero value means all records were
          * processed, created top (popular combination search) is totally correct. Non zero means top may be not

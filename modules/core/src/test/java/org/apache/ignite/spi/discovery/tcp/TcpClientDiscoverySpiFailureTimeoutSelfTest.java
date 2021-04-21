@@ -443,6 +443,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
         /** */
         private volatile long readDelay;
 
+        /** */
         private volatile long writeToSocketDelay;
 
         /** */
@@ -484,7 +485,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
 
                     Thread.sleep(writeToSocketDelay);
                 }
-                catch (InterruptedException e) {
+                catch (InterruptedException ignore) {
                     // Nothing to do.
                 }
             }
@@ -507,7 +508,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
 
                     Thread.sleep(writeToSocketDelay);
                 }
-                catch (InterruptedException e) {
+                catch (InterruptedException ignore) {
                     // Nothing to do.
                 }
             }
@@ -531,7 +532,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
 
                     Thread.sleep(writeToSocketDelay);
                 }
-                catch (InterruptedException e) {
+                catch (InterruptedException ignore) {
                     // Nothing to do.
                 }
             }
@@ -565,7 +566,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
                     try {
                         Thread.sleep(2000);
                     }
-                    catch (InterruptedException ignored) {
+                    catch (InterruptedException ignore) {
                         // No-op.
                     }
 

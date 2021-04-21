@@ -37,8 +37,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -47,7 +45,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Tests that freezing due to JVM STW client will be failed if connection can't be established.
  */
-@RunWith(JUnit4.class)
 public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -58,7 +55,6 @@ public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTes
 
         cfg.setFailureDetectionTimeout(120000);
         cfg.setClientFailureDetectionTimeout(120000);
-        cfg.setClientMode("client".equals(gridName));
 
         TcpCommunicationSpi spi = new TcpCommunicationSpi();
 
@@ -106,9 +102,9 @@ public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTes
     @Test
     public void testFreezingClient() throws Exception {
         try {
-            final IgniteEx srv = startGrid(0);
+            final IgniteEx srv = startGrids(2);
 
-            final IgniteEx client = startGrid("client");
+            final IgniteEx client = startClientGrid(3);
 
             final int keysCnt = 100_000;
 
@@ -126,6 +122,10 @@ public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTes
         }
         catch (ClusterTopologyException e) {
             // Expected.
+
+            e.printStackTrace();
+
+            System.out.println(e);
         }
         finally {
             stopAllGrids();
@@ -145,11 +145,7 @@ public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTes
 
         /** {@inheritDoc} */
         @Override public Integer call() throws Exception {
-            Thread loadThread = new Thread() {
-                @Override public void run() {
-                    log.info("result = " + simulateLoad());
-                }
-            };
+            Thread loadThread = new Thread(() -> log.info("result = " + simulateLoad()));
 
             loadThread.setName("load-thread");
             loadThread.start();

@@ -16,22 +16,41 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
-import org.apache.ignite.internal.processors.cache.persistence.CheckpointWriteProgressSupplier;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressImpl;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
+import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.logger.NullLogger;
+import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.GridTestKernalContext;
+import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
+import org.mockito.Mockito;
 
+import static java.lang.Thread.State.TIMED_WAITING;
+import static org.apache.ignite.internal.processors.database.DataRegionMetricsSelfTest.NO_OP_METRICS;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -42,7 +61,7 @@ import static org.mockito.Mockito.when;
 public class IgniteThrottlingUnitTest {
     /** Per test timeout */
     @Rule
-    public Timeout globalTimeout = new Timeout((int) GridTestUtils.DFLT_TEST_TIMEOUT);
+    public Timeout globalTimeout = new Timeout((int)GridTestUtils.DFLT_TEST_TIMEOUT);
 
     /** Logger. */
     private IgniteLogger log = new NullLogger();
@@ -55,6 +74,20 @@ public class IgniteThrottlingUnitTest {
 
     {
         when(pageMemory2g.totalPages()).thenReturn((2L * 1024 * 1024 * 1024) / 4096);
+
+        IgniteConfiguration cfg = new IgniteConfiguration().setMetricExporterSpi(new NoopMetricExporterSpi());
+
+        GridTestKernalContext ctx = new GridTestKernalContext(new GridTestLog4jLogger(), cfg);
+
+        ctx.add(new GridMetricManager(ctx));
+        ctx.add(new PerformanceStatisticsProcessor(ctx));
+
+        DataRegionMetricsImpl metrics = new DataRegionMetricsImpl(new DataRegionConfiguration(),
+            ctx.metric(),
+            ctx.performanceStatistics(),
+            NO_OP_METRICS);
+
+        when(pageMemory2g.metrics()).thenReturn(metrics);
     }
 
     /**
@@ -163,7 +196,7 @@ public class IgniteThrottlingUnitTest {
     public void beginOfCp() {
         PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, stateChecker, log);
 
-        assertTrue(throttle.getParkTime(0.01, 100,400000,
+        assertTrue(throttle.getParkTime(0.01, 100, 400000,
             1,
             20103,
             23103) == 0);
@@ -213,10 +246,10 @@ public class IgniteThrottlingUnitTest {
     public void tooMuchPagesMarkedDirty() {
         PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, stateChecker, log);
 
-       // 363308	350004	348976	10604
+        // 363308 350004 348976 10604
         long time = throttle.getParkTime(0.75,
             ((350004 + 348976) / 2),
-            350004-10604,
+            350004 - 10604,
             4,
             279,
             23933);
@@ -226,6 +259,55 @@ public class IgniteThrottlingUnitTest {
         assertTrue(time == 0);
     }
 
+    /** */
+    @Test
+    public void wakeupThrottledThread() throws IgniteInterruptedCheckedException {
+        PagesWriteThrottlePolicy plc = new PagesWriteThrottle(pageMemory2g, null, stateChecker, true, log);
+
+        AtomicBoolean stopLoad = new AtomicBoolean();
+        List<Thread> loadThreads = new ArrayList<>();
+
+        for (int i = 0; i < 3; i++) {
+            loadThreads.add(new Thread(
+                () -> {
+                    while (!stopLoad.get())
+                        plc.onMarkDirty(true);
+                },
+                "load-" + i
+            ));
+        }
+
+        when(pageMemory2g.checkpointBufferPagesSize()).thenReturn(100);
+
+        AtomicInteger checkpointBufferPagesCount = new AtomicInteger(70);
+
+        when(pageMemory2g.checkpointBufferPagesCount()).thenAnswer(mock -> checkpointBufferPagesCount.get());
+
+        try {
+            loadThreads.forEach(Thread::start);
+
+            for (int i = 0; i < 1_000; i++)
+                loadThreads.forEach(LockSupport::unpark);
+
+            // Awaiting that all load threads are parked.
+            for (Thread t : loadThreads)
+                assertTrue(t.getName(), waitForCondition(() -> t.getState() == TIMED_WAITING, 500L));
+
+            // Disable throttling
+            checkpointBufferPagesCount.set(50);
+
+            // Awaiting that all load threads are unparked.
+            for (Thread t : loadThreads)
+                assertTrue(t.getName(), waitForCondition(() -> t.getState() != TIMED_WAITING, 500L));
+
+            for (Thread t : loadThreads)
+                assertNotEquals(t.getName(), TIMED_WAITING, t.getState());
+        }
+        finally {
+            stopLoad.set(true);
+        }
+    }
+
     /**
      *
      */
@@ -233,6 +315,8 @@ public class IgniteThrottlingUnitTest {
     public void warningInCaseTooMuchThrottling() {
         AtomicInteger warnings = new AtomicInteger(0);
         IgniteLogger log = mock(IgniteLogger.class);
+
+        when(log.isInfoEnabled()).thenReturn(true);
 
         doAnswer(invocation -> {
             Object[] args = invocation.getArguments();
@@ -245,8 +329,13 @@ public class IgniteThrottlingUnitTest {
         }).when(log).info(anyString());
 
         AtomicInteger written = new AtomicInteger();
-        CheckpointWriteProgressSupplier cpProgress = mock(CheckpointWriteProgressSupplier.class);
-        when(cpProgress.writtenPagesCounter()).thenReturn(written);
+
+        CheckpointProgressImpl cl0 = Mockito.mock(CheckpointProgressImpl.class);
+
+        IgniteOutClosure<CheckpointProgress> cpProgress = Mockito.mock(IgniteOutClosure.class);
+        Mockito.when(cpProgress.apply()).thenReturn(cl0);
+
+        Mockito.when(cl0.writtenPagesCounter()).thenReturn(written);
 
         PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, cpProgress, stateChecker, log) {
             @Override protected void doPark(long throttleParkTimeNs) {
@@ -269,7 +358,7 @@ public class IgniteThrottlingUnitTest {
 
             throttle.onMarkDirty(false);
 
-            if(warnings.get()>0)
+            if (warnings.get() > 0)
                 break;
         }
 

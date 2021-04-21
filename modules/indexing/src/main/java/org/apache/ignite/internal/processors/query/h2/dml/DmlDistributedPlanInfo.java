@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.dml;
 
 import java.util.List;
+import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
 
 /**
  * Additional information about distributed update plan.
@@ -29,15 +30,20 @@ public final class DmlDistributedPlanInfo {
     /** Identifiers of caches involved in update (used for cluster nodes mapping). */
     private final List<Integer> cacheIds;
 
+    /** Derived partitions info. */
+    private final PartitionResult derivedParts;
+
     /**
      * Constructor.
-     *
      * @param replicatedOnly Whether all caches are replicated.
      * @param cacheIds List of cache identifiers.
+     * @param derivedParts PartitionNode tree to calculate derived partition
+     *      (reference to PartitionNode#apply(java.lang.Object...)).
      */
-    public DmlDistributedPlanInfo(boolean replicatedOnly, List<Integer> cacheIds) {
+    public DmlDistributedPlanInfo(boolean replicatedOnly, List<Integer> cacheIds, PartitionResult derivedParts) {
         this.replicatedOnly = replicatedOnly;
         this.cacheIds = cacheIds;
+        this.derivedParts = derivedParts;
     }
 
     /**
@@ -52,5 +58,12 @@ public final class DmlDistributedPlanInfo {
      */
     public List<Integer> getCacheIds() {
         return cacheIds;
+    }
+
+    /**
+     * @return Query derived partitions info.
+     */
+    public PartitionResult derivedPartitions() {
+        return derivedParts;
     }
 }

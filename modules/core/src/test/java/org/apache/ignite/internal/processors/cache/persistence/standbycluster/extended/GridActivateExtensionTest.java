@@ -34,10 +34,12 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.junit.Ignore;
 
 /**
  *
  */
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-9214")
 public class GridActivateExtensionTest extends GridCacheAbstractFullApiSelfTest {
     /** Condition id. */
     private int condId;
@@ -98,7 +100,7 @@ public class GridActivateExtensionTest extends GridCacheAbstractFullApiSelfTest 
 
         log.info("start backup cluster");
 
-        for (String name: backUpCluster.keySet()){
+        for (String name: backUpCluster.keySet()) {
             String n = name + "backUp";
 
             IgniteConfiguration cfg = getConfiguration(n);
@@ -112,7 +114,7 @@ public class GridActivateExtensionTest extends GridCacheAbstractFullApiSelfTest 
 
         log.info("shutdown main cluster");
 
-        for (String name : backUpCluster.keySet()){
+        for (String name : backUpCluster.keySet()) {
             log.info(name + " stopping");
 
             stopGrid(name);
@@ -178,7 +180,7 @@ public class GridActivateExtensionTest extends GridCacheAbstractFullApiSelfTest 
     /**
      *
      */
-    public boolean onlyClient(){
+    public boolean onlyClient() {
         for (int i = 0; i < gridCount(); i++)
             if (!grid(i).configuration().isClientMode())
                 return false;

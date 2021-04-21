@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-
-import java.util.UUID;
 
 /**
  * Unique key for the query context.
@@ -81,7 +80,7 @@ public class QueryContextKey {
 
         QueryContextKey other = (QueryContextKey)o;
 
-        return qryId == other.qryId && segmentId == other.segmentId && F.eq(nodeId, other.nodeId) ;
+        return qryId == other.qryId && segmentId == other.segmentId && F.eq(nodeId, other.nodeId);
     }
 
     /** {@inheritDoc} */

@@ -41,7 +41,7 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setDataStorageConfiguration(new DataStorageConfiguration())
-            .setCacheConfiguration(new <String, Person>CacheConfiguration("cache")
+            .setCacheConfiguration(new CacheConfiguration<String, Person>("cache")
                 .setQueryEntities(getIndexCfg())
                 .setAffinity(new RendezvousAffinityFunction(false, 16)));
     }
@@ -95,8 +95,6 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
 
             assertEquals(cursor1.getAll().size(), cursor1Idx.getAll().size());
             assertEquals(cursor2.getAll().size(), cursor2Idx.getAll().size());
-
-
         }
         finally {
             stopAllGrids();
@@ -112,7 +110,7 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
 
         IgniteCache<String, Person> cache = ignite.cache("cache");
 
-        for (int i=0; i<10; i++)
+        for (int i = 0; i < 10; i++)
             cache.put(String.valueOf(System.currentTimeMillis()), new Person("Name " + i, i));
 
         return cache;

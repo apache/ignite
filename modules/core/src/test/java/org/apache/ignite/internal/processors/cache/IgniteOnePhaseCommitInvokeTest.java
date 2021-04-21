@@ -45,9 +45,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class IgniteOnePhaseCommitInvokeTest extends GridCommonAbstractTest {
     /** */
-    private boolean client;
-
-    /** */
     private static final String CACHE_NAME = "testCache";
 
     /** {@inheritDoc} */
@@ -57,8 +54,6 @@ public class IgniteOnePhaseCommitInvokeTest extends GridCommonAbstractTest {
         TestRecordingCommunicationSpi commSpi = new TestRecordingCommunicationSpi();
 
         cfg.setCommunicationSpi(commSpi);
-
-        cfg.setClientMode(client);
 
         CacheConfiguration ccfg = new CacheConfiguration();
 
@@ -116,9 +111,7 @@ public class IgniteOnePhaseCommitInvokeTest extends GridCommonAbstractTest {
         if (withOldVal)
             srv0.cache(CACHE_NAME).put(1, 1);
 
-        client = true;
-
-        final Ignite clientNode = startGrid(1);
+        final Ignite clientNode = startClientGrid(1);
 
         final int grpId = groupIdForCache(srv0, CACHE_NAME);
 
@@ -128,8 +121,6 @@ public class IgniteOnePhaseCommitInvokeTest extends GridCommonAbstractTest {
                     ((GridDhtPartitionSupplyMessage)msg).groupId() == grpId;
             }
         });
-
-        client = false;
 
         Ignite srv1 = startGrid(2);
 

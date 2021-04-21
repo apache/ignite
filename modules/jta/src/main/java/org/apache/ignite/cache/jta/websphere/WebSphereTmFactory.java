@@ -105,6 +105,7 @@ public class WebSphereTmFactory implements Factory<TransactionManager> {
             throw new IgniteException(e);
         }
     }
+
     /**
      *
      */

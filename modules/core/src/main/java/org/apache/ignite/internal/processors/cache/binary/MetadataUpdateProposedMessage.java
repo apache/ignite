@@ -134,11 +134,6 @@ public final class MetadataUpdateProposedMessage implements DiscoveryCustomMessa
     }
 
     /** {@inheritDoc} */
-    @Override public boolean stopProcess() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr,
         AffinityTopologyVersion topVer, DiscoCache discoCache) {
         throw new UnsupportedOperationException();

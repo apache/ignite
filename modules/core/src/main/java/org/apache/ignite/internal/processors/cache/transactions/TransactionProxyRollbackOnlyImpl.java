@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLo
 import org.apache.ignite.lang.IgniteFuture;
 
 /**
- * Cache transaction proxy which support only rollback or close operations and getters.
+ * Cache transaction proxy which supports only rollback or close operations and getters.
  */
 public class TransactionProxyRollbackOnlyImpl<K, V> extends TransactionProxyImpl<K, V> {
     /** */

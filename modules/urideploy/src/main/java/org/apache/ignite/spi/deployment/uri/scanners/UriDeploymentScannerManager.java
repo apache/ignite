@@ -108,7 +108,7 @@ public class UriDeploymentScannerManager implements UriDeploymentScannerContext 
         scannerThread = new IgniteSpiThread(igniteInstanceName, "grid-uri-scanner", log) {
             /** {@inheritDoc} */
             @SuppressWarnings({"BusyWait"})
-            @Override protected void body() throws InterruptedException  {
+            @Override protected void body() throws InterruptedException {
                 try {
                     while (!isInterrupted()) {
                         try {
@@ -164,14 +164,14 @@ public class UriDeploymentScannerManager implements UriDeploymentScannerContext 
     }
 
     /** {@inheritDoc} */
-    public boolean isCancelled() {
+    @Override public boolean isCancelled() {
         assert scannerThread != null;
 
         return scannerThread.isInterrupted();
     }
 
     /** {@inheritDoc} */
-    public File createTempFile(String fileName, File tmpDir) throws IOException {
+    @Override public File createTempFile(String fileName, File tmpDir) throws IOException {
         assert fileName != null;
 
         int idx = fileName.lastIndexOf('.');
@@ -190,32 +190,32 @@ public class UriDeploymentScannerManager implements UriDeploymentScannerContext 
     }
 
     /** {@inheritDoc} */
-    public boolean isFirstScan() {
+    @Override public boolean isFirstScan() {
         return firstScan;
     }
 
     /** {@inheritDoc} */
-    public URI getUri() {
+    @Override public URI getUri() {
         return uri;
     }
 
     /** {@inheritDoc} */
-    public File getDeployDirectory() {
+    @Override public File getDeployDirectory() {
         return deployDir;
     }
 
     /** {@inheritDoc} */
-    public FilenameFilter getFilter() {
+    @Override public FilenameFilter getFilter() {
         return filter;
     }
 
     /** {@inheritDoc} */
-    public GridUriDeploymentScannerListener getListener() {
+    @Override public GridUriDeploymentScannerListener getListener() {
         return lsnr;
     }
 
     /** {@inheritDoc} */
-    public IgniteLogger getLogger() {
+    @Override public IgniteLogger getLogger() {
         return log;
     }
 

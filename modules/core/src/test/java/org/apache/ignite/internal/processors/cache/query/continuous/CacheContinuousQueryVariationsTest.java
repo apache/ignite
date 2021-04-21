@@ -237,7 +237,7 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
                     };
 
                     final CacheEntryUpdatedListener<Object, Object> lsnr = asyncCallback ?
-                        new AsyncLocalNonSerializableListener(clsr): new LocalNonSerializableListener(clsr);
+                        new AsyncLocalNonSerializableListener(clsr) : new LocalNonSerializableListener(clsr);
 
                     IgniteCache<Object, Object> jcache = keepBinary ? jcache(idx).withKeepBinary() : jcache(idx);
 
@@ -616,7 +616,7 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
      */
     private Object checkAndGetObject(@Nullable Object obj) {
         if (obj != null) {
-            assert obj instanceof BinaryObject || dataMode == EXTERNALIZABLE: obj;
+            assert obj instanceof BinaryObject || dataMode == EXTERNALIZABLE : obj;
 
             if (obj instanceof BinaryObject)
                 obj = ((BinaryObject)obj).deserialize();

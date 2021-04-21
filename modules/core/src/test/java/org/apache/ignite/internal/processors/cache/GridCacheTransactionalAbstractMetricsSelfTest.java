@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Arrays;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheMetrics;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
@@ -259,6 +261,42 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
     @Test
     public void testOptimisticSuspendedSerializableTxTimeoutRollbacks() throws Exception {
         doTestSuspendedTxTimeoutRollbacks(OPTIMISTIC, SERIALIZABLE);
+    }
+
+    /** */
+    @Test
+    public void testCommitTime() {
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        HistogramMetricImpl m = metric("CommitTime");
+
+        assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
+
+        try (Transaction tx = grid(0).transactions().txStart()) {
+            cache.put(1, 1);
+
+            tx.commit();
+        }
+
+        assertEquals(1, Arrays.stream(m.value()).filter(v -> v == 1).count());
+    }
+
+    /** */
+    @Test
+    public void testRollbackTime() {
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        HistogramMetricImpl m = metric("RollbackTime");
+
+        assertTrue(Arrays.stream(m.value()).allMatch(v -> v == 0));
+
+        try (Transaction tx = grid(0).transactions().txStart()) {
+            cache.put(1, 1);
+
+            tx.rollback();
+        }
+
+        assertEquals(1, Arrays.stream(m.value()).filter(v -> v == 1).count());
     }
 
     /**

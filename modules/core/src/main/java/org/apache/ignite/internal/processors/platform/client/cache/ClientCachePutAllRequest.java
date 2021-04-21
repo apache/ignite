@@ -17,17 +17,17 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-
-import java.util.LinkedHashMap;
-import java.util.Map;
+import org.apache.ignite.internal.processors.platform.client.tx.ClientTxAwareRequest;
 
 /**
  * PutAll request.
  */
-public class ClientCachePutAllRequest extends ClientCacheRequest {
+public class ClientCachePutAllRequest extends ClientCacheDataRequest implements ClientTxAwareRequest {
     /** Map. */
     private final Map<Object, Object> map;
 

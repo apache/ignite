@@ -17,11 +17,10 @@
 
 package org.apache.ignite.cache.store.cassandra.persistence;
 
-import org.apache.ignite.IgniteException;
-
 import java.beans.PropertyDescriptor;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import org.apache.ignite.IgniteException;
 
 /**
  * Property accessor provides read/write access to POJO object properties defined through:

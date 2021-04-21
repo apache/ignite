@@ -112,7 +112,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// from org.apache.ignite.internal.processors.platform.utils package
         /// Note: return null if collection is empty
         /// </summary>
-        public static ICollection<T> ReadCollectionRaw<T, TReader>(this TReader reader,
+        public static IList<T> ReadCollectionRaw<T, TReader>(this TReader reader,
             Func<TReader, T> factory) where TReader : IBinaryRawReader
         {
             Debug.Assert(reader != null);

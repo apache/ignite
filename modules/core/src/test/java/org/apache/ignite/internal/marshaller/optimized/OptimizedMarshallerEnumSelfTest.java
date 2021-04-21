@@ -36,6 +36,7 @@ public class OptimizedMarshallerEnumSelfTest {
     private String igniteHome = System.getProperty("user.dir");
 
     private final IgniteLogger rootLog = new GridTestLog4jLogger(false);
+
     /**
      * @throws Exception If failed.
      */

@@ -88,9 +88,6 @@ public class IgniteCacheQueryAbstractDistributedJoinSelfTest extends AbstractInd
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        if ("client".equals(igniteInstanceName))
-            c.setClientMode(true);
-
         int i = 0;
 
         CacheConfiguration<?, ?>[] ccs = new CacheConfiguration[4];

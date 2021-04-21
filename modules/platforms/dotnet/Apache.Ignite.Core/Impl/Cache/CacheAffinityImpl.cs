@@ -77,7 +77,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
         /** */
         private readonly bool _keepBinary;
-        
+
         /** Grid. */
         private readonly IIgniteInternal _ignite;
 
@@ -111,7 +111,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         public bool IsPrimary<TK>(IClusterNode n, TK key)
         {
             IgniteArgumentCheck.NotNull(n, "n");
-            
+
             IgniteArgumentCheck.NotNull(key, "key");
 
             return DoOutOp(OpIsPrimary, n.Id, key) == True;
@@ -221,7 +221,6 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             return Marshaller.Unmarshal<T>(stream, _keepBinary);
         }
-
 
         /// <summary>
         /// Gets the node by id.

@@ -37,6 +37,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -45,7 +46,10 @@ import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
 
 /**
  *
@@ -61,7 +65,7 @@ public class CollectConflictPartitionKeysTask extends ComputeTaskAdapter<Partiti
     private IgniteLogger log;
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(
+    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(
         List<ClusterNode> subgrid, PartitionKey partKey) throws IgniteException {
         Map<ComputeJob, ClusterNode> jobs = new HashMap<>();
 
@@ -166,14 +170,16 @@ public class CollectConflictPartitionKeysTask extends ComputeTaskAdapter<Partiti
 
             int partHash = 0;
             long partSize;
-            long updateCntrBefore;
+            PartitionUpdateCounter updateCntrBefore;
             List<PartitionEntryHashRecord> partEntryHashRecords;
 
             try {
                 if (part.state() != GridDhtPartitionState.OWNING)
                     return Collections.emptyMap();
 
-                updateCntrBefore = part.updateCounter();
+                @Nullable PartitionUpdateCounter updCntr = part.dataStore().partUpdateCounter();
+
+                updateCntrBefore = updCntr == null ? null : updCntr.copy();
 
                 partSize = part.dataStore().fullSize();
 
@@ -201,12 +207,12 @@ public class CollectConflictPartitionKeysTask extends ComputeTaskAdapter<Partiti
                         row.key().valueBytes(grpCtx.cacheObjectContext()), row.version(), valHash));
                 }
 
-                long updateCntrAfter = part.updateCounter();
+                PartitionUpdateCounter updateCntrAfter = part.dataStore().partUpdateCounter();
 
-                if (updateCntrBefore != updateCntrAfter) {
-                    throw new IgniteException("Cluster is not idle: update counter of partition " + partKey.toString() +
-                        " changed during hash calculation [before=" + updateCntrBefore +
-                        ", after=" + updateCntrAfter + "]");
+                if (updateCntrAfter != null && !updateCntrAfter.equals(updateCntrBefore)) {
+                    throw new GridNotIdleException(GRID_NOT_IDLE_MSG + "[grpName=" + grpCtx.cacheOrGroupName() +
+                        ", grpId=" + grpCtx.groupId() + ", partId=" + part.id() + "] changed during hash calculation " +
+                        "[before=" + updateCntrBefore + ", after=" + updateCntrAfter + "]");
                 }
             }
             catch (IgniteCheckedException e) {
@@ -223,7 +229,7 @@ public class CollectConflictPartitionKeysTask extends ComputeTaskAdapter<Partiti
             boolean isPrimary = part.primary(grpCtx.topology().readyTopologyVersion());
 
             PartitionHashRecord partHashRec = new PartitionHashRecord(
-                partKey, isPrimary, consId, partHash, updateCntrBefore, partSize);
+                partKey, isPrimary, consId, partHash, updateCntrBefore == null ? 0 : updateCntrBefore.get(), partSize);
 
             Map<PartitionHashRecord, List<PartitionEntryHashRecord>> res = new HashMap<>();
 

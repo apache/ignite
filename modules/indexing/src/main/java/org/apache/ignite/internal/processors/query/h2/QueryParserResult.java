@@ -17,18 +17,27 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.util.List;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Result of parsing and splitting SQL from {@link SqlFieldsQuery}.
  */
 public class QueryParserResult {
-    /** New fields query that may be executed right away. */
-    private final SqlFieldsQuery qry;
+    /** Query descriptor. */
+    private final QueryDescriptor qryDesc;
+
+    /** Query parameters. */
+    private final QueryParameters qryParams;
 
     /** Remaining query. */
     private final SqlFieldsQuery remainingQry;
+
+    /** Metadata for the positional query parameters ('?'). */
+    private final List<JdbcParameterMeta> paramsMeta;
 
     /** Select. */
     private final QueryParserResultSelect select;
@@ -42,31 +51,46 @@ public class QueryParserResult {
     /**
      * Constructor.
      *
-     * @param qry New query.
+     * @param qryDesc Query descriptor.
+     * @param qryParams Query parameters.
      * @param remainingQry Remaining query.
+     * @param paramsMeta metadata info about positional parameters of current parsed query (not includes remainingSql).
      * @param select Select.
      * @param dml DML.
      * @param cmd Command.
      */
     public QueryParserResult(
-        SqlFieldsQuery qry,
+        QueryDescriptor qryDesc,
+        QueryParameters qryParams,
         SqlFieldsQuery remainingQry,
+        @NotNull List<JdbcParameterMeta> paramsMeta,
         @Nullable QueryParserResultSelect select,
         @Nullable QueryParserResultDml dml,
         @Nullable QueryParserResultCommand cmd
     ) {
-        this.qry = qry;
+        assert paramsMeta != null;
+
+        this.qryDesc = qryDesc;
+        this.qryParams = qryParams;
         this.remainingQry = remainingQry;
+        this.paramsMeta = paramsMeta;
         this.select = select;
         this.dml = dml;
         this.cmd = cmd;
     }
 
     /**
-     * @return New fields query that may be executed right away.
+     * @return Query descriptor.
      */
-    public SqlFieldsQuery query() {
-        return qry;
+    public QueryDescriptor queryDescriptor() {
+        return qryDesc;
+    }
+
+    /**
+     * @return Query parameters.
+     */
+    public QueryParameters queryParameters() {
+        return qryParams;
     }
 
     /**
@@ -119,10 +143,17 @@ public class QueryParserResult {
     }
 
     /**
-     * @return Number of parameters.
+     * @return Number of current statement parameters.
      */
     public int parametersCount() {
-        // Only SELECT and DML can have parameters.
-        return select != null ? select.parametersCount() : dml != null ? dml.parametersCount() : 0;
+        return paramsMeta.size();
+    }
+
+    /**
+     * @return Descriptions of each query parameter of current statement. Empty list in case of native command, never
+     * {@code null}.
+     */
+    @NotNull public List<JdbcParameterMeta> parametersMeta() {
+        return paramsMeta;
     }
 }

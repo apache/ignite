@@ -1,0 +1,131 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Master key rotation
+
+== Overview
+
+Master key encrypts cache keys. Encrypted cache keys are stored on the disk. To learn more see the link:security/tde[Transparent Data Encryption] page.
+
+Ignite 2.9 introduces the master key change process. It allows users to switch Ignite to the new master key with re-encrypting cache keys.
+
+Master key rotation is required if it has been compromised or at the end of the crypto period (key validity period).
+
+== Prerequisites
+
+A new master key should be available to `EncryptionSpi` for each server node. The cluster should be active.
+
+== Configuration
+
+Master keys are identified by name. When the cluster starts for the first time, the master key name from the configuration will be used. See link:security/tde#configuration[TDE Configuration].
+
+Nodes save the master key name to the disk (local `MetaStorage`) on the first cluster activation and each master key change. If some node restarts, it will use the master key name from the local `MetaStorage`.
+
+== Changing master key
+
+NOTE: Cache start and node join during the key change process is prohibited and will be rejected.
+
+Ignite provides the ability to change the master key from the following interfaces:
+
+- link:#command-line-tool[command line tool]
+- link:#jmx[JMX]
+- link:#from-code[from code]
+
+=== Command line tool
+
+Ignite ships a `control.sh|bat` script, located in the `$IGNITE_HOME/bin` folder, that acts like a tool to manage the master key change process from the command line. The following commands can be used with `control.sh|bat`:
+
+[source,shell]
+----
+# Print the current master key name.
+control.sh|bat --encryption get_master_key_name
+
+# Change the master key.
+control.sh|bat --encryption change_master_key newMasterKeyName
+----
+
+=== JMX
+
+You can also manage the master key change process via the `EncryptionMXBean` interface:
+
+[cols="1,1",opts="header"]
+|===
+|Method | Description
+|getMasterKeyName() | Gets the current master key name.
+|changeMasterKey(String masterKeyName) | Starts master key change process.
+|===
+
+=== From code
+
+The master key change process can be managed programmatically:
+
+[tabs]
+--
+tab:Java[]
+
+[source, java]
+----
+include::{javaCodeDir}/TDE.java[tags=master-key-rotation, indent=0]
+----
+--
+
+== Recovery of the master key on failing node
+
+If some node is unavailable during a master key change process it won't be able to join to the cluster with the old master key. The node should re-encrypt local group keys during recovery on startup. The actual master key name should be set via `IGNITE_MASTER_KEY_NAME_TO_CHANGE_BEFORE_STARTUP` system property before the node starts. The node saves the key name to the local `MetaStorage` when the cluster is active.
+
+NOTE: It is recommended to delete system property after a successful recovery. Otherwise, the invalid master key name can be used when the node restarts.
+
+== Additional master key generation example
+
+Ignite comes with the `KeystoreEncryptionSpi` based on JDK provided cipher algorithm implementations. See link:security/tde#master-key-generation-example[keystore master key generation example]. An additional master key can be generated using the `keytool` as follows:
+
+[source,shell]
+----
+user:~/tmp:[]$ keytool \
+-storepass mypassw0rd \
+-storetype PKCS12 \
+-keystore ./ignite_keystore.jks \
+-list
+
+Keystore type: PKCS12
+Keystore provider: SunJSSE
+
+Your keystore contains 1 entry
+
+ignite.master.key, 15.01.2019, SecretKeyEntry,
+
+
+user:~/tmp:[]$ keytool -genseckey \
+-alias ignite.master.key2 \
+-keystore ./ignite_keystore.jks \
+-storetype PKCS12 \
+-keyalg aes \
+-storepass mypassw0rd \
+-keysize 256
+
+
+user:~/tmp:[]$ keytool \
+-storepass mypassw0rd \
+-storetype PKCS12 \
+-keystore ./ignite_keystore.jks \
+-list
+
+Keystore type: PKCS12
+Keystore provider: SunJSSE
+
+Your keystore contains 2 entries
+
+ignite.master.key, 15.01.2019, SecretKeyEntry,
+ignite.master.key2, 15.01.2019, SecretKeyEntry,
+----

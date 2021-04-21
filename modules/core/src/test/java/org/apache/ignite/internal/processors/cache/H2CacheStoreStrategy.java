@@ -73,7 +73,6 @@ public class H2CacheStoreStrategy implements TestCacheStoreStrategy {
         "delete from WRITES;\n" +
         "delete from REMOVES;";
 
-
     /**
      * @throws IgniteCheckedException If failed.
      */

@@ -16,6 +16,7 @@
  */
 
 // ReSharper disable MissingSerializationAttribute
+// ReSharper disable NonReadonlyMemberInGetHashCode
 namespace Apache.Ignite.Core.Tests.Cache
 {
     using System;
@@ -97,7 +98,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             for (int i = 0; i < GridCount(); i++)
             {
                 var cache = Cache(i);
-                var entries = cache.Select(pair => pair.ToString() + GetKeyAffinity(cache, pair.Key)).ToArray();
+                var entries = cache.Select(pair => pair + GetKeyAffinity(cache, pair.Key)).ToArray();
 
                 if (entries.Any())
                     Assert.Fail("Cache '{0}' is not empty in grid [{1}]: ({2})", CacheName(), i,
@@ -117,26 +118,25 @@ namespace Apache.Ignite.Core.Tests.Cache
             return Ignition.GetIgnite("grid-" + idx);
         }
 
-        private ICache<int, int> Cache(int idx) {
-            return Cache<int, int>(idx);
-        }
-
-        private ICache<TK, TV> Cache<TK, TV>(int idx) {
-            return GetIgnite(idx).GetCache<TK, TV>(CacheName());
-        }
-
-        protected ICache<int, int> Cache(bool async = false)
+        protected ICache<int, int> Cache(int idx, bool async = false)
         {
-            var cache = Cache<int, int>(0);
+            return Cache<int, int>(idx, async);
+        }
+
+        private ICache<TK, TV> Cache<TK, TV>(int idx, bool async = false) {
+            var cache = GetIgnite(idx).GetCache<TK, TV>(CacheName());
 
             return async ? cache.WrapAsync() : cache;
         }
 
+        protected ICache<int, int> Cache(bool async = false)
+        {
+            return Cache<int, int>(0, async);
+        }
+
         private ICache<TK, TV> Cache<TK, TV>(bool async = false)
         {
-            var cache = Cache<TK, TV>(0);
-
-            return async ? cache : cache.WrapAsync();
+            return Cache<TK, TV>(0, async);
         }
 
         private ICacheAffinity Affinity()
@@ -239,15 +239,15 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache.Put(key1, 1);
 
-            int val;
+            int unused;
 
             Assert.AreEqual(1, cache.LocalPeek(key1));
             Assert.Throws<KeyNotFoundException>(() => cache.LocalPeek(-1));
-            Assert.IsFalse(cache.TryLocalPeek(-1, out val));
+            Assert.IsFalse(cache.TryLocalPeek(-1, out unused));
 
             Assert.AreEqual(1, cache.LocalPeek(key1, CachePeekMode.All));
             Assert.Throws<KeyNotFoundException>(() => cache.LocalPeek(-1, CachePeekMode.All));
-            Assert.AreEqual(false, cache.TryLocalPeek(-1, out val, CachePeekMode.All));
+            Assert.AreEqual(false, cache.TryLocalPeek(-1, out unused, CachePeekMode.All));
         }
 
         [Test]
@@ -994,8 +994,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 cache.LocalClear(key);
 
-                int val;
-                Assert.IsFalse(cache.TryLocalPeek(key, out val));
+                int unused;
+                Assert.IsFalse(cache.TryLocalPeek(key, out unused));
 
                 Assert.Less(cache.GetSize(), i);
 
@@ -1016,10 +1016,10 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache.LocalClearAll(keys);
 
-            int val;
+            int unused;
 
             foreach (var key in keys)
-                Assert.IsFalse(cache.TryLocalPeek(key, out val));
+                Assert.IsFalse(cache.TryLocalPeek(key, out unused));
 
             cache.Clear();
         }
@@ -1199,11 +1199,11 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
-        public void TestSizes()
+        public void TestSizes([Values(true, false)] bool async)
         {
             for (int i = 0; i < GridCount(); i++)
             {
-                var cache = Cache(i);
+                var cache = Cache(i, async);
 
                 List<int> keys = GetPrimaryKeysForCache(cache, 2);
 
@@ -1211,12 +1211,22 @@ namespace Apache.Ignite.Core.Tests.Cache
                     cache.Put(key, 1);
 
                 Assert.IsTrue(cache.GetSize() >= 2);
+                Assert.AreEqual(cache.GetSize(), cache.GetSizeLong());
+                Assert.AreEqual(2, cache.GetLocalSizeLong(CachePeekMode.Primary));
                 Assert.AreEqual(2, cache.GetLocalSize(CachePeekMode.Primary));
+
+                foreach (var key in keys)
+                {
+                    var p = GetIgnite(i).GetAffinity(cache.Name).GetPartition(key);
+
+                    Assert.GreaterOrEqual(cache.GetSizeLong(p, CachePeekMode.Primary), 1);
+                }
             }
 
-            ICache<int, int> cache0 = Cache();
+            ICache<int, int> cache0 = Cache(async);
 
             Assert.AreEqual(GridCount() * 2, cache0.GetSize(CachePeekMode.Primary));
+            Assert.AreEqual(GridCount() * 2, cache0.GetSizeLong(CachePeekMode.Primary));
 
             if (!LocalCache() && !ReplicatedCache())
             {
@@ -1225,6 +1235,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 cache0.Put(nearKey, 1);
 
                 Assert.AreEqual(NearEnabled() ? 1 : 0, cache0.GetSize(CachePeekMode.Near));
+                Assert.AreEqual(NearEnabled() ? 1 : 0, cache0.GetSizeLong(CachePeekMode.Near));
             }
         }
 
@@ -1238,15 +1249,26 @@ namespace Apache.Ignite.Core.Tests.Cache
             cache.Put(keys[1], 2);
 
             var localSize = cache.GetLocalSize();
+            Assert.AreEqual(localSize, cache.GetLocalSizeLong());
 
             cache.LocalEvict(keys.Take(2).ToArray());
 
             Assert.AreEqual(0, cache.GetLocalSize(CachePeekMode.Onheap));
+            Assert.AreEqual(0, cache.GetLocalSizeLong(CachePeekMode.Onheap));
             Assert.AreEqual(localSize, cache.GetLocalSize(CachePeekMode.All));
+            Assert.AreEqual(localSize, cache.GetLocalSizeLong(CachePeekMode.All));
 
             cache.Put(keys[2], 3);
 
             Assert.AreEqual(localSize + 1, cache.GetLocalSize(CachePeekMode.All));
+            Assert.AreEqual(localSize + 1, cache.GetLocalSizeLong(CachePeekMode.All));
+
+            foreach (var key in keys)
+            {
+                var p = Affinity().GetPartition(key);
+
+                Assert.GreaterOrEqual(cache.GetLocalSizeLong(p, CachePeekMode.All), 1);
+            }
 
             cache.RemoveAll(keys.Take(2).ToArray());
         }
@@ -1715,7 +1737,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /**
-         * Test tries to provoke garbage collection for .Net future before it was completed to verify
+         * Test tries to provoke garbage collection for .NET future before it was completed to verify
          * futures pinning works.
          */
         [Test]
@@ -2305,6 +2327,45 @@ namespace Apache.Ignite.Core.Tests.Cache
             }
 
             Assert.AreEqual(2, cache[1]);
+        }
+
+        /// <summary>
+        /// Tests that value object can reference key object.
+        /// </summary>
+        [Test]
+        public void TestPutGetWithKeyObjectReferenceInValue([Values(true, false)] bool async)
+        {
+            var cache = Cache<Container, Container>(async);
+
+            var key = new Container {Id = 1};
+            var val = new Container {Id = 2, Inner = key};
+
+            cache.Put(key, val);
+            
+            var res = cache.Get(key);
+            
+            Assert.AreEqual(2, res.Id);
+            Assert.AreEqual(1, res.Inner.Id);
+        }
+
+        /// <summary>
+        /// Tests that key and value objects can reference the same nested object.
+        /// </summary>
+        [Test]
+        public void TestPutGetWithSharedObjectReferenceInKeyAndValue([Values(true, false)] bool async)
+        {
+            var cache = Cache<Container, Container>(async);
+
+            var inner = new Container {Id = -1};
+            var key = new Container {Id = 1, Inner = inner};
+            var val = new Container {Id = 2, Inner = inner};
+
+            cache.Put(key, val);
+            
+            var res = cache.Get(key);
+            
+            Assert.AreEqual(2, res.Id);
+            Assert.AreEqual(-1, res.Inner.Id);
         }
 
         private void TestKeepBinaryFlag(bool async)

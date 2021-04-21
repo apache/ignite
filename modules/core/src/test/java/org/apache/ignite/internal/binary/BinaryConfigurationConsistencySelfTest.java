@@ -20,15 +20,16 @@ package org.apache.ignite.internal.binary;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinarySerializer;
-import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -41,14 +42,9 @@ public class BinaryConfigurationConsistencySelfTest extends GridCommonAbstractTe
     /** */
     private BinaryConfiguration binaryCfg;
 
-    /** */
-    private boolean isClient;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(isClient);
 
         cfg.setMarshaller(new BinaryMarshaller());
 
@@ -60,38 +56,26 @@ public class BinaryConfigurationConsistencySelfTest extends GridCommonAbstractTe
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
-
-        isClient = false;
     }
 
     /**
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK, value = "true")
     public void testSkipCheckConsistencyFlagEnabled() throws Exception {
-        String backup = System.setProperty(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK, "true");
+        // Wrong usage of Ignite (done only in test purposes).
+        binaryCfg = null;
 
-        try {
-            // Wrong usage of Ignite (done only in test purposes).
-            binaryCfg = null;
+        startGrid(0);
 
-            startGrid(0);
+        binaryCfg = new BinaryConfiguration();
 
-            binaryCfg = new BinaryConfiguration();
+        startGrid(1);
 
-            startGrid(1);
+        binaryCfg = customConfig(true);
 
-            isClient = true;
-            binaryCfg = customConfig(true);
-
-            startGrid(2);
-        }
-        finally {
-            if (backup != null)
-                System.setProperty(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK, backup);
-            else
-                System.clearProperty(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK);
-        }
+        startClientGrid(2);
     }
 
     /**
@@ -103,9 +87,7 @@ public class BinaryConfigurationConsistencySelfTest extends GridCommonAbstractTe
 
         startGrids(2);
 
-        isClient = true;
-
-        startGrid(2);
+        startClientGrid(2);
     }
 
     /**
@@ -117,9 +99,7 @@ public class BinaryConfigurationConsistencySelfTest extends GridCommonAbstractTe
 
         startGrids(2);
 
-        isClient = true;
-
-        startGrid(2);
+        startClientGrid(2);
     }
 
     /**
@@ -131,9 +111,7 @@ public class BinaryConfigurationConsistencySelfTest extends GridCommonAbstractTe
 
         startGrids(2);
 
-        isClient = true;
-
-        startGrid(2);
+        startClientGrid(2);
     }
 
     /**
@@ -189,11 +167,9 @@ public class BinaryConfigurationConsistencySelfTest extends GridCommonAbstractTe
             }
         }, IgniteCheckedException.class, "");
 
-        isClient = true;
-
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                startGrid(2);
+                startClientGrid(2);
 
                 return null;
             }

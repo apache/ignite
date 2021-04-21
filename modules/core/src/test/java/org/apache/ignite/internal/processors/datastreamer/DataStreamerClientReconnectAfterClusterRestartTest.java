@@ -32,16 +32,11 @@ import org.junit.Test;
  * Tests DataStreamer reconnect behaviour when client nodes arrives at the same or different topVer than it left.
  */
 public class DataStreamerClientReconnectAfterClusterRestartTest extends GridCommonAbstractTest {
-    /** */
-    private boolean clientMode;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(new CacheConfiguration<>("test"));
-
-        cfg.setClientMode(clientMode);
 
         return cfg;
     }
@@ -78,18 +73,14 @@ public class DataStreamerClientReconnectAfterClusterRestartTest extends GridComm
         try {
             startGrid(0);
 
-            clientMode = true;
-
-            Ignite client = startGrid(1);
+            Ignite client = startClientGrid(1);
 
             if (withAnotherClient) {
                 // Force increase of topVer
-                startGrid(2);
+                startClientGrid(2);
 
                 stopGrid(2);
             }
-
-            clientMode = false;
 
             try (IgniteDataStreamer<String, String> streamer = client.dataStreamer("test")) {
                 streamer.allowOverwrite(allowOverwrite);

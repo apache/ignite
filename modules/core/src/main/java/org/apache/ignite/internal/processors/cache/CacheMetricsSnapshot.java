@@ -23,6 +23,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
 import org.apache.ignite.cache.CacheMetrics;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedObjectOutputStream;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -301,6 +302,12 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     /** */
     private boolean isValidForWriting;
 
+    /** Index rebuilding in progress. */
+    private boolean idxRebuildInProgress;
+
+    /** Number of keys processed during index rebuilding. */
+    private long idxRebuildKeyProcessed;
+
     /**
      * Default constructor.
      */
@@ -410,6 +417,9 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         rebalanceStartTime = m.rebalancingStartTime();
         rebalanceFinishTime = m.estimateRebalancingFinishTime();
         rebalanceClearingPartitionsLeft = m.getRebalanceClearingPartitionsLeft();
+
+        idxRebuildInProgress = m.isIndexRebuildInProgress();
+        idxRebuildKeyProcessed = m.getIndexRebuildKeysProcessed();
     }
 
     /**
@@ -750,6 +760,7 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
 
         return (float) offHeapMisses / offHeapGets * 100.0f;
     }
+
     /** {@inheritDoc} */
     @Override public long getOffHeapEntriesCount() {
         return offHeapEntriesCnt;
@@ -1018,6 +1029,21 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         return isValidForWriting;
     }
 
+    /** No need in snapshoting this metric, only local metric would be acceptable. */
+    @Override public String getTxKeyCollisions() {
+        return "";
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isIndexRebuildInProgress() {
+        return idxRebuildInProgress;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getIndexRebuildKeysProcessed() {
+        return idxRebuildKeyProcessed;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheMetricsSnapshot.class, this);
@@ -1077,23 +1103,25 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         out.writeLong(rebalancingBytesRate);
         out.writeLong(rebalancingKeysRate);
 
-        out.writeLong(rebalancedKeys);
-        out.writeLong(estimatedRebalancingKeys);
-        out.writeLong(rebalanceStartTime);
-        out.writeLong(rebalanceFinishTime);
-        out.writeLong(rebalanceClearingPartitionsLeft);
+        if (!(out instanceof OptimizedObjectOutputStream)) {
+            out.writeLong(rebalancedKeys);
+            out.writeLong(estimatedRebalancingKeys);
+            out.writeLong(rebalanceStartTime);
+            out.writeLong(rebalanceFinishTime);
+            out.writeLong(rebalanceClearingPartitionsLeft);
 
-        out.writeLong(entryProcessorPuts);
-        out.writeFloat(entryProcessorAverageInvocationTime);
-        out.writeLong(entryProcessorInvocations);
-        out.writeFloat(entryProcessorMaxInvocationTime);
-        out.writeFloat(entryProcessorMinInvocationTime);
-        out.writeLong(entryProcessorReadOnlyInvocations);
-        out.writeFloat(entryProcessorHitPercentage);
-        out.writeLong(entryProcessorHits);
-        out.writeLong(entryProcessorMisses);
-        out.writeFloat(entryProcessorMissPercentage);
-        out.writeLong(entryProcessorRemovals);
+            out.writeLong(entryProcessorPuts);
+            out.writeFloat(entryProcessorAverageInvocationTime);
+            out.writeLong(entryProcessorInvocations);
+            out.writeFloat(entryProcessorMaxInvocationTime);
+            out.writeFloat(entryProcessorMinInvocationTime);
+            out.writeLong(entryProcessorReadOnlyInvocations);
+            out.writeFloat(entryProcessorHitPercentage);
+            out.writeLong(entryProcessorHits);
+            out.writeLong(entryProcessorMisses);
+            out.writeFloat(entryProcessorMissPercentage);
+            out.writeLong(entryProcessorRemovals);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1150,14 +1178,16 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         rebalancingBytesRate = in.readLong();
         rebalancingKeysRate = in.readLong();
 
-        rebalancedKeys = in.readLong();
-        estimatedRebalancingKeys = in.readLong();
-        rebalanceStartTime = in.readLong();
-        rebalanceFinishTime = in.readLong();
-        rebalanceClearingPartitionsLeft = in.readLong();
+        if (in.available() >= 40) {
+            rebalancedKeys = in.readLong();
+            estimatedRebalancingKeys = in.readLong();
+            rebalanceStartTime = in.readLong();
+            rebalanceFinishTime = in.readLong();
+            rebalanceClearingPartitionsLeft = in.readLong();
+        }
 
         // 11 long and 5 float values give 108 bytes in total.
-        if (in.available() >= 108) {
+        if (in.available() >= 68) {
             entryProcessorPuts = in.readLong();
             entryProcessorAverageInvocationTime = in.readFloat();
             entryProcessorInvocations = in.readLong();

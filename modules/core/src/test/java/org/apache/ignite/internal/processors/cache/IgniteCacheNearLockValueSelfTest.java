@@ -46,7 +46,7 @@ public class IgniteCacheNearLockValueSelfTest extends GridCommonAbstractTest {
 
         startGrid(1);
 
-        startGrid(0);
+        startClientGrid(0);
     }
 
     /** {@inheritDoc} */
@@ -56,9 +56,6 @@ public class IgniteCacheNearLockValueSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
-
-        if (getTestIgniteInstanceName(0).equals(igniteInstanceName))
-            cfg.setClientMode(true);
 
         TestRecordingCommunicationSpi commSpi = new TestRecordingCommunicationSpi();
 

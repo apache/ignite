@@ -248,7 +248,7 @@ public class SqlSchemaSelfTest extends AbstractIndexingCommonTest {
 
         GridTestUtils.runMultiThreaded(new Runnable() {
             @Override public void run() {
-                for (int i = 0; i < 100; i++) {
+                for (int i = 0; i < GridTestUtils.SF.applyLB(100, 20); i++) {
                     int idx = maxIdx.incrementAndGet();
 
                     String tbl = "Person" + idx;
@@ -325,6 +325,18 @@ public class SqlSchemaSelfTest extends AbstractIndexingCommonTest {
         SchemaOperationException e = X.cause(th, SchemaOperationException.class);
 
         assertEquals(SchemaOperationException.CODE_TABLE_EXISTS, e.code());
+    }
+
+    /**
+     * Test table creation and data retrieval with implicit schema.
+     */
+    @Test
+    public void testImplicitSchema() {
+        IgniteCache<?, ?> c = node.getOrCreateCache("testCache1");
+
+        c.query(new SqlFieldsQuery("CREATE TABLE TEST1 (ID LONG PRIMARY KEY, VAL LONG)" +
+            " WITH \"template=replicated\";")).getAll();
+        c.query(new SqlFieldsQuery("SELECT * FROM TEST1")).getAll();
     }
 
     /**

@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.GridLuceneIndex;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.index.Index;
@@ -43,6 +44,7 @@ import org.h2.result.SortOrder;
 import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Information about table in database.
@@ -51,10 +53,10 @@ public class H2TableDescriptor {
     /** PK index name. */
     public static final String PK_IDX_NAME = "_key_PK";
 
-    /** PK hashindex name */
+    /** PK hash index name. */
     public static final String PK_HASH_IDX_NAME = "_key_PK_hash";
 
-    /** Affinity key index name */
+    /** Affinity key index name. */
     public static final String AFFINITY_KEY_IDX_NAME = "AFFINITY_KEY";
 
     /** Indexing. */
@@ -102,6 +104,13 @@ public class H2TableDescriptor {
         this.isSql = isSql;
 
         fullTblName = H2Utils.withQuotes(schemaName) + "." + H2Utils.withQuotes(type.tableName());
+    }
+
+    /**
+     * @return {@code true} In case table was created from SQL.
+     */
+    public boolean sql() {
+        return isSql;
     }
 
     /**
@@ -156,7 +165,7 @@ public class H2TableDescriptor {
     /**
      * @return Cache name.
      */
-    public String cacheName(){
+    public String cacheName() {
         return cacheInfo.name();
     }
 
@@ -230,7 +239,8 @@ public class H2TableDescriptor {
             false,
             unwrappedKeyAndAffinityCols,
             wrappedKeyCols,
-            -1
+            -1,
+            null
         );
 
         idxs.add(pkIdx);
@@ -293,7 +303,8 @@ public class H2TableDescriptor {
                     true,
                     colsWithUnwrappedKey,
                     cols,
-                    -1)
+                    -1,
+                    null)
                 );
             }
         }
@@ -317,16 +328,29 @@ public class H2TableDescriptor {
             keyCols = new ArrayList<>(type.fields().size() + 1);
 
             // Check if key is simple type.
-            if(QueryUtils.isSqlType(type.keyClass()))
+            if (QueryUtils.isSqlType(type.keyClass()))
                 keyCols.add(keyCol);
             else {
-                for (String propName : type.fields().keySet()) {
-                    GridQueryProperty prop = type.property(propName);
+                if (!type.primaryKeyFields().isEmpty()) {
+                    for (String keyName : type.primaryKeyFields()) {
+                        GridQueryProperty prop = type.property(keyName);
 
-                    if (prop.key()) {
-                        Column col = tbl.getColumn(propName);
+                        assert prop.key() : keyName + " is not a key field";
+
+                        Column col = tbl.getColumn(prop.name());
 
                         keyCols.add(tbl.indexColumn(col.getColumnId(), SortOrder.ASCENDING));
+                    }
+                }
+                else {
+                    for (String propName : type.fields().keySet()) {
+                        GridQueryProperty prop = type.property(propName);
+
+                        if (prop.key()) {
+                            Column col = tbl.getColumn(propName);
+
+                            keyCols.add(tbl.indexColumn(col.getColumnId(), SortOrder.ASCENDING));
+                        }
                     }
                 }
 
@@ -362,7 +386,7 @@ public class H2TableDescriptor {
         ArrayList<GridH2IndexBase> res = new ArrayList<>();
 
         for (GridQueryIndexDescriptor idxDesc : type.indexes().values()) {
-            GridH2IndexBase idx = createUserIndex(idxDesc);
+            GridH2IndexBase idx = createUserIndex(idxDesc, null);
 
             res.add(idx);
         }
@@ -374,10 +398,11 @@ public class H2TableDescriptor {
      * Create user index.
      *
      * @param idxDesc Index descriptor.
+     * @param cacheVisitor Cache visitor.
      * @return Index.
      */
     @SuppressWarnings("ZeroLengthArrayAllocation")
-    public GridH2IndexBase createUserIndex(GridQueryIndexDescriptor idxDesc) {
+    public GridH2IndexBase createUserIndex(GridQueryIndexDescriptor idxDesc, @Nullable SchemaIndexCacheVisitor cacheVisitor) {
         IndexColumn keyCol = tbl.indexColumn(QueryUtils.KEY_COL, SortOrder.ASCENDING);
         IndexColumn affCol = tbl.getAffinityKeyColumn();
 
@@ -408,11 +433,12 @@ public class H2TableDescriptor {
                 false,
                 colsWithUnwrappedKey,
                 cols,
-                idxDesc.inlineSize()
+                idxDesc.inlineSize(),
+                cacheVisitor
             );
         }
         else if (idxDesc.type() == QueryIndexType.GEOSPATIAL)
-            return H2Utils.createSpatialIndex(tbl, idxDesc.name(), cols.toArray(new IndexColumn[0]));
+            return H2Utils.createSpatialIndex(tbl, idxDesc.name(), cols);
 
         throw new IllegalStateException("Index type: " + idxDesc.type());
     }

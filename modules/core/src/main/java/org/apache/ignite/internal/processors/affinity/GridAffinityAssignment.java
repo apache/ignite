@@ -239,6 +239,11 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
         return set == null ? Collections.<Integer>emptySet() : set;
     }
 
+    /** {@inheritDoc} */
+    @Override public Set<Integer> partitionPrimariesDifferentToIdeal() {
+        return Collections.emptySet();
+    }
+
     /**
      * Initializes primary and backup maps.
      */

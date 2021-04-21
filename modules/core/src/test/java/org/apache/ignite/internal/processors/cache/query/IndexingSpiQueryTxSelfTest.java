@@ -57,7 +57,6 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
-        cfg.setClientMode("client".equals(igniteInstanceName));
         cfg.setIndexingSpi(new MyBrokenIndexingSpi());
 
         CacheConfiguration ccfg = cacheConfiguration(igniteInstanceName);
@@ -74,7 +73,7 @@ public class IndexingSpiQueryTxSelfTest extends GridCacheAbstractSelfTest {
     /** */
     @Test
     public void testIndexingSpiWithTxClient() throws Exception {
-        IgniteEx client = startGrid("client");
+        IgniteEx client = startClientGrid("client");
 
         assertNotNull(client.cache(DEFAULT_CACHE_NAME));
 

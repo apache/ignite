@@ -18,6 +18,7 @@
 package org.apache.ignite.lang;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 /**
  * Defines a predicate which accepts two parameters and returns {@code true} or {@code false}.
@@ -34,4 +35,26 @@ public interface IgniteBiPredicate<E1, E2> extends Serializable {
      * @return Return value.
      */
     public boolean apply(E1 e1, E2 e2);
+
+    /**
+     * Returns a composed predicate that represents a short-circuiting logical
+     * AND of this predicate and another.  When evaluating the composed
+     * predicate, if this predicate is {@code false}, then the {@code other}
+     * predicate is not evaluated.
+     *
+     * <p>Any exceptions thrown during evaluation of either predicate are relayed
+     * to the caller; if evaluation of this predicate throws an exception, the
+     * {@code other} predicate will not be evaluated.
+     *
+     * @param then a predicate that will be logically-ANDed with this
+     *              predicate
+     * @return a composed predicate that represents the short-circuiting logical
+     * AND of this predicate and the {@code other} predicate
+     * @throws NullPointerException if other is null
+     */
+    default IgniteBiPredicate<E1, E2> and(IgniteBiPredicate<E1, E2> then) {
+        Objects.requireNonNull(then);
+
+        return (p1, p2) -> apply(p1, p2) && then.apply(p1, p2);
+    }
 }

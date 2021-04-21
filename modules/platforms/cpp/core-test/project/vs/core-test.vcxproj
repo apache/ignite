@@ -57,12 +57,15 @@
     <None Include="..\..\config\invalid.xml" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\affinity_test.cpp" />
     <ClCompile Include="..\..\src\binary_object_test.cpp" />
     <ClCompile Include="..\..\src\binary_identity_resolver_test.cpp" />
     <ClCompile Include="..\..\src\cache_store_test.cpp" />
     <ClCompile Include="..\..\src\cache_test.cpp" />
-    <ClCompile Include="..\..\src\cluster_test.cpp" />
     <ClCompile Include="..\..\src\cache_invoke_test.cpp" />
+    <ClCompile Include="..\..\src\cluster_group_test.cpp" />
+    <ClCompile Include="..\..\src\cluster_node_test.cpp" />
+    <ClCompile Include="..\..\src\cluster_test.cpp" />
     <ClCompile Include="..\..\src\compute_test.cpp" />
     <ClCompile Include="..\..\src\concurrent_test.cpp" />
     <ClCompile Include="..\..\src\date_time_test.cpp" />
@@ -95,6 +98,20 @@
     <ClInclude Include="..\..\include\ignite\test_type.h" />
     <ClInclude Include="..\..\include\ignite\test_utils.h" />
     <ClInclude Include="..\..\include\teamcity_messages.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="..\..\config\cache-native-persistence-test-32.xml" />
+    <Xml Include="..\..\config\cache-native-persistence-test-default.xml" />
+    <Xml Include="..\..\config\cache-native-persistence-test.xml" />
+    <Xml Include="..\..\config\compute-client-32.xml" />
+    <Xml Include="..\..\config\compute-client-default.xml" />
+    <Xml Include="..\..\config\compute-client.xml" />
+    <Xml Include="..\..\config\compute-server0-32.xml" />
+    <Xml Include="..\..\config\compute-server0-default.xml" />
+    <Xml Include="..\..\config\compute-server0.xml" />
+    <Xml Include="..\..\config\compute-server1-32.xml" />
+    <Xml Include="..\..\config\compute-server1-default.xml" />
+    <Xml Include="..\..\config\compute-server1.xml" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{133A22DB-FD60-44B9-B5E3-6CBB3EA5ABF0}</ProjectGuid>

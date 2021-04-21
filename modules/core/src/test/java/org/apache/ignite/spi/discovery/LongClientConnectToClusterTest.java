@@ -17,6 +17,10 @@
 
 package org.apache.ignite.spi.discovery;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.Socket;
+import java.util.Collections;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -30,12 +34,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.Socket;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
 import org.junit.Test;
 
 /**
@@ -45,6 +43,7 @@ import org.junit.Test;
 public class LongClientConnectToClusterTest extends GridCommonAbstractTest {
     /** Client instance name. */
     public static final String CLIENT_INSTANCE_NAME = "client";
+
     /** Client metrics update count. */
     private static volatile int clientMetricsUpdateCnt;
 
@@ -57,7 +56,6 @@ public class LongClientConnectToClusterTest extends GridCommonAbstractTest {
             : new TcpDiscoverySpi();
 
         return super.getConfiguration(igniteInstanceName)
-            .setClientMode(igniteInstanceName.startsWith(CLIENT_INSTANCE_NAME))
             .setClientFailureDetectionTimeout(1_000)
             .setMetricsUpdateFrequency(500)
             .setDiscoverySpi(discoSpi
@@ -88,7 +86,7 @@ public class LongClientConnectToClusterTest extends GridCommonAbstractTest {
     public void testClientConnectToCluster() throws Exception {
         clientMetricsUpdateCnt = 0;
 
-        IgniteEx client = startGrid(CLIENT_INSTANCE_NAME);
+        IgniteEx client = startClientGrid(CLIENT_INSTANCE_NAME);
 
         assertTrue(clientMetricsUpdateCnt > 0);
 
@@ -113,24 +111,19 @@ public class LongClientConnectToClusterTest extends GridCommonAbstractTest {
 
             /** {@inheritDoc} */
             @Override public IgniteFuture<?> onDiscovery(
-                int type,
-                long topVer,
-                ClusterNode node,
-                Collection<ClusterNode> topSnapshot,
-                @Nullable Map<Long, Collection<ClusterNode>> topHist,
-                @Nullable DiscoverySpiCustomMessage spiCustomMsg
+                DiscoveryNotification notification
             ) {
-                if (EventType.EVT_NODE_METRICS_UPDATED == type) {
-                    log.info("Metrics update message catched from node " + node);
+                if (EventType.EVT_NODE_METRICS_UPDATED == notification.type()) {
+                    log.info("Metrics update message catched from node " + notification.getNode());
 
                     assertFalse(locNode.isClient());
 
-                    if (node.isClient())
+                    if (notification.getNode().isClient())
                         clientMetricsUpdateCnt++;
                 }
 
                 if (delegate != null)
-                    return delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
+                    return delegate.onDiscovery(notification);
 
                 return new IgniteFinishedFutureImpl<>();
             }

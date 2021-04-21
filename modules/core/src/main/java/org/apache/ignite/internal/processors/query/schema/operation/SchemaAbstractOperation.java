@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.schema.operation;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
-
 import java.io.Serializable;
 import java.util.UUID;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Abstract operation on schema.

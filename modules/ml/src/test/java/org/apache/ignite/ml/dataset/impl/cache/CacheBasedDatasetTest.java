@@ -88,7 +88,8 @@ public class CacheBasedDatasetTest extends GridCommonAbstractTest {
         CacheBasedDataset<Integer, String, Long, SimpleDatasetData> dataset = builder.build(
             TestUtils.testEnvBuilder(),
             (env, upstream, upstreamSize) -> upstreamSize,
-            (env, upstream, upstreamSize, ctx) -> new SimpleDatasetData(new double[0], 0)
+            (env, upstream, upstreamSize, ctx) -> new SimpleDatasetData(new double[0], 0),
+            TestUtils.testEnvBuilder().buildForTrainer()
         );
 
         assertEquals("Upstream cache name from dataset",
@@ -145,7 +146,8 @@ public class CacheBasedDatasetTest extends GridCommonAbstractTest {
         CacheBasedDataset<Integer, String, Long, SimpleDatasetData> dataset = builder.build(
             TestUtils.testEnvBuilder(),
             (env, upstream, upstreamSize) -> upstreamSize,
-            (env, upstream, upstreamSize, ctx) -> new SimpleDatasetData(new double[0], 0)
+            (env, upstream, upstreamSize, ctx) -> new SimpleDatasetData(new double[0], 0),
+            TestUtils.testEnvBuilder().buildForTrainer()
         );
 
         assertTrue("Before computation all partitions should not be reserved",

@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.db.wal.crc;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.function.BiFunction;
@@ -35,13 +33,9 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -50,10 +44,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
-
-import static java.nio.ByteBuffer.allocate;
-import static java.nio.file.StandardOpenOption.WRITE;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.CRC_SIZE;
 
 /**
  *
@@ -200,18 +190,19 @@ public abstract class IgniteAbstractWalIteratorInvalidCrcTest extends GridCommon
 
         FileDescriptor corruptedDesc = descPicker.apply(archiveDescs, descs);
 
-        FileWALPointer beforeCorruptedPtr = corruptWalSegmentFile(
+        WALPointer beforeCorruptedPtr = WalTestUtils.corruptWalSegmentFile(
             corruptedDesc,
-            iterFactory
+            iterFactory,
+            random
         );
 
         if (shouldFail) {
-            FileWALPointer[] lastReadPtrRef = new FileWALPointer[1];
+            WALPointer[] lastReadPtrRef = new WALPointer[1];
 
             IgniteException igniteException = (IgniteException) GridTestUtils.assertThrows(log, () -> {
                 try (WALIterator iter = getWalIterator(walMgr, ignoreArchiveDir)) {
                     for (IgniteBiTuple<WALPointer, WALRecord> tuple : iter) {
-                        FileWALPointer ptr = (FileWALPointer)tuple.get1();
+                        WALPointer ptr = tuple.get1();
                         lastReadPtrRef[0] = ptr;
                     }
                 }
@@ -221,56 +212,17 @@ public abstract class IgniteAbstractWalIteratorInvalidCrcTest extends GridCommon
 
             assertTrue(igniteException.hasCause(IgniteDataIntegrityViolationException.class));
 
-            FileWALPointer lastReadPtr = lastReadPtrRef[0];
+            WALPointer lastReadPtr = lastReadPtrRef[0];
             assertNotNull(lastReadPtr);
 
             // WAL iterator advances to the next record and only then returns current one,
             // so next record has to be valid as well.
-            assertEquals(lastReadPtr.next(), beforeCorruptedPtr);
+            assertEquals(lastReadPtr, beforeCorruptedPtr);
         }
         else
             try (WALIterator iter = getWalIterator(walMgr, ignoreArchiveDir)) {
                 while (iter.hasNext())
                     iter.next();
             }
-    }
-
-    /**
-     * Put zero CRC in one of records for the specified segment.
-     * @param desc WAL segment descriptor.
-     * @param iterFactory Iterator factory for segment iterating.
-     * @return Descriptor that is located strictly before the corrupted one.
-     * @throws IOException If IO exception.
-     * @throws IgniteCheckedException If iterator failed.
-     */
-    protected FileWALPointer corruptWalSegmentFile(
-        FileDescriptor desc,
-        IgniteWalIteratorFactory iterFactory
-    ) throws IOException, IgniteCheckedException {
-        List<FileWALPointer> pointers = new ArrayList<>();
-
-        try (WALIterator it = iterFactory.iterator(desc.file())) {
-            for (IgniteBiTuple<WALPointer, WALRecord> tuple : it) {
-                pointers.add((FileWALPointer) tuple.get1());
-            }
-        }
-
-        // Should have a previous record to return and another value before that to ensure that "lastReadPtr"
-        // in "doTest" will always exist.
-        int idxCorrupted = 2 + random.nextInt(pointers.size() - 2);
-
-        FileWALPointer pointer = pointers.get(idxCorrupted);
-        int crc32Off = pointer.fileOffset() + pointer.length() - CRC_SIZE;
-
-        ByteBuffer zeroCrc32 = allocate(CRC_SIZE); // Has 0 value by default.
-
-        FileIOFactory ioFactory = new RandomAccessFileIOFactory();
-        try (FileIO io = ioFactory.create(desc.file(), WRITE)) {
-            io.write(zeroCrc32, crc32Off);
-
-            io.force(true);
-        }
-
-        return pointers.get(idxCorrupted - 1);
     }
 }

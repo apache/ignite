@@ -17,11 +17,13 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.internal.MemoryLeaksOnRestartNodeTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheCreateRestartSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheNearRestartRollbackSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePartitionedNearDisabledOptimisticTxNodeRestartTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedNodeRestartTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedOptimisticTxNodeRestartTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.NearCacheMultithreadedUpdateTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedNodeRestartSelfTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -36,8 +38,11 @@ import org.junit.runners.Suite;
     GridCacheReplicatedNodeRestartSelfTest.class,
     GridCachePartitionedNearDisabledOptimisticTxNodeRestartTest.class,
     IgniteCacheNearRestartRollbackSelfTest.class,
+    NearCacheMultithreadedUpdateTest.class,
 
-    IgniteCacheCreateRestartSelfTest.class
+    IgniteCacheCreateRestartSelfTest.class,
+
+    MemoryLeaksOnRestartNodeTest.class
 })
 public class IgniteCacheRestartTestSuite {
 }

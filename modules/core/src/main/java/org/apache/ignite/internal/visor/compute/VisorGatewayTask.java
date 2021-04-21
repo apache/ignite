@@ -51,6 +51,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -81,7 +82,7 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
     protected transient IgniteEx ignite;
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable Object[] args) throws IgniteException {
         assert args != null;
         assert args.length >= 2;
@@ -246,7 +247,7 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
          * @return Object constructed from string.
          */
         @Nullable private Object toObject(Class cls, String val) {
-            if (val == null  || "null".equals(val) || "nil".equals(val))
+            if (val == null || "null".equals(val) || "nil".equals(val))
                 return null;
 
             if (String.class == cls)
@@ -299,7 +300,7 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
 
                 byte[] res = new byte[els.length];
 
-                for (int i = 0; i < els.length; i ++)
+                for (int i = 0; i < els.length; i++)
                     res[i] = Byte.valueOf(els[i]);
 
                 return res;

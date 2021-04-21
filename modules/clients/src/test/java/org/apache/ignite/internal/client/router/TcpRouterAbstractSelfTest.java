@@ -71,7 +71,7 @@ public abstract class TcpRouterAbstractSelfTest extends ClientAbstractSelfTest {
 
         assert router.getSendCount() > sndCnt :
             "Failed to ensure network activity [currCnt=" + router.getSendCount() + ", oldCnt=" + sndCnt + ']';
-        assert router.getReceivedCount() > rcvCnt:
+        assert router.getReceivedCount() > rcvCnt :
             "Failed to ensure network activity [currCnt=" + router.getReceivedCount() + ", oldCnt=" + rcvCnt + ']';
     }
 
@@ -109,7 +109,7 @@ public abstract class TcpRouterAbstractSelfTest extends ClientAbstractSelfTest {
         cfg.setHost(HOST);
         cfg.setPort(ROUTER_PORT);
         cfg.setPortRange(0);
-        cfg.setServers(Collections.singleton(HOST+":"+BINARY_PORT));
+        cfg.setServers(Collections.singleton(HOST + ":" + BINARY_PORT));
         cfg.setLogger(new Log4JLogger(ROUTER_LOG_CFG));
 
         return cfg;

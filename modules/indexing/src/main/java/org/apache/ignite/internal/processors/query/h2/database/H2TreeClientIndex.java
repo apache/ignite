@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.h2.database;
 
-import java.util.List;
-
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
+import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
 import org.h2.index.IndexType;
@@ -33,27 +33,34 @@ import org.h2.table.IndexColumn;
  * We need indexes on an not affinity nodes. The index shouldn't contains any data.
  */
 public class H2TreeClientIndex extends H2TreeIndexBase {
+    /** */
+    private final InlineIndex clientIdx;
+
     /**
      * @param tbl Table.
      * @param name Index name.
-     * @param pk Primary key.
-     * @param colsList Index columns.
+     * @param cols Index columns.
+     * @param idxType Index type.
      */
-    @SuppressWarnings("ZeroLengthArrayAllocation")
-    public H2TreeClientIndex(GridH2Table tbl, String name, boolean pk, List<IndexColumn> colsList) {
-        super(tbl);
+    public H2TreeClientIndex(InlineIndex idx, GridH2Table tbl, String name, IndexColumn[] cols, IndexType idxType) {
+        super(tbl, name, cols, idxType);
 
-        IndexColumn[] cols = colsList.toArray(new IndexColumn[0]);
+        clientIdx = idx;
+    }
 
-        IndexColumn.mapColumns(cols, tbl);
-
-        initBaseIndex(tbl, 0, name, cols,
-            pk ? IndexType.createPrimaryKey(false, false) : IndexType.createNonUnique(false, false, false));
+    /** {@inheritDoc} */
+    @Override public int inlineSize() {
+        return clientIdx.inlineSize();
     }
 
     /** {@inheritDoc} */
     @Override public void refreshColumnIds() {
         // Do nothing.
+    }
+
+    /** {@inheritDoc} */
+    @Override public long totalRowCount(IndexingQueryCacheFilter partsFilter) {
+        throw unsupported();
     }
 
     /** {@inheritDoc} */

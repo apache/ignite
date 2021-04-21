@@ -37,9 +37,6 @@ import org.junit.Test;
  *
  */
 public class DdlTransactionSelfTest extends GridCommonAbstractTest {
-    /** */
-    private boolean client;
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
@@ -55,7 +52,6 @@ public class DdlTransactionSelfTest extends GridCommonAbstractTest {
             .setDefaultTxTimeout(5000));
 
         cfg.setCacheConfiguration(getCacheConfiguration());
-        cfg.setClientMode(client);
 
         return cfg;
     }
@@ -78,9 +74,7 @@ public class DdlTransactionSelfTest extends GridCommonAbstractTest {
     public void testTxIsCommittedOnDdlRequestMultinodeClient() throws Exception {
         startGridsMultiThreaded(4, false);
 
-        client = true;
-
-        Ignite node = startGrid(4);
+        Ignite node = startClientGrid(4);
 
         awaitPartitionMapExchange();
 
@@ -213,9 +207,7 @@ public class DdlTransactionSelfTest extends GridCommonAbstractTest {
     public void testDdlRequestWithoutTxMultinodeClient() throws Exception {
         startGridsMultiThreaded(4, false);
 
-        client = true;
-
-        Ignite node = startGrid(4);
+        Ignite node = startClientGrid(4);
 
         awaitPartitionMapExchange();
 

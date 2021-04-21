@@ -272,14 +272,14 @@ public class GridJobContextImpl implements ComputeJobContext, Externalizable {
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(ctx);
-        U.writeGridUuid(out, jobId);
+        U.writeIgniteUuid(out, jobId);
         U.writeMap(out, getAttributes());
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         ctx = (GridKernalContext)in.readObject();
-        jobId = U.readGridUuid(in);
+        jobId = U.readIgniteUuid(in);
         attrs = U.readMap(in);
     }
 

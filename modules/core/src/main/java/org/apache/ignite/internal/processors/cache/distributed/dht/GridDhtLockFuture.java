@@ -58,11 +58,14 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCach
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersionAware;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
+import org.apache.ignite.internal.processors.tracing.MTC;
+import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -81,6 +84,8 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_LOADED;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRELOAD;
+import static org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
+import static org.apache.ignite.internal.processors.tracing.SpanType.TX_DHT_LOCK_MAP;
 
 /**
  * Cache lock future.
@@ -89,6 +94,9 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
     implements GridCacheVersionedFuture<Boolean>, GridDhtFuture<Boolean>, GridCacheMappedVersion, DhtLockFuture<Boolean> {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Tracing span. */
+    private Span span;
 
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
@@ -267,7 +275,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         }
 
         if (tx != null) {
-            while(true) {
+            while (true) {
                 IgniteInternalFuture fut = tx.lockFut;
 
                 if (fut != null) {
@@ -316,7 +324,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
         // Register invalid partitions with transaction.
         if (tx != null)
-            tx.addInvalidPartition(cacheCtx, invalidPart);
+            tx.addInvalidPartition(cacheCtx.cacheId(), invalidPart);
 
         if (log.isDebugEnabled())
             log.debug("Added invalid partition to future [invalidPart=" + invalidPart + ", fut=" + this + ']');
@@ -728,30 +736,32 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
     /** {@inheritDoc} */
     @Override public boolean onDone(@Nullable Boolean success, @Nullable Throwable err) {
-        // Protect against NPE.
-        if (success == null) {
-            assert err != null;
+        try (TraceSurroundings ignored = MTC.support(span)) {
+            // Protect against NPE.
+            if (success == null) {
+                assert err != null;
 
-            success = false;
+                success = false;
+            }
+
+            assert err == null || !success;
+            assert !success || (initialized() && !hasPending()) : "Invalid done callback [success=" + success +
+                ", fut=" + this + ']';
+
+            if (log.isDebugEnabled())
+                log.debug("Received onDone(..) callback [success=" + success + ", err=" + err + ", fut=" + this + ']');
+
+            // If locks were not acquired yet, delay completion.
+            if (isDone() || (err == null && success && !checkLocks()))
+                return false;
+
+            synchronized (this) {
+                if (this.err == null)
+                    this.err = err;
+            }
+
+            return onComplete(success, err instanceof NodeStoppingException, true);
         }
-
-        assert err == null || !success;
-        assert !success || (initialized() && !hasPending()) : "Invalid done callback [success=" + success +
-            ", fut=" + this + ']';
-
-        if (log.isDebugEnabled())
-            log.debug("Received onDone(..) callback [success=" + success + ", err=" + err + ", fut=" + this + ']');
-
-        // If locks were not acquired yet, delay completion.
-        if (isDone() || (err == null && success && !checkLocks()))
-            return false;
-
-        synchronized (this) {
-            if (this.err == null)
-                this.err = err;
-        }
-
-        return onComplete(success, err instanceof NodeStoppingException, true);
     }
 
     /**
@@ -809,18 +819,21 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
      *
      */
     public void map() {
-        if (F.isEmpty(entries)) {
-            onComplete(true, false, true);
+        try (TraceSurroundings ignored =
+                 MTC.supportContinual(span = cctx.kernalContext().tracing().create(TX_DHT_LOCK_MAP, MTC.span()))) {
+            if (F.isEmpty(entries)) {
+                onComplete(true, false, true);
 
-            return;
-        }
+                return;
+            }
 
-        readyLocks();
+            readyLocks();
 
-        if (timeout > 0 && !isDone()) { // Prevent memory leak if future is completed by call to readyLocks.
-            timeoutObj = new LockTimeoutObject();
+            if (timeout > 0 && !isDone()) { // Prevent memory leak if future is completed by call to readyLocks.
+                timeoutObj = new LockTimeoutObject();
 
-            cctx.time().addTimeoutObject(timeoutObj);
+                cctx.time().addTimeoutObject(timeoutObj);
+            }
         }
     }
 
@@ -897,7 +910,8 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                 return;
 
             if (log.isDebugEnabled())
-                log.debug("Mapped DHT lock future [dhtMap=" + F.nodeIds(dhtMap.keySet()) + ", dhtLockFut=" + this + ']');
+                log.debug("Mapped DHT lock future [dhtMap=" + F.nodeIds(dhtMap.keySet()) +
+                    ", dhtLockFut=" + this + ']');
 
             long timeout = inTx() ? tx.remainingTime() : this.timeout;
 
@@ -1163,10 +1177,18 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
         /** {@inheritDoc} */
         @Override public void onTimeout() {
-            if (log.isDebugEnabled())
-                log.debug("Timed out waiting for lock response: " + this);
+            long longOpsDumpTimeout = cctx.tm().longOperationsDumpTimeout();
 
             synchronized (GridDhtLockFuture.this) {
+                if (log.isDebugEnabled() || timeout >= longOpsDumpTimeout) {
+                    String msg = dumpPendingLocks();
+
+                    if (log.isDebugEnabled())
+                        log.debug(msg);
+                    else
+                        log.warning(msg);
+                }
+
                 timedOut = true;
 
                 // Stop locks and responses processing.
@@ -1183,6 +1205,66 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(LockTimeoutObject.class, this);
+        }
+
+        /**
+         * NB! Should be called in synchronized block on {@link GridDhtLockFuture} instance.
+         *
+         * @return String representation of pending locks.
+         */
+        private String dumpPendingLocks() {
+            StringBuilder sb = new StringBuilder();
+
+            sb.append("Transaction tx=").append(tx.getClass().getSimpleName());
+            sb.append(" [xid=").append(tx.xid());
+            sb.append(", xidVer=").append(tx.xidVersion());
+            sb.append(", nearXid=").append(tx.nearXidVersion().asIgniteUuid());
+            sb.append(", nearXidVer=").append(tx.nearXidVersion());
+            sb.append(", nearNodeId=").append(tx.nearNodeId());
+            sb.append(", label=").append(tx.label());
+            sb.append("] timed out, can't acquire lock for ");
+
+            Iterator<KeyCacheObject> locks = pendingLocks.iterator();
+
+            boolean found = false;
+
+            while (!found && locks.hasNext()) {
+                KeyCacheObject key = locks.next();
+
+                GridCacheEntryEx entry = cctx.cache().entryEx(key, topVer);
+
+                while (true) {
+                    try {
+                        Collection<GridCacheMvccCandidate> candidates = entry.localCandidates();
+
+                        for (GridCacheMvccCandidate candidate : candidates) {
+                            IgniteInternalTx itx = cctx.tm().tx(candidate.version());
+
+                            if (itx != null && candidate.owner() && !candidate.version().equals(tx.xidVersion())) {
+                                sb.append("key=").append(key).append(", owner=");
+                                sb.append("[xid=").append(itx.xid()).append(", ");
+                                sb.append("xidVer=").append(itx.xidVersion()).append(", ");
+                                sb.append("nearXid=").append(itx.nearXidVersion().asIgniteUuid()).append(", ");
+                                sb.append("nearXidVer=").append(itx.nearXidVersion()).append(", ");
+                                sb.append("label=").append(itx.label()).append(", ");
+                                sb.append("nearNodeId=").append(candidate.otherNodeId()).append("]");
+                                sb.append(", queueSize=").append(candidates.isEmpty() ? 0 : candidates.size() - 1);
+
+                                found = true;
+
+                                break;
+                            }
+                        }
+
+                        break;
+                    }
+                    catch (GridCacheEntryRemovedException e) {
+                        entry = cctx.cache().entryEx(key, topVer);
+                    }
+                }
+            }
+
+            return sb.toString();
         }
     }
 

@@ -43,11 +43,13 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionState;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * Tests to check behavior regarding transactions started via SQL.
  */
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-13723")
 public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -160,8 +162,8 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
         try (Transaction ignored = node().transactions().txStart()) {
             node().cache("ints").put(1, 1);
 
-            assertSqlException(new RunnableX() {
-                @Override public void run() throws Exception {
+            assertSqlException(new Runnable() {
+                @Override public void run() {
                     execute(node(), sql);
                 }
             }, IgniteQueryErrorCode.TRANSACTION_TYPE_MISMATCH);
@@ -170,8 +172,8 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
         try (Transaction ignored = node().transactions().txStart()) {
             node().cache("ints").put(1, 1);
 
-            assertSqlException(new RunnableX() {
-                @Override public void run() throws Exception {
+            assertSqlException(new Runnable() {
+                @Override public void run() {
                     node().cache("ints").query(new SqlFieldsQuery(sql).setLocal(true)).getAll();
                 }
             }, IgniteQueryErrorCode.TRANSACTION_TYPE_MISMATCH);

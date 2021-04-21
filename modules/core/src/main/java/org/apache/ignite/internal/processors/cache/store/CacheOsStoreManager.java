@@ -21,9 +21,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.platform.cache.store.PlatformCacheStore;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 
 /**
  * Default store manager implementation.

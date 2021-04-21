@@ -218,6 +218,7 @@ public class IgniteCacheDistributedJoinCustomAffinityMapper extends GridCommonAb
             // No-op.
         }
     }
+
     /**
      *
      */

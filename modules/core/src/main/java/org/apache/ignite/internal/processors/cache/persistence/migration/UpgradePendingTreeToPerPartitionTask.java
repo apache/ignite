@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -149,7 +150,9 @@ public class UpgradePendingTreeToPerPartitionTask implements IgniteCallable<Bool
                 grp.dataRegion().pageMemory(),
                 pendingRootPage.pageId().pageId(),
                 ((GridCacheOffheapManager)grp.offheap()).reuseListForIndex(null),
-                false
+                false,
+                null,
+                PageIdAllocator.FLAG_IDX
             );
         }
         finally {

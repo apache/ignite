@@ -28,6 +28,7 @@ import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DAEMON;
 
@@ -43,7 +44,7 @@ class IgniteKillTask extends ComputeTaskAdapter<Boolean, Void> {
     private boolean restart;
 
     /** {@inheritDoc} */
-    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Boolean restart) {
+    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Boolean restart) {
         assert restart != null;
 
         this.restart = restart;

@@ -308,7 +308,7 @@ public class AboutDialog extends JDialog {
      * @param act Escape button action.
      */
     private void setEscAction(ActionListener act) {
-        assert(act != null);
+        assert (act != null);
 
         getRootPane().registerKeyboardAction(act,
             KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0x0),

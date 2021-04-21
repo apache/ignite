@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Cache
 {
+    using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Net;
@@ -71,10 +72,12 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 Assert.AreEqual(200, serverCache[2].Id);
 
                 // SQL from server cache.
+#pragma warning disable 618
                 var sqlRes = serverCache.Query(new SqlQuery(typeof(Person), "where id = 100")).GetAll().Single();
                 Assert.AreEqual(1, sqlRes.Key);
                 Assert.AreEqual(100, sqlRes.Value.Id);
                 Assert.AreEqual("foo", sqlRes.Value.Name);
+#pragma warning restore 618
             }
         }
 
@@ -96,19 +99,13 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             }
 
             /** <inheritdoc /> */
-            public int[] GetSchema(int typeId, int schemaId)
-            {
-                return null;
-            }
-
-            /** <inheritdoc /> */
             public void PutBinaryTypes(ICollection<BinaryType> types)
             {
                 // No-op.
             }
 
             /** <inheritdoc /> */
-            public bool RegisterType(int id, string typeName)
+            public bool RegisterType(int id, string typeName, bool registerSameJavaType)
             {
                 return false;
             }
@@ -120,7 +117,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             }
 
             /** <inheritdoc /> */
-            public string GetTypeName(int id)
+            public string GetTypeName(int id, byte platformId, Func<Exception, string> errorAction)
             {
                 return null;
             }

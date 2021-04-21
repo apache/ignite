@@ -135,6 +135,16 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
         setsMap = new ConcurrentHashMap<>(10);
     }
 
+    /** @return Sets map. */
+    public ConcurrentMap<IgniteUuid, GridCacheSetProxy> sets() {
+        return setsMap;
+    }
+
+    /** @return Queue map. */
+    public ConcurrentMap<IgniteUuid, GridCacheQueueProxy> queues() {
+        return queuesMap;
+    }
+
     /** {@inheritDoc} */
     @Override protected void onKernalStart0() throws IgniteCheckedException {
         try {
@@ -658,13 +668,13 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
-            U.writeGridUuid(out, setId);
+            U.writeIgniteUuid(out, setId);
             U.writeString(out, cacheName);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            setId = U.readGridUuid(in);
+            setId = U.readIgniteUuid(in);
             cacheName = U.readString(in);
         }
 
@@ -738,14 +748,14 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             U.writeString(out, cacheName);
-            U.writeGridUuid(out, setId);
+            U.writeIgniteUuid(out, setId);
             out.writeObject(topVer);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             cacheName = U.readString(in);
-            setId = U.readGridUuid(in);
+            setId = U.readIgniteUuid(in);
             topVer = (AffinityTopologyVersion)in.readObject();
         }
 

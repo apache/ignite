@@ -47,8 +47,9 @@ public class IgniteDiscoveryCacheReuseSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testDiscoCacheReuseOnNodeJoin() throws Exception {
-        startGridsMultiThreaded(2);
+        Ignite ignite1 = startGridsMultiThreaded(2);
 
+        ignite1.cluster().baselineAutoAdjustEnabled(false);
         // The final topology version after 2 node joins and one CacheAffinityChange message.
         AffinityTopologyVersion waited = new AffinityTopologyVersion(2, 1);
 

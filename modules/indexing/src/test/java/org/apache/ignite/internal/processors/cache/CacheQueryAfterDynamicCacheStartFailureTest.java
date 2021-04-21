@@ -22,16 +22,8 @@ import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 
 public class CacheQueryAfterDynamicCacheStartFailureTest extends IgniteAbstractDynamicCacheStartFailTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        return cfg;
-    }
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrids(gridCount());
@@ -40,7 +32,7 @@ public class CacheQueryAfterDynamicCacheStartFailureTest extends IgniteAbstractD
     }
 
     /** {@inheritDoc} */
-    protected CacheConfiguration createCacheConfiguration(String cacheName) {
+    @Override protected CacheConfiguration createCacheConfiguration(String cacheName) {
         CacheConfiguration cfg = new CacheConfiguration()
             .setName(cacheName)
             .setIndexedTypes(Integer.class, Value.class);
@@ -48,7 +40,8 @@ public class CacheQueryAfterDynamicCacheStartFailureTest extends IgniteAbstractD
         return cfg;
     }
 
-    protected void checkCacheOperations(IgniteCache<Integer, Value> cache) throws Exception {
+    /** {@inheritDoc} */
+    @Override protected void checkCacheOperations(IgniteCache<Integer, Value> cache) throws Exception {
         super.checkCacheOperations(cache);
 
         // Check SQL API.

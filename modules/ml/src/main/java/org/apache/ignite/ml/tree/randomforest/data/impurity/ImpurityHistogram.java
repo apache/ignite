@@ -52,7 +52,7 @@ public abstract class ImpurityHistogram implements Serializable {
      * @param bestBucketId Best bucket id.
      * @param bestSplitVal Best split value.
      * @param bestImpurity Best impurity.
-     * @return best split value.
+     * @return Best split value.
      */
     protected Optional<NodeSplit> checkAndReturnSplitValue(int bestBucketId, double bestSplitVal, double bestImpurity) {
         if (isLastBucket(bestBucketId))
@@ -63,7 +63,7 @@ public abstract class ImpurityHistogram implements Serializable {
 
     /**
      * @param bestBucketId Best bucket id.
-     * @return true if best found bucket is last within all bucketIds.
+     * @return True if best found bucket is last within all bucketIds.
      */
     private boolean isLastBucket(int bestBucketId) {
         int minBucketId = Integer.MAX_VALUE;

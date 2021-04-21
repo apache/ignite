@@ -21,34 +21,23 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
-
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.query.h2.twostep.GridReduceQueryExecutor;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_RETRY_TIMEOUT;
 
 /**
  * Tests distributed queries over set of partitions on unstable topology.
  */
+@WithSystemProperty(key = IGNITE_SQL_RETRY_TIMEOUT, value = "1000000")
 public class IgniteCacheDistributedPartitionQueryNodeRestartsSelfTest extends
     IgniteCacheDistributedPartitionQueryAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        System.setProperty(IgniteSystemProperties.IGNITE_SQL_RETRY_TIMEOUT, Long.toString(1000_000L));
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_SQL_RETRY_TIMEOUT,
-            Long.toString(GridReduceQueryExecutor.DFLT_RETRY_TIMEOUT));
-
-        super.afterTestsStopped();
-    }
-
     /**
      * Tests join query within region on unstable topology.
      */
@@ -98,9 +87,17 @@ public class IgniteCacheDistributedPartitionQueryNodeRestartsSelfTest extends
 
                             Thread.sleep(rnd.nextInt(NODE_RESTART_TIME));
 
-                            startGrid(grid);
+                            IgniteEx g = startGrid(grid);
 
                             Thread.sleep(rnd.nextInt(NODE_RESTART_TIME));
+
+                            // Avoid data loss on random restarts.
+                            assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                                @Override public boolean apply() {
+                                    return !g.cachex("cl").context().topology().hasMovingPartitions() ||
+                                        !g.cachex("de").context().topology().hasMovingPartitions();
+                                }
+                            }, 30_000));
                         } finally {
                             states.set(grid, 0);
                         }
@@ -112,7 +109,7 @@ public class IgniteCacheDistributedPartitionQueryNodeRestartsSelfTest extends
         }, RESTART_THREADS_CNT);
 
         // Test duration.
-        U.sleep(60_000);
+        U.sleep(GridTestUtils.SF.applyLB(60_000, 20_000));
 
         stop.set(true);
 

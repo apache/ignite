@@ -70,9 +70,36 @@ public abstract class LogListener implements Consumer<String> {
     public abstract boolean check();
 
     /**
+     * Checks that all conditions are met with timeout.
+     *
+     * @return {@code True} if all conditions are met.
+     */
+    public boolean check(long millis) throws InterruptedException {
+        long startTime = System.currentTimeMillis();
+
+        while (startTime + millis >= System.currentTimeMillis()) {
+            if (check())
+                return true;
+
+            Thread.sleep(1000);
+        }
+
+        return check();
+    }
+
+    /**
      * Reset listener state.
      */
-    abstract void reset();
+    public abstract void reset();
+
+    /**
+     * Creates new builder.
+     *
+     * @return new builder.
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
 
     /**
      * Creates new listener builder.
@@ -333,7 +360,7 @@ public abstract class LogListener implements Consumer<String> {
         }
 
         /** {@inheritDoc} */
-        @Override void reset() {
+        @Override public void reset() {
             matches.set(0);
         }
 
@@ -368,7 +395,7 @@ public abstract class LogListener implements Consumer<String> {
         }
 
         /** {@inheritDoc} */
-        @Override void reset() {
+        @Override public void reset() {
             for (LogMessageListener lsnr : lsnrs)
                 lsnr.reset();
         }

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.io.Serializable;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
@@ -98,7 +99,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
                     if (i % 500 == 0)
                         log.info("Iteration " + i);
 
-                    cache.invoke(key, new IncProcessor());
+                    doOperation(() -> cache.invoke(key, new IncProcessor()));
                 }
 
                 return null;
@@ -143,7 +144,8 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
                     if (i % 500 == 0)
                         log.info("Iteration " + i);
 
-                    Integer val = cache.getAndPut(key, i);
+                    int val0 = i;
+                    Integer val = doOperation(() -> cache.getAndPut(key, val0));
 
                     assertNotNull(val);
                 }
@@ -235,7 +237,8 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
                     if (i % 1000 == 0)
                         log.info("Put iteration " + i);
 
-                    cache.put(key, i);
+                    int val = i;
+                    doOperation(() -> cache.put(key, val));
                 }
 
                 return null;
@@ -302,6 +305,20 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
      */
     protected int iterations() {
         return 1_000;
+    }
+
+    /** */
+    protected <T> T doOperation(Supplier<T> op) {
+        return op.get();
+    }
+
+    /** */
+    protected void doOperation(Runnable op) {
+        doOperation(() -> {
+            op.run();
+
+            return null;
+        });
     }
 
     /**

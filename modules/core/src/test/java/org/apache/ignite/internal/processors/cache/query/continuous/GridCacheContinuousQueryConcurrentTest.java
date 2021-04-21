@@ -424,8 +424,6 @@ public class GridCacheContinuousQueryConcurrentTest extends GridCommonAbstractTe
             new SingletonFactory<>(new KeyEventFilter(key, id)), false, true);
     }
 
-
-
     /**
      * @param cacheMode Cache mode.
      * @param atomicMode Atomicy mode.

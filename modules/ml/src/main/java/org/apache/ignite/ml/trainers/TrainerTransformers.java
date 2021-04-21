@@ -59,6 +59,7 @@ public class TrainerTransformers {
         PredictionsAggregator aggregator) {
         return makeBagged(trainer, ensembleSize, subsampleRatio, -1, -1, aggregator);
     }
+
     /**
      * Add bagging logic to a given trainer.
      *

@@ -24,7 +24,7 @@ import org.apache.ignite.mxbean.CacheMetricsMXBean;
 /**
  * Management bean that provides access to {@link IgniteCache IgniteCache}.
  */
-class CacheClusterMetricsMXBeanImpl implements CacheMetricsMXBean {
+public class CacheClusterMetricsMXBeanImpl implements CacheMetricsMXBean {
     /** Cache. */
     private GridCacheAdapter<?, ?> cache;
 
@@ -495,6 +495,11 @@ class CacheClusterMetricsMXBeanImpl implements CacheMetricsMXBean {
     }
 
     /** {@inheritDoc} */
+    @Override public String getTxKeyCollisions() {
+        return cache.clusterMetrics().getTxKeyCollisions();
+    }
+
+    /** {@inheritDoc} */
     @Override public void enableStatistics() {
         try {
             cache.context().shared().cache().enableStatistics(Collections.singleton(cache.name()), true);
@@ -512,5 +517,15 @@ class CacheClusterMetricsMXBeanImpl implements CacheMetricsMXBean {
         catch (Exception e) {
             throw new RuntimeException(e.getMessage());
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isIndexRebuildInProgress() {
+        return cache.clusterMetrics().isIndexRebuildInProgress();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getIndexRebuildKeysProcessed() {
+        return cache.clusterMetrics().getIndexRebuildKeysProcessed();
     }
 }

@@ -22,8 +22,9 @@ import java.util.Iterator;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.environment.LearningEnvironment;
+import org.apache.ignite.ml.math.exceptions.preprocessing.IllegalLabelTypeException;
+import org.apache.ignite.ml.preprocessing.Preprocessor;
 import org.apache.ignite.ml.structures.LabeledVector;
-import org.apache.ignite.ml.trainers.FeatureLabelExtractor;
 
 /**
  * A partition {@code data} builder that makes {@link DecisionTreeData}.
@@ -38,7 +39,7 @@ public class DecisionTreeDataBuilder<K, V, C extends Serializable>
     private static final long serialVersionUID = 3678784980215216039L;
 
     /** Extractor of features and labels from an {@code upstream} data. */
-    private final FeatureLabelExtractor<K, V, Double> extractor;
+    private final Preprocessor<K, V> preprocessor;
 
     /** Build index. */
     private final boolean buildIdx;
@@ -46,11 +47,11 @@ public class DecisionTreeDataBuilder<K, V, C extends Serializable>
     /**
      * Constructs a new instance of decision tree data builder.
      *
-     * @param extractor Extractor of features and labels from an {@code upstream} data..
+     * @param preprocessor Extractor of features and labels from an {@code upstream} data..
      * @param buildIdx Build index.
      */
-    public DecisionTreeDataBuilder(FeatureLabelExtractor<K, V, Double> extractor, boolean buildIdx) {
-        this.extractor = extractor;
+    public DecisionTreeDataBuilder(Preprocessor<K, V> preprocessor, boolean buildIdx) {
+        this.preprocessor = preprocessor;
         this.buildIdx = buildIdx;
     }
 
@@ -67,10 +68,14 @@ public class DecisionTreeDataBuilder<K, V, C extends Serializable>
         while (upstreamData.hasNext()) {
             UpstreamEntry<K, V> entry = upstreamData.next();
 
-            LabeledVector<Double> featsAndLbl = extractor.extract(entry.getKey(), entry.getValue());
-            features[ptr] = featsAndLbl.features().asArray();
+            LabeledVector labeledVector = preprocessor.apply(entry.getKey(), entry.getValue());
+            features[ptr] = labeledVector.features().asArray();
 
-            labels[ptr] = featsAndLbl.label();
+            Object lb = labeledVector.label();
+            if (lb instanceof Double)
+                labels[ptr] = (double)lb;
+            else
+                throw new IllegalLabelTypeException(lb.getClass(), lb, Double.class);
 
             ptr++;
         }

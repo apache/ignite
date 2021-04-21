@@ -32,19 +32,17 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  */
 public class IgniteCacheInvokeReadThroughTest extends IgniteCacheInvokeReadThroughAbstractTest {
     /** {@inheritDoc} */
-    @Override public void setUp() throws Exception {
+    @Override protected void beforeTest() throws Exception {
         MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.CACHE_STORE);
 
-        super.setUp();
+        super.beforeTest();
     }
 
     /** {@inheritDoc} */
     @Override protected void startNodes() throws Exception {
         startGridsMultiThreaded(4);
 
-        client = true;
-
-        startGrid(4);
+        startClientGrid(4);
     }
 
     /**

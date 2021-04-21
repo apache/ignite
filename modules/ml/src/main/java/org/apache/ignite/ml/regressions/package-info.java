@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains various regressions.
  */
+
 package org.apache.ignite.ml.regressions;

@@ -16,7 +16,6 @@
  */
 
 /**
- * <!-- Package description. -->
- * Full ML Tutorial.
+ * <!-- Package description. --> Full ML Tutorial.
  */
 package org.apache.ignite.examples.ml.tutorial;

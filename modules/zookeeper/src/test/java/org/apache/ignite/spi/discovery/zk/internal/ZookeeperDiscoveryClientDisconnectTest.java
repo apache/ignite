@@ -17,18 +17,13 @@
 
 package org.apache.ignite.spi.discovery.zk.internal;
 
-import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.management.JMX;
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -38,7 +33,6 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -50,7 +44,6 @@ import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiMBean;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiTestUtil;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.zookeeper.ZkTestClientCnxnSocketNIO;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -67,6 +60,7 @@ public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySp
 
         // we reduce fealure detection tp speedup failure detection on catch(Exception) clause in createTcpClient().
         cfg.setFailureDetectionTimeout(2000);
+        cfg.setClientFailureDetectionTimeout(2000);
 
         return cfg;
     }
@@ -84,9 +78,7 @@ public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySp
 
         Ignite srv1 = startGrid("server1-block");
 
-        helper.clientModeThreadLocal(true);
-
-        IgniteEx cli = startGrid("client-block");
+        IgniteEx cli = startClientGrid("client-block");
 
         IgniteCache<Object, Object> cache = cli.getOrCreateCache(DEFAULT_CACHE_NAME);
 
@@ -96,14 +88,8 @@ public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySp
 
         assertEquals(1, srv1.cluster().forClients().nodes().size());
 
-        MBeanServer srv = ManagementFactory.getPlatformMBeanServer();
-
-        IgniteEx ignite = grid("server1-block");
-
-        ObjectName spiName = U.makeMBeanName(ignite.context().igniteInstanceName(), "SPIs",
-            ZookeeperDiscoverySpi.class.getSimpleName());
-
-        ZookeeperDiscoverySpiMBean bean = JMX.newMBeanProxy(srv, spiName, ZookeeperDiscoverySpiMBean.class);
+        ZookeeperDiscoverySpiMBean bean = getMxBean(srv1.name(), "SPIs",
+            ZookeeperDiscoverySpi.class, ZookeeperDiscoverySpiMBean.class);
 
         assertNotNull(bean);
 
@@ -144,9 +130,8 @@ public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySp
 
         sesTimeout = 3000;
         testSockNio = true;
-        helper.clientMode(true);
 
-        Ignite client = startGrid(1);
+        Ignite client = startClientGrid(1);
 
         final CountDownLatch latch = new CountDownLatch(1);
 
@@ -186,9 +171,7 @@ public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySp
 
         joinTimeout = 3000;
 
-        helper.clientMode(true);
-
-        startGridsMultiThreaded(1, CLIENTS);
+        startClientGridsMultiThreaded(1, CLIENTS);
 
         waitForTopology(CLIENTS + 1);
 
@@ -220,13 +203,11 @@ public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySp
     public void testStartNoServers_FailOnTimeout() {
         joinTimeout = 3000;
 
-        helper.clientMode(true);
-
         long start = System.currentTimeMillis();
 
         Throwable err = GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                startGrid(0);
+                startClientGrid(0);
 
                 return null;
             }
@@ -265,9 +246,7 @@ public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySp
 
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                helper.clientModeThreadLocal(true);
-
-                startGrid(0);
+                startClientGrid(0);
 
                 return null;
             }
@@ -276,8 +255,6 @@ public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySp
         U.sleep(3000);
 
         helper.waitSpi(getTestIgniteInstanceName(0), spis);
-
-        helper.clientModeThreadLocal(false);
 
         startGrid(1);
 
@@ -336,9 +313,7 @@ public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySp
     private void disconnectOnServersLeft(int srvs, int clients) throws Exception {
         startGridsMultiThreaded(srvs);
 
-        helper.clientMode(true);
-
-        startGridsMultiThreaded(srvs, clients);
+        startClientGridsMultiThreaded(srvs, clients);
 
         for (int i = 0; i < GridTestUtils.SF.applyLB(5, 2); i++) {
             info("Iteration: " + i);
@@ -385,8 +360,6 @@ public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySp
 
             evts.clear();
 
-            helper.clientMode(false);
-
             log.info("Restart servers.");
 
             startGridsMultiThreaded(0, srvs);
@@ -397,106 +370,6 @@ public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySp
 
             log.info("Reconnect finished.");
         }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8178")
-    @Test
-    public void testReconnectServersRestart_1() throws Exception {
-        reconnectServersRestart(1);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8178")
-    @Test
-    public void testReconnectServersRestart_2() throws Exception {
-        reconnectServersRestart(3);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testReconnectServersRestart_3() throws Exception {
-        startGrid(0);
-
-        helper.clientMode(true);
-
-        startGridsMultiThreaded(10, 10);
-
-        stopGrid(getTestIgniteInstanceName(0), true, false);
-
-        final int srvIdx = ThreadLocalRandom.current().nextInt(10);
-
-        final AtomicInteger idx = new AtomicInteger();
-
-        info("Restart nodes.");
-
-        // Test concurrent start when there are disconnected nodes from previous cluster.
-        GridTestUtils.runMultiThreaded(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                int threadIdx = idx.getAndIncrement();
-
-                helper.clientModeThreadLocal(threadIdx == srvIdx || ThreadLocalRandom.current().nextBoolean());
-
-                startGrid(threadIdx);
-
-                return null;
-            }
-        }, 10, "start-node");
-
-        waitForTopology(20);
-
-        evts.clear();
-    }
-
-    /**
-     * Checks that a client will reconnect after previous cluster data was cleaned.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testReconnectServersRestart_4() throws Exception {
-        startGrid(0);
-
-        helper.clientMode(true);
-
-        IgniteEx client = startGrid(1);
-
-        helper.clientMode(false);
-
-        CountDownLatch latch = new CountDownLatch(1);
-
-        client.events().localListen(event -> {
-            latch.countDown();
-
-            return true;
-        }, EVT_CLIENT_NODE_DISCONNECTED);
-
-        waitForTopology(2);
-
-        stopGrid(0);
-
-        evts.clear();
-
-        // Waiting for client starts to reconnect and create join request.
-        assertTrue("Failed to wait for client node disconnected.", latch.await(10, SECONDS));
-
-        // Restart cluster twice for incrementing internal order. (alive zk-nodes having lower order and containing
-        // client join request will be removed). See {@link ZookeeperDiscoveryImpl#cleanupPreviousClusterData}.
-        startGrid(0);
-
-        stopGrid(0);
-
-        evts.clear();
-
-        startGrid(0);
-
-        waitForTopology(2);
     }
 
     /**
@@ -534,59 +407,5 @@ public class ZookeeperDiscoveryClientDisconnectTest extends ZookeeperDiscoverySp
         finally {
             zkCluster.start();
         }
-    }
-
-    /**
-     * @param srvs Number of server nodes in test.
-     * @throws Exception If failed.
-     */
-    private void reconnectServersRestart(int srvs) throws Exception {
-        startGridsMultiThreaded(srvs);
-
-        helper.clientMode(true);
-
-        final int CLIENTS = 10;
-
-        startGridsMultiThreaded(srvs, CLIENTS);
-
-        helper.clientMode(false);
-
-        long stopTime = System.currentTimeMillis() + 30_000;
-
-        ThreadLocalRandom rnd = ThreadLocalRandom.current();
-
-        final int NODES = srvs + CLIENTS;
-
-        int iter = 0;
-
-        while (System.currentTimeMillis() < stopTime) {
-            int restarts = rnd.nextInt(10) + 1;
-
-            info("Test iteration [iter=" + iter++ + ", restarts=" + restarts + ']');
-
-            for (int i = 0; i < restarts; i++) {
-                GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
-                    @Override public void apply(Integer threadIdx) {
-                        stopGrid(getTestIgniteInstanceName(threadIdx), true, false);
-                    }
-                }, srvs, "stop-server");
-
-                startGridsMultiThreaded(0, srvs);
-            }
-
-            final Ignite srv = ignite(0);
-
-            assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
-                @Override public boolean apply() {
-                    return srv.cluster().nodes().size() == NODES;
-                }
-            }, 30_000));
-
-            waitForTopology(NODES);
-
-            awaitPartitionMapExchange();
-        }
-
-        evts.clear();
     }
 }

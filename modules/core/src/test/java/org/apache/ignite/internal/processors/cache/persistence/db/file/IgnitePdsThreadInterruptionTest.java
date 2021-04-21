@@ -114,14 +114,14 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
         try (IgniteDataStreamer<Integer, byte[]> st = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
             st.allowOverwrite(true);
 
-            for (int i = 0; i < maxKey; i++){
+            for (int i = 0; i < maxKey; i++) {
                 keysToCheck.add(i);
 
                 st.addData(i, PAYLOAD);
             }
         }
 
-        IgniteCache<Integer,  byte[]> cache = ignite.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, byte[]> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         AtomicReference<Throwable> fail = new AtomicReference<>();
 
@@ -145,7 +145,7 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
             worker.start();
 
         // Interrupts should not affect reads.
-        for (int i = 0;i < workers.length / 2; i++)
+        for (int i = 0; i < workers.length / 2; i++)
             workers[i].interrupt();
 
         U.sleep(3_000);

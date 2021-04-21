@@ -105,7 +105,7 @@ public class GridCacheModuloAffinityFunction implements AffinityFunction {
         return Collections.unmodifiableList(res);
     }
 
-    /** {@inheritDoc} */
+    /** */
     public Collection<ClusterNode> nodes(int part, Collection<ClusterNode> nodes) {
         List<ClusterNode> sorted = new ArrayList<>(nodes);
 
@@ -158,7 +158,6 @@ public class GridCacheModuloAffinityFunction implements AffinityFunction {
 
             if (n == null)
                 n = (it = sorted.iterator()).next();
-
 
             ret.add(n);
         }

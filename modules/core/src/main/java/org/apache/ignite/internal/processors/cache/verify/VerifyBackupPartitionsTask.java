@@ -53,7 +53,10 @@ import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
 
 /**
  * Task for comparing update counters and checksums between primary and backup partitions of specified caches.
@@ -82,7 +85,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
     private IgniteLogger log;
 
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(
+    @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(
         List<ClusterNode> subgrid, Set<String> cacheNames) throws IgniteException {
         Map<ComputeJob, ClusterNode> jobs = new HashMap<>();
 
@@ -102,7 +105,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
 
             for (Map.Entry<PartitionKey, PartitionHashRecord> e : nodeHashes.entrySet()) {
                 if (!clusterHashes.containsKey(e.getKey()))
-                    clusterHashes.put(e.getKey(), new ArrayList<PartitionHashRecord>());
+                    clusterHashes.put(e.getKey(), new ArrayList<>());
 
                 clusterHashes.get(e.getKey()).add(e.getValue());
             }
@@ -269,7 +272,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
                     if (U.currentTimeMillis() - lastProgressLogTs > 3 * 60 * 1000L) {
                         lastProgressLogTs = U.currentTimeMillis();
 
-                        log.warning("idle_verify is still running, processed " + completionCntr.get() + " of " +
+                        log.warning("The check procedure is still running, processed " + completionCntr.get() + " of " +
                             partHashCalcFutures.size() + " local partitions");
                     }
                 }
@@ -329,9 +332,9 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
                 long updateCntrAfter = part.updateCounter();
 
                 if (updateCntrBefore != updateCntrAfter) {
-                    throw new IgniteException("Cluster is not idle: update counter of partition [grpId=" +
-                        grpCtx.groupId() + ", partId=" + part.id() + "] changed during hash calculation [before=" +
-                        updateCntrBefore + ", after=" + updateCntrAfter + "]");
+                    throw new GridNotIdleException(GRID_NOT_IDLE_MSG + "[grpName=" + grpCtx.cacheOrGroupName() +
+                        ", grpId=" + grpCtx.groupId() + ", partId=" + part.id() + "] changed during hash calculation " +
+                        "[before=" + updateCntrBefore + ", after=" + updateCntrAfter + "]");
                 }
             }
             catch (IgniteCheckedException e) {

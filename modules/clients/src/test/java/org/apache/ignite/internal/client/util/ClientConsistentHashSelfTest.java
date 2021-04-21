@@ -81,7 +81,7 @@ public class ClientConsistentHashSelfTest extends GridCommonAbstractTest {
 
             if (exp.equals(act))
                 info("Validation succeed [exp=" + exp + ", act=" + act + ']');
-            else{
+            else {
                 info("Validation failed  [exp=" + exp + ", act=" + act + ']');
 
                 fail = true;
@@ -104,8 +104,8 @@ public class ClientConsistentHashSelfTest extends GridCommonAbstractTest {
 
         try {
             // Add several objects with the same hash without neither natural ordering nor comparator.
-            hash.addNode(new Object() { public int hashCode() { return 0; } }, 1);
-            hash.addNode(new Object() { public int hashCode() { return 0; } }, 1);
+            hash.addNode(new Object() { @Override public int hashCode() { return 0; } }, 1);
+            hash.addNode(new Object() { @Override public int hashCode() { return 0; } }, 1);
 
             fail("Expects failed due to internal TreeSet requires comparator or natural ordering.");
         }
@@ -122,8 +122,8 @@ public class ClientConsistentHashSelfTest extends GridCommonAbstractTest {
         }, null);
 
         // Add several objects with the same hash into consistent hash with explicit comparator.
-        hash.addNode(new Object() { public int hashCode() { return 0; } }, 1);
-        hash.addNode(new Object() { public int hashCode() { return 0; } }, 1);
+        hash.addNode(new Object() { @Override public int hashCode() { return 0; } }, 1);
+        hash.addNode(new Object() { @Override public int hashCode() { return 0; } }, 1);
 
         info("Expected pass due to internal TreeSet has explicit comparator.");
     }

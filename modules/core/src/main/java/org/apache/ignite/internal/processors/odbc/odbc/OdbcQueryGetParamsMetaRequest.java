@@ -17,45 +17,15 @@
 
 package org.apache.ignite.internal.processors.odbc.odbc;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
-
 /**
  * ODBC query get params meta request.
  */
-public class OdbcQueryGetParamsMetaRequest extends OdbcRequest {
-    /** Schema. */
-    private final String schema;
-
-    /** Query. */
-    private final String query;
-
+public class OdbcQueryGetParamsMetaRequest extends OdbcQueryGetQueryMetaRequest {
     /**
      * @param schema Schema.
      * @param query SQL Query.
      */
     public OdbcQueryGetParamsMetaRequest(String schema, String query) {
-        super(META_PARAMS);
-
-        this.schema = schema;
-        this.query = query;
-    }
-
-    /**
-     * @return SQL Query.
-     */
-    public String query() {
-        return query;
-    }
-
-    /**
-     * @return Schema name.
-     */
-    public String schema() {
-        return schema;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(OdbcQueryGetParamsMetaRequest.class, this);
+        super(META_PARAMS, schema, query);
     }
 }

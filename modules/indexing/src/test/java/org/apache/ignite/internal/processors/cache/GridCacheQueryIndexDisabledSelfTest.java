@@ -144,6 +144,7 @@ public class GridCacheQueryIndexDisabledSelfTest extends GridCommonAbstractTest 
             assertTrue("Scan query should work with disable query indexing.", false);
         }
     }
+
     /**
      * @throws Exception If failed.
      */

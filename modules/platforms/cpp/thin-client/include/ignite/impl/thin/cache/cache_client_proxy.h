@@ -20,6 +20,9 @@
 
 #include <ignite/common/concurrent.h>
 
+#include <ignite/thin/cache/query/query_fields_cursor.h>
+#include <ignite/thin/cache/query/query_sql_fields.h>
+
 namespace ignite
 {
     namespace impl
@@ -154,11 +157,6 @@ namespace ignite
                     void LocalPeek(const WritableKey& key, Readable& value);
 
                     /**
-                     * Update cache partitions info.
-                     */
-                    void RefreshAffinityMapping();
-
-                    /**
                      * Removes given key mapping from cache. If cache previously contained value for the given key,
                      * then this value is returned. In case of PARTITIONED or REPLICATED caches, the value will be
                      * loaded from the primary node, which in its turn may load the value from the disk-based swap
@@ -289,6 +287,15 @@ namespace ignite
                      *     was no previous value).
                      */
                     void GetAndPutIfAbsent(const WritableKey& key, const Writable& valIn, Readable& valOut);
+
+                    /**
+                     * Perform SQL fields query.
+                     *
+                     * @param qry Query.
+                     * @return Query cursor.
+                     */
+                    ignite::thin::cache::query::QueryFieldsCursor Query(
+                            const ignite::thin::cache::query::SqlFieldsQuery& qry);
 
                     /**
                      * Get from CacheClient.

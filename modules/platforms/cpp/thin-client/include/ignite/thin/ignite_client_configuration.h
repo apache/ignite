@@ -45,7 +45,9 @@ namespace ignite
              * Constructs configuration with all parameters set to default values.
              */
             IgniteClientConfiguration() :
-                sslMode(SslMode::DISABLE)
+                sslMode(SslMode::DISABLE),
+                partitionAwareness(false),
+                connectionsLimit(0)
             {
                 // No-op.
             }
@@ -61,9 +63,9 @@ namespace ignite
             }
 
             /**
-             * Set addressess of the remote servers to connect.
+             * Set addresses of the remote servers to connect.
              *
-             * The format of the addresse is: <host>[:<port>[..<port_range>]]. If port is not specified, default port
+             * The format of the addresses is: <host>[:<port>[..<port_range>]]. If port is not specified, default port
              * is used (10800). You can enlist several hosts separated by comma.
              *
              * For example: "localhost,example.com:12345,127.0.0.1:10800..10900,192.168.3.80:5893".
@@ -201,6 +203,65 @@ namespace ignite
                 this->sslCaFile = sslCaFile;
             }
 
+            /**
+             * Set Partition Awareness.
+             *
+             * Enable or disable feature that enables thin client to consider data affinity when making requests
+             * to the cluster. It means, thin client is going to connect to all available cluster servers listed by
+             * SetEndPoints() method and try to send request to a node which stores related data.
+             *
+             * Disabled by default.
+             *
+             * @param enable Enable partition awareness.
+             */
+            void SetPartitionAwareness(bool enable)
+            {
+                partitionAwareness = enable;
+            }
+
+            /**
+             * Get Partition Awareness flag.
+             *
+             * @see SetPartitionAwareness() for details.
+             *
+             * @return @c true if partition awareness is enabled and @c false otherwise.
+             */
+            bool IsPartitionAwareness() const
+            {
+                return partitionAwareness;
+            }
+
+            /**
+             * Get connection limit.
+             *
+             * By default, C++ thin client establishes a connection to every server node listed in @c endPoints. Use
+             * this setting to limit the number of active connections. This reduces initial connection time and the
+             * resource usage, but can have a negative effect on cache operation performance, especially if partition
+             * awareness is used.
+             *
+             * Zero value means that number of active connections is not limited.
+             *
+             * The default value is zero.
+             *
+             * @return Active connection limit.
+             */
+            uint32_t GetConnectionsLimit() const
+            {
+                return connectionsLimit;
+            }
+
+            /**
+             * Set connection limit.
+             *
+             * @see GetConnectionsLimit for details.
+             *
+             * @param connectionsLimit Connections limit to set.
+             */
+            void SetConnectionsLimit(uint32_t limit)
+            {
+                connectionsLimit = limit;
+            }
+
         private:
             /** Connection end points */
             std::string endPoints;
@@ -222,6 +283,12 @@ namespace ignite
 
             /** SSL client certificate authority path */
             std::string sslCaFile;
+
+            /** Partition awareness. */
+            bool partitionAwareness;
+
+            /** Active connections limit. */
+            uint32_t connectionsLimit;
         };
     }
 }

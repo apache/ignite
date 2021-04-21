@@ -54,6 +54,9 @@ class GridNioSslHandler extends ReentrantLock {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Handshake duration threshold; warning is logged when exceeded. */
+    private static final long LONG_HANDSHAKE_THRESHOLD_MS = 1000;
+
     /** Grid logger. */
     private IgniteLogger log;
 
@@ -203,6 +206,8 @@ class GridNioSslHandler extends ReentrantLock {
         if (log.isDebugEnabled())
             log.debug("Entered handshake(): [handshakeStatus=" + handshakeStatus + ", ses=" + ses + ']');
 
+        long startTs = U.currentTimeMillis();
+
         lock();
 
         try {
@@ -290,6 +295,13 @@ class GridNioSslHandler extends ReentrantLock {
         }
         finally {
             unlock();
+
+            long elapsed = U.currentTimeMillis() - startTs;
+
+            if (elapsed > LONG_HANDSHAKE_THRESHOLD_MS && log.isInfoEnabled()) {
+                log.info("Handshake took too long: [millis=" + elapsed + ", handshakeStatus=" + handshakeStatus +
+                    ", ses=" + ses + ']');
+            }
         }
 
         if (log.isDebugEnabled())
@@ -604,7 +616,7 @@ class GridNioSslHandler extends ReentrantLock {
                 appBuf = expandBuffer(appBuf, appBuf.capacity() * 2);
         }
         while ((res.getStatus() == Status.OK || res.getStatus() == Status.BUFFER_OVERFLOW) &&
-            (handshakeFinished && res.getHandshakeStatus() == NOT_HANDSHAKING || res.getHandshakeStatus() == NEED_UNWRAP));
+            (handshakeFinished || res.getHandshakeStatus() == NEED_UNWRAP));
 
         return res;
     }

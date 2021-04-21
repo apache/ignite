@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains implementation of partition {@code context}.
  */
+
 package org.apache.ignite.ml.dataset.primitive.context;

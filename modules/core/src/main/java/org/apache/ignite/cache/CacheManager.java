@@ -36,6 +36,7 @@ import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalGateway;
@@ -57,6 +58,9 @@ import static org.apache.ignite.IgniteSystemProperties.getBoolean;
  * Implementation of JSR-107 {@link CacheManager}.
  */
 public class CacheManager implements javax.cache.CacheManager {
+    /** @see IgniteSystemProperties#IGNITE_JCACHE_DEFAULT_ISOLATED */
+    public static final boolean DFLT_JCACHE_DEFAULT_ISOLATED = true;
+
     /** */
     private static final String CACHE_STATISTICS = "CacheStatistics";
 
@@ -100,7 +104,7 @@ public class CacheManager implements javax.cache.CacheManager {
             if (uri.equals(cachingProvider.getDefaultURI())) {
                 IgniteConfiguration cfg = new IgniteConfiguration();
 
-                if (getBoolean(IGNITE_JCACHE_DEFAULT_ISOLATED, true)) {
+                if (getBoolean(IGNITE_JCACHE_DEFAULT_ISOLATED, DFLT_JCACHE_DEFAULT_ISOLATED)) {
                     TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
                     discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
@@ -199,10 +203,10 @@ public class CacheManager implements javax.cache.CacheManager {
             Cache<K, V> cache = getCache0(cacheName);
 
             if (cache != null) {
-                if(!keyType.isAssignableFrom(cache.getConfiguration(Configuration.class).getKeyType()))
+                if (!keyType.isAssignableFrom(cache.getConfiguration(Configuration.class).getKeyType()))
                     throw new ClassCastException();
 
-                if(!valType.isAssignableFrom(cache.getConfiguration(Configuration.class).getValueType()))
+                if (!valType.isAssignableFrom(cache.getConfiguration(Configuration.class).getValueType()))
                     throw new ClassCastException();
             }
 
@@ -303,7 +307,7 @@ public class CacheManager implements javax.cache.CacheManager {
 
     /** {@inheritDoc} */
     @Override public void enableManagement(String cacheName, boolean enabled) {
-        if(IgniteUtils.IGNITE_MBEANS_DISABLED)
+        if (IgniteUtils.IGNITE_MBEANS_DISABLED)
             return;
 
         kernalGateway.readLock();
@@ -328,7 +332,7 @@ public class CacheManager implements javax.cache.CacheManager {
 
     /** {@inheritDoc} */
     @Override public void enableStatistics(String cacheName, boolean enabled) {
-        if(IgniteUtils.IGNITE_MBEANS_DISABLED)
+        if (IgniteUtils.IGNITE_MBEANS_DISABLED)
             return;
 
         kernalGateway.readLock();
@@ -382,7 +386,7 @@ public class CacheManager implements javax.cache.CacheManager {
      * @param beanType Mxbean name.
      */
     private void unregisterCacheObject(String name, String beanType) {
-        if(IgniteUtils.IGNITE_MBEANS_DISABLED)
+        if (IgniteUtils.IGNITE_MBEANS_DISABLED)
             return;
 
         MBeanServer mBeanSrv = ignite.configuration().getMBeanServer();
@@ -428,10 +432,10 @@ public class CacheManager implements javax.cache.CacheManager {
 
     /** {@inheritDoc} */
     @Override public <T> T unwrap(Class<T> clazz) {
-        if(clazz.isAssignableFrom(getClass()))
+        if (clazz.isAssignableFrom(getClass()))
             return clazz.cast(this);
 
-        if(clazz.isAssignableFrom(ignite.getClass()))
+        if (clazz.isAssignableFrom(ignite.getClass()))
             return clazz.cast(ignite);
 
         throw new IllegalArgumentException();

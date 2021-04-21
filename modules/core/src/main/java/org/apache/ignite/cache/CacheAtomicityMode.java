@@ -19,6 +19,7 @@ package org.apache.ignite.cache;
 
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 
@@ -99,6 +100,8 @@ public enum CacheAtomicityMode {
     ATOMIC,
 
     /**
+     * <b>This is an experimental feature. Transactional SQL is currently in a beta status.</b>
+     * <p>
      * Specifies fully {@code ACID}-compliant transactional cache behavior for both key-value API and SQL transactions.
      * <p>
      * This atomicity mode enables multiversion concurrency control (MVCC) for the cache. In MVCC-enabled caches,
@@ -119,6 +122,7 @@ public enum CacheAtomicityMode {
      * <p>
      * See {@link Transaction} for more information about transactions.
      */
+    @IgniteExperimental
     TRANSACTIONAL_SNAPSHOT;
 
     /** Enumerated values. */

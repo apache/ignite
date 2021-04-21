@@ -27,13 +27,12 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TimeStampRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRecord;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV2Serializer;
@@ -127,7 +126,7 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
             @Override public List<WALRecord> call() throws Exception {
                 WALRecord rec0 = new DataRecord(Collections.<DataEntry>emptyList());
 
-                WALRecord rec1 = new TxRecord(PREPARED,null,null,null);
+                WALRecord rec1 = new TxRecord(PREPARED, null, null, null);
 
                 return Arrays.asList(rec0, rec1);
             }
@@ -219,7 +218,7 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
 
                 if (exp == 0L)
                     assertTrue(act0.timestamp() == 0L);
-                else{
+                else {
                     long diff = Math.abs(exp - act0.timestamp());
 
                     assertTrue(String.valueOf(diff), diff < 10_000);
@@ -238,7 +237,7 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
 
         IgniteEx ig0 = (IgniteEx)startGrid();
 
-        ig0.active(true);
+        ig0.cluster().active(true);
 
         IgniteWriteAheadLogManager wal = ig0.context().cache().context().wal();
 
@@ -263,7 +262,7 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
 
         Iterator<Long> itToCheck = checker.getTimeStamps().iterator();
 
-        try (PartitionMetaStateRecordExcludeIterator it = new PartitionMetaStateRecordExcludeIterator(wal.replay(p))) {
+        try (TimestampRecordIterator it = new TimestampRecordIterator(wal.replay(p))) {
             while (it.hasNext()) {
                 IgniteBiTuple<WALPointer, WALRecord> tup0 = it.next();
 
@@ -306,14 +305,17 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class PartitionMetaStateRecordExcludeIterator extends GridFilteredClosableIterator<IgniteBiTuple<WALPointer, WALRecord>> {
-        private PartitionMetaStateRecordExcludeIterator(GridCloseableIterator<? extends IgniteBiTuple<WALPointer, WALRecord>> it) {
+    private static class TimestampRecordIterator extends GridFilteredClosableIterator<IgniteBiTuple<WALPointer, WALRecord>> {
+        /**
+         * @param it Iterator.
+         */
+        private TimestampRecordIterator(GridCloseableIterator<? extends IgniteBiTuple<WALPointer, WALRecord>> it) {
             super(it);
         }
 
         /** {@inheritDoc} */
         @Override protected boolean accept(IgniteBiTuple<WALPointer, WALRecord> tup) {
-            return !(tup.get2() instanceof PartitionMetaStateRecord);
+            return tup.get2() instanceof TimeStampRecord;
         }
     }
 }

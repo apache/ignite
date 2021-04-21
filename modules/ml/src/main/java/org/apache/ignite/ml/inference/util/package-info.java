@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Root package for util classes used in {@link org.apache.ignite.ml.inference} package.
  */
+
 package org.apache.ignite.ml.inference.util;

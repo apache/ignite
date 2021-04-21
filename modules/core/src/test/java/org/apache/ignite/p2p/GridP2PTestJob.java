@@ -44,7 +44,6 @@ public class GridP2PTestJob extends ComputeJobAdapter {
     @IgniteInstanceResource
     private Ignite ignite;
 
-
     /**
      * @param arg is argument of GridP2PTestJob.
      */
@@ -82,7 +81,7 @@ public class GridP2PTestJob extends ComputeJobAdapter {
         }
 
         // Test property file load.
-        byte [] bytes = new byte[20];
+        byte[] bytes = new byte[20];
 
         try {
             in.read(bytes);
@@ -111,7 +110,7 @@ public class GridP2PTestJob extends ComputeJobAdapter {
             cls = Class.forName("java.math.BigInteger");
         }
         catch (ClassNotFoundException e) {
-            log.error("Mandatory class can't be loaded: [java.math.BigInteger]",e);
+            log.error("Mandatory class can't be loaded: [java.math.BigInteger]", e);
 
             return -5;
         }

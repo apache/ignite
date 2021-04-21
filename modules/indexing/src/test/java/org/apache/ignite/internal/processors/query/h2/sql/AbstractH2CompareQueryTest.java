@@ -77,7 +77,7 @@ public abstract class AbstractH2CompareQueryTest extends AbstractIndexingCommonT
      * @return Cache configuration.
      */
     protected CacheConfiguration cacheConfiguration(String name, CacheMode mode, Class<?> clsK, Class<?> clsV) {
-        CacheConfiguration<?,?> cc = defaultCacheConfiguration();
+        CacheConfiguration<?, ?> cc = defaultCacheConfiguration();
 
         cc.setName(name);
         cc.setCacheMode(mode);
@@ -329,7 +329,7 @@ public abstract class AbstractH2CompareQueryTest extends AbstractIndexingCommonT
     private static void assertRsEquals(List<List<?>> rs1, List<List<?>> rs2, Ordering ordering) {
         assertEquals("Rows count has to be equal.", rs1.size(), rs2.size());
 
-        switch (ordering){
+        switch (ordering) {
             case ORDERED:
                 for (int rowNum = 0; rowNum < rs1.size(); rowNum++) {
                     List<?> row1 = rs1.get(rowNum);
@@ -350,8 +350,8 @@ public abstract class AbstractH2CompareQueryTest extends AbstractIndexingCommonT
 
                 // X.println("Result size: " + rowsWithCnt1.size());
 
-                Iterator<Map.Entry<String,Integer>> iter1 = rowsWithCnt1.entrySet().iterator();
-                Iterator<Map.Entry<String,Integer>> iter2 = rowsWithCnt2.entrySet().iterator();
+                Iterator<Map.Entry<String, Integer>> iter1 = rowsWithCnt1.entrySet().iterator();
+                Iterator<Map.Entry<String, Integer>> iter2 = rowsWithCnt2.entrySet().iterator();
 
                 int uSize = rowsWithCnt1.size();
 

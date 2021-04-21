@@ -31,6 +31,7 @@ import org.junit.Test;
 /**
  *
  */
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-9081")
 public class IgniteChangeGlobalStateServiceTest extends IgniteChangeGlobalStateAbstractTest {
     /** {@inheritDoc} */
     @Override protected int backUpClientNodes() {
@@ -84,7 +85,7 @@ public class IgniteChangeGlobalStateServiceTest extends IgniteChangeGlobalStateA
     /**
      *
      */
-    private static class TestService implements Service{
+    private static class TestService implements Service {
         /** */
         private static final long serialVersionUID = 0L;
 

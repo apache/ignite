@@ -97,7 +97,7 @@ public class GridJobExecutionLoadTestClientSemaphore implements Callable<Object>
             final int noThreads = args.length > 0 ? Integer.parseInt(args[0]) :
                 Runtime.getRuntime().availableProcessors();
             final int duration = args.length > 1 ? Integer.parseInt(args[1]) : 0;
-            int tasksCnt  = args.length > 2 ? Integer.parseInt(args[2]) : 4069;
+            int tasksCnt = args.length > 2 ? Integer.parseInt(args[2]) : 4069;
             final String outputFileName = args.length > 3 ? args[3] : null;
 
             X.println("Thread count: " + noThreads);

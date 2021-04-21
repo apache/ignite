@@ -19,4 +19,5 @@
  * <!-- Package description. -->
  * Contains Redis protocol commands.
  */
+
 package org.apache.ignite.internal.processors.rest.handlers.redis;

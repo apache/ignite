@@ -29,8 +29,11 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.zookeeper.ZkTestClientCnxnSocketNIO;
 import org.junit.Test;
+
+import static org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryImpl.IGNITE_ZOOKEEPER_DISCOVERY_SPI_MAX_EVTS;
 
 /**
  * Tests for Zookeeper SPI discovery.
@@ -54,9 +57,10 @@ public class ZookeeperDiscoveryConcurrentStartAndStartStopTest extends Zookeeper
                 @Override public Void call() throws Exception {
                     int threadIdx = idx.getAndIncrement();
 
-                    helper.clientModeThreadLocal(threadIdx == srvIdx || ThreadLocalRandom.current().nextBoolean());
-
-                    startGrid(threadIdx);
+                    if (threadIdx == srvIdx || ThreadLocalRandom.current().nextBoolean())
+                        startClientGrid(threadIdx);
+                    else
+                        startGrid(threadIdx);
 
                     return null;
                 }
@@ -128,15 +132,9 @@ public class ZookeeperDiscoveryConcurrentStartAndStartStopTest extends Zookeeper
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_ZOOKEEPER_DISCOVERY_SPI_MAX_EVTS, value = "1")
     public void testConcurrentStartStop2_EventsThrottle() throws Exception {
-        System.setProperty(ZookeeperDiscoveryImpl.IGNITE_ZOOKEEPER_DISCOVERY_SPI_MAX_EVTS, "1");
-
-        try {
-            concurrentStartStop(5);
-        }
-        finally {
-            System.clearProperty(ZookeeperDiscoveryImpl.IGNITE_ZOOKEEPER_DISCOVERY_SPI_MAX_EVTS);
-        }
+        concurrentStartStop(5);
     }
 
     /**
@@ -182,7 +180,9 @@ public class ZookeeperDiscoveryConcurrentStartAndStartStopTest extends Zookeeper
             }, NODES, "stop-node");
 
             for (int j = 0; j < NODES; j++)
-                expEvts[j] = ZookeeperDiscoverySpiTestHelper.failEvent(++topVer);
+                expEvts[j] = ZookeeperDiscoverySpiTestHelper.leftEvent(++topVer, false);
+
+            helper.checkEvents(ignite(0), evts, expEvts);
 
             checkEventsConsistency();
         }
@@ -200,6 +200,8 @@ public class ZookeeperDiscoveryConcurrentStartAndStartStopTest extends Zookeeper
         evts.clear();
 
         startGridsMultiThreaded(3, false);
+
+        checkZkNodesCleanup();
 
         waitForTopology(3);
     }
@@ -451,14 +453,12 @@ public class ZookeeperDiscoveryConcurrentStartAndStartStopTest extends Zookeeper
 
         startGrids(SRVS);
 
-        helper.clientMode(true);
-
         final int THREADS = 30;
 
         for (int i = 0; i < GridTestUtils.SF.applyLB(5, 2); i++) {
             info("Iteration: " + i);
 
-            startGridsMultiThreaded(SRVS, THREADS);
+            startClientGridsMultiThreaded(SRVS, THREADS);
 
             waitForTopology(SRVS + THREADS);
 

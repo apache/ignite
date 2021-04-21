@@ -22,6 +22,8 @@ import java.util.LinkedHashMap;
 import org.h2.util.StatementBuilder;
 import org.h2.util.StringUtils;
 
+import static org.apache.ignite.internal.processors.query.QueryUtils.delimeter;
+
 /** */
 public class GridSqlUpdate extends GridSqlStatement {
     /** */
@@ -58,7 +60,6 @@ public class GridSqlUpdate extends GridSqlStatement {
         return cols;
     }
 
-
     /** */
     public GridSqlUpdate set(LinkedHashMap<String, GridSqlElement> set) {
         this.set = set;
@@ -83,22 +84,24 @@ public class GridSqlUpdate extends GridSqlStatement {
 
     /** {@inheritDoc} */
     @Override public String getSQL() {
+        char delim = delimeter();
+
         StatementBuilder buff = new StatementBuilder(explain() ? "EXPLAIN " : "");
         buff.append("UPDATE ")
             .append(target.getSQL())
-            .append("\nSET\n");
+            .append(delim).append("SET").append(delim);
 
         for (GridSqlColumn c : cols) {
             GridSqlElement e = set.get(c.columnName());
-            buff.appendExceptFirst(",\n    ");
+            buff.appendExceptFirst("," + delim + "    ");
             buff.append(c.columnName()).append(" = ").append(e != null ? e.getSQL() : "DEFAULT");
         }
 
         if (where != null)
-            buff.append("\nWHERE ").append(StringUtils.unEnclose(where.getSQL()));
+            buff.append(delim).append("WHERE ").append(StringUtils.unEnclose(where.getSQL()));
 
         if (limit != null)
-            buff.append("\nLIMIT ").append(StringUtils.unEnclose(limit.getSQL()));
+            buff.append(delim).append("LIMIT ").append(StringUtils.unEnclose(limit.getSQL()));
 
         return buff.toString();
     }

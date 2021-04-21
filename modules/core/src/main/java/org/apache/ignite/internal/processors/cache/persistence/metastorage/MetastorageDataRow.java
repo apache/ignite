@@ -17,87 +17,43 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.PageIdAllocator;
-import org.apache.ignite.internal.processors.cache.persistence.Storable;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
-/**
- *
- */
-public class MetastorageDataRow implements MetastorageSearchRow, Storable {
-    /** */
-    private long link;
+/** */
+public class MetastorageDataRow implements MetastorageRow {
+    /** Link to the data. */
+    private final long link;
 
-    /** */
-    private String key;
+    /** Key. */
+    private final String key;
 
-    /** */
-    private byte[] value;
+    /** Link to the key if the key itself is too long to be inlined into the page. */
+    private final long keyLink;
 
     /** */
-    public MetastorageDataRow(long link, String key, byte[] value) {
+    public MetastorageDataRow(long link, String key, long keyLink) {
         this.link = link;
         this.key = key;
-        this.value = value;
+        this.keyLink = keyLink;
     }
 
-    /** */
-    public MetastorageDataRow(String key, byte[] value) {
-        this.key = key;
-        this.value = value;
+    /** {@inheritDoc} */
+    @Override public long link() {
+        return link;
     }
 
-    /**
-     * @return Key.
-     */
+    /** {@inheritDoc} */
     @Override public String key() {
         return key;
     }
 
     /** {@inheritDoc} */
-    @Override
-    public int hash() {
-        return key.hashCode();
+    @Override public long keyLink() {
+        return keyLink;
     }
 
     /** {@inheritDoc} */
-    @Override
-    public int partition() {
-        return MetaStorage.PRESERVE_LEGACY_METASTORAGE_PARTITION_ID ? PageIdAllocator.OLD_METASTORE_PARTITION: PageIdAllocator.METASTORE_PARTITION;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int size() throws IgniteCheckedException {
-        return 4 + value().length;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int headerSize() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public void link(long link) {
-        this.link = link;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public long link() {
-        return link;
-    }
-
-    /**
-     * @return Value.
-     */
-    public byte[] value() {
-        return value;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public String toString() {
-        return "key=" + key;
+    @Override public String toString() {
+        return S.toString(MetastorageDataRow.class, this);
     }
 }

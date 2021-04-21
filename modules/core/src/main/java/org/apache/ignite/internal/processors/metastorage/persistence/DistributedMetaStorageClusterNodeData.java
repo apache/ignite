@@ -19,31 +19,46 @@ package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.io.Serializable;
 
-/** */
-@SuppressWarnings("PublicField")
+/**
+ * Distributed metastorage data that cluster sends to joining node.
+ */
+@SuppressWarnings({"PublicField", "AssignmentOrReturnOfFieldWithMutableType"})
 class DistributedMetaStorageClusterNodeData implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
+    /**
+     * Distributed metastorage version of cluster. If {@link #fullData} is not null then this version corresponds to
+     * its content.
+     */
     public final DistributedMetaStorageVersion ver;
 
-    /** */
-    public final DistributedMetaStorageHistoryItem[] fullData;
+    /**
+     * Full data is sent if there's not enough history items on local node.
+     */
+    public final DistributedMetaStorageKeyValuePair[] fullData;
 
-    /** */
+    /**
+     * Required updates for joining nodes or full available history of local node if {@link #fullData} is
+     * not {@code null}.
+     */
     public final DistributedMetaStorageHistoryItem[] hist;
 
-    /** */
+    /**
+     * Additional updates. Makes sence only if {@link #fullData} is not {@code null}.
+     */
     public DistributedMetaStorageHistoryItem[] updates;
 
     /** */
     public DistributedMetaStorageClusterNodeData(
         DistributedMetaStorageVersion ver,
-        DistributedMetaStorageHistoryItem[] fullData,
+        DistributedMetaStorageKeyValuePair[] fullData,
         DistributedMetaStorageHistoryItem[] hist,
         DistributedMetaStorageHistoryItem[] updates
     ) {
+        assert ver != null;
+        assert fullData == null || hist != null;
+
         this.fullData = fullData;
         this.ver = ver;
         this.hist = hist;

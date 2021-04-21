@@ -27,7 +27,6 @@ import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ExampleNodeStartup;
@@ -49,7 +48,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
  *         collocated mode. Refer to {@link AffinityKey} javadoc for more details.
  *         <p>
  *         To use distributed joins it is necessary to set query 'distributedJoin' flag using
- *         {@link SqlFieldsQuery#setDistributedJoins(boolean)} or {@link SqlQuery#setDistributedJoins(boolean)}.
+ *         {@link SqlFieldsQuery#setDistributedJoins(boolean)}.
  *     </li>
  *     <li>
  *         Note that if you created query on to replicated cache, all data will
@@ -135,7 +134,6 @@ public class CacheQueryExample {
         print("People with salaries between 0 and 1000 (queried with SCAN query): ", cache.query(scan).getAll());
     }
 
-
     /**
      * Example for TEXT queries using LUCENE-based indexing of people's resumes.
      */
@@ -153,7 +151,6 @@ public class CacheQueryExample {
         print("Following people have 'Master Degree' in their resumes: ", masters.getAll());
         print("Following people have 'Bachelor Degree' in their resumes: ", bachelors.getAll());
     }
-
 
     /**
      * Populate cache with test data.

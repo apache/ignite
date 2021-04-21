@@ -75,7 +75,7 @@ public class ServiceDeploymentOnClientDisconnectTest extends GridCommonAbstractT
 
         startGrid(0);
 
-        startGrid(getConfiguration("client").setClientMode(true));
+        startClientGrid(getConfiguration("client"));
     }
 
     /** {@inheritDoc} */
@@ -205,7 +205,7 @@ public class ServiceDeploymentOnClientDisconnectTest extends GridCommonAbstractT
         server().close();
 
         assertTrue(latch.await(
-                CLIENT_FAILURE_DETECTION_TIMEOUT * 2 + CLIENT_FAILURE_DETECTION_TIMEOUT/10,
+            CLIENT_FAILURE_DETECTION_TIMEOUT * 2 + CLIENT_FAILURE_DETECTION_TIMEOUT / 10,
                 TimeUnit.MILLISECONDS
         ));
 

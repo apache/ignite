@@ -30,17 +30,18 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.FileDe
 public class SegmentRouter {
     /** */
     public static final String ZIP_SUFFIX = ".zip";
+
     /** */
-    private File walWorkDir;
+    private final File walWorkDir;
 
     /** WAL archive directory (including consistent ID as subfolder) */
-    private File walArchiveDir;
+    private final File walArchiveDir;
 
     /** Holder of actual information of latest manipulation on WAL segments. */
-    private SegmentAware segmentAware;
+    private final SegmentAware segmentAware;
 
     /** */
-    private DataStorageConfiguration dsCfg;
+    private final DataStorageConfiguration dsCfg;
 
     /**
      * @param walWorkDir WAL work directory.
@@ -69,7 +70,7 @@ public class SegmentRouter {
     public FileDescriptor findSegment(long segmentId) throws FileNotFoundException {
         FileDescriptor fd;
 
-        if (segmentAware.lastArchivedAbsoluteIndex() >= segmentId)
+        if (segmentAware.lastArchivedAbsoluteIndex() >= segmentId || !isArchiverEnabled())
             fd = new FileDescriptor(new File(walArchiveDir, fileName(segmentId)));
         else
             fd = new FileDescriptor(new File(walWorkDir, fileName(segmentId % dsCfg.getWalSegments())), segmentId);
@@ -86,5 +87,36 @@ public class SegmentRouter {
         }
 
         return fd;
+    }
+
+    /**
+     * @return {@code true} If archive folder exists.
+     */
+    public boolean hasArchive() {
+        return !walWorkDir.getAbsolutePath().equals(walArchiveDir.getAbsolutePath());
+    }
+
+    /**
+     * @return WAL working directory.
+     */
+    public File getWalWorkDir() {
+        return walWorkDir;
+    }
+
+    /**
+     * @return WAL archive directory.
+     */
+    public File getWalArchiveDir() {
+        return walArchiveDir;
+    }
+
+    /**
+     * Returns {@code true} if archiver is enabled.
+     */
+    private boolean isArchiverEnabled() {
+        if (walArchiveDir != null && walWorkDir != null)
+            return !walArchiveDir.equals(walWorkDir);
+
+        return !new File(dsCfg.getWalArchivePath()).equals(new File(dsCfg.getWalPath()));
     }
 }

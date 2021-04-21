@@ -42,6 +42,9 @@ namespace Apache.Ignite.Core.Impl.Common
         /** Attribute that specifies a type for abstract properties, such as IpFinder. */
         private const string TypNameAttribute = "type";
 
+        /** Value for TypNameAttribute that denotes null. */
+        private const string TypNameNull = "null";
+
         /** Xmlns. */
         private const string XmlnsAttribute = "xmlns";
 
@@ -205,6 +208,14 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         private static void WriteComplexProperty(object obj, XmlWriter writer, Type valueType)
         {
+            if (obj == null)
+            {
+                // Happens with reference-type properties that have non-null default value.
+                // Example: IgniteClientConfiguration.Logger
+                writer.WriteAttributeString(TypNameAttribute, TypNameNull);
+                return;
+            }
+            
             var props = GetNonDefaultProperties(obj).OrderBy(x => x.Name).ToList();
 
             var realType = obj.GetType();
@@ -284,6 +295,11 @@ namespace Apache.Ignite.Core.Impl.Common
                 propType = ResolvePropertyType(reader, propType, prop.Name, targetType, resolver);
             }
 
+            if (propType == null)
+            {
+                return null;
+            }
+
             if (IsBasicType(propType))
             {
                 // Regular property in xmlElement form.
@@ -314,6 +330,11 @@ namespace Apache.Ignite.Core.Impl.Common
         {
             propType = ResolvePropertyType(reader, propType, propName, targetType, resolver);
 
+            if (propType == null)
+            {
+                return null;
+            }
+
             var nestedVal = Activator.CreateInstance(propType);
 
             using (var subReader = reader.ReadSubtree())
@@ -333,6 +354,9 @@ namespace Apache.Ignite.Core.Impl.Common
             TypeResolver resolver)
         {
             var typeName = reader.GetAttribute(TypNameAttribute);
+
+            if (typeName == TypNameNull)
+                return null;
 
             if (!propType.IsAbstract && typeName == null)
                 return propType;
@@ -574,7 +598,10 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         private static IEnumerable<PropertyInfo> GetNonDefaultProperties(object obj)
         {
-            Debug.Assert(obj != null);
+            if (obj == null)
+            {
+                Debug.Assert(obj != null);
+            }
 
             return obj.GetType().GetProperties()
                 .Where(p => p.GetIndexParameters().Length == 0 &&  // Skip indexed properties.

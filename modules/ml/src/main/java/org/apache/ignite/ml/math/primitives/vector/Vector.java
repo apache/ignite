@@ -18,19 +18,21 @@
 package org.apache.ignite.ml.math.primitives.vector;
 
 import java.io.Externalizable;
+import java.io.Serializable;
 import java.util.Spliterator;
 import java.util.function.IntToDoubleFunction;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.Destroyable;
 import org.apache.ignite.ml.math.MetaAttributes;
 import org.apache.ignite.ml.math.StorageOpsMetrics;
-import org.apache.ignite.ml.math.exceptions.CardinalityException;
-import org.apache.ignite.ml.math.exceptions.IndexException;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
+import org.apache.ignite.ml.math.exceptions.math.CardinalityException;
+import org.apache.ignite.ml.math.exceptions.math.IndexException;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteIntDoubleToDoubleBiFunction;
 import org.apache.ignite.ml.math.primitives.matrix.Matrix;
+import org.apache.ignite.ml.structures.LabeledVector;
 
 /**
  * A vector interface.
@@ -71,6 +73,21 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
          * @param val Value to set.
          */
         void set(double val);
+
+        /**
+         * Sets any serializable object value.
+         *
+         * @param val Value to set.
+         */
+        void setRaw(Serializable val);
+
+        /**
+         * Gets element's value.
+         *
+         * @param <T> Type of expected value.
+         * @return The value of this vector element.
+         */
+        <T extends Serializable> T getRaw();
     }
 
     /**
@@ -169,7 +186,7 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      *
      * @param vec Argument vector.
      * @return This vector.
-     * @throws CardinalityException Thrown if cardinalities mismatch.
+     * @throws CardinalityException Thrown if cardinality mismatch.
      */
     public Vector assign(Vector vec);
 
@@ -199,7 +216,7 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      * @param vec Argument vector.
      * @param fun Mapping function.
      * @return This function.
-     * @throws CardinalityException Thrown if cardinalities mismatch.
+     * @throws CardinalityException Thrown if cardinality mismatch.
      */
     public Vector map(Vector vec, IgniteBiFunction<Double, Double, Double> fun);
 
@@ -247,6 +264,23 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
     public double getX(int idx);
 
     /**
+     * Gets the value at specified index.
+     *
+     * @param idx Vector index.
+     * @return Vector value.
+     * @throws IndexException Throw if index is out of bounds.
+     */
+    public <T extends Serializable> T getRaw(int idx);
+
+    /**
+     * Gets the value at specified index without checking for index boundaries.
+     *
+     * @param idx Vector index.
+     * @return Vector value.
+     */
+    public <T extends Serializable> T getRawX(int idx);
+
+    /**
      * Creates new empty vector of the same underlying class but of different cardinality.
      *
      * @param crd Cardinality for new vector.
@@ -285,7 +319,7 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      *
      * @param vec Argument vector.
      * @return New vector.
-     * @throws CardinalityException Thrown if cardinalities mismatch.
+     * @throws CardinalityException Thrown if cardinality mismatch.
      */
     public Vector minus(Vector vec);
 
@@ -369,7 +403,7 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      *
      * @param vec Other argument vector to add.
      * @return New vector.
-     * @throws CardinalityException Thrown if cardinalities mismatch.
+     * @throws CardinalityException Thrown if cardinality mismatch.
      */
     public Vector plus(Vector vec);
 
@@ -391,6 +425,25 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      * @return This vector.
      */
     public Vector setX(int idx, double val);
+
+    /**
+     * Sets value.
+     *
+     * @param idx Vector index to set value at.
+     * @param val Value to set.
+     * @return This vector.
+     * @throws IndexException Throw if index is out of bounds.
+     */
+    public Vector setRaw(int idx, Serializable val);
+
+    /**
+     * Sets value without checking for index boundaries.
+     *
+     * @param idx Vector index to set value at.
+     * @param val Value to set.
+     * @return This vector.
+     */
+    public Vector setRawX(int idx, Serializable val);
 
     /**
      * Increments value at given index without checking for index boundaries.
@@ -431,7 +484,7 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      *
      * @param vec Vector to multiply by.
      * @return New vector.
-     * @throws CardinalityException Thrown if cardinalities mismatch.
+     * @throws CardinalityException Thrown if cardinality mismatch.
      */
     public Vector times(Vector vec);
 
@@ -482,7 +535,7 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      * @param <T> Type of the folded value.
      * @param zeroVal Zero value for fold operation.
      * @return Folded value of these vectors.
-     * @throws CardinalityException Thrown when cardinalities mismatch.
+     * @throws CardinalityException Thrown when cardinality mismatch.
      */
     public <T> T foldMap(Vector vec, IgniteBiFunction<T, Double, T> foldFun,
         IgniteBiFunction<Double, Double, Double> combFun,
@@ -500,7 +553,7 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      *
      * @param vec Another vector.
      * @return Distance squared.
-     * @throws CardinalityException Thrown if cardinalities mismatch.
+     * @throws CardinalityException Thrown if cardinality mismatch.
      */
     public double getDistanceSquared(Vector vec);
 
@@ -519,7 +572,6 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      **/
     public void compute(int i, IgniteIntDoubleToDoubleBiFunction f);
 
-
     /**
      * Returns array of doubles corresponds to vector components.
      *
@@ -527,5 +579,16 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
      */
     public default double[] asArray() {
         return getStorage().data();
+    }
+
+    /**
+     * Creates {@link LabeledVector} instance.
+     *
+     * @param lbl Label value.
+     * @param <L> Label class.
+     * @return Labeled vector.
+     */
+    public default <L> LabeledVector<L> labeled(L lbl) {
+        return new LabeledVector<>(this, lbl);
     }
 }

@@ -35,7 +35,6 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.testframework.MvccFeatureChecker;
@@ -55,18 +54,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 public class EntryVersionConsistencyReadThroughTest extends GridCommonAbstractTest {
     /** */
     private static final int NODES_CNT = 5;
-
-    /** */
-    private boolean client;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(client);
-
-        return cfg;
-    }
 
     /**
      * @param atomicityMode Atomicity mode.
@@ -98,9 +85,7 @@ public class EntryVersionConsistencyReadThroughTest extends GridCommonAbstractTe
 
         startGridsMultiThreaded(NODES_CNT - 1);
 
-        client = true;
-
-        startGrid(NODES_CNT - 1);
+        startClientGrid(NODES_CNT - 1);
     }
 
     /**

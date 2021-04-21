@@ -30,12 +30,12 @@ import org.junit.Test;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static java.nio.file.StandardOpenOption.WRITE;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessorImpl.allocateDirectBuffer;
 import static org.apache.ignite.internal.processors.compress.FileSystemUtils.getFileSystemBlockSize;
 import static org.apache.ignite.internal.processors.compress.FileSystemUtils.getSparseFileSize;
 import static org.apache.ignite.internal.processors.compress.FileSystemUtils.punchHole;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  */

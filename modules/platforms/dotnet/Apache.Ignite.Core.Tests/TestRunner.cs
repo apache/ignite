@@ -15,6 +15,7 @@
 * limitations under the License.
 */
 
+#if (!NETCOREAPP)
 namespace Apache.Ignite.Core.Tests
 {
     using System;
@@ -24,7 +25,6 @@ namespace Apache.Ignite.Core.Tests
     using System.Reflection;
     using Apache.Ignite.Core.Tests.Binary.Serializable;
     using Apache.Ignite.Core.Tests.Cache;
-    using Apache.Ignite.Core.Tests.Cache.Query.Linq;
     using Apache.Ignite.Core.Tests.Client.Cache;
     using Apache.Ignite.Core.Tests.Compute;
     using Apache.Ignite.Core.Tests.Memory;
@@ -44,7 +44,7 @@ namespace Apache.Ignite.Core.Tests
             if (args.Length == 1 && args[0] == "-basicTests")
             {
                 RunBasicTests();
-                
+
                 return;
             }
 
@@ -74,10 +74,10 @@ namespace Apache.Ignite.Core.Tests
             var basicTests = new[]
             {
                 typeof(ComputeApiTest),
-                typeof(CacheLinqTest),
                 typeof(SqlDmlTest),
                 typeof(LinqTest),
-                typeof(PersistenceTest)
+                typeof(PersistenceTest),
+                typeof(CacheTest)
             };
 
             Environment.ExitCode = TestAll(basicTests, true);
@@ -113,7 +113,7 @@ namespace Apache.Ignite.Core.Tests
                 "-run:" + string.Join(",", testClass.Select(x => x.FullName)),
                 Assembly.GetAssembly(typeof(TestRunner)).Location
             };
-            
+
             return Runner.Main(args.ToArray());
         }
 
@@ -133,3 +133,21 @@ namespace Apache.Ignite.Core.Tests
         }
     }
 }
+#else
+namespace Apache.Ignite.Core.Tests
+{
+    /// <summary>
+    /// Test runner.
+    /// </summary>
+    internal static class TestRunner
+    {
+        /// <summary>
+        /// Console entry point.
+        /// </summary>
+        private static void Main()
+        {
+            new IgniteStartStopTest().TestStartDefault();
+        }
+    }
+}
+#endif

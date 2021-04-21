@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-
 import java.util.Collection;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
+import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /**
  * Cache names response.
@@ -44,8 +44,8 @@ public class ClientCacheGetNamesResponse extends ClientResponse {
     }
 
     /** {@inheritDoc} */
-    @Override public void encode(BinaryRawWriterEx writer) {
-        super.encode(writer);
+    @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
+        super.encode(ctx, writer);
 
         writer.writeInt(cacheNames.size());
 

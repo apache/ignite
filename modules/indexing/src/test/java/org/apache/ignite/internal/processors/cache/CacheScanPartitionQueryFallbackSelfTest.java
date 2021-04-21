@@ -77,9 +77,6 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
     /** Cache mode. */
     private CacheMode cacheMode;
 
-    /** Client mode. */
-    private volatile boolean clientMode;
-
     /** Expected first node ID. */
     private static UUID expNodeId;
 
@@ -95,8 +92,6 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setClientMode(clientMode);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
@@ -253,7 +248,6 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
      */
     private void scanFallbackOnRebalancing(final boolean cur) throws Exception {
         cacheMode = CacheMode.PARTITIONED;
-        clientMode = false;
         backups = 2;
         commSpiFactory = new TestFallbackOnRebalancingCommunicationSpiFactory();
         syncRebalance = true;
@@ -343,7 +337,6 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
     @Test
     public void testScanFallbackOnRebalancingCursor1() throws Exception {
         cacheMode = CacheMode.PARTITIONED;
-        clientMode = false;
         backups = 1;
         commSpiFactory = new TestFallbackOnRebalancingCommunicationSpiFactory();
 

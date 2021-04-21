@@ -52,9 +52,6 @@ public class CrossCacheLockTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (igniteInstanceName.equals(getTestIgniteInstanceName(GRID_CNT - 1)))
-            cfg.setClientMode(true);
-
         CacheConfiguration ccfg1 = new CacheConfiguration(DEFAULT_CACHE_NAME);
         ccfg1.setName(CACHE1);
         ccfg1.setBackups(1);
@@ -75,7 +72,7 @@ public class CrossCacheLockTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(GRID_CNT - 1);
 
-        startGrid(GRID_CNT - 1);
+        startClientGrid(GRID_CNT - 1);
     }
 
     /**
