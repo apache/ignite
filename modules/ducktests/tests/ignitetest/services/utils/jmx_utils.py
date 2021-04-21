@@ -23,14 +23,14 @@ import re
 from ignitetest.services.utils.decorators import memoize
 
 
-def ignite_jmx_mixin(node, spec, pids):
+def ignite_jmx_mixin(node, service):
     """
     Dynamically mixin JMX attributes to Ignite service node.
     :param node: Ignite service node.
-    :param pids: Ignite service node pids.
+    :param service: Ignite service.
     """
-    setattr(node, 'pids', pids)
-    setattr(node, 'spec', spec)
+    setattr(node, 'pids', service.pids(node))
+    setattr(node, 'install_root', service.install_root)
     base_cls = node.__class__
     base_cls_name = node.__class__.__name__
     node.__class__ = type(base_cls_name, (base_cls, IgniteJmxMixin), {})
@@ -58,7 +58,7 @@ class JmxClient:
     """
     def __init__(self, node):
         self.node = node
-        self.install_root = node.spec.path_aware.install_root
+        self.install_root = node.install_root
         self.pid = node.pids[0]
 
     @property
