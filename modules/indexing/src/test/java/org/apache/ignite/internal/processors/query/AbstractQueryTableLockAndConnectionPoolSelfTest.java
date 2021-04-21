@@ -34,6 +34,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.h2.ConnectionManager;
@@ -195,6 +196,21 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
         checkTablesLockQueryAndDropColumnMultithreaded(srv1);
         // TODO: +++ DDL DROP COLUMN CacheContext == null on CLI
         // checkTablesLockQueryAndDropColumnMultithreaded(cli);
+    }
+
+    /**
+     * Test drop table with high load queries on the same table.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMultipleNodesWithTablesLockQueryAndTableDrop() throws Exception {
+        Ignite srv0 = startGrid(0);
+        Ignite srv1 = startGrid(1);
+        startGrid(2);
+
+        checkTablesLockQueryAndDropTable(srv0);
+        checkTablesLockQueryAndDropTable(srv1);
     }
 
     /**
@@ -391,6 +407,75 @@ public abstract class AbstractQueryTableLockAndConnectionPoolSelfTest extends Ab
         while (U.currentTimeMillis() < tEnd) {
             execute(node, new SqlFieldsQuery("ALTER TABLE \"pers\".Person DROP COLUMN name")).getAll();
             execute(node, new SqlFieldsQuery("ALTER TABLE \"pers\".Person ADD  COLUMN name varchar")).getAll();
+        }
+
+        // Test is OK in case DDL operations is passed on hi load queries pressure.
+        end.set(true);
+        fut.get();
+
+        checkConnectionLeaks(Ignition.allGrids().size());
+    }
+
+    /**
+     * @param node Ignite node to execute query.
+     * @throws Exception If failed.
+     */
+    private void checkTablesLockQueryAndDropTable(final Ignite node) throws Exception {
+        execute(node, new SqlFieldsQuery("CREATE TABLE IF NOT EXISTS TEST (ID INT PRIMARY KEY, VAL INT)")).getAll();
+
+        final AtomicBoolean end = new AtomicBoolean(false);
+
+        final int qryThreads = 10;
+
+        // Do many concurrent queries.
+        IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
+            @Override public void run() {
+                while (!end.get()) {
+                    try {
+                        FieldsQueryCursor<List<?>> cursor = execute(node, new SqlFieldsQuery(
+                            "SELECT * FROM TEST")
+                            .setLazy(lazy()));
+
+                        cursor.getAll();
+                    }
+                    catch (Exception e) {
+                        if (e.getMessage().contains("Failed to find cache")
+                            || e.getMessage().contains("Failed to parse query. Table \"TEST\" not found")
+                            || e.getMessage().contains("Cache not found on local node (was concurrently destroyed?)")
+                            || e.getMessage().contains("Getting affinity for too old topology version that is already out of history")
+                            || e.getMessage().contains("Failed to find partitioned cache")
+                            || e.getMessage().contains("Table \"TEST\" not found")
+                            || e.getMessage().contains("Table PUBLIC.TEST already destroyed")
+                        ) {
+                            // Swallow exception when table is dropped.
+                        }
+                        else if (X.cause(e, IgniteInterruptedCheckedException.class) != null) {
+                            // Swallow exception when table is dropped.
+                        }
+                        else if (X.cause(e, QueryRetryException.class) == null) {
+                            log.error("Unexpected exception", e);
+
+                            fail("Unexpected exception. " + e);
+                        }
+                        else if (!lazy()) {
+                            log.error("Unexpected exception", e);
+
+                            fail("Unexpected QueryRetryException.");
+                        }
+                    }
+                }
+            }
+        }, qryThreads, "usr-qry");
+
+        long tEnd = U.currentTimeMillis() + TEST_DUR;
+
+        while (U.currentTimeMillis() < tEnd) {
+            execute(node, new SqlFieldsQuery("DROP TABLE TEST")).getAll();
+
+            // Small delay after drop
+            U.sleep(10);
+
+            execute(node, new SqlFieldsQuery("CREATE TABLE TEST (ID INT PRIMARY KEY, VAL INT)")).getAll();
         }
 
         // Test is OK in case DDL operations is passed on hi load queries pressure.
