@@ -44,6 +44,7 @@ import org.apache.calcite.sql.SqlUpdate;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.dialect.CalciteSqlDialect;
 import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SelectScope;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorImpl;
@@ -117,6 +118,12 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         validateUpdateFields(call);
 
         super.validateUpdate(call);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void validateLiteral(SqlLiteral literal) {
+        if (literal.getTypeName() != SqlTypeName.DECIMAL)
+            super.validateLiteral(literal);
     }
 
     /** {@inheritDoc} */

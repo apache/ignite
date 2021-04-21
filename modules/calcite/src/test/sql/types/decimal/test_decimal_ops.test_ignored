@@ -1,6 +1,7 @@
 # name: test/sql/types/decimal/test_decimal_ops.test
 # description: Test various operations with decimals
 # group: [decimal]
+# Ignore: https://issues.apache.org/jira/browse/IGNITE-14589
 
 statement ok
 PRAGMA enable_verification
@@ -13,7 +14,7 @@ INSERT INTO decimals VALUES ('0.1'), ('0.2');
 
 # basic projection
 query I
-SELECT * FROM decimals ORDER BY d
+SELECT * FROM decimals
 ----
 0.1
 0.2
@@ -33,14 +34,14 @@ SELECT * FROM decimals WHERE d='0.1'::DECIMAL(3,2)
 
 # greater than equals
 query I
-SELECT * FROM decimals WHERE d>='0.1'::DECIMAL(3,2) ORDER BY d
+SELECT * FROM decimals WHERE d>='0.1'::DECIMAL(3,2)
 ----
 0.1
 0.2
 
 # what about if we use different decimal scales?
 query I
-SELECT * FROM decimals WHERE d='0.1'::DECIMAL(9,5) ORDER BY d
+SELECT * FROM decimals WHERE d='0.1'::DECIMAL(9,5)
 ----
 0.1
 
@@ -65,6 +66,11 @@ SELECT * FROM decimals WHERE d > '0.1'::DECIMAL(9,1) ORDER BY 1
 0.11
 0.2
 0.21
+
+query I
+DELETE FROM decimals WHERE d <> d::DECIMAL(9,1)
+----
+2
 
 #
 # test ABS function
@@ -160,7 +166,7 @@ SELECT ROUND('-999.9'::DECIMAL(4,1)), ROUND('-99999999.9'::DECIMAL(9,1)), ROUND(
 -1000	-100000000	-100000000000000000	-10000000000000000000000000000000000000
 
 # round with precision
-query IIIIIIIIIIII
+query IIIIIIIIIIIII
 SELECT ROUND('100.3908147521'::DECIMAL(18,10), 0)::VARCHAR,
 	   ROUND('100.3908147521'::DECIMAL(18,10), 1)::VARCHAR,
 	   ROUND('100.3908147521'::DECIMAL(18,10), 2)::VARCHAR,
@@ -172,6 +178,7 @@ SELECT ROUND('100.3908147521'::DECIMAL(18,10), 0)::VARCHAR,
 	   ROUND('100.3908147521'::DECIMAL(18,10), 8)::VARCHAR,
 	   ROUND('100.3908147521'::DECIMAL(18,10), 9)::VARCHAR,
 	   ROUND('100.3908147521'::DECIMAL(18,10), 10)::VARCHAR,
+	   ROUND('100.3908147521'::DECIMAL(18,10), 100000)::VARCHAR,
 	   ROUND(NULL::DECIMAL, 0)
 ----
 100
@@ -184,6 +191,7 @@ SELECT ROUND('100.3908147521'::DECIMAL(18,10), 0)::VARCHAR,
 100.3908148
 100.39081475
 100.390814752
+100.3908147521
 100.3908147521
 NULL
 
@@ -232,6 +240,12 @@ SELECT ROUND('1049578239572094512.32415'::DECIMAL(30,10), 0)::VARCHAR,
 0
 0
 0
+
+# printf
+query I
+SELECT printf('%.2f', '0.12345'::DECIMAL(30,10))
+----
+0.12
 
 # use decimal in subquery
 query I

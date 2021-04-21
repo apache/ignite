@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
@@ -55,6 +56,9 @@ public class RelJsonReader {
     /** */
     private static final TypeReference<LinkedHashMap<String, Object>> TYPE_REF =
         new TypeReference<LinkedHashMap<String, Object>>() {};
+
+    /** */
+    private final ObjectMapper mapper = new ObjectMapper().enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
 
     /** */
     private final RelOptCluster cluster;
@@ -90,7 +94,7 @@ public class RelJsonReader {
     public RelNode read(String s) {
         try {
             lastRel = null;
-            Map<String, Object> o = new ObjectMapper().readValue(s, TYPE_REF);
+            Map<String, Object> o = mapper.readValue(s, TYPE_REF);
             List<Map<String, Object>> rels = (List)o.get("rels");
             readRels(rels);
             return lastRel;
