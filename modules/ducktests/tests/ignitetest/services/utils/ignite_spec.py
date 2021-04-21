@@ -99,11 +99,11 @@ class IgniteSpec(metaclass=ABCMeta):
 
         return config_templates
 
-    def extend_config(self, config_dir, config):
+    def extend_config(self, test_globals, node, cluster):
         """
-        Extend config with custom values
+        Extend config with custom variables
         """
-        return config
+        return self.config.prepare_for_env(test_globals=test_globals, node=node, cluster=cluster)
 
     def __home(self, product=None):
         """

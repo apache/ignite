@@ -172,8 +172,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
     def _prepare_configs(self, node):
         config = self.config.prepare_for_env(test_globals=self.globals, node=node, cluster=self)
-        # pylint: disable=W0613
-        config = self.spec.extend_config(config_dir=self.config_dir, config=config)
+        config = self.spec.extend_config(test_globals=self.globals, node=node, cluster=self)
 
         for name, template in self.spec.config_templates:
             config_txt = template.render(config_dir=self.config_dir, work_dir=self.work_dir, config=config)
