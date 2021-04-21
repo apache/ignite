@@ -90,6 +90,12 @@ class IgniteSpec(metaclass=ABCMeta):
              IgniteClientConfigTemplate() if self.config.client_mode else IgniteServerConfigTemplate())
         ]
 
+    def extend_config(self, config_dir, config):
+        """
+        Extend config with custom values
+        """
+        return config
+
     def __home(self, product=None):
         """
         Get home directory for current spec.

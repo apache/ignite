@@ -199,6 +199,8 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
         config = config._replace(local_host=socket.gethostbyname(node.account.hostname))
 
+        config = self.spec.extend_config(config_dir=self.config_dir, config=config)
+
         config.discovery_spi.prepare_on_start(cluster=self)
 
         for name, template in self.spec.config_templates:
