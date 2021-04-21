@@ -150,8 +150,8 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
                 Object obj1 = handler.get(x, o1);
                 Object obj2 = handler.get(x, o2);
 
-                boolean o1Comparable = o1 instanceof Comparable;
-                boolean o2Comparable = o2 instanceof Comparable;
+                boolean o1Comparable = obj1 instanceof Comparable;
+                boolean o2Comparable = obj2 instanceof Comparable;
 
                 if (o1Comparable && o2Comparable) {
                     final Comparable c1 = (Comparable)obj1;
