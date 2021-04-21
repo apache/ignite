@@ -134,7 +134,7 @@ public interface IgniteSecurity {
      * @param pwd User password.
      * @throws IgniteCheckedException If error occurred.
      */
-    public void createUser(String login, String pwd) throws IgniteCheckedException;
+    public void createUser(String login, char[] pwd) throws IgniteCheckedException;
 
     /**
      * Alters password of user with the specified login.
@@ -143,7 +143,7 @@ public interface IgniteSecurity {
      * @param pwd User password to alter.
      * @throws IgniteCheckedException If error occurred.
      */
-    public void alterUser(String login, String pwd) throws IgniteCheckedException;
+    public void alterUser(String login, char[] pwd) throws IgniteCheckedException;
 
     /**
      * Drops user with the specified login.

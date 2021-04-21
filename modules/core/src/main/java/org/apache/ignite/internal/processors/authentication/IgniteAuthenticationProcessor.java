@@ -336,11 +336,11 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      * @param passwd Password.
      * @throws UserManagementException On error.
      */
-    public static void validate(String login, String passwd) throws UserManagementException {
+    public static void validate(String login, char[] passwd) throws UserManagementException {
         if (F.isEmpty(login))
             throw new UserManagementException("User name is empty");
 
-        if (F.isEmpty(passwd))
+        if (passwd.length == 0)
             throw new UserManagementException("Password is empty");
 
         if ((STORE_USER_PREFIX + login).getBytes().length > MetastorageTree.MAX_KEY_LEN)
@@ -349,10 +349,10 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void createUser(String login, String passwd) throws IgniteCheckedException {
+    @Override public void createUser(String login, char[] passwd) throws IgniteCheckedException {
         validate(login, passwd);
 
-        UserManagementOperation op = new UserManagementOperation(User.create(login, passwd), ADD);
+        UserManagementOperation op = new UserManagementOperation(User.create(login, new String(passwd)), ADD);
 
         execUserOperation(op).get();
     }
@@ -365,8 +365,8 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void alterUser(String login, String passwd) throws IgniteCheckedException {
-        UserManagementOperation op = new UserManagementOperation(User.create(login, passwd), UPDATE);
+    @Override public void alterUser(String login, char[] passwd) throws IgniteCheckedException {
+        UserManagementOperation op = new UserManagementOperation(User.create(login, new String(passwd)), UPDATE);
 
         execUserOperation(op).get();
     }

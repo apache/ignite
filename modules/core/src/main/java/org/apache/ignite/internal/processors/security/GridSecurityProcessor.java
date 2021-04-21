@@ -141,7 +141,7 @@ public interface GridSecurityProcessor extends GridProcessor {
      * @param pwd User password.
      * @throws IgniteCheckedException If error occurred.
      */
-    public default void createUser(String login, String pwd) throws IgniteCheckedException {
+    public default void createUser(String login, char[] pwd) throws IgniteCheckedException {
         throw new UnsupportedOperationException();
     }
 
@@ -152,7 +152,7 @@ public interface GridSecurityProcessor extends GridProcessor {
      * @param pwd User password to alter.
      * @throws IgniteCheckedException If error occurred.
      */
-    public default void alterUser(String login, String pwd) throws IgniteCheckedException {
+    public default void alterUser(String login, char[] pwd) throws IgniteCheckedException {
         throw new UnsupportedOperationException();
     }
 
