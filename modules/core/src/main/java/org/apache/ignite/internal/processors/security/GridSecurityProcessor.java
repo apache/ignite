@@ -23,7 +23,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
-import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
@@ -142,7 +141,6 @@ public interface GridSecurityProcessor extends GridProcessor {
      * @param pwd User password.
      * @throws IgniteCheckedException If error occurred.
      */
-    @IgniteExperimental
     public default void createUser(String login, String pwd) throws IgniteCheckedException {
         throw new UnsupportedOperationException();
     }
@@ -154,7 +152,6 @@ public interface GridSecurityProcessor extends GridProcessor {
      * @param pwd User password to alter.
      * @throws IgniteCheckedException If error occurred.
      */
-    @IgniteExperimental
     public default void alterUser(String login, String pwd) throws IgniteCheckedException {
         throw new UnsupportedOperationException();
     }
@@ -165,7 +162,6 @@ public interface GridSecurityProcessor extends GridProcessor {
      * @param login Login of the user to be dropped.
      * @throws IgniteCheckedException If error occurred.
      */
-    @IgniteExperimental
     public default void dropUser(String login) throws IgniteCheckedException {
         throw new UnsupportedOperationException();
     }
