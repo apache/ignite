@@ -127,6 +127,13 @@ public final class ConfigurationChanger {
     }
 
     /** */
+    public <A extends Annotation> void addValidators(Class<A> annotationType, Set<Validator<A, ?>> validators) {
+        this.validators
+            .computeIfAbsent(annotationType, a -> new HashSet<>())
+            .addAll(validators);
+    }
+
+    /** */
     public void addRootKey(RootKey<?, ?> rootKey) {
         assert !storageInstances.containsKey(rootKey.type());
 

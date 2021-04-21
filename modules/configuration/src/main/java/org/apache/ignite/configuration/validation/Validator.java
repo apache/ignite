@@ -18,7 +18,6 @@
 package org.apache.ignite.configuration.validation;
 
 import java.lang.annotation.Annotation;
-import org.apache.ignite.configuration.ConfigurationRegistry;
 
 /**
  * Interface for all configuration validators. Recommended to be a stateless class.
@@ -27,7 +26,6 @@ import org.apache.ignite.configuration.ConfigurationRegistry;
  *
  * @param <A> Type of the annotation that puts current validator to the field.
  * @param <VIEW> Upper bound for field types that can be validated with this validator.
- * @see ConfigurationRegistry#registerValidator(Class, Validator)
  */
 public interface Validator<A extends Annotation, VIEW> {
     /**

@@ -15,29 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.rest.configuration;
-
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import org.apache.ignite.configuration.annotation.ConfigurationRoot;
-import org.apache.ignite.configuration.annotation.Value;
-import org.apache.ignite.configuration.storage.ConfigurationType;
-
-import static org.apache.ignite.rest.RestModule.DFLT_PORT;
+package org.apache.ignite.internal.metastorage.network;
 
 /**
- * Configuration schema for REST endpoint subtree.
+ * Metastorage message types
  */
-@ConfigurationRoot(rootName = "rest", type = ConfigurationType.LOCAL)
-public class RestConfigurationSchema {
+// TODO: IGNITE-14088: Uncomment and use real serializer factory
+//@DirectlyMarshallableTypes(moduleType = 11)
+public enum MetaStorageMessageTypes {
     /** */
-    @Min(1024)
-    @Max(0xFFFF)
-    @Value(hasDefault = true)
-    public final int port = DFLT_PORT;
+    CLUSTER_INIT_REQUEST((short)1100);
 
     /** */
-    @Min(0)
-    @Value(hasDefault = true)
-    public final int portRange = 0;
+    private short msgType;
+
+    /**
+     * Constructor.
+     *
+     * @param msgType Message type.
+     */
+    MetaStorageMessageTypes(short msgType) {
+        this.msgType = msgType;
+    }
+
+    /**
+     * @return Message type.
+     */
+    public short msgType() {
+        return msgType;
+    }
 }

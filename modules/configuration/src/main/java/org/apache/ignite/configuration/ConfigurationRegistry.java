@@ -20,9 +20,11 @@ package org.apache.ignite.configuration;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -67,21 +69,27 @@ public class ConfigurationRegistry {
         changer.addValidator(Max.class, new MaxValidator());
     }
 
-    /** */
-    public void registerRootKey(RootKey<?, ?> rootKey) {
-        changer.addRootKey(rootKey);
+    /**
+     * Constructor.
+     *
+     * @param rootKeys Configuration root keys.
+     * @param validators Validators.
+     * @param configurationStorages Configuration Storages.
+     */
+    public <A extends Annotation> ConfigurationRegistry(
+        Collection<RootKey<?, ?>> rootKeys,
+        Map<Class<A>, Set<Validator<A, ?>>> validators,
+        Collection<ConfigurationStorage> configurationStorages
+    ) {
+        rootKeys.forEach(rootKey ->
+        {
+            changer.addRootKey(rootKey);
+            configs.put(rootKey.key(), (DynamicConfiguration<?, ?, ?>)rootKey.createPublicRoot(changer));
+        });
 
-        configs.put(rootKey.key(), (DynamicConfiguration<?, ?, ?>)rootKey.createPublicRoot(changer));
-    }
+        validators.forEach(changer::addValidators);
 
-    /** */
-    public <A extends Annotation> void registerValidator(Class<A> annotationType, Validator<A, ?> validator) {
-        changer.addValidator(annotationType, validator);
-    }
-
-    /** */
-    public void registerStorage(ConfigurationStorage configurationStorage) {
-        changer.register(configurationStorage);
+        configurationStorages.forEach(changer::register);
     }
 
     /** */

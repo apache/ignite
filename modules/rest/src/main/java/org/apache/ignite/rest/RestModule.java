@@ -33,9 +33,9 @@ import java.net.BindException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import org.apache.ignite.configuration.ConfigurationRegistry;
+import org.apache.ignite.configuration.schemas.rest.RestConfiguration;
+import org.apache.ignite.configuration.schemas.rest.RestView;
 import org.apache.ignite.configuration.validation.ConfigurationValidationException;
-import org.apache.ignite.rest.configuration.RestConfiguration;
-import org.apache.ignite.rest.configuration.RestView;
 import org.apache.ignite.rest.netty.RestApiInitializer;
 import org.apache.ignite.rest.presentation.ConfigurationPresentation;
 import org.apache.ignite.rest.presentation.json.JsonPresentation;
@@ -81,7 +81,6 @@ public class RestModule {
      */
     public void prepareStart(ConfigurationRegistry sysCfg) {
         sysConf = sysCfg;
-        sysCfg.registerRootKey(RestConfiguration.KEY);
 
         presentation = new JsonPresentation(sysCfg);
     }

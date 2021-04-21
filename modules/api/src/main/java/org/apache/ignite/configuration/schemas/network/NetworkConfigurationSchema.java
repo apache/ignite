@@ -15,7 +15,26 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.configuration.schemas.network;
+
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
+import org.apache.ignite.configuration.annotation.ConfigurationRoot;
+import org.apache.ignite.configuration.annotation.Value;
+import org.apache.ignite.configuration.storage.ConfigurationType;
+
 /**
- * Contains internal tests or test related classes and interfaces.
+ * Configuration schema for network endpoint subtree.
  */
-package org.apache.ignite.internal.testframework;
+@ConfigurationRoot(rootName = "network", type = ConfigurationType.LOCAL)
+public class NetworkConfigurationSchema {
+    /** */
+    @Min(1024)
+    @Max(0xFFFF)
+    @Value(hasDefault = true)
+    public final int port = 3040;
+
+    /** */
+    @Value(hasDefault = true)
+    public String[] netClusterNodes = {"localhost:" + port};
+}

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.configuration.sample;
 
+import java.util.Arrays;
+import java.util.Collections;
 import org.apache.ignite.configuration.ConfigurationRegistry;
 import org.apache.ignite.configuration.storage.TestConfigurationStorage;
 import org.junit.jupiter.api.AfterEach;
@@ -33,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class UsageTest {
     /** */
-    private final ConfigurationRegistry registry = new ConfigurationRegistry();
+    private ConfigurationRegistry registry;
 
     /** */
     @AfterEach
@@ -46,9 +48,11 @@ public class UsageTest {
      */
     @Test
     public void test() throws Exception {
-        registry.registerRootKey(LocalConfiguration.KEY);
-
-        registry.registerStorage(new TestConfigurationStorage());
+        registry = new ConfigurationRegistry(
+            Collections.singletonList(LocalConfiguration.KEY),
+            Collections.emptyMap(),
+            Collections.singletonList(new TestConfigurationStorage())
+        );
 
         LocalConfiguration root = registry.getConfiguration(LocalConfiguration.KEY);
 
@@ -100,10 +104,11 @@ public class UsageTest {
 
         long autoAdjustTimeout = 30_000L;
 
-        registry.registerRootKey(NetworkConfiguration.KEY);
-        registry.registerRootKey(LocalConfiguration.KEY);
-
-        registry.registerStorage(new TestConfigurationStorage());
+        registry = new ConfigurationRegistry(
+            Arrays.asList(NetworkConfiguration.KEY, LocalConfiguration.KEY),
+            Collections.emptyMap(),
+            Collections.singletonList(new TestConfigurationStorage())
+        );
 
         registry.getConfiguration(LocalConfiguration.KEY).change(local ->
             local.changeBaseline(baseline ->

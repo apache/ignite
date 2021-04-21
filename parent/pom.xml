@@ -634,6 +634,7 @@
                         <exclude>**/*.iml</exclude> <!-- IntelliJ IDEA project files -->
                         <exclude>modules/bytecode/src/main/java/com/facebook/presto/bytecode/ClassInfo.java</exclude> <!-- MIT license. -->
                         <exclude>modules/bytecode/src/main/java/com/facebook/presto/bytecode/ClassInfoLoader.java</exclude> <!-- MIT license. -->
+                        <exclude>**/META-INF/services/**</exclude> <!-- Interface mappings: cannot be changed -->
                     </excludes>
                 </configuration>
             </plugin>

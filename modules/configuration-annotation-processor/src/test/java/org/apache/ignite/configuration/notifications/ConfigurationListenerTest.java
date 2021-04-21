@@ -18,6 +18,7 @@
 package org.apache.ignite.configuration.notifications;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.configuration.ConfigurationRegistry;
@@ -26,6 +27,7 @@ import org.apache.ignite.configuration.annotation.ConfigValue;
 import org.apache.ignite.configuration.annotation.ConfigurationRoot;
 import org.apache.ignite.configuration.annotation.NamedConfigValue;
 import org.apache.ignite.configuration.annotation.Value;
+import org.apache.ignite.configuration.storage.ConfigurationStorage;
 import org.apache.ignite.configuration.storage.ConfigurationType;
 import org.apache.ignite.configuration.storage.TestConfigurationStorage;
 import org.junit.jupiter.api.AfterEach;
@@ -61,7 +63,7 @@ public class ConfigurationListenerTest {
     }
 
     /** */
-    private final ConfigurationRegistry registry = new ConfigurationRegistry();
+    private ConfigurationRegistry registry;
 
     /** */
     private ParentConfiguration configuration;
@@ -69,13 +71,15 @@ public class ConfigurationListenerTest {
     /** */
     @BeforeEach
     public void before() {
-        registry.registerRootKey(ParentConfiguration.KEY);
+        ConfigurationStorage testConfigurationStorage = new TestConfigurationStorage();
 
-        TestConfigurationStorage storage = new TestConfigurationStorage();
+        registry = new ConfigurationRegistry(
+            Collections.singletonList(ParentConfiguration.KEY),
+            Collections.emptyMap(),
+            Collections.singletonList(testConfigurationStorage)
+        );
 
-        registry.registerStorage(storage);
-
-        registry.startStorageConfigurations(storage.type());
+        registry.startStorageConfigurations(testConfigurationStorage.type());
 
         configuration = registry.getConfiguration(ParentConfiguration.KEY);
     }
