@@ -22,13 +22,13 @@ import org.apache.ignite.internal.processors.query.calcite.CalciteBasicSecondary
 import org.apache.ignite.internal.processors.query.calcite.CalciteErrorHandlilngIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessorTest;
 import org.apache.ignite.internal.processors.query.calcite.CancelTest;
-import org.apache.ignite.internal.processors.query.calcite.CreateTableIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.DateTimeTest;
 import org.apache.ignite.internal.processors.query.calcite.LimitOffsetTest;
 import org.apache.ignite.internal.processors.query.calcite.MetadataIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.QueryCheckerTest;
 import org.apache.ignite.internal.processors.query.calcite.SortAggregateIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.SqlFieldsQueryUsageTest;
+import org.apache.ignite.internal.processors.query.calcite.TableDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.ClosableIteratorsHolderTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ContinuousExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcQueryTest;
@@ -63,7 +63,7 @@ import org.junit.runners.Suite;
     SortAggregateIntegrationTest.class,
 
     SqlDdlParserTest.class,
-    CreateTableIntegrationTest.class,
+    TableDdlIntegrationTest.class,
 })
 public class IgniteCalciteTestSuite {
 }

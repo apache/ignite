@@ -39,41 +39,41 @@ SqlNodeList CreateTableOptionList() :
     }
 }
 
-IgniteSqlCreateTableOptionEnum CreateTableOptionEnumOpt() :
+SqlLiteral CreateTableOptionKey() :
 {
 }
 {
-    <TEMPLATE> { return IgniteSqlCreateTableOptionEnum.TEMPLATE; }
+    <TEMPLATE> { return SqlLiteral.createSymbol(IgniteSqlCreateTableOptionEnum.TEMPLATE, getPos()); }
 |
-    <BACKUPS> { return IgniteSqlCreateTableOptionEnum.BACKUPS; }
+    <BACKUPS> { return SqlLiteral.createSymbol(IgniteSqlCreateTableOptionEnum.BACKUPS, getPos()); }
 |
-    <AFFINITY_KEY> { return IgniteSqlCreateTableOptionEnum.AFFINITY_KEY; }
+    <AFFINITY_KEY> { return SqlLiteral.createSymbol(IgniteSqlCreateTableOptionEnum.AFFINITY_KEY, getPos()); }
 |
-    <ATOMICITY> { return IgniteSqlCreateTableOptionEnum.ATOMICITY; }
+    <ATOMICITY> { return SqlLiteral.createSymbol(IgniteSqlCreateTableOptionEnum.ATOMICITY, getPos()); }
 |
-    <WRITE_SYNCHRONIZATION_MODE> { return IgniteSqlCreateTableOptionEnum.WRITE_SYNCHRONIZATION_MODE; }
+    <WRITE_SYNCHRONIZATION_MODE> { return SqlLiteral.createSymbol(IgniteSqlCreateTableOptionEnum.WRITE_SYNCHRONIZATION_MODE, getPos()); }
 |
-    <CACHE_GROUP> { return IgniteSqlCreateTableOptionEnum.CACHE_GROUP; }
+    <CACHE_GROUP> { return SqlLiteral.createSymbol(IgniteSqlCreateTableOptionEnum.CACHE_GROUP, getPos()); }
 |
-    <CACHE_NAME> { return IgniteSqlCreateTableOptionEnum.CACHE_NAME; }
+    <CACHE_NAME> { return SqlLiteral.createSymbol(IgniteSqlCreateTableOptionEnum.CACHE_NAME, getPos()); }
 |
-    <DATA_REGION> { return IgniteSqlCreateTableOptionEnum.DATA_REGION; }
+    <DATA_REGION> { return SqlLiteral.createSymbol(IgniteSqlCreateTableOptionEnum.DATA_REGION, getPos()); }
 |
-    <KEY_TYPE> { return IgniteSqlCreateTableOptionEnum.KEY_TYPE; }
+    <KEY_TYPE> { return SqlLiteral.createSymbol(IgniteSqlCreateTableOptionEnum.KEY_TYPE, getPos()); }
 |
-    <VALUE_TYPE> { return IgniteSqlCreateTableOptionEnum.VALUE_TYPE; }
+    <VALUE_TYPE> { return SqlLiteral.createSymbol(IgniteSqlCreateTableOptionEnum.VALUE_TYPE, getPos()); }
 |
-    <ENCRYPTED> { return IgniteSqlCreateTableOptionEnum.ENCRYPTED; }
+    <ENCRYPTED> { return SqlLiteral.createSymbol(IgniteSqlCreateTableOptionEnum.ENCRYPTED, getPos()); }
 }
 
 void CreateTableOption(List<SqlNode> list) :
 {
     final Span s;
-    final IgniteSqlCreateTableOptionEnum key;
+    final SqlLiteral key;
     final SqlNode val;
 }
 {
-    key = CreateTableOptionEnumOpt() { s = span(); }
+    key = CreateTableOptionKey() { s = span(); }
     <EQ>
     (
         val = Literal()
@@ -161,6 +161,26 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     )
     {
         return new IgniteSqlCreateTable(s.end(this), ifNotExists, id, columnList, optionList);
+    }
+}
+
+boolean IfExistsOpt() :
+{
+}
+{
+    <IF> <EXISTS> { return true; }
+|
+    { return false; }
+}
+
+SqlDrop SqlDropTable(Span s, boolean replace) :
+{
+    final boolean ifExists;
+    final SqlIdentifier id;
+}
+{
+    <TABLE> ifExists = IfExistsOpt() id = CompoundIdentifier() {
+        return SqlDdlNodes.dropTable(s.end(this), ifExists, id);
     }
 }
 
