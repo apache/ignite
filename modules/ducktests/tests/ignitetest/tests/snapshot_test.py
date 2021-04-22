@@ -85,7 +85,7 @@ class SnapshotTest(IgniteTest):
         dump_2 = control_utility.idle_verify_dump(node)
 
         diff = node.account.ssh_output(f'diff {dump_1} {dump_2}', allow_fail=True)
-        assert diff, diff
+        assert diff
 
         nodes.stop()
         nodes.restore_from_snapshot(self.SNAPSHOT_NAME)
