@@ -146,6 +146,17 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             .check();
     }
 
+    /** Tests varchar min\max aggregates. */
+    @Test
+    public void testVarCharMinMax() throws IgniteInterruptedCheckedException {
+        execute(client, "CREATE TABLE TEST(val VARCHAR primary key, val1 integer);");
+        execute(client, "INSERT INTO test VALUES ('б', 1), ('бб', 2), ('щ', 3), ('щщ', 4), ('Б', 4), ('ББ', 4), ('Я', 4);");
+        List<List<?>> rows = sql("SELECT MAX(val), MIN(val) FROM TEST");
+
+        assertEquals(1, rows.size());
+        assertEquals(Arrays.asList("щщ", "Б"), F.first(rows));
+    }
+
     /** */
     @Test
     public void testCountWithJoin() throws Exception {
