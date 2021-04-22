@@ -140,10 +140,10 @@ public class RootNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
 
     /** {@inheritDoc} */
     @Override public void push(Row row) throws Exception {
-        assert waiting > 0;
-
         lock.lock();
         try {
+            assert waiting > 0;
+
             checkState();
 
             waiting--;

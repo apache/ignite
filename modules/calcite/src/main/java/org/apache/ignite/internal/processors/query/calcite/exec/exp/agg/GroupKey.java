@@ -40,6 +40,11 @@ public class GroupKey {
         return fields[idx];
     }
 
+    /** */
+    public int fieldsCount() {
+        return fields.length;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
