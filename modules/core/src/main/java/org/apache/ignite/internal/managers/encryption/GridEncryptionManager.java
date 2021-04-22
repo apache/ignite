@@ -230,6 +230,9 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     /** Cache group page stores scanner. */
     private CacheGroupPageScanner pageScanner;
 
+    /** Flag indicating that the cluster has been deactivated. */
+    private boolean deactivated;
+
     /**
      * @param ctx Kernel context.
      */
@@ -1105,7 +1108,11 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
             return null;
         });
 
-        startReencryption(reencryptGroups.keySet());
+        if (deactivated) {
+            deactivated = false;
+
+            startReencryption(reencryptGroups.keySet());
+        }
     }
 
     /** {@inheritDoc} */
@@ -1113,6 +1120,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         synchronized (metaStorageMux) {
             writeToMetaStoreEnabled = false;
         }
+
+        deactivated = true;
     }
 
     /**
