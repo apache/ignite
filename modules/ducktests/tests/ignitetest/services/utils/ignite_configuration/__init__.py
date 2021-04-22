@@ -116,6 +116,30 @@ class IgniteThinClientConfiguration(NamedTuple):
     """
     addresses: str = None
     version: IgniteVersion = DEV_BRANCH
+    ssl_params: SslParams = None
+    sslMode: str = "DISABLED"
+    sslClientCertificateKeyStorePath: str = None
+    sslClientCertificateKeyStorePassword: str = None
+    sslTrustCertificateKeyStorePath: str = None
+    sslTrustCertificateKeyStorePassword: str = None
+    userName: str = None
+    userPassword: str = None
+
+
+    def __prepare_ssl(self, test_globals):
+        """
+        Updates ssl configuration from globals.
+        """
+        ssl_params = None
+        if self.ssl_params is None and is_ssl_enabled(test_globals):
+            ssl_params = get_ssl_params(
+                test_globals,
+                IGNITE_CLIENT_ALIAS
+            )
+        if ssl_params:
+            return self._replace(ssl_params=ssl_params,
+                                 client_connector_configuration=ClientConnectorConfiguration(ssl_enabled=True))
+        return self
 
     # pylint: disable=unused-argument
     def prepare_for_env(self, test_globals, node, cluster):
