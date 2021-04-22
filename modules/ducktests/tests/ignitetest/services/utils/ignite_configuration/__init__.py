@@ -117,13 +117,6 @@ class IgniteThinClientConfiguration(NamedTuple):
     addresses: str = None
     version: IgniteVersion = DEV_BRANCH
     ssl_params: SslParams = None
-    ssl_enabled: str = "DISABLED"
-    sslClientCertificateKeyStorePath: str = None
-    sslClientCertificateKeyStorePassword: str = None
-    sslTrustCertificateKeyStorePath: str = None
-    sslTrustCertificateKeyStorePassword: str = None
-    userName: str = None
-    userPassword: str = None
 
     # pylint: disable=unused-argument
     def prepare_for_env(self, test_globals, node, cluster):
