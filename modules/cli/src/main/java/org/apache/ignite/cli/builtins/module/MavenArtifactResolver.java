@@ -29,8 +29,8 @@ import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.ignite.cli.IgniteCLIException;
-import org.apache.ignite.cli.ui.ProgressBar;
 import org.apache.ignite.cli.builtins.SystemPathResolver;
+import org.apache.ignite.cli.ui.ProgressBar;
 import org.apache.ivy.Ivy;
 import org.apache.ivy.core.IvyContext;
 import org.apache.ivy.core.event.EventManager;
@@ -242,7 +242,7 @@ public class MavenArtifactResolver {
         locBr.setEventManager(evtMgr);
         locBr.setM2compatible(true);
         locBr.setUsepoms(true);
-        locBr.setRoot("file://" + pathRslvr.osHomeDirectoryPath().resolve(".m2").resolve("repository/"));
+        locBr.setRoot("file:///" + pathRslvr.osHomeDirectoryPath().resolve(".m2").resolve("repository/"));
         locBr.setName("local");
 
         chainRslvr.add(locBr);
