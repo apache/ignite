@@ -85,11 +85,11 @@ class SnapshotTest(IgniteTest):
         dump_2 = control_utility.idle_verify_dump(node)
 
         diff = node.account.ssh_output(f'diff {dump_1} {dump_2}', allow_fail=True)
-        assert len(diff) != 0
+        assert diff, diff
 
         nodes.stop()
         nodes.restore_from_snapshot(self.SNAPSHOT_NAME)
-        nodes.start(clean=False)
+        nodes.start()
 
         control_utility.activate()
         control_utility.validate_indexes()
@@ -98,4 +98,4 @@ class SnapshotTest(IgniteTest):
         dump_3 = control_utility.idle_verify_dump(node)
 
         diff = node.account.ssh_output(f'diff {dump_1} {dump_3}', allow_fail=True)
-        assert len(diff) == 0, diff
+        assert not diff, diff
