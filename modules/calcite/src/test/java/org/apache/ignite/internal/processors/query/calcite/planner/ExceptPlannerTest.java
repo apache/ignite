@@ -71,6 +71,8 @@ public class ExceptPlannerTest extends AbstractPlannerTest {
         createTable("RANDOM_TBL2", type, IgniteDistributions.random(), null);
         createTable("BROADCAST_TBL1", type, IgniteDistributions.broadcast(), null);
         createTable("BROADCAST_TBL2", type, IgniteDistributions.broadcast(), null);
+        createTable("SINGLE_TBL1", type, IgniteDistributions.single(), null);
+        createTable("SINGLE_TBL2", type, IgniteDistributions.single(), null);
 
         List<List<UUID>> assignment = Arrays.asList(
             select(nodes, 0, 1),
@@ -80,10 +82,10 @@ public class ExceptPlannerTest extends AbstractPlannerTest {
             select(nodes, 1, 2)
         );
 
-        createTable("COLOCATED_TBL1", type, IgniteDistributions.affinity(0, "Test1", "hash"),
+        createTable("AFFINITY_TBL1", type, IgniteDistributions.affinity(0, "Test1", "hash"),
             assignment);
 
-        createTable("COLOCATED_TBL2", type, IgniteDistributions.affinity(0, "Test2", "hash"),
+        createTable("AFFINITY_TBL2", type, IgniteDistributions.affinity(0, "Test2", "hash"),
             assignment);
     }
 
@@ -143,16 +145,77 @@ public class ExceptPlannerTest extends AbstractPlannerTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testExceptColocated() throws Exception {
+    public void testExceptSingle() throws Exception {
         String sql = "" +
-            "SELECT * FROM colocated_tbl1 " +
+            "SELECT * FROM single_tbl1 " +
             "EXCEPT " +
-            "SELECT * FROM colocated_tbl2 ";
+            "SELECT * FROM single_tbl2 ";
+
+        assertPlan(sql, isInstanceOf(IgniteSingleMinus.class)
+            .and(input(0, isTableScan("single_tbl1")))
+            .and(input(1, isTableScan("single_tbl2"))));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testExceptSingleAndRandom() throws Exception {
+        String sql = "" +
+            "SELECT * FROM single_tbl1 " +
+            "EXCEPT " +
+            "SELECT * FROM random_tbl1 ";
+
+        assertPlan(sql, isInstanceOf(IgniteSingleMinus.class)
+            .and(input(0, isTableScan("single_tbl1")))
+            .and(input(1, hasChildThat(isTableScan("random_tbl1")))));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testExceptSingleAndAffinity() throws Exception {
+        String sql = "" +
+            "SELECT * FROM single_tbl1 " +
+            "EXCEPT " +
+            "SELECT * FROM affinity_tbl1 ";
+
+        assertPlan(sql, isInstanceOf(IgniteSingleMinus.class)
+            .and(input(0, isTableScan("single_tbl1")))
+            .and(input(1, hasChildThat(isTableScan("affinity_tbl1")))));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testExceptSingleAndBroadcast() throws Exception {
+        String sql = "" +
+            "SELECT * FROM single_tbl1 " +
+            "EXCEPT " +
+            "SELECT * FROM broadcast_tbl1 ";
+
+        assertPlan(sql, isInstanceOf(IgniteSingleMinus.class)
+            .and(input(0, isTableScan("single_tbl1")))
+            .and(input(1, isTableScan("broadcast_tbl1")))
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testExceptAffinity() throws Exception {
+        String sql = "" +
+            "SELECT * FROM affinity_tbl1 " +
+            "EXCEPT " +
+            "SELECT * FROM affinity_tbl2 ";
 
         assertPlan(sql, isInstanceOf(IgniteReduceMinus.class)
             .and(hasChildThat(isInstanceOf(IgniteMapMinus.class)
-                .and(input(0, isTableScan("colocated_tbl1")))
-                .and(input(1, isTableScan("colocated_tbl2")))
+                .and(input(0, isTableScan("affinity_tbl1")))
+                .and(input(1, isTableScan("affinity_tbl2")))
             ))
         );
     }
@@ -229,16 +292,16 @@ public class ExceptPlannerTest extends AbstractPlannerTest {
             "EXCEPT " +
             "SELECT * FROM random_tbl2 " +
             "EXCEPT " +
-            "SELECT * FROM colocated_tbl1 " +
+            "SELECT * FROM affinity_tbl1 " +
             "EXCEPT " +
-            "SELECT * FROM colocated_tbl2 ";
+            "SELECT * FROM affinity_tbl2 ";
 
         assertPlan(sql, isInstanceOf(IgniteReduceMinus.class)
             .and(hasChildThat(isInstanceOf(IgniteMapMinus.class)
                 .and(input(0, isTableScan("random_tbl1")))
                 .and(input(1, isTableScan("random_tbl2")))
-                .and(input(2, isTableScan("colocated_tbl1")))
-                .and(input(3, isTableScan("colocated_tbl2")))
+                .and(input(2, isTableScan("affinity_tbl1")))
+                .and(input(3, isTableScan("affinity_tbl2")))
             ))
         );
     }
@@ -253,16 +316,16 @@ public class ExceptPlannerTest extends AbstractPlannerTest {
             "EXCEPT ALL " +
             "SELECT * FROM random_tbl2 " +
             "EXCEPT ALL " +
-            "SELECT * FROM colocated_tbl1 " +
+            "SELECT * FROM affinity_tbl1 " +
             "EXCEPT ALL " +
-            "SELECT * FROM colocated_tbl2 ";
+            "SELECT * FROM affinity_tbl2 ";
 
         assertPlan(sql, isInstanceOf(IgniteReduceMinus.class).and(n -> n.all)
             .and(hasChildThat(isInstanceOf(IgniteMapMinus.class)
                 .and(input(0, isTableScan("random_tbl1")))
                 .and(input(1, isTableScan("random_tbl2")))
-                .and(input(2, isTableScan("colocated_tbl1")))
-                .and(input(3, isTableScan("colocated_tbl2")))
+                .and(input(2, isTableScan("affinity_tbl1")))
+                .and(input(3, isTableScan("affinity_tbl2")))
             ))
         );
     }
@@ -277,13 +340,13 @@ public class ExceptPlannerTest extends AbstractPlannerTest {
             "EXCEPT ALL " +
             "SELECT * FROM random_tbl2 " +
             "EXCEPT " +
-            "SELECT * FROM colocated_tbl1 ";
+            "SELECT * FROM affinity_tbl1 ";
 
         assertPlan(sql, isInstanceOf(IgniteReduceMinus.class).and(n -> !n.all)
             .and(hasChildThat(isInstanceOf(IgniteMapMinus.class)
                 .and(input(0, isTableScan("random_tbl1")))
                 .and(input(1, isTableScan("random_tbl2")))
-                .and(input(2, isTableScan("colocated_tbl1")))
+                .and(input(2, isTableScan("affinity_tbl1")))
             ))
         );
     }
@@ -343,8 +406,10 @@ public class ExceptPlannerTest extends AbstractPlannerTest {
             }
 
             @Override public boolean test(RelNode node) {
-                if (checkRecursively(node))
-                    return true;
+                for (RelNode input : node.getInputs()) {
+                    if (checkRecursively(input))
+                        return true;
+                }
 
                 lastError = "Not found child for defined condition [node=" + node + ']';
 

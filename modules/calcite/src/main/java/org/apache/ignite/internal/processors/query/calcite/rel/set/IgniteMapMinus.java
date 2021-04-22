@@ -33,7 +33,6 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.GroupKey
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
-import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
@@ -109,21 +108,16 @@ public class IgniteMapMinus extends IgniteMinusBase {
         RelTraitSet nodeTraits,
         List<RelTraitSet> inputTraits
     ) {
-        Set<IgniteDistribution> distributions = inputTraits.stream()
-            .map(TraitUtils::distribution)
-            .collect(Collectors.toSet());
+        if (inputTraits.stream().allMatch(t -> TraitUtils.distribution(t).satisfies(IgniteDistributions.single())))
+            return ImmutableList.of(); // If all distributions are single or broadcast IgniteSingleMinus should be used.
 
-        ImmutableList.Builder<Pair<RelTraitSet, List<RelTraitSet>>> b = ImmutableList.builder();
+        if (inputTraits.stream().anyMatch(t -> TraitUtils.distribution(t) == IgniteDistributions.single()))
+            return ImmutableList.of(); // Mixing of single and random is prohibited.
 
-        for (IgniteDistribution distribution : distributions) {
-            if (distribution.satisfies(IgniteDistributions.single()))
-                continue;
-
-            b.add(Pair.of(nodeTraits.replace(distribution),
-                Commons.transform(inputTraits, t -> t.replace(distribution))));
-        }
-
-        return b.build();
+        return ImmutableList.of(
+            Pair.of(nodeTraits.replace(IgniteDistributions.random()), Commons.transform(inputTraits,
+                t -> t.replace(IgniteDistributions.random())))
+        );
     }
 
     /** {@inheritDoc} */

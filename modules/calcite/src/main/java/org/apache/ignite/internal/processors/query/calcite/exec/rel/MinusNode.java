@@ -112,15 +112,10 @@ public class MinusNode<Row> extends AbstractNode<Row> {
 
         checkState();
 
-        if (type == AggregateType.SINGLE && grouping.isEmpty()) {
-            requested = 0;
-
-            downstream().end();
-
-            return;
-        }
-
-        curSrcIdx++;
+        if (type == AggregateType.SINGLE && grouping.isEmpty())
+            curSrcIdx = sources().size(); // Skip subsequent sources.
+        else
+            curSrcIdx++;
 
         if (curSrcIdx >= sources().size()) {
             waiting = -1;
