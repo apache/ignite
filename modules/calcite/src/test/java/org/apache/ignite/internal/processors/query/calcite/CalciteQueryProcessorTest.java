@@ -1111,24 +1111,36 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
     /** */
     private List<List<?>> sql(String sql) throws IgniteInterruptedCheckedException {
+        return sql(sql, false);
+    }
+
+    /** */
+    private List<List<?>> sql(String sql, boolean noCheck) throws IgniteInterruptedCheckedException {
         QueryEngine engineSrv = Commons.lookupComponent(grid(0).context(), QueryEngine.class);
 
         assertTrue(client.configuration().isClientMode());
 
         QueryEngine engineCli = Commons.lookupComponent(client.context(), QueryEngine.class);
 
-        List<FieldsQueryCursor<List<?>>> cursorsSrv = engineSrv.query(null, "PUBLIC", sql);
-
         List<FieldsQueryCursor<List<?>>> cursorsCli = engineCli.query(null, "PUBLIC", sql);
 
         List<List<?>> allSrv;
 
-        try (QueryCursor srvCursor = cursorsSrv.get(0); QueryCursor cliCursor = cursorsCli.get(0)) {
-            allSrv = srvCursor.getAll();
+        if (!noCheck) {
+            List<FieldsQueryCursor<List<?>>> cursorsSrv = engineSrv.query(null, "PUBLIC", sql);
 
-            assertEquals(allSrv.size(), cliCursor.getAll().size());
+            try (QueryCursor srvCursor = cursorsSrv.get(0); QueryCursor cliCursor = cursorsCli.get(0)) {
+                allSrv = srvCursor.getAll();
 
-            checkContextCancelled();
+                assertEquals(allSrv.size(), cliCursor.getAll().size());
+
+                checkContextCancelled();
+            }
+        }
+        else {
+            try (QueryCursor cliCursor = cursorsCli.get(0)) {
+                allSrv = cliCursor.getAll();
+            }
         }
 
         return allSrv;

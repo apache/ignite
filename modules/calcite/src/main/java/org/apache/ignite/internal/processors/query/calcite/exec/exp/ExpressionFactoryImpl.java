@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Primitives;
+import com.sun.xml.internal.ws.spi.db.FieldGetter;
 import org.apache.calcite.adapter.enumerable.EnumUtils;
 import org.apache.calcite.adapter.enumerable.RexToLixTranslator;
 import org.apache.calcite.adapter.enumerable.RexToLixTranslator.InputGetter;
@@ -65,6 +66,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Aggregat
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -145,9 +147,27 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
 
         if (fieldCollation.direction == RelFieldCollation.Direction.ASCENDING) {
             return (o1, o2) -> {
-                final Comparable c1 = (Comparable)handler.get(x, o1);
-                final Comparable c2 = (Comparable)handler.get(x, o2);
-                return RelFieldCollation.compare(c1, c2, nullComparison);
+                Object obj1 = handler.get(x, o1);
+                Object obj2 = handler.get(x, o2);
+
+                boolean o1Comparable = obj1 instanceof Comparable;
+                boolean o2Comparable = obj2 instanceof Comparable;
+
+                if (o1Comparable && o2Comparable) {
+                    final Comparable c1 = (Comparable)obj1;
+                    final Comparable c2 = (Comparable)obj2;
+                    return RelFieldCollation.compare(c1, c2, nullComparison);
+                }
+                else {
+                    if (obj1 == obj2)
+                        return 0;
+                    else if (obj1 == null)
+                        return nullComparison;
+                    else if (obj2 == null)
+                        return -nullComparison;
+                    else
+                        return GridH2ValueCacheObject.compareHashOrBytes(obj1, obj2, null);
+                }
             };
         }
 
