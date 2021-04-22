@@ -66,10 +66,6 @@ class PathAware:
             "config": {
                 "path": self.config_dir,
                 "collect_default": True
-            },
-            "shared": {
-                "path": self.shared_root,
-                "collect_default": True
             }
         })
 

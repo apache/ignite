@@ -161,11 +161,14 @@ class IgniteSpec(metaclass=ABCMeta):
         return self.service.config_file
 
     def init_local_shared(self):
+        """
+        :return: path to local share folder. Files should be copied on all nodes in `shared_root` folder.
+        """
+        local_dir = os.path.join(tempfile.gettempdir(), str(self.service.context.session_context.session_id))
+
         if not is_ssl_enabled(self.service.context.globals):
             self.service.logger.debug("Ssl disabled. Nothing to generate.")
-            return
-
-        local_dir = os.path.join(tempfile.gettempdir(), str(self.service.context.session_context.session_id))
+            return local_dir
 
         if os.path.isdir(local_dir):
             self.service.logger.debug("Local shared dir already exists. Exiting. " + local_dir)
@@ -176,20 +179,10 @@ class IgniteSpec(metaclass=ABCMeta):
 
         script_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "certs")
 
-        self.runcmd(f"cp {script_dir}/*.sh {local_dir}")
-        self.runcmd(f"{local_dir}/mkcerts.sh")
+        self.__runcmd(f"cp {script_dir}/*.sh {local_dir}")
+        self.__runcmd(f"{local_dir}/mkcerts.sh")
 
         return local_dir
-
-    def runcmd(self, cmd):
-        self.service.logger.debug(cmd)
-        proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        stdout, stderr = proc.communicate()
-
-        if proc.returncode != 0:
-            raise RuntimeError("Command '%s' returned non-zero exit status %d: %s" % (cmd, proc.returncode, stdout))
-
-
 
     def _jvm_opts(self):
         """
@@ -201,6 +194,14 @@ class IgniteSpec(metaclass=ABCMeta):
     def _add_jvm_opts(self, opts):
         """Properly adds JVM options to current"""
         self.jvm_opts = merge_jvm_settings(self.jvm_opts, opts)
+
+    def __runcmd(self, cmd):
+        self.service.logger.debug(cmd)
+        proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        stdout, stderr = proc.communicate()
+
+        if proc.returncode != 0:
+            raise RuntimeError("Command '%s' returned non-zero exit status %d: %s" % (cmd, proc.returncode, stdout))
 
 
 class IgniteNodeSpec(IgniteSpec):

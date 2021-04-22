@@ -19,7 +19,6 @@ This module contains the base class to build services aware of Ignite.
 import os
 import re
 import signal
-
 import sys
 import time
 from abc import ABCMeta
