@@ -40,6 +40,7 @@ def resolve_spec(service, **kwargs):
         if name in service.context.globals:
             fqdn = service.context.globals[name]
             (module, clazz) = fqdn.rsplit('.', 1)
+
             module = importlib.import_module(module)
             return getattr(module, clazz)
         return default
@@ -89,7 +90,6 @@ class IgniteSpec(metaclass=ABCMeta):
                             "-Dlog4j.configuration=file:" + self.service.log_config_file,
                             "-Dlog4j.configDebug=true"])
 
-    @property
     def config_templates(self):
         """
         :return: config that service will use to start on a node
@@ -113,6 +113,13 @@ class IgniteSpec(metaclass=ABCMeta):
         Extend config with custom variables
         """
         return self.config.prepare_for_env(test_globals=test_globals, node=node, cluster=cluster)
+
+    # pylint: disable=unused-argument
+    def extend_config(self, config, test_globals, node, cluster):
+        """
+        Extend config with custom variables
+        """
+        return config
 
     def __home(self, product=None):
         """

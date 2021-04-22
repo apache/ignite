@@ -467,6 +467,7 @@ ducker_test() {
         die "ducker_test: you must supply at least one system test to run. Type --help for help."
     local args=""
     local ignite_test=0
+
     for arg in "${@}"; do
         local regex=".*\/ignitetest\/(.*)"
         if [[ $arg =~ $regex ]]; then
