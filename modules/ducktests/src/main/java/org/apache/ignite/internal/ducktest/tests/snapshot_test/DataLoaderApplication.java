@@ -33,11 +33,8 @@ public class DataLoaderApplication extends IgniteAwareApplication {
     /** {@inheritDoc} */
     @Override public void run(JsonNode jNode) {
         String cacheName = jNode.get("cacheName").asText();
-
         long start = jNode.get("start").asLong();
-
         long interval = jNode.get("interval").asLong();
-
         int valSize = jNode.get("valueSizeKb").asInt() * 1024;
 
         markInitialized();
