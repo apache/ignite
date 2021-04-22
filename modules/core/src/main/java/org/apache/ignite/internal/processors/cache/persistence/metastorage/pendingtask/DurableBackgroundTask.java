@@ -18,6 +18,7 @@ package org.apache.ignite.internal.processors.cache.persistence.metastorage.pend
 
 import java.io.Serializable;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
 
 /**
  * Durable task that should be used to do long operations (e.g. index deletion) in background
@@ -26,33 +27,39 @@ import org.apache.ignite.internal.GridKernalContext;
  */
 public interface DurableBackgroundTask extends Serializable {
     /**
-     * Short unique name of the task is used to build metastorage key for saving this task and for logging.
+     * Getting a short name for a task to identify it.
+     * Also used as part of a key for storage in a MetaStorage.
      *
-     * @return Short name of this task.
+     * @return Short name of the task.
      */
-    public String shortName();
+    String shortName();
 
     /**
-     * Method that executes the task. It is called after node start.
+     * Checks if the task has completed or not.
+     * If the task is completed, then it will not start and will be deleted from the MetaStorage.
      *
-     * @param ctx Grid kernal context.
+     * @return {@code True} if the task is complete.
      */
-    public void execute(GridKernalContext ctx);
+    boolean completed();
 
     /**
-     * Method that marks task as complete.
-     */
-    public void complete();
-
-    /**
-     * Method that return completion flag.
+     * Checks if the task has started.
+     * Avoids running the task twice.
      *
-     * @return flag that task completed.
+     * @return {@code True} if started.
      */
-    public boolean isCompleted();
+    boolean started();
 
     /**
-     * Callback for task cancellation.
+     * Cancel task execution.
      */
-    public void onCancel();
+    void cancel();
+
+    /**
+     * Asynchronous execution of a task.
+     *
+     * @param ctx Kernal context.
+     * @return Future that completes when a task is completed.
+     */
+    IgniteInternalFuture<?> executeAsync(GridKernalContext ctx);
 }

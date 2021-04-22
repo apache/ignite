@@ -22,7 +22,10 @@ import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
@@ -38,9 +41,15 @@ import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask.DurableBackgroundTask;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.thread.IgniteThread;
+import org.jetbrains.annotations.Nullable;
 
+import static java.util.Collections.singleton;
 import static org.apache.ignite.internal.metric.IoStatisticsType.SORTED_INDEX;
 
 /**
@@ -54,7 +63,7 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
     private List<Long> rootPages;
 
     /** */
-    private transient List<InlineIndexTree> trees;
+    private transient volatile List<InlineIndexTree> trees;
 
     /** */
     private transient volatile boolean completed;
@@ -76,6 +85,12 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
 
     /** */
     private final String id;
+
+    /** Logger. */
+    @Nullable private transient volatile IgniteLogger log;
+
+    /** Worker tasks. */
+    @Nullable private transient volatile GridWorker worker;
 
     /** */
     public DurableBackgroundCleanupIndexTreeTask(
@@ -103,7 +118,107 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
     }
 
     /** {@inheritDoc} */
-    @Override public void execute(GridKernalContext ctx) {
+    @Override public IgniteInternalFuture<?> executeAsync(GridKernalContext ctx) {
+        assert !started();
+        assert !completed();
+
+        log = ctx.log(this.getClass());
+
+        GridFutureAdapter<?> fut = new GridFutureAdapter<>();
+
+        worker = new GridWorker(
+            ctx.igniteInstanceName(),
+            "async-durable-background-task-executor-" + shortName(),
+            log
+        ) {
+            /** {@inheritDoc} */
+            @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
+                Throwable err = null;
+
+                try {
+                    execute(ctx);
+
+                    completed = true;
+
+                    worker = null;
+                }
+                catch (Throwable t) {
+                    err = t;
+                }
+
+                fut.onDone(err);
+            }
+        };
+
+        new IgniteThread(worker).start();
+
+        return fut;
+    }
+
+    /**
+     * Checks that pageId is still relevant and has not been deleted / reused.
+     * @param grpId Cache group id.
+     * @param pageMem Page memory instance.
+     * @param rootPageId Root page identifier.
+     * @return {@code true} if root page was deleted/reused, {@code false} otherwise.
+     */
+    private boolean skipDeletedRoot(int grpId, PageMemory pageMem, long rootPageId) {
+        try {
+            long page = pageMem.acquirePage(grpId, rootPageId);
+
+            try {
+                long pageAddr = pageMem.readLock(grpId, rootPageId, page);
+
+                try {
+                    return pageAddr == 0;
+                }
+                finally {
+                    pageMem.readUnlock(grpId, rootPageId, page);
+                }
+            }
+            finally {
+                pageMem.releasePage(grpId, rootPageId, page);
+            }
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Cannot acquire tree root page.", e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean completed() {
+        return completed;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean started() {
+        return worker != null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void cancel() {
+        trees = null;
+
+        GridWorker w = worker;
+
+        if (w != null) {
+            worker = null;
+
+            U.awaitForWorkersStop(singleton(w), true, log);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DurableBackgroundCleanupIndexTreeTask.class, this);
+    }
+
+    /**
+     * Task execution.
+     *
+     * @param ctx Kernal context.
+     */
+    private void execute(GridKernalContext ctx) {
         List<InlineIndexTree> trees0 = trees;
 
         if (trees0 == null) {
@@ -206,56 +321,6 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
         finally {
             ctx.cache().context().database().checkpointReadUnlock();
         }
-    }
-
-    /**
-     * Checks that pageId is still relevant and has not been deleted / reused.
-     * @param grpId Cache group id.
-     * @param pageMem Page memory instance.
-     * @param rootPageId Root page identifier.
-     * @return {@code true} if root page was deleted/reused, {@code false} otherwise.
-     */
-    private boolean skipDeletedRoot(int grpId, PageMemory pageMem, long rootPageId) {
-        try {
-            long page = pageMem.acquirePage(grpId, rootPageId);
-
-            try {
-                long pageAddr = pageMem.readLock(grpId, rootPageId, page);
-
-                try {
-                    return pageAddr == 0;
-                }
-                finally {
-                    pageMem.readUnlock(grpId, rootPageId, page);
-                }
-            }
-            finally {
-                pageMem.releasePage(grpId, rootPageId, page);
-            }
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException("Cannot acquire tree root page.", e);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void complete() {
-        completed = true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isCompleted() {
-        return completed;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onCancel() {
-        trees = null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(DurableBackgroundCleanupIndexTreeTask.class, this);
     }
 
     /** */
