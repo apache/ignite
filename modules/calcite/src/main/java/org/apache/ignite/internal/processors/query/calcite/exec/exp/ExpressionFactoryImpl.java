@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Primitives;
-import com.sun.xml.internal.ws.spi.db.FieldGetter;
 import org.apache.calcite.adapter.enumerable.EnumUtils;
 import org.apache.calcite.adapter.enumerable.RexToLixTranslator;
 import org.apache.calcite.adapter.enumerable.RexToLixTranslator.InputGetter;
