@@ -191,12 +191,10 @@ import static org.apache.ignite.internal.processors.cache.persistence.checkpoint
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.CachePartitionDefragmentationManager.DEFRAGMENTATION_MNTC_TASK_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.defragmentation.maintenance.DefragmentationParameters.fromStore;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CORRUPTED_DATA_FILES_MNTC_TASK_NAME;
+import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.COMPLETED_TX_STATES;
+import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.PREPARED_TX_STATES;
 import static org.apache.ignite.internal.util.IgniteUtils.GB;
 import static org.apache.ignite.internal.util.IgniteUtils.checkpointBufferSize;
-import static org.apache.ignite.transactions.TransactionState.COMMITTED;
-import static org.apache.ignite.transactions.TransactionState.PREPARED;
-import static org.apache.ignite.transactions.TransactionState.PREPARING;
-import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 
 /**
  *
@@ -2618,9 +2616,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         if (restoreMeta) { // Also restore tx states.
                             TxRecord txRec = (TxRecord)rec;
 
-                            if (txRec.state() == COMMITTED || txRec.state() == ROLLED_BACK)
+                            if (COMPLETED_TX_STATES.test(txRec))
                                 uncommitedTx.remove(txRec.nearXidVersion());
-                            else if (txRec.state() == PREPARED || txRec.state() == PREPARING)
+                            else if (PREPARED_TX_STATES.test(txRec))
                                 uncommitedTx.add(txRec.nearXidVersion());
                         }
 
@@ -2969,15 +2967,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         return null;
-    }
-
-    /**
-     * Skip checkpoint on node stop.
-     *
-     * @param skip If {@code true} skips checkpoint on node stop.
-     */
-    public void skipCheckPointOnNodeStop(boolean skip) {
-        checkpointManager.skipOnNodeStop(skip);
     }
 
     /**

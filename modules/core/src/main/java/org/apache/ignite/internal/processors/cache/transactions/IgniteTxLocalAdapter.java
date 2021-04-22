@@ -943,7 +943,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     if (persistenceEnabled) {
                         GridCacheDatabaseSharedManager dbManager = (GridCacheDatabaseSharedManager)cctx.database();
 
-                        dbManager.skipCheckPointOnNodeStop(true);
+                        dbManager.getCheckpointer().skipCheckpointOnNodeStop(true);
                     }
 
                     throw ex;

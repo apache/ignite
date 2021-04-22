@@ -419,11 +419,4 @@ public class CheckpointManager {
     public void unblockCheckpointLock() {
         checkpointTimeoutLock.start();
     }
-
-    /**
-     * @param skip Skip checkpoint on node stop flag.
-     */
-    public void skipOnNodeStop(boolean skip) {
-        checkpointer.skipCheckpointOnNodeStop(true);
-    }
 }
