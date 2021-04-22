@@ -21,6 +21,8 @@ import base64
 import importlib
 import json
 import os
+import subprocess
+import tempfile
 from abc import ABCMeta, abstractmethod
 
 from ignitetest.services.utils import IgniteServiceType
@@ -28,6 +30,7 @@ from ignitetest.services.utils.config_template import IgniteClientConfigTemplate
     IgniteLoggerConfigTemplate, IgniteThinClientConfigTemplate
 from ignitetest.services.utils.jvm_utils import create_jvm_settings, merge_jvm_settings
 from ignitetest.services.utils.path import get_home_dir, get_module_path, IgnitePathAware
+from ignitetest.services.utils.ssl.ssl_params import is_ssl_enabled
 from ignitetest.utils.version import DEV_BRANCH
 
 
@@ -156,6 +159,37 @@ class IgniteSpec(metaclass=ABCMeta):
         :return: path to project configuration file
         """
         return self.service.config_file
+
+    def init_local_shared(self):
+        if not is_ssl_enabled(self.service.context.globals):
+            self.service.logger.debug("Ssl disabled. Nothing to generate.")
+            return
+
+        local_dir = os.path.join(tempfile.gettempdir(), str(self.service.context.session_context.session_id))
+
+        if os.path.isdir(local_dir):
+            self.service.logger.debug("Local shared dir already exists. Exiting. " + local_dir)
+            return local_dir
+
+        self.service.logger.debug("Local shared dir not exists. Creating. " + local_dir)
+        os.mkdir(local_dir)
+
+        script_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "certs")
+
+        self.runcmd(f"cp {script_dir}/*.sh {local_dir}")
+        self.runcmd(f"{local_dir}/mkcerts.sh")
+
+        return local_dir
+
+    def runcmd(self, cmd):
+        self.service.logger.debug(cmd)
+        proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        stdout, stderr = proc.communicate()
+
+        if proc.returncode != 0:
+            raise RuntimeError("Command '%s' returned non-zero exit status %d: %s" % (cmd, proc.returncode, stdout))
+
+
 
     def _jvm_opts(self):
         """

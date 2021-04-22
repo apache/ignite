@@ -47,7 +47,8 @@ class SelfTest(IgniteTest):
         app = IgniteApplicationService(
             self.test_context,
             server_configuration,
-            java_class_name="org.apache.ignite.internal.ducktest.tests.smoke_test.AssertionApplication")
+            java_class_name="org.apache.ignite.internal.ducktest.tests.smoke_test.AssertionApplication",
+            startup_timeout_sec=180)
 
         try:
             app.start()
@@ -64,12 +65,12 @@ class SelfTest(IgniteTest):
         Tests plain services start and stop (termitation vs self-terination).
         """
         ignites = IgniteService(self.test_context, IgniteConfiguration(version=IgniteVersion(ignite_version)),
-                                num_nodes=1)
+                                num_nodes=1, startup_timeout_sec=180)
 
         ignites.start()
 
         client = IgniteService(self.test_context, IgniteClientConfiguration(version=IgniteVersion(ignite_version)),
-                               num_nodes=1)
+                               num_nodes=1, startup_timeout_sec=180)
 
         client.start()
 
@@ -114,7 +115,7 @@ class SelfTest(IgniteTest):
             return list(node.account.ssh_capture(f'ls {service.log_dir}/console.log* | wc -l', callback=int))[0]
 
         ignites = IgniteService(self.test_context, IgniteConfiguration(version=IgniteVersion(ignite_version)),
-                                num_nodes=1)
+                                num_nodes=1, startup_timeout_sec=180)
 
         ignites.start()
 
@@ -146,11 +147,12 @@ class SelfTest(IgniteTest):
         ignite_cfg = IgniteConfiguration(version=IgniteVersion(ignite_version))
 
         if is_ignite_service:
-            ignite = IgniteService(self.test_context, ignite_cfg, num_nodes=1)
+            ignite = IgniteService(self.test_context, ignite_cfg, num_nodes=1, startup_timeout_sec=180)
         else:
             ignite = IgniteApplicationService(
                 self.test_context, ignite_cfg,
-                java_class_name="org.apache.ignite.internal.ducktest.tests.self_test.TestKillableApplication")
+                java_class_name="org.apache.ignite.internal.ducktest.tests.self_test.TestKillableApplication",
+                startup_timeout_sec=180)
 
         ignite.start()
 

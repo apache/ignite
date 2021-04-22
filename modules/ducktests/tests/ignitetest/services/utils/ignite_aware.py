@@ -19,6 +19,7 @@ This module contains the base class to build services aware of Ignite.
 import os
 import re
 import signal
+
 import sys
 import time
 from abc import ABCMeta
@@ -106,6 +107,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         self.await_event("Topology snapshot", self.startup_timeout_sec, from_the_beginning=True)
 
     def start_node(self, node, **kwargs):
+        self.init_shared(node)
         self.init_persistent(node)
 
         self.__update_node_log_file(node)
@@ -170,6 +172,15 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         super().init_persistent(node)
 
         self._prepare_configs(node)
+
+    def init_shared(self, node):
+        local_shared_dir = self.spec.init_local_shared()
+
+        node.account.mkdirs(f"{self.persistent_root} {self.shared_root}")
+
+        for file in os.listdir(local_shared_dir):
+            self.logger.debug("Copying shared file to node. " + str(file))
+            node.account.copy_to(os.path.join(local_shared_dir, file), self.shared_root)
 
     def _prepare_configs(self, node):
         config = self.config.prepare_for_env(test_globals=self.globals, node=node, cluster=self)

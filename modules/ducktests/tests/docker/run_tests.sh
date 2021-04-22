@@ -160,7 +160,5 @@ if [[ -n "$MAX_PARALLEL" ]]; then
   DUCKTAPE_OPTIONS="$DUCKTAPE_OPTIONS --max-parallel $MAX_PARALLEL"
 fi
 
-"$SCRIPT_DIR"/../certs/mkcerts.sh
-
 "$SCRIPT_DIR"/ducker-ignite test "$TC_PATHS" "$DUCKTAPE_OPTIONS" \
   || die "ducker-ignite test failed"

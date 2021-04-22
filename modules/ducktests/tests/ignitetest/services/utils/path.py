@@ -66,6 +66,10 @@ class PathAware:
             "config": {
                 "path": self.config_dir,
                 "collect_default": True
+            },
+            "shared": {
+                "path": self.shared_root,
+                "collect_default": True
             }
         })
 
@@ -103,6 +107,13 @@ class PathAware:
         :return: path to log directory
         """
         return os.path.join(self.persistent_root, "logs")
+
+    @property
+    def shared_root(self):
+        """
+        :return: path to directory with shared files - same files on all nodes
+        """
+        return os.path.join(self.persistent_root, "shared")
 
     @property
     @abstractmethod
