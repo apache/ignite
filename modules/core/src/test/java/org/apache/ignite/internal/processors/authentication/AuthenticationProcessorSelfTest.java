@@ -428,6 +428,8 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
         assertThrows(() -> createUser(cli, null, "", "test"),
             UserManagementException.class, "User name is empty");
 
+        assertThrows(() -> createUser(cli, null, "test", null), NullPointerException.class, null);
+
         assertThrows(() -> createUser(cli, null, "test", ""),
             UserManagementException.class, "Password is empty");
 
