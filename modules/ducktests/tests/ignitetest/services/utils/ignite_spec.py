@@ -40,7 +40,6 @@ def resolve_spec(service, **kwargs):
         if name in service.context.globals:
             fqdn = service.context.globals[name]
             (module, clazz) = fqdn.rsplit('.', 1)
-
             module = importlib.import_module(module)
             return getattr(module, clazz)
         return default
