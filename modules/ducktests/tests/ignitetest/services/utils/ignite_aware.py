@@ -106,6 +106,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         self.await_event("Topology snapshot", self.startup_timeout_sec, from_the_beginning=True)
 
     def start_node(self, node, **kwargs):
+        self.init_shared(node)
         self.init_persistent(node)
 
         self.__update_node_log_file(node)
@@ -171,8 +172,25 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
         self._prepare_configs(node)
 
+    def init_shared(self, node):
+        """
+        Init shared directory. Content of shared directory must be equal on all test nodes.
+        :param node: Ignite service node.
+        """
+        local_shared_dir = self.spec.init_local_shared()
+
+        if not os.path.isdir(local_shared_dir):
+            self.logger.debug("Local shared dir not exists. Nothing to copy. " + str(local_shared_dir))
+            return
+
+        node.account.mkdirs(f"{self.persistent_root} {self.shared_root}")
+
+        for file in os.listdir(local_shared_dir):
+            self.logger.debug("Copying shared file to node. " + str(file))
+            node.account.copy_to(os.path.join(local_shared_dir, file), self.shared_root)
+
     def _prepare_configs(self, node):
-        config = self.config.prepare_for_env(test_globals=self.globals, node=node, cluster=self)
+        config = self.config.prepare_for_env(self.globals, self.shared_root, node, self)
 
         for name, template in self.spec.config_templates:
             config_txt = template.render(config_dir=self.config_dir, work_dir=self.work_dir, config=config)

@@ -27,7 +27,6 @@ DEFAULT_CLIENT_KEYSTORE = 'client.jks'
 DEFAULT_ADMIN_KEYSTORE = 'admin.jks'
 DEFAULT_PASSWORD = "123456"
 DEFAULT_TRUSTSTORE = "truststore.jks"
-DEFAULT_ROOT = "/opt/"
 
 SSL_PARAMS_KEY = "params"
 SSL_KEY = "ssl"
@@ -46,21 +45,19 @@ class SslParams:
     """
 
     # pylint: disable=R0913
-    def __init__(self, key_store_jks: str = None, key_store_password: str = DEFAULT_PASSWORD,
+    def __init__(self, root_dir: str, key_store_jks: str = None, key_store_password: str = DEFAULT_PASSWORD,
                  trust_store_jks: str = DEFAULT_TRUSTSTORE, trust_store_password: str = DEFAULT_PASSWORD,
-                 key_store_path: str = None, trust_store_path: str = None, root_dir: str = DEFAULT_ROOT):
+                 key_store_path: str = None, trust_store_path: str = None):
         if not key_store_jks and not key_store_path:
             raise Exception("Keystore must be specified to init SslParams")
 
-        certificate_dir = os.path.join(root_dir, "ignite-dev", "modules", "ducktests", "tests", "certs")
-
-        self.key_store_path = key_store_path if key_store_path else os.path.join(certificate_dir, key_store_jks)
+        self.key_store_path = key_store_path if key_store_path else os.path.join(root_dir, key_store_jks)
         self.key_store_password = key_store_password
-        self.trust_store_path = trust_store_path if trust_store_path else os.path.join(certificate_dir, trust_store_jks)
+        self.trust_store_path = trust_store_path if trust_store_path else os.path.join(root_dir, trust_store_jks)
         self.trust_store_password = trust_store_password
 
 
-def get_ssl_params(_globals: dict, alias: str):
+def get_ssl_params(_globals: dict, shared_root: str, alias: str):
     """
     Gets SSL params from Globals
     Structure may be found in modules/ducktests/tests/checks/utils/check_get_ssl_params.py
@@ -79,7 +76,6 @@ def get_ssl_params(_globals: dict, alias: str):
     If you specyfy ssl_params in test, you override globals
     """
 
-    root_dir = _globals.get("install_root", DEFAULT_ROOT)
     if SSL_PARAMS_KEY in _globals[SSL_KEY] and alias in _globals[SSL_KEY][SSL_PARAMS_KEY]:
         ssl_param = _globals[SSL_KEY][SSL_PARAMS_KEY][alias]
     elif alias in default_keystore:
@@ -87,7 +83,7 @@ def get_ssl_params(_globals: dict, alias: str):
     else:
         raise Exception("We don't have SSL params for: " + alias)
 
-    return SslParams(root_dir=root_dir, **ssl_param) if ssl_param else None
+    return SslParams(shared_root, **ssl_param) if ssl_param else None
 
 
 def is_ssl_enabled(_globals: dict):
