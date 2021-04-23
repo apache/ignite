@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -43,21 +44,39 @@ import org.junit.Test;
  *
  */
 public class GridCacheRebalancingUnmarshallingFailedSelfTest extends GridCommonAbstractTest {
-    /** partitioned cache name. */
-    protected static String CACHE = "cache";
+    /**
+     * partitioned cache name.
+     */
+    protected static final String CACHE = "cache";
 
-    /** Allows to change behavior of readExternal method. */
+    /**
+     * Allows to change behavior of readExternal method.
+     */
     protected static AtomicInteger readCnt = new AtomicInteger();
 
-    /** */
+    /**
+     *
+     */
     private volatile Marshaller marshaller;
 
-    /** */
+    /**
+     *
+     */
     private ListeningTestLogger customLog;
 
-    /** Test key 1. */
+    /**
+     *
+     */
+    private static final Pattern unmarshalingErrorPattern = Pattern.compile(".*Rebalancing routine has failed" +
+        ".*unavailablePartitions=\\[.*].*");
+
+    /**
+     * Test key 1.
+     */
     private static class TestKey implements Externalizable {
-        /** Field. */
+        /**
+         * Field.
+         */
         @QuerySqlField(index = true)
         private String field;
 
@@ -68,12 +87,16 @@ public class GridCacheRebalancingUnmarshallingFailedSelfTest extends GridCommonA
             this.field = field;
         }
 
-        /** Test key 1. */
+        /**
+         * Test key 1.
+         */
         public TestKey() {
             // No-op.
         }
 
-        /** {@inheritDoc} */
+        /**
+         * {@inheritDoc}
+         */
         @Override public boolean equals(Object o) {
             if (this == o)
                 return true;
@@ -85,17 +108,23 @@ public class GridCacheRebalancingUnmarshallingFailedSelfTest extends GridCommonA
             return !(field != null ? !field.equals(key.field) : key.field != null);
         }
 
-        /** {@inheritDoc} */
+        /**
+         * {@inheritDoc}
+         */
         @Override public int hashCode() {
             return field != null ? field.hashCode() : 0;
         }
 
-        /** {@inheritDoc} */
+        /**
+         * {@inheritDoc}
+         */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             out.writeObject(field);
         }
 
-        /** {@inheritDoc} */
+        /**
+         * {@inheritDoc}
+         */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             field = (String)in.readObject();
 
@@ -107,7 +136,9 @@ public class GridCacheRebalancingUnmarshallingFailedSelfTest extends GridCommonA
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration iCfg = super.getConfiguration(igniteInstanceName);
 
@@ -136,7 +167,6 @@ public class GridCacheRebalancingUnmarshallingFailedSelfTest extends GridCommonA
         runTest();
     }
 
-
     /**
      * @throws Exception e.
      */
@@ -163,8 +193,7 @@ public class GridCacheRebalancingUnmarshallingFailedSelfTest extends GridCommonA
     private void runTest() throws Exception {
         customLog = new ListeningTestLogger(log);
 
-        LogListener unmarshalErrorLogListener = LogListener.matches("Rebalancing routine has failed").atLeast(1).
-            andMatches("ERROR").build();//.andMatches("unavailablePartitions").build();
+        LogListener unmarshalErrorLogListener = LogListener.matches(unmarshalingErrorPattern).atLeast(1).build();
 
         customLog.registerListener(unmarshalErrorLogListener);
 
@@ -191,10 +220,12 @@ public class GridCacheRebalancingUnmarshallingFailedSelfTest extends GridCommonA
         for (int i = 50; i < 100; i++)
             assertNull(grid(1).cache(CACHE).get(new TestKey(String.valueOf(i))));
 
-        assertTrue(unmarshalErrorLogListener.check());
+        assertTrue("Unmarshal log error messaage is not valid.", unmarshalErrorLogListener.check());
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
