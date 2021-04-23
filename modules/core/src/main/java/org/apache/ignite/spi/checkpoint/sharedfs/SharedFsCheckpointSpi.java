@@ -408,7 +408,7 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
                         null
                     : null;
             }
-            catch (FileNotFoundException e) {
+            catch (FileNotFoundException ignore) {
                 // Ignore.
             }
             catch (IgniteCheckedException e) {

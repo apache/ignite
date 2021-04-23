@@ -299,14 +299,4 @@ public class WriteAheadLogManagerSelfTest extends GridCommonAbstractTest {
     @Nullable private GridTimeoutObject timeoutRollover(IgniteEx n) {
         return getFieldValue(walMgr(n), "timeoutRollover");
     }
-
-    /**
-     * Getting WAL manager.
-     *
-     * @param n Node.
-     * @return WAL manager.
-     */
-    private FileWriteAheadLogManager walMgr(IgniteEx n) {
-        return (FileWriteAheadLogManager)n.context().cache().context().wal();
-    }
 }

@@ -30,10 +30,10 @@ import org.apache.ignite.internal.metric.LogExporterSpiTest;
 import org.apache.ignite.internal.metric.MetricsConfigurationTest;
 import org.apache.ignite.internal.metric.MetricsSelfTest;
 import org.apache.ignite.internal.metric.ReadMetricsOnNodeStartupTest;
+import org.apache.ignite.internal.metric.SystemMetricsTest;
 import org.apache.ignite.internal.metric.SystemViewComputeJobTest;
 import org.apache.ignite.internal.metric.SystemViewSelfTest;
 import org.apache.ignite.internal.processors.cache.CachePutIfAbsentTest;
-import org.apache.ignite.internal.processors.cache.CacheReadBeforeActivationTest;
 import org.apache.ignite.internal.processors.cache.GridCacheDataTypesCoverageTest;
 import org.apache.ignite.internal.processors.cache.GridCacheLongRunningTransactionDiagnosticsTest;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionGenerationWithCacheStorageTest;
@@ -63,6 +63,7 @@ import org.apache.ignite.internal.processors.cache.transactions.TxPartitionCount
 import org.apache.ignite.internal.processors.cache.transactions.TxPartitionCounterStateTwoPrimaryTwoBackupsTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxPartitionCounterStateWithFilterTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRecoveryOnCoordniatorFailTest;
+import org.apache.ignite.internal.processors.cluster.ClusterNameBeforeActivation;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
@@ -123,6 +124,7 @@ public class IgniteCacheTestSuite9 {
         GridTestUtils.addTestIfNeeded(suite, IoStatisticsSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IoStatisticsMetricsLocalMXBeanImplSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, MetricsSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, SystemMetricsTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, MetricsConfigurationTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, SystemViewSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, SystemViewComputeJobTest.class, ignoredTests);
@@ -144,7 +146,7 @@ public class IgniteCacheTestSuite9 {
         GridTestUtils.addTestIfNeeded(suite, RebalanceStatisticsTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, TxRecoveryOnCoordniatorFailTest.class, ignoredTests);
 
-        GridTestUtils.addTestIfNeeded(suite, CacheReadBeforeActivationTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, ClusterNameBeforeActivation.class, ignoredTests);
 
         return suite;
     }

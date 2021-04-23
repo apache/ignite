@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.persistence.PageStoreWriter;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressImpl;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -253,6 +254,12 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
             }
         });
 
+        when(kernalCtx.performanceStatistics()).thenAnswer(new Answer<Object>() {
+            @Override public Object answer(InvocationOnMock mock) throws Throwable {
+                return new PerformanceStatisticsProcessor(kernalCtx);
+            }
+        });
+
         when(sctx.kernalContext()).thenReturn(kernalCtx);
 
         when(sctx.gridEvents()).thenAnswer(new Answer<Object>() {
@@ -263,7 +270,10 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
 
         DataRegionConfiguration regCfg = cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration();
 
-        DataRegionMetricsImpl memMetrics = new DataRegionMetricsImpl(regCfg, kernalCtx.metric(), NO_OP_METRICS);
+        DataRegionMetricsImpl memMetrics = new DataRegionMetricsImpl(regCfg,
+            kernalCtx.metric(),
+            kernalCtx.performanceStatistics(),
+            NO_OP_METRICS);
 
         long[] sizes = prepareSegmentSizes(regCfg.getMaxSize());
 
