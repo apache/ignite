@@ -17,9 +17,9 @@
 
 package org.apache.ignite.configuration.sample;
 
-import javax.validation.constraints.NotNull;
 import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.Value;
+import org.apache.ignite.configuration.validation.Immutable;
 
 /**
  * Test node configuration schema.
@@ -27,8 +27,8 @@ import org.apache.ignite.configuration.annotation.Value;
 @Config
 public class NodeConfigurationSchema {
     /** Consistent id. */
-    @Value(immutable = true)
-    @NotNull(message = "Consistent id must not be null")
+    @Value
+    @Immutable
     public String consistentId;
 
     /** Port. */

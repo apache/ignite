@@ -29,15 +29,14 @@ import org.apache.ignite.configuration.NamedConfigurationTree;
 import org.apache.ignite.configuration.RootKey;
 import org.apache.ignite.configuration.notifications.ConfigurationNamedListListener;
 import org.apache.ignite.configuration.tree.NamedListChange;
-import org.apache.ignite.configuration.tree.NamedListInit;
 import org.apache.ignite.configuration.tree.NamedListView;
 
 /**
  * Named configuration wrapper.
  */
-public final class NamedListConfiguration<T extends ConfigurationProperty<VIEW, CHANGE>, VIEW, CHANGE, INIT>
-    extends DynamicConfiguration<NamedListView<VIEW>, NamedListInit<INIT>, NamedListChange<CHANGE, INIT>>
-    implements NamedConfigurationTree<T, VIEW, CHANGE, INIT>
+public final class NamedListConfiguration<T extends ConfigurationProperty<VIEW, CHANGE>, VIEW, CHANGE>
+    extends DynamicConfiguration<NamedListView<VIEW>, NamedListChange<CHANGE>>
+    implements NamedConfigurationTree<T, VIEW, CHANGE>
 {
     /** Listeners of property update. */
     private final List<ConfigurationNamedListListener<VIEW>> extendedListeners = new CopyOnWriteArrayList<>();

@@ -15,18 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration.tree;
+package org.apache.ignite.configuration.validation;
 
-import java.util.function.Consumer;
+import java.lang.annotation.Documented;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
-/** */
-public interface NamedListInit<T> {
-    /**
-     * Update the value in named list configuration.
-     *
-     * @param key Key for the value to be created.
-     * @param valConsumer Closure to modify value associated with the key. Object of type {@code T},
-     *      passed to the closure, must not be reused anywhere else.
-     */
-    NamedListInit<T> create(String key, Consumer<T> valConsumer);
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+/**
+ * Signifies that this value can only be initialized and can't be changed afterwards.
+ */
+@Target(FIELD)
+@Retention(RUNTIME)
+@Documented
+public @interface Immutable {
 }

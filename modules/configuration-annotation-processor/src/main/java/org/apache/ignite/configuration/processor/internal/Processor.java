@@ -63,7 +63,6 @@ import org.apache.ignite.configuration.tree.ConfigurationSource;
 import org.apache.ignite.configuration.tree.ConfigurationVisitor;
 import org.apache.ignite.configuration.tree.InnerNode;
 import org.apache.ignite.configuration.tree.NamedListChange;
-import org.apache.ignite.configuration.tree.NamedListInit;
 import org.apache.ignite.configuration.tree.NamedListNode;
 import org.apache.ignite.configuration.tree.NamedListView;
 
@@ -159,7 +158,6 @@ public class Processor extends AbstractProcessor {
                 configClass,
                 configName,
                 Utils.getViewName(schemaClassName),
-                Utils.getInitName(schemaClassName),
                 Utils.getChangeName(schemaClassName)
             );
 
@@ -191,7 +189,6 @@ public class Processor extends AbstractProcessor {
 
                 TypeName fieldType = types.getFieldType();
                 TypeName viewClassType = types.getViewClassType();
-                TypeName initClassType = types.getInitClassType();
                 TypeName changeClassType = types.getChangeClassType();
 
                 final ConfigValue confAnnotation = field.getAnnotation(ConfigValue.class);
@@ -267,7 +264,7 @@ public class Processor extends AbstractProcessor {
                     );
                 }
 
-                configDesc.getFields().add(new ConfigurationElement(fieldType, fieldName, viewClassType, initClassType, changeClassType));
+                configDesc.getFields().add(new ConfigurationElement(fieldType, fieldName, viewClassType, changeClassType));
 
                 createGetters(configurationClassBuilder, configurationInterfaceBuilder, fieldName, types);
             }
@@ -370,7 +367,6 @@ public class Processor extends AbstractProcessor {
 
         TypeName unwrappedType = baseType;
         TypeName viewClassType = baseType;
-        TypeName initClassType = baseType;
         TypeName changeClassType = baseType;
 
         final ConfigValue confAnnotation = field.getAnnotation(ConfigValue.class);
@@ -380,7 +376,6 @@ public class Processor extends AbstractProcessor {
 
             unwrappedType = fieldType;
             viewClassType = Utils.getViewName((ClassName) baseType);
-            initClassType = Utils.getInitName((ClassName) baseType);
             changeClassType = Utils.getChangeName((ClassName) baseType);
         }
 
@@ -389,11 +384,10 @@ public class Processor extends AbstractProcessor {
             ClassName interfaceGetType = Utils.getConfigurationInterfaceName((ClassName) baseType);
 
             viewClassType = Utils.getViewName((ClassName) baseType);
-            initClassType = Utils.getInitName((ClassName) baseType);
             changeClassType = Utils.getChangeName((ClassName) baseType);
 
-            fieldType = ParameterizedTypeName.get(ClassName.get(NamedListConfiguration.class), interfaceGetType, viewClassType, changeClassType, initClassType);
-            interfaceGetMethodType = ParameterizedTypeName.get(ClassName.get(NamedConfigurationTree.class), interfaceGetType, viewClassType, changeClassType, initClassType);
+            fieldType = ParameterizedTypeName.get(ClassName.get(NamedListConfiguration.class), interfaceGetType, viewClassType, changeClassType);
+            interfaceGetMethodType = ParameterizedTypeName.get(ClassName.get(NamedConfigurationTree.class), interfaceGetType, viewClassType, changeClassType);
         }
 
         final Value valueAnnotation = field.getAnnotation(Value.class);
@@ -413,7 +407,7 @@ public class Processor extends AbstractProcessor {
             interfaceGetMethodType = ParameterizedTypeName.get(confValueClass, genericType);
         }
 
-        return new ConfigurationFieldTypes(fieldType, unwrappedType, viewClassType, initClassType, changeClassType, interfaceGetMethodType);
+        return new ConfigurationFieldTypes(fieldType, unwrappedType, viewClassType, changeClassType, interfaceGetMethodType);
     }
 
     /**
@@ -429,20 +423,16 @@ public class Processor extends AbstractProcessor {
         /** VIEW object type. */
         private final TypeName viewClassType;
 
-        /** INIT object type. */
-        private final TypeName initClassType;
-
         /** CHANGE object type. */
         private final TypeName changeClassType;
 
         /** Get method type for public interface. */
         private final TypeName interfaceGetMethodType;
 
-        private ConfigurationFieldTypes(TypeName fieldType, TypeName unwrappedType, TypeName viewClassType, TypeName initClassType, TypeName changeClassType, TypeName interfaceGetMethodType) {
+        private ConfigurationFieldTypes(TypeName fieldType, TypeName unwrappedType, TypeName viewClassType, TypeName changeClassType, TypeName interfaceGetMethodType) {
             this.fieldType = fieldType;
             this.unwrappedType = unwrappedType;
             this.viewClassType = viewClassType;
-            this.initClassType = initClassType;
             this.changeClassType = changeClassType;
             this.interfaceGetMethodType = interfaceGetMethodType;
         }
@@ -465,11 +455,6 @@ public class Processor extends AbstractProcessor {
         /** */
         public TypeName getViewClassType() {
             return viewClassType;
-        }
-
-        /** */
-        public TypeName getInitClassType() {
-            return initClassType;
         }
 
         /** */
@@ -531,11 +516,10 @@ public class Processor extends AbstractProcessor {
         TypeSpec.Builder configurationInterfaceBuilder
     ) {
         final ClassName viewClassTypeName = Utils.getViewName(schemaClassName);
-        final ClassName initClassName = Utils.getInitName(schemaClassName);
         final ClassName changeClassName = Utils.getChangeName(schemaClassName);
 
         ClassName dynConfClass = ClassName.get("org.apache.ignite.configuration.internal", "DynamicConfiguration");
-        TypeName dynConfViewClassType = ParameterizedTypeName.get(dynConfClass, viewClassTypeName, initClassName, changeClassName);
+        TypeName dynConfViewClassType = ParameterizedTypeName.get(dynConfClass, viewClassTypeName, changeClassName);
 
         configurationClassBuilder.superclass(dynConfViewClassType);
 
@@ -551,8 +535,6 @@ public class Processor extends AbstractProcessor {
 
         ClassName changeClsName = Utils.getChangeName(schemaClassName);
 
-        ClassName initClsName = Utils.getInitName(schemaClassName);
-
         ClassName nodeClsName = Utils.getNodeName(schemaClassName);
 
         TypeSpec.Builder viewClsBuilder = TypeSpec.interfaceBuilder(viewClsName)
@@ -561,15 +543,11 @@ public class Processor extends AbstractProcessor {
         TypeSpec.Builder changeClsBuilder = TypeSpec.interfaceBuilder(changeClsName)
             .addModifiers(PUBLIC);
 
-        TypeSpec.Builder initClsBuilder = TypeSpec.interfaceBuilder(initClsName)
-            .addModifiers(PUBLIC);
-
         TypeSpec.Builder nodeClsBuilder = TypeSpec.classBuilder(nodeClsName)
             .addModifiers(FINAL)
             .superclass(ClassName.get(InnerNode.class))
             .addSuperinterface(viewClsName)
             .addSuperinterface(changeClsName)
-            .addSuperinterface(initClsName)
             // Cannot use "schemaClassName" here because it can't handle inner static classes.
             .addField(FieldSpec.builder(ClassName.get(clazz), "_spec", PRIVATE, FINAL)
                 .initializer("new $T()", ClassName.get(clazz))
@@ -627,7 +605,6 @@ public class Processor extends AbstractProcessor {
 
         for (VariableElement field : fields) {
             Value valAnnotation = field.getAnnotation(Value.class);
-            boolean mutable = valAnnotation == null || !valAnnotation.immutable();
 
             String fieldName = field.getSimpleName().toString();
             TypeName schemaFieldType = TypeName.get(field.asType());
@@ -643,8 +620,6 @@ public class Processor extends AbstractProcessor {
 
             TypeName changeFieldType = leafField ? schemaFieldType : Utils.getChangeName((ClassName)schemaFieldType);
 
-            TypeName initFieldType = leafField ? schemaFieldType : Utils.getInitName((ClassName)schemaFieldType);
-
             TypeName nodeFieldType = leafField ? schemaFieldType.box() : Utils.getNodeName((ClassName)schemaFieldType);
 
             TypeName namedListParamType = nodeFieldType;
@@ -654,9 +629,7 @@ public class Processor extends AbstractProcessor {
 
                 nodeFieldType = ParameterizedTypeName.get(ClassName.get(NamedListNode.class), nodeFieldType);
 
-                changeFieldType = ParameterizedTypeName.get(ClassName.get(NamedListChange.class), changeFieldType, initFieldType);
-
-                initFieldType = ParameterizedTypeName.get(ClassName.get(NamedListInit.class), initFieldType);
+                changeFieldType = ParameterizedTypeName.get(ClassName.get(NamedListChange.class), changeFieldType);
             }
 
             {
@@ -695,7 +668,7 @@ public class Processor extends AbstractProcessor {
                 }
             }
 
-            if (mutable) {
+            {
                 String changeMtdName = "change" + capitalize(fieldName);
 
                 {
@@ -752,67 +725,6 @@ public class Processor extends AbstractProcessor {
                     nodeChangeMtdBuilder.addStatement("return this");
 
                     nodeClsBuilder.addMethod(nodeChangeMtdBuilder.build());
-                }
-            }
-
-            {
-                String initMtdName = "init" + capitalize(fieldName);
-
-                {
-                    MethodSpec.Builder initMtdBuilder = MethodSpec.methodBuilder(initMtdName)
-                        .addModifiers(PUBLIC, ABSTRACT)
-                        .returns(initClsName);
-
-                    if (valAnnotation != null)
-                        initMtdBuilder.addParameter(changeFieldType, fieldName);
-                    else
-                        initMtdBuilder.addParameter(ParameterizedTypeName.get(consumerClsName, initFieldType), fieldName);
-
-                    initClsBuilder.addMethod(initMtdBuilder.build());
-                }
-
-                {
-                    MethodSpec.Builder nodeInitMtdBuilder = MethodSpec.methodBuilder(initMtdName)
-                        .addAnnotation(Override.class)
-                        .addModifiers(PUBLIC)
-                        .returns(nodeClsName);
-
-                    if (valAnnotation != null) {
-                        CodeBlock initStatement;
-
-                        if (isArray)
-                            initStatement = CodeBlock.builder().add("this.$L = $L.clone()", fieldName, fieldName).build();
-                        else
-                            initStatement = CodeBlock.builder().add("this.$L = $L", fieldName, fieldName).build();
-
-                        nodeInitMtdBuilder
-                            .addParameter(initFieldType, fieldName)
-                            .addStatement(initStatement);
-                    }
-                    else {
-                        String paramName = fieldName + "Consumer";
-                        nodeInitMtdBuilder.addParameter(ParameterizedTypeName.get(consumerClsName, initFieldType), paramName);
-
-                        if (!namedListField) {
-                            nodeInitMtdBuilder.addStatement(
-                                "if ($L == null) $L = new $T()",
-                                fieldName,
-                                fieldName,
-                                nodeFieldType
-                            );
-
-                            nodeInitMtdBuilder.addStatement("$L.accept($L)", paramName, fieldName);
-                        }
-                        else {
-                            nodeInitMtdBuilder.addAnnotation(suppressWarningsUnchecked());
-
-                            nodeInitMtdBuilder.addStatement("$L.accept((NamedListChange)$L)", paramName, fieldName);
-                        }
-                    }
-
-                    nodeInitMtdBuilder.addStatement("return this");
-
-                    nodeClsBuilder.addMethod(nodeInitMtdBuilder.build());
                 }
             }
 
@@ -912,12 +824,10 @@ public class Processor extends AbstractProcessor {
 
         TypeSpec viewCls = viewClsBuilder.build();
         TypeSpec changeCls = changeClsBuilder.build();
-        TypeSpec initCls = initClsBuilder.build();
         TypeSpec nodeCls = nodeClsBuilder.build();
 
         buildClass(viewClsName.packageName(), viewCls);
         buildClass(changeClsName.packageName(), changeCls);
-        buildClass(initClsName.packageName(), initCls);
         buildClass(nodeClsName.packageName(), nodeCls);
     }
 

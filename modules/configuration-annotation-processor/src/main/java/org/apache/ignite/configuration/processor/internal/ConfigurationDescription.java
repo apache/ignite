@@ -17,9 +17,9 @@
 
 package org.apache.ignite.configuration.processor.internal;
 
+import com.squareup.javapoet.TypeName;
 import java.util.ArrayList;
 import java.util.List;
-import com.squareup.javapoet.TypeName;
 
 /**
  * Configuration and all it's inner fields.
@@ -29,8 +29,8 @@ public class ConfigurationDescription extends ConfigurationElement {
     private List<ConfigurationElement> fields = new ArrayList<>();
 
     /** Constructor. */
-    public ConfigurationDescription(TypeName type, String name, TypeName view, TypeName init, TypeName change) {
-        super(type, name, view, init, change);
+    public ConfigurationDescription(TypeName type, String name, TypeName view, TypeName change) {
+        super(type, name, view, change);
     }
 
     /**

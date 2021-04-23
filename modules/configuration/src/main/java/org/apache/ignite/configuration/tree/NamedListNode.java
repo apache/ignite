@@ -26,7 +26,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /** */
-public final class NamedListNode<N extends InnerNode> implements NamedListView<N>, NamedListChange<N, N>, TraversableTreeNode, ConstructableTreeNode {
+public final class NamedListNode<N extends InnerNode> implements NamedListView<N>, NamedListChange<N>, TraversableTreeNode, ConstructableTreeNode {
     /** */
     public final Supplier<N> valSupplier;
 
@@ -74,11 +74,11 @@ public final class NamedListNode<N extends InnerNode> implements NamedListView<N
     }
 
     /** {@inheritDoc} */
-    @Override public final NamedListChange<N, N> update(String key, Consumer<N> valConsumer) {
+    @Override public final NamedListChange<N> update(String key, Consumer<N> valConsumer) {
         Objects.requireNonNull(valConsumer, "valConsumer");
 
         if (map.containsKey(key) && map.get(key) == null)
-            throw new IllegalStateException("You can't add entity that has just been deleted [key=" + key + ']');
+            throw new IllegalStateException("You can't create entity that has just been deleted [key=" + key + ']');
 
         N val = map.get(key);
 
@@ -91,7 +91,7 @@ public final class NamedListNode<N extends InnerNode> implements NamedListView<N
     }
 
     /** {@inheritDoc} */
-    @Override public NamedListChange<N, N> delete(String key) {
+    @Override public NamedListChange<N> delete(String key) {
         if (map.containsKey(key) && map.get(key) != null)
             throw new IllegalStateException("You can't add entity that has just been modified [key=" + key + ']');
 
@@ -110,7 +110,7 @@ public final class NamedListNode<N extends InnerNode> implements NamedListView<N
     }
 
     /** {@inheritDoc} */
-    @Override public NamedListChange<N, N> create(String key, Consumer<N> valConsumer) {
+    @Override public NamedListChange<N> create(String key, Consumer<N> valConsumer) {
         Objects.requireNonNull(valConsumer, "valConsumer");
 
         N val = map.get(key);

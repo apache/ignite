@@ -45,10 +45,10 @@ public class ConstructableTreeNodeTest {
     /** */
     @Test
     public void nullSource() {
-        var parentNode = new ParentNode().initChild(child ->
-            child.initStrCfg("value")
+        var parentNode = new ParentNode().changeChild(child ->
+            child.changeStrCfg("value")
         )
-        .initElements(elements ->
+        .changeElements(elements ->
             elements.create("name", element -> {})
         );
 

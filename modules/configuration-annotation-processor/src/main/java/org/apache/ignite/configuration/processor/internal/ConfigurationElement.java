@@ -32,18 +32,14 @@ public class ConfigurationElement {
     /** Configuration VIEW type. */
     private final TypeName view;
 
-    /** Configuration INIT type. */
-    private final TypeName init;
-
     /** Configuration CHANGE type. */
     private final TypeName change;
 
     /** Constructor. */
-    public ConfigurationElement(TypeName type, String name, TypeName view, TypeName init, TypeName change) {
+    public ConfigurationElement(TypeName type, String name, TypeName view, TypeName change) {
         this.type = type;
         this.name = name;
         this.view = view;
-        this.init = init;
         this.change = change;
     }
 
@@ -60,11 +56,6 @@ public class ConfigurationElement {
     /** */
     public TypeName getView() {
         return view;
-    }
-
-    /** */
-    public TypeName getInit() {
-        return init;
     }
 
     /** */

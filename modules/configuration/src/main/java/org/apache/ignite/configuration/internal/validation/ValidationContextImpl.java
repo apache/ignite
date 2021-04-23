@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.function.Function;
 import org.apache.ignite.configuration.RootKey;
 import org.apache.ignite.configuration.internal.SuperRoot;
+import org.apache.ignite.configuration.internal.util.KeyNotFoundException;
 import org.apache.ignite.configuration.tree.InnerNode;
 import org.apache.ignite.configuration.tree.TraversableTreeNode;
 import org.apache.ignite.configuration.validation.ValidationContext;
@@ -94,7 +95,12 @@ class ValidationContextImpl<VIEW> implements ValidationContext<VIEW> {
 
     /** {@inheritDoc} */
     @Override public VIEW getOldValue() {
-        return (VIEW)find(currentPath, oldRoots);
+        try {
+            return (VIEW)find(currentPath, oldRoots);
+        }
+        catch (KeyNotFoundException ignore) {
+            return null;
+        }
     }
 
     /** {@inheritDoc} */

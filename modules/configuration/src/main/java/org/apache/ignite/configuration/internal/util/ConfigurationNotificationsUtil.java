@@ -53,7 +53,7 @@ public class ConfigurationNotificationsUtil {
     public static void notifyListeners(
         InnerNode oldInnerNode,
         InnerNode newInnerNode,
-        DynamicConfiguration<InnerNode, ?, ?> cfgNode,
+        DynamicConfiguration<InnerNode, ?> cfgNode,
         long storageRevision,
         List<CompletableFuture<?>> futures
     ) {
@@ -80,7 +80,7 @@ public class ConfigurationNotificationsUtil {
             @Override public Void visitInnerNode(String key, InnerNode oldNode) {
                 InnerNode newNode = newInnerNode.traverseChild(key, innerNodeVisitor());
 
-                var dynCfg = (DynamicConfiguration<InnerNode, ?, ?>)cfgNode.members().get(key);
+                var dynCfg = (DynamicConfiguration<InnerNode, ?>)cfgNode.members().get(key);
 
                 notifyListeners(oldNode, newNode, dynCfg, storageRevision, futures);
 
@@ -92,7 +92,7 @@ public class ConfigurationNotificationsUtil {
                 var newNamedList = (NamedListNode<InnerNode>)newInnerNode.traverseChild(key, namedListNodeVisitor());
 
                 if (newNamedList != oldNamedList) {
-                    var namedListCfg = (NamedListConfiguration<?, InnerNode, ?, ?>)cfgNode.members().get(key);
+                    var namedListCfg = (NamedListConfiguration<?, InnerNode, ?>)cfgNode.members().get(key);
 
                     notifyPublicListeners(namedListCfg.listeners(), (NamedListView<InnerNode>)oldNamedList, newNamedList, storageRevision, futures);
 
@@ -135,7 +135,7 @@ public class ConfigurationNotificationsUtil {
 
                         notifyPublicListeners(namedListCfg.extendedListeners(), oldNamedList.get(name), newNamedList.get(name), storageRevision, futures);
 
-                        var dynCfg = (DynamicConfiguration<InnerNode, ?, ?>)namedListCfgMembers.get(name);
+                        var dynCfg = (DynamicConfiguration<InnerNode, ?>)namedListCfgMembers.get(name);
 
                         notifyListeners(oldNamedList.get(name), newNamedList.get(name), dynCfg, storageRevision, futures);
                     }

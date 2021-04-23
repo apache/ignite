@@ -28,6 +28,7 @@ import org.apache.ignite.configuration.annotation.Value;
 import org.apache.ignite.configuration.tree.ConfigurationVisitor;
 import org.apache.ignite.configuration.tree.InnerNode;
 import org.apache.ignite.configuration.tree.NamedListNode;
+import org.apache.ignite.configuration.validation.Immutable;
 import org.junit.jupiter.api.Test;
 
 import static java.util.Collections.emptySet;
@@ -58,7 +59,8 @@ public class TraversableTreeNodeTest {
     @Config
     public static class ChildConfigurationSchema {
         /** */
-        @Value(immutable = true, hasDefault = true)
+        @Value(hasDefault = true)
+        @Immutable
         public int intCfg = 99;
 
         /** */
@@ -89,19 +91,16 @@ public class TraversableTreeNodeTest {
 
         assertThat(parentNode, instanceOf(ParentView.class));
         assertThat(parentNode, instanceOf(ParentChange.class));
-        assertThat(parentNode, instanceOf(ParentInit.class));
 
         var namedElementNode = new NamedElementNode();
 
         assertThat(namedElementNode, instanceOf(NamedElementView.class));
         assertThat(namedElementNode, instanceOf(NamedElementChange.class));
-        assertThat(namedElementNode, instanceOf(NamedElementInit.class));
 
         var childNode = new ChildNode();
 
         assertThat(childNode, instanceOf(ChildView.class));
         assertThat(childNode, instanceOf(ChildChange.class));
-        assertThat(childNode, instanceOf(ChildInit.class));
     }
 
     /**
@@ -152,46 +151,6 @@ public class TraversableTreeNodeTest {
         assertNotNull(elementsNode);
 
         parentNode.changeElements(elements -> elements.update("key", element -> {}));
-
-        // Assert that change method applied its closure to the same object instead of creating a new one.
-        assertSame(elementsNode, parentNode.elements());
-    }
-
-    /**
-     * Test for signature and implementation of "init" method on leaves.
-     */
-    @Test
-    public void initLeaf() {
-        var childNode = new ChildNode().initStrCfg("value");
-
-        assertEquals("value", childNode.strCfg());
-    }
-
-    /**
-     * Test for signature and implementation of "init" method on inner nodes.
-     */
-    @Test
-    public void initInnerChild() {
-        var parentNode = new ParentNode().initChild(child -> {});
-
-        ChildNode childNode = parentNode.child();
-
-        parentNode.initChild(child -> child.initStrCfg("value"));
-
-        // Assert that init method applied its closure to the same object instead of creating a new one.
-        assertSame(childNode, parentNode.child());
-    }
-
-    /**
-     * Test for signature and implementation of "init" method on named list nodes.
-     */
-    @Test
-    public void initNamedChild() {
-        var parentNode = new ParentNode();
-
-        NamedListNode<NamedElementNode> elementsNode = parentNode.elements();
-
-        parentNode.initElements(elements -> elements.create("key", element -> {}));
 
         // Assert that change method applied its closure to the same object instead of creating a new one.
         assertSame(elementsNode, parentNode.elements());

@@ -44,11 +44,6 @@ import static java.lang.annotation.RetentionPolicy.SOURCE;
 @Documented
 public @interface Value {
     /**
-     * @return {@code true} if this value can only be initialized and can't be changed afterwards.
-     */
-    boolean immutable() default false;
-
-    /**
      * Indicator that current cpnfoguration value has default value. Value itself is derived from instantiated object
      * of corresponding schema type. This means that default is not necessarily a constant value.
      */

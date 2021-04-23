@@ -32,6 +32,7 @@ import org.apache.ignite.configuration.annotation.Value;
 import org.apache.ignite.configuration.storage.ConfigurationType;
 import org.apache.ignite.configuration.storage.Data;
 import org.apache.ignite.configuration.storage.TestConfigurationStorage;
+import org.apache.ignite.configuration.validation.Immutable;
 import org.apache.ignite.configuration.validation.ValidationContext;
 import org.apache.ignite.configuration.validation.ValidationIssue;
 import org.apache.ignite.configuration.validation.Validator;
@@ -73,7 +74,8 @@ public class ConfigurationChangerTest {
     @Config
     public static class BConfigurationSchema {
         /** */
-        @Value(immutable = true)
+        @Value
+        @Immutable
         public int intCfg;
 
         /** */
@@ -97,8 +99,8 @@ public class ConfigurationChangerTest {
         final TestConfigurationStorage storage = new TestConfigurationStorage();
 
         ANode data = new ANode()
-            .initChild(init -> init.initIntCfg(1).initStrCfg("1"))
-            .initElements(change -> change.create("a", init -> init.initStrCfg("1")));
+            .changeChild(change -> change.changeIntCfg(1).changeStrCfg("1"))
+            .changeElements(change -> change.create("a", element -> element.changeStrCfg("1")));
 
         ConfigurationChanger changer = new ConfigurationChanger((oldRoot, newRoot, revision) -> completedFuture(null));
         changer.addRootKey(KEY);
@@ -121,14 +123,14 @@ public class ConfigurationChangerTest {
         final TestConfigurationStorage storage = new TestConfigurationStorage();
 
         ANode data1 = new ANode()
-            .initChild(init -> init.initIntCfg(1).initStrCfg("1"))
-            .initElements(change -> change.create("a", init -> init.initStrCfg("1")));
+            .changeChild(change -> change.changeIntCfg(1).changeStrCfg("1"))
+            .changeElements(change -> change.create("a", element -> element.changeStrCfg("1")));
 
         ANode data2 = new ANode()
-            .initChild(init -> init.initIntCfg(2).initStrCfg("2"))
-            .initElements(change -> change
-                .create("a", init -> init.initStrCfg("2"))
-                .create("b", init -> init.initStrCfg("2"))
+            .changeChild(change -> change.changeIntCfg(2).changeStrCfg("2"))
+            .changeElements(change -> change
+                .create("a", element -> element.changeStrCfg("2"))
+                .create("b", element -> element.changeStrCfg("2"))
             );
 
         ConfigurationChanger changer1 = new ConfigurationChanger((oldRoot, newRoot, revision) -> completedFuture(null));
@@ -165,14 +167,14 @@ public class ConfigurationChangerTest {
         final TestConfigurationStorage storage = new TestConfigurationStorage();
 
         ANode data1 = new ANode()
-            .initChild(init -> init.initIntCfg(1).initStrCfg("1"))
-            .initElements(change -> change.create("a", init -> init.initStrCfg("1")));
+            .changeChild(change -> change.changeIntCfg(1).changeStrCfg("1"))
+            .changeElements(change -> change.create("a", element -> element.changeStrCfg("1")));
 
         ANode data2 = new ANode()
-            .initChild(init -> init.initIntCfg(2).initStrCfg("2"))
-            .initElements(change -> change
-                .create("a", init -> init.initStrCfg("2"))
-                .create("b", init -> init.initStrCfg("2"))
+            .changeChild(change -> change.changeIntCfg(2).changeStrCfg("2"))
+            .changeElements(change -> change
+                .create("a", element -> element.changeStrCfg("2"))
+                .create("b", element -> element.changeStrCfg("2"))
             );
 
         ConfigurationChanger changer1 = new ConfigurationChanger((oldRoot, newRoot, revision) -> completedFuture(null));
@@ -201,13 +203,13 @@ public class ConfigurationChangerTest {
     }
 
     /**
-     * Test that init and change fail with right exception if storage is inaccessible.
+     * Test that change fails with right exception if storage is inaccessible.
      */
     @Test
     public void testFailedToWrite() {
         final TestConfigurationStorage storage = new TestConfigurationStorage();
 
-        ANode data = new ANode().initChild(child -> child.initIntCfg(1));
+        ANode data = new ANode().changeChild(child -> child.changeIntCfg(1));
 
         ConfigurationChanger changer = new ConfigurationChanger((oldRoot, newRoot, revision) -> completedFuture(null));
         changer.addRootKey(KEY);

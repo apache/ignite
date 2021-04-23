@@ -65,16 +65,14 @@ public class AbstractProcessorTest {
         final ClassName configurationName = Utils.getConfigurationName(clazz);
         final ClassName nodeName = Utils.getNodeName(clazz);
         final ClassName viewName = Utils.getViewName(clazz);
-        final ClassName initName = Utils.getInitName(clazz);
         final ClassName changeName = Utils.getChangeName(clazz);
 
         final JavaFileObject configurationClass = generatedClasses.get(configurationName);
         final JavaFileObject nodeClass = generatedClasses.get(nodeName);
         final JavaFileObject viewClass = generatedClasses.get(viewName);
-        final JavaFileObject initClass = generatedClasses.get(initName);
         final JavaFileObject changeClass = generatedClasses.get(changeName);
 
-        return new ConfigSet(configurationClass, nodeClass, viewClass, initClass, changeClass);
+        return new ConfigSet(configurationClass, nodeClass, viewClass, changeClass);
     }
 
     /**

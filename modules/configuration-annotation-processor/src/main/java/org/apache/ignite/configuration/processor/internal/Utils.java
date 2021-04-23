@@ -81,19 +81,6 @@ public class Utils {
     }
 
     /**
-     * Get {@link ClassName} for configuration INIT object class.
-     *
-     * @param schemaClassName Configuration schema ClassName.
-     * @return Configuration INIT object ClassName.
-     */
-    public static ClassName getInitName(ClassName schemaClassName) {
-        return ClassName.get(
-            schemaClassName.packageName(),
-            schemaClassName.simpleName().replace("ConfigurationSchema", "Init")
-        );
-    }
-
-    /**
      * Get {@link ClassName} for configuration CHANGE object class.
      *
      * @param schemaClassName Configuration schema ClassName.

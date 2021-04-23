@@ -46,7 +46,7 @@ public class ITProcessorTest extends AbstractProcessorTest {
 
         assertNotEquals(Compilation.Status.FAILURE, status.status());
 
-        assertEquals(6, batch.generated().size());
+        assertEquals(5, batch.generated().size());
 
         final ConfigSet classSet = batch.getBySchema(testConfigurationSchema);
 
@@ -71,10 +71,6 @@ public class ITProcessorTest extends AbstractProcessorTest {
                 "primitiveLong()", long.class.getCanonicalName(),
                 "primitiveInt()", int.class.getCanonicalName(),
                 "stringArray()", String[].class.getCanonicalName(),
-                "initValue1(java.lang.String)", nodeClassName,
-                "initPrimitiveLong(long)", nodeClassName,
-                "initPrimitiveInt(int)", nodeClassName,
-                "initStringArray(java.lang.String[])", nodeClassName,
                 "changeValue1(java.lang.String)", nodeClassName,
                 "changePrimitiveLong(long)", nodeClassName,
                 "changePrimitiveInt(int)", nodeClassName,

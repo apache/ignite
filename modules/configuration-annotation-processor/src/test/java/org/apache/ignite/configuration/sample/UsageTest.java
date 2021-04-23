@@ -60,7 +60,7 @@ public class UsageTest {
             local.changeBaseline(baseline ->
                 baseline.changeNodes(nodes ->
                     nodes.create("node1", node ->
-                        node.initConsistentId("test").initPort(1000)
+                        node.changeConsistentId("test").changePort(1000)
                     )
                 ).changeAutoAdjust(autoAdjust ->
                     autoAdjust.changeEnabled(true).changeTimeout(100_000L)

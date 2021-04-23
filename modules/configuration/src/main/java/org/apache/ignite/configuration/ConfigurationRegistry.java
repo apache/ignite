@@ -38,6 +38,7 @@ import org.apache.ignite.configuration.internal.RootKeyImpl;
 import org.apache.ignite.configuration.internal.SuperRoot;
 import org.apache.ignite.configuration.internal.util.ConfigurationUtil;
 import org.apache.ignite.configuration.internal.util.KeyNotFoundException;
+import org.apache.ignite.configuration.internal.validation.ImmutableValidator;
 import org.apache.ignite.configuration.internal.validation.MaxValidator;
 import org.apache.ignite.configuration.internal.validation.MinValidator;
 import org.apache.ignite.configuration.storage.ConfigurationStorage;
@@ -46,6 +47,7 @@ import org.apache.ignite.configuration.tree.ConfigurationSource;
 import org.apache.ignite.configuration.tree.ConfigurationVisitor;
 import org.apache.ignite.configuration.tree.InnerNode;
 import org.apache.ignite.configuration.tree.TraversableTreeNode;
+import org.apache.ignite.configuration.validation.Immutable;
 import org.apache.ignite.configuration.validation.Validator;
 import org.apache.ignite.lang.IgniteLogger;
 
@@ -58,7 +60,7 @@ public class ConfigurationRegistry {
     private static final IgniteLogger LOG = IgniteLogger.forClass(ConfigurationRegistry.class);
 
     /** */
-    private final Map<String, DynamicConfiguration<?, ?, ?>> configs = new HashMap<>();
+    private final Map<String, DynamicConfiguration<?, ?>> configs = new HashMap<>();
 
     /** */
     private final ConfigurationChanger changer = new ConfigurationChanger(this::notificator);
@@ -67,6 +69,7 @@ public class ConfigurationRegistry {
         // Default vaildators implemented in current module.
         changer.addValidator(Min.class, new MinValidator());
         changer.addValidator(Max.class, new MaxValidator());
+        changer.addValidator(Immutable.class, new ImmutableValidator());
     }
 
     /**
@@ -84,7 +87,7 @@ public class ConfigurationRegistry {
         rootKeys.forEach(rootKey ->
         {
             changer.addRootKey(rootKey);
-            configs.put(rootKey.key(), (DynamicConfiguration<?, ?, ?>)rootKey.createPublicRoot(changer));
+            configs.put(rootKey.key(), (DynamicConfiguration<?, ?>)rootKey.createPublicRoot(changer));
         });
 
         validators.forEach(changer::addValidators);
@@ -148,7 +151,7 @@ public class ConfigurationRegistry {
             @Override public Void visitInnerNode(String key, InnerNode newRoot) {
                 InnerNode oldRoot = oldSuperRoot.traverseChild(key, innerNodeVisitor());
 
-                var cfg = (DynamicConfiguration<InnerNode, ?, ?>)configs.get(key);
+                var cfg = (DynamicConfiguration<InnerNode, ?>)configs.get(key);
 
                 assert oldRoot != null && cfg != null : key;
 

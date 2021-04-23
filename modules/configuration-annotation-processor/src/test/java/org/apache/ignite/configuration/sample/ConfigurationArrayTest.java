@@ -51,7 +51,7 @@ public class ConfigurationArrayTest {
         };
 
         final String[] initialValue = initialSupplier.get();
-        arrayNode.initArray(initialValue);
+        arrayNode.changeArray(initialValue);
 
         // test that field is not the same as initialValue
         assertNotSame(getArray(arrayNode), initialValue);

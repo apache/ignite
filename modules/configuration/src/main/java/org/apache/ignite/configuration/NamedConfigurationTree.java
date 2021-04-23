@@ -28,8 +28,8 @@ import org.apache.ignite.configuration.tree.NamedListView;
  * @param <VIEW> Value type of the underlying node.
  * @param <CHANGE> Type of the object that changes underlying nodes values.
  */
-public interface NamedConfigurationTree<T extends ConfigurationProperty<VIEW, CHANGE>, VIEW, CHANGE, INIT>
-    extends ConfigurationTree<NamedListView<VIEW>, NamedListChange<CHANGE, INIT>>
+public interface NamedConfigurationTree<T extends ConfigurationProperty<VIEW, CHANGE>, VIEW, CHANGE>
+    extends ConfigurationTree<NamedListView<VIEW>, NamedListChange<CHANGE>>
 {
     /**
      * Get named configuration by name.

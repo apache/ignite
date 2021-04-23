@@ -37,7 +37,7 @@ import org.apache.ignite.configuration.validation.ConfigurationValidationExcepti
 /**
  * This class represents configuration root or node.
  */
-public abstract class DynamicConfiguration<VIEW, INIT, CHANGE> extends ConfigurationNode<VIEW, CHANGE>
+public abstract class DynamicConfiguration<VIEW, CHANGE> extends ConfigurationNode<VIEW, CHANGE>
     implements ConfigurationTree<VIEW, CHANGE>
 {
     /** Configuration members (leaves and nodes). */

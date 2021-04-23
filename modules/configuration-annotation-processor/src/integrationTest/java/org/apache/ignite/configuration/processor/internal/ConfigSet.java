@@ -41,9 +41,6 @@ public class ConfigSet {
     /** VIEW class. */
     private final JavaFileObject viewClass;
 
-    /** INIT class. */
-    private final JavaFileObject initClass;
-
     /** CHANGE class. */
     private final JavaFileObject changeClass;
 
@@ -54,10 +51,9 @@ public class ConfigSet {
     private final ParsedClass node;
 
     /** Constructor. */
-    public ConfigSet(JavaFileObject configurationClass, JavaFileObject nodeClass, JavaFileObject viewClass, JavaFileObject initClass, JavaFileObject changeClass) {
+    public ConfigSet(JavaFileObject configurationClass, JavaFileObject nodeClass, JavaFileObject viewClass, JavaFileObject changeClass) {
         this.configurationClass = configurationClass;
         this.viewClass = viewClass;
-        this.initClass = initClass;
         this.changeClass = changeClass;
         this.nodeClass = nodeClass;
 
@@ -92,7 +88,7 @@ public class ConfigSet {
      * @return {@code true} if all required classes were generated.
      */
     public boolean allGenerated() {
-        return configurationClass != null && nodeClass != null && viewClass != null && initClass != null && changeClass != null;
+        return configurationClass != null && nodeClass != null && viewClass != null && changeClass != null;
     }
 
     /** */

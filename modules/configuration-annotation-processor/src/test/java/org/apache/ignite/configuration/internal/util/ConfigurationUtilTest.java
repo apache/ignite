@@ -255,8 +255,8 @@ public class ConfigurationUtilTest {
         // No defaults in this test so everything must be initialized explicitly.
         parentNode.changeElements(elements ->
             elements.create("name", element ->
-                element.initChild(child ->
-                    child.initStr("foo")
+                element.changeChild(child ->
+                    child.changeStr("foo")
                 )
             )
         );
@@ -290,9 +290,9 @@ public class ConfigurationUtilTest {
     /** */
     @Test
     public void patch() {
-        var originalRoot = new ParentNode().initElements(elements ->
+        var originalRoot = new ParentNode().changeElements(elements ->
             elements.create("name1", element ->
-                element.initChild(child -> child.initStr("value1"))
+                element.changeChild(child -> child.changeStr("value1"))
             )
         );
 
@@ -343,16 +343,16 @@ public class ConfigurationUtilTest {
     /** */
     @Test
     public void cleanupMatchingValues() {
-        var curParent = new ParentNode().initElements(elements -> elements
+        var curParent = new ParentNode().changeElements(elements -> elements
             .create("missing", element -> {})
-            .create("match", element -> element.initChild(child -> child.initStr("match")))
-            .create("mismatch", element -> element.initChild(child -> child.initStr("foo")))
+            .create("match", element -> element.changeChild(child -> child.changeStr("match")))
+            .create("mismatch", element -> element.changeChild(child -> child.changeStr("foo")))
         );
 
-        var newParent = new ParentNode().initElements(elements -> elements
+        var newParent = new ParentNode().changeElements(elements -> elements
             .create("extra", element -> {})
-            .create("match", element -> element.initChild(child -> child.initStr("match")))
-            .create("mismatch", element -> element.initChild(child -> child.initStr("bar")))
+            .create("match", element -> element.changeChild(child -> child.changeStr("match")))
+            .create("mismatch", element -> element.changeChild(child -> child.changeStr("bar")))
         );
 
         ConfigurationUtil.cleanupMatchingValues(curParent, newParent);
