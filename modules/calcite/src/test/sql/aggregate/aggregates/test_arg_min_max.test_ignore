@@ -1,6 +1,7 @@
 # name: test/sql/aggregate/aggregates/test_arg_min_max.test
 # description: Test arg_min and arg_max operator
 # group: [aggregates]
+# Ignored: https://issues.apache.org/jira/browse/IGNITE-14639
 
 #Corner cases
 statement error

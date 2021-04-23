@@ -1,6 +1,7 @@
 # name: test/sql/aggregate/aggregates/test_string_agg.test
 # description: Test STRING_AGG operator
 # group: [aggregates]
+# Ignored: https://issues.apache.org/jira/browse/IGNITE-14636
 
 # test incorrect usage of STRING_AGG function
 

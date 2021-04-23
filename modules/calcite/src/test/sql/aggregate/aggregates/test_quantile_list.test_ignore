@@ -1,6 +1,7 @@
 # name: test/sql/aggregate/aggregates/test_quantile_list.test
 # description: Test QUANTILE operator with LIST quantiles
 # group: [aggregates]
+# Ignored: https://issues.apache.org/jira/browse/IGNITE-14637
 
 statement ok
 PRAGMA enable_verification
