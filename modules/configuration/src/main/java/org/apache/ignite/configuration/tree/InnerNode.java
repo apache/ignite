@@ -43,6 +43,7 @@ public abstract class InnerNode implements TraversableTreeNode, ConstructableTre
      * Order of fields must be the same as they are described in configuration schema.
      *
      * @param visitor Configuration visitor.
+     * @param <T> Parameter type of the passed visitor.
      */
     public abstract <T> void traverseChildren(ConfigurationVisitor<T> visitor);
 
@@ -75,6 +76,8 @@ public abstract class InnerNode implements TraversableTreeNode, ConstructableTre
      *
      * @param key Name of the child.
      * @param visitor Configuration visitor.
+     * @param <T> Parameter type of passed visitor.
+     * @return Whatever {@code visitor} returned.
      * @throws NoSuchElementException If field {@code key} is not found.
      */
     public abstract <T> T traverseChild(String key, ConfigurationVisitor<T> visitor) throws NoSuchElementException;
@@ -86,7 +89,7 @@ public abstract class InnerNode implements TraversableTreeNode, ConstructableTre
      *     switch (key) {
      *         case "namedList":
      *             if (src == null)
-     *                 namedList = new{@code NamedListNode<>}(Foo::new);
+     *                 namedList = new NamedListNode&lt;&gt;(Foo::new);
      *             else
      *                 src.descend(namedList = namedList.copy());
      *             break;

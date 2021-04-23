@@ -50,6 +50,7 @@ import org.apache.ignite.configuration.tree.TraversableTreeNode;
 import org.apache.ignite.configuration.validation.Immutable;
 import org.apache.ignite.configuration.validation.Validator;
 import org.apache.ignite.lang.IgniteLogger;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.configuration.internal.util.ConfigurationNotificationsUtil.notifyListeners;
 import static org.apache.ignite.configuration.internal.util.ConfigurationUtil.innerNodeVisitor;
@@ -79,9 +80,9 @@ public class ConfigurationRegistry {
      * @param validators Validators.
      * @param configurationStorages Configuration Storages.
      */
-    public <A extends Annotation> ConfigurationRegistry(
+    public ConfigurationRegistry(
         Collection<RootKey<?, ?>> rootKeys,
-        Map<Class<A>, Set<Validator<A, ?>>> validators,
+        Map<Class<? extends Annotation>, Set<Validator<? extends Annotation, ?>>> validators,
         Collection<ConfigurationStorage> configurationStorages
     ) {
         rootKeys.forEach(rootKey ->
@@ -95,12 +96,22 @@ public class ConfigurationRegistry {
         configurationStorages.forEach(changer::register);
     }
 
-    /** */
+    /**
+     * Starts storage configurations.
+     * @param storageType Storage type.
+     */
     public void startStorageConfigurations(ConfigurationType storageType) {
         changer.initialize(storageType);
     }
 
-    /** */
+    /**
+     * Gets the public configuration tree.
+     * @param rootKey Root key.
+     * @param <V> View type.
+     * @param <C> Change type.
+     * @param <T> Configuration tree type.
+     * @return Public configuration tree.
+     */
     public <V, C, T extends ConfigurationTree<V, C>> T getConfiguration(RootKey<T, V> rootKey) {
         return (T)configs.get(rootKey.key());
     }
@@ -133,8 +144,14 @@ public class ConfigurationRegistry {
         return visitor.visitLeafNode(null, (Serializable)node);
     }
 
-    /** */
-    public CompletableFuture<Void> change(ConfigurationSource changesSource, ConfigurationStorage storage) {
+    /**
+     * Change configuration.
+     * @param changesSource Configuration source to create patch from it.
+     * @param storage Expected storage for the changes. Can be null, this will mean that derived storage will be used
+     * unconditionaly.
+     * @return Future that is completed on change completion.
+     */
+    public CompletableFuture<Void> change(ConfigurationSource changesSource, @Nullable ConfigurationStorage storage) {
         return changer.change(changesSource, storage);
     }
 
@@ -183,6 +200,9 @@ public class ConfigurationRegistry {
      * @param storageType Storage class as described in {@link ConfigurationRoot#type()}.
      * @param rootSupplier Closure to instantiate internal configuration tree roots.
      * @param publicRootCreator Function to create public user-facing tree instance.
+     * @param <T> Type of public configuration tree.
+     * @param <V> View type for the root.
+     * @return Root key instance.
      */
     public static <T extends ConfigurationTree<V, ?>, V> RootKey<T, V> newRootKey(
         String rootName,

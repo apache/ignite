@@ -396,6 +396,8 @@ public class ConfigurationUtil {
      *
      * @param root Immutable configuration node.
      * @param changes Change or Init object to be applied.
+     * @param <C> Type of the root.
+     * @return Patched root.
      */
     public static <C extends ConstructableTreeNode> C patch(C root, TraversableTreeNode changes) {
         assert root.getClass() == changes.getClass(); // Yes.

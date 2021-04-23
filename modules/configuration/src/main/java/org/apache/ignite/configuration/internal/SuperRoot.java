@@ -42,12 +42,17 @@ public final class SuperRoot extends InnerNode {
         allRootKeys = superRoot.allRootKeys;
     }
 
-    /** */
+    /**
+     * @param rootKeys Shared map of all available root keys.
+     */
     public SuperRoot(Map<String, RootKey<?, ?>> rootKeys) {
         allRootKeys = rootKeys;
     }
 
-    /** */
+    /**
+     * @param rootKeys Shared map of all available root keys.
+     * @param roots Map of roots belonging to this super root.
+     */
     public SuperRoot(Map<String, RootKey<?, ?>> rootKeys, Map<RootKey<?, ?>, InnerNode> roots) {
         allRootKeys = rootKeys;
 
@@ -55,7 +60,10 @@ public final class SuperRoot extends InnerNode {
             this.roots.put(entry.getKey().key(), entry.getValue());
     }
 
-    /** */
+    /**
+     * @param rootKeys Shared map of all available root keys.
+     * @param superRoots List of super roots to merge into even more superior root.
+     */
     public SuperRoot(Map<String, RootKey<?, ?>> rootKeys, List<SuperRoot> superRoots) {
         this(rootKeys);
 
@@ -63,7 +71,11 @@ public final class SuperRoot extends InnerNode {
             roots.putAll(superRoot.roots);
     }
 
-    /** */
+    /**
+     * Adds a root to the super root.
+     * @param rootKey Root key.
+     * @param root Root node.
+     */
     public void addRoot(RootKey<?, ?> rootKey, InnerNode root) {
         assert !roots.containsKey(rootKey.key()) : rootKey.key() + " : " + roots;
         assert allRootKeys.get(rootKey.key()) == rootKey : rootKey.key() + " : " + allRootKeys;
@@ -71,7 +83,11 @@ public final class SuperRoot extends InnerNode {
         roots.put(rootKey.key(), root);
     }
 
-    /** */
+    /**
+     * Gets a root.
+     * @param rootKey Root key of the desired root.
+     * @return Root node.
+     */
     public InnerNode getRoot(RootKey<?, ?> rootKey) {
         return roots.get(rootKey.key());
     }

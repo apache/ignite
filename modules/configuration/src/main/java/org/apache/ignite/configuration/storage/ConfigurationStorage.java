@@ -55,6 +55,7 @@ public interface ConfigurationStorage {
     /**
      * Notify storage that this specific revision was successfully handled and it is not necessary to repeat the same
      * notification on node restart.
+     * @param storageRevision Storage revision.
      */
     void notifyApplied(long storageRevision);
 

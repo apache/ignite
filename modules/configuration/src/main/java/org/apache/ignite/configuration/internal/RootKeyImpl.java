@@ -22,6 +22,7 @@ import java.util.function.Supplier;
 import org.apache.ignite.configuration.ConfigurationChanger;
 import org.apache.ignite.configuration.ConfigurationTree;
 import org.apache.ignite.configuration.RootKey;
+import org.apache.ignite.configuration.annotation.ConfigurationRoot;
 import org.apache.ignite.configuration.storage.ConfigurationType;
 import org.apache.ignite.configuration.tree.InnerNode;
 
@@ -39,7 +40,12 @@ public class RootKeyImpl<T extends ConfigurationTree<VIEW, ?>, VIEW> extends Roo
     /** */
     private final BiFunction<RootKey<T, VIEW>, ConfigurationChanger, T> publicRootCreator;
 
-    /** */
+    /**
+     * @param rootName Name of the root as described in {@link ConfigurationRoot#rootName()}.
+     * @param storageType Storage class as described in {@link ConfigurationRoot#type()}.
+     * @param rootSupplier Closure to instantiate internal configuration tree roots.
+     * @param publicRootCreator Function to create a public user-facing tree instance.
+     */
     public RootKeyImpl(
         String rootName,
         ConfigurationType storageType,

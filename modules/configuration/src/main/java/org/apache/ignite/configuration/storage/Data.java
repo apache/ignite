@@ -60,7 +60,9 @@ public class Data {
         return cfgVersion;
     }
 
-    /** */
+    /**
+     * @return Storage revision.
+     */
     public long storageRevision() {
         return storageRevision;
     }

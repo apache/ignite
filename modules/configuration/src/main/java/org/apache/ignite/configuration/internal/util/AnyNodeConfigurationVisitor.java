@@ -44,6 +44,7 @@ public abstract class AnyNodeConfigurationVisitor<T> implements ConfigurationVis
      *
      * @param key Name of the node.
      * @param node {@link InnerNode}, {@link NamedListNode} or {@link Serializable} leaf.
+     * @return Anything that implementation decides to return.
      */
     protected abstract T visitNode(String key, Object node);
 }

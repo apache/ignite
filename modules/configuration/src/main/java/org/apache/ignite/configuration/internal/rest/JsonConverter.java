@@ -17,6 +17,11 @@
 
 package org.apache.ignite.configuration.internal.rest;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.util.ArrayDeque;
@@ -25,11 +30,6 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonNull;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
 import org.apache.ignite.configuration.tree.ConfigurationSource;
 import org.apache.ignite.configuration.tree.ConfigurationVisitor;
 import org.apache.ignite.configuration.tree.ConstructableTreeNode;
@@ -40,7 +40,9 @@ import org.jetbrains.annotations.NotNull;
 import static org.apache.ignite.configuration.internal.util.ConfigurationUtil.join;
 
 public class JsonConverter {
-    /** */
+    /**
+     * @return Visitor to create JSON representations.
+     */
     public static ConfigurationVisitor<JsonElement> jsonVisitor() {
         return new ConfigurationVisitor<JsonElement>() {
             /** */

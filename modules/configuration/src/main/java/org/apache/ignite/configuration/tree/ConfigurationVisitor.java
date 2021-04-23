@@ -28,6 +28,7 @@ public interface ConfigurationVisitor<T> {
      *
      * @param key Name of the serializable value retrieved from its holder object.
      * @param val Configuration value.
+     * @return Anything that implementation decides to return.
      */
     default T visitLeafNode(String key, Serializable val) {
         return null;
@@ -38,6 +39,7 @@ public interface ConfigurationVisitor<T> {
      *
      * @param key Name of the node retrieved from its holder object.
      * @param node Inner configuration node.
+     * @return Anything that implementation decides to return.
      */
     default T visitInnerNode(String key, InnerNode node) { //TODO IGNITE-14372 Pass interface, not implementation.
         return null;
@@ -48,6 +50,8 @@ public interface ConfigurationVisitor<T> {
      *
      * @param key Name of the node retrieved from its holder object.
      * @param node Named list inner configuration node.
+     * @param <N> Type of element nodes in the named list.
+     * @return Anything that implementation decides to return.
      */
     default <N extends InnerNode> T visitNamedListNode(String key, NamedListNode<N> node) {
         return null;

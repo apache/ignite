@@ -20,16 +20,13 @@ package org.apache.ignite.configuration.storage;
  * Exception thrown from configuration storage.
  */
 public class StorageException extends RuntimeException {
-    /** Constructor. */
     public StorageException() {
     }
 
-    /** Constructor. */
     public StorageException(String message) {
         super(message);
     }
 
-    /** Constructor. */
     public StorageException(String message, Throwable cause) {
         super(message, cause);
     }

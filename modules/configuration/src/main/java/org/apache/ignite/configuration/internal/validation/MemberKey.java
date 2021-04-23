@@ -29,7 +29,11 @@ public class MemberKey {
     /** Name of the field. */
     private final String fieldName;
 
-    /** Constructor. */
+    /**
+     * Constructor.
+     * @param clazz Class that contains a member.
+     * @param fieldName Member name.
+     */
     public MemberKey(Class<?> clazz, String fieldName) {
         this.clazz = clazz;
         this.fieldName = fieldName;

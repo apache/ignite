@@ -26,7 +26,10 @@ public class ConfigurationValidationException extends RuntimeException {
     /** List of configuration validation issues. */
     private List<ValidationIssue> issues;
 
-    /** Constructor. */
+    /**
+     * Constructor.
+     * @param message Exception message.
+     */
     public ConfigurationValidationException(String message) {
         super(message);
     }

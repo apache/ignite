@@ -29,18 +29,18 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface ConfigurationNotificationEvent<VIEW> {
     /**
-     * Previous value of the updated configuration.
+     * @return Previous value of the updated configuration.
      */
     @Nullable VIEW oldValue();
 
     /**
-     * Updated value of the configuration.
+     * @return Updated value of the configuration.
      */
     @Nullable VIEW newValue();
 
     /**
-     * Monotonously increasing counter, linked to the specific storage for current configuration values. Gives you a
-     * unique change identifier inside a specific configuration storage.
+     * @return Monotonously increasing counter, linked to the specific storage for current configuration values. Gives
+     * a unique change identifier inside a specific configuration storage.
      */
     long storageRevision();
 }

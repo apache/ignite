@@ -35,7 +35,13 @@ public class ConfigurationElement {
     /** Configuration CHANGE type. */
     private final TypeName change;
 
-    /** Constructor. */
+    /**
+     * Constructor.
+     * @param type Configuration type.
+     * @param name Name of configuration element.
+     * @param view Configuration VIEW type.
+     * @param change Configuration CHANGE type.
+     */
     public ConfigurationElement(TypeName type, String name, TypeName view, TypeName change) {
         this.type = type;
         this.name = name;
@@ -43,22 +49,30 @@ public class ConfigurationElement {
         this.change = change;
     }
 
-    /** */
+    /**
+     * @return Name of a configuration element.
+     */
     public String getName() {
         return name;
     }
 
-    /** */
+    /**
+     * @return Configuration type.
+     */
     public TypeName getType() {
         return type;
     }
 
-    /** */
+    /**
+     * @return Configuration VIEW type.
+     */
     public TypeName getView() {
         return view;
     }
 
-    /** */
+    /**
+     * @return Configuration CHANGE type.
+     */
     public TypeName getChange() {
         return change;
     }

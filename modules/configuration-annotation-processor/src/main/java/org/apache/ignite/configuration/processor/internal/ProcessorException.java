@@ -20,12 +20,10 @@ package org.apache.ignite.configuration.processor.internal;
  * Annotation processing exception.
  */
 public class ProcessorException extends RuntimeException {
-    /** Constructor. */
     public ProcessorException(String message) {
         super(message);
     }
 
-    /** Constructor. */
     public ProcessorException(String message, Throwable cause) {
         super(message, cause);
     }

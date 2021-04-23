@@ -28,13 +28,19 @@ public class ConfigurationDescription extends ConfigurationElement {
     /** Inner configuration fields. */
     private List<ConfigurationElement> fields = new ArrayList<>();
 
-    /** Constructor. */
+    /**
+     * Constructor.
+     * @param type Configuration type.
+     * @param name Name of configuration element.
+     * @param view Configuration VIEW type.
+     * @param change Configuration CHANGE type.
+     */
     public ConfigurationDescription(TypeName type, String name, TypeName view, TypeName change) {
         super(type, name, view, change);
     }
 
     /**
-     * Get configuration fields.
+     * @return Configuration fields.
      */
     public List<ConfigurationElement> getFields() {
         return fields;

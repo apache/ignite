@@ -22,15 +22,24 @@ import org.apache.ignite.configuration.tree.InnerNode;
 
 /** */
 public abstract class RootKey<T extends ConfigurationTree<VIEW, ?>, VIEW> {
-    /** */
+    /**
+     * @return Name of the configuration root.
+     */
     public abstract String key();
 
-    /** */
+    /**
+     * @return Configuration type of the root.
+     */
     protected abstract ConfigurationType type();
 
-    /** */
+    /**
+     * @return New instance of the inner node for the root.
+     */
     protected abstract InnerNode createRootNode();
 
-    /** */
+    /**
+     * @param changer Configuration changer instance.
+     * @return New instance of the public tree for the root.
+     */
     protected abstract T createPublicRoot(ConfigurationChanger changer);
 }

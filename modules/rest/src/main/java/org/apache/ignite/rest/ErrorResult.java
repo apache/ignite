@@ -27,7 +27,10 @@ public class ErrorResult {
     /** */
     private final String message;
 
-    /** */
+    /**
+     * @param type Error type describing the class of the error occurred.
+     * @param message User-friendly error message.
+     */
     public ErrorResult(String type, String message) {
         this.type = type;
         this.message = message;

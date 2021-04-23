@@ -97,7 +97,7 @@ public final class NamedListConfiguration<T extends ConfigurationProperty<VIEW, 
         return Collections.unmodifiableMap(values);
     }
 
-    /** */
+    /** @return List of listeners that are specific for named configurations.*/
     public List<ConfigurationNamedListListener<VIEW>> extendedListeners() {
         return Collections.unmodifiableList(extendedListeners);
     }

@@ -17,14 +17,14 @@
 
 package org.apache.ignite.configuration.internal;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import java.lang.annotation.Annotation;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import org.apache.ignite.configuration.ConfigurationRegistry;
 import org.apache.ignite.configuration.RootKey;
 import org.apache.ignite.configuration.internal.rest.JsonConverter;
@@ -49,9 +49,9 @@ import org.apache.ignite.configuration.validation.Validator;
      * @param validators Validators.
      * @param configurationStorages Configuration storages.
      */
-    public <A extends Annotation> ConfigurationManager(
+    public ConfigurationManager(
         Collection<RootKey<?, ?>> rootKeys,
-        Map<Class<A>, Set<Validator<A, ?>>> validators,
+        Map<Class<? extends Annotation>, Set<Validator<? extends Annotation, ?>>> validators,
         Collection<ConfigurationStorage> configurationStorages
     ) {
         this.configurationStorages = Set.copyOf(configurationStorages);
@@ -75,6 +75,8 @@ import org.apache.ignite.configuration.validation.Validator;
     /**
      * Bootstrap configuration manager with customer user cfg.
      * @param jsonStr Customer configuration in json format.
+     * @throws InterruptedException If thread is interrupted during bootstrap.
+     * @throws ExecutionException If configuration update failed for some reason.
      */
     public void bootstrap(String jsonStr) throws InterruptedException, ExecutionException {
         JsonObject jsonCfg = JsonParser.parseString(jsonStr).getAsJsonObject();

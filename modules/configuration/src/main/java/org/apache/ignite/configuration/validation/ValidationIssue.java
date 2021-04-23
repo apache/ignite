@@ -23,12 +23,16 @@ public class ValidationIssue {
     /** */
     private final String message;
 
-    /** */
+    /**
+     * @param message Error message.
+     */
     public ValidationIssue(String message) {
         this.message = message;
     }
 
-    /** */
+    /**
+     * @return Error message.
+     */
     public String message() {
         return message;
     }

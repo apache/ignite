@@ -59,7 +59,12 @@ public class Utils {
         );
     }
 
-    /** */
+    /**
+     * Get {@link ClassName} for a configuration node object class.
+     *
+     * @param schemaClassName Configuration schema ClassName.
+     * @return Configuration node object ClassName.
+     */
     public static ClassName getNodeName(ClassName schemaClassName) {
         return ClassName.get(
             schemaClassName.packageName(),
