@@ -94,7 +94,7 @@ class IgniteConfiguration(NamedTuple):
         """
         Updates configuration based on current environment.
         """
-        return self.__prepare_ssl(kwargs.get("test_globals"), kwargs.get("shared_root"))\
+        return self.__prepare_ssl(kwargs.get("shared_root"), kwargs.get("test_globals"))\
             .__prepare_discovery(kwargs.get("node"), kwargs.get("cluster"))
 
     @property
