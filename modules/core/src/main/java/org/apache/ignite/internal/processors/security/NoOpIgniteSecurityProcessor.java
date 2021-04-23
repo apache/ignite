@@ -41,8 +41,8 @@ import static org.apache.ignite.internal.processors.security.SecurityUtils.MSG_S
  * No operation IgniteSecurity.
  */
 public class NoOpIgniteSecurityProcessor extends GridProcessorAdapter implements IgniteSecurity {
-    /** Error message that occurs when trying to perform security operations if security is disabled. */
-    public static final String SECURITY_DISABLED_ERROR_MSG = "Operation cannot be performed: Ignite security is disabled.";
+    /** Error message that occurs when trying to perform security operations if security disabled. */
+    public static final String SECURITY_DISABLED_ERROR_MSG = "Operation cannot be performed: Ignite security disabled.";
 
     /** No operation security context. */
     private final OperationSecurityContext opSecCtx = new OperationSecurityContext(this, null);
