@@ -34,7 +34,9 @@ public class TcpDiscoveryCoordinatorTest extends GridCommonAbstractTest {
                 .setDaemon("daemon".equals(igniteInstanceName));
     }
 
-    /** */
+    /**
+     * @throws Exception if failed.
+     */
     @Test
     public void testGetCoordinatorWithOldesDaemonNode() throws Exception {
         //Start cluster with server1 as coordinator.
