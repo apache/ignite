@@ -36,7 +36,7 @@ public class TcpDiscoveryCoordinatorTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testHetCoordinatorWithOldesDaemonNode() throws Exception {
+    public void testGetCoordinatorWithOldesDaemonNode() throws Exception {
         //Start cluster with server1 as coordinator.
         startGrid("server1");
         startGrid("daemon");
