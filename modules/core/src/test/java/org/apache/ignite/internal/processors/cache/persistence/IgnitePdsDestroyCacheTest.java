@@ -84,19 +84,15 @@ public class IgnitePdsDestroyCacheTest extends IgnitePdsDestroyCacheAbstractTest
     public void testDestroyCacheWithNodeFilter() throws Exception {
         String cacheName = "cache1";
 
-        cleanPersistenceDir();
-
         Ignite ignite = startGrids(2);
 
         ignite.cluster().state(ClusterState.ACTIVE);
 
         UUID nodeId0 = ignite.cluster().localNode().id();
 
-        CacheConfiguration<Object, Object> cfg1 = new CacheConfiguration<>(cacheName)
+        IgniteCache<?, ?> cache1 = ignite.createCache(new CacheConfiguration<>(cacheName)
             .setCacheMode(CacheMode.REPLICATED)
-            .setNodeFilter(n -> nodeId0.equals(n.id()));
-
-        IgniteCache<?, ?> cache1 = ignite.createCache(cfg1);
+            .setNodeFilter(n -> nodeId0.equals(n.id())));
 
         cache1.destroy();
 
