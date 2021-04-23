@@ -93,14 +93,14 @@ public class ExchangeActions {
      * @return New caches start requests.
      */
     public Collection<CacheActionData> cacheStartRequests() {
-        return cachesToStart != null ? cachesToStart.values() : Collections.<CacheActionData>emptyList();
+        return cachesToStart != null ? cachesToStart.values() : Collections.emptyList();
     }
 
     /**
      * @return Stop cache requests.
      */
     public Collection<CacheActionData> cacheStopRequests() {
-        return cachesToStop != null ? cachesToStop.values() : Collections.<CacheActionData>emptyList();
+        return cachesToStop != null ? cachesToStop.values() : Collections.emptyList();
     }
 
     /**

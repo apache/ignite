@@ -27,14 +27,6 @@ This eliminates the bottleneck, allowing the application to scale more easily.
 
 image::images/partitionawareness02.png[With Partition Awareness]
 
-[WARNING]
-====
-[discrete]
-Note that for non-Java clients presently you need to provide addresses of all the server nodes in the connection properties.
-This also means that if a new server node joins the cluster, you should add the server's address to the connection properties and reconnect the thin client.
-Otherwise, the thin client will not be able to send direct requests to this server.
-This limitation is planned to be addressed before the GA release of the feature.
-====
 
 
 

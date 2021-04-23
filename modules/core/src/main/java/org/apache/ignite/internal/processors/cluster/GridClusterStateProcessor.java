@@ -729,6 +729,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                     nodeIds
                 );
 
+                ctx.durableBackgroundTasksProcessor().onStateChange(msg);
+
                 if (msg.forceChangeBaselineTopology())
                     newState.setTransitionResult(msg.requestId(), msg.state());
 

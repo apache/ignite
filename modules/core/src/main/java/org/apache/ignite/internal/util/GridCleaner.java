@@ -76,7 +76,7 @@ public class GridCleaner {
             try {
                 return Class.forName(clsName, true, clsLdr);
             }
-            catch (ClassNotFoundException e) {
+            catch (ClassNotFoundException ignore) {
                 // ignored;
             }
         }

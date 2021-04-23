@@ -51,7 +51,9 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_CACHED_S
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_FILE_MAX_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_FLUSH_SIZE;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_START;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CHECKPOINT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.JOB;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.PAGES_WRITE_THROTTLE;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_READS;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TASK;
@@ -59,7 +61,9 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_ROLLBACK;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.cacheRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.cacheStartRecordSize;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.checkpointRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.jobRecordSize;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.pagesWriteThrottleRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.queryReadsRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.queryRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.taskRecordSize;
@@ -102,6 +106,9 @@ public class FilePerformanceStatisticsWriter {
     /** Factory to provide I/O interface. */
     private final FileIOFactory fileIoFactory = new RandomAccessFileIOFactory();
 
+    /** Performance statistics file. */
+    private final File file;
+
     /** Performance statistics file I/O. */
     private final FileIO fileIo;
 
@@ -136,7 +143,7 @@ public class FilePerformanceStatisticsWriter {
     public FilePerformanceStatisticsWriter(GridKernalContext ctx) throws IgniteCheckedException, IOException {
         log = ctx.log(getClass());
 
-        File file = resolveStatisticsFile(ctx);
+        file = resolveStatisticsFile(ctx);
 
         fileIo = fileIoFactory.create(file);
 
@@ -306,6 +313,75 @@ public class FilePerformanceStatisticsWriter {
             buf.putLong(startTime);
             buf.putLong(duration);
             buf.put(timedOut ? (byte)1 : 0);
+        });
+    }
+
+    /** @return Performance statistics file. */
+    File file() {
+        return file;
+    }
+
+    /**
+     * @param beforeLockDuration Before lock duration.
+     * @param lockWaitDuration Lock wait duration.
+     * @param listenersExecDuration Listeners execute duration.
+     * @param markDuration Mark duration.
+     * @param lockHoldDuration Lock hold duration.
+     * @param pagesWriteDuration Pages write duration.
+     * @param fsyncDuration Fsync duration.
+     * @param walCpRecordFsyncDuration Wal cp record fsync duration.
+     * @param writeCpEntryDuration Write checkpoint entry duration.
+     * @param splitAndSortCpPagesDuration Split and sort cp pages duration.
+     * @param totalDuration Total duration in milliseconds.
+     * @param cpStartTime Checkpoint start time in milliseconds.
+     * @param pagesSize Pages size.
+     * @param dataPagesWritten Data pages written.
+     * @param cowPagesWritten Cow pages written.
+     */
+    public void checkpoint(
+        long beforeLockDuration,
+        long lockWaitDuration,
+        long listenersExecDuration,
+        long markDuration,
+        long lockHoldDuration,
+        long pagesWriteDuration,
+        long fsyncDuration,
+        long walCpRecordFsyncDuration,
+        long writeCpEntryDuration,
+        long splitAndSortCpPagesDuration,
+        long totalDuration,
+        long cpStartTime,
+        int pagesSize,
+        int dataPagesWritten,
+        int cowPagesWritten
+    ) {
+        doWrite(CHECKPOINT, checkpointRecordSize(), buf -> {
+            buf.putLong(beforeLockDuration);
+            buf.putLong(lockWaitDuration);
+            buf.putLong(listenersExecDuration);
+            buf.putLong(markDuration);
+            buf.putLong(lockHoldDuration);
+            buf.putLong(pagesWriteDuration);
+            buf.putLong(fsyncDuration);
+            buf.putLong(walCpRecordFsyncDuration);
+            buf.putLong(writeCpEntryDuration);
+            buf.putLong(splitAndSortCpPagesDuration);
+            buf.putLong(totalDuration);
+            buf.putLong(cpStartTime);
+            buf.putInt(pagesSize);
+            buf.putInt(dataPagesWritten);
+            buf.putInt(cowPagesWritten);
+        });
+    }
+
+    /**
+     * @param endTime End time in milliseconds.
+     * @param duration Duration in milliseconds.
+     */
+    public void pagesWriteThrottle(long endTime, long duration) {
+        doWrite(PAGES_WRITE_THROTTLE, pagesWriteThrottleRecordSize(), buf -> {
+            buf.putLong(endTime);
+            buf.putLong(duration);
         });
     }
 

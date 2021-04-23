@@ -17,11 +17,13 @@
 
 package org.apache.ignite.compatibility.clients;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import javax.cache.Cache;
+import javax.cache.event.CacheEntryEvent;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 import org.apache.ignite.Ignite;
@@ -32,6 +34,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
@@ -52,6 +55,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assume;
@@ -313,6 +317,25 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
         }
     }
 
+    /** */
+    private void testContinuousQueries() throws Exception {
+        X.println(">>>> Testing continuous queries");
+
+        try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(ADDR))) {
+            ClientCache<Object, Object> cache = client.getOrCreateCache("testContinuousQueries");
+
+            List<CacheEntryEvent<?, ?>> allEvts = new ArrayList<>();
+
+            cache.query(new ContinuousQuery<>().setLocalListener(evts -> evts.forEach(allEvts::add)));
+
+            cache.put(0, 0);
+            cache.put(0, 1);
+            cache.remove(0);
+
+            assertTrue(GridTestUtils.waitForCondition(() -> allEvts.size() == 3, 1_000L));
+        }
+    }
+
     /** {@inheritDoc} */
     @Override protected void testClient(IgniteProductVersion clientVer, IgniteProductVersion serverVer) throws Exception {
         IgniteProductVersion minVer = clientVer.compareTo(serverVer) < 0 ? clientVer : serverVer;
@@ -345,6 +368,9 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
             testCompute();
             testServices();
         }
+
+        if (clientVer.compareTo(VER_2_11_0) >= 0 && serverVer.compareTo(VER_2_10_0) >= 0)
+            testContinuousQueries();
     }
 
     /** */

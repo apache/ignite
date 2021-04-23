@@ -21,24 +21,32 @@ import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
+import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.DISCO_METRICS;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+
 /**
  * Zookeeper discovery statistics.
  */
 public class ZookeeperDiscoveryStatistics {
     /** */
-    private final LongAdderMetric joinedNodesCnt = new LongAdderMetric("JoinedNodes", "Joined nodes count");
+    private final LongAdderMetric joinedNodesCnt = new LongAdderMetric(metricName(DISCO_METRICS, "JoinedNodes"),
+        "Joined nodes count");
 
     /** */
-    private final LongAdderMetric failedNodesCnt = new LongAdderMetric("FailedNodes", "Failed nodes count");
+    private final LongAdderMetric failedNodesCnt = new LongAdderMetric(metricName(DISCO_METRICS, "FailedNodes"),
+        "Failed nodes count");
 
     /** */
-    private final LongAdderMetric leftNodesCnt = new LongAdderMetric("LeftNodes", "Left nodes count");
+    private final LongAdderMetric leftNodesCnt = new LongAdderMetric(metricName(DISCO_METRICS, "LeftNodes"),
+        "Left nodes count");
 
     /** Communication error count. */
-    private final LongAdderMetric commErrCnt = new LongAdderMetric("CommunicationErrors", "Communication errors count");
+    private final LongAdderMetric commErrCnt = new LongAdderMetric(metricName(DISCO_METRICS, "CommunicationErrors"),
+        "Communication errors count");
 
     /** Current topology version */
-    private final AtomicLongMetric topVer = new AtomicLongMetric("CurrentTopologyVersion", "Current topology version");
+    private final AtomicLongMetric topVer = new AtomicLongMetric(metricName(DISCO_METRICS, "CurrentTopologyVersion"),
+        "Current topology version");
 
     /**
      * @param discoReg Discovery metric registry.

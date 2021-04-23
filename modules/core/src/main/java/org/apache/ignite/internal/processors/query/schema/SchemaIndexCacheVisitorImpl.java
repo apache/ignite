@@ -61,7 +61,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
     protected final GridFutureAdapter<Void> buildIdxFut;
 
     /** Logger. */
-    protected IgniteLogger log;
+    protected final IgniteLogger log;
 
     /**
      * Constructor.
@@ -110,8 +110,9 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
 
         AtomicBoolean stop = new AtomicBoolean();
 
-        GridCompoundFuture<SchemaIndexCacheStat, SchemaIndexCacheStat> buildIdxCompoundFut =
-            new GridCompoundFuture<>();
+        // To avoid a race between clearing pageMemory (on a cache stop ex. deactivation)
+        // and rebuilding indexes, which can lead to a fail of the node.
+        SchemaIndexCacheCompoundFuture buildIdxCompoundFut = new SchemaIndexCacheCompoundFuture();
 
         for (GridDhtLocalPartition locPart : locParts) {
             GridWorkerFuture<SchemaIndexCacheStat> workerFut = new GridWorkerFuture<>();

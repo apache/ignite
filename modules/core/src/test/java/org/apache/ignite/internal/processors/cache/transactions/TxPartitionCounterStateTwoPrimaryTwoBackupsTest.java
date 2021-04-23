@@ -220,6 +220,6 @@ public class TxPartitionCounterStateTwoPrimaryTwoBackupsTest extends TxPartition
         // Expect consistent partitions.
         assertPartitionsSame(idleVerify(grid(CLIENT_GRID_NAME), DEFAULT_CACHE_NAME));
 
-        assertCountersSame(PARTITION_ID, true);
+        assertCountersSame(PARTITION_ID, true, DEFAULT_CACHE_NAME);
     }
 }
