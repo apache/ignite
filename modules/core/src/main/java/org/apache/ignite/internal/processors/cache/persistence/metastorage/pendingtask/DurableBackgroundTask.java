@@ -21,45 +21,30 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 
 /**
- * Durable task that should be used to do long operations (e.g. index deletion) in background
- * for cases when node with persistence can fail before operation is completed. After start, node reads it's
- * pending background tasks from metastorage and completes them.
+ * Durable task that should be used to do long operations (e.g. index deletion) in background.
  */
 public interface DurableBackgroundTask extends Serializable {
     /**
-     * Getting a short name for a task to identify it.
+     * Getting the name of the task to identify it.
      * Also used as part of a key for storage in a MetaStorage.
      *
-     * @return Short name of the task.
+     * @return Task name.
      */
-    String shortName();
+    String name();
 
     /**
-     * Checks if the task has completed or not.
-     * If the task is completed, then it will not start and will be deleted from the MetaStorage.
-     *
-     * @return {@code True} if the task is complete.
-     */
-    boolean completed();
-
-    /**
-     * Checks if the task has started.
-     * Avoids running the task twice.
-     *
-     * @return {@code True} if started.
-     */
-    boolean started();
-
-    /**
-     * Cancel task execution.
+     * Canceling the task.
      */
     void cancel();
 
     /**
-     * Asynchronous execution of a task.
+     * Asynchronous task execution.
+     *
+     * If the futures are completed with an error or {@code true}, then the task will be considered completed.
+     * If the futures are completed with {@code false}, then later it will be re-executed.
      *
      * @param ctx Kernal context.
-     * @return Future that completes when a task is completed.
+     * @return Future of the tasks.
      */
-    IgniteInternalFuture<?> executeAsync(GridKernalContext ctx);
+    IgniteInternalFuture<Boolean> executeAsync(GridKernalContext ctx);
 }

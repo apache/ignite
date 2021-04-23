@@ -66,9 +66,6 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
     private transient volatile List<InlineIndexTree> trees;
 
     /** */
-    private transient volatile boolean completed;
-
-    /** */
     private String cacheGrpName;
 
     /** */
@@ -103,7 +100,6 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
     ) {
         this.rootPages = rootPages;
         this.trees = trees;
-        this.completed = false;
         this.cacheGrpName = cacheGrpName;
         this.cacheName = cacheName;
         this.id = UUID.randomUUID().toString();
@@ -113,24 +109,28 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
     }
 
     /** {@inheritDoc} */
-    @Override public String shortName() {
+    @Override public String name() {
         return "DROP_SQL_INDEX-" + schemaName + "." + idxName + "-" + id;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> executeAsync(GridKernalContext ctx) {
-        assert !started();
-        assert !completed();
-
+    @Override public IgniteInternalFuture<Boolean> executeAsync(GridKernalContext ctx) {
         log = ctx.log(this.getClass());
 
-        GridFutureAdapter<?> fut = new GridFutureAdapter<>();
+        GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
 
         worker = new GridWorker(
             ctx.igniteInstanceName(),
-            "async-durable-background-task-executor-" + shortName(),
+            "async-durable-background-task-executor-" + name(),
             log
         ) {
+            /** {@inheritDoc} */
+            @Override public void cancel() {
+                fut.onDone(false);
+
+                super.cancel();
+            }
+
             /** {@inheritDoc} */
             @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
                 Throwable err = null;
@@ -138,15 +138,14 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
                 try {
                     execute(ctx);
 
-                    completed = true;
-
                     worker = null;
+
+                    fut.onDone(true);
                 }
                 catch (Throwable t) {
-                    err = t;
+                    if (!fut.isDone())
+                        fut.onDone(err);
                 }
-
-                fut.onDone(err);
             }
         };
 
@@ -183,16 +182,6 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
         catch (IgniteCheckedException e) {
             throw new IgniteException("Cannot acquire tree root page.", e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean completed() {
-        return completed;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean started() {
-        return worker != null;
     }
 
     /** {@inheritDoc} */
@@ -288,7 +277,7 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
                 // Below we create a fake index tree using it's root page, stubbing some parameters,
                 // because we just going to free memory pages that are occupied by tree structure.
                 try {
-                    String treeName = "deletedTree_" + i + "_" + shortName();
+                    String treeName = "deletedTree_" + i + "_" + name();
 
                     InlineIndexTree tree = new InlineIndexTree(
                         null, cctx, treeName, cctx.offheap(), cctx.offheap().reuseListForIndex(treeName),
