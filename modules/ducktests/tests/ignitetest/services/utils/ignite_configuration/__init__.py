@@ -118,12 +118,23 @@ class IgniteThinClientConfiguration(NamedTuple):
     version: IgniteVersion = DEV_BRANCH
     ssl_params: SslParams = None
 
-    # pylint: disable=unused-argument
+    def __prepare_ssl(self, test_globals):
+        """
+        Updates ssl configuration from globals.
+        """
+        ssl_params = None
+        if self.ssl_params is None and is_ssl_enabled(test_globals):
+            ssl_params = get_ssl_params(test_globals, IGNITE_CLIENT_ALIAS)
+        if ssl_params:
+            return self._replace(ssl_params=ssl_params)
+        return self
+
+    # pylint: disable=unused-argument,protected-access
     def prepare_for_env(self, test_globals, node, cluster):
         """
         Updates configuration based on current environment.
         """
-        return self
+        return self.__prepare_ssl(test_globals)
 
     @property
     def service_type(self):

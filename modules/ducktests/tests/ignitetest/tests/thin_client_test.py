@@ -32,6 +32,11 @@ class ThinClientTest(IgniteTest):
     """
     cluster - cluster size.
     JAVA_CLIENT_CLASS_NAME - running classname.
+    to use with ssl enabled:
+    export GLOBALS='{"ssl":{"enabled":true},"key_store_path":"/opt/ignite-dev/modules/ducktests/tests/certs/",
+    "key_store_password":"123456","trust_store_path":"/opt/ignite-dev/modules/ducktests/tests/certs/",
+    "trust_store_password":"123456","user":"client","password":"123456"}'
+    or globals should be provided to jenkins job.
     """
 
     JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.thin_client_test.ThinClientSelfTestApplication"

@@ -28,6 +28,8 @@ DEFAULT_ADMIN_KEYSTORE = 'admin.jks'
 DEFAULT_PASSWORD = "123456"
 DEFAULT_TRUSTSTORE = "truststore.jks"
 DEFAULT_ROOT = "/opt/"
+DEFAULT_USER = "client"
+DEFAULT_USER_PASSWORD = "123456"
 
 SSL_PARAMS_KEY = "params"
 SSL_KEY = "ssl"
@@ -59,10 +61,8 @@ class SslParams:
         self.key_store_password = key_store_password
         self.trust_store_path = trust_store_path if trust_store_path else os.path.join(certificate_dir, trust_store_jks)
         self.trust_store_password = trust_store_password
-
-        if user:
-            self.user = user
-            self.password = password
+        self.user = user if user else DEFAULT_USER
+        self.password = password if password else DEFAULT_USER_PASSWORD
 
 
 def get_ssl_params(_globals: dict, alias: str):
