@@ -80,7 +80,6 @@ class TestParams:
                     "key_store_password": TEST_PASSWORD,
                     "trust_store_jks": TEST_TRUSTSTORE_JKS,
                     "trust_store_password": TEST_PASSWORD}}}}
-
     test_globals_path = {
         SSL_KEY: {
             ENABLED_KEY: True,
@@ -90,21 +89,17 @@ class TestParams:
                     "key_store_password": TEST_PASSWORD,
                     "trust_store_path": os.path.join(CERT_DIR2, TEST_TRUSTSTORE_JKS),
                     "trust_store_password": TEST_PASSWORD}}}}
-
     test_globals_default = {SSL_KEY: {ENABLED_KEY: True}}
-
     test_globals_no_ssl = {}
 
     expected_ssl_params_jks = {'key_store_path': os.path.join(CERT_DIR1, TEST_KEYSTORE_JKS),
                                'key_store_password': TEST_PASSWORD,
                                'trust_store_path': os.path.join(CERT_DIR1, TEST_TRUSTSTORE_JKS),
                                'trust_store_password': TEST_PASSWORD}
-
     expected_ssl_params_path = {'key_store_path': os.path.join(CERT_DIR2, TEST_KEYSTORE_JKS),
                                 'key_store_password': TEST_PASSWORD,
                                 'trust_store_path': os.path.join(CERT_DIR2, TEST_TRUSTSTORE_JKS),
                                 'trust_store_password': TEST_PASSWORD}
-
     expected_ssl_params_default = {'key_store_path': os.path.join(CERT_DIR1, DEFAULT_CLIENT_KEYSTORE),
                                    'key_store_password': DEFAULT_PASSWORD,
                                    'trust_store_path': os.path.join(CERT_DIR1, DEFAULT_TRUSTSTORE),
