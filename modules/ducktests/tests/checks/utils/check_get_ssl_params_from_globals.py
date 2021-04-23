@@ -120,7 +120,8 @@ class CheckCaseJks:
     @pytest.mark.parametrize('test_globals, expected',
                              [(TestParams.test_globals_jks, CERTIFICATE_DIR, TestParams.expected_ssl_params_jks),
                               (TestParams.test_globals_path, TEST_CERTIFICATE_DIR, TestParams.expected_ssl_params_path),
-                              (TestParams.test_globals_default, CERTIFICATE_DIR, TestParams.expected_ssl_params_default)])
+                              (TestParams.test_globals_default, CERTIFICATE_DIR,
+                               TestParams.expected_ssl_params_default)])
     def check_parse(test_globals, shared_root, expected):
         """
         Check that SslParams correctly parse SSL params from globals

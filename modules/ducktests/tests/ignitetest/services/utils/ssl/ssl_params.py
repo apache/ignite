@@ -45,9 +45,9 @@ class SslParams:
     """
 
     # pylint: disable=R0913
-    def __init__(self, key_store_jks: str = None, key_store_password: str = DEFAULT_PASSWORD,
+    def __init__(self, root_dir: str, key_store_jks: str = None, key_store_password: str = DEFAULT_PASSWORD,
                  trust_store_jks: str = DEFAULT_TRUSTSTORE, trust_store_password: str = DEFAULT_PASSWORD,
-                 key_store_path: str = None, trust_store_path: str = None, root_dir: str = DEFAULT_ROOT):
+                 key_store_path: str = None, trust_store_path: str = None):
         if not key_store_jks and not key_store_path:
             raise Exception("Keystore must be specified to init SslParams")
 
@@ -83,7 +83,7 @@ def get_ssl_params(_globals: dict, shared_root: str, alias: str):
     else:
         raise Exception("We don't have SSL params for: " + alias)
 
-    return SslParams(root_dir=shared_root, **ssl_param) if ssl_param else None
+    return SslParams(shared_root, **ssl_param) if ssl_param else None
 
 
 def is_ssl_enabled(_globals: dict):

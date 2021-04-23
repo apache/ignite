@@ -166,7 +166,7 @@ class IgniteSpec(metaclass=ABCMeta):
         """
         local_dir = os.path.join(tempfile.gettempdir(), str(self.service.context.session_context.session_id))
 
-        if not is_ssl_enabled(self.service.context.globals):
+        if not is_ssl_enabled(self.service.context.globals) and not self.service.config.ssl_params:
             self.service.logger.debug("Ssl disabled. Nothing to generate.")
             return local_dir
 
@@ -198,7 +198,7 @@ class IgniteSpec(metaclass=ABCMeta):
     def __runcmd(self, cmd):
         self.service.logger.debug(cmd)
         proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        stdout, stderr = proc.communicate()
+        stdout, _ = proc.communicate()
 
         if proc.returncode != 0:
             raise RuntimeError("Command '%s' returned non-zero exit status %d: %s" % (cmd, proc.returncode, stdout))

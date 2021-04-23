@@ -173,6 +173,10 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         self._prepare_configs(node)
 
     def init_shared(self, node):
+        """
+        Init shared directory. Content of shared directory must be equal on all test nodes.
+        :param node: Ignite service node.
+        """
         local_shared_dir = self.spec.init_local_shared()
 
         node.account.mkdirs(f"{self.persistent_root} {self.shared_root}")
