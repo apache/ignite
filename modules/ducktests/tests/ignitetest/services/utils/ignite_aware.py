@@ -179,6 +179,10 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
         local_shared_dir = self.spec.init_local_shared()
 
+        if not os.path.isdir(local_shared_dir):
+            self.logger.debug("Local shared dir not exists. Nothing to copy. " + str(local_shared_dir))
+            return
+
         node.account.mkdirs(f"{self.persistent_root} {self.shared_root}")
 
         for file in os.listdir(local_shared_dir):
