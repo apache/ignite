@@ -2839,11 +2839,25 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             throw new IgniteException(msg, e);
         }
 
-        for (IgniteBiTuple<CacheGroupContext, Boolean> grp : grpsToStop)
-            stopCacheGroup(grp.get1().groupId(), grp.get2());
+        for (ExchangeActions.CacheGroupActionData data : exchActions.cacheGroupsToStop())
+            stopCacheGroup(data.descriptor().groupId(), data.destroy());
 
-        if (!sharedCtx.kernalContext().clientNode())
+        if (!sharedCtx.kernalContext().clientNode()) {
             sharedCtx.database().onCacheGroupsStopped(grpsToStop);
+
+            for (ExchangeActions.CacheGroupActionData data : exchActions.cacheGroupsToStop()) {
+                if (sharedCtx.pageStore() == null)
+                    break;
+
+                try {
+                    sharedCtx.pageStore().shutdownForCacheGroup(data.descriptor(), data.destroy());
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to gracefully clean page store resources for destroyed cache " +
+                        "[cache=" + data.descriptor().cacheOrGroupName() + "]", e);
+                }
+            }
+        }
 
         if (exchActions.deactivate())
             sharedCtx.deactivate();
@@ -2949,6 +2963,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (grp != null)
             stopCacheGroup(grp, destroy);
+        else
+            cachesInfo.cleanupRemovedGroup(grpId);
     }
 
     /**

@@ -18,13 +18,20 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.lang.reflect.Field;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -66,6 +73,49 @@ public class IgnitePdsDestroyCacheTest extends IgnitePdsDestroyCacheAbstractTest
         startGroupCachesDynamically(ignite);
 
         checkDestroyCaches(ignite);
+    }
+
+    /**
+     * Test destroy cache group on a filtered node.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDestroyCacheWithNodeFilter() throws Exception {
+        String cacheName = "cache1";
+
+        cleanPersistenceDir();
+
+        Ignite ignite = startGrids(2);
+
+        ignite.cluster().state(ClusterState.ACTIVE);
+
+        UUID nodeId0 = ignite.cluster().localNode().id();
+
+        CacheConfiguration<Object, Object> cfg1 = new CacheConfiguration<>(cacheName)
+            .setCacheMode(CacheMode.REPLICATED)
+            .setNodeFilter(n -> nodeId0.equals(n.id()));
+
+        IgniteCache<?, ?> cache1 = ignite.createCache(cfg1);
+
+        cache1.destroy();
+
+        forceCheckpoint();
+
+        awaitPartitionMapExchange();
+
+        for (Ignite grid : G.allGrids())
+            assertNull(((IgniteEx)grid).context().cache().cacheGroupDescriptor(CU.cacheId(cacheName)));
+
+        stopAllGrids();
+
+        // Make sure cache data is removed and the node can join the cluster.
+        ignite = startGrids(2);
+
+        ignite.cluster().state(ClusterState.ACTIVE);
+
+        for (Ignite grid : G.allGrids())
+            assertNull(((IgniteEx)grid).context().cache().cacheGroupDescriptor(CU.cacheId(cacheName)));
     }
 
     /**

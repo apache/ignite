@@ -67,7 +67,6 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.store.PageStoreCollection;
-import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
@@ -573,19 +572,23 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void shutdownForCacheGroup(CacheGroupContext grp, boolean destroy) throws IgniteCheckedException {
-        grpsWithoutIdx.remove(grp.groupId());
+    @Override public void shutdownForCacheGroup(CacheGroupDescriptor desc, boolean destroy) throws IgniteCheckedException {
+        grpsWithoutIdx.remove(desc.groupId());
 
-        CacheStoreHolder old = idxCacheStores.remove(grp.groupId());
+        CacheStoreHolder old = idxCacheStores.remove(desc.groupId());
 
-        if (old != null) {
+        try {
+            if (old == null)
+                return;
+
             IgniteCheckedException ex = shutdown(old, /*clean files if destroy*/destroy, null);
-
-            if (destroy)
-                removeCacheGroupConfigurationData(grp);
 
             if (ex != null)
                 throw ex;
+        }
+        finally {
+            if (destroy)
+                removeCacheGroupConfigurationData(desc);
         }
     }
 
@@ -1209,11 +1212,11 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /**
      * Delete caches' configuration data files of cache group.
      *
-     * @param ctx Cache group context.
+     * @param desc Cache group descriptor.
      * @throws IgniteCheckedException If fails.
      */
-    private void removeCacheGroupConfigurationData(CacheGroupContext ctx) throws IgniteCheckedException {
-        File cacheGrpDir = cacheWorkDir(ctx.sharedGroup(), ctx.cacheOrGroupName());
+    private void removeCacheGroupConfigurationData(CacheGroupDescriptor desc) throws IgniteCheckedException {
+        File cacheGrpDir = cacheWorkDir(desc.sharedGroup(), desc.cacheOrGroupName());
 
         if (cacheGrpDir != null && cacheGrpDir.exists()) {
             DirectoryStream.Filter<Path> cacheCfgFileFilter = new DirectoryStream.Filter<Path>() {
@@ -1227,7 +1230,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                     Files.deleteIfExists(path);
             }
             catch (IOException e) {
-                throw new IgniteCheckedException("Failed to delete cache configurations of group: " + ctx.toString(), e);
+                throw new IgniteCheckedException("Failed to delete cache configurations of group: " + desc.toString(), e);
             }
         }
     }

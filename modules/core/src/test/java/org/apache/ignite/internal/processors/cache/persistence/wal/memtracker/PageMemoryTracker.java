@@ -49,6 +49,7 @@ import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
@@ -198,11 +199,11 @@ public class PageMemoryTracker implements IgnitePlugin {
     IgnitePageStoreManager createPageStoreManager() {
         if (isEnabled()) {
             return new FilePageStoreManager(gridCtx) {
-                @Override public void shutdownForCacheGroup(CacheGroupContext grp,
+                @Override public void shutdownForCacheGroup(CacheGroupDescriptor desc,
                     boolean destroy) throws IgniteCheckedException {
-                    super.shutdownForCacheGroup(grp, destroy);
+                    super.shutdownForCacheGroup(desc, destroy);
 
-                    cleanupPages(fullPageId -> fullPageId.groupId() == grp.groupId());
+                    cleanupPages(fullPageId -> fullPageId.groupId() == desc.groupId());
                 }
 
                 @Override public void onPartitionDestroyed(int grpId, int partId, int tag) throws IgniteCheckedException {

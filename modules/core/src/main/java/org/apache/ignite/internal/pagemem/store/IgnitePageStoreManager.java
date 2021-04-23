@@ -24,7 +24,6 @@ import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
@@ -76,11 +75,11 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * Callback called when a cache is stopping. After this callback is invoked, no data associated with
      * the given cache will be stored on disk.
      *
-     * @param grp Cache group being stopped.
+     * @param desc Cache group descriptor.
      * @param destroy Flag indicating if the cache is being destroyed and data should be cleaned.
      * @throws IgniteCheckedException If failed to handle cache destroy callback.
      */
-    public void shutdownForCacheGroup(CacheGroupContext grp, boolean destroy) throws IgniteCheckedException;
+    public void shutdownForCacheGroup(CacheGroupDescriptor desc, boolean destroy) throws IgniteCheckedException;
 
     /**
      * Callback called when a partition is created on the local node.

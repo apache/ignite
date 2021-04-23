@@ -1580,20 +1580,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 log.error("Failed to clear page memory", e);
             }
         }
-
-        if (cctx.pageStore() != null) {
-            for (IgniteBiTuple<CacheGroupContext, Boolean> tup : stoppedGrps) {
-                CacheGroupContext grp = tup.get1();
-
-                try {
-                    cctx.pageStore().shutdownForCacheGroup(grp, tup.get2());
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to gracefully clean page store resources for destroyed cache " +
-                        "[cache=" + grp.cacheOrGroupName() + "]", e);
-                }
-            }
-        }
     }
 
     /**
