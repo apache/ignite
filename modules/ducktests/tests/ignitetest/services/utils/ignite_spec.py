@@ -166,7 +166,8 @@ class IgniteSpec(metaclass=ABCMeta):
         """
         local_dir = os.path.join(tempfile.gettempdir(), str(self.service.context.session_context.session_id))
 
-        if not is_ssl_enabled(self.service.context.globals) and not self.service.config.ssl_params:
+        if not is_ssl_enabled(self.service.context.globals) and \
+                not (self.service.config.service_type == IgniteServiceType.NODE and self.service.config.ssl_params):
             self.service.logger.debug("Ssl disabled. Nothing to generate.")
             return local_dir
 
