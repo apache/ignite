@@ -117,7 +117,7 @@ class CheckCaseJks:
     """
 
     @staticmethod
-    @pytest.mark.parametrize('test_globals, expected',
+    @pytest.mark.parametrize('test_globals, shared_root, expected',
                              [(TestParams.test_globals_jks, CERTIFICATE_DIR, TestParams.expected_ssl_params_jks),
                               (TestParams.test_globals_path, TEST_CERTIFICATE_DIR, TestParams.expected_ssl_params_path),
                               (TestParams.test_globals_default, CERTIFICATE_DIR,
