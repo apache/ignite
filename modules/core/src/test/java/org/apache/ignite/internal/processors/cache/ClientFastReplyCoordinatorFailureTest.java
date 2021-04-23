@@ -227,7 +227,7 @@ public class ClientFastReplyCoordinatorFailureTest extends GridCommonAbstractTes
                 try {
                     PART_SINGLE_REQ_MSG_LATCH.await();
                 }
-                catch (InterruptedException e) {
+                catch (InterruptedException ignore) {
                     // no-op
                 }
             }

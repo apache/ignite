@@ -194,7 +194,7 @@ public class FailureProcessor extends GridProcessorAdapter {
         DiagnosticProcessor diagnosticProcessor = ctx.diagnostic();
 
         if (diagnosticProcessor != null)
-            diagnosticProcessor.onFailure(ignite, failureCtx);
+            diagnosticProcessor.onFailure(failureCtx);
 
         boolean invalidated = hnd.onFailure(ignite, failureCtx);
 

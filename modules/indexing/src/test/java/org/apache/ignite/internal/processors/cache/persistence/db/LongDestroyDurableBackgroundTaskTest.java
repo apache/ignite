@@ -47,6 +47,7 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
@@ -163,19 +164,30 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
     /** */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
+            .setFailureHandler(new StopNodeFailureHandler())
             .setDataStorageConfiguration(
-                new DataStorageConfiguration().setDefaultDataRegionConfiguration(
-                    new DataRegionConfiguration()
-                        .setPersistenceEnabled(true)
-                        .setInitialSize(10 * 1024L * 1024L)
-                        .setMaxSize(50 * 1024L * 1024L)
-                )
-                .setCheckpointFrequency(Long.MAX_VALUE / 2)
+                new DataStorageConfiguration()
+                    .setDefaultDataRegionConfiguration(
+                        new DataRegionConfiguration()
+                            .setPersistenceEnabled(true)
+                            .setInitialSize(10 * 1024L * 1024L)
+                            .setMaxSize(50 * 1024L * 1024L)
+                    )
+                    .setDataRegionConfigurations(
+                        new DataRegionConfiguration()
+                            .setName("dr1")
+                            .setPersistenceEnabled(false)
+                    )
+                    .setCheckpointFrequency(Long.MAX_VALUE / 2)
             )
             .setCacheConfiguration(
                 new CacheConfiguration(DEFAULT_CACHE_NAME)
                     .setBackups(1)
+                    .setSqlSchema("PUBLIC"),
+                new CacheConfiguration<Integer, Integer>("TEST")
                     .setSqlSchema("PUBLIC")
+                    .setBackups(1)
+                    .setDataRegionName("dr1")
             )
             .setGridLogger(testLog);
     }
@@ -542,6 +554,50 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
     }
 
     /**
+     * Test case when cluster deactivation happens with no-persistence cache. Index tree deletion task should not be
+     * started after stopping cache.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testClusterDeactivationShouldPassWithoutErrors() throws Exception {
+        IgniteEx ignite = startGrids(NODES_COUNT);
+
+        ignite.cluster().active(true);
+
+        IgniteCache<Integer, Integer> cache = ignite.cache("TEST");
+
+        query(cache, "create table TEST (id integer primary key, p integer, f integer) with " +
+            "\"DATA_REGION=dr1\"");
+
+        query(cache, "create index TEST_IDX on TEST (p)");
+
+        for (int i = 0; i < 5_000; i++)
+            query(cache, "insert into TEST (id, p, f) values (?, ?, ?)", i, i, i);
+
+        LogListener lsnr = LogListener.matches("Could not execute durable background task").build();
+        LogListener lsnr2 = LogListener.matches("Executing durable background task").build();
+        LogListener lsnr3 = LogListener.matches("Execution of durable background task completed").build();
+
+        testLog.registerAllListeners(lsnr, lsnr2, lsnr3);
+
+        ignite.cluster().active(false);
+
+        doSleep(1_000);
+
+        assertFalse(lsnr.check());
+        assertFalse(lsnr2.check());
+        assertFalse(lsnr3.check());
+
+        testLog.unregisterListener(lsnr);
+        testLog.unregisterListener(lsnr2);
+        testLog.unregisterListener(lsnr3);
+
+        for (int i = 0; i < NODES_COUNT; i++)
+            grid(i);
+    }
+
+    /**
      * Tests case when long index deletion operation happens. Checkpoint should run in the middle of index deletion
      * operation.
      *
@@ -684,13 +740,15 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
     }
 
     /**
-     * Tests that task removed from metastorage in beginning of next checkpoint.
+     * Tests that completed task removed from metastorage in the ending of next checkpoint.
      *
      * @throws Exception If failed.
      */
     @Test
     public void testIndexDeletionTaskRemovedAfterCheckpointFinished() throws Exception {
         prepareAndPopulateCluster(1, false, true);
+
+        assertFalse(durableBackgroundTaskTestLsnr.check());
 
         awaitLatch(pendingDelLatch, "Test timed out: failed to await for durable background task completion.");
 
@@ -831,8 +889,12 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
         }
 
         /** {@inheritDoc} */
-        @Override public void onMarkCheckpointBegin(Context ctx) {
-            /* No op. */
+        @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
+            savedTasks.clear();
+
+            metastorage.iterate(STORE_DURABLE_BACKGROUND_TASK_PREFIX,
+                (key, val) -> savedTasks.add(key),
+                true);
         }
 
         /** {@inheritDoc} */
@@ -841,10 +903,8 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
         }
 
         /** {@inheritDoc} */
-        @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
-            metastorage.iterate(STORE_DURABLE_BACKGROUND_TASK_PREFIX,
-                    (key, val) -> savedTasks.add(key),
-                    true);
+        @Override public void beforeCheckpointBegin(Context ctx) {
+            /* No op. */
         }
     }
 }
