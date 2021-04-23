@@ -70,9 +70,9 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
 
         IgniteEx client = startGridsWithSnapshot(2, CACHE_KEYS_RANGE, true);
 
-        grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(dfltCacheCfg.getName())).get(TIMEOUT);
+        grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(DEFAULT_CACHE_NAME)).get(TIMEOUT);
 
-        IgniteCache<Object, Object> cache = client.cache(dfltCacheCfg.getName());
+        IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
 
         assertTrue(cache.indexReadyFuture().isDone());
 
@@ -91,9 +91,9 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
 
         forceCheckpoint();
 
-        ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(dfltCacheCfg.getName())).get(TIMEOUT);
+        ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(DEFAULT_CACHE_NAME)).get(TIMEOUT);
 
-        IgniteCache<Object, Object> cache = ignite.cache(dfltCacheCfg.getName()).withKeepBinary();
+        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME).withKeepBinary();
 
         assertTrue(cache.indexReadyFuture().isDone());
 
@@ -117,7 +117,7 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
 
         awaitPartitionMapExchange();
 
-        ignite.cache(dfltCacheCfg.getName()).destroy();
+        ignite.cache(DEFAULT_CACHE_NAME).destroy();
 
         awaitPartitionMapExchange();
 
@@ -130,9 +130,9 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
 
         // Restore from an empty node.
         ignite.snapshot().restoreSnapshot(
-            SNAPSHOT_NAME, Collections.singleton(dfltCacheCfg.getName())).get(TIMEOUT);
+            SNAPSHOT_NAME, Collections.singleton(DEFAULT_CACHE_NAME)).get(TIMEOUT);
 
-        IgniteCache<Object, Object> cache = ignite.cache(dfltCacheCfg.getName()).withKeepBinary();
+        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME).withKeepBinary();
 
         assertTrue(cache.indexReadyFuture().isDone());
 
