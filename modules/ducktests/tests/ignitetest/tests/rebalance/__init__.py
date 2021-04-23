@@ -21,16 +21,13 @@ from typing import NamedTuple
 
 # pylint: disable=W0622
 from ducktape.errors import TimeoutError
-from ducktape.mark import defaults
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
-from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.enum import constructible
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import DEV_BRANCH, LATEST
 
 
 @constructible
@@ -46,37 +43,6 @@ class NodeJoinLeftScenario(IgniteTest):
     """
     Test scenario with rebalance triggered by node join or node left.
     """
-    NUM_NODES = 4
-
-    # pylint: disable=too-many-arguments, too-many-locals
-    @cluster(num_nodes=NUM_NODES)
-    @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @defaults(backups=[1], cache_count=[1], entry_count=[15_000], entry_size=[50_000], preloaders=[1],
-              thread_pool_size=[None], batch_size=[None], batches_prefetch_count=[None], throttle=[None])
-    def test_node_join(self, ignite_version,
-                       backups, cache_count, entry_count, entry_size, preloaders,
-                       thread_pool_size, batch_size, batches_prefetch_count, throttle):
-        """
-        Tests rebalance on node join.
-        """
-        return self._run_scenario(ignite_version, TriggerEvent.NODE_JOIN,
-                                  backups, cache_count, entry_count, entry_size, preloaders,
-                                  thread_pool_size, batch_size, batches_prefetch_count, throttle)
-
-    # pylint: disable=too-many-arguments, too-many-locals
-    @cluster(num_nodes=NUM_NODES)
-    @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @defaults(backups=[1], cache_count=[1], entry_count=[15_000], entry_size=[50_000], preloaders=[1],
-              thread_pool_size=[None], batch_size=[None], batches_prefetch_count=[None], throttle=[None])
-    def test_node_left(self, ignite_version,
-                       backups, cache_count, entry_count, entry_size, preloaders,
-                       thread_pool_size, batch_size, batches_prefetch_count, throttle):
-        """
-        Tests rebalance on node left.
-        """
-        return self._run_scenario(ignite_version, TriggerEvent.NODE_LEFT,
-                                  backups, cache_count, entry_count, entry_size, preloaders,
-                                  thread_pool_size, batch_size, batches_prefetch_count, throttle)
 
     # pylint: disable=too-many-arguments, too-many-locals
     def _run_scenario(self, ignite_version, trigger_event,

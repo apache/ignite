@@ -24,12 +24,12 @@ from ignitetest.services.utils.control_utility import ControlUtility, ControlUti
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
-from ignitetest.tests.rebalance import NodeJoinLeftScenario
+from ignitetest.tests.rebalance.in_memory_test import InMemoryTest
 from ignitetest.utils.version import IgniteVersion
 
 
 # pylint: disable=W0223
-class PersistentTest(NodeJoinLeftScenario):
+class PersistentTest(InMemoryTest):
     """
     Tests rebalance scenarios in persistent mode.
     """
