@@ -48,6 +48,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.cache.CacheException;
+import javax.cache.expiry.Duration;
 import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -2303,7 +2304,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 ", mode=" + cfg.getCacheMode() +
                 ", atomicity=" + cfg.getAtomicityMode() +
                 ", backups=" + cfg.getBackups() +
-                ", mvcc=" + cacheCtx.mvccEnabled() + ']');
+                ", mvcc=" + cacheCtx.mvccEnabled() +
+                (cacheCtx.expiry() != null ? ", " + getExpirePolicyInfo(cacheCtx) : "") + ']');
         }
 
         grp.onCacheStarted(cacheCtx);
@@ -2383,10 +2385,25 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 ", mode=" + cfg.getCacheMode() +
                 ", atomicity=" + cfg.getAtomicityMode() +
                 ", backups=" + cfg.getBackups() +
-                ", mvcc=" + cacheCtx.mvccEnabled() + ']');
+                ", mvcc=" + cacheCtx.mvccEnabled() +
+                (cacheCtx.expiry() != null ? ", " + getExpirePolicyInfo(cacheCtx) : "") + ']');
         }
 
         return cacheCtx;
+    }
+
+    /**
+     * Get formatted string with expire policy info.
+     *
+     * @param ctx - cache context.
+     * @return formatted expire policy info.
+     */
+    private String getExpirePolicyInfo(GridCacheContext ctx) {
+        Duration expiry = ctx.expiry().getExpiryForCreation();
+
+        return "expirePolicy=[durationAmount=" + expiry.getDurationAmount() +
+                ", timeUnit=" + expiry.getTimeUnit() +
+                ", isEagerTtl=" + ctx.config().isEagerTtl() + ']';
     }
 
     /**
