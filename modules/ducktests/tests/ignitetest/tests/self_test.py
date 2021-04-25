@@ -64,12 +64,12 @@ class SelfTest(IgniteTest):
         Tests plain services start and stop (termitation vs self-terination).
         """
         ignites = IgniteService(self.test_context, IgniteConfiguration(version=IgniteVersion(ignite_version)),
-                                num_nodes=1)
+                                num_nodes=1, startup_timeout_sec=180)
 
         ignites.start()
 
         client = IgniteService(self.test_context, IgniteClientConfiguration(version=IgniteVersion(ignite_version)),
-                               num_nodes=1)
+                               num_nodes=1, startup_timeout_sec=180)
 
         client.start()
 
