@@ -114,7 +114,7 @@ public class IgniteSnapshotWithMetastorageTest extends AbstractSnapshotSelfTest 
                     assertEquals("value", value);
                 }
                 catch (Throwable t) {
-                    fail("Exception reading metastorage");
+                    fail("Exception reading metastorage: " + t.getMessage());
                 }
             }
         });
