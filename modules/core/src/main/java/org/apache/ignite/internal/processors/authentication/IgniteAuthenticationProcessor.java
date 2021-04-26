@@ -378,8 +378,8 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                 User cur = users.putIfAbsent(toSubjectId(u.name()), u);
 
                 if (cur != null) {
-                    throw new IllegalStateException("Security users [" + u.name() + ", " + cur.name() + "] with" +
-                        " conflicting IDs found while reading from metastorage. It is possible that the Ignite" +
+                    throw new IllegalStateException("Security users with conflicting IDs found while reading from" +
+                        " metastorage [logins=" + u.name() + ", " + cur.name() + "]. It is possible that the Ignite" +
                         " metastorage is corrupted or the specified users were created bypassing the Ignite Security API.");
                 }
             }, true);
