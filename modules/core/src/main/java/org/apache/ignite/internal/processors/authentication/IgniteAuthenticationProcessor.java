@@ -336,7 +336,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         if (F.isEmpty(login))
             throw new UserManagementException("User name is empty");
 
-        if (passwd.length == 0)
+        if (F.isEmpty(passwd))
             throw new UserManagementException("Password is empty");
 
         if ((STORE_USER_PREFIX + login).getBytes().length > MetastorageTree.MAX_KEY_LEN)
@@ -375,7 +375,13 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
             metastorage.iterate(STORE_USER_PREFIX, (key, val) -> {
                 User u = (User)val;
 
-                users.put(toSubjectId(u.name()), u);
+                User cur = users.putIfAbsent(toSubjectId(u.name()), u);
+
+                if (cur != null) {
+                    throw new IllegalStateException("Security users [" + u.name() + ", " + cur.name() + "] with" +
+                        " conflicting IDs found while reading from metastorage. It is possible that the Ignite" +
+                        " metastorage is corrupted or the specified users were created bypassing the Ignite Security API.");
+                }
             }, true);
         }
         else
@@ -893,7 +899,12 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         return !n.isClient() && !n.isDaemon();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     *
+     * The current implementation of {@link GridSecurityProcessor} allows any Ignite node to join the Ignite cluster
+     * without authentication check.
+     */
     @Override public SecurityContext authenticateNode(ClusterNode node, SecurityCredentials cred) throws IgniteCheckedException {
         return new SecurityContextImpl(
             node.id(),
@@ -904,12 +915,12 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Override public SecuritySubject authenticatedSubject(UUID subjId) throws IgniteCheckedException {
-        throw new UnsupportedOperationException();
+        return null;
     }
 
     /** {@inheritDoc} */
     @Override public Collection<SecuritySubject> authenticatedSubjects() throws IgniteCheckedException {
-        throw new UnsupportedOperationException();
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -950,7 +961,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      * node attributes and is obtained automatically by the Ignite using the node ID
      * (see {@link IgniteSecurityProcessor#withContext(java.util.UUID)}). Since we use the node ID as the subject ID
      * during node authentication, this method is used for obtaining security context for thin clients only.
-     * Note that the returned security context does not contain the address of the security subject.
+     * Note, that the returned security context does not contain the address of the security subject.
      */
     @Override public SecurityContext securityContext(UUID subjId) {
         User user = users.get(subjId);
@@ -1350,7 +1361,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         private final UUID id;
 
         /** Security subject login.  */
-        private final Object login;
+        private final String login;
 
         /** Security subject type. */
         private final SecuritySubjectType type;
@@ -1359,7 +1370,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         private final InetSocketAddress addr;
 
         /** */
-        public SecuritySubjectImpl(UUID id, Object login, SecuritySubjectType type, InetSocketAddress addr) {
+        public SecuritySubjectImpl(UUID id, String login, SecuritySubjectType type, InetSocketAddress addr) {
             this.id = id;
             this.login = login;
             this.type = type;
@@ -1372,7 +1383,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         }
 
         /** {@inheritDoc} */
-        @Override public Object login() {
+        @Override public String login() {
             return login;
         }
 
@@ -1406,7 +1417,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         private final SecuritySubject subj;
 
         /** */
-        public SecurityContextImpl(UUID id, Object login, SecuritySubjectType type, InetSocketAddress addr) {
+        public SecurityContextImpl(UUID id, String login, SecuritySubjectType type, InetSocketAddress addr) {
             subj = new SecuritySubjectImpl(id, login, type, addr);
         }
 
