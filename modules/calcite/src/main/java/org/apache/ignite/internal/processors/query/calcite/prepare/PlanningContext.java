@@ -105,19 +105,19 @@ public final class PlanningContext implements Context {
         String qry,
         Object[] parameters,
         AffinityTopologyVersion topVer,
-        IgniteLogger log) {
+        IgniteLogger log,
+        GridQueryCancel qryCancel) {
         this.locNodeId = locNodeId;
         this.originatingNodeId = originatingNodeId;
         this.qry = qry;
         this.parameters = parameters;
         this.topVer = topVer;
         this.log = log;
+        this.qryCancel = qryCancel;
 
         this.parentCtx = Contexts.chain(parentCtx, cfg.getContext());
         // link frameworkConfig#context() to this.
         this.cfg = Frameworks.newConfigBuilder(cfg).context(this).build();
-
-        qryCancel = unwrap(GridQueryCancel.class);
 
         RelDataTypeSystem typeSys = connectionConfig().typeSystem(RelDataTypeSystem.class, cfg.getTypeSystem());
         typeFactory = new IgniteTypeFactory(typeSys);
@@ -316,7 +316,7 @@ public final class PlanningContext implements Context {
     /**
      * Planner context builder.
      */
-    @SuppressWarnings("PublicInnerClass") 
+    @SuppressWarnings("PublicInnerClass")
     public static class Builder {
         /** */
         private static final FrameworkConfig EMPTY_CONFIG =
@@ -348,6 +348,9 @@ public final class PlanningContext implements Context {
 
         /** */
         private IgniteLogger log = new NullLogger();
+
+        /** */
+        private GridQueryCancel qryCancel;
 
         /**
          * @param locNodeId Local node ID.
@@ -423,13 +426,22 @@ public final class PlanningContext implements Context {
         }
 
         /**
+         * @param qryCancel Query Cancel hook.
+         * @return Builder for chaining.
+         */
+        public Builder qryCancel(GridQueryCancel qryCancel) {
+            this.qryCancel = qryCancel;
+            return this;
+        }
+
+        /**
          * Builds planner context.
          *
          * @return Planner context.
          */
         public PlanningContext build() {
             return new PlanningContext(frameworkCfg, parentCtx, locNodeId, originatingNodeId, qry,
-                parameters, topVer, log);
+                parameters, topVer, log, qryCancel);
         }
     }
 }

@@ -83,9 +83,7 @@ public class CancelTest extends GridCommonAbstractTest {
                     .setSqlSchema("PUBLIC"));
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testCancel() throws Exception {
         QueryEngine engine = Commons.lookupComponent(grid(0).context(), QueryEngine.class);

@@ -261,9 +261,9 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
             Map<Object, Outbox<?>> locals = GridTestUtils.getFieldValue(mailReg, MailboxRegistryImpl.class, "locals");
 
-            waitForCondition(() -> remotes.isEmpty() || remotes.values().stream().allMatch(s -> s.context().isCancelled()), 5_000);
+            waitForCondition(() -> remotes.isEmpty() || remotes.values().stream().allMatch(s -> s.context().isFinished()), 5_000);
 
-            waitForCondition(() -> locals.isEmpty() || locals.values().stream().allMatch(s -> s.context().isCancelled()), 5_000);
+            waitForCondition(() -> locals.isEmpty() || locals.values().stream().allMatch(s -> s.context().isFinished()), 5_000);
         }
     }
 

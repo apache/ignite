@@ -179,7 +179,7 @@ public abstract class AbstractNode<Row> implements Node<Row> {
 
     /** */
     protected void checkState() throws Exception {
-        if (context().isCancelled())
+        if (context().isFinished())
             throw new ExecutionCancelledException();
         if (Thread.interrupted())
             throw new IgniteInterruptedCheckedException("Thread was interrupted.");

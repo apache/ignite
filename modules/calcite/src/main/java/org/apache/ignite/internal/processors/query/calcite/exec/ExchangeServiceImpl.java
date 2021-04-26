@@ -192,7 +192,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
                 ctxs.add(outbox.context());
             }
 
-            CompletableFuture.allOf(futs.toArray(new CompletableFuture<?>[0])).thenRun(() -> ctxs.forEach(ExecutionContext::cancel));
+            CompletableFuture.allOf(futs.toArray(new CompletableFuture<?>[0])).thenRun(() -> ctxs.forEach(ExecutionContext::finish));
         }
         else if (log.isDebugEnabled()) {
             log.debug("Stale oubox cancel message received: [" +

@@ -37,4 +37,13 @@ public class NoOpQueryEngine extends GridProcessorAdapter implements QueryEngine
     @Override public List<FieldsQueryCursor<List<?>>> query(@Nullable QueryContext ctx, String schemaName, String query, Object... params) throws IgniteSQLException {
         return Collections.emptyList();
     }
+
+    /** {@inheritDoc} */
+    @Override public List<GridRunningQueryInfo> runningSqlQueries() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void cancelQuery(long qryId) {
+    }
 }

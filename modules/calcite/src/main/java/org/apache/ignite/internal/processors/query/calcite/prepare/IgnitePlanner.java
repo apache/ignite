@@ -63,7 +63,9 @@ import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.RuleSets;
 import org.apache.calcite.tools.ValidationException;
 import org.apache.calcite.util.Pair;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
@@ -273,6 +275,8 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         if (planner == null) {
             VolcanoPlannerExt planner = new VolcanoPlannerExt(frameworkCfg.getCostFactory(), ctx);
             planner.setExecutor(rexExecutor);
+            planner.registerCancelHook(ctx);
+
             this.planner = planner;
 
             for (RelTraitDef<?> def : traitDefs)
@@ -382,6 +386,20 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         protected VolcanoPlannerExt(RelOptCostFactory costFactory, Context externalCtx) {
             super(costFactory, externalCtx);
             setTopDownOpt(true);
+        }
+
+        public void registerCancelHook(PlanningContext externalCtx) {
+            try {
+                GridQueryCancel cancel = externalCtx.queryCancel();
+
+                if(cancel != null)
+                    cancel.add(() -> {
+                        cancelFlag.set(true);
+                    });
+            }
+            catch (QueryCancelledException e) {
+                throw new IgniteSQLException(e.getMessage(), IgniteQueryErrorCode.QUERY_CANCELED);
+            }
         }
 
         /** {@inheritDoc} */

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
+import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -27,8 +28,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.ConventionTraitDef;
@@ -56,7 +55,6 @@ import org.apache.calcite.util.Pair;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -181,7 +179,10 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     private ClosableIteratorsHolder iteratorsHolder;
 
     /** */
-    private final Map<UUID, QueryInfo> running;
+    private RunningQueryService runningQrySvc;
+
+    /** */
+    private final Map<UUID, QueryInfo> executing;
 
     /** */
     private final RowHandler<Row> handler;
@@ -200,7 +201,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         this.handler = handler;
 
         discoLsnr = (e, c) -> onNodeLeft(e.eventNode().id());
-        running = new ConcurrentHashMap<>();
+        executing = new ConcurrentHashMap<>();
         ddlConverter = new DdlSqlToCommandConverter();
 
         ddlCmdHnd = new DdlCommandHandler(
@@ -321,6 +322,20 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /**
+     * @return Running query service.
+     */
+    public RunningQueryService RunningQueryService() {
+        return runningQrySvc;
+    }
+
+    /**
+     * @param runningQrySvc Running query service.
+     */
+    public void runningQrySvc(RunningQueryService runningQrySvc) {
+        this.runningQrySvc = runningQrySvc;
+    }
+
+    /**
      * @param msgSvc Message service.
      */
     public void messageService(MessageService msgSvc) {
@@ -397,9 +412,19 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         String qry,
         Object[] params
     ) {
-        PlanningContext pctx = createContext(Commons.convert(ctx), topologyVersion(), localNodeId(), schema, qry, params);
+        GridQueryCancel qryCancel = new GridQueryCancel();
 
-        List<QueryPlan> qryPlans = queryPlanCache().queryPlan(pctx, new CacheKey(pctx.schemaName(), pctx.query()), this::prepareQuery);
+        PlanningContext pctx = createContext(Commons.convert(ctx), topologyVersion(), localNodeId(), schema, qry, params, qryCancel);
+
+        long planningId = runningQrySvc.register(pctx);
+
+        List<QueryPlan> qryPlans;
+        try {
+            qryPlans = queryPlanCache().queryPlan(pctx, new CacheKey(pctx.schemaName(), pctx.query()), this::prepareQuery);
+        }
+        finally {
+            runningQrySvc.unregister(planningId);
+        }
 
         return executePlans(qryPlans, pctx);
     }
@@ -417,22 +442,12 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         List<FieldsQueryCursor<List<?>>> cursors = new ArrayList<>(qryPlans.size());
 
         for (QueryPlan plan : qryPlans) {
-            UUID qryId = UUID.randomUUID();
-
-            FieldsQueryCursor<List<?>> cur = executePlan(qryId, pctx, plan);
+            FieldsQueryCursor<List<?>> cur = executePlan(pctx, plan);
 
             cursors.add(cur);
         }
 
         return cursors;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void cancelQuery(UUID qryId) {
-        QueryInfo info = running.get(qryId);
-
-        if (info != null)
-            info.doCancel();
     }
 
     /** {@inheritDoc} */
@@ -454,6 +469,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         mappingService(proc.mappingService());
         messageService(proc.messageService());
         exchangeService(proc.exchangeService());
+        runningQrySvc(proc.runningQueryService());
 
         init();
      }
@@ -473,7 +489,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     @Override public void tearDown() {
         eventManager().removeDiscoveryEventListener(discoLsnr, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
 
-        running.clear();
+        executing.clear();
 
         iteratorsHolder().tearDown();
     }
@@ -486,6 +502,12 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     /** */
     private PlanningContext createContext(Context parent, AffinityTopologyVersion topVer, UUID originator,
         @Nullable String schema, String qry, Object[] params) {
+        return createContext(parent, topVer, originator, schema, qry, params, new GridQueryCancel());
+    }
+
+    /** */
+    private PlanningContext createContext(Context parent, AffinityTopologyVersion topVer, UUID originator,
+        @Nullable String schema, String qry, Object[] params, @Nullable GridQueryCancel qryCancel) {
         RelTraitDef<?>[] traitDefs = {
             ConventionTraitDef.INSTANCE,
             RelCollationTraitDef.INSTANCE,
@@ -508,6 +530,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             .parameters(params)
             .topologyVersion(topVer)
             .logger(log)
+            .qryCancel(qryCancel)
             .build();
     }
 
@@ -542,6 +565,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             throw new IgniteSQLException("Failed to validate query.", IgniteQueryErrorCode.PARSING, e);
         }
         catch (Exception e) {
+            if (ctx.queryCancel().cancelled())
+                throw new IgniteSQLException("The query was cancelled while planning.", IgniteQueryErrorCode.QUERY_CANCELED);
+
             throw new IgniteSQLException("Failed to plan query.", IgniteQueryErrorCode.UNKNOWN, e);
         }
     }
@@ -665,6 +691,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
             return igniteRel;
         }
+        catch (IgniteSQLException sqlEx){
+            throw sqlEx;
+        }
         catch (Throwable ex) {
             log.error("Unexpected error at query optimizer.", ex);
             log.error(planner.dump());
@@ -702,12 +731,12 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private FieldsQueryCursor<List<?>> executePlan(UUID qryId, PlanningContext pctx, QueryPlan plan) {
+    private FieldsQueryCursor<List<?>> executePlan(PlanningContext pctx, QueryPlan plan) {
         switch (plan.type()) {
             case DML:
                 // TODO a barrier between previous operation and this one
             case QUERY:
-                return executeQuery(qryId, (MultiStepPlan) plan, pctx);
+                return executeQuery((MultiStepPlan)plan, pctx);
             case EXPLAIN:
                 return executeExplain((ExplainPlan)plan, pctx);
             case DDL:
@@ -732,7 +761,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private FieldsQueryCursor<List<?>> executeQuery(UUID qryId, MultiStepPlan plan, PlanningContext pctx) {
+    private FieldsQueryCursor<List<?>> executeQuery(MultiStepPlan plan, PlanningContext pctx) {
         plan.init(pctx);
 
         List<Fragment> fragments = plan.fragments();
@@ -758,10 +787,12 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             plan.target(fragment),
             plan.remotes(fragment));
 
+        UUID qryExecId = UUID.randomUUID();
+
         ExecutionContext<Row> ectx = new ExecutionContext<>(
             taskExecutor(),
             pctx,
-            qryId,
+            qryExecId,
             fragmentDesc,
             handler,
             Commons.parametersMap(pctx.parameters()));
@@ -769,10 +800,14 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         Node<Row> node = new LogicalRelImplementor<>(ectx, partitionService(), mailboxRegistry(),
             exchangeService(), failureProcessor()).go(fragment.root());
 
-        QueryInfo info = new QueryInfo(ectx, plan, node);
-
         // register query
-        register(info);
+        QueryInfo qryInfo = new QueryInfo(ectx, plan, node);
+        executing.put(qryExecId, qryInfo);
+
+        //ToDo: In additional we should know text of concrete execution statement of multistatement query.
+        String qryText = pctx.query();
+        long runningId = runningQrySvc.register(qryText, pctx, qryInfo);
+        qryInfo.queryId(runningId);
 
         // start remote execution
         for (int i = 1; i < fragments.size(); i++) {
@@ -786,11 +821,11 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             Throwable ex = null;
             for (UUID nodeId : fragmentDesc.nodeIds()) {
                 if (ex != null)
-                    info.onResponse(nodeId, fragment.fragmentId(), ex);
+                    qryInfo.onResponse(nodeId, fragment.fragmentId(), ex);
                 else {
                     try {
                         QueryStartRequest req = new QueryStartRequest(
-                            qryId,
+                            qryExecId,
                             pctx.schemaName(),
                             fragment.serialized(),
                             pctx.topologyVersion(),
@@ -800,13 +835,13 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                         messageService().send(nodeId, req);
                     }
                     catch (Throwable e) {
-                        info.onResponse(nodeId, fragment.fragmentId(), ex = e);
+                        qryInfo.onResponse(nodeId, fragment.fragmentId(), ex = e);
                     }
                 }
             }
         }
 
-        return new ListFieldsQueryCursor<>(plan, info.iterator(), ectx);
+        return new ListFieldsQueryCursor<>(plan, qryInfo.iterator(), ectx);
     }
 
     /** */
@@ -837,42 +872,18 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             messageService().send(origNodeId, new QueryStartResponse(qryId, frId));
         }
         catch (IgniteCheckedException e) {
-            IgniteException wrpEx = new IgniteException("Failed to send reply. [nodeId=" + origNodeId + ']', e);
-
-            throw wrpEx;
+            throw new IgniteException("Failed to send reply. [nodeId=" + origNodeId + ']', e);
         }
 
         node.init();
     }
 
     /** */
-    private void register(QueryInfo info) {
-        UUID qryId = info.ctx.queryId();
-        PlanningContext pctx = info.ctx.planningContext();
-
-        running.put(qryId, info);
-
-        GridQueryCancel qryCancel = pctx.queryCancel();
-
-        if (qryCancel == null)
-            return;
-
-        try {
-            qryCancel.add(info);
-        }
-        catch (QueryCancelledException e) {
-            running.remove(qryId);
-
-            throw new IgniteSQLException(e.getMessage(), IgniteQueryErrorCode.QUERY_CANCELED);
-        }
-    }
-
-    /** */
     private FieldsMetadata queryFieldsMetadata(PlanningContext ctx, RelDataType sqlType,
         @Nullable List<List<String>> origins) {
-        RelDataType resultType = TypeUtils.getResultType(
+        RelDataType resType = TypeUtils.getResultType(
             ctx.typeFactory(), ctx.catalogReader(), sqlType, origins);
-        return new FieldsMetadataImpl(resultType, origins);
+        return new FieldsMetadataImpl(resType, origins);
     }
 
     /** */
@@ -928,25 +939,25 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     private void onMessage(UUID nodeId, QueryStartResponse msg) {
         assert nodeId != null && msg != null;
 
-        QueryInfo info = running.get(msg.queryId());
+        QueryInfo qryInfo = executing.get(msg.queryId());
 
-        if (info != null)
-            info.onResponse(nodeId, msg.fragmentId(), msg.error());
+        if (qryInfo != null)
+            qryInfo.onResponse(nodeId, msg.fragmentId(), msg.error());
     }
 
     /** */
     private void onMessage(UUID nodeId, ErrorMessage msg) {
         assert nodeId != null && msg != null;
 
-        QueryInfo info = running.get(msg.queryId());
+        QueryInfo qryInfo = executing.get(msg.queryId());
 
-        if (info != null)
-            info.onError(new RemoteException(nodeId, msg.queryId(), msg.fragmentId(), msg.error()));
+        if (qryInfo != null)
+            qryInfo.onError(new RemoteException(nodeId, msg.queryId(), msg.fragmentId(), msg.error()));
     }
 
     /** */
     private void onNodeLeft(UUID nodeId) {
-        running.forEach((uuid, queryInfo) -> queryInfo.onNodeLeft(nodeId));
+        executing.forEach((uuid, queryInfo) -> queryInfo.onNodeLeft(nodeId));
     }
 
     /** */
@@ -1016,6 +1027,13 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         private volatile QueryState state;
 
         /** */
+        private volatile long queryId;
+
+        /**
+         * @param ctx Execution context.
+         * @param plan Plan.
+         * @param root Root.
+         * */
         private QueryInfo(ExecutionContext<Row> ctx, MultiStepPlan plan, Node<Row> root) {
             this.ctx = ctx;
 
@@ -1038,6 +1056,11 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             }
 
             state = QueryState.RUNNING;
+        }
+
+        /** */
+        public void queryId(long queryId) {
+            this.queryId = queryId;
         }
 
         /** */
@@ -1072,7 +1095,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
             if (state0 == QueryState.CLOSED) {
                 // 2) unregister runing query
-                running.remove(ctx.queryId());
+                runningQrySvc.unregister(queryId);
 
                 // 4) close remote fragments
                 IgniteException wrpEx = null;
@@ -1091,7 +1114,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 }
 
                 // 4) Cancel local fragment
-                ctx.cancel();
+                ctx.finish();
 
                 if (wrpEx != null)
                     throw wrpEx;

@@ -71,7 +71,7 @@ public class ExecutionContext<Row> implements DataContext {
     private final ExpressionFactory<Row> expressionFactory;
 
     /** */
-    private final AtomicBoolean cancelFlag = new AtomicBoolean();
+    private final AtomicBoolean finishFlag = new AtomicBoolean();
 
     /** */
     private Object[] correlations = new Object[16];
@@ -191,8 +191,8 @@ public class ExecutionContext<Row> implements DataContext {
 
     /** {@inheritDoc} */
     @Override public Object get(String name) {
-        if (Variable.CANCEL_FLAG.camelName.equals(name))
-            return cancelFlag;
+//        if (Variable.CANCEL_FLAG.camelName.equals(name))
+//            return cancelFlag;
         if (Variable.TIME_ZONE.camelName.equals(name))
             return TIME_ZONE; // TODO DistributedSqlConfiguration#timeZone
         if (name.startsWith("?"))
@@ -231,7 +231,7 @@ public class ExecutionContext<Row> implements DataContext {
      * @param task Query task.
      */
     public void execute(RunnableX task, Consumer<Throwable> onError) {
-        if (isCancelled())
+        if (isFinished())
             return;
 
         executor.execute(qryId, fragmentId(), () -> {
@@ -240,6 +240,9 @@ public class ExecutionContext<Row> implements DataContext {
             }
             catch (Throwable e) {
                 onError.accept(e);
+
+                if (isFinished())
+                    return;
 
                 throw new IgniteException("Unexpected exception", e);
             }
@@ -255,7 +258,7 @@ public class ExecutionContext<Row> implements DataContext {
      * @return a {@link CompletableFuture} representing pending task
      */
     public CompletableFuture<?> submit(RunnableX task, Consumer<Throwable> onError) {
-        assert !isCancelled() : "Call submit after execution was cancelled.";
+        assert !isFinished() : "Call submit after execution was cancelled.";
 
         return executor.submit(qryId, fragmentId(), () -> {
             try {
@@ -277,16 +280,16 @@ public class ExecutionContext<Row> implements DataContext {
     }
 
     /**
-     * Sets cancel flag, returns {@code true} if flag was changed by this call.
+     * Sets finish flag, returns {@code true} if flag was changed by this call.
      *
      * @return {@code True} if flag was changed by this call.
      */
-    public boolean cancel() {
-        return !cancelFlag.get() && cancelFlag.compareAndSet(false, true);
+    public boolean finish() {
+        return !finishFlag.get() && finishFlag.compareAndSet(false, true);
     }
 
     /** */
-    public boolean isCancelled() {
-        return cancelFlag.get();
+    public boolean isFinished() {
+        return finishFlag.get();
     }
 }

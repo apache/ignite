@@ -45,6 +45,8 @@ import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistry;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutorImpl;
+import org.apache.ignite.internal.processors.query.calcite.exec.RunningQueryInfo;
+import org.apache.ignite.internal.processors.query.calcite.exec.RunningQueryService;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
@@ -128,6 +130,8 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     /** */
     private final ExecutionService executionSvc;
 
+    private final RunningQueryService runningQryScv;
+
     /**
      * @param ctx Kernal context.
      */
@@ -144,6 +148,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         msgSvc = new MessageServiceImpl(ctx);
         mappingSvc = new MappingServiceImpl(ctx);
         exchangeSvc = new ExchangeServiceImpl(ctx);
+        runningQryScv = new RunningQueryService(ctx);
     }
 
     /**
@@ -209,6 +214,13 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         return failureProcessor;
     }
 
+    /**
+     * @return Running query manager.
+     */
+    public RunningQueryService runningQueryService() {
+        return runningQryScv;
+    }
+
     /** {@inheritDoc} */
     @Override public void start() {
         onStart(ctx,
@@ -220,7 +232,8 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             taskExecutor,
             mappingSvc,
             qryPlanCache,
-            exchangeSvc
+            exchangeSvc,
+            runningQryScv
         );
     }
 
@@ -235,7 +248,8 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             taskExecutor,
             mappingSvc,
             qryPlanCache,
-            exchangeSvc
+            exchangeSvc,
+            runningQryScv
         );
     }
 
@@ -244,6 +258,14 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         String qry, Object... params) throws IgniteSQLException {
 
         return executionSvc.executeQuery(qryCtx, schemaName, qry, params);
+    }
+
+    @Override public List<RunningQueryInfo> runningSqlQueries() {
+        return runningQryScv.runningSqlQueries();
+    }
+
+    @Override public void cancelQuery(long qryId) {
+        runningQryScv.cancelQuery(qryId);
     }
 
     /** */

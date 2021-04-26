@@ -83,4 +83,11 @@ public class GridQueryCancel {
         if (canceled)
             throw new QueryCancelledException();
     }
+
+    /**
+     * @return State of cancel flag.
+     */
+    public synchronized boolean cancelled() {
+        return canceled;
+    }
 }

@@ -13,30 +13,29 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
-
-package org.apache.ignite.internal.processors.query.calcite.exec;
-
-import java.util.List;
-import java.util.UUID;
-
-import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.internal.processors.query.QueryContext;
-import org.apache.ignite.internal.processors.query.calcite.util.Service;
-import org.jetbrains.annotations.Nullable;
-
-/**
  *
  */
-public interface ExecutionService extends Service {
-    /**
-     * Executes a query.
-     *
-     * @param ctx Query external context, contains flags and connection settings like a locale or a timezone.
-     * @param schema Schema name.
-     * @param query Query.
-     * @param params Query parameters.
-     * @return Query cursor.
-     */
-    List<FieldsQueryCursor<List<?>>> executeQuery(@Nullable QueryContext ctx, String schema, String query, Object[] params);
+
+package org.apache.ignite.internal.processors.query.calcite;
+
+import java.util.List;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+
+public class CalciteTestUtils {
+    /** */
+    public static List<List<?>> executeSql(IgniteEx ign, String sql) {
+        List<FieldsQueryCursor<List<?>>> cur = queryProcessor(ign).query(null, "PUBLIC", sql);
+
+        try (QueryCursor<List<?>> srvCursor = cur.get(0)) {
+            return srvCursor.getAll();
+        }
+    }
+
+    /** */
+    public static CalciteQueryProcessor queryProcessor(IgniteEx ign) {
+        return Commons.lookupComponent(ign.context(), CalciteQueryProcessor.class);
+    }
 }
