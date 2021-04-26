@@ -1009,7 +1009,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         return Arrays.stream(dir.listFiles())
             .sorted()
             .filter(File::isDirectory)
-            .filter(f -> f.getName().startsWith(CACHE_DIR_PREFIX) || f.getName().startsWith(CACHE_GRP_DIR_PREFIX))
+            .filter(f -> f.getName().startsWith(CACHE_DIR_PREFIX) || f.getName().startsWith(CACHE_GRP_DIR_PREFIX) ||
+                f.getName().startsWith(MetaStorage.META_STORAGE_DIR_NAME))
             .filter(f -> names.test(cacheGroupName(f)))
             .collect(Collectors.toList());
     }
@@ -1055,6 +1056,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             return name.substring(CACHE_GRP_DIR_PREFIX.length());
         else if (name.startsWith(CACHE_DIR_PREFIX))
             return name.substring(CACHE_DIR_PREFIX.length());
+        else if (name.startsWith(MetaStorage.META_STORAGE_DIR_NAME))
+            return MetaStorage.METASTORAGE_CACHE_NAME;
         else
             throw new IgniteException("Directory doesn't match the cache or cache group prefix: " + dir);
     }
