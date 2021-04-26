@@ -50,14 +50,40 @@ Custom cluster, Vagrant, K8s, Mesos, Docker, cloud providers, etc.
 ## Run tests
 - Change a current directory to`${IGNITE_HOME}`
 - Build Apache IGNITE invoking `${IGNITE_HOME}/scripts/build-module.sh ducktests`
-- Run tests using [Ducktape](https://ducktape-docs.readthedocs.io/en/latest/run_tests.html). 
+- Run tests using [Ducktape](https://ducktape-docs.readthedocs.io/en/latest/run_tests.html). \
   For example:
   ```
   ducktape --results-root=./results --cluster-file=./cluster.json --repeat 1 --max-parallel 16 ./modules/ducktests/tests/ignitetest
   ```
 # Custom Ignites (forks) testing
 ## Run all tests
-TBD
+### Setup
+Any version of Apache Ignite, or it's fork, can be tested. 
+Binary releases supported as well as compiled sources. 
+
+- Binary releases should be located at `/opt` directory, eg. `/opt/ignite-2.11.0`.
+- Source releases also should be located at `/opt` directory, but should be compiled before the first use.\
+  Use the following command to compile sources properly:
+  ```
+  ./scripts/build-module.sh ducktests
+  ```
+You may replace `/opt` with custom directory by setting `install_root` globals param. \
+For example, `--globals-json, eg: {"install_root": "/dir42"}`
+
+### Execution
+You may set versions (products) using `@ignite_versions` decorator at code
+```
+@ignite_versions(str(DEV_BRANCH), str(LATEST))
+```
+or passing versions set via globals during the execution
+```
+--globals-json, eg: {"ignite_versions":["2.8.1", "dev"]}
+```
+You may also specify product prefix by `project` param at globals, for example:
+```
+--globals-json, eg: {"project": "fork" ,"ignite_versions": ["ignite-2.8.1", "2.8.1", "dev"]}
+```
+will execute tests on `ignite-2.8.1, fork-2.8.1, fork-dev`
 
 ## Run tests from the external source/repository
 TBD
