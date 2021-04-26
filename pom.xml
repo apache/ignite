@@ -73,6 +73,7 @@
                                 <descriptor>assembly/assembly.xml</descriptor>
                             </descriptors>
                             <finalName>apache-ignite-${project.version}</finalName>
+                            <attach>false</attach>
                         </configuration>
                     </execution>
                 </executions>
