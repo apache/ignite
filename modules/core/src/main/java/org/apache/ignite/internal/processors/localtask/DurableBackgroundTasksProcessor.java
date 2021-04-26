@@ -351,7 +351,7 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
      * @param t Durable background task.
      * @return MetaStorage {@code t} key.
      */
-    private String metaStorageKey(DurableBackgroundTask t) {
+    static String metaStorageKey(DurableBackgroundTask t) {
         return TASK_PREFIX + t.name();
     }
 }
