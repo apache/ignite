@@ -18,13 +18,14 @@ This module contains ignite config classes and utilities.
 """
 import os
 
-import sys
 from jinja2 import FileSystemLoader, Environment
 
 DEFAULT_CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
-DEFAULT_IGNITE_CONF = "ignitetest/services/utils/templates/ignite.xml.j2"
-DEFAULT_THIN_CLIENT_CONF = "ignitetest/services/utils/templates/thin_client_config.xml.j2"
-DEFAULT_LOG4J_CONF = "ignitetest/services/utils/templates/log4j.xml.j2"
+DEFAULT_IGNITE_CONF = "ignite.xml.j2"
+DEFAULT_THIN_CLIENT_CONF = "thin_client_config.xml.j2"
+DEFAULT_LOG4J_CONF = "log4j.xml.j2"
+
+TEMPLATE_PATHES = [DEFAULT_CONFIG_PATH]
 
 
 class ConfigTemplate:
@@ -32,8 +33,7 @@ class ConfigTemplate:
     Basic configuration.
     """
     def __init__(self, path):
-        tmpl_loader = FileSystemLoader(searchpath=[DEFAULT_CONFIG_PATH] + sys.path)
-        env = Environment(loader=tmpl_loader)
+        env = Environment(loader=FileSystemLoader(searchpath=TEMPLATE_PATHES))
 
         self.template = env.get_template(path)
         self.default_params = {}
