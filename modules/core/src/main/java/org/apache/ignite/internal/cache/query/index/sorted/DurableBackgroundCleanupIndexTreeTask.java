@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask.DurableBackgroundTask;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask.DurableBackgroundTaskResult;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -114,23 +115,18 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> executeAsync(GridKernalContext ctx) {
+    @Override public IgniteInternalFuture<DurableBackgroundTaskResult> executeAsync(GridKernalContext ctx) {
         log = ctx.log(this.getClass());
 
-        GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
+        assert worker == null;
+
+        GridFutureAdapter<DurableBackgroundTaskResult> fut = new GridFutureAdapter<>();
 
         worker = new GridWorker(
             ctx.igniteInstanceName(),
             "async-durable-background-task-executor-" + name(),
             log
         ) {
-            /** {@inheritDoc} */
-            @Override public void cancel() {
-                fut.onDone(false);
-
-                super.cancel();
-            }
-
             /** {@inheritDoc} */
             @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
                 Throwable err = null;
@@ -140,11 +136,10 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
 
                     worker = null;
 
-                    fut.onDone(true);
+                    fut.onDone(DurableBackgroundTaskResult.complete(null));
                 }
                 catch (Throwable t) {
-                    if (!fut.isDone())
-                        fut.onDone(err);
+                    fut.onDone(DurableBackgroundTaskResult.restart(t));
                 }
             }
         };

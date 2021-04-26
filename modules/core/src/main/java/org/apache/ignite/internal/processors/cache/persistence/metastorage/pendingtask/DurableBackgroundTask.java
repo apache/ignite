@@ -40,11 +40,10 @@ public interface DurableBackgroundTask extends Serializable {
     /**
      * Asynchronous task execution.
      *
-     * If the futures are completed with an error or {@code true}, then the task will be considered completed.
-     * If the futures are completed with {@code false}, then later it will be re-executed.
+     * Completion of the task execution should be only with the {@link DurableBackgroundTaskResult result}.
      *
      * @param ctx Kernal context.
      * @return Future of the tasks.
      */
-    IgniteInternalFuture<Boolean> executeAsync(GridKernalContext ctx);
+    IgniteInternalFuture<DurableBackgroundTaskResult> executeAsync(GridKernalContext ctx);
 }

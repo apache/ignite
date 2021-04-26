@@ -134,7 +134,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
     private final LogListener taskLifecycleListener =
         new MessageOrderLogListener(
             ".*?Executing durable background task: DROP_SQL_INDEX-PUBLIC." + IDX_NAME + "-.*",
-            ".*?Execution of durable background task canceled: DROP_SQL_INDEX-PUBLIC." + IDX_NAME + "-.*",
+            ".*?Could not execute durable background task: DROP_SQL_INDEX-PUBLIC." + IDX_NAME + "-.*",
             ".*?Executing durable background task: DROP_SQL_INDEX-PUBLIC." + IDX_NAME + "-.*",
             ".*?Execution of durable background task completed: DROP_SQL_INDEX-PUBLIC." + IDX_NAME + "-.*"
         );
