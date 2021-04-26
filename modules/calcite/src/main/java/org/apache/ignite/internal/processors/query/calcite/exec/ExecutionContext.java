@@ -191,8 +191,6 @@ public class ExecutionContext<Row> implements DataContext {
 
     /** {@inheritDoc} */
     @Override public Object get(String name) {
-//        if (Variable.CANCEL_FLAG.camelName.equals(name))
-//            return cancelFlag;
         if (Variable.TIME_ZONE.camelName.equals(name))
             return TIME_ZONE; // TODO DistributedSqlConfiguration#timeZone
         if (name.startsWith("?"))

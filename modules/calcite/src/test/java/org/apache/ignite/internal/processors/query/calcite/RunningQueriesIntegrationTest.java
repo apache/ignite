@@ -116,9 +116,7 @@ public class RunningQueriesIntegrationTest extends GridCommonAbstractTest {
         GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(0), IgniteSQLException.class, "The query was cancelled while ");
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testCancelAtExecutionPhase() throws IgniteCheckedException {
         QueryEngine engine = queryProcessor(client);
