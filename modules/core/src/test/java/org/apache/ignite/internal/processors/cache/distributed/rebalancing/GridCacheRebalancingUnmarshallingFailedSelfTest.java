@@ -23,7 +23,6 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -173,7 +172,7 @@ public class GridCacheRebalancingUnmarshallingFailedSelfTest extends GridCommonA
 
         readCnt.set(Integer.MAX_VALUE);
 
-        Ignite ig = startGrid(0);
+        startGrid(0);
 
         for (int i = 0; i < 100; i++)
             grid(0).cache(CACHE).put(new TestKey(String.valueOf(i)), i);
