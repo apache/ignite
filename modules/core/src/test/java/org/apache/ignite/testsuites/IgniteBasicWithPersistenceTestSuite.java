@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CommonPoolStarvat
 import org.apache.ignite.internal.processors.cache.persistence.SingleNodePersistenceSslTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotCheckTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotSelfTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotWithMetastorageTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotMXBeanTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManagerSelfTest;
 import org.apache.ignite.internal.processors.performancestatistics.CacheStartTest;
@@ -97,6 +98,7 @@ import org.junit.runners.Suite;
     IgniteSnapshotManagerSelfTest.class,
     IgniteClusterSnapshotSelfTest.class,
     IgniteClusterSnapshotCheckTest.class,
+    IgniteClusterSnapshotWithMetastorageTest.class,
     IgniteSnapshotMXBeanTest.class,
 
     IgniteClusterIdTagTest.class,

@@ -67,6 +67,7 @@ import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPa
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
+import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -366,7 +367,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
     }
 
     /** {@inheritDoc} */
-    @Override public void beforeCheckpointBegin(Context ctx) {
+    @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
         if (stopping())
             return;
 
@@ -376,6 +377,8 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
             else
                 cpEndFut.completeExceptionally(f.error());
         });
+
+        ((DistributedMetaStorageImpl)cctx.kernalContext().distributedMetastorage()).flush(startedFut);
     }
 
     /** {@inheritDoc} */

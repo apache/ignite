@@ -60,6 +60,7 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageL
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -176,7 +177,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     );
 
     /**
-     * Map with futures used to wait for async write/remove operations completion.
+     * Map with user futures used to wait for async write/remove operations completion.
      */
     private final ConcurrentMap<UUID, GridFutureAdapter<Boolean>> updateFuts = new ConcurrentHashMap<>();
 
@@ -200,6 +201,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * Worker that will write data on disk asynchronously. Makes sence for persistent nodes only.
      */
     private final DmsDataWriterWorker worker;
+
+    /** */
+    private volatile IgniteInternalFuture<?> readyFut = new GridFinishedFuture<>();
 
     /**
      * @param ctx Kernal context.
@@ -253,16 +257,12 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         else {
             isp.registerMetastorageListener(new MetastorageLifecycleListener() {
                 /** {@inheritDoc} */
-                @Override public void onReadyForRead(
-                    ReadOnlyMetastorage metastorage
-                ) throws IgniteCheckedException {
+                @Override public void onReadyForRead(ReadOnlyMetastorage metastorage) throws IgniteCheckedException {
                     onMetaStorageReadyForRead(metastorage);
                 }
 
                 /** {@inheritDoc} */
-                @Override public void onReadyForReadWrite(
-                    ReadWriteMetastorage metastorage
-                ) {
+                @Override public void onReadyForReadWrite(ReadWriteMetastorage metastorage) throws IgniteCheckedException {
                     onMetaStorageReadyForWrite(metastorage);
                 }
             });
@@ -306,14 +306,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     private void stopWorker(boolean cancel) {
         assert lock.isWriteLockedByCurrentThread();
 
-        if (isPersistenceEnabled) {
-            try {
-                worker.cancel(cancel);
-            }
-            catch (InterruptedException e) {
-                log.error("Cannot stop distributed metastorage worker.", e);
-            }
-        }
+        if (isPersistenceEnabled)
+            worker.cancel(cancel);
     }
 
     /**
@@ -1011,6 +1005,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             DistributedMetaStorageClusterNodeData nodeData = (DistributedMetaStorageClusterNodeData)data.commonData();
 
             if (nodeData != null) {
+                readyFut.get();
+
                 if (nodeData.fullData != null) {
                     ver = nodeData.ver;
 
@@ -1166,6 +1162,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             return;
         }
 
+        lock.writeLock().lock();
+
         try {
             if (msg instanceof DistributedMetaStorageCasMessage)
                 completeCas((DistributedMetaStorageCasMessage)msg);
@@ -1177,6 +1175,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         }
         catch (IgniteCheckedException | Error e) {
             throw criticalError(e);
+        }
+        finally {
+            lock.writeLock().unlock();
         }
     }
 
@@ -1211,6 +1212,26 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     }
 
     /**
+     * @param holder Ready future when all updates over distributed metastorage might be proceed.
+     * @throws IgniteCheckedException If fails.
+     */
+    public void flush(IgniteInternalFuture<?> holder) throws IgniteCheckedException {
+        assert isPersistenceEnabled;
+
+        lock.readLock().lock();
+
+        try {
+            readyFut = holder.chain(f -> null);
+
+            // Read lock taken, so no other distributed updated will be added to the queue.
+            worker.awaitQueueEmpty();
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    /**
      * Invoke failure handler and rethrow passed exception, possibly wrapped into the unchecked one.
      */
     private RuntimeException criticalError(Throwable e) {
@@ -1231,39 +1252,42 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     private void completeWrite(
         DistributedMetaStorageHistoryItem histItem
     ) throws IgniteCheckedException {
-        lock.writeLock().lock();
+        assert lock.writeLock().isHeldByCurrentThread();
 
-        try {
-            histItem = optimizeHistoryItem(histItem);
+        readyFut.get();
 
-            if (histItem == null)
-                return;
+        histItem = optimizeHistoryItem(histItem);
 
-            ver = ver.nextVersion(histItem);
+        if (histItem == null)
+            return;
 
-            for (int i = 0, len = histItem.keys().length; i < len; i++) {
-                String key = histItem.keys()[i];
-                byte[] valBytes = histItem.valuesBytesArray()[i];
+        ver = ver.nextVersion(histItem);
 
-                notifyListeners(
-                    histItem.keys()[i],
-                    () -> bridge.read(key),
-                    () -> unmarshal(marshaller, valBytes));
-            }
+        for (int i = 0, len = histItem.keys().length; i < len; i++) {
+            String key = histItem.keys()[i];
+            byte[] valBytes = histItem.valuesBytesArray()[i];
 
-            for (int i = 0, len = histItem.keys().length; i < len; i++)
-                bridge.write(histItem.keys()[i], histItem.valuesBytesArray()[i]);
-
-            addToHistoryCache(ver.id(), histItem);
+            notifyListeners(
+                histItem.keys()[i],
+                () -> bridge.read(key),
+                () -> unmarshal(marshaller, valBytes));
         }
-        finally {
-            lock.writeLock().unlock();
-        }
+
+        for (int i = 0, len = histItem.keys().length; i < len; i++)
+            bridge.write(histItem.keys()[i], histItem.valuesBytesArray()[i]);
+
+        addToHistoryCache(ver.id(), histItem);
 
         if (isPersistenceEnabled)
             worker.update(histItem);
 
-        shrinkHistory();
+        // Shrink history so that its estimating size doesn't exceed {@link #histMaxBytes}.
+        while (histCache.sizeInBytes() > histMaxBytes && histCache.size() > 1) {
+            histCache.removeOldest();
+
+            if (isPersistenceEnabled)
+                worker.removeHistItem(ver.id() - histCache.size());
+        }
     }
 
     /**
@@ -1362,25 +1386,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         assert lock.isWriteLockedByCurrentThread();
 
         histCache.clear();
-    }
-
-    /**
-     * Shrikn history so that its estimating size doesn't exceed {@link #histMaxBytes}.
-     */
-    private void shrinkHistory() {
-        lock.writeLock().lock();
-
-        try {
-            while (histCache.sizeInBytes() > histMaxBytes && histCache.size() > 1) {
-                histCache.removeOldest();
-
-                if (isPersistenceEnabled)
-                    worker.removeHistItem(ver.id() - histCache.size());
-            }
-        }
-        finally {
-            lock.writeLock().unlock();
-        }
     }
 
     /**

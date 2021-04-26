@@ -166,6 +166,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirectories;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.DB_DEFAULT_FOLDER;
+import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_DATA;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getPageIO;
@@ -557,14 +558,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         Set<Integer> leftGrps = new HashSet<>(req.grpIds);
+
         leftGrps.removeAll(cctx.cache().cacheGroupDescriptors().keySet());
+        boolean exists = leftGrps.remove(METASTORAGE_CACHE_ID);
 
         if (!leftGrps.isEmpty()) {
             return new GridFinishedFuture<>(new IgniteCheckedException("Some of requested cache groups doesn't exist " +
                 "on the local node [missed=" + leftGrps + ", nodeId=" + cctx.localNodeId() + ']'));
         }
 
-        Map<Integer, Set<Integer>> parts = new HashMap<>();
+        Map<Integer, Set<Integer>> parts =
+            exists ? new HashMap<>(Collections.singletonMap(METASTORAGE_CACHE_ID, null)) : new HashMap<>();
 
         // Prepare collection of pairs group and appropriate cache partition to be snapshot.
         // Cache group context may be 'null' on some nodes e.g. a node filter is set.
@@ -1023,6 +1027,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 .filter(g -> !g.config().isEncryptionEnabled())
                 .map(CacheGroupDescriptor::groupId)
                 .collect(Collectors.toList());
+
+            grps.add(METASTORAGE_CACHE_ID);
 
             List<ClusterNode> srvNodes = cctx.discovery().serverNodes(AffinityTopologyVersion.NONE);
 
