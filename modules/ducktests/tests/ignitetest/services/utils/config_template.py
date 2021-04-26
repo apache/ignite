@@ -20,12 +20,13 @@ import os
 
 from jinja2 import FileSystemLoader, Environment
 
-DEFAULT_CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
+IGNITE_TEMPLATE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
+ZK_TEMPLATE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "zk", "templates")
 DEFAULT_IGNITE_CONF = "ignite.xml.j2"
 DEFAULT_THIN_CLIENT_CONF = "thin_client_config.xml.j2"
 DEFAULT_LOG4J_CONF = "log4j.xml.j2"
 
-TEMPLATE_PATHES = [DEFAULT_CONFIG_PATH]
+TEMPLATE_PATHES = [IGNITE_TEMPLATE_PATH, ZK_TEMPLATE_PATH]
 
 
 class ConfigTemplate:
