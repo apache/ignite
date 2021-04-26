@@ -560,15 +560,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         Set<Integer> leftGrps = new HashSet<>(req.grpIds);
 
         leftGrps.removeAll(cctx.cache().cacheGroupDescriptors().keySet());
-        boolean exists = leftGrps.remove(METASTORAGE_CACHE_ID);
+        boolean withMetaStorage = leftGrps.remove(METASTORAGE_CACHE_ID);
 
         if (!leftGrps.isEmpty()) {
             return new GridFinishedFuture<>(new IgniteCheckedException("Some of requested cache groups doesn't exist " +
                 "on the local node [missed=" + leftGrps + ", nodeId=" + cctx.localNodeId() + ']'));
         }
 
-        Map<Integer, Set<Integer>> parts =
-            exists ? new HashMap<>(Collections.singletonMap(METASTORAGE_CACHE_ID, null)) : new HashMap<>();
+        Map<Integer, Set<Integer>> parts = new HashMap<>();
 
         // Prepare collection of pairs group and appropriate cache partition to be snapshot.
         // Cache group context may be 'null' on some nodes e.g. a node filter is set.
@@ -587,6 +586,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             task0 = registerSnapshotTask(req.snpName,
                 req.srcNodeId,
                 parts,
+                withMetaStorage,
                 locSndrFactory.apply(req.snpName));
 
             clusterSnpReq = req;
@@ -1218,6 +1218,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param snpName Unique snapshot name.
      * @param srcNodeId Node id which cause snapshot operation.
      * @param parts Collection of pairs group and appropriate cache partition to be snapshot.
+     * @param withMetaStorage {@code true} if all metastorage data must be also included into snapshot.
      * @param snpSndr Factory which produces snapshot receiver instance.
      * @return Snapshot operation task which should be registered on checkpoint to run.
      */
@@ -1225,6 +1226,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         String snpName,
         UUID srcNodeId,
         Map<Integer, Set<Integer>> parts,
+        boolean withMetaStorage,
         SnapshotSender snpSndr
     ) {
         if (!busyLock.enterBusy())
@@ -1244,6 +1246,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     ioFactory,
                     snpSndr,
                     parts,
+                    withMetaStorage,
                     locBuff));
 
             if (prev != null)

@@ -144,9 +144,6 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /** */
     public static final String DFLT_STORE_DIR = "db";
 
-    /** */
-    public static final String META_STORAGE_NAME = "metastorage";
-
     /** Matcher for searching of *.tmp files. */
     public static final PathMatcher TMP_FILE_MATCHER =
         FileSystems.getDefault().getPathMatcher("glob:**" + TMP_SUFFIX);
@@ -298,7 +295,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 storeWorkDir.toPath(), entry -> {
                     String name = entry.toFile().getName();
 
-                    return !name.equals(META_STORAGE_NAME) &&
+                    return !name.equals(MetaStorage.META_STORAGE_DIR_NAME) &&
                         (name.startsWith(CACHE_DIR_PREFIX) || name.startsWith(CACHE_GRP_DIR_PREFIX));
                 }
             )) {
@@ -498,9 +495,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             DataRegion dataRegion = cctx.database().dataRegion(GridCacheDatabaseSharedManager.METASTORE_DATA_REGION_NAME);
 
             CacheStoreHolder holder = initDir(
-                new File(storeWorkDir, META_STORAGE_NAME),
+                new File(storeWorkDir, MetaStorage.META_STORAGE_DIR_NAME),
                 grpId,
-                PageIdAllocator.METASTORE_PARTITION + 1,
+                MetaStorage.partitions().size(),
                 dataRegion.memoryMetrics().totalAllocatedPages()::add,
                 false);
 

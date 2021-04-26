@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 
-import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
@@ -27,7 +26,7 @@ public class MetastorageRowStoreEntry extends SimpleDataRow {
     /** */
     public MetastorageRowStoreEntry(byte[] val) {
         super(0L, MetaStorage.PRESERVE_LEGACY_METASTORAGE_PARTITION_ID ?
-            PageIdAllocator.OLD_METASTORE_PARTITION : PageIdAllocator.METASTORE_PARTITION, val);
+            MetaStorage.OLD_METASTORE_PARTITION : MetaStorage.METASTORE_PARTITION, val);
     }
 
     /** {@inheritDoc} */
