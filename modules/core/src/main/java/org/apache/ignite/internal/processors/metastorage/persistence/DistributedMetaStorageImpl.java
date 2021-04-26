@@ -257,12 +257,16 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         else {
             isp.registerMetastorageListener(new MetastorageLifecycleListener() {
                 /** {@inheritDoc} */
-                @Override public void onReadyForRead(ReadOnlyMetastorage metastorage) throws IgniteCheckedException {
+                @Override public void onReadyForRead(
+                    ReadOnlyMetastorage metastorage
+                ) throws IgniteCheckedException {
                     onMetaStorageReadyForRead(metastorage);
                 }
 
                 /** {@inheritDoc} */
-                @Override public void onReadyForReadWrite(ReadWriteMetastorage metastorage) throws IgniteCheckedException {
+                @Override public void onReadyForReadWrite(
+                    ReadWriteMetastorage metastorage
+                ) {
                     onMetaStorageReadyForWrite(metastorage);
                 }
             });

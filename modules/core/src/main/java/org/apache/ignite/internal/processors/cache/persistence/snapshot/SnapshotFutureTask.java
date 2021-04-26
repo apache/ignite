@@ -392,7 +392,8 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
                 cpEndFut.completeExceptionally(f.error());
         });
 
-        ((DistributedMetaStorageImpl)cctx.kernalContext().distributedMetastorage()).flush(startedFut);
+        if (withMetaStorage)
+            ((DistributedMetaStorageImpl)cctx.kernalContext().distributedMetastorage()).flush(startedFut);
     }
 
     /** {@inheritDoc} */
