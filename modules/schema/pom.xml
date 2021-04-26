@@ -36,21 +36,19 @@
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-api</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-bytecode</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
+        <!-- 3rd party dependencies -->
         <dependency>
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>
