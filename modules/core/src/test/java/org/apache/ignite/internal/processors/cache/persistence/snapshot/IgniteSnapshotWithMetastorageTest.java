@@ -38,7 +38,7 @@ public class IgniteSnapshotWithMetastorageTest extends AbstractSnapshotSelfTest 
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotWithMetastorage() throws Exception {
-        IgniteEx ignite = startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
+        IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
         startClientGrid();
 
         ignite.context().distributedMetastorage().write("key", "value");
@@ -47,7 +47,7 @@ public class IgniteSnapshotWithMetastorageTest extends AbstractSnapshotSelfTest 
 
         stopAllGrids();
 
-        IgniteEx snp = startGridsFromSnapshot(3, SNAPSHOT_NAME);
+        IgniteEx snp = startGridsFromSnapshot(2, SNAPSHOT_NAME);
 
         assertEquals("value", snp.context().distributedMetastorage().read("key"));
     }
@@ -79,20 +79,19 @@ public class IgniteSnapshotWithMetastorageTest extends AbstractSnapshotSelfTest 
         int[] marked = new int[1];
 
         db.addCheckpointListener(new CheckpointListener() {
-            @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
+            /** {@inheritDoc} */
+            @Override public void onMarkCheckpointBegin(Context ctx) {
                 // Save counter under checkpoint write-lock.
                 // No distributed metastorage updates should be saved to snapshot after this counter.
                 if (done.compareAndSet(false, true))
                     marked[0] = keyCnt.get();
             }
 
-            @Override public void onCheckpointBegin(Context ctx) throws IgniteCheckedException {
+            /** {@inheritDoc} */
+            @Override public void onCheckpointBegin(Context ctx) {}
 
-            }
-
-            @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
-
-            }
+            /** {@inheritDoc} */
+            @Override public void beforeCheckpointBegin(Context ctx) {}
         });
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
@@ -107,11 +106,12 @@ public class IgniteSnapshotWithMetastorageTest extends AbstractSnapshotSelfTest 
         IgniteEx snp = startGridsFromSnapshot(2, SNAPSHOT_NAME);
 
         snp.context().distributedMetastorage().iterate(prefix, new BiConsumer<String, Serializable>() {
-            @Override public void accept(String s, Serializable serializable) {
+            @Override public void accept(String key, Serializable value) {
                 try {
-                    int key = Integer.parseInt(s.replace(prefix, ""));
+                    int key0 = Integer.parseInt(key.replace(prefix, ""));
 
-                    assertTrue(key <= marked[0]);
+                    assertTrue(key0 <= marked[0]);
+                    assertEquals("value", value);
                 }
                 catch (Throwable t) {
                     fail("Exception reading metastorage");
