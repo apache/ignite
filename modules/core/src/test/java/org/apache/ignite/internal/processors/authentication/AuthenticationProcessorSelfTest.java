@@ -428,7 +428,8 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
         assertThrows(() -> createUser(cli, null, "", "test"),
             UserManagementException.class, "User name is empty");
 
-        assertThrows(() -> createUser(cli, null, "test", null), NullPointerException.class, null);
+        assertThrows(() -> createUser(cli, null, "test", null),
+            UserManagementException.class, "Password is empty");
 
         assertThrows(() -> createUser(cli, null, "test", ""),
             UserManagementException.class, "Password is empty");
@@ -518,7 +519,8 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
     /** Creates user with specified login and password. */
     public static void createUser(IgniteEx ignite, SecurityContext secCtx, String login, String pwd)
         throws IgniteCheckedException {
-        withSecurityContext(ignite, secCtx, ign -> ign.context().security().createUser(login, pwd.toCharArray()));
+        withSecurityContext(ignite, secCtx, ign ->
+            ign.context().security().createUser(login, pwd == null ? null : pwd.toCharArray()));
     }
 
     /** Alters password of the user with the specified login. */
