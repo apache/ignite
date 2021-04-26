@@ -18,19 +18,12 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import org.apache.ignite.internal.IgniteEx;
-import org.junit.Before;
 import org.junit.Test;
 
 /**
  * Cluster-wide snapshot with distributed metastorage test.
  */
 public class IgniteClusterSnapshotWithMetastorageTest extends AbstractSnapshotSelfTest {
-    /** Cleanup data of task execution results if need. */
-    @Before
-    public void beforeCheck() throws Exception {
-        cleanPersistenceDir();
-    }
-
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotWithMetastorage() throws Exception {
