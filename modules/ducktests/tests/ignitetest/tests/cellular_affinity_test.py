@@ -53,6 +53,7 @@ class DiscoreryType(IntEnum):
     ZooKeeper = 0
     TCP = 1
 
+
 @constructible
 class TxPrepType(IntEnum):
     """
@@ -146,6 +147,7 @@ class CellularAffinity(IgniteTest):
     # pylint: disable=R0912
     # pylint: disable=R0914
     # pylint: disable=no-member
+    # pylint: disable=too-many-statements
     @cluster(num_nodes=2 * (NODES_PER_CELL + 1) + 3)  # cell_cnt * (srv_per_cell + cell_streamer) + zookeper_cluster
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @matrix(stop_type=[StopType.DROP_NETWORK, StopType.SIGKILL, StopType.SIGTERM],
