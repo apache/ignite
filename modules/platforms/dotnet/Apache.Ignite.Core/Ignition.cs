@@ -363,7 +363,10 @@ namespace Apache.Ignite.Core
                 if ((Os.IsLinux || Os.IsMacOs) &&
                     string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(EnvEnableAlternateStackCheck)))
                 {
-                    log.Warn("TODO");
+                    log.Warn("Alternate stack check is not enabled, this will cause 'Stack smashing detected'" +
+                             "error when NullReferenceException occurs on .NET Core on Linux and macOS." +
+                             "To enable alternate stack check on .NET Core 3+ and .NET 5+, " +
+                             "set {0} environment variable to 1.", EnvEnableAlternateStackCheck);
                 }
             }
         }
