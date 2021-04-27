@@ -590,9 +590,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 withMetaStorage,
                 locSndrFactory.apply(req.snpName));
 
-            if (withMetaStorage)
+            if (withMetaStorage) {
                 ((DistributedMetaStorageImpl)cctx.kernalContext().distributedMetastorage())
-                    .pauseLocalMetaStorage(((SnapshotFutureTask)task0).started());
+                    .pauseMetaStorage(((SnapshotFutureTask)task0).started());
+            }
 
             clusterSnpReq = req;
         }

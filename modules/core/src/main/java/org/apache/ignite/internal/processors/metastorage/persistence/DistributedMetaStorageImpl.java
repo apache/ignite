@@ -1229,7 +1229,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     /**
      * @param compFut Future which should be completed when worker may proceed with updates.
      */
-    public void pauseLocalMetaStorage(IgniteInternalFuture<?> compFut) {
+    public void pauseMetaStorage(IgniteInternalFuture<?> compFut) {
         assert isPersistenceEnabled;
 
         lock.readLock().lock();

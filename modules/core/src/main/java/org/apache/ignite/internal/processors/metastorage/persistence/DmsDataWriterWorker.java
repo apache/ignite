@@ -43,7 +43,7 @@ import static org.apache.ignite.internal.processors.metastorage.persistence.Dist
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.versionKey;
 
 /** */
-class DmsDataWriterWorker extends GridWorker {
+public class DmsDataWriterWorker extends GridWorker {
     /** */
     public static final byte[] DUMMY_VALUE = {};
 
