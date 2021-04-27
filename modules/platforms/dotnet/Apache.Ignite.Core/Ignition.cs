@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core
         private static readonly object SyncRoot = new object();
 
         /** GC warning flag. */
-        private static int _gcWarn;
+        private static int _diagPrinted;
 
         /** */
         private static readonly IDictionary<NodeKey, Ignite> Nodes = new Dictionary<NodeKey, Ignite>();
@@ -243,8 +243,8 @@ namespace Apache.Ignite.Core
 
                 log.Debug("Starting Ignite.NET " + Assembly.GetExecutingAssembly().GetName().Version);
 
-                // 1. Check GC settings.
-                CheckServerGc(cfg, log);
+                // 1. Log diagnostics.
+                LogDiagnosticMessages(cfg, log);
 
                 // 2. Create context.
                 JvmDll.Load(cfg.JvmDllPath, log);
@@ -337,16 +337,22 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
-        /// Check whether GC is set to server mode.
+        /// Performs system checks and logs diagnostic messages.
         /// </summary>
         /// <param name="cfg">Configuration.</param>
         /// <param name="log">Log.</param>
-        private static void CheckServerGc(IgniteConfiguration cfg, ILogger log)
+        private static void LogDiagnosticMessages(IgniteConfiguration cfg, ILogger log)
         {
-            if (!cfg.SuppressWarnings && !GCSettings.IsServerGC && Interlocked.CompareExchange(ref _gcWarn, 1, 0) == 0)
-                log.Warn("GC server mode is not enabled, this could lead to less " +
-                    "than optimal performance on multi-core machines (to enable see " +
-                    "http://msdn.microsoft.com/en-us/library/ms229357(v=vs.110).aspx).");
+            if (!cfg.SuppressWarnings &&
+                Interlocked.CompareExchange(ref _diagPrinted, 1, 0) == 0)
+            {
+                if (!GCSettings.IsServerGC)
+                {
+                    log.Warn("GC server mode is not enabled, this could lead to less " +
+                             "than optimal performance on multi-core machines (to enable see " +
+                             "http://msdn.microsoft.com/en-us/library/ms229357(v=vs.110).aspx).");
+                }
+            }
         }
 
         /// <summary>
