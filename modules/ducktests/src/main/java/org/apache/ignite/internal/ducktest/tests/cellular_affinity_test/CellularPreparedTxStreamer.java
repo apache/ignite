@@ -39,6 +39,8 @@ public class CellularPreparedTxStreamer extends IgniteAwareApplication {
         final String attr = jsonNode.get("attr").asText();
         final String cell = jsonNode.get("cell").asText();
         final int txCnt = jsonNode.get("txCnt").asInt();
+        final int multiTxCnt = jsonNode.get("multiTxCnt").asInt();
+        final int noncollocatedTxCnt = jsonNode.get("noncollocatedTxCnt").asInt();
 
         markInitialized();
 
@@ -64,16 +66,52 @@ public class CellularPreparedTxStreamer extends IgniteAwareApplication {
                     "[key=" + i + ", nodes=" + nodes.size() + ", stat=" + stat + "]";
 
             if (stat.containsKey(cell)) {
-                cnt++;
-
                 Transaction tx = ignite.transactions().txStart();
 
                 cache.put(i, i);
 
                 ((TransactionProxyImpl<?, ?>)tx).tx().prepare(true);
 
-                if (cnt % 100 == 0)
+                if (cnt++ % 100 == 0)
                     log.info("Long Tx prepared [key=" + i + ",cnt=" + cnt + ", cell=" + stat.keySet() + "]");
+            }
+
+            i--;
+        }
+
+        cnt = 0;
+        i = -10_000_000; // To have no intersection with other node's txs.
+
+        while (cnt != multiTxCnt && !terminated()) {
+            Transaction tx = ignite.transactions().txStart();
+
+            cache.put(--i, i);
+            cache.put(--i, i);
+
+            ((TransactionProxyImpl<?, ?>)tx).tx().prepare(true);
+
+            if (cnt++ % 100 == 0)
+                log.info("Long Multikey Tx prepared [key=" + i + ",cnt=" + cnt + "]");
+        }
+
+        cnt = 0;
+        i = -20_000_000; // To have no intersection with other node's txs.
+
+        while (cnt != noncollocatedTxCnt && !terminated()) {
+            Collection<ClusterNode> nodes = aff.mapKeyToPrimaryAndBackups(i);
+
+            Map<Object, Long> stat = nodes.stream().collect(
+                Collectors.groupingBy(n -> n.attributes().get(attr), Collectors.counting()));
+
+            if (!stat.containsKey(cell)) {
+                Transaction tx = ignite.transactions().txStart();
+
+                cache.put(i, i);
+
+                ((TransactionProxyImpl<?, ?>)tx).tx().prepare(true);
+
+                if (cnt++ % 100 == 0)
+                    log.info("Long Noncollocated Tx prepared [key=" + i + ",cnt=" + cnt + ", cell=" + stat.keySet() + "]");
             }
 
             i--;

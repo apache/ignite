@@ -16,9 +16,9 @@
 """
 This module contains Cellular Affinity tests.
 """
-import math
 from enum import IntEnum
 
+import math
 from ducktape.mark import matrix
 from jinja2 import Template
 
@@ -53,6 +53,15 @@ class DiscoreryType(IntEnum):
     ZooKeeper = 0
     TCP = 1
 
+@constructible
+class TxPrepType(IntEnum):
+    """
+    Transaction preparation type.
+    """
+    CELL_ONLY = 0
+    CELL_WITH_MULTIKEY = 1
+    CELL_WITH_NONCOLLOCATED = 2
+
 
 # pylint: disable=W0223
 class CellularAffinity(IgniteTest):
@@ -70,6 +79,8 @@ class CellularAffinity(IgniteTest):
     CACHE_NAME = "test-cache"
 
     PREPARED_TX_CNT = 500  # possible amount at real cluster under load (per cell).
+    PREPARED_MULTIKEY_TX_CNT = PREPARED_TX_CNT / 2  # should not cause full recovery waiting on alive nodes (per cell)
+    PREPARED_NONCOLLOCATED_TX_CNT = PREPARED_TX_CNT * 2  # huge value, should not affect dramatically on switch speed
 
     CONFIG_TEMPLATE = """
             <property name="cacheConfiguration">
@@ -138,7 +149,8 @@ class CellularAffinity(IgniteTest):
     @cluster(num_nodes=2 * (NODES_PER_CELL + 1) + 3)  # cell_cnt * (srv_per_cell + cell_streamer) + zookeper_cluster
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @matrix(stop_type=[StopType.DROP_NETWORK, StopType.SIGKILL, StopType.SIGTERM],
-            discovery_type=[DiscoreryType.ZooKeeper, DiscoreryType.TCP])
+            discovery_type=[DiscoreryType.ZooKeeper, DiscoreryType.TCP],
+            preparation_type=[TxPrepType.CELL_ONLY, TxPrepType.CELL_WITH_MULTIKEY, TxPrepType.CELL_WITH_NONCOLLOCATED])
     def test_latency(self, ignite_version, stop_type, discovery_type):
         """
         Tests Cellular switch tx latency.
@@ -169,7 +181,8 @@ class CellularAffinity(IgniteTest):
 
             discovery_spi = from_zookeeper_cluster(zk_quorum)
 
-        cell0, prepared_tx_loader1 = self.start_cell_with_prepared_txs(ignite_version, "C0", discovery_spi, modules)
+        cell0, prepared_tx_loader1 = \
+            self.start_cell_with_prepared_txs(ignite_version, f'C{0}', discovery_spi, modules)
 
         if d_type is DiscoreryType.TCP:
             discovery_spi = from_ignite_cluster(cell0)
@@ -179,14 +192,20 @@ class CellularAffinity(IgniteTest):
         loaders = [prepared_tx_loader1]
         nodes = [cell0]
 
-        for cell in range(1, cells_amount):
+        failed_cell_id = 1
+
+        for cell_id in range(1, cells_amount):
             node, prepared_tx_loader = \
-                self.start_cell_with_prepared_txs(ignite_version, "C%d" % cell, discovery_spi, modules)
+                self.start_cell_with_prepared_txs(
+                    ignite_version, f'C{cell_id}', discovery_spi, modules,
+                    multi_cnt=self.PREPARED_MULTIKEY_TX_CNT * cells_amount if cell_id == failed_cell_id else 0,
+                    noncoll_cnt=self.PREPARED_NONCOLLOCATED_TX_CNT * cells_amount if cell_id == failed_cell_id else 0
+                )
 
             loaders.append(prepared_tx_loader)
             nodes.append(node)
 
-        failed_loader = loaders[1]
+        failed_loader = loaders[failed_cell_id]
 
         for node in [*nodes, *loaders]:
             node.await_started()
@@ -259,7 +278,8 @@ class CellularAffinity(IgniteTest):
                     "warmup": 10000},
             modules=modules, startup_timeout_sec=180)
 
-    def start_cell_with_prepared_txs(self, version, cell_id, discovery_spi, modules):
+    # pylint: disable=too-many-arguments
+    def start_cell_with_prepared_txs(self, version, cell_id, discovery_spi, modules, multi_cnt=0, noncoll_cnt=0):
         """
         Starts cell with prepared transactions.
         """
@@ -276,14 +296,16 @@ class CellularAffinity(IgniteTest):
             params={"cacheName": CellularAffinity.CACHE_NAME,
                     "attr": CellularAffinity.ATTRIBUTE,
                     "cell": cell_id,
-                    "txCnt": CellularAffinity.PREPARED_TX_CNT},
+                    "txCnt": CellularAffinity.PREPARED_TX_CNT,
+                    "multiTxCnt": multi_cnt,
+                    "noncollocatedTxCnt": noncoll_cnt},
             jvm_opts=['-D' + CellularAffinity.ATTRIBUTE + '=' + cell_id], modules=modules, startup_timeout_sec=180)
 
         prepared_tx_streamer.start_async()  # starts last server node and creates prepared txs on it.
 
         return nodes, prepared_tx_streamer
 
-    # pylint: disable=R0913
+    # pylint: disable=too-many-arguments
     def start_cell(self, version, jvm_opts, discovery_spi=None, modules=None, nodes_cnt=NODES_PER_CELL):
         """
         Starts cell.
