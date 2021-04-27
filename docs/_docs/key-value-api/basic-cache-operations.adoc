@@ -266,9 +266,9 @@ To achieve nested execution of asynchronous compute operations, you can take adv
 Callbacks for asynchronous cache operations are invoked by using `ForkJoinPool#commonPool`, unless a different executor is configured with `IgniteConfiguration#asyncContinuationExecutor`.
 
 * This default executor is safe for any operations inside the callback.
-* Default behavior has changed in Ignite 2.11. Before that, async cache operation callbacks were called from an Ignite system pool (so-called "striped pool").
+* Default behavior was changed in Ignite 2.11. Before that, async cache operation callbacks were called from an Ignite system pool (so-called "striped pool").
 * To restore the previous behavior, use `IgniteConfiguration.setAsyncContinuationExecutor(Runnable::run)`.
-** Can provide a small performance improvement in some situations, because callbacks are executed without any indirection or scheduling.
+** Previous behavior can provide a small performance improvement, because callbacks are executed without any indirection or scheduling.
 ** UNSAFE: cache operations can't proceed while system threads execute callbacks, and deadlocks are possible if other cache operations are invoked from the callback.
 
 
