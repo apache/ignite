@@ -33,6 +33,12 @@ class SimpleTask implements DurableBackgroundTask {
     /** Task name. */
     private String name;
 
+    /** Future that will be completed at the beginning of the {@link #executeAsync}. */
+    final transient GridFutureAdapter<Void> onExecFut = new GridFutureAdapter<>();
+
+    /** Future that will be returned from the {@link #executeAsync}. */
+    final transient GridFutureAdapter<DurableBackgroundTaskResult> taskFut = new GridFutureAdapter<>();
+
     /**
      * Constructor.
      *
@@ -54,6 +60,8 @@ class SimpleTask implements DurableBackgroundTask {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<DurableBackgroundTaskResult> executeAsync(GridKernalContext ctx) {
-        return new GridFutureAdapter<>();
+        onExecFut.onDone();
+
+        return taskFut;
     }
 }

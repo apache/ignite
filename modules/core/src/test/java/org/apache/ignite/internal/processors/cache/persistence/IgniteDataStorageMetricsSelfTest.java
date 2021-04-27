@@ -440,16 +440,6 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Getting db manager of node.
-     *
-     * @param n Node.
-     * @return Db manager.
-     */
-    private GridCacheDatabaseSharedManager dbMgr(IgniteEx n) {
-        return (GridCacheDatabaseSharedManager)n.context().cache().context().database();
-    }
-
-    /**
      * Getting DATASTORAGE_METRIC_PREFIX metric registry.
      *
      * @param n Node.
