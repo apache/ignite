@@ -618,6 +618,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                     {
                         base.Dispose(true);
 
+                        // TODO: This cleanup fails if flush fails?
                         if (_rcv != null)
                             Marshaller.Ignite.HandleRegistry.Release(_rcvHnd);
 
@@ -628,6 +629,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                         _rwLock.ExitWriteLock();
                     }
 
+                    // TODO: This cleanup fails if flush fails.
                     Marshaller.Ignite.HandleRegistry.Release(_hnd);
 
                     break;
