@@ -98,7 +98,9 @@ Tip: use an extension method to reduce verbosity.
 
 == ConfigureAwait
 
-TODO
+`Task.ConfigureAwait` method can be used as usual with all Ignite async APIs.
+
+See link:https://devblogs.microsoft.com/dotnet/configureawait-faq/[ConfigureAwait FAQ] for more details.
 
 
 
