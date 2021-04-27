@@ -23,7 +23,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.Function;
-import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.ByteUtils;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.network.ClusterNode;
 import org.jetbrains.annotations.NotNull;
@@ -125,13 +125,13 @@ public class RendezvousAffinityFunctionTest {
             null
         );
 
-        byte[] assignmentBytes = IgniteUtils.toBytes(assignment);
+        byte[] assignmentBytes = ByteUtils.toBytes(assignment);
 
         assertNotNull(assignment);
 
         LOG.info("Assignment is serialized successfully [bytes=" + assignmentBytes.length + ']');
 
-        List<List<ClusterNode>> deserializedAssignment = (List<List<ClusterNode>>)IgniteUtils.fromBytes(assignmentBytes);
+        List<List<ClusterNode>> deserializedAssignment = (List<List<ClusterNode>>)ByteUtils.fromBytes(assignmentBytes);
 
         assertNotNull(deserializedAssignment);
 

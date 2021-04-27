@@ -17,54 +17,27 @@
 
 package org.apache.ignite.internal.vault.common;
 
-import java.io.Serializable;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Representation of vault entry.
+ * Vault storage listener for changes.
  */
-public class VaultEntry implements Serializable {
-    /** Key. */
-    private byte[] key;
-
-    /** Value. */
-    private byte[] val;
+//TODO: need to generify with metastorage WatchListener https://issues.apache.org/jira/browse/IGNITE-14653
+public interface VaultListener {
+    /**
+     * The method will be called on each vault update.
+     *
+     * @param entries A single entry or a batch.
+     * @return {@code True} if listener must continue event handling. If returns {@code false} then the listener and
+     * corresponding watch will be unregistered.
+     */
+    boolean onUpdate(@NotNull Iterable<Entry> entries);
 
     /**
-     * Constructs {@code VaultEntry} instance from the given key and value.
+     * The method will be called in case of an error occurred. The listener and corresponding watch will be
+     * unregistered.
      *
-     * @param key Key as a {@code ByteArray}.
-     * @param val Value as a {@code byte[]}.
+     * @param e Exception.
      */
-    public VaultEntry(byte[] key, byte[] val) {
-        this.key = key;
-        this.val = val;
-    }
-
-    /**
-     * Gets a key bytes.
-     *
-     * @return Byte array.
-     */
-    public @NotNull byte[] key() {
-        return key;
-    }
-
-    /**
-     * Gets a value bytes.
-     *
-     * @return Byte array.
-     */
-    public @NotNull byte[] value() {
-        return val;
-    }
-
-    /**
-     * Returns value which denotes whether entry is empty or not.
-     *
-     * @return {@code True} if entry is empty, otherwise - {@code false}.
-     */
-    public boolean empty() {
-        return val == null;
-    }
+    void onError(@NotNull Throwable e);
 }

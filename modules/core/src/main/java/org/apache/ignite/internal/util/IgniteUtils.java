@@ -17,21 +17,13 @@
 
 package org.apache.ignite.internal.util;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import org.apache.ignite.lang.IgniteLogger;
 
 /**
  * Collection of utility methods used throughout the system.
  */
 public class IgniteUtils {
-    /** The logger. */
-    private static final IgniteLogger LOG = IgniteLogger.forClass(IgniteUtils.class);
-
     /** Version of the JDK. */
     private static String jdkVer;
 
@@ -174,48 +166,5 @@ public class IgniteUtils {
         int val = (int)(key ^ (key >>> 32));
 
         return hash(val);
-    }
-
-    /**
-     * Serializes an object to byte array using native java serialization mechanism.
-     *
-     * @param obj Object to serialize.
-     * @return Byte array.
-     */
-    public static byte[] toBytes(Object obj) {
-        try (ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
-            try (ObjectOutputStream out = new ObjectOutputStream(bos)) {
-
-                out.writeObject(obj);
-
-                out.flush();
-
-                return bos.toByteArray();
-            }
-        }
-        catch (Exception e) {
-            LOG.warn("Could not serialize a class [cls=" + obj.getClass().getName() + "]", e);
-
-            return null;
-        }
-    }
-
-    /**
-     * Deserializes an object from byte array using native java serialization mechanism.
-     *
-     * @param bytes Byte array.
-     * @return Object.
-     */
-    public static Object fromBytes(byte[] bytes) {
-        try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes)) {
-            try (ObjectInputStream in = new ObjectInputStream(bis)) {
-                return in.readObject();
-            }
-        }
-        catch (Exception e) {
-            LOG.warn("Could not deserialize an object", e);
-
-            return null;
-        }
     }
 }

@@ -28,8 +28,9 @@ import org.apache.ignite.configuration.schemas.table.TablesConfiguration;
 import org.apache.ignite.internal.baseline.BaselineManager;
 import org.apache.ignite.internal.metastorage.MetaStorageManager;
 import org.apache.ignite.internal.util.ArrayUtils;
-import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.ByteUtils;
 import org.apache.ignite.internal.vault.VaultManager;
+import org.apache.ignite.lang.ByteArray;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.metastorage.common.Conditions;
 import org.apache.ignite.metastorage.common.Key;
@@ -141,8 +142,7 @@ public class AffinityManager {
                         UUID tblId = UUID.fromString(placeholderValue);
 
                         try {
-                            String name = new String(vaultManager.get((INTERNAL_PREFIX + tblId.toString())
-                                .getBytes(StandardCharsets.UTF_8)).get().value(), StandardCharsets.UTF_8);
+                            String name = new String(vaultManager.get(ByteArray.fromString(INTERNAL_PREFIX + tblId.toString())).get().value(), StandardCharsets.UTF_8);
 
                             int partitions = configurationMgr.configurationRegistry().getConfiguration(TablesConfiguration.KEY)
                                 .tables().get(name).partitions().value();
@@ -151,7 +151,7 @@ public class AffinityManager {
 
                             metaStorageMgr.invoke(evt.newEntry().key(),
                                 Conditions.value().eq(evt.newEntry().value()),
-                                Operations.put(IgniteUtils.toBytes(
+                                Operations.put(ByteUtils.toBytes(
                                     RendezvousAffinityFunction.assignPartitions(
                                         baselineMgr.nodes(),
                                         partitions,
