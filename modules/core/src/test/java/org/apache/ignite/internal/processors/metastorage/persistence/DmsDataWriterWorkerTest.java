@@ -21,9 +21,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThread;
 import org.junit.After;
 import org.junit.Assert;
@@ -37,15 +36,9 @@ import static org.apache.ignite.internal.processors.metastorage.persistence.Dist
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.versionKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageVersion.INITIAL_VERSION;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DmsDataWriterWorker.DUMMY_VALUE;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 
 /** */
-public class DmsDataWriterWorkerTest {
-    /** */
-    private static IgniteLogger log = new GridTestLog4jLogger(true).getLogger(DmsDataWriterWorkerTest.class);
-
+public class DmsDataWriterWorkerTest extends GridCommonAbstractTest {
     /** */
     private Thread testThread;
 
@@ -103,7 +96,7 @@ public class DmsDataWriterWorkerTest {
 
         startWorker();
 
-        worker.cancel(true);
+        worker.cancel(false);
 
         assertEquals(1, metastorage.cache.size());
         assertEquals(INITIAL_VERSION, metastorage.read(versionKey()));
