@@ -357,7 +357,13 @@ namespace Apache.Ignite.Core
                 {
                     log.Warn("GC server mode is not enabled, this could lead to less " +
                              "than optimal performance on multi-core machines (to enable see " +
-                             "http://msdn.microsoft.com/en-us/library/ms229357(v=vs.110).aspx).");
+                             "https://docs.microsoft.com/en-us/dotnet/core/run-time-config/garbage-collector).");
+                }
+
+                if ((Os.IsLinux || Os.IsMacOs) &&
+                    string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(EnvEnableAlternateStackCheck)))
+                {
+                    log.Warn("TODO");
                 }
             }
         }
