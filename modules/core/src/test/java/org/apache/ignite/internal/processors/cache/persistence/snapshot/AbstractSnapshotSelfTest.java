@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
@@ -330,9 +331,25 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         String snpName,
         boolean activate
     ) throws Exception {
+        return startGridsFromSnapshot(IntStream.range(0, cnt).boxed().collect(Collectors.toSet()), path, snpName, activate);
+    }
+
+    /**
+     * @param ids Set of ignite instances ids to start.
+     * @param path Snapshot path resolver.
+     * @param snpName Snapshot to start grids from.
+     * @param activate {@code true} to activate after cluster start.
+     * @return Coordinator ignite instance.
+     * @throws Exception If fails.
+     */
+    protected IgniteEx startGridsFromSnapshot(Set<Integer> ids,
+        Function<IgniteConfiguration, String> path,
+        String snpName,
+        boolean activate
+    ) throws Exception {
         IgniteEx crd = null;
 
-        for (int i = 0; i < cnt; i++) {
+        for (Integer i : ids) {
             IgniteConfiguration cfg = optimize(getConfiguration(getTestIgniteInstanceName(i)));
 
             cfg.setWorkDirectory(Paths.get(path.apply(cfg), snpName).toString());

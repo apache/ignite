@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -26,7 +27,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
@@ -34,10 +34,11 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
 
 /**
  * Cluster-wide snapshot with distributed metastorage test.
@@ -89,15 +90,20 @@ public class IgniteSnapshotWithMetastorageTest extends AbstractSnapshotSelfTest 
 
         stopAllGrids();
 
-        IgniteEx snp = startGridsFromSnapshot(2, SNAPSHOT_NAME);
+        IgniteEx snp0 = startGridsFromSnapshot(new HashSet<>(Collections.singletonList(0)),
+            cfg -> resolveSnapshotWorkDirectory(cfg).getAbsolutePath(), SNAPSHOT_NAME, false);
 
         Set<String> allKeys = new HashSet<>();
-        snp.context().distributedMetastorage().iterate(SNAPSHOT_PREFIX, (key, val) -> allKeys.add(key));
+        snp0.context().distributedMetastorage().iterate(SNAPSHOT_PREFIX, (key, val) -> allKeys.add(key));
 
-        for (Ignite ig : G.allGrids()) {
-            // Iterator reads keys from the node heap map.
-            ((IgniteEx)ig).context().distributedMetastorage()
-                .iterate(SNAPSHOT_PREFIX, new BiConsumer<String, Serializable>() {
+        stopGrid(0);
+
+        IgniteEx snp1 = startGridsFromSnapshot(new HashSet<>(Collections.singletonList(1)),
+            cfg -> resolveSnapshotWorkDirectory(cfg).getAbsolutePath(), SNAPSHOT_NAME, false);
+
+        // Iterator reads keys from the node heap map.
+        snp1.context().distributedMetastorage()
+            .iterate(SNAPSHOT_PREFIX, new BiConsumer<String, Serializable>() {
                 @Override public void accept(String key, Serializable value) {
                     try {
                         assertTrue("Keys must be the same on all nodes [key=" + key + ", all=" + allKeys + ']',
@@ -108,7 +114,6 @@ public class IgniteSnapshotWithMetastorageTest extends AbstractSnapshotSelfTest 
                     }
                 }
             });
-        }
     }
 
     /** @throws Exception If fails. */
