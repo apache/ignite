@@ -72,6 +72,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
@@ -460,6 +461,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /** */
     private IgniteDiscoverySpiInternalListener internalLsnr;
+
+    /** Allow specifying an address filter when getting registered nodes */
+    private IgnitePredicate<InetSocketAddress> addressFilter;
 
     /** For test purposes. */
     private boolean skipAddrsRandomization = false;
@@ -1994,6 +1998,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             assert addr != null;
 
             try {
+                if (addressFilter != null && !addressFilter.apply(addr))
+                    continue;
+
                 InetSocketAddress resolved = addr.isUnresolved() ?
                         new InetSocketAddress(InetAddress.getByName(addr.getHostName()), addr.getPort()) : addr;
 
@@ -2190,6 +2197,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             return;
 
         sslEnable = ignite().configuration().getSslContextFactory() != null;
+
+        addressFilter = ignite().configuration().getAddressFilter();
 
         initFailureDetectionTimeout();
 

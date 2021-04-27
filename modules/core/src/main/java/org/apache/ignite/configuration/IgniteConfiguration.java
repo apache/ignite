@@ -19,6 +19,7 @@ package org.apache.ignite.configuration;
 
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
+import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Executor;
@@ -31,6 +32,7 @@ import javax.cache.integration.CacheLoader;
 import javax.cache.processor.EntryProcessor;
 import javax.management.MBeanServer;
 import javax.net.ssl.SSLContext;
+
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -534,6 +536,9 @@ public class IgniteConfiguration {
     /** SSL connection factory. */
     private Factory<SSLContext> sslCtxFactory;
 
+    /** Address filter */
+    private IgnitePredicate<InetSocketAddress> addressFilter;
+
     /** Platform configuration. */
     private PlatformConfiguration platformCfg;
 
@@ -653,6 +658,7 @@ public class IgniteConfiguration {
          */
         activeOnStart = cfg.isActiveOnStart();
         activeOnStartPropSetFlag = cfg.activeOnStartPropSetFlag;
+        addressFilter = cfg.getAddressFilter();
         addrRslvr = cfg.getAddressResolver();
         allResolversPassReq = cfg.isAllSegmentationResolversPassRequired();
         atomicCfg = cfg.getAtomicConfiguration();
@@ -1939,6 +1945,17 @@ public class IgniteConfiguration {
     }
 
     /**
+     * Sets address filter which will allow filtering addresses
+     *
+     * @param addressFilter Address filter
+     */
+    public IgniteConfiguration setAddressFilter(IgnitePredicate<InetSocketAddress> addressFilter) {
+        this.addressFilter = addressFilter;
+
+        return this;
+    }
+
+    /**
      * Returns SSL context factory that will be used for creating a secure socket layer.
      *
      * @return SSL connection factory.
@@ -1946,6 +1963,16 @@ public class IgniteConfiguration {
      */
     public Factory<SSLContext> getSslContextFactory() {
         return sslCtxFactory;
+    }
+
+    /**
+     * Returns address filter used to filter addresses
+     *
+     * @return Address filter predicate
+     * @see SslContextFactory
+     */
+    public IgnitePredicate<InetSocketAddress> getAddressFilter() {
+        return addressFilter;
     }
 
     /**
