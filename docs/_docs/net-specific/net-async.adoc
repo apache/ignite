@@ -41,6 +41,14 @@ depending on the environment and the configuration. This is called "async contin
 
 == Async Continuations
 
+=== Cache
+
+TODO
+
+=== Compute
+
+TODO
+
 == ConfigureAwait
 
 TODO
@@ -48,23 +56,3 @@ TODO
 
 
 
-== Cache
-
-Consider the following code:
-
-[source,csharp]
-----
-// Print Hello World on all cluster nodes.
-ignite.GetCompute().Broadcast(new HelloAction());
-
-class HelloAction : IComputeAction
-{
-  public void Invoke()
-  {
-    Console.WriteLine("Hello World!");
-  }
-}
-----
-
-
-== Compute
