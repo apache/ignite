@@ -33,7 +33,7 @@ string hello = await cache.GetAsync(1);
 ----
 
 With async APIs, current thread is not blocked while we wait for the cache operation to complete;
-it is returned to the thread pool and can perform other work.
+the thread is returned to the thread pool and can perform other work.
 
 When the async operation completes, our method resumes execution - either on the same thread, or on a different one -
 depending on the environment and the configuration. This is called "async continuation".
