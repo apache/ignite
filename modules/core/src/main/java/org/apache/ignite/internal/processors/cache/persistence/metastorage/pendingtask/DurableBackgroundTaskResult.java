@@ -31,10 +31,10 @@ import org.jetbrains.annotations.Nullable;
  */
 public class DurableBackgroundTaskResult {
     /** Completed state. */
-    private static Object COMPLETED = new Object();
+    private static final Object COMPLETED = new Object();
 
     /** Restarted state. */
-    private static Object RESTART = new Object();
+    private static final Object RESTART = new Object();
 
     /** Execution state. */
     private final Object state;
