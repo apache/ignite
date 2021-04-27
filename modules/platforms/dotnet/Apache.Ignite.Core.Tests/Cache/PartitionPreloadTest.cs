@@ -247,7 +247,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 {
                     if (affinity.GetPartition(k) == preloadPart)
                     {
-                        streamer.AddData(k, k);
+                        streamer.Add(k, k);
                         
                         cnt--;
                     }
