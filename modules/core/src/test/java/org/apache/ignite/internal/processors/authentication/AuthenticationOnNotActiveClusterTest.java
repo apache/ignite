@@ -28,7 +28,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.authenticate;
 import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.createUser;
-import static org.apache.ignite.internal.processors.authentication.User.DEFAULT_USER_NAME;
+import static org.apache.ignite.internal.processors.authentication.User.DFAULT_USER_NAME;
 
 /**
  * Test for {@link IgniteAuthenticationProcessor}.
@@ -91,7 +91,7 @@ public class AuthenticationOnNotActiveClusterTest extends GridCommonAbstractTest
         startClientGrid(CLI_NODE);
 
         for (int i = 0; i < NODES_COUNT; ++i) {
-            SecurityContext secCtx = authenticate(ignite(i), "ignite", "ignite");
+            SecurityContext secCtx = authenticate(grid(i), "ignite", "ignite");
 
             assertNotNull(secCtx);
             assertEquals("ignite", secCtx.subject().login());
@@ -109,7 +109,7 @@ public class AuthenticationOnNotActiveClusterTest extends GridCommonAbstractTest
 
         grid(0).cluster().active(true);
 
-        SecurityContext secCtxDflt = authenticate(grid(0), DEFAULT_USER_NAME, "ignite");
+        SecurityContext secCtxDflt = authenticate(grid(0), DFAULT_USER_NAME, "ignite");
 
         for (int i = 0; i < 10; ++i)
            createUser(grid(0), secCtxDflt, "test" + i, "passwd");

@@ -49,8 +49,6 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageTree;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
@@ -88,7 +86,7 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_AUTHENTICATION_ENABLED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS;
-import static org.apache.ignite.internal.processors.authentication.User.DEFAULT_USER_NAME;
+import static org.apache.ignite.internal.processors.authentication.User.DFAULT_USER_NAME;
 import static org.apache.ignite.internal.processors.authentication.UserManagementOperation.OperationType.ADD;
 import static org.apache.ignite.internal.processors.authentication.UserManagementOperation.OperationType.REMOVE;
 import static org.apache.ignite.internal.processors.authentication.UserManagementOperation.OperationType.UPDATE;
@@ -103,8 +101,7 @@ import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_NODE;
  *
  */
 public class IgniteAuthenticationProcessor extends GridProcessorAdapter implements GridSecurityProcessor,
-    MetastorageLifecycleListener, PartitionsExchangeAware
-{
+    MetastorageLifecycleListener {
     /** Store user prefix. */
     private static final String STORE_USER_PREFIX = "user.";
 
@@ -117,7 +114,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     /** Futures prepared user map. Authentication message ID -> public future. */
     private final ConcurrentMap<IgniteUuid, AuthenticateFuture> authFuts = new ConcurrentHashMap<>();
 
-    /** When the future is done the node is ready for authentication. */
+    /** Whan the future is done the node is ready for authentication. */
     private final GridFutureAdapter<Void> readyForAuthFut = new GridFutureAdapter<>();
 
     /** Operation mutex. */
@@ -167,8 +164,8 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         super(ctx);
     }
 
-    /** Callback that is called after all Ignite processors started but before discovery manager start. */
-    public void afterStart() throws IgniteCheckedException {
+    /** Starts processor. */
+    public void startProcessor() throws IgniteCheckedException {
         if (!GridCacheUtils.isPersistenceEnabled(ctx.config())) {
             throw new IgniteCheckedException("Authentication can be enabled only for cluster with enabled persistence."
                 + " Check the DataRegionConfiguration");
@@ -178,10 +175,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
         ctx.addNodeAttribute(ATTR_AUTHENTICATION_ENABLED, true);
         ctx.addNodeAttribute(ATTR_SECURITY_CREDENTIALS, new SecurityCredentials());
-
-        sharedCtx = ctx.cache().context();
-
-        sharedCtx.exchange().registerExchangeAwareComponent(this);
 
         GridDiscoveryManager discoMgr = ctx.discovery();
 
@@ -207,8 +200,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
             }
         };
 
-        discoMgr.localJoinFuture().listen(fut -> onLocalJoin());
-
         ctx.event().addDiscoveryEventListener(discoLsnr, DISCO_EVT_TYPES);
 
         ioLsnr = (nodeId, msg, plc) -> {
@@ -232,6 +223,13 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
             1,
             0,
             new LinkedBlockingQueue<>());
+    }
+
+    /**
+     * On cache processor started.
+     */
+    public void cacheProcessorStarted() {
+        sharedCtx = ctx.cache().context();
     }
 
     /** {@inheritDoc} */
@@ -798,8 +796,8 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      * Local node joined to topology. Discovery cache is available but no discovery custom message are received.
      * Initial user set and initial user operation (received on join) are processed here.
      */
-    private void onLocalJoin() {
-        if (ctx.isDaemon() || ctx.clientDisconnected() || coordinator() == null)
+    public void onLocalJoin() {
+        if (coordinator() == null)
             return;
 
         if (F.eq(coordinator().id(), ctx.localNodeId())) {
@@ -836,8 +834,10 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         readyForAuthFut.onDone();
     }
 
-    /** {@inheritDoc} */
-    @Override public void onDoneBeforeTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
+    /**
+     * Called on node activate.
+     */
+    public void onActivate() {
         activateFut.onDone();
     }
 
@@ -942,10 +942,10 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                 " are not supported [igniteInstanceName=" + login + ']');
         }
 
-        if (!DEFAULT_USER_NAME.equals(login) && !(ALTER_USER == perm && Objects.equals(login, name)))
+        if (!DFAULT_USER_NAME.equals(login) && !(ALTER_USER == perm && Objects.equals(login, name)))
             throw new SecurityException("User management operations are not allowed for user [curUser=" + login + ']');
 
-        if (DROP_USER == perm && DEFAULT_USER_NAME.equals(name))
+        if (DROP_USER == perm && DFAULT_USER_NAME.equals(name))
             throw new SecurityException("Default user cannot be removed.");
     }
 
@@ -1213,7 +1213,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         }
 
         /**
-         * @return {@code true} if need retry (after node left).
+         * @return {@code true} if need retry (aftyer node left).
          */
         boolean retry() {
             return retry;

@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.authentication.IgniteAuthentication
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.internal.processors.authentication.User.DEFAULT_USER_NAME;
+import static org.apache.ignite.internal.processors.authentication.User.DFAULT_USER_NAME;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.ADD_USER;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.REMOVE_USER;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.UPDATE_USER;
@@ -58,28 +58,28 @@ public class JettyRestProcessorAuthenticatorUserManagementAuthorizationTest exte
         String userLogin = "user";
         String userPwd = "pwd";
 
-        checkRestRequest(DEFAULT_USER_NAME, dfltUserPwd, ADD_USER, userLogin, userPwd, null);
+        checkRestRequest(DFAULT_USER_NAME, dfltUserPwd, ADD_USER, userLogin, userPwd, null);
 
         checkRestRequest(userLogin, userPwd, ADD_USER, "not-allowed-user", userPwd,
             "User management operations are not allowed for user [curUser=user]");
 
-        checkRestRequest(userLogin, userPwd, UPDATE_USER, DEFAULT_USER_NAME, "new-pwd",
+        checkRestRequest(userLogin, userPwd, UPDATE_USER, DFAULT_USER_NAME, "new-pwd",
             "User management operations are not allowed for user [curUser=user]");
 
-        checkRestRequest(DEFAULT_USER_NAME, dfltUserPwd, UPDATE_USER, DEFAULT_USER_NAME, "new-pwd", null);
+        checkRestRequest(DFAULT_USER_NAME, dfltUserPwd, UPDATE_USER, DFAULT_USER_NAME, "new-pwd", null);
         dfltUserPwd = "new-pwd";
 
         checkRestRequest(userLogin, userPwd, UPDATE_USER, userLogin, "new-pwd", null);
 
-        checkRestRequest(DEFAULT_USER_NAME, dfltUserPwd, UPDATE_USER, userLogin, "pwd", null);
+        checkRestRequest(DFAULT_USER_NAME, dfltUserPwd, UPDATE_USER, userLogin, "pwd", null);
 
-        checkRestRequest(userLogin, userPwd, REMOVE_USER, DEFAULT_USER_NAME, null,
+        checkRestRequest(userLogin, userPwd, REMOVE_USER, DFAULT_USER_NAME, null,
             "User management operations are not allowed for user [curUser=user]");
 
-        checkRestRequest(DEFAULT_USER_NAME, dfltUserPwd, REMOVE_USER, DEFAULT_USER_NAME, null,
+        checkRestRequest(DFAULT_USER_NAME, dfltUserPwd, REMOVE_USER, DFAULT_USER_NAME, null,
             "Default user cannot be removed.");
 
-        checkRestRequest(DEFAULT_USER_NAME, dfltUserPwd, REMOVE_USER, userLogin, null, null);
+        checkRestRequest(DFAULT_USER_NAME, dfltUserPwd, REMOVE_USER, userLogin, null, null);
     }
 
     /** Checks REST request execution. */

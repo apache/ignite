@@ -1250,6 +1250,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 startTimer.finishGlobalStage("Configure binary metadata");
 
                 startProcessor(createComponent(IGridClusterStateProcessor.class, ctx));
+
+                if (cfg.isAuthenticationEnabled()) {
+                    IgniteSecurityProcessor sec = (IgniteSecurityProcessor)ctx.security();
+
+                    ((IgniteAuthenticationProcessor)sec.securityProcessor()).startProcessor();
+                }
+
                 startProcessor(new PerformanceStatisticsProcessor(ctx));
                 startProcessor(new GridCacheProcessor(ctx));
                 startProcessor(new IndexProcessor(ctx));
@@ -1268,12 +1275,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 startProcessor(new DistributedMetaStorageImpl(ctx));
                 startProcessor(new DistributedConfigurationProcessor(ctx));
                 startProcessor(new DurableBackgroundTasksProcessor(ctx));
-
-                if (cfg.isAuthenticationEnabled()) {
-                    IgniteSecurityProcessor sec = (IgniteSecurityProcessor)ctx.security();
-
-                    ((IgniteAuthenticationProcessor)sec.securityProcessor()).afterStart();
-                }
 
                 startTimer.finishGlobalStage("Start processors");
 

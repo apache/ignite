@@ -32,7 +32,7 @@ public class User implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Default user name. */
-    public static final String DEFAULT_USER_NAME = "ignite";
+    public static final String DFAULT_USER_NAME = "ignite";
 
     /** Default user password. */
     private static final String DFLT_USER_PASSWORD = "ignite";
@@ -96,7 +96,7 @@ public class User implements Serializable {
      * @return Created user.
      */
     public static User defaultUser() {
-        return create(DEFAULT_USER_NAME, DFLT_USER_PASSWORD);
+        return create(DFAULT_USER_NAME, DFLT_USER_PASSWORD);
     }
 
     /**

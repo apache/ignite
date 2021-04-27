@@ -23,7 +23,6 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
-import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -31,6 +30,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.alterUserPassword;
+import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.authenticate;
 import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.createUser;
 import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.dropUser;
 import static org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcessor.SECURITY_DISABLED_ERROR_MSG;
@@ -132,10 +132,12 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
     private void checkNodeJoinFailed(boolean client, boolean authEnabled) throws Exception {
         startGrid(configuration(0, authEnabled, false));
 
-        GridTestUtils.assertThrowsAnyCause(log, () -> {
-                startGrid(configuration(1, !authEnabled, client));
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    startGrid(configuration(1, !authEnabled, client));
 
-                return null;
+                    return null;
+                }
             },
             IgniteSpiException.class,
             "Local node's grid security processor class is not equal to remote node's grid security processor class");
@@ -150,19 +152,31 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
 
         grid(0).cluster().active(true);
 
-        checkSecurityOperationFailed(() -> createUser(grid(0), null, "test", "test"));
-        checkSecurityOperationFailed(() -> dropUser(grid(0), null, "test"));
-        checkSecurityOperationFailed(() -> alterUserPassword(grid(0), null, "test", "test"));
-    }
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    createUser(grid(0), null, "test", "test");
 
-    /** Checks that specified security operation fails. */
-    @SuppressWarnings("ThrowableNotThrown")
-    private void checkSecurityOperationFailed(IgniteThrowableRunner op) {
-        GridTestUtils.assertThrows(log, () -> {
-            op.run();
+                    return null;
+                }
+            }, IgniteCheckedException.class, SECURITY_DISABLED_ERROR_MSG);
 
-            return null;
-        }, IgniteCheckedException.class, SECURITY_DISABLED_ERROR_MSG);
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    dropUser(grid(0), null, "test");
+
+                    return null;
+                }
+            }, IgniteCheckedException.class, SECURITY_DISABLED_ERROR_MSG);
+
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    alterUserPassword(grid(0), null, "test", "test");
+
+                    return null;
+                }
+            }, IgniteCheckedException.class, SECURITY_DISABLED_ERROR_MSG);
+
+        authenticate(grid(0), "test", "test");
     }
 
     /**
