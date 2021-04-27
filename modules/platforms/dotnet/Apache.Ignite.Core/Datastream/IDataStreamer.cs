@@ -154,7 +154,23 @@ namespace Apache.Ignite.Core.Datastream
         /// <para />
         /// Default is <c>0</c> (disabled).
         /// </summary>
+        [Obsolete("Use AutoFlushInterval.")]
         long AutoFlushFrequency { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the automatic flush interval. Data streamer buffers the data for performance reasons.
+        /// The buffer is flushed in the following cases:
+        /// <ul>
+        /// <li>Buffer is full.</li>
+        /// <li><see cref="Flush"/> or <see cref="TryFlush"/> is called.</li>
+        /// <li>Periodically when <see cref="AutoFlushInterval"/> is set.</li >
+        /// </ul>
+        /// <para />
+        /// When set to <see cref="TimeSpan.Zero"/>, automatic flush is disabled.
+        /// <para />
+        /// Default is <see cref="TimeSpan.Zero"/> (disabled).
+        /// </summary>
+        TimeSpan AutoFlushInterval { get; set; }
 
         /// <summary>
         /// Gets the task for this loading process. This task completes whenever method
