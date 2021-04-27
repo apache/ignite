@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
     using System.Diagnostics;
     using System.Linq;
     using System.Threading;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Datastream;
@@ -644,6 +645,19 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 ex.Message);
 #pragma warning restore 618
         }
+
+
+#if NETCOREAPP
+        /// <summary>
+        /// Tests async streamer usage.
+        /// </summary>
+        [Test]
+        public async Task TestStreamerAsyncAwait()
+        {
+            await Task.Delay(1);
+            Assert.Fail("TODO");
+        }
+#endif
 
         /// <summary>
         /// Test binarizable receiver.
