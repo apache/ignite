@@ -2838,7 +2838,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new CacheException("Execution of local SqlFieldsQuery on client node disallowed.");
 
         if (experimentalQueryEngine != null && useExperimentalSqlEngine) {
-            if (!shouldSkipCalcite(qry.getSql()))
+            if (executeWithExperimentalEngine(qry.getSql()))
                 return experimentalQueryEngine.query(QueryContext.of(qry), qry.getSchema(), qry.getSql(), X.EMPTY_OBJECT_ARRAY);
         }
 
@@ -2870,11 +2870,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             return executeQuery(qryType, qry.getSql(), cctx, clo, true);
         });
-    }
-
-    /** Calcite baseb engine is available. */
-    public boolean useExperimentalEngine() {
-        return experimentalQueryEngine != null;
     }
 
     /**
@@ -3634,8 +3629,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param sql Query to execute.
      * @return {@code true} if the given query should be executed with Calcite-based engine.
      */
-    public static boolean shouldSkipCalcite(String sql) {
-        return H2_REDIRECTION_RULES.matcher(sql).find();
+    public static boolean executeWithExperimentalEngine(String sql) {
+        return !H2_REDIRECTION_RULES.matcher(sql).find();
     }
 
     /**
