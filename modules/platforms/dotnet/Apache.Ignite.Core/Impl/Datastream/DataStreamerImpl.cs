@@ -530,6 +530,30 @@ namespace Apache.Ignite.Core.Impl.Datastream
         }
 
         /** <inheritDoc /> */
+        public void Add(TK key, TV val)
+        {
+            AddData(key, val);
+        }
+
+        /** <inheritDoc /> */
+        public void Add(KeyValuePair<TK, TV> pair)
+        {
+            AddData(pair);
+        }
+
+        /** <inheritDoc /> */
+        public void Add(ICollection<KeyValuePair<TK, TV>> entries)
+        {
+            AddData(entries);
+        }
+
+        /** <inheritDoc /> */
+        public void Remove(TK key)
+        {
+            RemoveData(key);
+        }
+
+        /** <inheritDoc /> */
         public void TryFlush()
         {
             ThrowIfDisposed();
