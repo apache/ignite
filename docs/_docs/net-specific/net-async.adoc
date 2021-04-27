@@ -16,7 +16,7 @@
 
 == Overview
 
-Many Ignite APIs have asynchronous versions, for example, `void ICache.Put` and `Task ICache.PutAsync`.
+Many Ignite APIs have asynchronous variants, for example, `void ICache.Put` and `Task ICache.PutAsync`.
 Async APIs allow us to write link:https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/concepts/async/[efficient non-blocking code]:
 
 [source,csharp]
