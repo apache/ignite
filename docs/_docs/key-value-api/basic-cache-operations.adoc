@@ -263,7 +263,7 @@ Callbacks for asynchronous compute operations are invoked by threads from the li
 Calling synchronous cache and compute operations from inside the callback may lead to a deadlock due to pools starvation.
 To achieve nested execution of asynchronous compute operations, you can take advantage of link:perf-and-troubleshooting/thread-pools-tuning#creating-custom-thread-pool[custom thread pools].
 
-Callbacks for asynchronous cache operations are invoked using `IgniteConfiguration#asyncContinuationExecutor`, which defaults to `ForkJoinPool#commonPool`.
+Callbacks for asynchronous cache operations are invoked by using `ForkJoinPool#commonPool`, unless a different executor is configured with `IgniteConfiguration#asyncContinuationExecutor`.
 
 * This default executor is safe for any operations inside the callback.
 * Default behavior has changed in Ignite 2.11. Before that, async cache operation callbacks were called from an Ignite system pool (so-called "striped pool").
