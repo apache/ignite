@@ -129,8 +129,6 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
         ) {
             /** {@inheritDoc} */
             @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
-                Throwable err = null;
-
                 try {
                     execute(ctx);
 
@@ -139,6 +137,8 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
                     fut.onDone(DurableBackgroundTaskResult.complete(null));
                 }
                 catch (Throwable t) {
+                    worker = null;
+
                     fut.onDone(DurableBackgroundTaskResult.restart(t));
                 }
             }
