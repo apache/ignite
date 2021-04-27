@@ -583,6 +583,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 Flush0(batch0, false, PlcFlush);
 
                 // TODO: Await completion of previous batches.
+                // Flush should simply call FlushAsync.
                 return batch0.Task;
             }
 
