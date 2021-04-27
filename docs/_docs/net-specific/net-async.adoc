@@ -94,7 +94,20 @@ Tip: use an extension method to reduce verbosity.
 
 *Ignite 2.11 and later*: all `ICompute` async APIs use .NET Thread Pool to run async continuations.
 
-*Ignite 2.10 and before*: Compute async continuations are executed on link:/perf-and-troubleshooting/thread-pools-tuning[Ignite public pool]
+*Ignite 2.10 and before*: Compute async continuations are executed on link:/perf-and-troubleshooting/thread-pools-tuning[Ignite public pool].
+To reduce the load on the public pool, it is recommended to use the same `ContinueWith` approach as above:
+
+[source,csharp]
+----
+await compute.CallAsync(new MyAction()).ContinueWith(
+                t => t.Result,
+                CancellationToken.None,
+                TaskContinuationOptions.None,
+                TaskScheduler.Default);
+----
+
+This will move the continuation from Ignite public pool (reserved for Compute functionality) to the .NET thread pool (`TaskScheduler.Default`).
+
 
 == ConfigureAwait
 
