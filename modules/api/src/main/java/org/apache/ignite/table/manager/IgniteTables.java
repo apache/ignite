@@ -15,10 +15,42 @@
  * limitations under the License.
  */
 
+/**
+ * Interface for manage tables.
+ */
 package org.apache.ignite.table.manager;
+
+import java.util.List;
+import java.util.function.Consumer;
+import org.apache.ignite.configuration.schemas.table.TableChange;
+import org.apache.ignite.table.Table;
 
 /**
  * Interface that provides methods for managing tables.
  */
-public interface TableManager {
+public interface IgniteTables {
+    /**
+     * Creates a cluster table.
+     * The table changes if already exists.
+     *
+     * @param name Table name.
+     * @param tableInitChange Table changer.
+     * @return Table.
+     */
+    Table createTable(String name, Consumer<TableChange> tableInitChange);
+
+    /**
+     * Gets a list of all started tables.
+     *
+     * @return List of tables.
+     */
+    List<Table> tables();
+
+    /**
+     * Gets a table by name, if it was created before.
+     *
+     * @param name Name of the table.
+     * @return Tables with corresponding name or {@code null} if table isn't created.
+     */
+    Table table(String name);
 }

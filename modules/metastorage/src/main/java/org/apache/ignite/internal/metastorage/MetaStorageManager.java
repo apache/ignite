@@ -18,13 +18,15 @@
 package org.apache.ignite.internal.metastorage;
 
 import java.util.concurrent.CompletableFuture;
-
+import org.apache.ignite.internal.raft.Loza;
 import org.apache.ignite.internal.vault.VaultManager;
 import org.apache.ignite.metastorage.client.MetaStorageService;
+import org.apache.ignite.metastorage.common.Condition;
+import org.apache.ignite.metastorage.common.Entry;
 import org.apache.ignite.metastorage.common.Key;
+import org.apache.ignite.metastorage.common.Operation;
 import org.apache.ignite.metastorage.common.WatchListener;
 import org.apache.ignite.network.ClusterService;
-import org.apache.ignite.internal.raft.Loza;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -88,6 +90,48 @@ import org.jetbrains.annotations.Nullable;
      * subscription.
      */
     public synchronized CompletableFuture<Long> registerWatch(@Nullable Key key, @NotNull WatchListener lsnr) {
+        // TODO: IGNITE-14446 Implement DMS manager with watch registry.
+        return null;
+    }
+
+    /**
+     * Proxies the invocation to metastorage.
+     *
+     * @param key The target key.
+     * @return Metastorage entry.
+     */
+    public synchronized CompletableFuture<Entry> get(@Nullable Key key) {
+        // TODO: IGNITE-14446 Implement DMS manager with watch registry.
+        return null;
+    }
+
+    /**
+     * Proxies the invocation to metastorage.
+     *
+     * @param key The target key.
+     * @param value The value to set.
+     * @return
+     */
+    public CompletableFuture<Void> put(@NotNull Key key, @NotNull byte[] value) {
+        // TODO: IGNITE-14446 Implement DMS manager with watch registry.
+        return null;
+    }
+
+    /**
+     * Invokes a service operation for metastorage.
+     *
+     * @param key Key in metastorage.
+     * @param condition Condition to process.
+     * @param success Success operation.
+     * @param failure Failure operation.
+     * @return Future which will complete when appropriate final operation would be invoked.
+     */
+    public CompletableFuture<Boolean> invoke(
+        @NotNull Key key,
+        @NotNull Condition condition,
+        @NotNull Operation success,
+        @NotNull Operation failure
+    ) {
         // TODO: IGNITE-14446 Implement DMS manager with watch registry.
         return null;
     }

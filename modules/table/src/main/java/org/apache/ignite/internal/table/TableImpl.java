@@ -51,7 +51,7 @@ public class TableImpl extends AbstractTableView implements Table {
      * @param tbl Table.
      * @param schemaMgr Table schema manager.
      */
-    public TableImpl(InternalTable tbl, TableSchemaManager schemaMgr) {
+    public TableImpl(InternalTable tbl, TableSchemaView schemaMgr) {
         super(tbl, schemaMgr);
 
         marsh = new TupleMarshallerImpl(schemaMgr);

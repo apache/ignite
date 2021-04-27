@@ -19,6 +19,7 @@ package org.apache.ignite.network;
 import java.io.Serializable;
 import java.util.Objects;
 import org.apache.ignite.internal.tostring.S;
+import java.util.UUID;
 
 /**
  * Representation of a node in a cluster.
@@ -71,6 +72,15 @@ public class ClusterNode implements Serializable {
             return false;
         ClusterNode that = (ClusterNode)o;
         return port == that.port && name.equals(that.name) && host.equals(that.host);
+    }
+
+    /**
+     * Creates node UUID.
+     *
+     * @return Node UUID identifier.
+     */
+    public UUID id() {
+        return new UUID(name.hashCode(), name.substring(name.length() / 2).hashCode());
     }
 
     /** {@inheritDoc} */

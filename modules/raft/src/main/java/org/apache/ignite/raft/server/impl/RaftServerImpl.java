@@ -27,11 +27,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiConsumer;
 import org.apache.ignite.lang.IgniteLogger;
-import org.apache.ignite.network.ClusterService;
-import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterNode;
-import org.apache.ignite.network.message.MessageSerializationRegistry;
-import org.apache.ignite.network.scalecube.ScaleCubeClusterServiceFactory;
+import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.raft.client.Command;
 import org.apache.ignite.raft.client.Peer;
 import org.apache.ignite.raft.client.RaftErrorCode;
@@ -52,14 +49,11 @@ import org.jetbrains.annotations.NotNull;
  * A single node server implementation.
  */
 public class RaftServerImpl implements RaftServer {
-    /** */
+    /** The logger. */
     private static final IgniteLogger LOG = IgniteLogger.forClass(RaftServerImpl.class);
 
     /** */
     private final String id;
-
-    /** */
-    private final int localPort;
 
     /** */
     private final RaftClientMessageFactory clientMsgFactory;
@@ -83,24 +77,20 @@ public class RaftServerImpl implements RaftServer {
     private final Thread writeWorker;
 
     /**
-     * @param id Server id.
-     * @param localPort Local port.
+     * @param service Network service.
      * @param clientMsgFactory Client message factory.
      * @param queueSize Queue size.
      * @param listeners Command listeners.
      */
     public RaftServerImpl(
-        @NotNull String id,
-        int localPort,
+        ClusterService service,
         @NotNull RaftClientMessageFactory clientMsgFactory,
         int queueSize,
         Map<String, RaftGroupCommandListener> listeners
     ) {
-        Objects.requireNonNull(id);
         Objects.requireNonNull(clientMsgFactory);
 
-        this.id = id;
-        this.localPort = localPort;
+        this.id = service.topologyService().localMember().name();
         this.clientMsgFactory = clientMsgFactory;
 
         if (listeners != null)
@@ -109,18 +99,7 @@ public class RaftServerImpl implements RaftServer {
         readQueue = new ArrayBlockingQueue<>(queueSize);
         writeQueue = new ArrayBlockingQueue<>(queueSize);
 
-        // TODO: IGNITE-14088: Uncomment and use real serializer factory
-        var serializationRegistry = new MessageSerializationRegistry();
-//            .registerFactory((short)1000, ???)
-//            .registerFactory((short)1001, ???)
-//            .registerFactory((short)1005, ???)
-//            .registerFactory((short)1006, ???)
-//            .registerFactory((short)1009, ???);
-
-        var context = new ClusterLocalConfiguration(id, localPort, List.of(), serializationRegistry);
-        var factory = new ScaleCubeClusterServiceFactory();
-
-        server = factory.createClusterService(context);
+        server = service;
 
         server.messagingService().addMessageHandler((message, sender, correlationId) -> {
             if (message instanceof GetLeaderRequest) {
@@ -129,9 +108,9 @@ public class RaftServerImpl implements RaftServer {
                 server.messagingService().send(sender, resp, correlationId);
             }
             else if (message instanceof ActionRequest) {
-                ActionRequest<?> req0 = (ActionRequest<?>) message;
+                ActionRequest<?> req0 = (ActionRequest<?>)message;
 
-                RaftGroupCommandListener lsnr = listeners.get(req0.groupId());
+                RaftGroupCommandListener lsnr = RaftServerImpl.this.listeners.get(req0.groupId());
 
                 if (lsnr == null) {
                     sendError(sender, correlationId, RaftErrorCode.ILLEGAL_STATE);
@@ -161,7 +140,7 @@ public class RaftServerImpl implements RaftServer {
         writeWorker.setDaemon(true);
         writeWorker.start();
 
-        LOG.info("Started replication server [id=" + id + ", localPort=" + localPort + ']');
+        LOG.info("Started replication server [node=" + server.topologyService().localMember() + ']');
     }
 
     /** {@inheritDoc} */
@@ -189,7 +168,7 @@ public class RaftServerImpl implements RaftServer {
         writeWorker.interrupt();
         writeWorker.join();
 
-        LOG.info("Stopped replication server [id=" + id + ", localPort=" + localPort + ']');
+        LOG.info("Stopped replication server [node=" + server.topologyService().localMember() + ']');
     }
 
     private <T extends Command> void handleActionRequest(

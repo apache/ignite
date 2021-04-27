@@ -18,13 +18,13 @@
 package org.apache.ignite.table.impl;
 
 import org.apache.ignite.internal.schema.SchemaDescriptor;
-import org.apache.ignite.internal.table.TableSchemaManager;
+import org.apache.ignite.internal.table.TableSchemaView;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Dummy schema manager for tests.
  */
-public class DummySchemaManagerImpl implements TableSchemaManager {
+public class DummySchemaManagerImpl implements TableSchemaView {
     /** Schema. */
     private final SchemaDescriptor schema;
 

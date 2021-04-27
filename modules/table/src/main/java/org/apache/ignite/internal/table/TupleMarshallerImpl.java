@@ -31,14 +31,14 @@ import org.jetbrains.annotations.NotNull;
  */
 class TupleMarshallerImpl implements TupleMarshaller {
     /** Schema manager. */
-    private final TableSchemaManager schemaMgr;
+    private final TableSchemaView schemaMgr;
 
     /**
      * Constructor.
      *
      * @param schemaMgr Schema manager.
      */
-    TupleMarshallerImpl(TableSchemaManager schemaMgr) {
+    TupleMarshallerImpl(TableSchemaView schemaMgr) {
         this.schemaMgr = schemaMgr;
     }
 

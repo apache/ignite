@@ -44,7 +44,7 @@ public class KVViewImpl<K, V> extends AbstractTableView implements KeyValueView<
      * @param keyMapper Key class mapper.
      * @param valueMapper Value class mapper.
      */
-    public KVViewImpl(InternalTable tbl, TableSchemaManager schemaMgr, KeyMapper<K> keyMapper,
+    public KVViewImpl(InternalTable tbl, TableSchemaView schemaMgr, KeyMapper<K> keyMapper,
         ValueMapper<V> valueMapper) {
         super(tbl, schemaMgr);
     }

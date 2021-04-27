@@ -17,15 +17,37 @@
 
 package org.apache.ignite.internal.affinity;
 
-import org.apache.ignite.internal.baseline.BaselineManager;
+import java.nio.charset.StandardCharsets;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import org.apache.ignite.configuration.internal.ConfigurationManager;
+import org.apache.ignite.configuration.schemas.runner.ClusterConfiguration;
+import org.apache.ignite.configuration.schemas.runner.NodeConfiguration;
+import org.apache.ignite.configuration.schemas.table.TablesConfiguration;
+import org.apache.ignite.internal.baseline.BaselineManager;
 import org.apache.ignite.internal.metastorage.MetaStorageManager;
+import org.apache.ignite.internal.util.ArrayUtils;
+import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.vault.VaultManager;
+import org.apache.ignite.lang.IgniteLogger;
+import org.apache.ignite.metastorage.common.Conditions;
+import org.apache.ignite.metastorage.common.Key;
+import org.apache.ignite.metastorage.common.Operations;
+import org.apache.ignite.metastorage.common.WatchEvent;
+import org.apache.ignite.metastorage.common.WatchListener;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Affinity manager is responsible for affinity function related logic including calculating affinity assignments.
  */
-// TODO: IGNITE-14586 Remove @SuppressWarnings when implementation provided.
-@SuppressWarnings({"FieldCanBeLocal", "unused"}) public class AffinityManager {
+public class AffinityManager {
+    /** The logger. */
+    private static final IgniteLogger LOG = IgniteLogger.forClass(AffinityManager.class);
+
+    /** Tables prefix for the metasorage. */
+    private static final String INTERNAL_PREFIX = "internal.tables.";
+
     /**
      * MetaStorage manager in order to watch private distributed affinity specific configuration,
      * cause ConfigurationManger handles only public configuration.
@@ -38,23 +60,142 @@ import org.apache.ignite.internal.metastorage.MetaStorageManager;
     /** Baseline manager. */
     private final BaselineManager baselineMgr;
 
+    /** Vault manager. */
+    private final VaultManager vaultManager;
+
+    /** Affinity calculate subscription future. */
+    private CompletableFuture<Long> affinityCalculateSubscriptionFut = null;
+
     /**
-     * The constructor.
-     *
-     * @param configurationMgr Configuration manager.
-     * @param metaStorageMgr Meta storage manager.
+     * @param configurationMgr Configuration module.
+     * @param metaStorageMgr Meta storage service.
      */
     public AffinityManager(
         ConfigurationManager configurationMgr,
         MetaStorageManager metaStorageMgr,
-        BaselineManager baselineMgr
+        BaselineManager baselineMgr,
+        VaultManager vaultManager
     ) {
         this.configurationMgr = configurationMgr;
         this.metaStorageMgr = metaStorageMgr;
         this.baselineMgr = baselineMgr;
+        this.vaultManager = vaultManager;
+
+        String localNodeName = configurationMgr.configurationRegistry().getConfiguration(NodeConfiguration.KEY)
+            .name().value();
+
+        configurationMgr.configurationRegistry().getConfiguration(ClusterConfiguration.KEY)
+            .metastorageNodes().listen(ctx -> {
+                if (ctx.newValue() != null) {
+                    if (hasMetastorageLocally(localNodeName, ctx.newValue()))
+                        subscribeToAssignmentCalculation();
+                    else
+                        unsubscribeFromAssignmentCalculation();
+                }
+            return CompletableFuture.completedFuture(null);
+        });
+
+        String[] metastorageMembers = configurationMgr.configurationRegistry().getConfiguration(NodeConfiguration.KEY)
+            .metastorageNodes().value();
+
+        if (hasMetastorageLocally(localNodeName, metastorageMembers))
+            subscribeToAssignmentCalculation();
     }
 
-    // TODO: IGNITE-14237 Affinity function.
-    // TODO: IGNITE-14238 Creating and destroying caches.
-    // TODO: IGNITE-14235 Provide a minimal cache/table configuration.
+    /**
+     * Checks whether the local node hosts Metastorage.
+     *
+     * @param localNodeName Local node uniq name.
+     * @param metastorageMembers Metastorage members names.
+     * @return True if the node has Metastorage, false otherwise.
+     */
+    private boolean hasMetastorageLocally(String localNodeName, String[] metastorageMembers) {
+        boolean isLocalNodeHasMetasorage = false;
+
+        for (String name : metastorageMembers) {
+            if (name.equals(localNodeName)) {
+                isLocalNodeHasMetasorage = true;
+
+                break;
+            }
+        }
+        return isLocalNodeHasMetasorage;
+    }
+
+    /**
+     * Subscribes to metastorage members update.
+     */
+    private void subscribeToAssignmentCalculation() {
+        assert affinityCalculateSubscriptionFut == null : "Affinity calculation already subscribed";
+
+        String tableInternalPrefix = INTERNAL_PREFIX + "assignment.#";
+
+        affinityCalculateSubscriptionFut = metaStorageMgr.registerWatch(new Key(tableInternalPrefix), new WatchListener() {
+            @Override public boolean onUpdate(@NotNull Iterable<WatchEvent> events) {
+                for (WatchEvent evt : events) {
+                    if (ArrayUtils.empty(evt.newEntry().value())) {
+                        String keyTail = evt.newEntry().key().toString().substring(INTERNAL_PREFIX.length());
+
+                        String placeholderValue = keyTail.substring(0, keyTail.indexOf('.'));
+
+                        UUID tblId = UUID.fromString(placeholderValue);
+
+                        try {
+                            String name = new String(vaultManager.get((INTERNAL_PREFIX + tblId.toString())
+                                .getBytes(StandardCharsets.UTF_8)).get().value(), StandardCharsets.UTF_8);
+
+                            int partitions = configurationMgr.configurationRegistry().getConfiguration(TablesConfiguration.KEY)
+                                .tables().get(name).partitions().value();
+                            int replicas = configurationMgr.configurationRegistry().getConfiguration(TablesConfiguration.KEY)
+                                .tables().get(name).replicas().value();
+
+                            metaStorageMgr.invoke(evt.newEntry().key(),
+                                Conditions.value().eq(evt.newEntry().value()),
+                                Operations.put(IgniteUtils.toBytes(
+                                    RendezvousAffinityFunction.assignPartitions(
+                                        baselineMgr.nodes(),
+                                        partitions,
+                                        replicas,
+                                        false,
+                                        null
+                                    ))),
+                                Operations.noop());
+
+                            LOG.info("Affinity manager calculated assignment for the table [name={}, tblId={}]",
+                                name, tblId);
+                        }
+                        catch (InterruptedException | ExecutionException e) {
+                            LOG.error("Failed to initialize affinity [key={}]",
+                                evt.newEntry().key().toString(), e);
+                        }
+                    }
+                }
+
+                return true;
+            }
+
+            @Override public void onError(@NotNull Throwable e) {
+                LOG.error("Metastorage listener issue", e);
+            }
+        });
+    }
+
+    /**
+     * Unsubscribes a listener form the affinity calculation.
+     */
+    private void unsubscribeFromAssignmentCalculation() {
+        if (affinityCalculateSubscriptionFut == null)
+            return;
+
+        try {
+            Long subscriptionId = affinityCalculateSubscriptionFut.get();
+
+            metaStorageMgr.unregisterWatch(subscriptionId);
+
+            affinityCalculateSubscriptionFut = null;
+        }
+        catch (InterruptedException | ExecutionException e) {
+            LOG.error("Couldn't unsubscribe for Metastorage updates", e);
+        }
+    }
 }

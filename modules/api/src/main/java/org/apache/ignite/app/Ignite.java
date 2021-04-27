@@ -17,16 +17,16 @@
 
 package org.apache.ignite.app;
 
-import org.apache.ignite.table.manager.TableManager;
+import org.apache.ignite.table.manager.IgniteTables;
 
 /**
  * Ignite node interface. Main entry-point for all Ignite APIs.
  */
 public interface Ignite extends AutoCloseable {
     /**
-     * Gets a manager for tables.
+     * Gets an object for manipulate Ignite tables.
      *
-     * @return Table manager.
+     * @return Ignite tables.
      */
-    TableManager tableManager();
+    IgniteTables tables();
 }

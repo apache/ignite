@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.app;
 
+import io.netty.util.internal.StringUtil;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -24,33 +25,39 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.ignite.app.Ignite;
 import org.apache.ignite.app.Ignition;
-import org.apache.ignite.internal.baseline.BaselineManager;
 import org.apache.ignite.configuration.RootKey;
 import org.apache.ignite.configuration.internal.ConfigurationManager;
-import org.apache.ignite.configuration.storage.ConfigurationType;
 import org.apache.ignite.configuration.schemas.network.NetworkConfiguration;
 import org.apache.ignite.configuration.schemas.network.NetworkView;
-import org.apache.ignite.internal.affinity.AffinityManager;
+import org.apache.ignite.configuration.schemas.runner.ClusterConfiguration;
+import org.apache.ignite.configuration.schemas.runner.NodeConfiguration;
+import org.apache.ignite.configuration.schemas.table.TablesConfiguration;
 import org.apache.ignite.configuration.storage.ConfigurationStorage;
-import org.apache.ignite.internal.table.distributed.TableManagerImpl;
-import org.apache.ignite.internal.vault.VaultManager;
+import org.apache.ignite.configuration.storage.ConfigurationType;
+import org.apache.ignite.internal.affinity.AffinityManager;
+import org.apache.ignite.internal.baseline.BaselineManager;
 import org.apache.ignite.internal.metastorage.MetaStorageManager;
+import org.apache.ignite.internal.raft.Loza;
+import org.apache.ignite.internal.schema.SchemaManager;
+import org.apache.ignite.internal.storage.DistributedConfigurationStorage;
+import org.apache.ignite.internal.storage.LocalConfigurationStorage;
+import org.apache.ignite.internal.table.distributed.TableManager;
+import org.apache.ignite.internal.vault.VaultManager;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.message.MessageSerializationRegistry;
 import org.apache.ignite.network.scalecube.ScaleCubeClusterServiceFactory;
-import org.apache.ignite.internal.raft.Loza;
-import org.apache.ignite.internal.storage.DistributedConfigurationStorage;
-import org.apache.ignite.internal.storage.LocalConfigurationStorage;
-import org.apache.ignite.internal.schema.SchemaManager;
-import org.apache.ignite.table.manager.TableManager;
+import org.apache.ignite.table.manager.IgniteTables;
 import org.apache.ignite.utils.IgniteProperties;
 
 /**
  * Implementation of an entry point for handling grid lifecycle.
  */
 public class IgnitionImpl implements Ignition {
+    /** The logger. */
+    private static final IgniteLogger LOG = IgniteLogger.forClass(IgnitionImpl.class);
+
     /** */
     private static final String[] BANNER = new String[] {
         "",
@@ -71,9 +78,6 @@ public class IgnitionImpl implements Ignition {
     /** */
     private static final String VER_KEY = "version";
 
-    /** */
-    private static final IgniteLogger LOG = IgniteLogger.forClass(IgnitionImpl.class);
-
     /** {@inheritDoc} */
     @Override public synchronized Ignite start(String jsonStrBootstrapCfg) {
         ackBanner();
@@ -83,7 +87,12 @@ public class IgnitionImpl implements Ignition {
 
         boolean cfgBootstrappedFromPds = vaultMgr.bootstrapped();
 
-        List<RootKey<?, ?>> rootKeys = new ArrayList<>(Collections.singletonList(NetworkConfiguration.KEY));
+        List<RootKey<?, ?>> rootKeys = Arrays.asList(
+            NetworkConfiguration.KEY,
+            NodeConfiguration.KEY,
+            ClusterConfiguration.KEY,
+            TablesConfiguration.KEY
+        );
 
         List<ConfigurationStorage> configurationStorages =
             new ArrayList<>(Collections.singletonList(new LocalConfigurationStorage(vaultMgr)));
@@ -108,15 +117,22 @@ public class IgnitionImpl implements Ignition {
 
         var serializationRegistry = new MessageSerializationRegistry();
 
+        String localNodeName = locConfigurationMgr.configurationRegistry().getConfiguration(NodeConfiguration.KEY)
+            .name().value();
+
+        assert !StringUtil.isNullOrEmpty(localNodeName) : "Node local name is empty";
+
         // Network startup.
         ClusterService clusterNetSvc = new ScaleCubeClusterServiceFactory().createClusterService(
             new ClusterLocalConfiguration(
-                "Node" + netConfigurationView.port(),
+                localNodeName,
                 netConfigurationView.port(),
                 Arrays.asList(netConfigurationView.netClusterNodes()),
                 serializationRegistry
             )
         );
+
+        clusterNetSvc.start();
 
         // Raft Component startup.
         Loza raftMgr = new Loza(clusterNetSvc);
@@ -138,25 +154,23 @@ public class IgnitionImpl implements Ignition {
         BaselineManager baselineMgr = new BaselineManager(configurationMgr, metaStorageMgr, clusterNetSvc);
 
         // Affinity manager startup.
-        new AffinityManager(configurationMgr, metaStorageMgr, baselineMgr);
+        new AffinityManager(configurationMgr, metaStorageMgr, baselineMgr, vaultMgr);
 
         SchemaManager schemaMgr = new SchemaManager(configurationMgr);
 
         // Distributed table manager startup.
-        TableManager distributedTblMgr = new TableManagerImpl(
+        IgniteTables distributedTblMgr = new TableManager(
             configurationMgr,
-            clusterNetSvc,
             metaStorageMgr,
             schemaMgr,
-            raftMgr
+            raftMgr,
+            vaultMgr
         );
 
         // TODO IGNITE-14579 Start rest manager.
 
         // Deploy all resisted watches cause all components are ready and have registered their listeners.
         metaStorageMgr.deployWatches();
-
-        clusterNetSvc.start();
 
         ackSuccessStart();
 

@@ -58,14 +58,14 @@ import org.apache.ignite.lang.IgniteLogger;
  */
 @Experimental
 public class AsmSerializerGenerator implements SerializerFactory {
+    /** The logger. */
+    private static final IgniteLogger LOG = IgniteLogger.forClass(AsmSerializerGenerator.class);
+
     /** Serializer package name. */
     public static final String SERIALIZER_PACKAGE_NAME = "org.apache.ignite.internal.schema.marshaller";
 
     /** Serializer package name prefix. */
     public static final String SERIALIZER_CLASS_NAME_PREFIX = "SerializerForSchema_";
-
-    /** Logger. */
-    private static final IgniteLogger LOG = IgniteLogger.forClass(AsmSerializerGenerator.class);
 
     /** Dump generated code. */
     private final boolean dumpCode = LOG.isTraceEnabled();

@@ -15,16 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration.extended;
+package org.apache.ignite.internal.table;
 
-import org.apache.ignite.configuration.annotation.Config;
-import org.apache.ignite.configuration.annotation.ConfigValue;
+import org.apache.ignite.internal.schema.SchemaDescriptor;
 
-/** */
-@SuppressWarnings("PMD.UnusedPrivateField")
-@Config
-public class BaselineConfigurationSchema {
-    /** */
-    @ConfigValue
-    private AutoAdjustConfigurationSchema autoAdjust;
+/**
+ * Table schema manager interface.
+ */
+public interface TableSchemaView {
+    /**
+     * @return Current schema.
+     */
+    SchemaDescriptor schema();
+
+    /**
+     * @param ver Schema version.
+     * @return Schema of given version.
+     */
+    SchemaDescriptor schema(int ver);
 }

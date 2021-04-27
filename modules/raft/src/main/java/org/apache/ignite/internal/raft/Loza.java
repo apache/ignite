@@ -17,15 +17,38 @@
 
 package org.apache.ignite.internal.raft;
 
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;
+import org.apache.ignite.raft.client.Peer;
+import org.apache.ignite.raft.client.message.RaftClientMessageFactory;
+import org.apache.ignite.raft.client.message.impl.RaftClientMessageFactoryImpl;
+import org.apache.ignite.raft.client.service.RaftGroupCommandListener;
+import org.apache.ignite.raft.client.service.RaftGroupService;
+import org.apache.ignite.raft.client.service.impl.RaftGroupServiceImpl;
+import org.apache.ignite.raft.server.RaftServer;
+import org.apache.ignite.raft.server.impl.RaftServerImpl;
 
 /**
  * Best raft manager ever since 1982.
  */
-// TODO: IGNITE-14586 Remove @SuppressWarnings when implementation provided.
-@SuppressWarnings({"FieldCanBeLocal", "unused"}) public class Loza {
+public class Loza {
+    /** Factory. */
+    private static RaftClientMessageFactory FACTORY = new RaftClientMessageFactoryImpl();
+
+    /** Timeout. */
+    private static final int TIMEOUT = 1000;
+
+    /** Retry delay. */
+    private static final int DELAY = 200;
+
     /** Cluster network service. */
     private final ClusterService clusterNetSvc;
+
+    /** Raft server. */
+    private RaftServer raftServer;
 
     /**
      * Constructor.
@@ -34,5 +57,33 @@ import org.apache.ignite.network.ClusterService;
      */
     public Loza(ClusterService clusterNetSvc) {
         this.clusterNetSvc = clusterNetSvc;
+
+        this.raftServer = new RaftServerImpl(clusterNetSvc, FACTORY, 1000, Map.of());
+    }
+
+    /**
+     * Creates a RAFT group.
+     *
+     * @param groupId RAFT group id.
+     * @param peers Group peers.
+     * @param lsnr Group listener.
+     * @return A RAFT group client.
+     */
+    public RaftGroupService startRaftGroup(String groupId, List<ClusterNode> peers, RaftGroupCommandListener lsnr) {
+        assert peers.size() > 1;
+
+        //Now we are using only one node in a raft group.
+        if (peers.get(0).name().equals(clusterNetSvc.topologyService().localMember().name()))
+            raftServer.setListener(groupId, lsnr);
+
+        return new RaftGroupServiceImpl(
+            groupId,
+            clusterNetSvc,
+            FACTORY,
+            TIMEOUT,
+            peers.stream().map(Peer::new).collect(Collectors.toList()),
+            true,
+            DELAY
+        );
     }
 }

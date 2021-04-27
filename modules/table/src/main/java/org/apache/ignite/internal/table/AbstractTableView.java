@@ -29,14 +29,14 @@ abstract class AbstractTableView {
     protected final InternalTable tbl;
 
     /** Schema manager. */
-    protected final TableSchemaManager schemaMgr;
+    protected final TableSchemaView schemaMgr;
 
     /**
      * Constructor
      * @param tbl Internal table.
      * @param schemaMgr Schema manager.
      */
-    protected AbstractTableView(InternalTable tbl, TableSchemaManager schemaMgr) {
+    protected AbstractTableView(InternalTable tbl, TableSchemaView schemaMgr) {
         this.tbl = tbl;
         this.schemaMgr = schemaMgr;
     }

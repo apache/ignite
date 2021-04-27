@@ -15,23 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration.extended;
+package org.apache.ignite.configuration.schemas.table;
 
-import org.apache.ignite.configuration.annotation.ConfigValue;
 import org.apache.ignite.configuration.annotation.ConfigurationRoot;
+import org.apache.ignite.configuration.annotation.NamedConfigValue;
 import org.apache.ignite.configuration.storage.ConfigurationType;
 
-/**
- *
- */
+/** Tables configuration schema. */
 @SuppressWarnings("PMD.UnusedPrivateField")
-@ConfigurationRoot(rootName = "local", type = ConfigurationType.LOCAL)
-public class LocalConfigurationSchema {
-    /** */
-    @ConfigValue
-    private BaselineConfigurationSchema baseline;
+@ConfigurationRoot(rootName = "table", type = ConfigurationType.DISTRIBUTED)
+public class TablesConfigurationSchema {
 
-    /** */
-    @ConfigValue
-    private DataStorageConfigurationSchema dataStorage;
+    /** List of configured tables. */
+    @NamedConfigValue
+    TableConfigurationSchema tables;
 }

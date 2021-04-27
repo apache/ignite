@@ -26,15 +26,16 @@ import org.apache.ignite.configuration.storage.ConfigurationType;
 /**
  * Configuration schema for REST endpoint subtree.
  */
+@SuppressWarnings("PMD.UnusedPrivateField")
 @ConfigurationRoot(rootName = "rest", type = ConfigurationType.LOCAL)
 public class RestConfigurationSchema {
-    /** */
+    /** TCP port. */
     @Min(1024)
     @Max(0xFFFF)
     @Value(hasDefault = true)
     public final int port = 10300;
 
-    /** */
+    /** TCP port range. */
     @Min(0)
     @Value(hasDefault = true)
     public final int portRange = 0;

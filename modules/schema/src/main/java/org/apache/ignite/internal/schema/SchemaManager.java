@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.schema;
 
+import java.util.UUID;
 import org.apache.ignite.configuration.internal.ConfigurationManager;
 
 /**
@@ -27,6 +28,9 @@ import org.apache.ignite.configuration.internal.ConfigurationManager;
     /** Configuration manager in order to handle and listen schema specific configuration.*/
     private final ConfigurationManager configurationMgr;
 
+    /** Schema. */
+    private final SchemaDescriptor schema;
+
     /**
      * The constructor.
      *
@@ -34,5 +38,39 @@ import org.apache.ignite.configuration.internal.ConfigurationManager;
      */
     public SchemaManager(ConfigurationManager configurationMgr) {
         this.configurationMgr = configurationMgr;
+
+        this.schema = new SchemaDescriptor(1,
+            new Column[] {
+                new Column("key", NativeType.LONG, false)
+            },
+            new Column[] {
+                new Column("value", NativeType.LONG, false)
+            }
+        );
+    }
+
+    /**
+     * Gets a current schema for the table specified.
+     *
+     * @param tableId Table id.
+     * @return Schema.
+     */
+    public SchemaDescriptor schema(UUID tableId) {
+        return schema;
+    }
+
+    /**
+     * Gets a schema for specific version.
+     *
+     * @param tableId Table id.
+     * @param ver Schema version.
+     * @return Schema.
+     */
+    public SchemaDescriptor schema(UUID tableId, long ver) {
+        assert ver >= 0;
+
+        assert schema.version() == ver;
+
+        return schema;
     }
 }

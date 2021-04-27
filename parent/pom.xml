@@ -797,6 +797,7 @@
                     <version>false</version>
                     <additionalJOptions>${javadoc.opts}</additionalJOptions>
                     <excludePackageNames>com.facebook.presto.*</excludePackageNames>
+                    <sourcepath>src/main/java:target/generated-sources/annotations</sourcepath>
                     <links>
                         <link>https://ignite.apache.org/releases/latest/javadoc/</link>
                     </links>

@@ -49,7 +49,7 @@ public class KVBinaryViewImpl extends AbstractTableView implements KeyValueBinar
      * @param tbl Table storage.
      * @param schemaMgr Schema manager.
      */
-    public KVBinaryViewImpl(InternalTable tbl, TableSchemaManager schemaMgr) {
+    public KVBinaryViewImpl(InternalTable tbl, TableSchemaView schemaMgr) {
         super(tbl, schemaMgr);
 
         marsh = new TupleMarshallerImpl(schemaMgr);

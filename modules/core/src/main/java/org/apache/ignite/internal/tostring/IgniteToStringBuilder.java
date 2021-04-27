@@ -1872,7 +1872,6 @@ public class IgniteToStringBuilder {
      * @return Descriptor for the class.
      * @throws IllegalAccessException If failed.
      */
-    @SuppressWarnings({"TooBroadScope"})
     private static <T> ClassDescriptor getClassDescriptor(Class<T> cls) throws IllegalAccessException {
         assert cls != null;
 

@@ -15,22 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.table;
+package org.apache.ignite.configuration.schemas.runner;
 
-import org.apache.ignite.internal.schema.SchemaDescriptor;
+import java.util.UUID;
+import org.apache.ignite.configuration.annotation.ConfigurationRoot;
+import org.apache.ignite.configuration.annotation.Value;
+import org.apache.ignite.configuration.storage.ConfigurationType;
 
 /**
- * Table schema manager interface.
+ * Local node configuration schema.
  */
-public interface TableSchemaManager {
-    /**
-     * @return Current schema.
-     */
-    SchemaDescriptor schema();
+@SuppressWarnings("PMD.UnusedPrivateField")
+@ConfigurationRoot(rootName = "node", type = ConfigurationType.LOCAL)
+public class NodeConfigurationSchema {
+    /** Uniq local node name. */
+    @Value(hasDefault = true)
+    final String name = UUID.randomUUID().toString();
 
-    /**
-     * @param ver Schema version.
-     * @return Schema of given version.
-     */
-    SchemaDescriptor schema(int ver);
+    /** It is a copy of appropriate property from the cluster configuration. */
+    @Value(hasDefault = true)
+    final String[] metastorageNodes = new String[0];
 }

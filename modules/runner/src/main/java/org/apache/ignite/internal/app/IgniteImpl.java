@@ -18,24 +18,24 @@
 package org.apache.ignite.internal.app;
 
 import org.apache.ignite.app.Ignite;
-import org.apache.ignite.table.manager.TableManager;
+import org.apache.ignite.table.manager.IgniteTables;
 
 /**
  * Ignite internal implementation.
  */
 public class IgniteImpl implements Ignite {
     /** Distributed table manager. */
-    private final TableManager distributedTblMgr;
+    private final IgniteTables distributedTblMgr;
 
     /**
      * @param TblMgr Table manager.
      */
-    IgniteImpl(TableManager TblMgr) {
+    IgniteImpl(IgniteTables TblMgr) {
         this.distributedTblMgr = TblMgr;
     }
 
     /** {@inheritDoc} */
-    @Override public TableManager tableManager() {
+    @Override public IgniteTables tables() {
         return distributedTblMgr;
     }
 

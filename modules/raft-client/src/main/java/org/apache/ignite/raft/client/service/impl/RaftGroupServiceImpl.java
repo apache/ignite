@@ -25,8 +25,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 import org.apache.ignite.lang.IgniteLogger;
-import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.ClusterNode;
+import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.message.NetworkMessage;
 import org.apache.ignite.raft.client.Command;
 import org.apache.ignite.raft.client.Peer;
@@ -58,7 +58,7 @@ import static java.util.concurrent.ThreadLocalRandom.current;
  * The implementation of {@link RaftGroupService}
  */
 public class RaftGroupServiceImpl implements RaftGroupService {
-    /** Logger. */
+    /** The logger. */
     private static final IgniteLogger LOG = IgniteLogger.forClass(RaftGroupServiceImpl.class);
 
     /** */

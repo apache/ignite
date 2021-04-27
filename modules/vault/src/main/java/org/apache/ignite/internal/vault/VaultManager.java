@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.vault;
 
+import java.util.concurrent.CompletableFuture;
+import org.apache.ignite.internal.vault.common.VaultEntry;
+
 /**
  * VaultManager is responsible for handling VaultService lifecycle and providing interface for managing local keys.
  */
@@ -31,4 +34,11 @@ public class VaultManager {
     }
 
     // TODO: IGNITE-14405 Local persistent key-value storage (Vault).
+
+    /**
+     * This is a proxy to Vault service method.
+     */
+    public CompletableFuture<VaultEntry> get(byte[] key) {
+        return null;
+    }
 }

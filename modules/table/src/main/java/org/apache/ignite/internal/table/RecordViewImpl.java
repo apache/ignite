@@ -42,7 +42,7 @@ public class RecordViewImpl<R> extends AbstractTableView implements RecordView<R
      * @param schemaMgr Schema manager.
      * @param mapper Record class mapper.
      */
-    public RecordViewImpl(InternalTable tbl, TableSchemaManager schemaMgr, RecordMapper<R> mapper) {
+    public RecordViewImpl(InternalTable tbl, TableSchemaView schemaMgr, RecordMapper<R> mapper) {
         super(tbl, schemaMgr);
     }
 

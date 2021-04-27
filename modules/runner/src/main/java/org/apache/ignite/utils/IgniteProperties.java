@@ -62,6 +62,7 @@ public class IgniteProperties {
     /**
      * Returns property value for a given key or {@code null} if nothing was found.
      *
+     * @param key Key.
      * @return Value or {@code null}.
      */
     public static String get(String key) {

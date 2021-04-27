@@ -28,13 +28,13 @@ import org.apache.ignite.configuration.storage.ConfigurationType;
  */
 @ConfigurationRoot(rootName = "network", type = ConfigurationType.LOCAL)
 public class NetworkConfigurationSchema {
-    /** */
+    /** Network port. */
     @Min(1024)
     @Max(0xFFFF)
     @Value(hasDefault = true)
-    public final int port = 3040;
+    public final int port = 47500;
 
-    /** */
+    /** Cluster nodes. */
     @Value(hasDefault = true)
-    public String[] netClusterNodes = {"localhost:" + port};
+    public final String[] netClusterNodes = new String[0];
 }

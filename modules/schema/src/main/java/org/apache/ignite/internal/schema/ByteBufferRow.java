@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.Channels;
+import java.nio.channels.WritableByteChannel;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -67,7 +69,11 @@ public class ByteBufferRow implements BinaryRow {
 
     /** {@inheritDoc} */
     @Override public void writeTo(OutputStream stream) throws IOException {
-        throw new UnsupportedOperationException("Not implemented yet.");
+        WritableByteChannel channel = Channels.newChannel(stream);
+
+        channel.write(buf);
+
+        buf.rewind();
     }
 
     /** {@inheritDoc} */

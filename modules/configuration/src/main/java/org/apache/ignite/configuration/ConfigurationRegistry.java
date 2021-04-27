@@ -57,7 +57,7 @@ import static org.apache.ignite.configuration.internal.util.ConfigurationUtil.in
 
 /** */
 public class ConfigurationRegistry {
-    /** Logger. */
+    /** The logger. */
     private static final IgniteLogger LOG = IgniteLogger.forClass(ConfigurationRegistry.class);
 
     /** */
