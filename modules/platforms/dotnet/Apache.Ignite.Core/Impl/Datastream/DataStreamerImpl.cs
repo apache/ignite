@@ -422,6 +422,17 @@ namespace Apache.Ignite.Core.Impl.Datastream
         }
 
         /** <inheritDoc /> */
+        public Task BatchTask
+        {
+            get
+            {
+                var batch = _batch;
+                
+                return batch == null ? Task.CompletedTask : batch.Task;
+            }
+        }
+
+        /** <inheritDoc /> */
         public IStreamReceiver<TK, TV> Receiver
         {
             get
