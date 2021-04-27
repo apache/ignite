@@ -60,7 +60,7 @@ Server and thick client async cache APIs handle async continuations in a special
 [IMPORTANT]
 ====
 [discrete]
-=== *Ignite 2.10 and before*: danger of deadlocks and system pool starvation
+=== *Ignite 2.10 and before*: possibility of deadlocks and system pool starvation
 
 In Ignite versions 2.10 and before, system pool is used to run async continuations,
 which means that `GetAsync` call in the code above is executed by the system thread.
@@ -85,14 +85,16 @@ string hello = await cache.GetAsync(1).ContinueWith(
                 TaskScheduler.Default);
 ----
 
-This is rather verbose, but can be simplified with an extension method.
+Tip: use an extension method to reduce verbosity.
 
 ====
 
 
 === Compute
 
-TODO
+*Ignite 2.11 and later*: all `ICompute` async APIs use .NET Thread Pool to run async continuations.
+
+*Ignite 2.10 and before*: Compute async continuations are executed on link:/perf-and-troubleshooting/thread-pools-tuning[Ignite public pool]
 
 == ConfigureAwait
 
