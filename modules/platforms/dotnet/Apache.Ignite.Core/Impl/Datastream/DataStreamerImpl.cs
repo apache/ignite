@@ -115,7 +115,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         private readonly ManualResetEventSlim _closedEvt = new ManualResetEventSlim(false);
 
         /** Close future. */
-        private readonly Future<object> _closeFut = new Future<object>();
+        private readonly TaskCompletionSource<object> _closeFut = new TaskCompletionSource<object>();
 
         /** GC handle to this streamer. */
         private readonly long _hnd;
@@ -609,7 +609,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
 
                 if (Flush0(batch0, true, cancel ? PlcCancelClose : PlcClose))
                 {
-                    _closeFut.OnDone(null, null);
+                    ThreadPool.QueueUserWorkItem(_ => _closeFut.TrySetResult(null));
 
                     _rwLock.EnterWriteLock();
 
