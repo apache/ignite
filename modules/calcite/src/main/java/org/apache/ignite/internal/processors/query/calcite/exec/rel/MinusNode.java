@@ -337,7 +337,7 @@ public class MinusNode<Row> extends AbstractNode<Row> {
 
                 int availableRows = availableRows(entry.getValue());
 
-                if (availableRows <= cnt){
+                if (availableRows <= cnt) {
                     it.remove();
 
                     if (availableRows == 0)
@@ -377,7 +377,6 @@ public class MinusNode<Row> extends AbstractNode<Row> {
 
             cntrs[0] -= amount;
         }
-
 
         /** */
         private boolean isEmpty() {

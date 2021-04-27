@@ -167,8 +167,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private static final ThreadLocal<AffinityTopologyVersion> requestTopVer = new ThreadLocal<>();
 
     /** Patter to test incoming query to decide whether this query should be executed with Calcite or H2. */
-    private static final Pattern IS_SELECT_OR_EXPLAIN_PATTERN =
-        Pattern.compile("^\\s*(select|explain plan)", CASE_INSENSITIVE);
+    public static final Pattern H2_REDIRECTION_RULES =
+        Pattern.compile("\\s*(alter\\s*table|create\\s*index|drop\\s*index)", CASE_INSENSITIVE);
 
     /** For tests. */
     public static Class<? extends GridQueryIndexing> idxCls;
@@ -2838,7 +2838,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new CacheException("Execution of local SqlFieldsQuery on client node disallowed.");
 
         if (experimentalQueryEngine != null && useExperimentalSqlEngine) {
-            if (shouldRedirectToCalcite(qry.getSql()))
+            if (executeWithExperimentalEngine(qry.getSql()))
                 return experimentalQueryEngine.query(QueryContext.of(qry), qry.getSchema(), qry.getSql(), X.EMPTY_OBJECT_ARRAY);
         }
 
@@ -2870,11 +2870,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             return executeQuery(qryType, qry.getSql(), cctx, clo, true);
         });
-    }
-
-    /** Calcite baseb engine is available. */
-    public boolean useExperimentalEngine() {
-        return experimentalQueryEngine != null;
     }
 
     /**
@@ -3634,8 +3629,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param sql Query to execute.
      * @return {@code true} if the given query should be executed with Calcite-based engine.
      */
-    public static boolean shouldRedirectToCalcite(String sql) {
-        return IS_SELECT_OR_EXPLAIN_PATTERN.matcher(sql).find();
+    public static boolean executeWithExperimentalEngine(String sql) {
+        return !H2_REDIRECTION_RULES.matcher(sql).find();
     }
 
     /**
