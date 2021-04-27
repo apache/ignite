@@ -36,7 +36,9 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask.DurableBackgroundTaskResult.complete;
+import static org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask.DurableBackgroundTaskResult.restart;
 import static org.apache.ignite.internal.processors.localtask.DurableBackgroundTaskState.State.COMPLETED;
 import static org.apache.ignite.internal.processors.localtask.DurableBackgroundTaskState.State.INIT;
 import static org.apache.ignite.internal.processors.localtask.DurableBackgroundTaskState.State.STARTED;
@@ -92,6 +94,136 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
     @Test
     public void testSimpleTaskExecutionWithMetaStorage() throws Exception {
         checkSimpleTaskExecute(true);
+    }
+
+    /**
+     * Checking the correctness of restarting the task without MetaStorage.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testRestartTaskExecutionWithoutMetaStorage() throws Exception {
+        checkRestartTaskExecute(false);
+    }
+
+    /**
+     * Checking the correctness of restarting the task with MetaStorage.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testRestartTaskExecutionWithMetaStorage() throws Exception {
+        checkRestartTaskExecute(true);
+    }
+
+    /**
+     * Checking the correctness of cancelling the task.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCancelTaskExecution() throws Exception {
+        IgniteEx n = startGrid(0);
+        n.cluster().state(ACTIVE);
+
+        SimpleTask t = new SimpleTask("t");
+        IgniteInternalFuture<Void> execAsyncFut = execAsync(n, t, false);
+
+        t.onExecFut.get(getTestTimeout());
+        checkStateAndMetaStorage(n, t, STARTED, false);
+        assertFalse(execAsyncFut.isDone());
+
+        n.cluster().state(INACTIVE);
+
+        t.onExecFut.get(getTestTimeout());
+        t.taskFut.onDone(complete(null));
+
+        execAsyncFut.get(getTestTimeout());
+    }
+
+    /**
+     * Check that the task will be restarted after restarting the node.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testRestartTaskAfterRestartNode() throws Exception {
+        IgniteEx n = startGrid(0);
+        n.cluster().state(ACTIVE);
+
+        SimpleTask t = new SimpleTask("t");
+        execAsync(n, t, true);
+
+        t.onExecFut.get(getTestTimeout());
+        checkStateAndMetaStorage(n, t, STARTED, true);
+        t.taskFut.onDone(restart(null));
+
+        stopAllGrids();
+
+        n = startGrid(0);
+        n.cluster().state(ACTIVE);
+
+        t = ((SimpleTask)tasks(n).get(t.name()).task());
+
+        t.onExecFut.get(getTestTimeout());
+        checkStateAndMetaStorage(n, t, STARTED, true);
+        t.taskFut.onDone(complete(null));
+    }
+
+    /**
+     * Check that the task will be restarted correctly.
+     *
+     * @param save Save to MetaStorage.
+     * @throws Exception If failed.
+     */
+    private void checkRestartTaskExecute(boolean save) throws Exception {
+        IgniteEx n = startGrid(0);
+        n.cluster().state(ACTIVE);
+
+        ObservingCheckpointListener checkpointLsnr = null;
+
+        if (save)
+            dbMgr(n).addCheckpointListener(checkpointLsnr = new ObservingCheckpointListener());
+
+        SimpleTask t = new SimpleTask("t");
+        IgniteInternalFuture<Void> execAsyncFut = execAsync(n, t, save);
+
+        t.onExecFut.get(getTestTimeout());
+        checkStateAndMetaStorage(n, t, STARTED, save);
+        assertFalse(execAsyncFut.isDone());
+
+        if (save) {
+            dbMgr(n).enableCheckpoints(false).get(getTestTimeout());
+
+            t.taskFut.onDone(restart(null));
+            checkStateAndMetaStorage(n, t, INIT, save);
+            assertFalse(execAsyncFut.isDone());
+
+            GridFutureAdapter<Void> onMarkCheckpointBeginFut = checkpointLsnr.onMarkCheckpointBeginAsync(ctx -> {
+                checkStateAndMetaStorage(n, t, INIT, save);
+                assertFalse(toRmv(n).containsKey(t.name()));
+            });
+
+            dbMgr(n).enableCheckpoints(true).get(getTestTimeout());
+            onMarkCheckpointBeginFut.get(getTestTimeout());
+        }
+        else {
+            t.taskFut.onDone(restart(null));
+            checkStateAndMetaStorage(n, t, INIT, save);
+            assertFalse(execAsyncFut.isDone());
+        }
+
+        t.reset();
+
+        n.cluster().state(INACTIVE);
+        n.cluster().state(ACTIVE);
+
+        t.onExecFut.get(getTestTimeout());
+        checkStateAndMetaStorage(n, t, STARTED, save);
+        assertFalse(execAsyncFut.isDone());
+
+        t.taskFut.onDone(complete(null));
+        execAsyncFut.get(getTestTimeout());
     }
 
     /**

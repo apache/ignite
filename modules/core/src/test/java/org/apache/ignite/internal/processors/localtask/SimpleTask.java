@@ -17,16 +17,21 @@
 
 package org.apache.ignite.internal.processors.localtask;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask.DurableBackgroundTask;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask.DurableBackgroundTaskResult;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Simple {@link DurableBackgroundTask} implementation for tests.
  */
-class SimpleTask implements DurableBackgroundTask {
+class SimpleTask extends IgniteDataTransferObject implements DurableBackgroundTask {
     /** Serial version UID. */
     private static final long serialVersionUID = 0L;
 
@@ -34,10 +39,19 @@ class SimpleTask implements DurableBackgroundTask {
     private String name;
 
     /** Future that will be completed at the beginning of the {@link #executeAsync}. */
-    final transient GridFutureAdapter<Void> onExecFut = new GridFutureAdapter<>();
+    final GridFutureAdapter<Void> onExecFut = new GridFutureAdapter<>();
 
     /** Future that will be returned from the {@link #executeAsync}. */
-    final transient GridFutureAdapter<DurableBackgroundTaskResult> taskFut = new GridFutureAdapter<>();
+    final GridFutureAdapter<DurableBackgroundTaskResult> taskFut = new GridFutureAdapter<>();
+
+    /** Future that will be completed at the beginning of the {@link #cancel}. */
+    final GridFutureAdapter<Void> onCancelFut = new GridFutureAdapter<>();
+
+    /**
+     * Default constructor.
+     */
+    public SimpleTask() {
+    }
 
     /**
      * Constructor.
@@ -55,7 +69,7 @@ class SimpleTask implements DurableBackgroundTask {
 
     /** {@inheritDoc} */
     @Override public void cancel() {
-        // No-op.
+        onCancelFut.onDone();
     }
 
     /** {@inheritDoc} */
@@ -63,5 +77,26 @@ class SimpleTask implements DurableBackgroundTask {
         onExecFut.onDone();
 
         return taskFut;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        U.writeLongString(out, name);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(
+        byte protoVer,
+        ObjectInput in
+    ) throws IOException, ClassNotFoundException {
+        name = U.readLongString(in);
+    }
+
+    /**
+     * Resetting internal futures.
+     */
+    void reset() {
+        onExecFut.reset();
+        taskFut.reset();
     }
 }
