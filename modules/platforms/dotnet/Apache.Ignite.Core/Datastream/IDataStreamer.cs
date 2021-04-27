@@ -161,6 +161,13 @@ namespace Apache.Ignite.Core.Datastream
         /// <see cref="IDataStreamer{K,V}.Close(bool)"/> completes.
         /// </summary>
         Task Task { get; }
+        
+        /// <summary>
+        /// Gets the task for the current batch. This task completes when the current batch is flushed,
+        /// either explicitly with <see cref="Flush"/>, or automatically when the buffer is full or
+        /// <see cref="AutoFlushFrequency"/> is set.
+        /// </summary>
+        Task BatchTask { get; }
 
         /// <summary>
         /// Gets or sets custom stream receiver.
