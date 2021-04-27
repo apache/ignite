@@ -60,6 +60,8 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestStartWithConfigPath()
         {
+            Environment.SetEnvironmentVariable("COMPlus_EnableAlternateStackCheck", "0");
+            
             var cfg = new IgniteConfiguration
             {
                 SpringConfigUrl = Path.Combine("Config", "spring-test.xml"),
