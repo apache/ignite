@@ -367,13 +367,27 @@ namespace Apache.Ignite.Core.Impl.Datastream
         {
             get
             {
+                return (long) AutoFlushInterval.TotalMilliseconds;
+            }
+            set
+            {
+                AutoFlushInterval = TimeSpan.FromMilliseconds(value);
+            }
+        }
+
+
+        /** <inheritDoc /> */
+        public TimeSpan AutoFlushInterval
+        {
+            get
+            {
                 _rwLock.EnterReadLock(); 
                 
                 try
                 {
                     ThrowIfDisposed();
 
-                    return _flusher.Frequency;
+                    return TimeSpan.FromMilliseconds(_flusher.Frequency);
                 }
                 finally
                 {
@@ -389,7 +403,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 {
                     ThrowIfDisposed();
 
-                    _flusher.Frequency = value;
+                    _flusher.Frequency = (long) value.TotalMilliseconds;
                 }
                 finally
                 {
