@@ -606,6 +606,8 @@ namespace Apache.Ignite.Core.Impl.Datastream
                     break;
                 }
 
+                // TODO: Flush can throw - we should clean up the resources anyway,
+                // and never throw from the Dispose method.
                 if (Flush0(batch0, true, cancel ? PlcCancelClose : PlcClose))
                 {
                     _rwLock.EnterWriteLock();
