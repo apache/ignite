@@ -374,7 +374,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                 User cur = users.putIfAbsent(toSubjectId(u.name()), u);
 
                 if (cur != null) {
-                    throw new IllegalStateException("Security users with conflicting IDs found while reading from" +
+                    throw new IllegalStateException("Security users with conflicting IDs were found while reading from" +
                         " metastorage [logins=" + u.name() + ", " + cur.name() + "]. It is possible that the Ignite" +
                         " metastorage is corrupted or the specified users were created bypassing the Ignite Security API.");
                 }
@@ -936,15 +936,17 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         Object login = subj.login();
 
         if (subj.type() == REMOTE_NODE) {
-            throw new SecurityException("User management operations initiated on behalf of the Ignite node" +
-                " are not supported [igniteInstanceName=" + login + ']');
+            throw new IgniteUserManagementSecurityException("User management operations initiated on behalf of" +
+                " the Ignite node are not supported [igniteInstanceName=" + login + ']');
         }
 
-        if (!DFAULT_USER_NAME.equals(login) && !(ALTER_USER == perm && Objects.equals(login, name)))
-            throw new SecurityException("User management operations are not allowed for user [curUser=" + login + ']');
+        if (!DFAULT_USER_NAME.equals(login) && !(ALTER_USER == perm && Objects.equals(login, name))) {
+            throw new IgniteUserManagementSecurityException("User management operations are not allowed for user" +
+                " [curUser=" + login + ']');
+        }
 
         if (DROP_USER == perm && DFAULT_USER_NAME.equals(name))
-            throw new SecurityException("Default user cannot be removed.");
+            throw new IgniteUserManagementSecurityException("Default user cannot be removed.");
     }
 
     /** {@inheritDoc} */
@@ -960,8 +962,13 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      * (see {@link IgniteSecurityProcessor#withContext(java.util.UUID)}). Since we use the node ID as the subject ID
      * during node authentication, this method is used for obtaining security context for thin clients only.
      * Note, that the returned security context does not contain the address of the security subject.
+     * Since the client node does not store user data, the {@link SecurityContext} returned by the client node does
+     * not contain any user information, address, or username.
      */
     @Override public SecurityContext securityContext(UUID subjId) {
+        if (ctx.clientNode())
+            return new SecurityContextImpl(subjId, null, REMOTE_CLIENT, null);
+
         User user = users.get(subjId);
 
         return user == null ? null : new SecurityContextImpl(subjId, user.name(), REMOTE_CLIENT, null);

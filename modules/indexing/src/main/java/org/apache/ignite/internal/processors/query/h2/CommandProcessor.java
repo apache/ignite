@@ -58,6 +58,8 @@ import org.apache.ignite.internal.ServiceMXBeanImpl;
 import org.apache.ignite.internal.TransactionsMXBeanImpl;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.processors.authentication.IgniteAccessControlException;
+import org.apache.ignite.internal.processors.authentication.IgniteUserManagementSecurityException;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadAckClientParameters;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadCacheWriter;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadParser;
@@ -685,6 +687,11 @@ public class CommandProcessor {
 
             if (fut != null)
                 fut.get();
+        }
+        catch (IgniteUserManagementSecurityException e) {
+            // The following exception transformation is needed to keep {@link IgniteAuthenticationProcessor} backward
+            // compatibility intact.
+            throw new IgniteSQLException(e.getMessage(), new IgniteAccessControlException(e.getMessage(), e));
         }
         catch (SchemaOperationException e) {
             throw convert(e);

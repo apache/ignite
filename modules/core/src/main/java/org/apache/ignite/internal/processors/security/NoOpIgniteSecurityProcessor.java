@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.security;
 import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -152,16 +153,16 @@ public class NoOpIgniteSecurityProcessor extends GridProcessorAdapter implements
 
     /** {@inheritDoc} */
     @Override public void createUser(String login, char[] pwd) throws IgniteCheckedException {
-        throw new IgniteCheckedException(SECURITY_DISABLED_ERROR_MSG);
+        throw new IgniteException(SECURITY_DISABLED_ERROR_MSG);
     }
 
     /** {@inheritDoc} */
     @Override public void alterUser(String login, char[] pwd) throws IgniteCheckedException {
-        throw new IgniteCheckedException(SECURITY_DISABLED_ERROR_MSG);
+        throw new IgniteException(SECURITY_DISABLED_ERROR_MSG);
     }
 
     /** {@inheritDoc} */
     @Override public void dropUser(String login) throws IgniteCheckedException {
-        throw new IgniteCheckedException(SECURITY_DISABLED_ERROR_MSG);
+        throw new IgniteException(SECURITY_DISABLED_ERROR_MSG);
     }
 }

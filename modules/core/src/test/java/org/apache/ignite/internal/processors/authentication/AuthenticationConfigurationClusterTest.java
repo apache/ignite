@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.authentication;
 
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -29,10 +30,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.alterUserPassword;
 import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.authenticate;
-import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.createUser;
-import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.dropUser;
 import static org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcessor.SECURITY_DISABLED_ERROR_MSG;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
 
@@ -154,27 +152,27 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    createUser(grid(0), null, "test", "test");
+                    grid(0).context().security().createUser("test", "test".toCharArray());
 
                     return null;
                 }
-            }, IgniteCheckedException.class, SECURITY_DISABLED_ERROR_MSG);
+            }, IgniteException.class, SECURITY_DISABLED_ERROR_MSG);
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    dropUser(grid(0), null, "test");
+                    grid(0).context().security().dropUser("test");
 
                     return null;
                 }
-            }, IgniteCheckedException.class, SECURITY_DISABLED_ERROR_MSG);
+            }, IgniteException.class, SECURITY_DISABLED_ERROR_MSG);
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    alterUserPassword(grid(0), null, "test", "test");
+                    grid(0).context().security().alterUser("test", "test".toCharArray());
 
                     return null;
                 }
-            }, IgniteCheckedException.class, SECURITY_DISABLED_ERROR_MSG);
+            }, IgniteException.class, SECURITY_DISABLED_ERROR_MSG);
 
         authenticate(grid(0), "test", "test");
     }

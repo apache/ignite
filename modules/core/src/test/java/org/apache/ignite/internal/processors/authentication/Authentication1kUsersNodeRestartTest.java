@@ -23,16 +23,13 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.alterUserPassword;
 import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.authenticate;
-import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.createUser;
-import static org.apache.ignite.internal.processors.authentication.User.DFAULT_USER_NAME;
 
 /**
  * Test for {@link IgniteAuthenticationProcessor} on unstable topology.
@@ -92,12 +89,12 @@ public class Authentication1kUsersNodeRestartTest extends GridCommonAbstractTest
 
         grid(0).cluster().active(true);
 
-        SecurityContext secCtxDflt = authenticate(grid(0), DFAULT_USER_NAME, "ignite");
+        IgniteSecurity sec = grid(0).context().security();
 
         IntStream.range(0, USERS_COUNT).parallel().forEach(
             i -> {
                 try {
-                    createUser(grid(0), secCtxDflt, "test" + i, "init");
+                    sec.createUser("test" + i, "init".toCharArray());
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException(e);
@@ -107,7 +104,7 @@ public class Authentication1kUsersNodeRestartTest extends GridCommonAbstractTest
         IntStream.range(0, USERS_COUNT).parallel().forEach(
             i -> {
                 try {
-                    alterUserPassword(grid(0), secCtxDflt, "test" + i, "passwd_" + i);
+                    sec.alterUser("test" + i, ("passwd_" + i).toCharArray());
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException(e);
