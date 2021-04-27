@@ -150,8 +150,8 @@ class CellularAffinity(IgniteTest):
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @matrix(stop_type=[StopType.DROP_NETWORK, StopType.SIGKILL, StopType.SIGTERM],
             discovery_type=[DiscoreryType.ZooKeeper, DiscoreryType.TCP],
-            preparation_type=[TxPrepType.CELL_ONLY, TxPrepType.CELL_WITH_MULTIKEY, TxPrepType.CELL_WITH_NONCOLLOCATED])
-    def test_latency(self, ignite_version, stop_type, discovery_type):
+            prep_type=[TxPrepType.CELL_ONLY, TxPrepType.CELL_WITH_MULTIKEY, TxPrepType.CELL_WITH_NONCOLLOCATED])
+    def test_latency(self, ignite_version, stop_type, discovery_type, prep_type):
         """
         Tests Cellular switch tx latency.
         """
@@ -195,12 +195,15 @@ class CellularAffinity(IgniteTest):
         failed_cell_id = 1
 
         for cell_id in range(1, cells_amount):
+            multi_cnt = self.PREPARED_MULTIKEY_TX_CNT * cells_amount \
+                if cell_id == failed_cell_id and prep_type == TxPrepType.CELL_WITH_MULTIKEY else 0
+
+            noncoll_cnt = self.PREPARED_NONCOLLOCATED_TX_CNT * cells_amount \
+                if cell_id == failed_cell_id and prep_type == TxPrepType.CELL_WITH_NONCOLLOCATED else 0
+
             node, prepared_tx_loader = \
-                self.start_cell_with_prepared_txs(
-                    ignite_version, f'C{cell_id}', discovery_spi, modules,
-                    multi_cnt=self.PREPARED_MULTIKEY_TX_CNT * cells_amount if cell_id == failed_cell_id else 0,
-                    noncoll_cnt=self.PREPARED_NONCOLLOCATED_TX_CNT * cells_amount if cell_id == failed_cell_id else 0
-                )
+                self.start_cell_with_prepared_txs(ignite_version, f'C{cell_id}', discovery_spi, modules, multi_cnt,
+                                                  noncoll_cnt)
 
             loaders.append(prepared_tx_loader)
             nodes.append(node)
