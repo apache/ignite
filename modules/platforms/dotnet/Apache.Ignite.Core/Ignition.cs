@@ -66,6 +66,13 @@ namespace Apache.Ignite.Core
         /// </summary>
         public const string ClientConfigurationSectionName = "igniteClientConfiguration";
 
+        /// <summary>
+        /// Environment variable name to enable alternate stack checks on .NET Core 3+ and .NET 5+.
+        /// This is required to fix "Stack smashing detected" errors that occur instead of NullReferenceException
+        /// on Linux and macOS when Java overwrites SIGSEGV handler installed by .NET in thick client or server mode.
+        /// </summary>
+        private const string EnvEnableAlternateStackCheck = "COMPlus_EnableAlternateStackCheck";
+
         /** */
         private static readonly object SyncRoot = new object();
 
