@@ -34,7 +34,9 @@
     <packaging>pom</packaging>
 
     <modules>
+        <module>modules/affinity</module>
         <module>modules/api</module>
+        <module>modules/baseline</module>
         <module>modules/bytecode</module>
         <module>modules/cli</module>
         <module>modules/cli-common</module>
@@ -52,8 +54,6 @@
         <module>modules/schema</module>
         <module>modules/table</module>
         <module>modules/vault</module>
-        <module>modules/baseline</module>
-        <module>modules/affinity</module>
     </modules>
 
     <build>
