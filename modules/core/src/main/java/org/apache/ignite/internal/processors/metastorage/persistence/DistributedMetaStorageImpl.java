@@ -28,6 +28,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Future;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiConsumer;
@@ -60,7 +61,6 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageL
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -201,9 +201,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
      * Worker that will write data on disk asynchronously. Makes sence for persistent nodes only.
      */
     private final DmsDataWriterWorker worker;
-
-    /** */
-    private volatile IgniteInternalFuture<?> readyFut = new GridFinishedFuture<>();
 
     /**
      * @param ctx Kernal context.
@@ -1009,8 +1006,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             DistributedMetaStorageClusterNodeData nodeData = (DistributedMetaStorageClusterNodeData)data.commonData();
 
             if (nodeData != null) {
-                readyFut.get();
-
                 if (nodeData.fullData != null) {
                     ver = nodeData.ver;
 
@@ -1216,19 +1211,32 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     }
 
     /**
-     * @param holder Ready future when all updates over distributed metastorage might be proceed.
-     * @throws IgniteCheckedException If fails.
+     * @return Future which will be completed when all the updates prior to the pause processed.
      */
-    public void flush(IgniteInternalFuture<?> holder) throws IgniteCheckedException {
+    public Future<?> flush() {
         assert isPersistenceEnabled;
 
         lock.readLock().lock();
 
         try {
-            readyFut = holder.chain(f -> null);
+            return worker.flush();
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+    }
 
+    /**
+     * @param compFut Future which should be completed when worker may proceed with updates.
+     */
+    public void pauseLocalMetaStorage(IgniteInternalFuture<?> compFut) {
+        assert isPersistenceEnabled;
+
+        lock.readLock().lock();
+
+        try {
             // Read lock taken, so no other distributed updated will be added to the queue.
-            worker.awaitQueueEmpty();
+            worker.pause(compFut);
         }
         finally {
             lock.readLock().unlock();
@@ -1257,8 +1265,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         DistributedMetaStorageHistoryItem histItem
     ) throws IgniteCheckedException {
         assert lock.writeLock().isHeldByCurrentThread();
-
-        readyFut.get();
 
         histItem = optimizeHistoryItem(histItem);
 

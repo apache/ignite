@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Serializable;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -25,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
@@ -32,6 +34,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -71,7 +74,7 @@ public class IgniteSnapshotWithMetastorageTest extends AbstractSnapshotSelfTest 
         IgniteInternalFuture<?> updFut = GridTestUtils.runMultiThreadedAsync(() -> {
             while (!Thread.currentThread().isInterrupted() && !stop.get()) {
                 try {
-                    ignite.context().distributedMetastorage().write(SNAPSHOT_PREFIX + keyCnt.incrementAndGet(), "value");
+                    ignite.context().distributedMetastorage().write(SNAPSHOT_PREFIX + keyCnt.getAndIncrement(), "value");
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException(e);
@@ -79,53 +82,33 @@ public class IgniteSnapshotWithMetastorageTest extends AbstractSnapshotSelfTest 
             }
         }, 3, "dms-updater");
 
-        GridCacheSharedContext<?, ?> cctx = ignite.context().cache().context();
-        GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)cctx.database();
-
-        int[] marked = new int[1];
-
-        db.addCheckpointListener(new CheckpointListener() {
-            /** {@inheritDoc} */
-            @Override public void onMarkCheckpointBegin(Context ctx) {
-                // Save counter under checkpoint write-lock.
-                // No distributed metastorage updates should be saved to snapshot after this counter.
-                if (ctx.progress().reason().contains("Snapshot"))
-                    marked[0] = keyCnt.get();
-            }
-
-            /** {@inheritDoc} */
-            @Override public void onCheckpointBegin(Context ctx) {}
-
-            /** {@inheritDoc} */
-            @Override public void beforeCheckpointBegin(Context ctx) {}
-        });
-
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
-
-        assertTrue(GridTestUtils.waitForCondition(() -> keyCnt.get() > marked[0], getTestTimeout()));
 
         stop.set(true);
         updFut.get();
-
-        assertTrue(marked[0] > 0);
 
         stopAllGrids();
 
         IgniteEx snp = startGridsFromSnapshot(2, SNAPSHOT_NAME);
 
-        snp.context().distributedMetastorage().iterate(SNAPSHOT_PREFIX, new BiConsumer<String, Serializable>() {
-            @Override public void accept(String key, Serializable value) {
-                try {
-                    int key0 = Integer.parseInt(key.replace(SNAPSHOT_PREFIX, ""));
+        Set<String> allKeys = new HashSet<>();
+        snp.context().distributedMetastorage().iterate(SNAPSHOT_PREFIX, (key, val) -> allKeys.add(key));
 
-                    assertTrue(key0 <= marked[0]);
-                    assertEquals("value", value);
+        for (Ignite ig : G.allGrids()) {
+            // Iterator reads keys from the node heap map.
+            ((IgniteEx)ig).context().distributedMetastorage()
+                .iterate(SNAPSHOT_PREFIX, new BiConsumer<String, Serializable>() {
+                @Override public void accept(String key, Serializable value) {
+                    try {
+                        assertTrue("Keys must be the same on all nodes [key=" + key + ", all=" + allKeys + ']',
+                            allKeys.contains(key));
+                    }
+                    catch (Throwable t) {
+                        fail("Exception reading metastorage: " + t.getMessage());
+                    }
                 }
-                catch (Throwable t) {
-                    fail("Exception reading metastorage: " + t.getMessage());
-                }
-            }
-        });
+            });
+        }
     }
 
     /** @throws Exception If fails. */

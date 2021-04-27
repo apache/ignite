@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.metastorage.persistence;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -29,27 +28,30 @@ import java.util.concurrent.RunnableFuture;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
 import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.TestOnly;
 
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.COMMON_KEY_PREFIX;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.cleanupGuardKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyItemKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.localKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.versionKey;
-import static org.apache.ignite.internal.processors.metastorage.persistence.DmsWorkerStatus.CANCEL;
-import static org.apache.ignite.internal.processors.metastorage.persistence.DmsWorkerStatus.CONTINUE;
-import static org.apache.ignite.internal.processors.metastorage.persistence.DmsWorkerStatus.HALT;
 
 /** */
 class DmsDataWriterWorker extends GridWorker {
     /** */
     public static final byte[] DUMMY_VALUE = {};
+
+    /** */
+    private static final Object STOP = new Object();
+
+    /** */
+    private static final Object AWAIT = new Object();
 
     /** */
     private final LinkedBlockingQueue<RunnableFuture<?>> updateQueue = new LinkedBlockingQueue<>();
@@ -61,15 +63,6 @@ class DmsDataWriterWorker extends GridWorker {
     private final Consumer<Throwable> errorHnd;
 
     /** */
-    @TestOnly
-    public DmsWorkerStatus status() {
-        return status;
-    }
-
-    /** */
-    private volatile DmsWorkerStatus status = CONTINUE;
-
-    /** */
     private DistributedMetaStorageVersion workerDmsVer;
 
     /** */
@@ -77,6 +70,15 @@ class DmsDataWriterWorker extends GridWorker {
 
     /** */
     private volatile RunnableFuture<?> curTask;
+
+    /** */
+    private volatile CountDownLatch latch = new CountDownLatch(0);
+
+    /**
+     * This task is used to pause processing of the {@code updateQueue}. If this task completed it means that all the updates
+     * prior to it already flushed to the local metastorage.
+     */
+    private volatile RunnableFuture<?> pauseTask;
 
     /** */
     public DmsDataWriterWorker(
@@ -89,6 +91,10 @@ class DmsDataWriterWorker extends GridWorker {
         this.lock = lock;
         this.errorHnd = errorHnd;
 
+        pauseTask = new FutureTask<>(() -> AWAIT);
+        // Completed future task.
+        pauseTask.run();
+
         // Put restore task to the queue, so it will be executed on worker start.
         updateQueue.offer(newDmsTask(this::restore));
     }
@@ -99,16 +105,21 @@ class DmsDataWriterWorker extends GridWorker {
     }
 
     /**
-     * @throws IgniteCheckedException Failed if pending tasks have been interrupted or cancelled.
+     * @return Future which will be completed will all the tasks prior to the pause task completed.
      */
-    public void awaitQueueEmpty() throws IgniteCheckedException {
-        Collection<Future<?>> tasks = new ArrayList<>(updateQueue);
-        Future<?> curTask0 = curTask;
+    public Future<?> flush() {
+        return pauseTask;
+    }
 
-        for (Future<?> fut : tasks)
-            U.get(fut);
+    /**
+     * @param compFut Future which should be completed when worker may proceed with updates.
+     */
+    public void pause(IgniteInternalFuture<?> compFut) {
+        latch = new CountDownLatch(1);
 
-        U.get(curTask0);
+        updateQueue.offer(pauseTask = new FutureTask<>(() -> AWAIT));
+
+        compFut.listen(f -> latch.countDown());
     }
 
     /** */
@@ -166,17 +177,13 @@ class DmsDataWriterWorker extends GridWorker {
         if (halt)
             updateQueue.clear();
 
-        status = halt ? HALT : CANCEL;
-
-        updateQueue.offer(halt ? new FutureTask<>(() -> HALT) : new FutureTask<>(() -> CANCEL));
+        updateQueue.offer(new FutureTask<>(() -> STOP));
 
         U.join(runner(), log);
     }
 
     /** {@inheritDoc} */
     @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
-        status = CONTINUE;
-
         while (true) {
             try {
                 curTask = updateQueue.take();
@@ -196,8 +203,11 @@ class DmsDataWriterWorker extends GridWorker {
                 // Ignored exception will be handled by errHnd.
             }
 
-            if (res == HALT || res == CANCEL)
+            if (res == STOP)
                 break;
+
+            if (res == AWAIT)
+                U.awaitQuiet(latch);
         }
     }
 

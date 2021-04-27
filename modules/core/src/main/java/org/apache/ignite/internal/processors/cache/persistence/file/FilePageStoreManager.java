@@ -295,7 +295,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                 storeWorkDir.toPath(), entry -> {
                     String name = entry.toFile().getName();
 
-                    return !name.equals(MetaStorage.META_STORAGE_DIR_NAME) &&
+                    return !name.equals(MetaStorage.METASTORAGE_DIR_NAME) &&
                         (name.startsWith(CACHE_DIR_PREFIX) || name.startsWith(CACHE_GRP_DIR_PREFIX));
                 }
             )) {
@@ -495,7 +495,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             DataRegion dataRegion = cctx.database().dataRegion(GridCacheDatabaseSharedManager.METASTORE_DATA_REGION_NAME);
 
             CacheStoreHolder holder = initDir(
-                new File(storeWorkDir, MetaStorage.META_STORAGE_DIR_NAME),
+                new File(storeWorkDir, MetaStorage.METASTORAGE_DIR_NAME),
                 grpId,
                 MetaStorage.partitions().size(),
                 dataRegion.memoryMetrics().totalAllocatedPages()::add,
@@ -1010,7 +1010,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             .sorted()
             .filter(File::isDirectory)
             .filter(f -> f.getName().startsWith(CACHE_DIR_PREFIX) || f.getName().startsWith(CACHE_GRP_DIR_PREFIX) ||
-                f.getName().startsWith(MetaStorage.META_STORAGE_DIR_NAME))
+                f.getName().startsWith(MetaStorage.METASTORAGE_DIR_NAME))
             .filter(f -> names.test(cacheGroupName(f)))
             .collect(Collectors.toList());
     }
@@ -1056,7 +1056,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             return name.substring(CACHE_GRP_DIR_PREFIX.length());
         else if (name.startsWith(CACHE_DIR_PREFIX))
             return name.substring(CACHE_DIR_PREFIX.length());
-        else if (name.startsWith(MetaStorage.META_STORAGE_DIR_NAME))
+        else if (name.startsWith(MetaStorage.METASTORAGE_DIR_NAME))
             return MetaStorage.METASTORAGE_CACHE_NAME;
         else
             throw new IgniteException("Directory doesn't match the cache or cache group prefix: " + dir);
@@ -1174,6 +1174,23 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         boolean isSharedGrp = ccfg.getGroupName() != null;
 
         return cacheDirName(isSharedGrp, isSharedGrp ? ccfg.getGroupName() : ccfg.getName());
+    }
+
+    /**
+     * @param grpId Group id.
+     * @return Name of cache group directory.
+     * @throws IgniteCheckedException If cache group doesn't exist.
+     */
+    public String cacheDirName(int grpId) throws IgniteCheckedException {
+        if (grpId == MetaStorage.METASTORAGE_CACHE_ID)
+            return MetaStorage.METASTORAGE_DIR_NAME;
+
+        CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
+
+        if (gctx == null)
+            throw new IgniteCheckedException("Cache group context has not found due to the cache group is stopped.");
+
+        return cacheDirName(gctx.config());
     }
 
     /**

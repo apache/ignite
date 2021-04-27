@@ -244,7 +244,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
             // right after current will be completed.
             cctx.database().forceCheckpoint(String.format(CP_SNAPSHOT_REASON, SNAPSHOT_NAME));
 
-            snpFutTask.awaitStarted();
+            snpFutTask.started().get();
 
             db.forceCheckpoint("snapshot is ready to be created")
                 .futureFor(CheckpointState.MARKER_STORED_TO_DISK)
@@ -565,7 +565,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         // right after current will be completed.
         cctx.database().forceCheckpoint(String.format(CP_SNAPSHOT_REASON, snpName));
 
-        snpFutTask.awaitStarted();
+        snpFutTask.started().get();
 
         return snpFutTask;
     }

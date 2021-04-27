@@ -51,6 +51,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.store.PageWriteListener;
@@ -305,10 +306,10 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
     }
 
     /**
-     * @throws IgniteCheckedException If fails.
+     * @return Started future.
      */
-    public void awaitStarted() throws IgniteCheckedException {
-        startedFut.get();
+    public IgniteInternalFuture<?> started() {
+        return startedFut;
     }
 
     /**
@@ -354,7 +355,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
             }
 
             if (withMetaStorage) {
-                U.ensureDirectory(cacheWorkDir(tmpConsIdDir, MetaStorage.META_STORAGE_DIR_NAME),
+                U.ensureDirectory(cacheWorkDir(tmpConsIdDir, MetaStorage.METASTORAGE_DIR_NAME),
                     "directory for snapshotting cache group",
                     log);
             }
@@ -393,7 +394,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
         });
 
         if (withMetaStorage)
-            ((DistributedMetaStorageImpl)cctx.kernalContext().distributedMetastorage()).flush(startedFut);
+            U.get(((DistributedMetaStorageImpl)cctx.kernalContext().distributedMetastorage()).flush());
     }
 
     /** {@inheritDoc} */
@@ -482,7 +483,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
                 processed.put(MetaStorage.METASTORAGE_CACHE_ID, MetaStorage.partitions());
 
                 addPartitionWriters(MetaStorage.METASTORAGE_CACHE_ID, MetaStorage.partitions(),
-                    () -> cacheDirName(MetaStorage.METASTORAGE_CACHE_ID));
+                    () -> pageStore.cacheDirName(MetaStorage.METASTORAGE_CACHE_ID));
             }
 
             pageStore.readConfigurationFiles(ccfgs,
@@ -540,7 +541,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
         try {
             for (Map.Entry<Integer, Set<Integer>> e : processed.entrySet()) {
                 int grpId = e.getKey();
-                String cacheDirName = cacheDirName(grpId);
+                String cacheDirName = pageStore.cacheDirName(grpId);
 
                 // Process partitions for a particular cache group.
                 for (int partId : e.getValue()) {
@@ -619,23 +620,6 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
 
             partFileLengths.put(pair, store.size());
         }
-    }
-
-    /**
-     * @param grpId Group id.
-     * @return Name of cache group directory.
-     * @throws IgniteCheckedException If cache group doesn't exist.
-     */
-    private String cacheDirName(int grpId) throws IgniteCheckedException {
-        if (grpId == MetaStorage.METASTORAGE_CACHE_ID)
-            return MetaStorage.META_STORAGE_DIR_NAME;
-
-        CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
-
-        if (gctx == null)
-            throw new IgniteCheckedException("Cache group context has not found due to the cache group is stopped.");
-
-        return FilePageStoreManager.cacheDirName(gctx.config());
     }
 
     /**

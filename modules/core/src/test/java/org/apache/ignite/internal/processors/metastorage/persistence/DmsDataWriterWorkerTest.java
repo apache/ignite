@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThread;
@@ -283,23 +283,17 @@ public class DmsDataWriterWorkerTest extends GridCommonAbstractTest {
     @Test
     public void testHalt() throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
-        AtomicBoolean await = new AtomicBoolean(true);
+        CountDownLatch updating = new CountDownLatch(1);
 
         metastorage = new MyReadWriteMetaStorageMock() {
             @Override public void writeRaw(String key, byte[] data) {
                 try {
-                    if (await.get())
-                        latch.countDown();
+                    latch.countDown();
 
-                    while (worker.status() != DmsWorkerStatus.HALT) {
-                        //noinspection BusyWait
-                        Thread.sleep(0);
-                    }
+                    U.await(updating);
                 }
                 catch (Exception ignore) {
                 }
-
-                await.set(false);
 
                 super.writeRaw(key, data);
             }
@@ -313,6 +307,7 @@ public class DmsDataWriterWorkerTest extends GridCommonAbstractTest {
         worker.update(histItem("key2", "val2"));
 
         latch.await();
+        updating.countDown();
 
         worker.cancel(true);
 

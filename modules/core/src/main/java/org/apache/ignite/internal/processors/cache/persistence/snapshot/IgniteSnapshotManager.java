@@ -106,6 +106,7 @@ import org.apache.ignite.internal.processors.cache.tree.DataRow;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
+import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridBusyLock;
@@ -580,7 +581,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         IgniteInternalFuture<Set<GroupPartitionId>> task0;
 
-        if (parts.isEmpty())
+        if (parts.isEmpty() && !withMetaStorage)
             task0 = new GridFinishedFuture<>(Collections.emptySet());
         else {
             task0 = registerSnapshotTask(req.snpName,
@@ -588,6 +589,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 parts,
                 withMetaStorage,
                 locSndrFactory.apply(req.snpName));
+
+            if (withMetaStorage)
+                ((DistributedMetaStorageImpl)cctx.kernalContext().distributedMetastorage())
+                    .pauseLocalMetaStorage(((SnapshotFutureTask)task0).started());
 
             clusterSnpReq = req;
         }
@@ -1127,7 +1132,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             // Schedule task on a checkpoint and wait when it starts.
             try {
-                task.awaitStarted();
+                task.started().get();
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Fail to wait while cluster-wide snapshot operation started", e);
