@@ -1,0 +1,70 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Asynchronous APIs
+
+== Overview
+
+Many Ignite APIs have asynchronous versions, for example, `void ICache.Put` and `Task ICache.PutAsync`.
+Async APIs allow us to write link:https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/concepts/async/[efficient non-blocking code]:
+
+[source,csharp]
+----
+ICache<int, string> cache = ignite.GetOrCreateCache<int, string>("my-cache");
+
+// Sync, blocks thread on every call.
+cache.Put(1, "Hello");
+string hello = cache.Get(1);
+
+// Async, does not block threads.
+await cache.PutAsync(1, "Hello");
+string hello = await cache.GetAsync(1);
+----
+
+With async APIs, current thread is not blocked while we wait for cache operation to complete;
+it is returned to the thread pool and can perform other work.
+
+When the async operation completes, our method resumes execution - either on the same thread, or on a different one -
+depending on the environment and the configuration. This is called "async continuation".
+
+
+== Async Continuations
+
+== ConfigureAwait
+
+TODO
+
+
+
+
+== Cache
+
+Consider the following code:
+
+[source,csharp]
+----
+// Print Hello World on all cluster nodes.
+ignite.GetCompute().Broadcast(new HelloAction());
+
+class HelloAction : IComputeAction
+{
+  public void Invoke()
+  {
+    Console.WriteLine("Hello World!");
+  }
+}
+----
+
+
+== Compute
