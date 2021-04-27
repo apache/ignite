@@ -260,7 +260,7 @@ If an asynchronous operation is completed by the time the callback is passed to 
 Otherwise, the callback is executed asynchronously when the operation is completed.
 
 Callbacks for asynchronous compute operations are invoked by threads from the /perf-and-troubleshooting/thread-pools-tuning[Ignite public pool].
-Therefore, you should avoid calling synchronous cache and compute operations from inside the callback, because it may lead to a deadlock due to pools starvation.
+Calling synchronous cache and compute operations from inside the callback may lead to a deadlock due to pools starvation.
 To achieve nested execution of asynchronous compute operations, you can take advantage of /perf-and-troubleshooting/thread-pools-tuning#creating-custom-thread-pool[custom thread pools].
 
 Callbacks for asynchronous cache operations are invoked using `IgniteConfiguration#asyncContinuationExecutor`, which defaults to `ForkJoinPool#commonPool`.
