@@ -55,7 +55,7 @@ Server and thick client async cache APIs handle async continuations in a special
 * In Ignite 2.11 and later, the behavior is controlled by `IgniteConfiguration.AsyncContinuationExecutor` property. A common thread pool is used by default, and no special care is required.
 * To restore the previous behavior, use `IgniteConfiguration.AsyncContinuationExecutor = AsyncContinuationExecutor.UnsafeSynchronous`.
 ** Can provide a small performance improvement in some situations, because callbacks are executed without any indirection or scheduling.
-** UNSAFE: cache operations can't proceed while system threads execute continuations (callbacks), and deadlocks are possible if other cache operations are invoked from the callback.
+** UNSAFE: cache operations cannot proceed while system threads execute continuations (callbacks), and deadlocks are possible if other cache operations are invoked from the callback.
 
 [IMPORTANT]
 ====
