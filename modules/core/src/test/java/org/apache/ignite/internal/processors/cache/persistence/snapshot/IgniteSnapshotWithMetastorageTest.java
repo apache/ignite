@@ -111,7 +111,7 @@ public class IgniteSnapshotWithMetastorageTest extends AbstractSnapshotSelfTest 
         ignite.context().cache().context().exchange()
             .registerExchangeAwareComponent(new PartitionsExchangeAware() {
                 /** {@inheritDoc} */
-                @Override public void onInitBeforeTopologyLock(GridDhtPartitionsExchangeFuture fut) {
+                @Override public void onInitAfterTopologyLock(GridDhtPartitionsExchangeFuture fut) {
                     latch.countDown();
                 }
             });
