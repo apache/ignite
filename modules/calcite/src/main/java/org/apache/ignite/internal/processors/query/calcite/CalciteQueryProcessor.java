@@ -75,6 +75,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             // so it's better to disable such rewriting right now
             // TODO: remove this after IGNITE-14277
             .withInSubQueryThreshold(Integer.MAX_VALUE)
+            .withExpand(false)
             .withDecorrelationEnabled(true))
         .parserConfig(
             SqlParser.config()

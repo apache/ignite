@@ -115,7 +115,11 @@ public class CorrelatedNestedLoopJoinRule extends ConverterRule {
             conditionList.add(condition2);
         }
 
-        RelTraitSet filterInTraits = rel.getRight().getTraitSet().replace(RewindabilityTrait.REWINDABLE);
+        CorrelationTrait corrTrait = CorrelationTrait.correlations(correlationIds);
+
+        RelTraitSet filterInTraits = rel.getRight().getTraitSet()
+            .replace(RewindabilityTrait.REWINDABLE)
+            .replace(corrTrait);
 
         // Push a filter with batchSize disjunctions
         relBuilder
@@ -123,9 +127,6 @@ public class CorrelatedNestedLoopJoinRule extends ConverterRule {
             .filter(relBuilder.or(conditionList));
 
         RelNode right = relBuilder.build();
-
-        CorrelationTrait corrTrait = CorrelationTrait.correlations(correlationIds);
-        right = right.copy(filterInTraits.replace(corrTrait), right.getInputs());
 
         JoinRelType joinType = rel.getJoinType();
 

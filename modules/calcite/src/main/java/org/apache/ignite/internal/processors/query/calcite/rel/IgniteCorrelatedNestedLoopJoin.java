@@ -70,7 +70,15 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteJoin {
      *                         LHS and used by the RHS and are not available to
      *                         nodes above this Join in the tree
      */
-    public IgniteCorrelatedNestedLoopJoin(RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right, RexNode condition, Set<CorrelationId> variablesSet, JoinRelType joinType) {
+    public IgniteCorrelatedNestedLoopJoin(
+        RelOptCluster cluster,
+        RelTraitSet traitSet,
+        RelNode left,
+        RelNode right,
+        RexNode condition,
+        Set<CorrelationId> variablesSet,
+        JoinRelType joinType
+    ) {
         super(cluster, traitSet, left, right, condition, variablesSet, joinType);
     }
 

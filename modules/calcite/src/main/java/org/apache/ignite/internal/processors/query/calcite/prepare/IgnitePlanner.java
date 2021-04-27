@@ -339,6 +339,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
             // near the leaves created by trim migrate past joins and seem to
             // prevent join-reordering.
             .withTrimUnusedFields(RelOptUtil.countJoins(root.rel) < 2)
+            .withExpand(false)
             .build();
         SqlToRelConverter converter = sqlToRelConverter(validator(), catalogReader, config);
         boolean ordered = !root.collation.getFieldCollations().isEmpty();

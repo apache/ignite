@@ -625,6 +625,22 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
     /** */
     @Test
+    public void testExistsCondition() throws Exception {
+        populateTables();
+
+        sql("select * from Orders where salary > some (10, 20)", false);
+
+        List<List<?>> rows = sql(
+            "SELECT name FROM Orders o WHERE EXISTS (" +
+                "   SELECT 1" +
+                "   FROM Account a" +
+                "   WHERE o.name = a.name)", true);
+
+        assertEquals(4, rows.size());
+    }
+
+    /** */
+    @Test
     public void testNotExistsConditionWithSubquery() throws Exception {
         populateTables();
 
