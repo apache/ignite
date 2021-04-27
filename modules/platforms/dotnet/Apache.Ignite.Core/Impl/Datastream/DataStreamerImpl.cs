@@ -608,7 +608,8 @@ namespace Apache.Ignite.Core.Impl.Datastream
 
                 // TODO: Flush can throw - we should clean up the resources anyway,
                 // and never throw from the Dispose method.
-                // Or should we? How to communicate the failure otherwise? Check best practices.
+                // Or should we? How to communicate the failure otherwise?
+                // https://docs.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/ca1065
                 if (Flush0(batch0, true, cancel ? PlcCancelClose : PlcClose))
                 {
                     _rwLock.EnterWriteLock();
