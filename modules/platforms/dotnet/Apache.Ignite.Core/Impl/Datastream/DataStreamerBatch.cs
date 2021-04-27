@@ -177,7 +177,6 @@ namespace Apache.Ignite.Core.Impl.Datastream
             }
         }
 
-
         /// <summary>
         /// Await completion of current and all previous loads.
         /// </summary>

@@ -111,9 +111,6 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /** Lock. */
         private readonly ReaderWriterLockSlim _rwLock = new ReaderWriterLockSlim();
 
-        /** Closed event. */
-        private readonly ManualResetEventSlim _closedEvt = new ManualResetEventSlim(false);
-
         /** Close future. */
         private readonly TaskCompletionSource<object> _closeFut = new TaskCompletionSource<object>();
 
@@ -570,7 +567,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
             else
             {
                 // Batch is null, i.e. data streamer is closing. Wait for close to complete.
-                _closedEvt.Wait();
+                Task.Wait();
             }
         }
 
@@ -584,10 +581,13 @@ namespace Apache.Ignite.Core.Impl.Datastream
             if (batch0 != null)
             {
                 Flush0(batch0, false, PlcFlush);
+
+                // TODO: Await completion of previous batches.
                 return batch0.Task;
             }
 
-            return Task.CompletedTask;
+            // Batch is null, i.e. data streamer is closing. Wait for close to complete.
+            return Task;
         }
 
         /** <inheritDoc /> */
@@ -602,15 +602,11 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 if (batch0 == null)
                 {
                     // Wait for concurrent close to finish.
-                    _closedEvt.Wait();
-
-                    return;
+                    break;
                 }
 
                 if (Flush0(batch0, true, cancel ? PlcCancelClose : PlcClose))
                 {
-                    ThreadPool.QueueUserWorkItem(_ => _closeFut.TrySetResult(null));
-
                     _rwLock.EnterWriteLock();
 
                     try
@@ -620,7 +616,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                         if (_rcv != null)
                             Marshaller.Ignite.HandleRegistry.Release(_rcvHnd);
 
-                        _closedEvt.Set();
+                        ThreadPool.QueueUserWorkItem(_ => _closeFut.TrySetResult(null));
                     }
                     finally
                     {
@@ -632,6 +628,8 @@ namespace Apache.Ignite.Core.Impl.Datastream
                     break;
                 }
             }
+
+            _closeFut.Task.Wait();
         }
 
         /** <inheritDoc /> */
