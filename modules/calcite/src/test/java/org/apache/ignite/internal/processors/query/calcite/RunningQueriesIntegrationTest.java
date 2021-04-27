@@ -18,34 +18,26 @@
 
 package org.apache.ignite.internal.processors.query.calcite;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryEngine;
-import org.apache.ignite.internal.processors.query.calcite.exec.RunningQueryInfo;
+import org.apache.ignite.internal.processors.query.RunningQueryInfo;
+import org.apache.ignite.internal.processors.query.RunningStage;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
 
 import static java.util.stream.Collectors.joining;
-import static org.apache.ignite.cache.query.QueryCancelledException.ERR_MSG;
 import static org.apache.ignite.internal.processors.query.calcite.CalciteTestUtils.executeSql;
 import static org.apache.ignite.internal.processors.query.calcite.CalciteTestUtils.queryProcessor;
-import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.awaitReservationsRelease;
-import static org.apache.ignite.internal.processors.query.calcite.exec.RunningQueryService.RunningStage.EXECUTION;
-import static org.apache.ignite.internal.processors.query.calcite.exec.RunningQueryService.RunningStage.PLANNING;
 
 /**
  *
@@ -55,7 +47,7 @@ public class RunningQueriesIntegrationTest extends GridCommonAbstractTest {
     private static IgniteEx client;
 
     /** Timeout in ms for async operations. */
-    private static final long TIMEOUT_IN_MS = 5000;
+    private static final long TIMEOUT_IN_MS = 10000;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -88,12 +80,12 @@ public class RunningQueriesIntegrationTest extends GridCommonAbstractTest {
     @Test
     public void testCancelAtPlanningPhase() throws IgniteCheckedException {
         QueryEngine engine = queryProcessor(client);
-        int count = 9;
+        int cnt = 9;
 
-        for (int i = 0; i < count; i++)
+        for (int i = 0; i < cnt; i++)
             executeSql(client, "CREATE TABLE person" + i + " (id int, val varchar)");
 
-        String bigJoin = IntStream.range(0, count).mapToObj((i) -> "person" + i + " p" + i).collect(joining(", "));
+        String bigJoin = IntStream.range(0, cnt).mapToObj((i) -> "person" + i + " p" + i).collect(joining(", "));
         String sql = "select * from " + bigJoin;
 
         IgniteInternalFuture<List<List<?>>> fut = GridTestUtils.runAsync(() -> executeSql(client, sql));
@@ -101,12 +93,12 @@ public class RunningQueriesIntegrationTest extends GridCommonAbstractTest {
         Assert.assertTrue(GridTestUtils.waitForCondition(
             () -> !engine.runningSqlQueries().isEmpty(), TIMEOUT_IN_MS));
 
-        List<? extends GridRunningQueryInfo> running = engine.runningSqlQueries();
+        List<RunningQueryInfo> running = engine.runningSqlQueries();
 
         assertEquals(1, running.size());
 
-        RunningQueryInfo run = (RunningQueryInfo)running.get(0);
-        assertEquals(PLANNING, run.stage());
+        RunningQueryInfo run = running.get(0);
+        assertEquals(RunningStage.PLANNING, run.stage());
 
         engine.cancelQuery(run.id());
 
@@ -120,7 +112,7 @@ public class RunningQueriesIntegrationTest extends GridCommonAbstractTest {
     @Test
     public void testCancelAtExecutionPhase() throws IgniteCheckedException {
         QueryEngine engine = queryProcessor(client);
-        int count = 6;
+        int cnt = 6;
 
         executeSql(client, "CREATE TABLE person (id int, val varchar)");
 
@@ -129,24 +121,24 @@ public class RunningQueriesIntegrationTest extends GridCommonAbstractTest {
 
         executeSql(client, insertSql);
 
-        String bigJoin = IntStream.range(0, count).mapToObj((i) -> "person p" + i).collect(joining(", "));
+        String bigJoin = IntStream.range(0, cnt).mapToObj((i) -> "person p" + i).collect(joining(", "));
         String sql = "select * from " + bigJoin;
 
         IgniteInternalFuture<List<List<?>>> fut = GridTestUtils.runAsync(() -> executeSql(client, sql));
 
         Assert.assertTrue(GridTestUtils.waitForCondition(
             () -> {
-                List<? extends GridRunningQueryInfo> queries = engine.runningSqlQueries();
+                List<RunningQueryInfo> queries = engine.runningSqlQueries();
 
-                return !queries.isEmpty() && ((RunningQueryInfo)queries.get(0)).stage() == EXECUTION;
+                return !queries.isEmpty() && queries.get(0).stage() == RunningStage.EXECUTION;
             }
             , TIMEOUT_IN_MS));
 
-        List<? extends GridRunningQueryInfo> running = engine.runningSqlQueries();
+        List<RunningQueryInfo> running = engine.runningSqlQueries();
 
         assertEquals(1, running.size());
 
-        RunningQueryInfo run = (RunningQueryInfo)running.get(0);
+        RunningQueryInfo run = running.get(0);
         engine.cancelQuery(run.id());
 
         Assert.assertTrue(GridTestUtils.waitForCondition(

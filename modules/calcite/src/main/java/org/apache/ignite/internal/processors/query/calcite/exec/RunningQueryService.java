@@ -29,9 +29,10 @@ import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
-import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryCancellable;
+import org.apache.ignite.internal.processors.query.RunningQueryInfo;
+import org.apache.ignite.internal.processors.query.RunningStage;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
 
@@ -41,7 +42,7 @@ public class RunningQueryService implements Service {
     private final Map<Long, RunningQueryInfo> running;
 
     /** Local node ID. */
-    private final UUID localNodeId;
+    private final UUID locNodeId;
 
     /** Unique id for queries on single node. */
     private final AtomicLong qryIdGen = new AtomicLong();
@@ -49,7 +50,7 @@ public class RunningQueryService implements Service {
     /** */
     public RunningQueryService(GridKernalContext ctx) {
         running = new ConcurrentHashMap<>();
-        localNodeId = ctx.localNodeId();
+        locNodeId = ctx.localNodeId();
     }
 
     /**
@@ -110,7 +111,7 @@ public class RunningQueryService implements Service {
         RunningQueryInfo run = new RunningQueryInfo(
             stage,
             qryId,
-            localNodeId,
+            locNodeId,
             qryText,
             schema,
             cancel);
@@ -134,7 +135,7 @@ public class RunningQueryService implements Service {
      */
     public void cancelQuery(Long qryId) {
         RunningQueryInfo runningInfo = running.get(qryId);
-        System.out.println("!!! CANCEL " + runningInfo + "  " + runningInfo.cancelable());
+
         if (runningInfo != null)
             runningInfo.cancel();
     }
@@ -166,13 +167,5 @@ public class RunningQueryService implements Service {
         }
 
         return res;
-    }
-
-    /** Stages of query execution */
-    public enum RunningStage {
-        /** */
-        PLANNING,
-        /** */
-        EXECUTION
     }
 }

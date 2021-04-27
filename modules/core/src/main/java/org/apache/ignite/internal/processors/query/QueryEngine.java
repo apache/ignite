@@ -42,7 +42,7 @@ public interface QueryEngine extends GridProcessor {
      *
      * @return SQL running queries.
      */
-    List<? extends GridRunningQueryInfo> runningSqlQueries();
+    List<RunningQueryInfo> runningSqlQueries();
 
     /**
      * Cancel specified query.

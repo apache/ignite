@@ -45,7 +45,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistry;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutorImpl;
-import org.apache.ignite.internal.processors.query.calcite.exec.RunningQueryInfo;
+import org.apache.ignite.internal.processors.query.RunningQueryInfo;
 import org.apache.ignite.internal.processors.query.calcite.exec.RunningQueryService;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
