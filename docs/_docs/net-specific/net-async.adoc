@@ -21,7 +21,7 @@ Async APIs allow us to write link:https://docs.microsoft.com/en-us/dotnet/csharp
 
 [source,csharp]
 ----
-ICache<int, string> cache = ignite.GetOrCreateCache<int, string>("my-cache");
+ICache<int, string> cache = ignite.GetOrCreateCache<int, string>("name");
 
 // Sync, blocks thread on every call.
 cache.Put(1, "Hello");
@@ -32,7 +32,7 @@ await cache.PutAsync(1, "Hello");
 string hello = await cache.GetAsync(1);
 ----
 
-With async APIs, current thread is not blocked while we wait for cache operation to complete;
+With async APIs, current thread is not blocked while we wait for the cache operation to complete;
 it is returned to the thread pool and can perform other work.
 
 When the async operation completes, our method resumes execution - either on the same thread, or on a different one -
@@ -41,9 +41,20 @@ depending on the environment and the configuration. This is called "async contin
 
 == Async Continuations
 
-=== Cache
+Unless specified otherwise, Ignite executes async continuations on the link:https://docs.microsoft.com/en-us/dotnet/standard/threading/the-managed-thread-pool[.NET Thread Pool.]
 
-TODO
+=== Thin Client
+
+All thin client async APIs use link:https://docs.microsoft.com/en-us/dotnet/standard/threading/the-managed-thread-pool[.NET Thread Pool.] for async continuations.
+
+=== Thick Cache
+
+Server and thick client async cache APIs handle async continuations in a special way:
+
+* In Ignite 2.11 and later, the behavior is controlled by `IgniteConfiguration.AsyncContinuationExecutor` property. A common thread pool is used by default, and no special care is required.
+* To restore the previous behavior, use `IgniteConfiguration.AsyncContinuationExecutor = AsyncContinuationExecutor.UnsafeSynchronous`.
+** Can provide a small performance improvement in some situations, because callbacks are executed without any indirection or scheduling.
+** UNSAFE: cache operations can't proceed while system threads execute continuations (callbacks), and deadlocks are possible if other cache operations are invoked from the callback.
 
 === Compute
 
