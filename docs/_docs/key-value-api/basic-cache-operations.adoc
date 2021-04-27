@@ -259,9 +259,9 @@ This is java specific
 If an asynchronous operation is completed by the time the callback is passed to either the `IgniteFuture.listen()` or `IgniteFuture.chain()` method, then the callback is executed synchronously by the calling thread.
 Otherwise, the callback is executed asynchronously when the operation is completed.
 
-Callbacks for asynchronous compute operations are invoked by threads from the /perf-and-troubleshooting/thread-pools-tuning[Ignite public pool].
+Callbacks for asynchronous compute operations are invoked by threads from the link:perf-and-troubleshooting/thread-pools-tuning[Ignite public pool].
 Calling synchronous cache and compute operations from inside the callback may lead to a deadlock due to pools starvation.
-To achieve nested execution of asynchronous compute operations, you can take advantage of /perf-and-troubleshooting/thread-pools-tuning#creating-custom-thread-pool[custom thread pools].
+To achieve nested execution of asynchronous compute operations, you can take advantage of link:perf-and-troubleshooting/thread-pools-tuning#creating-custom-thread-pool[custom thread pools].
 
 Callbacks for asynchronous cache operations are invoked using `IgniteConfiguration#asyncContinuationExecutor`, which defaults to `ForkJoinPool#commonPool`.
 
