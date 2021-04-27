@@ -177,7 +177,8 @@ public class SnapshotRestoreProcess {
 
                 fut0 = fut;
             }
-        } catch (IgniteException e) {
+        }
+        catch (IgniteException e) {
             return new IgniteFinishedFutureImpl<>(e);
         }
 
@@ -473,7 +474,8 @@ public class SnapshotRestoreProcess {
 
                         for (File src : opCtx0.dirs)
                             Files.move(formatTmpDirName(src).toPath(), src.toPath(), StandardCopyOption.ATOMIC_MOVE);
-                    } catch (Throwable t) {
+                    }
+                    catch (Throwable t) {
                         log.error("Unable to restore cache group(s) from the snapshot " +
                             "[reqId=" + opCtx.reqId + ", snapshot=" + opCtx.snpName + ']', t);
 
@@ -486,7 +488,8 @@ public class SnapshotRestoreProcess {
                 });
 
             return retFut;
-        } catch (IgniteIllegalStateException | IgniteCheckedException | RejectedExecutionException e) {
+        }
+        catch (IgniteIllegalStateException | IgniteCheckedException | RejectedExecutionException e) {
             log.error("Unable to restore cache group(s) from the snapshot " +
                 "[reqId=" + req.requestId() + ", snapshot=" + req.snapshotName() + ']', e);
 
@@ -616,6 +619,11 @@ public class SnapshotRestoreProcess {
             File cacheDir = pageStore.cacheWorkDir(snpCacheDir.getName().startsWith(CACHE_GRP_DIR_PREFIX), grpName);
 
             if (cacheDir.exists()) {
+                if (!cacheDir.isDirectory()) {
+                    throw new IgniteCheckedException("Unable to restore cache group, file with required directory " +
+                        "name already exists [group=" + grpName + ", file=" + cacheDir + ']');
+                }
+
                 if (cacheDir.list().length > 0) {
                     throw new IgniteCheckedException("Unable to restore cache group, directory is not empty " +
                         "[group=" + grpName + ", dir=" + cacheDir + ']');
