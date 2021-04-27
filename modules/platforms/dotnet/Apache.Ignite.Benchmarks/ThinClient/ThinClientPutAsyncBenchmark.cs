@@ -18,6 +18,8 @@
 namespace Apache.Ignite.Benchmarks.ThinClient
 {
     using System.Collections.Generic;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Apache.Ignite.Benchmarks.Interop;
     using Apache.Ignite.Core.Client.Cache;
 
@@ -45,7 +47,7 @@ namespace Apache.Ignite.Benchmarks.ThinClient
         {
             descs.Add(BenchmarkOperationDescriptor.Create("ThinClientPutAsync", PutAsync, 1));
         }
-        
+
         /// <summary>
         /// Cache put.
         /// </summary>
@@ -53,7 +55,11 @@ namespace Apache.Ignite.Benchmarks.ThinClient
         {
             int idx = BenchmarkUtils.GetRandomInt(Dataset);
 
-            _cache.PutAsync(idx, Emps[idx]).Wait();
+            _cache.PutAsync(idx, Emps[idx]).ContinueWith(
+                t => {},
+                CancellationToken.None,
+                TaskContinuationOptions.None,
+                TaskScheduler.Default);
         }
     }
 }

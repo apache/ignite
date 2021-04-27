@@ -41,7 +41,8 @@ depending on the environment and the configuration. This is called "async contin
 
 == Async Continuations
 
-Unless specified otherwise, Ignite executes async continuations on the link:https://docs.microsoft.com/en-us/dotnet/standard/threading/the-managed-thread-pool[.NET Thread Pool.]
+Unless specified otherwise, Ignite executes async continuations on the link:https://docs.microsoft.com/en-us/dotnet/standard/threading/the-managed-thread-pool[.NET Thread Pool], which is safe and does not require any special care.
+
 
 === Thin Client
 
@@ -55,6 +56,39 @@ Server and thick client async cache APIs handle async continuations in a special
 * To restore the previous behavior, use `IgniteConfiguration.AsyncContinuationExecutor = AsyncContinuationExecutor.UnsafeSynchronous`.
 ** Can provide a small performance improvement in some situations, because callbacks are executed without any indirection or scheduling.
 ** UNSAFE: cache operations can't proceed while system threads execute continuations (callbacks), and deadlocks are possible if other cache operations are invoked from the callback.
+
+[IMPORTANT]
+====
+[discrete]
+=== *Ignite 2.10 and before*: danger of deadlocks and system pool starvation
+
+In Ignite versions 2.10 and before, system pool is used to run async continuations,
+which means that `GetAsync` call in the code above is executed by the system thread.
+
+This can lead to deadlocks if user code blocks the thread, or cause starvation because system thread is busy
+running user code instead of performing cache operations.
+
+To enable safe behavior, move continuations to the .NET Thread Pool manually:
+
+[source,csharp]
+----
+await cache.PutAsync(1, "Hello").ContinueWith(
+                t => {},
+                CancellationToken.None,
+                TaskContinuationOptions.None,
+                TaskScheduler.Default);
+
+string hello = await cache.GetAsync(1).ContinueWith(
+                t => t.Result,
+                CancellationToken.None,
+                TaskContinuationOptions.None,
+                TaskScheduler.Default);
+----
+
+This is rather verbose, but can be simplified with an extension method.
+
+====
+
 
 === Compute
 
