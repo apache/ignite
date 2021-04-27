@@ -596,25 +596,24 @@ namespace Apache.Ignite.Core.Tests.Dataload
         {
             var cache = _grid.CreateCache<int, int>(TestUtils.TestName);
 
-            var streamer = _grid.GetDataStreamer<int, int>(cache.Name);
+            using (var streamer = _grid.GetDataStreamer<int, int>(cache.Name))
+            {
+                streamer.Add(1, 2);
+                streamer.FlushAsync().Wait();
 
-            streamer.Add(1, 2);
-            var task = streamer.BatchTask;
-            streamer.Flush();
-            task.Wait();
+                _grid.DestroyCache(cache.Name);
 
-            _grid.DestroyCache(cache.Name);
+                streamer.Add(2, 3);
+                var task = streamer.BatchTask;
+                streamer.Flush();
 
-            streamer.Add(2, 3);
-            task = streamer.BatchTask;
-            streamer.Flush();
+                var ex = Assert.Throws<AggregateException>(task.Wait).InnerException;
 
-            var ex = Assert.Throws<AggregateException>(task.Wait).InnerException;
+                Assert.IsNotNull(ex);
 
-            Assert.IsNotNull(ex);
-
-            Assert.AreEqual("class org.apache.ignite.IgniteCheckedException: DataStreamer data loading failed.",
-                ex.Message);
+                Assert.AreEqual("class org.apache.ignite.IgniteCheckedException: DataStreamer data loading failed.",
+                    ex.Message);
+            }
         }
 
         /// <summary>
