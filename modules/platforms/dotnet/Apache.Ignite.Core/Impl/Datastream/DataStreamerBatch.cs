@@ -146,28 +146,31 @@ namespace Apache.Ignite.Core.Impl.Datastream
             long futHnd = 0;
 
             // 3. Actual send.
-            ldr.Update(writer =>
+            try
             {
-                writer.WriteInt(plc);
-
-                if (plc != DataStreamerImpl<TK, TV>.PlcCancelClose)
+                ldr.Update(writer =>
                 {
-                    futHnd = handleRegistry.Allocate(_fut);
+                    writer.WriteInt(plc);
 
-                    try
+                    if (plc != DataStreamerImpl<TK, TV>.PlcCancelClose)
                     {
+                        futHnd = handleRegistry.Allocate(_fut);
+
                         writer.WriteLong(futHnd);
 
                         WriteTo(writer);
                     }
-                    catch (Exception)
-                    {
-                        handleRegistry.Release(futHnd);
-
-                        throw;
-                    }
+                });
+            }
+            catch (Exception)
+            {
+                if (futHnd != 0)
+                {
+                    handleRegistry.Release(futHnd);
                 }
-            });
+
+                throw;
+            }
 
             if (plc == DataStreamerImpl<TK, TV>.PlcCancelClose || _size == 0)
             {
