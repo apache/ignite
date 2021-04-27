@@ -43,12 +43,12 @@ namespace Apache.Ignite.Core.Impl.Datastream
 
         /** Current queue size.*/
         private volatile int _size;
-        
+
         /** Send guard. */
         private bool _sndGuard;
 
         /** */
-        private readonly Future<object> _fut = new Future<object>();
+        private readonly TaskCompletionSource<object> _fut = new TaskCompletionSource<object>();
 
         /// <summary>
         /// Constructor.
@@ -92,7 +92,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
             if (!_rwLock.TryEnterReadLock(0))
                 return -1;
 
-            try 
+            try
             {
                 // 1. Ensure additions are possible
                 if (_sndGuard)
@@ -171,8 +171,8 @@ namespace Apache.Ignite.Core.Impl.Datastream
 
             if (plc == DataStreamerImpl<TK, TV>.PlcCancelClose || _size == 0)
             {
-                _fut.OnNullResult();
-                
+                ThreadPool.QueueUserWorkItem(_ => _fut.TrySetResult(null));
+
                 handleRegistry.Release(futHnd);
             }
         }
@@ -190,7 +190,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
             {
                 try
                 {
-                    curBatch._fut.Get();
+                    curBatch._fut.Task.Wait();
                 }
                 // ReSharper disable once EmptyGeneralCatchClause
                 catch (Exception)

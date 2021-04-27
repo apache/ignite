@@ -749,7 +749,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// </summary>
         /// <param name="val">Value.</param>
         /// <param name="cnt">Items count.</param>
-        /// <returns>Future.</returns>
+        /// <returns>Task for the current batch.</returns>
         private Task Add0(object val, int cnt)
         {
             int bufSndSize0 = _bufSndSize;
