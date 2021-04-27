@@ -264,6 +264,7 @@ Therefore, you should avoid calling synchronous cache and compute operations fro
 To achieve nested execution of asynchronous compute operations, you can take advantage of link:perf-troubleshooting-guide/thread-pools-tuning#creating-custom-thread-pool[custom thread pools].
 
 Callbacks for asynchronous cache operations are called using `IgniteConfiguration#asyncContinuationExecutor`, which defaults to `ForkJoinPool#commonPool`.
+
 * This default executor is safe for any operations inside the callback.
 * Default behavior has changed in Ignite 2.11. Before that, async cache operation callbacks were called from an Ignite system pool (so-called "striped pool").
 * To restore the previous behavior, use `IgniteConfiguration.setAsyncContinuationExecutor(Runnable::run)`.
