@@ -95,6 +95,10 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
     /** Special partition reserved for metastore space. */
     public static final int METASTORE_PARTITION = 0x1;
 
+    /** The set of all metastorage partitions. */
+    public static final Set<Integer> METASTORAGE_PARTITIONS =
+        new HashSet<>(Arrays.asList(OLD_METASTORE_PARTITION, METASTORE_PARTITION));
+
     /** This flag is used ONLY FOR TESTING the migration of a metastorage from Part 0 to Part 1. */
     public static boolean PRESERVE_LEGACY_METASTORAGE_PARTITION_ID = false;
 
@@ -169,13 +173,6 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
         this.readOnly = readOnly;
         log = cctx.logger(getClass());
         this.failureProcessor = cctx.kernalContext().failure();
-    }
-
-    /**
-     * @return Count of metastorage partitions.
-     */
-    public static Set<Integer> partitions() {
-        return new HashSet<>(Arrays.asList(OLD_METASTORE_PARTITION, METASTORE_PARTITION));
     }
 
     /** */

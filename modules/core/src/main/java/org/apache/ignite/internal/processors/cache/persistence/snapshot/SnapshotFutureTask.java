@@ -72,7 +72,6 @@ import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
-import org.apache.ignite.internal.util.lang.IgniteThrowableSupplier;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -476,18 +475,19 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
                     throw new IgniteCheckedException("Cache group is stopped : " + grpId);
 
                 ccfgs.add(gctx.config());
-                addPartitionWriters(grpId, e.getValue(), () -> FilePageStoreManager.cacheDirName(gctx.config()));
+                addPartitionWriters(grpId, e.getValue(), FilePageStoreManager.cacheDirName(gctx.config()));
             }
 
             if (withMetaStorage) {
-                processed.put(MetaStorage.METASTORAGE_CACHE_ID, MetaStorage.partitions());
+                processed.put(MetaStorage.METASTORAGE_CACHE_ID, MetaStorage.METASTORAGE_PARTITIONS);
 
-                addPartitionWriters(MetaStorage.METASTORAGE_CACHE_ID, MetaStorage.partitions(),
-                    () -> pageStore.cacheDirName(MetaStorage.METASTORAGE_CACHE_ID));
+                addPartitionWriters(MetaStorage.METASTORAGE_CACHE_ID, MetaStorage.METASTORAGE_PARTITIONS,
+                    MetaStorage.METASTORAGE_DIR_NAME);
             }
 
             pageStore.readConfigurationFiles(ccfgs,
-                (ccfg, ccfgFile) -> ccfgSndrs.add(new CacheConfigurationSender(ccfg.getName(), FilePageStoreManager.cacheDirName(ccfg), ccfgFile)));
+                (ccfg, ccfgFile) -> ccfgSndrs.add(new CacheConfigurationSender(ccfg.getName(),
+                    FilePageStoreManager.cacheDirName(ccfg), ccfgFile)));
         }
         catch (IgniteCheckedException e) {
             acceptException(e);
@@ -605,10 +605,10 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
     /**
      * @param grpId Cache group id.
      * @param parts Set of partitions to be processed.
-     * @param dirSupp Directory to init.
+     * @param dirName Directory name to init.
      * @throws IgniteCheckedException If fails.
      */
-    private void addPartitionWriters(int grpId, Set<Integer> parts, IgniteThrowableSupplier<String> dirSupp) throws IgniteCheckedException {
+    private void addPartitionWriters(int grpId, Set<Integer> parts, String dirName) throws IgniteCheckedException {
         for (int partId : parts) {
             GroupPartitionId pair = new GroupPartitionId(grpId, partId);
 
@@ -616,7 +616,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
 
             partDeltaWriters.put(pair,
                 new PageStoreSerialWriter(store,
-                    partDeltaFile(cacheWorkDir(tmpConsIdDir, dirSupp.get()), partId)));
+                    partDeltaFile(cacheWorkDir(tmpConsIdDir, dirName), partId)));
 
             partFileLengths.put(pair, store.size());
         }
