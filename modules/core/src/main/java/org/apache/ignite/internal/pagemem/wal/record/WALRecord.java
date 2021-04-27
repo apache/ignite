@@ -343,7 +343,7 @@ public abstract class WALRecord {
         /**
          * Logical records are needed to replay logical updates since last checkpoint.
          * {@link GridCacheDatabaseSharedManager#applyLogicalUpdates(CheckpointStatus, org.apache.ignite.lang.IgnitePredicate,
-         * org.apache.ignite.lang.IgniteBiPredicate, boolean, java.util.Set)}
+         * org.apache.ignite.lang.IgniteBiPredicate, boolean)}
          */
         LOGICAL,
         /**
