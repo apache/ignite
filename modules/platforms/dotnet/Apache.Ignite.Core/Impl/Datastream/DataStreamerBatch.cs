@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         private bool _sndGuard;
 
         /** */
-        private readonly TaskCompletionSource<object> _fut = new TaskCompletionSource<object>();
+        private readonly Future<object> _fut = new Future<object>();
 
         /// <summary>
         /// Constructor.
@@ -171,7 +171,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
 
             if (plc == DataStreamerImpl<TK, TV>.PlcCancelClose || _size == 0)
             {
-                ThreadPool.QueueUserWorkItem(_ => _fut.TrySetResult(null));
+                ThreadPool.QueueUserWorkItem(_ => _fut.OnNullResult());
 
                 handleRegistry.Release(futHnd);
             }
@@ -190,7 +190,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
             {
                 try
                 {
-                    curBatch._fut.Task.Wait();
+                    curBatch._fut.Get();
                 }
                 // ReSharper disable once EmptyGeneralCatchClause
                 catch (Exception)
