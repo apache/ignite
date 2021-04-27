@@ -68,7 +68,7 @@ which means that `GetAsync` call in the code above is executed by the system thr
 This can lead to deadlocks if user code blocks the thread, or cause starvation because system thread is busy
 running user code instead of performing cache operations.
 
-To enable safe behavior, move continuations to the .NET Thread Pool manually:
+To enable safe behavior, move continuations to .NET Thread Pool manually:
 
 [source,csharp]
 ----

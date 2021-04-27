@@ -267,7 +267,7 @@ Callbacks for asynchronous cache operations are invoked by using `ForkJoinPool#c
 
 * This default executor is safe for any operations inside the callback.
 * Default behavior was changed in Ignite 2.11. Before that, async cache operation callbacks were called from an Ignite system pool (so-called "striped pool").
-* To restore the previous behavior, use `IgniteConfiguration.setAsyncContinuationExecutor(Runnable::run)`.
+* To restore previous behavior, use `IgniteConfiguration.setAsyncContinuationExecutor(Runnable::run)`.
 ** Previous behavior can provide a small performance improvement, because callbacks are executed without any indirection or scheduling.
 ** UNSAFE: cache operations cannot proceed while system threads execute callbacks, and deadlocks are possible if other cache operations are invoked from the callback.
 
