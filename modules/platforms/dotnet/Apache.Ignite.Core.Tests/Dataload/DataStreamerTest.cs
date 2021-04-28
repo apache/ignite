@@ -366,7 +366,9 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 var part1 = GetPrimaryPartitionKeys(_grid, 4);
                 var part2 = GetPrimaryPartitionKeys(_grid2, 4);
 
-                var task = ldr.AddData(part1[0], part1[0]);
+                ldr.Add(part1[0], part1[0]);
+
+                var task = ldr.GetCurrentBatchTask();
 
                 Thread.Sleep(100);
 
@@ -375,9 +377,9 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 ldr.PerNodeBufferSize = 2;
                 ldr.PerThreadBufferSize = 1;
 
-                ldr.AddData(part2[0], part2[0]);
-                ldr.AddData(part1[1], part1[1]);
-                Assert.IsTrue(ldr.AddData(part2[1], part2[1]).Wait(timeout));
+                ldr.Add(part2[0], part2[0]);
+                ldr.Add(part1[1], part1[1]);
+                ldr.Add(part2[1], part2[1]);
                 Assert.IsTrue(task.Wait(timeout));
 
                 Assert.AreEqual(part1[0], _cache.Get(part1[0]));
@@ -385,13 +387,17 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 Assert.AreEqual(part2[0], _cache.Get(part2[0]));
                 Assert.AreEqual(part2[1], _cache.Get(part2[1]));
 
-                Assert.IsTrue(ldr.AddData(new[]
+                var task2 = ldr.GetCurrentBatchTask();
+
+                ldr.Add(new[]
                 {
                     new KeyValuePair<int, int>(part1[2], part1[2]),
                     new KeyValuePair<int, int>(part1[3], part1[3]),
                     new KeyValuePair<int, int>(part2[2], part2[2]),
                     new KeyValuePair<int, int>(part2[3], part2[3])
-                }).Wait(timeout));
+                });
+
+                Assert.IsTrue(task2.Wait(timeout));
 
                 Assert.AreEqual(part1[2], _cache.Get(part1[2]));
                 Assert.AreEqual(part1[3], _cache.Get(part1[3]));
