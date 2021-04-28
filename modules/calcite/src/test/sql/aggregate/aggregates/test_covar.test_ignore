@@ -1,6 +1,8 @@
 # name: test/sql/aggregate/aggregates/test_covar.test
 # description: Test COVAR operators
 # group: [aggregates]
+# Ignored: https://issues.apache.org/jira/browse/IGNITE-14641
+
 
 # test incorrect usage of COVAR_POP function
 statement error

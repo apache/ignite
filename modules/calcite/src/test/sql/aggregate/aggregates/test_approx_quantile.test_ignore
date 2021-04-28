@@ -1,9 +1,8 @@
 # name: test/sql/aggregate/aggregates/test_approx_quantile.test
 # description: Test approx quantile operator
 # group: [aggregates]
-
-statement ok
-PRAGMA enable_verification
+# Ignored: https://issues.apache.org/jira/browse/IGNITE-14542
+# Ignored: https://issues.apache.org/jira/browse/IGNITE-14637
 
 statement ok
 create table quantile as select range r, random() from range(10000) union all values (NULL, 0.1), (NULL, 0.5), (NULL, 0.9) order by 2;

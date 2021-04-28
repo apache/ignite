@@ -1,6 +1,9 @@
 # name: test/sql/aggregate/aggregates/test_approximate_distinct_count.test
 # description: Test approx_count_distinct operator
 # group: [aggregates]
+# Ignored: https://issues.apache.org/jira/browse/IGNITE-14542
+# Ignored: https://issues.apache.org/jira/browse/IGNITE-14637
+
 
 statement error
 select approx_count_distinct(*)

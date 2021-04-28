@@ -1,6 +1,7 @@
 # name: test/sql/aggregate/aggregates/test_sum.test
 # description: Test sum aggregate
 # group: [aggregates]
+# Ignored: https://issues.apache.org/jira/browse/IGNITE-14542
 
 statement ok
 CREATE TABLE integers(i INTEGER);

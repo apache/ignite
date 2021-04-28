@@ -1,6 +1,7 @@
 # name: test/sql/aggregate/aggregates/test_bit_xor.test
 # description: Test BIT_XOR operator
 # group: [aggregates]
+# Ignored: https://issues.apache.org/jira/browse/IGNITE-14640
 
 # test on scalar values
 query II

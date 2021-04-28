@@ -1,6 +1,7 @@
 # name: test/sql/aggregate/aggregates/test_regression.test
 # description: Test Regression Functions
 # group: [aggregates]
+# Ignored: https://issues.apache.org/jira/browse/IGNITE-14643
 
 #Corner cases
 statement error

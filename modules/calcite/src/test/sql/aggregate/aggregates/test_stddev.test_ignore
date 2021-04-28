@@ -1,6 +1,7 @@
 # name: test/sql/aggregate/aggregates/test_stddev.test
 # description: STDDEV aggregations
 # group: [aggregates]
+# Ignored: https://issues.apache.org/jira/browse/IGNITE-14642
 
 statement ok
 create table stddev_test(val integer, grp integer)
