@@ -115,7 +115,7 @@ namespace Apache.Ignite.Core.Impl.Common
 
                 foreach (var task in tasks)
                 {
-                    if (task.IsFaulted)
+                    if (task.Exception != null)
                     {
                         errs.Add(task.Exception.GetBaseException());
                     }
