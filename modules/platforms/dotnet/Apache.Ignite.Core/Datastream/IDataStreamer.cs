@@ -261,16 +261,12 @@ namespace Apache.Ignite.Core.Datastream
         void TryFlush();
 
         /// <summary>
-        /// Loads any remaining data, but doesn't close the streamer. Data can be still added after
-        /// flush is finished. This method blocks and doesn't allow to add any data until all data
-        /// is loaded.
+        /// Loads any remaining buffered data, but doesn't close the streamer.
         /// </summary>
         void Flush();
 
         /// <summary>
-        /// Loads any remaining data, but doesn't close the streamer. Data can be still added after
-        /// flush is finished. This method blocks and doesn't allow to add any data until all data
-        /// is loaded.
+        /// Loads any remaining buffered data, but doesn't close the streamer.
         /// </summary>
         Task FlushAsync();
 
@@ -278,7 +274,7 @@ namespace Apache.Ignite.Core.Datastream
         /// Closes this streamer optionally loading any remaining data.
         /// </summary>
         /// <param name="cancel">Whether to cancel ongoing loading operations. When set to <c>true</c>
-        /// there is not guarantees what data will be actually loaded to cache.</param>
+        /// there are no guarantees what data will be actually loaded to cache.</param>
         void Close(bool cancel);
 
         /// <summary>

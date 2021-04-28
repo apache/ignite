@@ -775,10 +775,9 @@ namespace Apache.Ignite.Core.Tests.Dataload
 
             _grid.DestroyCache(cache.Name);
 
-            task = streamer.AddData(2, 3);
-            streamer.Flush();
+            streamer.AddData(2, 3);
 
-            var ex = Assert.Throws<AggregateException>(task.Wait).InnerException;
+            var ex = Assert.Throws<AggregateException>(() => streamer.Flush()).GetBaseException();
 
             Assert.IsNotNull(ex);
 
@@ -797,8 +796,18 @@ namespace Apache.Ignite.Core.Tests.Dataload
         [Test]
         public async Task TestStreamerAsyncAwait()
         {
-            await Task.Delay(1);
-            Assert.Fail("TODO");
+            using (var ldr = _grid.GetDataStreamer<int, int>(CacheName))
+            {
+                ldr.Add(1, 1);
+                ldr.Add(2, 2);
+
+                Assert.IsFalse(await _cache.ContainsKeysAsync(new[] {1, 2}));
+
+                await ldr.FlushAsync();
+
+                Assert.AreEqual(1, _cache[1]);
+                Assert.AreEqual(2, _cache[2]);
+            }
         }
 #endif
 
