@@ -35,12 +35,6 @@ namespace Apache.Ignite.BenchmarkDotNet.DataStreamer
         private const int EntryCount = 90000;
 
         /** */
-        private IIgnite Ignite { get; set; }
-
-        /** */
-        private IIgnite Ignite2 { get; set; }
-
-        /** */
         private IIgnite Client { get; set; }
 
         /** */
@@ -57,8 +51,8 @@ namespace Apache.Ignite.BenchmarkDotNet.DataStreamer
                 AutoGenerateIgniteInstanceName = true
             };
 
-            Ignite = Ignition.Start(cfg);
-            Ignite2 = Ignition.Start(cfg);
+            Ignition.Start(cfg);
+            Ignition.Start(cfg);
             Client = Ignition.Start(new IgniteConfiguration(cfg) {ClientMode = true});
 
             Cache = Client.CreateCache<int, Guid>("c");
@@ -96,7 +90,7 @@ namespace Apache.Ignite.BenchmarkDotNet.DataStreamer
         {
             Cache.Clear();
 
-            using (var streamer = Ignite.GetDataStreamer<int, Guid>(Cache.Name))
+            using (var streamer = Client.GetDataStreamer<int, Guid>(Cache.Name))
             {
                 streamer.AllowOverwrite = allowOverwrite;
 
