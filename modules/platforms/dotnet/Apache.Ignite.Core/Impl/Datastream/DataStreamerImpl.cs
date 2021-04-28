@@ -422,7 +422,9 @@ namespace Apache.Ignite.Core.Impl.Datastream
         {
             var batch = _batch;
 
-            return batch == null ? TaskRunner.CompletedTask : batch.GetThisAndPreviousCompletionTask();
+            return batch != null
+                ? batch.GetThisAndPreviousCompletionTask()
+                : Task; // Streamer is closing. Wait for close to complete.
         }
 
         /** <inheritDoc /> */
