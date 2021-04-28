@@ -18,6 +18,8 @@
 namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
+    using System.Collections.Generic;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -89,6 +91,42 @@ namespace Apache.Ignite.Core.Impl.Common
             var tcs = new TaskCompletionSource<TResult>();
             tcs.SetResult(result);
             return tcs.Task;
+        }
+
+        /// <summary>
+        /// Creates a task that will complete when all of the supplied tasks have completed.
+        /// <para />
+        /// Task.WhenAll is not available on .NET 4.
+        /// </summary>
+        public static Task WhenAll(IList<Task> tasks)
+        {
+            if (tasks.Count == 0)
+            {
+                return CompletedTask;
+            }
+
+            if (tasks.Count == 1)
+            {
+                return tasks[0];
+            }
+
+            return Task.Factory.ContinueWhenAll(tasks.ToArray(), _ =>
+            {
+                var errs = new List<Exception>(tasks.Count);
+
+                foreach (var task in tasks)
+                {
+                    if (task.IsFaulted)
+                    {
+                        errs.Add(task.Exception.GetBaseException());
+                    }
+                }
+
+                if (errs.Count > 0)
+                {
+                    throw new AggregateException(errs);
+                }
+            });
         }
     }
 }

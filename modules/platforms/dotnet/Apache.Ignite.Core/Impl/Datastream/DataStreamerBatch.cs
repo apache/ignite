@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Impl.Datastream
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
-    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Impl.Binary;
@@ -197,24 +196,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 curBatch = curBatch._prev;
             }
 
-            if (tasks.Count == 0)
-            {
-                return TaskRunner.CompletedTask;
-            }
-
-            if (tasks.Count == 1)
-            {
-                return tasks[0];
-            }
-
-            return Task.Factory.ContinueWhenAll(tasks.ToArray(), _ =>
-            {
-                // TODO: No LINQ
-                var errs = tasks.Where(t => t.IsFaulted).Select(t => t.Exception.GetBaseException()).ToArray();
-
-                if (errs.Length > 0)
-                    throw new AggregateException(errs);
-            });
+            return TaskRunner.WhenAll(tasks);
         }
 
         /// <summary>

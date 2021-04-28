@@ -748,7 +748,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
 
             streamer.Add(2, 3);
 
-            var ex = Assert.Throws<AggregateException>(() => streamer.Flush()).InnerException;
+            var ex = Assert.Throws<AggregateException>(() => streamer.Flush()).GetBaseException();
 
             Assert.IsNotNull(ex);
 
