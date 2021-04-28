@@ -164,6 +164,72 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 ldr.AllowOverwrite = true;
 
                 // Additions.
+                var task = ldr.BatchTask;
+                ldr.Add(1, 1);
+                ldr.Flush();
+                Assert.AreEqual(1, _cache.Get(1));
+                Assert.IsTrue(task.IsCompleted);
+                Assert.IsFalse(ldr.Task.IsCompleted);
+
+                task = ldr.BatchTask;
+                ldr.Add(new KeyValuePair<int, int>(2, 2));
+                ldr.Flush();
+                Assert.AreEqual(2, _cache.Get(2));
+                Assert.IsTrue(task.IsCompleted);
+
+                task = ldr.BatchTask;
+                ldr.Add(new [] { new KeyValuePair<int, int>(3, 3), new KeyValuePair<int, int>(4, 4) });
+                ldr.Flush();
+                Assert.AreEqual(3, _cache.Get(3));
+                Assert.AreEqual(4, _cache.Get(4));
+                Assert.IsTrue(task.IsCompleted);
+
+                // Removal.
+                task = ldr.BatchTask;
+                ldr.Remove(1);
+                ldr.Flush();
+                Assert.IsFalse(_cache.ContainsKey(1));
+                Assert.IsTrue(task.IsCompleted);
+
+                // Mixed.
+                ldr.Add(5, 5);
+                ldr.Remove(2);
+                ldr.Add(new KeyValuePair<int, int>(7, 7));
+                ldr.Add(6, 6);
+                ldr.Remove(4);
+                ldr.Add(new List<KeyValuePair<int, int>> { new KeyValuePair<int, int>(9, 9), new KeyValuePair<int, int>(10, 10) });
+                ldr.Add(new KeyValuePair<int, int>(8, 8));
+                ldr.Remove(3);
+                ldr.Add(new List<KeyValuePair<int, int>> { new KeyValuePair<int, int>(11, 11), new KeyValuePair<int, int>(12, 12) });
+
+                ldr.Flush();
+
+                for (int i = 2; i < 5; i++)
+                    Assert.IsFalse(_cache.ContainsKey(i));
+
+                for (int i = 5; i < 13; i++)
+                    Assert.AreEqual(i, _cache.Get(i));
+            }
+
+            Assert.IsTrue(ldr.Task.IsCompleted);
+        }
+
+        /// <summary>
+        /// Test data add/remove.
+        /// </summary>
+        [Test]
+        public void TestAddRemoveObsolete()
+        {
+#pragma warning disable 618
+            IDataStreamer<int, int> ldr;
+
+            using (ldr = _grid.GetDataStreamer<int, int>(CacheName))
+            {
+                Assert.IsFalse(ldr.Task.IsCompleted);
+
+                ldr.AllowOverwrite = true;
+
+                // Additions.
                 var task = ldr.AddData(1, 1);
                 ldr.Flush();
                 Assert.AreEqual(1, _cache.Get(1));
@@ -208,6 +274,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
             }
 
             Assert.IsTrue(ldr.Task.IsCompleted);
+#pragma warning restore 618
         }
 
         /// <summary>
