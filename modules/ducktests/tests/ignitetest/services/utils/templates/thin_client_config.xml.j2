@@ -34,8 +34,8 @@
         <property name="sslClientCertificateKeyStorePassword" value="{{ config.ssl_params.key_store_password }}"/>
         <property name="sslTrustCertificateKeyStorePath" value="{{ config.ssl_params.trust_store_path }}"/>
         <property name="sslTrustCertificateKeyStorePassword" value="{{ config.ssl_params.trust_store_password }}"/>
-        <property name="userName" value="{{ config.ssl_params.user }}"/>
-        <property name="userPassword" value="{{ config.ssl_params.password }}"/>
+        <property name="userName" value="{{ config.user }}"/>
+        <property name="userPassword" value="{{ config.password }}"/>
         {% endif %}
 
     </bean>

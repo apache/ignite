@@ -28,8 +28,6 @@ DEFAULT_ADMIN_KEYSTORE = 'admin.jks'
 DEFAULT_PASSWORD = "123456"
 DEFAULT_TRUSTSTORE = "truststore.jks"
 DEFAULT_ROOT = "/opt/"
-DEFAULT_USER = "client"
-DEFAULT_USER_PASSWORD = "123456"
 
 SSL_PARAMS_KEY = "params"
 SSL_KEY = "ssl"
@@ -50,8 +48,7 @@ class SslParams:
     # pylint: disable=R0913
     def __init__(self, root_dir: str, key_store_jks: str = None, key_store_password: str = DEFAULT_PASSWORD,
                  trust_store_jks: str = DEFAULT_TRUSTSTORE, trust_store_password: str = DEFAULT_PASSWORD,
-                 key_store_path: str = None, trust_store_path: str = None,
-                 user: str = None, password: str = None):
+                 key_store_path: str = None, trust_store_path: str = None):
         if not key_store_jks and not key_store_path:
             raise Exception("Keystore must be specified to init SslParams")
 
@@ -59,8 +56,6 @@ class SslParams:
         self.key_store_password = key_store_password
         self.trust_store_path = trust_store_path if trust_store_path else os.path.join(root_dir, trust_store_jks)
         self.trust_store_password = trust_store_password
-        self.user = user if user else DEFAULT_USER
-        self.password = password if password else DEFAULT_USER_PASSWORD
 
 
 def get_ssl_params(_globals: dict, shared_root: str, alias: str):
