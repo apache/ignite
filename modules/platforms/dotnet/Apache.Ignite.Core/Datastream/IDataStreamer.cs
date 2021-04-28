@@ -24,14 +24,10 @@ namespace Apache.Ignite.Core.Datastream
     using Apache.Ignite.Core.Cache.Store;
 
     /// <summary>
-    /// Data streamer is responsible for loading external data into cache. It achieves it by
-    /// properly buffering updates and properly mapping keys to nodes responsible for the data
-    /// to make sure that there is the least amount of data movement possible and optimal
-    /// network and memory utilization.
+    /// Data streamer loads data efficiently into cache. Updates are buffered and mapped to primary nodes
+    /// to ensure minimal data movement and optimal resource utilization.
     /// <para />
-    /// Note that streamer will load data concurrently by multiple internal threads, so the
-    /// data may get to remote nodes in different order from which it was added to
-    /// the streamer.
+    /// Note that streamer loads data to remote nodes in parallel, so cache updates can be reordered.
     /// <para />
     /// Also note that <c>IDataStreamer</c> is not the only way to load data into cache.
     /// Alternatively you can use
