@@ -555,17 +555,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /** <inheritDoc /> */
         public void Flush()
         {
-            ThrowIfDisposed();
-
-            DataStreamerBatch<TK, TV> batch0 = _batch;
-
-            if (batch0 != null)
-                Flush0(batch0, true, PlcFlush);
-            else
-            {
-                // Batch is null, i.e. data streamer is closing. Wait for close to complete.
-                Task.Wait();
-            }
+            FlushAsync().Wait();
         }
 
         /** <inheritDoc /> */
@@ -579,9 +569,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
             {
                 Flush0(batch0, false, PlcFlush);
 
-                // TODO: Await completion of previous batches.
-                // Flush should simply call FlushAsync.
-                return batch0.Task;
+                return batch0.GetThisAndPreviousCompletionTask();
             }
 
             // Batch is null, i.e. data streamer is closing. Wait for close to complete.

@@ -747,10 +747,8 @@ namespace Apache.Ignite.Core.Tests.Dataload
             _grid.DestroyCache(cache.Name);
 
             streamer.Add(2, 3);
-            var task = streamer.GetCurrentBatchTask();
-            streamer.Flush();
 
-            var ex = Assert.Throws<AggregateException>(task.Wait).InnerException;
+            var ex = Assert.Throws<AggregateException>(() => streamer.Flush()).InnerException;
 
             Assert.IsNotNull(ex);
 
