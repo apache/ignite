@@ -431,12 +431,12 @@ namespace Apache.Ignite.Core.Tests.Dataload
         {
             using (IDataStreamer<int, int> ldr = _grid.GetDataStreamer<int, int>(CacheName))
             {
-                var fut = ldr.AddData(1, 1);
+                var fut = ldr.GetCurrentBatchTask();
+                ldr.Add(1, 1);
 
                 ldr.Close(false);
 
-                fut.Wait();
-
+                Assert.IsTrue(fut.Wait(5000));
                 Assert.AreEqual(1, _cache.Get(1));
             }
         }
