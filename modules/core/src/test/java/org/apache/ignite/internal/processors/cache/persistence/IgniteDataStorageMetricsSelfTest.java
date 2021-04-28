@@ -43,7 +43,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.cache.WalStateManager.WALDisableContext;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
@@ -438,16 +437,6 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
         @Override public int hashCode() {
             return Objects.hash(fName, lName);
         }
-    }
-
-    /**
-     * Getting WAL manger.
-     *
-     * @param n Node.
-     * @return WAL manager.
-     */
-    private FileWriteAheadLogManager walMgr(IgniteEx n) {
-        return (FileWriteAheadLogManager)n.context().cache().context().wal();
     }
 
     /**

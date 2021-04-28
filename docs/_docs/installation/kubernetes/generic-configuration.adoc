@@ -388,6 +388,16 @@ Note that we use the external IP address (LoadBalancer Ingress) of the service.
 include::{javaFile}[tags=connectThinClient, indent=0]
 ----
 
+=== Connecting to REST API
+
+Connect to the cluster's REST API as follows:
+
+[source,shell,subs="attributes,specialchars"]
+----
+$ curl http://13.86.186.145:8080/ignite?cmd=version
+{"successStatus":0,"error":null,"response":"{version}","sessionToken":null}
+----
+
 == Partition Awareness
 
 include::../../includes/partition-awareness.adoc[]
@@ -398,16 +408,6 @@ In this case, a client can connect to every pod in a cluster.
 [source, java]
 ----
 include::{javaFile}[tags=connectThinClientWithKubernetesConfiguration, indent=0]
-----
-
-=== Connecting to REST API
-
-Connect to the cluster's REST API as follows:
-
-[source,shell,subs="attributes,specialchars"]
-----
-$ curl http://13.86.186.145:8080/ignite?cmd=version
-{"successStatus":0,"error":null,"response":"{version}","sessionToken":null}
 ----
 
 

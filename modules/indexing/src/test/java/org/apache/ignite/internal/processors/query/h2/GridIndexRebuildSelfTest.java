@@ -29,16 +29,17 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.cache.query.index.IndexProcessor;
+import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexAbstractSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.query.GridQueryIndexing;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexOperationCancellationToken;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -70,7 +71,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
     private Integer buildIdxThreadPoolSize;
 
     /** GridQueryIndexing class. */
-    private Class<? extends GridQueryIndexing> qryIndexingCls = BlockingIndexing.class;
+    private Class<? extends IndexesRebuildTask> blkIndexingCls = BlockingIndexesRebuildTask.class;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration commonConfiguration(int idx) throws Exception {
@@ -90,8 +91,8 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
     @Override protected IgniteConfiguration serverConfiguration(int idx) throws Exception {
         IgniteConfiguration cfg = super.serverConfiguration(idx);
 
-        if (nonNull(qryIndexingCls))
-            GridQueryProcessor.idxCls = qryIndexingCls;
+        if (nonNull(blkIndexingCls))
+            IndexProcessor.idxRebuildCls = blkIndexingCls;
 
         return cfg;
     }
@@ -105,7 +106,8 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
 
         INSTANCE = this;
 
-        BlockingIndexing.slowRebuildIdxFut = false;
+        BlockingIndexesRebuildTask.slowRebuildIdxFut = false;
+        BlockingIndexesRebuildTask.firstRbld = true;
     }
 
     /** {@inheritDoc} */
@@ -115,7 +117,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
         stopAllGrids();
 
         cleanPersistenceDir();
-        GridQueryProcessor.idxCls = null;
+        IndexProcessor.idxRebuildCls = null;
     }
 
     /** {@inheritDoc} */
@@ -215,7 +217,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
 
         assertTrue(delete(idxFile));
 
-        BlockingIndexing.slowRebuildIdxFut = true;
+        BlockingIndexesRebuildTask.slowRebuildIdxFut = true;
 
         srv = startServer();
 
@@ -239,7 +241,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
      * @throws Exception if failed.
      */
     private void checkCntThreadForRebuildIdx(int buildIdxThreadCnt) throws Exception {
-        qryIndexingCls = null;
+        blkIndexingCls = null;
 
         IgniteEx srv = startServer();
 
@@ -384,18 +386,19 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
     /**
      * Blocking indexing processor.
      */
-    private static class BlockingIndexing extends IgniteH2Indexing {
+    private static class BlockingIndexesRebuildTask extends IndexesRebuildTask {
         /** Flag to ignore first rebuild performed on initial node start. */
-        private boolean firstRbld = true;
+        static boolean firstRbld = true;
 
         /** Flag for slowing down {@code rebuildIdxFut} to reproduce data race. */
         static boolean slowRebuildIdxFut;
 
         /** {@inheritDoc} */
-        @Override protected void rebuildIndexesFromHash0(
+        @Override protected void startRebuild(
             GridCacheContext cctx,
+            GridFutureAdapter<Void> rebuildIdxFut,
             SchemaIndexCacheVisitorClosure clo,
-            GridFutureAdapter<Void> rebuildIdxFut
+            SchemaIndexOperationCancellationToken cancel
         ) {
             if (!firstRbld) {
                 try {
@@ -419,7 +422,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
                 });
             }
 
-            super.rebuildIndexesFromHash0(cctx, clo, rebuildIdxFut);
+            super.startRebuild(cctx, rebuildIdxFut, clo, cancel);
         }
     }
 }

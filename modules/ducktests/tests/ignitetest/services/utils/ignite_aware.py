@@ -54,7 +54,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         ALL = 2
 
     # pylint: disable=R0913
-    def __init__(self, context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, main_java_class,
+    def __init__(self, context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, main_java_class, modules,
                  **kwargs):
         """
         **kwargs are params that passed to IgniteSpec
@@ -69,8 +69,9 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         self.main_java_class = main_java_class
         self.startup_timeout_sec = startup_timeout_sec
         self.shutdown_timeout_sec = shutdown_timeout_sec
+        self.modules = modules
 
-        self.spec = resolve_spec(self, context, config, main_java_class, **kwargs)
+        self.spec = resolve_spec(self, **kwargs)
         self.init_logs_attribute()
 
         self.disconnected_nodes = []
@@ -105,6 +106,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         self.await_event("Topology snapshot", self.startup_timeout_sec, from_the_beginning=True)
 
     def start_node(self, node, **kwargs):
+        self.init_shared(node)
         self.init_persistent(node)
 
         self.__update_node_log_file(node)
@@ -113,7 +115,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
         wait_until(lambda: self.alive(node), timeout_sec=10)
 
-        ignite_jmx_mixin(node, self.spec, self.pids(node))
+        ignite_jmx_mixin(node, self)
 
     def stop_async(self, force_stop=False, **kwargs):
         """
@@ -170,8 +172,25 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
         self._prepare_configs(node)
 
+    def init_shared(self, node):
+        """
+        Init shared directory. Content of shared directory must be equal on all test nodes.
+        :param node: Ignite service node.
+        """
+        local_shared_dir = self.spec.init_local_shared()
+
+        if not os.path.isdir(local_shared_dir):
+            self.logger.debug("Local shared dir not exists. Nothing to copy. " + str(local_shared_dir))
+            return
+
+        node.account.mkdirs(f"{self.persistent_root} {self.shared_root}")
+
+        for file in os.listdir(local_shared_dir):
+            self.logger.debug("Copying shared file to node. " + str(file))
+            node.account.copy_to(os.path.join(local_shared_dir, file), self.shared_root)
+
     def _prepare_configs(self, node):
-        config = self.config.prepare_for_env(test_globals=self.globals, node=node, cluster=self)
+        config = self.config.prepare_for_env(self.globals, self.shared_root, node, self)
 
         for name, template in self.spec.config_templates:
             config_txt = template.render(config_dir=self.config_dir, work_dir=self.work_dir, config=config)

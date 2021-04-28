@@ -21,6 +21,8 @@ import base64
 import importlib
 import json
 import os
+import subprocess
+import tempfile
 from abc import ABCMeta, abstractmethod
 
 from ignitetest.services.utils import IgniteServiceType
@@ -28,16 +30,18 @@ from ignitetest.services.utils.config_template import IgniteClientConfigTemplate
     IgniteLoggerConfigTemplate, IgniteThinClientConfigTemplate
 from ignitetest.services.utils.jvm_utils import create_jvm_settings, merge_jvm_settings
 from ignitetest.services.utils.path import get_home_dir, get_module_path, IgnitePathAware
+from ignitetest.services.utils.ssl.ssl_params import is_ssl_enabled
 from ignitetest.utils.version import DEV_BRANCH
 
 
-def resolve_spec(service, context, config, main_java_class, **kwargs):
+def resolve_spec(service, **kwargs):
     """
     Resolve Spec classes for IgniteService and IgniteApplicationService
     """
+
     def _resolve_spec(name, default):
-        if name in context.globals:
-            fqdn = context.globals[name]
+        if name in service.context.globals:
+            fqdn = service.context.globals[name]
             (module, clazz) = fqdn.rsplit('.', 1)
             module = importlib.import_module(module)
             return getattr(module, clazz)
@@ -49,14 +53,20 @@ def resolve_spec(service, context, config, main_java_class, **kwargs):
         return len(impl_filter) > 0
 
     if is_impl("IgniteService"):
-        return _resolve_spec("NodeSpec", ApacheIgniteNodeSpec)(path_aware=service, context=context, config=config,
-                                                               **kwargs)
+        return _resolve_spec("NodeSpec", IgniteNodeSpec)(service=service, **kwargs)
 
     if is_impl("IgniteApplicationService"):
-        return _resolve_spec("AppSpec", ApacheIgniteApplicationSpec)(path_aware=service, context=context, config=config,
-                                                                     main_java_class=main_java_class, **kwargs)
+        return _resolve_spec("AppSpec", IgniteApplicationSpec)(service=service, **kwargs)
 
     raise Exception("There is no specification for class %s" % type(service))
+
+
+def envs_to_exports(envs):
+    """
+    :return: line with exports env variables: export A=B; export C=D;
+    """
+    exports = ["export %s=%s" % (key, envs[key]) for key in envs]
+    return "; ".join(exports) + ";"
 
 
 class IgniteSpec(metaclass=ABCMeta):
@@ -65,10 +75,8 @@ class IgniteSpec(metaclass=ABCMeta):
     """
 
     # pylint: disable=R0913
-    def __init__(self, path_aware, config, jvm_opts=None, full_jvm_opts=None):
-        self.config = config
-        self.path_aware = path_aware
-        self.envs = {}
+    def __init__(self, service, jvm_opts, full_jvm_opts):
+        self.service = service
 
         if full_jvm_opts:
             self.jvm_opts = full_jvm_opts
@@ -77,22 +85,26 @@ class IgniteSpec(metaclass=ABCMeta):
                 self._add_jvm_opts(jvm_opts)
         else:
             self.jvm_opts = create_jvm_settings(opts=jvm_opts,
-                                                gc_dump_path=os.path.join(path_aware.log_dir, "ignite_gc.log"),
-                                                oom_path=os.path.join(path_aware.log_dir, "ignite_out_of_mem.hprof"))
+                                                gc_dump_path=os.path.join(service.log_dir, "ignite_gc.log"),
+                                                oom_path=os.path.join(service.log_dir, "ignite_out_of_mem.hprof"))
+
+        self._add_jvm_opts(["-DIGNITE_SUCCESS_FILE=" + os.path.join(self.service.persistent_root, "success_file"),
+                            "-Dlog4j.configuration=file:" + self.service.log_config_file,
+                            "-Dlog4j.configDebug=true"])
 
     @property
     def config_templates(self):
         """
         :return: config that service will use to start on a node
         """
-        if self.config.service_type == IgniteServiceType.NONE:
+        if self.service.config.service_type == IgniteServiceType.NONE:
             return []
 
         config_templates = [(IgnitePathAware.IGNITE_LOG_CONFIG_NAME, IgniteLoggerConfigTemplate())]
 
-        if self.config.service_type == IgniteServiceType.NODE:
+        if self.service.config.service_type == IgniteServiceType.NODE:
             config_templates.append((IgnitePathAware.IGNITE_CONFIG_NAME,
-                                     IgniteClientConfigTemplate() if self.config.client_mode
+                                     IgniteClientConfigTemplate() if self.service.config.client_mode
                                      else IgniteServerConfigTemplate()))
         else:
             config_templates.append((IgnitePathAware.IGNITE_THIN_CLIENT_CONFIG_NAME, IgniteThinClientConfigTemplate()))
@@ -103,8 +115,8 @@ class IgniteSpec(metaclass=ABCMeta):
         """
         Get home directory for current spec.
         """
-        product = product if product else str(self.config.version)
-        return get_home_dir(self.path_aware.install_root, product)
+        product = product if product else self.service.product
+        return get_home_dir(self.service.install_root, product)
 
     def _module(self, name):
         """
@@ -113,7 +125,7 @@ class IgniteSpec(metaclass=ABCMeta):
         if name == "ducktests":
             return get_module_path(self.__home(str(DEV_BRANCH)), name, DEV_BRANCH.is_dev)
 
-        return get_module_path(self.__home(), name, self.config.version.is_dev)
+        return get_module_path(self.__home(), name, self.service.config.version.is_dev)
 
     @abstractmethod
     def command(self, node):
@@ -121,12 +133,57 @@ class IgniteSpec(metaclass=ABCMeta):
         :return: string that represents command to run service on a node
         """
 
-    def _envs(self):
+    def libs(self):
         """
-        :return: line with exports env variables: export A=B; export C=D;
+        :return: libs set.
         """
-        exports = ["export %s=%s" % (key, self.envs[key]) for key in self.envs]
-        return "; ".join(exports) + ";"
+        libs = self.service.modules or []
+
+        libs.append("log4j")
+        libs.append("ducktests")
+
+        return list(map(lambda m: os.path.join(self._module(m), "*"), libs))
+
+    def envs(self):
+        """
+        :return: environment set.
+        """
+        return {
+            'EXCLUDE_TEST_CLASSES': 'true',
+            'IGNITE_LOG_DIR': self.service.persistent_root,
+            'USER_LIBS': ":".join(self.libs())
+        }
+
+    def config_file_path(self):
+        """
+        :return: path to project configuration file
+        """
+        return self.service.config_file
+
+    def init_local_shared(self):
+        """
+        :return: path to local share folder. Files should be copied on all nodes in `shared_root` folder.
+        """
+        local_dir = os.path.join(tempfile.gettempdir(), str(self.service.context.session_context.session_id))
+
+        if not is_ssl_enabled(self.service.context.globals) and \
+                not (self.service.config.service_type == IgniteServiceType.NODE and self.service.config.ssl_params):
+            self.service.logger.debug("Ssl disabled. Nothing to generate.")
+            return local_dir
+
+        if os.path.isdir(local_dir):
+            self.service.logger.debug("Local shared dir already exists. Exiting. " + local_dir)
+            return local_dir
+
+        self.service.logger.debug("Local shared dir not exists. Creating. " + local_dir)
+        os.mkdir(local_dir)
+
+        script_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "certs")
+
+        self.__runcmd(f"cp {script_dir}/*.sh {local_dir}")
+        self.__runcmd(f"{local_dir}/mkcerts.sh")
+
+        return local_dir
 
     def _jvm_opts(self):
         """
@@ -139,17 +196,26 @@ class IgniteSpec(metaclass=ABCMeta):
         """Properly adds JVM options to current"""
         self.jvm_opts = merge_jvm_settings(self.jvm_opts, opts)
 
+    def __runcmd(self, cmd):
+        self.service.logger.debug(cmd)
+        proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        stdout, _ = proc.communicate()
+
+        if proc.returncode != 0:
+            raise RuntimeError("Command '%s' returned non-zero exit status %d: %s" % (cmd, proc.returncode, stdout))
+
 
 class IgniteNodeSpec(IgniteSpec):
     """
     Spec to run ignite node
     """
+
     def command(self, node):
         cmd = "%s %s %s %s 2>&1 | tee -a %s &" % \
-              (self._envs(),
-               self.path_aware.script("ignite.sh"),
+              (envs_to_exports(self.envs()),
+               self.service.script("ignite.sh"),
                self._jvm_opts(),
-               self.path_aware.config_file,
+               self.config_file_path(),
                node.log_file)
 
         return cmd
@@ -159,94 +225,48 @@ class IgniteApplicationSpec(IgniteSpec):
     """
     Spec to run ignite application
     """
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.args = ""
-
-    def _app_args(self):
-        return ",".join(self.args)
-
-    def command(self, node):
-        cmd = "%s %s %s %s 2>&1 | tee -a %s &" % \
-              (self._envs(),
-               self.path_aware.script("ignite.sh"),
-               self._jvm_opts(),
-               self._app_args(),
-               node.log_file)
-
-        return cmd
-
-
-class ApacheIgniteNodeSpec(IgniteNodeSpec):
-    """
-    Implementation IgniteNodeSpec for Apache Ignite project
-    """
-    def __init__(self, context, modules, **kwargs):
-        super().__init__(**kwargs)
-        self.context = context
-
-        libs = (modules or [])
-        libs.append("log4j")
-        libs = list(map(lambda m: os.path.join(self._module(m), "*"), libs))
-
-        libs.append(os.path.join(self._module("ducktests"), "*"))
-
-        self.envs = {
-            'EXCLUDE_TEST_CLASSES': 'true',
-            'IGNITE_LOG_DIR': self.path_aware.persistent_root,
-            'USER_LIBS': ":".join(libs)
-        }
-
-        self._add_jvm_opts(["-DIGNITE_SUCCESS_FILE=" + os.path.join(self.path_aware.persistent_root, "success_file"),
-                            "-Dlog4j.configuration=file:" + self.path_aware.log_config_file,
-                            "-Dlog4j.configDebug=true"])
-
-
-class ApacheIgniteApplicationSpec(IgniteApplicationSpec):
-    """
-    Implementation IgniteApplicationSpec for Apache Ignite project
-    """
-    # pylint: disable=too-many-arguments
-    def __init__(self, context, modules, main_java_class, java_class_name, params, **kwargs):
-        super().__init__(**kwargs)
-        self.context = context
-
-        libs = modules or []
-        libs.extend(["log4j"])
-
-        libs = list(map(lambda m: os.path.join(self._module(m), "*"), libs))
-        libs.append(os.path.join(self._module("ducktests"), "*"))
-        libs.extend(self.__jackson())
-
-        self.envs = {
-            "MAIN_CLASS": main_java_class,
-            "EXCLUDE_TEST_CLASSES": "true",
-            "IGNITE_LOG_DIR": self.path_aware.persistent_root,
-            "USER_LIBS": ":".join(libs)
-        }
-
-        self._add_jvm_opts(["-DIGNITE_SUCCESS_FILE=" + os.path.join(self.path_aware.persistent_root, "success_file"),
-                            "-Dlog4j.configuration=file:" + self.path_aware.log_config_file,
-                            "-Dlog4j.configDebug=true",
-                            "-DIGNITE_NO_SHUTDOWN_HOOK=true",  # allows to perform operations on app termination.
+        self._add_jvm_opts(["-DIGNITE_NO_SHUTDOWN_HOOK=true",  # allows to perform operations on app termination.
                             "-Xmx1G",
                             "-ea",
                             "-DIGNITE_ALLOW_ATOMIC_OPS_IN_TX=false"])
 
-        config_file = self.path_aware.config_file if self.config.service_type == IgniteServiceType.NODE \
-            else self.path_aware.thin_client_config_file
-
-        self.args = [
-            str(self.config.service_type.name),
-            java_class_name,
-            config_file,
-            str(base64.b64encode(json.dumps(params).encode('utf-8')), 'utf-8')
+    def command(self, node):
+        args = [
+            str(self.service.config.service_type.name),
+            self.service.java_class_name,
+            self.config_file_path(),
+            str(base64.b64encode(json.dumps(self.service.params).encode('utf-8')), 'utf-8')
         ]
 
+        cmd = "%s %s %s %s 2>&1 | tee -a %s &" % \
+              (envs_to_exports(self.envs()),
+               self.service.script("ignite.sh"),
+               self._jvm_opts(),
+               ",".join(args),
+               node.log_file)
+
+        return cmd
+
+    def config_file_path(self):
+        return self.service.config_file if self.service.config.service_type == IgniteServiceType.NODE \
+            else self.service.thin_client_config_file
+
+    def libs(self):
+        libs = super().libs()
+        libs.extend(self.__jackson())
+
+        return libs
+
     def __jackson(self):
-        if not self.config.version.is_dev:
+        if not self.service.config.version.is_dev:
             aws = self._module("aws")
-            return self.context.cluster.nodes[0].account.ssh_capture(
+            return self.service.context.cluster.nodes[0].account.ssh_capture(
                 "ls -d %s/* | grep jackson | tr '\n' ':' | sed 's/.$//'" % aws)
 
         return []
+
+    def envs(self):
+        return {**super().envs(), **{"MAIN_CLASS": self.service.main_java_class}}

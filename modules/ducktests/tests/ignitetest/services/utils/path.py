@@ -105,6 +105,13 @@ class PathAware:
         return os.path.join(self.persistent_root, "logs")
 
     @property
+    def shared_root(self):
+        """
+        :return: path to directory with shared files - same files on all nodes
+        """
+        return os.path.join(self.persistent_root, "shared")
+
+    @property
     @abstractmethod
     def product(self):
         """

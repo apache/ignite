@@ -31,7 +31,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.filehandle.FileWriteHandle;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -39,11 +38,13 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static org.apache.ignite.configuration.DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.ZIP_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor.fileName;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.isSegmentFileName;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Class for testing local size of WAL.
@@ -73,6 +74,7 @@ public class IgniteLocalWalSizeTest extends GridCommonAbstractTest {
                 new DataStorageConfiguration()
                     .setWalSegments(5)
                     .setWalSegmentSize((int)U.MB)
+                    .setMaxWalArchiveSize(UNLIMITED_WAL_ARCHIVE)
                     .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true))
             );
     }
@@ -185,12 +187,23 @@ public class IgniteLocalWalSizeTest extends GridCommonAbstractTest {
      * Check that local segment sizes in the memory and actual match.
      *
      * @param n Node.
+     * @throws Exception If failed.
      */
-    private void checkLocalSegmentSizes(IgniteEx n) {
-        FileWriteAheadLogManager wal = (FileWriteAheadLogManager)n.context().cache().context().wal();
+    private void checkLocalSegmentSizes(IgniteEx n) throws Exception {
+        disableWal(n, true);
 
-        File walWorkDir = getFieldValue(wal, "walWorkDir");
-        File walArchiveDir = getFieldValue(wal, "walArchiveDir");
+        if (walMgr(n).getSegmentRouter().hasArchive()) {
+            assertTrue(waitForCondition(
+                () -> walMgr(n).lastArchivedSegment() == walMgr(n).currentSegment() - 1, getTestTimeout()));
+        }
+
+        if (n.context().config().getDataStorageConfiguration().isWalCompactionEnabled()) {
+            assertTrue(waitForCondition(
+                () -> walMgr(n).lastCompactedSegment() == walMgr(n).lastArchivedSegment(), getTestTimeout()));
+        }
+
+        File walWorkDir = getFieldValue(walMgr(n), "walWorkDir");
+        File walArchiveDir = getFieldValue(walMgr(n), "walArchiveDir");
 
         Map<Long, Long> expSegmentSize = new HashMap<>();
 
@@ -204,7 +217,7 @@ public class IgniteLocalWalSizeTest extends GridCommonAbstractTest {
                     expSegmentSize.putIfAbsent(fd.idx(), fd.file().length());
             });
 
-        FileWriteHandle currHnd = getFieldValue(wal, "currHnd");
+        FileWriteHandle currHnd = getFieldValue(walMgr(n), "currHnd");
 
         if (!walArchiveDir.equals(walWorkDir)) {
             long absIdx = currHnd.getSegmentId();
@@ -216,14 +229,14 @@ public class IgniteLocalWalSizeTest extends GridCommonAbstractTest {
 
         assertEquals(currHnd.getSegmentId() + 1, expSegmentSize.size());
 
-        Map<Long, Long> segmentSize = getFieldValue(wal, "segmentSize");
+        Map<Long, Long> segmentSize = getFieldValue(walMgr(n), "segmentSize");
         assertEquals(expSegmentSize.size(), segmentSize.size());
 
         expSegmentSize.forEach((idx, size) -> {
             assertEquals(idx.toString(), size, segmentSize.get(idx));
-            assertEquals(idx.toString(), size.longValue(), wal.segmentSize(idx));
+            assertEquals(idx.toString(), size.longValue(), walMgr(n).segmentSize(idx));
         });
 
-        assertEquals(0, wal.segmentSize(currHnd.getSegmentId() + 1));
+        assertEquals(0, walMgr(n).segmentSize(currHnd.getSegmentId() + 1));
     }
 }

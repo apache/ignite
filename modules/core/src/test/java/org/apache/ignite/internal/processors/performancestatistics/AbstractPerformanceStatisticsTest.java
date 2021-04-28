@@ -81,8 +81,17 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
         waitForStatisticsEnabled(true);
     }
 
-    /** Stops and reads collecting performance statistics. */
-    public static void stopCollectStatisticsAndRead(TestHandler... handlers) throws Exception {
+    /** Rotate file collecting performance statistics. */
+    public static void rotateCollectStatistics() throws Exception {
+        List<Ignite> grids = G.allGrids();
+
+        assertFalse(grids.isEmpty());
+
+        statisticsMBean(grids.get(0).name()).rotate();
+    }
+
+    /** Stops collecting performance statistics. */
+    public static void stopCollectStatistics() throws Exception {
         List<Ignite> grids = G.allGrids();
 
         assertFalse(grids.isEmpty());
@@ -90,10 +99,20 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
         statisticsMBean(grids.get(0).name()).stop();
 
         waitForStatisticsEnabled(false);
+    }
+
+    /** Stops and reads collecting performance statistics. */
+    public static void stopCollectStatisticsAndRead(TestHandler... handlers) throws Exception {
+        stopCollectStatistics();
 
         File dir = U.resolveWorkDirectory(U.defaultWorkDirectory(), PERF_STAT_DIR, false);
 
-        new FilePerformanceStatisticsReader(handlers).read(singletonList(dir));
+        readFiles(singletonList(dir), handlers);
+    }
+
+    /** Reads collecting performance statistics files. */
+    public static void readFiles(List<File> files, TestHandler... handlers) throws Exception {
+        new FilePerformanceStatisticsReader(handlers).read(files);
     }
 
     /** Wait for statistics started/stopped in the cluster. */
@@ -130,7 +149,7 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
     }
 
     /** @return Performance statistics files. */
-    protected static List<File> statisticsFiles() throws Exception {
+    public static List<File> statisticsFiles() throws Exception {
         File perfStatDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), PERF_STAT_DIR, false);
 
         return FilePerformanceStatisticsReader.resolveFiles(singletonList(perfStatDir));
@@ -176,6 +195,33 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
         /** {@inheritDoc} */
         @Override public void job(UUID nodeId, IgniteUuid sesId, long queuedTime, long startTime, long duration,
             boolean timedOut) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void checkpoint(
+            UUID nodeId,
+            long beforeLockDuration,
+            long lockWaitDuration,
+            long listenersExecDuration,
+            long markDuration,
+            long lockHoldDuration,
+            long pagesWriteDuration,
+            long fsyncDuration,
+            long walCpRecordFsyncDuration,
+            long writeCpEntryDuration,
+            long splitAndSortCpPagesDuration,
+            long totalDuration,
+            long cpStartTime,
+            int pagesSize,
+            int dataPagesWritten,
+            int cowPagesWritten
+        ) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void pagesWriteThrottle(UUID nodeId, long endTime, long duration) {
             // No-op.
         }
     }

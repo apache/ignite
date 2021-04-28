@@ -58,7 +58,7 @@ class IgniteConfiguration(NamedTuple):
     rebalance_batches_prefetch_count: int = None
     rebalance_throttle: int = None
 
-    def __prepare_ssl(self, test_globals):
+    def __prepare_ssl(self, test_globals, shared_root):
         """
         Updates ssl configuration from globals.
         """
@@ -66,6 +66,7 @@ class IgniteConfiguration(NamedTuple):
         if self.ssl_params is None and is_ssl_enabled(test_globals):
             ssl_params = get_ssl_params(
                 test_globals,
+                shared_root,
                 IGNITE_CLIENT_ALIAS if self.client_mode else IGNITE_SERVER_ALIAS
             )
         if ssl_params:
@@ -89,11 +90,11 @@ class IgniteConfiguration(NamedTuple):
         return config
 
     # pylint: disable=protected-access
-    def prepare_for_env(self, test_globals, node, cluster):
+    def prepare_for_env(self, test_globals, shared_root, node, cluster):
         """
         Updates configuration based on current environment.
         """
-        return self.__prepare_ssl(test_globals).__prepare_discovery(node, cluster)
+        return self.__prepare_ssl(test_globals, shared_root).__prepare_discovery(node, cluster)
 
     @property
     def service_type(self):
@@ -131,6 +132,8 @@ class IgniteThinClientConfiguration(NamedTuple):
 
     # pylint: disable=unused-argument,protected-access
     def prepare_for_env(self, test_globals, node, cluster):
+    # pylint: disable=unused-argument
+    def prepare_for_env(self, test_globals, shared_root, node, cluster):
         """
         Updates configuration based on current environment.
         """
