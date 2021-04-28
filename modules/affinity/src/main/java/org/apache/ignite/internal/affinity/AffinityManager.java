@@ -129,9 +129,9 @@ public class AffinityManager {
     private void subscribeToAssignmentCalculation() {
         assert affinityCalculateSubscriptionFut == null : "Affinity calculation already subscribed";
 
-        String tableInternalPrefix = INTERNAL_PREFIX + "assignment.#";
+        String tableInternalPrefix = INTERNAL_PREFIX + "assignment.";
 
-        affinityCalculateSubscriptionFut = metaStorageMgr.registerWatch(new Key(tableInternalPrefix), new WatchListener() {
+        affinityCalculateSubscriptionFut = metaStorageMgr.registerWatchByPrefix(new Key(tableInternalPrefix), new WatchListener() {
             @Override public boolean onUpdate(@NotNull Iterable<WatchEvent> events) {
                 for (WatchEvent evt : events) {
                     if (ArrayUtils.empty(evt.newEntry().value())) {

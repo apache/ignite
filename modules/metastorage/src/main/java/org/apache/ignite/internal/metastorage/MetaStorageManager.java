@@ -17,11 +17,22 @@
 
 package org.apache.ignite.internal.metastorage;
 
+import java.util.Collection;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+import org.apache.ignite.internal.metastorage.watch.WatchAggregator;
 import org.apache.ignite.internal.raft.Loza;
 import org.apache.ignite.internal.vault.VaultManager;
+import org.apache.ignite.lang.ByteArray;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteInternalCheckedException;
+import org.apache.ignite.lang.IgniteInternalException;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.metastorage.client.MetaStorageService;
 import org.apache.ignite.metastorage.common.Condition;
+import org.apache.ignite.metastorage.common.Cursor;
 import org.apache.ignite.metastorage.common.Entry;
 import org.apache.ignite.metastorage.common.Key;
 import org.apache.ignite.metastorage.common.Operation;
@@ -53,6 +64,28 @@ import org.jetbrains.annotations.Nullable;
     private MetaStorageService metaStorageSvc;
 
     /**
+     * Aggregator of multiple watches to deploy them as one batch.
+     *
+     * @see WatchAggregator
+     */
+    private final WatchAggregator watchAggregator;
+
+    /**
+     * Future which will be completed with {@link IgniteUuid},
+     * when aggregated watch will be successfully deployed.
+     * Can be resolved to {@link Optional#empty()} if no watch deployed at the moment.
+     */
+    private CompletableFuture<Optional<IgniteUuid>> deployFut;
+
+    /**
+     * If true - all new watches will be deployed immediately.
+     *
+     * If false - all new watches will be aggregated to one batch
+     * for further deploy by {@link MetaStorageManager#deployWatches()}
+     */
+    private boolean deployed;
+
+    /**
      * The constructor.
      *
      * @param vaultMgr Vault manager.
@@ -62,11 +95,15 @@ import org.jetbrains.annotations.Nullable;
     public MetaStorageManager(
         VaultManager vaultMgr,
         ClusterService clusterNetSvc,
-        Loza raftMgr
+        Loza raftMgr,
+        MetaStorageService metaStorageSvc
     ) {
         this.vaultMgr = vaultMgr;
         this.clusterNetSvc = clusterNetSvc;
         this.raftMgr = raftMgr;
+        this.metaStorageSvc = metaStorageSvc;
+        watchAggregator = new WatchAggregator();
+        deployFut = new CompletableFuture<>();
 
         // TODO: IGNITE-14088: Uncomment and use real serializer factory
 //        Arrays.stream(MetaStorageMessageTypes.values()).forEach(
@@ -82,75 +119,296 @@ import org.jetbrains.annotations.Nullable;
     }
 
     /**
-     * Register subscription on meta storage updates for further deployment when DMS is ready.
+     * Deploy all registered watches.
+     */
+    public synchronized void deployWatches() {
+        try {
+            var watch = watchAggregator.watch(
+                vaultMgr.appliedRevision(),
+                this::storeEntries
+            );
+        if (watch.isEmpty())
+            deployFut.complete(Optional.empty());
+        else
+            metaStorageSvc.watch(
+                watch.get().keyCriterion().toRange().getKey(),
+                watch.get().keyCriterion().toRange().getValue(),
+                watch.get().revision(),
+                watch.get().listener()).thenAccept(id -> deployFut.complete(Optional.of(id))).join();
+        }
+        catch (IgniteInternalCheckedException e) {
+            throw new IgniteInternalException("Couldn't receive applied revision during deploy watches", e);
+        }
+
+        deployed = true;
+    }
+
+    /**
+     * Register watch listener by key.
      *
-     * @param key The target key. Couldn't be {@code null}.
+     * @param key The target key.
      * @param lsnr Listener which will be notified for each update.
      * @return Subscription identifier. Could be used in {@link #unregisterWatch} method in order to cancel
-     * subscription.
+     * subscription
      */
-    public synchronized CompletableFuture<Long> registerWatch(@Nullable Key key, @NotNull WatchListener lsnr) {
-        // TODO: IGNITE-14446 Implement DMS manager with watch registry.
-        return null;
+    public synchronized CompletableFuture<Long> registerWatch(
+        @Nullable Key key,
+        @NotNull WatchListener lsnr
+    ) {
+        return waitForReDeploy(watchAggregator.add(key, lsnr));
     }
 
     /**
-     * Proxies the invocation to metastorage.
+     * Register watch listener by key prefix.
      *
-     * @param key The target key.
-     * @return Metastorage entry.
+     * @param key Prefix to listen.
+     * @param lsnr Listener which will be notified for each update.
+     * @return Subscription identifier. Could be used in {@link #unregisterWatch} method in order to cancel
+     * subscription
      */
-    public synchronized CompletableFuture<Entry> get(@Nullable Key key) {
-        // TODO: IGNITE-14446 Implement DMS manager with watch registry.
-        return null;
+    public synchronized CompletableFuture<Long> registerWatchByPrefix(
+        @Nullable Key key,
+        @NotNull WatchListener lsnr
+    ) {
+        return waitForReDeploy(watchAggregator.addPrefix(key, lsnr));
     }
 
     /**
-     * Proxies the invocation to metastorage.
+     * Register watch listener by collection of keys.
      *
-     * @param key The target key.
-     * @param value The value to set.
-     * @return
+     * @param keys Collection listen.
+     * @param lsnr Listener which will be notified for each update.
+     * @return Subscription identifier. Could be used in {@link #unregisterWatch} method in order to cancel
+     * subscription
      */
-    public CompletableFuture<Void> put(@NotNull Key key, @NotNull byte[] value) {
-        // TODO: IGNITE-14446 Implement DMS manager with watch registry.
-        return null;
+    public synchronized CompletableFuture<Long> registerWatch(
+        @NotNull Collection<Key> keys,
+        @NotNull WatchListener lsnr
+    ) {
+        return waitForReDeploy(watchAggregator.add(keys, lsnr));
     }
 
     /**
-     * Invokes a service operation for metastorage.
+     * Register watch listener by range of keys.
      *
-     * @param key Key in metastorage.
-     * @param condition Condition to process.
-     * @param success Success operation.
-     * @param failure Failure operation.
-     * @return Future which will complete when appropriate final operation would be invoked.
+     * @param from Start key of range.
+     * @param to End key of range (exclusively).
+     * @param lsnr Listener which will be notified for each update.
+     * @return future with id of registered watch.
      */
-    public CompletableFuture<Boolean> invoke(
+    public synchronized CompletableFuture<Long> registerWatch(
+        @NotNull Key from,
+        @NotNull Key to,
+        @NotNull WatchListener lsnr
+    ) {
+        return waitForReDeploy(watchAggregator.add(from, to, lsnr));
+    }
+
+    /**
+     * Unregister watch listener by id.
+     *
+     * @param id of watch to unregister.
+     * @return future, which will be completed when unregister finished.
+     */
+    public synchronized CompletableFuture<Void> unregisterWatch(long id) {
+        watchAggregator.cancel(id);
+        if (deployed)
+            return updateWatches().thenAccept(v -> {});
+        else
+            return deployFut.thenAccept(uuid -> {});
+    }
+
+    /**
+     * @see MetaStorageService#get(Key)
+     */
+    public @NotNull CompletableFuture<Entry> get(@NotNull Key key) {
+        return metaStorageSvc.get(key);
+    }
+
+    /**
+     * @see MetaStorageService#get(Key, long)
+     */
+    public @NotNull CompletableFuture<Entry> get(@NotNull Key key, long revUpperBound) {
+        return metaStorageSvc.get(key, revUpperBound);
+    }
+
+    /**
+     * @see MetaStorageService#getAll(Collection)
+     */
+    public @NotNull CompletableFuture<Map<Key, Entry>> getAll(Collection<Key> keys) {
+        return metaStorageSvc.getAll(keys);
+    }
+
+    /**
+     * @see MetaStorageService#getAll(Collection, long)
+     */
+    public @NotNull CompletableFuture<Map<Key, Entry>> getAll(Collection<Key> keys, long revUpperBound) {
+        return metaStorageSvc.getAll(keys, revUpperBound);
+    }
+
+    /**
+     * @see MetaStorageService#put(Key, byte[])
+     */
+    public @NotNull CompletableFuture<Void> put(@NotNull Key key, byte[] val) {
+        return metaStorageSvc.put(key, val);
+    }
+
+    /**
+     * @see MetaStorageService#getAndPut(Key, byte[])
+     */
+    public @NotNull CompletableFuture<Entry> getAndPut(@NotNull Key key, byte[] val) {
+        return metaStorageSvc.getAndPut(key, val);
+    }
+
+    /**
+     * @see MetaStorageService#putAll(Map)
+     */
+    public @NotNull CompletableFuture<Void> putAll(@NotNull Map<Key, byte[]> vals) {
+        return metaStorageSvc.putAll(vals);
+    }
+
+    /**
+     * @see MetaStorageService#getAndPutAll(Map)
+     */
+    public @NotNull CompletableFuture<Map<Key, Entry>> getAndPutAll(@NotNull Map<Key, byte[]> vals) {
+        return metaStorageSvc.getAndPutAll(vals);
+    }
+
+    /**
+     * @see MetaStorageService#remove(Key)
+     */
+    public @NotNull CompletableFuture<Void> remove(@NotNull Key key) {
+        return metaStorageSvc.remove(key);
+    }
+
+    /**
+     * @see MetaStorageService#getAndRemove(Key)
+     */
+    public @NotNull CompletableFuture<Entry> getAndRemove(@NotNull Key key) {
+        return metaStorageSvc.getAndRemove(key);
+    }
+
+    /**
+     * @see MetaStorageService#removeAll(Collection)
+     */
+    public @NotNull CompletableFuture<Void> removeAll(@NotNull Collection<Key> keys) {
+        return metaStorageSvc.removeAll(keys);
+    }
+
+    /**
+     * @see MetaStorageService#getAndRemoveAll(Collection)
+     */
+    public @NotNull CompletableFuture<Map<Key, Entry>> getAndRemoveAll(@NotNull Collection<Key> keys) {
+        return metaStorageSvc.getAndRemoveAll(keys);
+    }
+
+    /**
+     * @see MetaStorageService#invoke(Key, Condition, Operation, Operation)
+     */
+    public @NotNull CompletableFuture<Boolean> invoke(
         @NotNull Key key,
-        @NotNull Condition condition,
+        @NotNull Condition cond,
         @NotNull Operation success,
         @NotNull Operation failure
     ) {
-        // TODO: IGNITE-14446 Implement DMS manager with watch registry.
-        return null;
+        return metaStorageSvc.invoke(key, cond, success, failure);
     }
 
     /**
-     * Unregister subscription for the given identifier.
+     * @see MetaStorageService#getAndInvoke(Key, Condition, Operation, Operation)
+     */
+    public @NotNull CompletableFuture<Entry> getAndInvoke(
+        @NotNull Key key,
+        @NotNull Condition cond,
+        @NotNull Operation success,
+        @NotNull Operation failure
+    ) {
+        return metaStorageSvc.getAndInvoke(key, cond, success, failure);
+    }
+
+    /**
+     * @see MetaStorageService#range(Key, Key, long)
+     */
+    public @NotNull Cursor<Entry> range(@NotNull Key keyFrom, @Nullable Key keyTo, long revUpperBound) {
+        return metaStorageSvc.range(keyFrom, keyTo, revUpperBound);
+    }
+
+    /**
+     * @see MetaStorageService#range(Key, Key)
+     */
+    public @NotNull Cursor<Entry> range(@NotNull Key keyFrom, @Nullable Key keyTo) {
+        return metaStorageSvc.range(keyFrom, keyTo);
+    }
+
+    /**
+     * @see MetaStorageService#compact()
+     */
+    public @NotNull CompletableFuture<Void> compact() {
+        return metaStorageSvc.compact();
+    }
+
+    /**
+     * Stop current batch of consolidated watches and register new one from current {@link WatchAggregator}.
      *
-     * @param id Subscription identifier.
-     * @return Completed future in case of operation success. Couldn't be {@code null}.
+     * @return Ignite UUID of new consolidated watch.
      */
-    public synchronized CompletableFuture<Void> unregisterWatch(long id) {
-        // TODO: IGNITE-14446 Implement DMS manager with watch registry.
-        return null;
+    private CompletableFuture<Optional<IgniteUuid>> updateWatches() {
+        Long revision;
+        try {
+            revision = vaultMgr.appliedRevision();
+        }
+        catch (IgniteInternalCheckedException e) {
+            throw new IgniteInternalException("Couldn't receive applied revision during watch redeploy", e);
+        }
+
+        final var finalRevision = revision;
+
+        deployFut = deployFut
+            .thenCompose(idOpt -> idOpt.map(metaStorageSvc::stopWatch).orElse(CompletableFuture.completedFuture(null)))
+            .thenCompose(r -> {
+                var watch = watchAggregator.watch(finalRevision, this::storeEntries);
+
+                if (watch.isEmpty())
+                    return CompletableFuture.completedFuture(Optional.empty());
+                else
+                    return metaStorageSvc.watch(
+                        watch.get().keyCriterion().toRange().get1(),
+                        watch.get().keyCriterion().toRange().get2(),
+                        watch.get().revision(),
+                        watch.get().listener()).thenApply(Optional::of);
+            });
+
+        return deployFut;
     }
 
     /**
-     * Deploy all registered watches through{@code MetaStorageService.watch()}.
+     * Store entries with appropriate associated revision.
+     *
+     * @param entries to store.
+     * @param revision associated revision.
+     * @return future, which will be completed when store action finished.
      */
-    public synchronized void deployWatches() {
-        // TODO: IGNITE-14446 Implement DMS manager with watch registry.
+    private CompletableFuture<Void> storeEntries(Collection<IgniteBiTuple<Key, byte[]>> entries, long revision) {
+        try {
+            return vaultMgr.putAll(entries.stream().collect(
+                Collectors.toMap(
+                    e -> ByteArray.fromString(e.getKey().toString()),
+                    IgniteBiTuple::getValue)),
+                revision);
+        }
+        catch (IgniteInternalCheckedException e) {
+            throw new IgniteInternalException("Couldn't put entries with considered revision.", e);
+        }
+    }
+
+    /**
+     * @param id of watch to redeploy.
+     * @return future, which will be completed after redeploy finished.
+     */
+    private CompletableFuture<Long> waitForReDeploy(long id) {
+        if (deployed)
+            return updateWatches().thenApply(uid -> id);
+        else
+            return deployFut.thenApply(uid -> id);
     }
 }

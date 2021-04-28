@@ -20,8 +20,12 @@ package org.apache.ignite.internal.app;
 import io.netty.util.internal.StringUtil;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import org.apache.ignite.app.Ignite;
 import org.apache.ignite.app.Ignition;
@@ -45,12 +49,22 @@ import org.apache.ignite.internal.table.distributed.TableManager;
 import org.apache.ignite.internal.vault.VaultManager;
 import org.apache.ignite.internal.vault.impl.VaultServiceImpl;
 import org.apache.ignite.lang.IgniteLogger;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.metastorage.client.MetaStorageService;
+import org.apache.ignite.metastorage.common.Condition;
+import org.apache.ignite.metastorage.common.Cursor;
+import org.apache.ignite.metastorage.common.Entry;
+import org.apache.ignite.metastorage.common.Key;
+import org.apache.ignite.metastorage.common.Operation;
+import org.apache.ignite.metastorage.common.WatchListener;
 import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.message.MessageSerializationRegistry;
 import org.apache.ignite.network.scalecube.ScaleCubeClusterServiceFactory;
 import org.apache.ignite.table.manager.IgniteTables;
 import org.apache.ignite.utils.IgniteProperties;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Implementation of an entry point for handling grid lifecycle.
@@ -142,7 +156,8 @@ public class IgnitionImpl implements Ignition {
         MetaStorageManager metaStorageMgr = new MetaStorageManager(
             vaultMgr,
             clusterNetSvc,
-            raftMgr
+            raftMgr,
+            metaStorageServiceMock()
         );
 
         // TODO IGNITE-14578 Bootstrap configuration manager with distributed configuration.
@@ -192,5 +207,100 @@ public class IgnitionImpl implements Ignition {
             .collect(Collectors.joining("\n"));
 
         LOG.info(banner + '\n' + " ".repeat(22) + "Apache Ignite ver. " + ver + '\n');
+    }
+
+    // TODO: remove when metastorage service will be ready.
+    private static MetaStorageService metaStorageServiceMock() {
+        return new MetaStorageService() {
+            @Override public @NotNull CompletableFuture<Entry> get(@NotNull Key key) {
+                throw new UnsupportedOperationException("Metastorage service is not implemented yet");
+            }
+
+            @Override public @NotNull CompletableFuture<Entry> get(@NotNull Key key, long revUpperBound) {
+                throw new UnsupportedOperationException("Metastorage service is not implemented yet");
+            }
+
+            @Override public @NotNull CompletableFuture<Map<Key, Entry>> getAll(Collection<Key> keys) {
+                throw new UnsupportedOperationException("Metastorage service is not implemented yet");
+            }
+
+            @Override public @NotNull CompletableFuture<Map<Key, Entry>> getAll(Collection<Key> keys, long revUpperBound) {
+                throw new UnsupportedOperationException("Metastorage service is not implemented yet");
+            }
+
+            @Override public @NotNull CompletableFuture<Void> put(@NotNull Key key, @NotNull byte[] value) {
+                throw new UnsupportedOperationException("Metastorage service is not implemented yet");
+            }
+
+            @Override public @NotNull CompletableFuture<Entry> getAndPut(@NotNull Key key, @NotNull byte[] value) {
+                throw new UnsupportedOperationException("Metastorage service is not implemented yet");
+            }
+
+            @Override public @NotNull CompletableFuture<Void> putAll(@NotNull Map<Key, byte[]> vals) {
+                throw new UnsupportedOperationException("Metastorage service is not implemented yet");
+            }
+
+            @Override public @NotNull CompletableFuture<Map<Key, Entry>> getAndPutAll(@NotNull Map<Key, byte[]> vals) {
+                throw new UnsupportedOperationException("Metastorage service is not implemented yet");
+            }
+
+            @Override public @NotNull CompletableFuture<Void> remove(@NotNull Key key) {
+                throw new UnsupportedOperationException("Metastorage service is not implemented yet");
+            }
+
+            @Override public @NotNull CompletableFuture<Entry> getAndRemove(@NotNull Key key) {
+                throw new UnsupportedOperationException("Metastorage service is not implemented yet");
+            }
+
+            @Override public @NotNull CompletableFuture<Void> removeAll(@NotNull Collection<Key> keys) {
+                throw new UnsupportedOperationException("Metastorage service is not implemented yet");
+            }
+
+            @Override
+            public @NotNull CompletableFuture<Map<Key, Entry>> getAndRemoveAll(@NotNull Collection<Key> keys) {
+                throw new UnsupportedOperationException("Metastorage service is not implemented yet");
+            }
+
+            @Override public @NotNull CompletableFuture<Boolean> invoke(@NotNull Key key, @NotNull Condition condition,
+                @NotNull Operation success, @NotNull Operation failure) {
+                throw new UnsupportedOperationException("Metastorage service is not implemented yet");
+            }
+
+            @Override public @NotNull CompletableFuture<Entry> getAndInvoke(@NotNull Key key, @NotNull Condition condition,
+                @NotNull Operation success, @NotNull Operation failure) {
+                throw new UnsupportedOperationException("Metastorage service is not implemented yet");
+            }
+
+            @Override public @NotNull Cursor<Entry> range(@NotNull Key keyFrom, @Nullable Key keyTo, long revUpperBound) {
+                throw new UnsupportedOperationException("Metastorage service is not implemented yet");
+            }
+
+            @Override public @NotNull Cursor<Entry> range(@NotNull Key keyFrom, @Nullable Key keyTo) {
+                throw new UnsupportedOperationException("Metastorage service is not implemented yet");
+            }
+
+            @Override public @NotNull CompletableFuture<IgniteUuid> watch(@Nullable Key keyFrom, @Nullable Key keyTo,
+                long revision, @NotNull WatchListener lsnr) {
+                return CompletableFuture.completedFuture(new IgniteUuid(UUID.randomUUID(), 0L));
+            }
+
+            @Override public @NotNull CompletableFuture<IgniteUuid> watch(@NotNull Key key, long revision,
+                @NotNull WatchListener lsnr) {
+                return CompletableFuture.completedFuture(new IgniteUuid(UUID.randomUUID(), 0L));
+            }
+
+            @Override public @NotNull CompletableFuture<IgniteUuid> watch(@NotNull Collection<Key> keys, long revision,
+                @NotNull WatchListener lsnr) {
+                return CompletableFuture.completedFuture(new IgniteUuid(UUID.randomUUID(), 0L));
+            }
+
+            @Override public @NotNull CompletableFuture<Void> stopWatch(@NotNull IgniteUuid id) {
+                throw new UnsupportedOperationException("Metastorage service is not implemented yet");
+            }
+
+            @Override public @NotNull CompletableFuture<Void> compact() {
+                throw new UnsupportedOperationException("Metastorage service is not implemented yet");
+            }
+        };
     }
 }

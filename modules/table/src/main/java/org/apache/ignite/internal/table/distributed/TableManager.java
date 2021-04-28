@@ -118,9 +118,9 @@ public class TableManager implements IgniteTables {
         if (hasMetastorageLocally(localNodeName, metastorageMembers))
             subscribeForTableCreation();
 
-        String tableInternalPrefix = INTERNAL_PREFIX + "assignment.#";
+        String tableInternalPrefix = INTERNAL_PREFIX + "assignment.";
 
-        tableCreationSubscriptionFut = metaStorageMgr.registerWatch(new Key(tableInternalPrefix), new WatchListener() {
+        tableCreationSubscriptionFut = metaStorageMgr.registerWatchByPrefix(new Key(tableInternalPrefix), new WatchListener() {
             @Override public boolean onUpdate(@NotNull Iterable<WatchEvent> events) {
                 for (WatchEvent evt : events) {
                     if (!ArrayUtils.empty(evt.newEntry().value())) {
