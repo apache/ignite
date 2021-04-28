@@ -813,7 +813,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
 
             if (wait)
                 // 3. Wait for all futures to finish.
-                curBatch.AwaitCompletion();
+                curBatch.GetThisAndPreviousCompletionTask().Wait();
 
             return res;
         }

@@ -181,30 +181,6 @@ namespace Apache.Ignite.Core.Impl.Datastream
         }
 
         /// <summary>
-        /// Await completion of current and all previous loads.
-        /// </summary>
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        public void AwaitCompletion()
-        {
-            DataStreamerBatch<TK, TV> curBatch = this;
-
-            while (curBatch != null)
-            {
-                try
-                {
-                    curBatch._fut.Get();
-                }
-                // ReSharper disable once EmptyGeneralCatchClause
-                catch (Exception)
-                {
-                    // Ignore.
-                }
-
-                curBatch = curBatch._prev;
-            }
-        }
-
-        /// <summary>
         /// Gets the task to await completion of current and all previous loads.
         /// </summary>
         public Task GetThisAndPreviousCompletionTask()
