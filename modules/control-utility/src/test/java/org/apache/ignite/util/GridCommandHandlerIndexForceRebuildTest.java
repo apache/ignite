@@ -232,7 +232,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
 
             String outputStr = testOut.toString();
 
-            validateOutputCacheNamesNotFound(outputStr, GRP_NAME_NON_EXISTING, CACHE_NAME_NON_EXISTING);
+            validateOutputCacheNamesNotFound(outputStr, CACHE_NAME_NON_EXISTING);
 
             validateOutputIndicesRebuildingInProgress(outputStr, F.asMap(GRP_NAME_2, F.asList(CACHE_NAME_2_1)));
 
@@ -291,7 +291,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
 
             String outputStr = testOut.toString();
 
-            validateOutputCacheGroupsNotFound(outputStr, GRP_NAME_NON_EXISTING, CACHE_NAME_NON_EXISTING);
+            validateOutputCacheGroupsNotFound(outputStr, GRP_NAME_NON_EXISTING);
 
             validateOutputIndicesRebuildingInProgress(outputStr, F.asMap(GRP_NAME_1, F.asList(CACHE_NAME_1_2)));
 
@@ -543,13 +543,14 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
      * @return text for CLI print output for given caches.
      */
     private String makeStringListForCacheGroupsAndNames(Map<String, List<String>> cacheGroputToNames) {
-        StringBuilder sb = new StringBuilder(INDENT);
+        StringBuilder sb = new StringBuilder();
 
         for (Map.Entry<String, List<String>> entry : cacheGroputToNames.entrySet()) {
             String cacheGrp = entry.getKey();
 
             for (String cacheName : entry.getValue()) {
-                sb.append("groupName=").append(cacheGrp)
+                sb.append(INDENT)
+                    .append("groupName=").append(cacheGrp)
                     .append(", cacheName=").append(cacheName)
                     .append(U.nl());
             }
