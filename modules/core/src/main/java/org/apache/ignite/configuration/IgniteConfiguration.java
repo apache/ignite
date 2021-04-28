@@ -19,7 +19,6 @@ package org.apache.ignite.configuration;
 
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
-import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Executor;
