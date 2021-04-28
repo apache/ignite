@@ -97,7 +97,17 @@ namespace Apache.Ignite.Core.Tests.Dataload
             using (IDataStreamer<int, int> ldr = _grid.GetDataStreamer<int, int>(CacheName))
             {
                 Assert.AreEqual(CacheName, ldr.CacheName);
-                Assert.AreEqual(0, ldr.AutoFlushFrequency);
+
+                Assert.AreEqual(TimeSpan.Zero, ldr.AutoFlushInterval);
+                ldr.AutoFlushInterval = TimeSpan.FromMinutes(5);
+                Assert.AreEqual(5, ldr.AutoFlushInterval.TotalMinutes);
+
+#pragma warning disable 618
+                Assert.AreEqual(5 * 60 * 1000, ldr.AutoFlushFrequency);
+                ldr.AutoFlushFrequency = 9000;
+                Assert.AreEqual(9000, ldr.AutoFlushFrequency);
+                Assert.AreEqual(9, ldr.AutoFlushInterval.TotalSeconds);
+#pragma warning restore 618
 
                 Assert.IsFalse(ldr.AllowOverwrite);
                 ldr.AllowOverwrite = true;
