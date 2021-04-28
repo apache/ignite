@@ -119,7 +119,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         stopAllGrids();
 
-        //cleanPersistenceDir();
+        cleanPersistenceDir();
 
         super.beforeTest();
     }
@@ -184,7 +184,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         CountDownLatch onChangeLatch2 = new CountDownLatch(1);
 
         TestCDCConsumer cnsmr = new TestCDCConsumer() {
-            @Override public void start(IgniteConfiguration configuration, IgniteLogger log) {
+            @Override public void start(IgniteLogger log) {
                 try {
                     startLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS);
                 }
@@ -192,7 +192,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
                     throw new RuntimeException(e);
                 }
 
-                super.start(configuration, log);
+                super.start(log);
             }
 
             @Override public boolean onChange(Iterator<ChangeEvent> events) {
@@ -282,8 +282,6 @@ public class CDCSelfTest extends GridCommonAbstractTest {
             waitForCondition(() -> cnt.get() - startCnt > KEYS_CNT, getTestTimeout());
 
             ign.close();
-
-            System.out.println("CDCSelfTest.testReadAfterNodeStop =====================================");
 
             IgniteCDC cdc = new IgniteCDC(cfg, cdcConfig(cnsmr));
 
@@ -534,7 +532,6 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         return waitForCondition(
             () -> {
                 int sum = Arrays.stream(cnsmrs).mapToInt(c -> F.size(c.keys(evtType, cacheId(cacheName)))).sum();
-                System.out.println(sum + " - " + expSz);
                 return sum >= expSz;
             },
             getTestTimeout());
@@ -566,7 +563,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         public volatile boolean stoped;
 
         /** {@inheritDoc} */
-        @Override public void start(IgniteConfiguration configuration, IgniteLogger log) {
+        @Override public void start(IgniteLogger log) {
             stoped = false;
         }
 

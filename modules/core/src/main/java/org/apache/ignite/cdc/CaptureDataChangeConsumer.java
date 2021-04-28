@@ -19,7 +19,6 @@ package org.apache.ignite.cdc;
 
 import java.util.Iterator;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.cdc.IgniteCDC;
 import org.apache.ignite.lang.IgniteExperimental;
 
@@ -28,7 +27,7 @@ import org.apache.ignite.lang.IgniteExperimental;
  * This consumer will receive event of data changes during {@link IgniteCDC} application invocation.
  * Lifecycle of consumer is the following:
  * <ul>
- *     <li>Start of the consumer {@link #start(IgniteConfiguration, IgniteLogger)}.</li>
+ *     <li>Start of the consumer {@link #start(IgniteLogger)}.</li>
  *     <li>Notification of the consumer by the {@link #onChange(Iterator)} call.</li>
  *     <li>Stop of the consumer {@link #stop()}.</li>
  * </ul>
@@ -45,10 +44,9 @@ public interface CaptureDataChangeConsumer {
     /**
      * Starts the consumer.
      *
-     * @param configuration Ignite configuration.
      * @param log Logger.
      */
-    void start(IgniteConfiguration configuration, IgniteLogger log);
+    void start(IgniteLogger log);
 
     /**
      * Handles entry changes events.
@@ -62,7 +60,7 @@ public interface CaptureDataChangeConsumer {
 
     /**
      * Stops the consumer.
-     * This methods can be invoked only after {@link #start(IgniteConfiguration, IgniteLogger)}.
+     * This methods can be invoked only after {@link #start(IgniteLogger)}.
      */
     void stop();
 }

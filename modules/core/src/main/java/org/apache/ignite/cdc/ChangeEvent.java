@@ -55,9 +55,6 @@ public class ChangeEvent implements Serializable {
     /** Cache id. */
     private final int cacheId;
 
-    /** Entry expire time. */
-    private final long expireTime;
-
     /**
      * @param key Key.
      * @param val Value.
@@ -66,10 +63,9 @@ public class ChangeEvent implements Serializable {
      * @param ord Order of the entry change.
      * @param op Event type.
      * @param cacheId Cache id.
-     * @param expireTime Entry expire time.
      */
     public ChangeEvent(Object key, Object val, boolean primary, int part,
-        ChangeEventOrder ord, ChangeEventType op, int cacheId, long expireTime) {
+        ChangeEventOrder ord, ChangeEventType op, int cacheId) {
         this.key = key;
         this.val = val;
         this.primary = primary;
@@ -77,7 +73,6 @@ public class ChangeEvent implements Serializable {
         this.ord = ord;
         this.op = op;
         this.cacheId = cacheId;
-        this.expireTime = expireTime;
     }
 
     /**
@@ -129,13 +124,6 @@ public class ChangeEvent implements Serializable {
      */
     public int cacheId() {
         return cacheId;
-    }
-
-    /**
-     * @return Expire time.
-     */
-    long expireTime() {
-        return expireTime;
     }
 
     /** {@inheritDoc} */

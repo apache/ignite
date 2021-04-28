@@ -694,9 +694,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 if (archiveLast) {
                     long i = segmentAware.lastArchivedAbsoluteIndex() + 1;
 
-                    if (i <= segmentAware.curAbsWalIdx())
-                        System.out.println("FileWriteAheadLogManager.stop0");
-
                     try {
                         for (; i < segmentAware.curAbsWalIdx(); i++)
                             archiver.archiveSegment(i);
@@ -818,9 +815,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 nextEndTime = lastRecMs <= 0 ? U.currentTimeMillis() : lastRecMs + walAutoArchiveAfterInactivity;
             }
 
-            if (log.isInfoEnabled())
-                log.info("Next timeout rollover scheduled[date=" + new Date(nextEndTime) + ']');
-
             cctx.time().addTimeoutObject(timeoutRollover = new TimeoutRollover(nextEndTime));
         }
     }
@@ -900,9 +894,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         // Logging was not resumed yet.
         if (currWrHandle == null || (isDisable != null && isDisable.check()))
             return null;
-
-        if ((cntr.incrementAndGet() % 5 == 0 || cctx.kernalContext().isStopping()) && rec.type() == WALRecord.RecordType.DATA_RECORD_V2)
-            System.out.println("FileWriteAheadLogManager.log - " + rec.type() + ", " + currWrHandle.getSegmentId());
 
         // Do page snapshots compression if configured.
         if (pageCompression != DiskPageCompression.DISABLED && rec instanceof PageSnapshot) {
@@ -1444,7 +1435,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 }
 
                 FileWriteHandle hnd = fileHandleManager.initHandle(fileIO, off + len, ser);
-
+/*
                 if (lastReadPtr != null && switchSegmentRecReached) {
                     if (switchSegmentRecordOffset != null) {
                         switchSegmentRecordOffset.set((int)segNo,
@@ -1458,7 +1449,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                             "[curIdx=" + hnd.getSegmentId() + ']');
                     }
                 }
-
+*/
                 segmentAware.curAbsWalIdx(hnd.getSegmentId());
 
                 segmentAware.minReserveIndex(F.isEmpty(walArchiveFiles) ? -1 : walArchiveFiles[0].idx - 1);

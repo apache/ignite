@@ -110,7 +110,7 @@ public class RecordV2Serializer implements RecordSerializer {
             WALRecord.RecordType recType = RecordV1Serializer.readRecordType(in);
 
             if (recType == SWITCH_SEGMENT_RECORD)
-                throw new SegmentEofException("Reached end of segment", null, true);
+                throw new SegmentEofException("Reached end of segment", null);
 
             WALPointer ptr = readPositionAndCheckPoint(in, expPtr, skipPositionCheck, recType);
 

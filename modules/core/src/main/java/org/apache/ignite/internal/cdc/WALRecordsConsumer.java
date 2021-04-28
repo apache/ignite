@@ -24,7 +24,6 @@ import org.apache.ignite.cdc.CaptureDataChangeConsumer;
 import org.apache.ignite.cdc.ChangeEvent;
 import org.apache.ignite.cdc.ChangeEventOrder;
 import org.apache.ignite.cdc.ChangeEventType;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.UnwrappedDataEntry;
@@ -129,8 +128,7 @@ public class WALRecordsConsumer<K, V> {
                 e.partitionId(),
                 ord,
                 type,
-                e.cacheId(),
-                e.expireTime()
+                e.cacheId()
             );
         }, true, OPS_FILTER), true)));
     }
@@ -138,12 +136,12 @@ public class WALRecordsConsumer<K, V> {
     /**
      * Starts the consumer.
      *
-     * @param configuration Ignite configuration.
+     * @param log Logger.
      */
-    public void start(IgniteConfiguration configuration, IgniteLogger log) {
+    public void start(IgniteLogger log) {
         this.log = log;
 
-        dataConsumer.start(configuration, log);
+        dataConsumer.start(log);
 
         if (log.isInfoEnabled())
             log.info("WalRecordsConsumer started[consumer=" + dataConsumer.getClass() + ']');
@@ -151,7 +149,7 @@ public class WALRecordsConsumer<K, V> {
 
     /**
      * Stops the consumer.
-     * This methods can be invoked only after {@link #start(IgniteConfiguration, IgniteLogger)}.
+     * This methods can be invoked only after {@link #start(IgniteLogger)}.
      */
     public void stop() {
         dataConsumer.stop();

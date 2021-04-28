@@ -133,9 +133,6 @@ public class IgniteCDC implements Runnable {
     /** Stoped flag. */
     private volatile boolean stoped;
 
-    /** Owner thread. */
-    private volatile Thread owner;
-
     /** Previous segments. */
     private final List<Path> prevSegments = new ArrayList<>();
 
@@ -167,8 +164,6 @@ public class IgniteCDC implements Runnable {
         synchronized (this) {
             if (stoped)
                 return;
-
-            owner = Thread.currentThread();
         }
 
         try {
@@ -223,7 +218,7 @@ public class IgniteCDC implements Runnable {
             if (initState != null && log.isInfoEnabled())
                 log.info("Loaded initial state[state=" + initState + ']');
 
-            consumer.start(cfg, log);
+            consumer.start(log);
 
             try {
                 consumeWalSegmentsUntilStoped();
