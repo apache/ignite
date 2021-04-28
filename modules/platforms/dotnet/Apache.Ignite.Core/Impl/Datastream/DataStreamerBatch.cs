@@ -185,7 +185,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// </summary>
         public Task GetThisAndPreviousCompletionTask()
         {
-            DataStreamerBatch<TK, TV> curBatch = this;
+            var curBatch = this;
 
             var tasks = new List<Task>();
 
@@ -196,7 +196,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 curBatch = curBatch._prev;
             }
 
-            return TaskRunner.WhenAll(tasks);
+            return TaskRunner.WhenAll(tasks.ToArray());
         }
 
         /// <summary>

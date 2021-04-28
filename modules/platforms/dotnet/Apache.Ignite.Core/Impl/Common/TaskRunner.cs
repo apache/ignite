@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -98,21 +97,21 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <para />
         /// Task.WhenAll is not available on .NET 4.
         /// </summary>
-        public static Task WhenAll(IList<Task> tasks)
+        public static Task WhenAll(Task[] tasks)
         {
-            if (tasks.Count == 0)
+            if (tasks.Length == 0)
             {
                 return CompletedTask;
             }
 
-            if (tasks.Count == 1)
+            if (tasks.Length == 1)
             {
                 return tasks[0];
             }
 
-            return Task.Factory.ContinueWhenAll(tasks.ToArray(), _ =>
+            return Task.Factory.ContinueWhenAll(tasks, _ =>
             {
-                var errs = new List<Exception>(tasks.Count);
+                var errs = new List<Exception>(tasks.Length);
 
                 foreach (var task in tasks)
                 {
