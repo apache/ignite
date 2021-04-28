@@ -815,6 +815,10 @@ namespace Apache.Ignite.Core.Tests.Dataload
 
                 Assert.AreEqual(1, _cache[1]);
                 Assert.AreEqual(2, _cache[2]);
+
+                // Empty buffer flush is allowed.
+                await ldr.FlushAsync();
+                await ldr.FlushAsync();
             }
         }
 #endif
