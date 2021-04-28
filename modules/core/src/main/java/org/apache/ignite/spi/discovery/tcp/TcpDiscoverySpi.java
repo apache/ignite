@@ -320,6 +320,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /** IP finder. */
     protected TcpDiscoveryIpFinder ipFinder;
 
+    /** Address filter */
+    private IgnitePredicate<InetSocketAddress> addressFilter;
+
     /** Socket operations timeout. */
     private long sockTimeout; // Must be initialized in the constructor of child class.
 
@@ -461,9 +464,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /** */
     private IgniteDiscoverySpiInternalListener internalLsnr;
-
-    /** Allow specifying an address filter when getting registered nodes */
-    private IgnitePredicate<InetSocketAddress> addressFilter;
 
     /** For test purposes. */
     private boolean skipAddrsRandomization = false;
@@ -925,6 +925,19 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     @IgniteSpiConfiguration(optional = true)
     public TcpDiscoverySpi setIpFinder(TcpDiscoveryIpFinder ipFinder) {
         this.ipFinder = ipFinder;
+
+        return this;
+    }
+
+    /**
+     * Sets address filter for IP addresses
+     *
+     * @param addressFilter Address filter to use
+     * @return {@code this} for chaining.
+     */
+    @IgniteSpiConfiguration(optional = true)
+    public TcpDiscoverySpi setAddressFilter(IgnitePredicate<InetSocketAddress> addressFilter) {
+        this.addressFilter = addressFilter;
 
         return this;
     }
@@ -2197,8 +2210,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             return;
 
         sslEnable = ignite().configuration().getSslContextFactory() != null;
-
-        addressFilter = ignite().configuration().getAddressFilter();
 
         initFailureDetectionTimeout();
 

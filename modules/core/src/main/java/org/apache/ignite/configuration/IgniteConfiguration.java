@@ -536,9 +536,6 @@ public class IgniteConfiguration {
     /** SSL connection factory. */
     private Factory<SSLContext> sslCtxFactory;
 
-    /** Address filter */
-    private IgnitePredicate<InetSocketAddress> addressFilter;
-
     /** Platform configuration. */
     private PlatformConfiguration platformCfg;
 
@@ -658,7 +655,6 @@ public class IgniteConfiguration {
          */
         activeOnStart = cfg.isActiveOnStart();
         activeOnStartPropSetFlag = cfg.activeOnStartPropSetFlag;
-        addressFilter = cfg.getAddressFilter();
         addrRslvr = cfg.getAddressResolver();
         allResolversPassReq = cfg.isAllSegmentationResolversPassRequired();
         atomicCfg = cfg.getAtomicConfiguration();
@@ -1945,17 +1941,6 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets address filter which will allow filtering addresses
-     *
-     * @param addressFilter Address filter
-     */
-    public IgniteConfiguration setAddressFilter(IgnitePredicate<InetSocketAddress> addressFilter) {
-        this.addressFilter = addressFilter;
-
-        return this;
-    }
-
-    /**
      * Returns SSL context factory that will be used for creating a secure socket layer.
      *
      * @return SSL connection factory.
@@ -1963,16 +1948,6 @@ public class IgniteConfiguration {
      */
     public Factory<SSLContext> getSslContextFactory() {
         return sslCtxFactory;
-    }
-
-    /**
-     * Returns address filter used to filter addresses
-     *
-     * @return Address filter predicate
-     * @see SslContextFactory
-     */
-    public IgnitePredicate<InetSocketAddress> getAddressFilter() {
-        return addressFilter;
     }
 
     /**

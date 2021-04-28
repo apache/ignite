@@ -34,7 +34,8 @@ import org.junit.Test;
  */
 public class TcpDiscoveryWithAddressFilterTest extends TcpDiscoveryWithWrongServerTest {
 
-    IgnitePredicate<InetSocketAddress> addressFilter = new P1<InetSocketAddress>() {
+    /** Address filter predicate which allows filtering IP addresses duringd discovery */
+    private IgnitePredicate<InetSocketAddress> addressFilter = new P1<InetSocketAddress>() {
         @Override public boolean apply(InetSocketAddress address) {
             // Compile regular expression
             Pattern pattern = Pattern.compile("^/127\\.0\\.0\\.1:47503$", Pattern.CASE_INSENSITIVE);
@@ -54,9 +55,8 @@ public class TcpDiscoveryWithAddressFilterTest extends TcpDiscoveryWithWrongServ
         ipFinder.setAddresses(Collections.singleton("127.0.0.1:" + Integer.toString(SERVER_PORT) + ".." +
                 Integer.toString(LAST_SERVER_PORT)));
 
-        cfg.setAddressFilter(addressFilter);
-
-        cfg.setDiscoverySpi(new TcpDiscoveryWithAddressFilter().setIpFinder(ipFinder));
+        cfg.setDiscoverySpi(new TcpDiscoveryWithAddressFilter().setIpFinder(ipFinder)
+                .setAddressFilter(addressFilter));
 
         return cfg;
     }
@@ -75,14 +75,13 @@ public class TcpDiscoveryWithAddressFilterTest extends TcpDiscoveryWithWrongServ
     /**
      * Check for incoming addresses and check that the filter was applied
      */
-    class TcpDiscoveryWithAddressFilter extends TcpDiscoverySpi {
+    private class TcpDiscoveryWithAddressFilter extends TcpDiscoverySpi {
         /** {@inheritDoc} */
         @Override protected Collection<InetSocketAddress> resolvedAddresses() throws IgniteSpiException {
             Collection<InetSocketAddress> res = super.resolvedAddresses();
 
-            for (InetSocketAddress addr : res) {
+            for (InetSocketAddress addr : res)
                 assertFalse(addr.getHostName().matches("^/127\\.0\\.0\\.1:47503$"));
-            }
 
             return res;
         }
