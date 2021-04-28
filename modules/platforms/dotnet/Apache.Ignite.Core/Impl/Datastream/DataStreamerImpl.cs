@@ -109,7 +109,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         private readonly string _cacheName;
 
         /** Lock. */
-        private readonly ReaderWriterLockSlim _rwLock = new ReaderWriterLockSlim();
+        private readonly ReaderWriterLockSlim _rwLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
 
         /** Close future. */
         private readonly TaskCompletionSource<object> _closeFut = new TaskCompletionSource<object>();
