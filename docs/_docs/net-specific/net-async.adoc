@@ -50,12 +50,13 @@ All thin client async APIs use link:https://docs.microsoft.com/en-us/dotnet/stan
 
 === Thick Cache
 
-Server and thick client async cache APIs handle async continuations in a special way:
+Callbacks for asynchronous cache operations on server and thick client nodes are invoked by using Java `ForkJoinPool#commonPool`, unless a different executor is configured with `IgniteConfiguration.AsyncContinuationExecutor`.
 
-* In Ignite 2.11 and later, the behavior is controlled by `IgniteConfiguration.AsyncContinuationExecutor` property. A common thread pool is used by default, and no special care is required.
+* This default executor is safe for any operations inside the callback.
+* Default behavior was changed in Ignite 2.11. Before that, async cache operation callbacks were called from an Ignite system pool (so-called "striped pool").
 * To restore the previous behavior, use `IgniteConfiguration.AsyncContinuationExecutor = AsyncContinuationExecutor.UnsafeSynchronous`.
-** Can provide a small performance improvement in some situations, because callbacks are executed without any indirection or scheduling.
-** UNSAFE: cache operations cannot proceed while system threads execute continuations (callbacks), and deadlocks are possible if other cache operations are invoked from the callback.
+** Previous behavior can provide a small performance improvement, because callbacks are executed without any indirection or scheduling.
+** UNSAFE: cache operations cannot proceed while system threads execute callbacks, and deadlocks are possible if other cache operations are invoked from the callback.
 
 [IMPORTANT]
 ====
