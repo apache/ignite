@@ -609,7 +609,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
                         for (int j = startIdx; j < endIdx; j++)
                         {
                             // ReSharper disable once AccessToDisposedClosure
-                            ldr.AddData(j, j);
+                            ldr.Add(j, j);
 
                             if (j % 100000 == 0)
                                 Console.WriteLine("Put [thread=" + threadIdx + ", cnt=" + j  + ']');
@@ -670,7 +670,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 var words = Enumerable.Repeat("a", 3).Concat(Enumerable.Repeat("b", 2));
                 foreach (var word in words)
                 {
-                    streamer.AddData(word, 1L);
+                    streamer.Add(word, 1L);
                 }
             }
 
@@ -694,7 +694,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 Assert.AreEqual(ldr.Receiver, receiver);
 
                 for (var i = 0; i < 100; i++)
-                    ldr.AddData(i, i);
+                    ldr.Add(i, i);
 
                 ldr.Flush();
 
@@ -720,7 +720,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 ldr.AllowOverwrite = true;
 
                 for (var i = 0; i < 100; i++)
-                    ldr.AddData(i, _grid.GetBinary().ToBinary<IBinaryObject>(new BinarizableEntry {Val = i}));
+                    ldr.Add(i, _grid.GetBinary().ToBinary<IBinaryObject>(new BinarizableEntry {Val = i}));
 
                 ldr.Flush();
 
