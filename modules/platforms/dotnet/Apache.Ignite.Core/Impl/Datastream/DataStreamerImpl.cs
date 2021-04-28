@@ -604,7 +604,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
 
                     base.Dispose(true);
                     ReleaseHandles();
-                    _closeFut.TrySetResult(null);
+                    ThreadPool.QueueUserWorkItem(_ =>_closeFut.TrySetResult(null));
 
                     return;
                 }
@@ -612,7 +612,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 {
                     base.Dispose(true);
                     ReleaseHandles();
-                    _closeFut.TrySetException(e);
+                    ThreadPool.QueueUserWorkItem(_ =>_closeFut.TrySetException(e));
 
                     throw;
                 }
