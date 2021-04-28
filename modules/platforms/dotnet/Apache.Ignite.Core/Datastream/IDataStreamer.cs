@@ -141,7 +141,8 @@ namespace Apache.Ignite.Core.Datastream
         int PerNodeParallelOperations { get; set; }
 
         /// <summary>
-        /// Gets or sets the automatic flush frequency. Data streamer buffers the data for performance reasons.
+        /// Gets or sets the automatic flush frequency, in milliseconds.
+        /// Data streamer buffers the data for performance reasons.
         /// The buffer is flushed in the following cases:
         /// <ul>
         /// <li>Buffer is full.</li>
