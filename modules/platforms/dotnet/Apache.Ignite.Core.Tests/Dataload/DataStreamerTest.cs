@@ -795,22 +795,37 @@ namespace Apache.Ignite.Core.Tests.Dataload
 #if NETCOREAPP
         /// <summary>
         /// Tests async streamer usage.
+        /// Using async cache and streamer operations within the streamer means that we end up on different threads.
+        /// Streamer is thread-safe and is expected to handle this well.
         /// </summary>
         [Test]
         public async Task TestStreamerAsyncAwait()
         {
             using (var ldr = _grid.GetDataStreamer<int, int>(CacheName))
             {
+                ldr.AllowOverwrite = true;
+
                 ldr.Add(Enumerable.Range(1, 500).ToDictionary(x => x, x => -x));
 
                 Assert.IsFalse(await _cache.ContainsKeysAsync(new[] {1, 2}));
 
-                var task = ldr.FlushAsync();
-                Assert.IsFalse(task.IsCompleted);
-                await task;
+                var flushTask = ldr.FlushAsync();
+                Assert.IsFalse(flushTask.IsCompleted);
+                await flushTask;
 
-                Assert.AreEqual(-1, _cache[1]);
-                Assert.AreEqual(-2, _cache[2]);
+                Assert.AreEqual(-1, await _cache.GetAsync(1));
+                Assert.AreEqual(-2, await _cache.GetAsync(2));
+
+                // Remove.
+                var batchTask = ldr.GetCurrentBatchTask();
+                Assert.IsFalse(batchTask.IsCompleted);
+                Assert.IsFalse(batchTask.IsFaulted);
+
+                ldr.Remove(1);
+                await ldr.FlushAsync();
+
+                Assert.IsTrue(batchTask.IsCompleted);
+                Assert.IsFalse(await _cache.ContainsKeyAsync(1));
 
                 // Empty buffer flush is allowed.
                 await ldr.FlushAsync();
