@@ -30,6 +30,13 @@ namespace Apache.Ignite.Core.Impl.Common
     internal static class TaskRunner
     {
         /// <summary>
+        /// Gets the completed task.
+        /// <para />
+        /// Task.CompletedTask is not available on .NET 4.
+        /// </summary>
+        public static readonly Task CompletedTask = FromResult<object>(null);
+
+        /// <summary>
         /// ContinueWith using default scheduler.
         /// </summary>
         public static Task<TNewResult> ContWith<TResult, TNewResult>(this Task<TResult> task,
@@ -37,11 +44,11 @@ namespace Apache.Ignite.Core.Impl.Common
             TaskContinuationOptions continuationOptions = TaskContinuationOptions.None)
         {
             IgniteArgumentCheck.NotNull(task, "task");
-            
-            return task.ContinueWith(continuationFunction, CancellationToken.None, continuationOptions, 
+
+            return task.ContinueWith(continuationFunction, CancellationToken.None, continuationOptions,
                 TaskScheduler.Default);
         }
-        
+
         /// <summary>
         /// ContinueWith using default scheduler.
         /// </summary>
@@ -50,8 +57,8 @@ namespace Apache.Ignite.Core.Impl.Common
             TaskContinuationOptions continuationOptions = TaskContinuationOptions.None)
         {
             IgniteArgumentCheck.NotNull(task, "task");
-            
-            return task.ContinueWith(continuationFunction, CancellationToken.None, continuationOptions, 
+
+            return task.ContinueWith(continuationFunction, CancellationToken.None, continuationOptions,
                 TaskScheduler.Default);
         }
 
@@ -64,7 +71,7 @@ namespace Apache.Ignite.Core.Impl.Common
             return Task.Factory.StartNew(action, CancellationToken.None, options,
                 TaskScheduler.Default);
         }
-        
+
         /// <summary>
         /// Run new task using default scheduler.
         /// </summary>

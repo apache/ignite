@@ -222,7 +222,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
 
             if (tasks.Count == 0)
             {
-                return Task.CompletedTask;
+                return TaskRunner.CompletedTask;
             }
 
             if (tasks.Count == 1)
@@ -230,7 +230,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 return tasks[0];
             }
 
-            return Task.WhenAll(tasks);
+            return Task.Factory.ContinueWhenAll(tasks.ToArray(), _ => { });
         }
 
         /// <summary>

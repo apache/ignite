@@ -424,7 +424,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
             {
                 var batch = _batch;
 
-                return batch == null ? Task.CompletedTask : batch.Task;
+                return batch == null ? TaskRunner.CompletedTask : batch.Task;
             }
         }
 
