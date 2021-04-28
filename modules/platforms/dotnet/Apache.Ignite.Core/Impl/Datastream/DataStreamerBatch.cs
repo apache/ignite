@@ -205,6 +205,35 @@ namespace Apache.Ignite.Core.Impl.Datastream
         }
 
         /// <summary>
+        /// Gets the task to await completion of current and all previous loads.
+        /// </summary>
+        public Task GetThisAndPreviousCompletionTask()
+        {
+            DataStreamerBatch<TK, TV> curBatch = this;
+
+            var tasks = new List<Task>();
+
+            while (curBatch != null)
+            {
+                tasks.Add(curBatch.Task);
+
+                curBatch = curBatch._prev;
+            }
+
+            if (tasks.Count == 0)
+            {
+                return Task.CompletedTask;
+            }
+
+            if (tasks.Count == 1)
+            {
+                return tasks[0];
+            }
+
+            return Task.WhenAll(tasks);
+        }
+
+        /// <summary>
         /// Write batch content.
         /// </summary>
         /// <param name="writer">Writer.</param>
