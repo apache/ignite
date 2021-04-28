@@ -24,6 +24,10 @@ namespace Apache.Ignite.BenchmarkDotNet.DataStreamer
 
     /// <summary>
     /// Data streamer benchmark.
+    /// |                 Method |     Mean |   Error |  StdDev | Ratio | RatioSD |
+    /// |----------------------- |---------:|--------:|--------:|------:|--------:|
+    /// |               Streamer | 226.6 ms | 3.34 ms | 2.96 ms |  1.00 |    0.00 |
+    /// | StreamerAllowOverwrite | 233.3 ms | 4.02 ms | 3.76 ms |  1.03 |    0.02 |
     /// </summary>
     public class DataStreamerBenchmark
     {
@@ -32,6 +36,9 @@ namespace Apache.Ignite.BenchmarkDotNet.DataStreamer
 
         /** */
         private IIgnite Ignite { get; set; }
+
+        /** */
+        private IIgnite Ignite2 { get; set; }
 
         /** */
         private IIgnite Client { get; set; }
@@ -45,14 +52,16 @@ namespace Apache.Ignite.BenchmarkDotNet.DataStreamer
         [GlobalSetup]
         public void GlobalSetup()
         {
-            Ignite = Ignition.Start(Utils.GetIgniteConfiguration());
-            Client = Ignition.Start(new IgniteConfiguration(Utils.GetIgniteConfiguration())
+            var cfg = new IgniteConfiguration(Utils.GetIgniteConfiguration())
             {
-                ClientMode = true,
-                IgniteInstanceName = "Client"
-            });
+                AutoGenerateIgniteInstanceName = true
+            };
 
-            Cache = Ignite.CreateCache<int, Guid>("c");
+            Ignite = Ignition.Start(cfg);
+            Ignite2 = Ignition.Start(cfg);
+            Client = Ignition.Start(new IgniteConfiguration(cfg) {ClientMode = true});
+
+            Cache = Client.CreateCache<int, Guid>("c");
         }
 
         /// <summary>
@@ -61,8 +70,7 @@ namespace Apache.Ignite.BenchmarkDotNet.DataStreamer
         [GlobalCleanup]
         public void GlobalCleanup()
         {
-            Client.Dispose();
-            Ignite.Dispose();
+            Ignition.StopAll(true);
         }
 
         /// <summary>
