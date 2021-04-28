@@ -20,7 +20,6 @@ package org.apache.ignite.internal.cdc;
 import org.apache.ignite.cdc.CaptureDataChangeConsumer;
 import org.apache.ignite.cdc.ChangeEvent;
 import org.apache.ignite.cdc.ChangeEventOrder;
-import org.apache.ignite.cdc.ChangeEventType;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -49,9 +48,6 @@ public class ChangeEventImpl implements ChangeEvent {
     /** Order of the entry change. */
     private final ChangeEventOrder ord;
 
-    /** Event type. */
-    private final ChangeEventType op;
-
     /** Cache id. */
     private final int cacheId;
 
@@ -61,17 +57,15 @@ public class ChangeEventImpl implements ChangeEvent {
      * @param primary {@code True} if changes made on primary node.
      * @param part Partition.
      * @param ord Order of the entry change.
-     * @param op Event type.
      * @param cacheId Cache id.
      */
     public ChangeEventImpl(Object key, Object val, boolean primary, int part,
-        ChangeEventOrder ord, ChangeEventType op, int cacheId) {
+        ChangeEventOrder ord, int cacheId) {
         this.key = key;
         this.val = val;
         this.primary = primary;
         this.part = part;
         this.ord = ord;
-        this.op = op;
         this.cacheId = cacheId;
     }
 
@@ -98,11 +92,6 @@ public class ChangeEventImpl implements ChangeEvent {
     /** {@inheritDoc} */
     @Override public ChangeEventOrder order() {
         return ord;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ChangeEventType operation() {
-        return op;
     }
 
     /** {@inheritDoc} */

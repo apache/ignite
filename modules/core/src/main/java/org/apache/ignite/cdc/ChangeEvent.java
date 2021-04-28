@@ -20,6 +20,7 @@ package org.apache.ignite.cdc;
 import java.io.Serializable;
 import org.apache.ignite.internal.cdc.IgniteCDC;
 import org.apache.ignite.lang.IgniteExperimental;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Event of single entry change.
@@ -36,9 +37,9 @@ public interface ChangeEvent extends Serializable {
     public Object key();
 
     /**
-     * @return Value for the changed entry.
+     * @return Value for the changed entry or {@code null} in case of entry removal.
      */
-    public Object value();
+    @Nullable public Object value();
 
     /**
      * @return {@code True} if event fired on primary node for partition containing this entry.
@@ -55,11 +56,6 @@ public interface ChangeEvent extends Serializable {
      * @return Order of the update operation.
      */
     public ChangeEventOrder order();
-
-    /**
-     * @return Operation type.
-     */
-    public ChangeEventType operation();
 
     /**
      * @return Cache ID.

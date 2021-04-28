@@ -50,8 +50,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.cdc.ChangeEventType.DELETE;
-import static org.apache.ignite.cdc.ChangeEventType.UPDATE;
+import static org.apache.ignite.cdc.CDCSelfTest.ChangeEventType.DELETE;
+import static org.apache.ignite.cdc.CDCSelfTest.ChangeEventType.UPDATE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -578,10 +578,10 @@ public class CDCSelfTest extends GridCommonAbstractTest {
                 if (!evt.primary())
                     return;
 
-                cacheKeys.computeIfAbsent(F.t(evt.operation(), evt.cacheId()),
+                cacheKeys.computeIfAbsent(F.t(evt.value() == null ? DELETE : UPDATE, evt.cacheId()),
                     k -> new ArrayList<>()).add((Integer)evt.key());
 
-                if (evt.operation() == UPDATE) {
+                if (evt.value() != null) {
                     assertTrue(((User)evt.value()).getName().startsWith("John Connor"));
                     assertTrue(((User)evt.value()).getAge() >= 42);
                 }
@@ -643,5 +643,9 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         cdcCfg.setKeepBinary(false);
 
         return cdcCfg;
+    }
+
+    public enum ChangeEventType {
+        UPDATE, DELETE
     }
 }

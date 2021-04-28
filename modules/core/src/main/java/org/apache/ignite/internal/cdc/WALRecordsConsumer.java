@@ -22,7 +22,6 @@ import java.util.Iterator;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cdc.CaptureDataChangeConsumer;
 import org.apache.ignite.cdc.ChangeEvent;
-import org.apache.ignite.cdc.ChangeEventType;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.UnwrappedDataEntry;
@@ -88,27 +87,6 @@ public class WALRecordsConsumer<K, V> {
         return dataConsumer.onChange(F.concat(F.iterator(recs, r -> F.iterator(((DataRecord)r).writeEntries(), e -> {
             UnwrappedDataEntry ue = (UnwrappedDataEntry)e;
 
-            ChangeEventType type;
-
-            switch (e.op()) {
-                // Combine two types of the events because `CREATE` only generated for first `put`
-                // of the key for `TRANSACTIONAL` caches.
-                // For `ATOMIC` caches every `put` generate `UPDATE` event.
-                case CREATE:
-                case UPDATE:
-                    type = ChangeEventType.UPDATE;
-
-                    break;
-
-                case DELETE:
-                    type = ChangeEventType.DELETE;
-
-                    break;
-
-                default:
-                    throw new IllegalStateException("Unexpected operation type[" + e.op());
-            }
-
             GridCacheVersion ver = e.writeVersion();
 
             ChangeEventOrderImpl ord =
@@ -127,7 +105,6 @@ public class WALRecordsConsumer<K, V> {
                 e.primary(),
                 e.partitionId(),
                 ord,
-                type,
                 e.cacheId()
             );
         }, true, OPS_FILTER), true)));
