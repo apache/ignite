@@ -297,10 +297,10 @@ namespace Apache.Ignite.Core.Tests.Dataload
             {
                 ldr.AllowOverwrite = true;
 
-                ldr.AddData(1, obj1);
-                ldr.AddData(2, obj2);
-                ldr.AddData(3, obj3);
-                ldr.AddData(4, obj4);
+                ldr.Add(1, obj1);
+                ldr.Add(2, obj2);
+                ldr.Add(3, obj3);
+                ldr.Add(4, obj4);
             }
 
             var cache = _grid.GetCache<int, Container>(CacheName);
@@ -321,8 +321,9 @@ namespace Apache.Ignite.Core.Tests.Dataload
         /// Test "tryFlush".
         /// </summary>
         [Test]
-        public void TestTryFlush()
+        public void TestTryFlushObsolete()
         {
+#pragma warning disable 618
             using (IDataStreamer<int, int> ldr = _grid.GetDataStreamer<int, int>(CacheName))
             {
                 var fut = ldr.AddData(1, 1);
@@ -330,6 +331,23 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 ldr.TryFlush();
 
                 fut.Wait();
+
+                Assert.AreEqual(1, _cache.Get(1));
+            }
+#pragma warning restore 618
+        }
+
+        /// <summary>
+        /// Test FlushAsync.
+        /// </summary>
+        [Test]
+        public void TestFlushAsync()
+        {
+            using (var ldr = _grid.GetDataStreamer<int, int>(CacheName))
+            {
+                ldr.Add(1, 1);
+
+                ldr.FlushAsync().Wait();
 
                 Assert.AreEqual(1, _cache.Get(1));
             }
