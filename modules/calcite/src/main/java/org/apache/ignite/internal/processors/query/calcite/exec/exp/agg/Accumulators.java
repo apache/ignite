@@ -120,6 +120,7 @@ public class Accumulators {
                 return DecimalMinMax.MIN_FACTORY;
             case INTEGER:
                 return IntMinMax.MIN_FACTORY;
+            case CHAR:
             case VARCHAR:
                 return VarCharMinMax.MIN_FACTORY;
             case BIGINT:
@@ -139,6 +140,7 @@ public class Accumulators {
                 return DecimalMinMax.MAX_FACTORY;
             case INTEGER:
                 return IntMinMax.MAX_FACTORY;
+            case CHAR:
             case VARCHAR:
                 return VarCharMinMax.MAX_FACTORY;
             case BIGINT:

@@ -3,11 +3,13 @@
 # group: [aggregates]
 
 # test counts on scalar values
-query III
-SELECT COUNT(1), COUNT(100), COUNT(DISTINCT 1)
+query IIIII
+SELECT COUNT(*), COUNT(1), COUNT(100), COUNT(NULL), COUNT(DISTINCT 1)
 ----
 1
 1
+1
+0
 1
 
 # test counts on a set of values
