@@ -806,15 +806,16 @@ namespace Apache.Ignite.Core.Tests.Dataload
         {
             using (var ldr = _grid.GetDataStreamer<int, int>(CacheName))
             {
-                ldr.Add(1, 1);
-                ldr.Add(2, 2);
+                ldr.Add(Enumerable.Range(1, 500).ToDictionary(x => x, x => -x));
 
                 Assert.IsFalse(await _cache.ContainsKeysAsync(new[] {1, 2}));
 
-                await ldr.FlushAsync();
+                var task = ldr.FlushAsync();
+                Assert.IsFalse(task.IsCompleted);
+                await task;
 
-                Assert.AreEqual(1, _cache[1]);
-                Assert.AreEqual(2, _cache[2]);
+                Assert.AreEqual(-1, _cache[1]);
+                Assert.AreEqual(-2, _cache[2]);
 
                 // Empty buffer flush is allowed.
                 await ldr.FlushAsync();
