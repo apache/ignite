@@ -606,33 +606,33 @@ namespace Apache.Ignite.Core.Impl.Datastream
                     break;
                 }
 
-                // TODO: Flush can throw - we should clean up the resources anyway,
-                // and never throw from the Dispose method.
-                // Or should we? How to communicate the failure otherwise?
-                // https://docs.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/ca1065
-                if (Flush0(batch0, true, cancel ? PlcCancelClose : PlcClose))
+                _rwLock.EnterWriteLock();
+
+                try
                 {
-                    _rwLock.EnterWriteLock();
-
-                    try
+                    if (!Flush0(batch0, true, cancel ? PlcCancelClose : PlcClose))
                     {
-                        base.Dispose(true);
-
-                        // TODO: This cleanup fails if flush fails?
-                        if (_rcv != null)
-                            Marshaller.Ignite.HandleRegistry.Release(_rcvHnd);
-
-                        ThreadPool.QueueUserWorkItem(_ => _closeFut.TrySetResult(null));
-                    }
-                    finally
-                    {
-                        _rwLock.ExitWriteLock();
+                        // Retry flushing.
+                        continue;
                     }
 
-                    // TODO: This cleanup fails if flush fails.
-                    Marshaller.Ignite.HandleRegistry.Release(_hnd);
+                    base.Dispose(true);
+                    ReleaseHandles();
+                    ThreadPool.QueueUserWorkItem(_ => _closeFut.TrySetResult(null));
 
                     break;
+                }
+                catch (Exception e)
+                {
+                    base.Dispose(true);
+                    ReleaseHandles();
+                    ThreadPool.QueueUserWorkItem(_ => _closeFut.TrySetException(e));
+
+                    throw;
+                }
+                finally
+                {
+                    _rwLock.ExitWriteLock();
                 }
             }
 
@@ -712,11 +712,21 @@ namespace Apache.Ignite.Core.Impl.Datastream
                     // Finalizers should never throw
                 }
 
-                Marshaller.Ignite.HandleRegistry.Release(_hnd, true);
-                Marshaller.Ignite.HandleRegistry.Release(_rcvHnd, true);
+                ReleaseHandles();
             }
 
-            base.Dispose(false);
+            base.Dispose(disposing);
+        }
+
+        /// <summary>
+        /// Releases the handles.
+        /// </summary>
+        private void ReleaseHandles()
+        {
+            Marshaller.Ignite.HandleRegistry.Release(_hnd, true);
+
+            if (_rcv != null)
+                Marshaller.Ignite.HandleRegistry.Release(_rcvHnd, true);
         }
 
         /** <inheritDoc /> */
