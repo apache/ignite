@@ -191,7 +191,10 @@ namespace Apache.Ignite.Core.Impl.Datastream
 
             while (curBatch != null)
             {
-                tasks.Add(curBatch.Task);
+                if (!curBatch.Task.IsCompleted)
+                {
+                    tasks.Add(curBatch.Task);
+                }
 
                 curBatch = curBatch._prev;
             }

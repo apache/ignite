@@ -822,8 +822,11 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 Assert.IsFalse(batchTask.IsFaulted);
 
                 ldr.Remove(1);
-                await ldr.FlushAsync();
+                var flushTask2 = ldr.FlushAsync();
 
+                Assert.AreSame(batchTask, flushTask2);
+                await flushTask2;
+                
                 Assert.IsTrue(batchTask.IsCompleted);
                 Assert.IsFalse(await _cache.ContainsKeyAsync(1));
 
