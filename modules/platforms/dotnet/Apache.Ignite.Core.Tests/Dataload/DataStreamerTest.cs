@@ -463,16 +463,11 @@ namespace Apache.Ignite.Core.Tests.Dataload
         /// Tests that streamer gets collected when there are no references to it.
         /// </summary>
         [Test]
-        [Ignore("IGNITE-8731")]
         public void TestFinalizer()
         {
-            var streamer = _grid.GetDataStreamer<int, int>(CacheName);
-            var streamerRef = new WeakReference(streamer);
-
-            Assert.IsNotNull(streamerRef.Target);
-
-            // ReSharper disable once RedundantAssignment
-            streamer = null;
+            // Create streamer reference in a different thread to defeat Debug mode quirks.
+            var streamerRef = Task.Factory.StartNew
+                (() => new WeakReference(_grid.GetDataStreamer<int, int>(CacheName))).Result;
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
