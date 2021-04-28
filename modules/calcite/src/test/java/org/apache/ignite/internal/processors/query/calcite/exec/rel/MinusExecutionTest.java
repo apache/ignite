@@ -153,7 +153,7 @@ public class MinusExecutionTest extends AbstractExecutionTest {
             );
         }
         else {
-            minusNode =  new MinusNode<>(
+            minusNode = new MinusNode<>(
                 ctx,
                 rowType,
                 MAP,
