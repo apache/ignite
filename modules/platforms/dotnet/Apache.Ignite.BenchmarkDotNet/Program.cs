@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.BenchmarkDotNet
 {
-    using Apache.Ignite.BenchmarkDotNet.Binary;
     using Apache.Ignite.BenchmarkDotNet.DataStreamer;
     using global::BenchmarkDotNet.Running;
 
