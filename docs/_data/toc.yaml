@@ -40,6 +40,7 @@
   - title: Installing Using Docker
     url: installation/installing-using-docker
   - title: Installing DEB or RPM package
+  - title: Installing DEB or RPM package
     url: installation/deb-rpm
   - title: Kubernetes
     items: 
@@ -193,8 +194,6 @@
       url: SQL/sql-api
     - title: Distributed Joins
       url: SQL/distributed-joins
-    - title: SQL Transactions
-      url: SQL/sql-transactions
     - title: Custom SQL Functions
       url: SQL/custom-sql-func
     - title: JDBC Driver
