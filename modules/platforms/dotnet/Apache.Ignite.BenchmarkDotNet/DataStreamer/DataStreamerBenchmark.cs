@@ -24,7 +24,7 @@ namespace Apache.Ignite.BenchmarkDotNet.DataStreamer
     /// <summary>
     /// Data streamer benchmark.
     /// </summary>
-    public sealed class DataStreamerBenchmark
+    public class DataStreamerBenchmark
     {
         /** */
         private const string CacheName = "c";
