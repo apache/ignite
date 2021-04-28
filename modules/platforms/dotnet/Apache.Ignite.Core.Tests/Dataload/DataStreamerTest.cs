@@ -164,20 +164,20 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 ldr.AllowOverwrite = true;
 
                 // Additions.
-                var task = ldr.BatchTask;
+                var task = ldr.GetCurrentBatchTask();
                 ldr.Add(1, 1);
                 ldr.Flush();
                 Assert.AreEqual(1, _cache.Get(1));
                 Assert.IsTrue(task.IsCompleted);
                 Assert.IsFalse(ldr.Task.IsCompleted);
 
-                task = ldr.BatchTask;
+                task = ldr.GetCurrentBatchTask();
                 ldr.Add(new KeyValuePair<int, int>(2, 2));
                 ldr.Flush();
                 Assert.AreEqual(2, _cache.Get(2));
                 Assert.IsTrue(task.IsCompleted);
 
-                task = ldr.BatchTask;
+                task = ldr.GetCurrentBatchTask();
                 ldr.Add(new [] { new KeyValuePair<int, int>(3, 3), new KeyValuePair<int, int>(4, 4) });
                 ldr.Flush();
                 Assert.AreEqual(3, _cache.Get(3));
@@ -185,7 +185,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 Assert.IsTrue(task.IsCompleted);
 
                 // Removal.
-                task = ldr.BatchTask;
+                task = ldr.GetCurrentBatchTask();
                 ldr.Remove(1);
                 ldr.Flush();
                 Assert.IsFalse(_cache.ContainsKey(1));
@@ -528,7 +528,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
             using (IDataStreamer<int, int> ldr = _grid.GetDataStreamer<int, int>(CacheName))
             {
                 // Test auto flush turning on.
-                var fut = ldr.BatchTask;
+                var fut = ldr.GetCurrentBatchTask();
                 ldr.Add(1, 1);
                 Thread.Sleep(100);
                 Assert.IsFalse(fut.IsCompleted);
@@ -536,13 +536,13 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 fut.Wait();
 
                 // Test forced flush after frequency change.
-                fut = ldr.BatchTask;
+                fut = ldr.GetCurrentBatchTask();
                 ldr.Add(2, 2);
                 ldr.AutoFlushInterval = TimeSpan.MaxValue;
                 fut.Wait();
 
                 // Test another forced flush after frequency change.
-                fut = ldr.BatchTask;
+                fut = ldr.GetCurrentBatchTask();
                 ldr.Add(3, 3);
                 ldr.AutoFlushInterval = TimeSpan.FromSeconds(1);
                 fut.Wait();
@@ -747,7 +747,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
             _grid.DestroyCache(cache.Name);
 
             streamer.Add(2, 3);
-            var task = streamer.BatchTask;
+            var task = streamer.GetCurrentBatchTask();
             streamer.Flush();
 
             var ex = Assert.Throws<AggregateException>(task.Wait).InnerException;

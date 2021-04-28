@@ -57,7 +57,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 Thread.Sleep(500);  // Wait for node to stop
 
                 streamer.Add(2, 3);
-                var task = streamer.BatchTask;
+                var task = streamer.GetCurrentBatchTask();
                 streamer.Flush();
 
                 var ex = Assert.Throws<AggregateException>(task.Wait).InnerException;

@@ -179,11 +179,11 @@ namespace Apache.Ignite.Core.Datastream
         Task Task { get; }
 
         /// <summary>
-        /// Gets the task for the current batch. This task completes when the current batch is flushed,
+        /// Gets the task for the current batch. This task completes when current and all previous batches are flushed,
         /// either explicitly with <see cref="Flush"/>, or automatically when the buffer is full or
         /// <see cref="AutoFlushFrequency"/> is set.
         /// </summary>
-        Task BatchTask { get; }
+        Task GetCurrentBatchTask();
 
         /// <summary>
         /// Gets or sets custom stream receiver.

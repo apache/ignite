@@ -418,14 +418,11 @@ namespace Apache.Ignite.Core.Impl.Datastream
         }
 
         /** <inheritDoc /> */
-        public Task BatchTask
+        public Task GetCurrentBatchTask()
         {
-            get
-            {
-                var batch = _batch;
+            var batch = _batch;
 
-                return batch == null ? TaskRunner.CompletedTask : batch.Task;
-            }
+            return batch == null ? TaskRunner.CompletedTask : batch.Task;
         }
 
         /** <inheritDoc /> */
