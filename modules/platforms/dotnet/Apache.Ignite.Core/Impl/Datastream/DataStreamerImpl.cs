@@ -588,7 +588,8 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 if (batch0 == null)
                 {
                     // Wait for concurrent close to finish.
-                    break;
+                    _closeFut.Task.Wait();
+                    return;
                 }
 
                 _rwLock.EnterWriteLock();
@@ -603,15 +604,15 @@ namespace Apache.Ignite.Core.Impl.Datastream
 
                     base.Dispose(true);
                     ReleaseHandles();
-                    ThreadPool.QueueUserWorkItem(_ => _closeFut.TrySetResult(null));
+                    _closeFut.TrySetResult(null);
 
-                    break;
+                    return;
                 }
                 catch (Exception e)
                 {
                     base.Dispose(true);
                     ReleaseHandles();
-                    ThreadPool.QueueUserWorkItem(_ => _closeFut.TrySetException(e));
+                    _closeFut.TrySetException(e);
 
                     throw;
                 }
@@ -620,8 +621,6 @@ namespace Apache.Ignite.Core.Impl.Datastream
                     _rwLock.ExitWriteLock();
                 }
             }
-
-            _closeFut.Task.Wait();
         }
 
         /** <inheritDoc /> */
