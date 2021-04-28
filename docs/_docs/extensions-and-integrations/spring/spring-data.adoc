@@ -32,7 +32,7 @@ tab:pom.xml[]
 ----
 <dependency>
     <groupId>org.apache.ignite</groupId>
-    <artifactId>ignite-spring-data_2.2-ext</artifactId>
+    <artifactId>ignite-spring-data-2.2-ext</artifactId>
     <version>${ignite-spring-data-ext.version}</version>
 </dependency>
 
@@ -77,7 +77,7 @@ Apache Ignite each one is compatible with.
 
 [NOTE]
 ====
-If your Spring Data version is earlier than Spring Data 2.2 then set `ignite-spring-data_2.0-ext`
+If your Spring Data version is earlier than Spring Data 2.2 then set `ignite-spring-data-2.0-ext`
 or `ignite-spring-data-ext` as an `artifactId` in the pom.xml configuration.
 ====
 
