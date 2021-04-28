@@ -117,6 +117,7 @@ namespace Apache.Ignite.Core.Impl.Common
                 {
                     if (task.Exception != null)
                     {
+                        // ReSharper disable once PossibleNullReferenceException
                         errs.Add(task.Exception.GetBaseException());
                     }
                 }
