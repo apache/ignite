@@ -25,7 +25,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.authentication.IgniteAccessControlException;
 import org.apache.ignite.internal.processors.authentication.UserManagementException;
-import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -92,23 +91,23 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
     @Test
     public void testCreateUpdateDropUser() throws Exception {
         for (int i = 0; i < NODES_COUNT; ++i) {
-            try (OperationSecurityContext ignored = grid(i).context().security().withContext(secCtxDflt)) {
-                userSql(i, "CREATE USER test WITH PASSWORD 'test'");
+            grid(i).context().security().withContext(secCtxDflt);
 
-                SecurityContext secCtx = authenticate(grid(i), "TEST", "test");
+            userSql(i, "CREATE USER test WITH PASSWORD 'test'");
 
-                assertNotNull(secCtx);
-                assertEquals("TEST", secCtx.subject().login());
+            SecurityContext secCtx = authenticate(grid(i), "TEST", "test");
 
-                userSql(i, "ALTER USER test WITH PASSWORD 'newpasswd'");
+            assertNotNull(secCtx);
+            assertEquals("TEST", secCtx.subject().login());
 
-                secCtx = authenticate(grid(i), "TEST", "newpasswd");
+            userSql(i, "ALTER USER test WITH PASSWORD 'newpasswd'");
 
-                assertNotNull(secCtx);
-                assertEquals("TEST", secCtx.subject().login());
+            secCtx = authenticate(grid(i), "TEST", "newpasswd");
 
-                userSql(i, "DROP USER test");
-            }
+            assertNotNull(secCtx);
+            assertEquals("TEST", secCtx.subject().login());
+
+            userSql(i, "DROP USER test");
         }
     }
 
@@ -117,22 +116,22 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCreateWithAlreadyExistUser() throws Exception {
-        try (OperationSecurityContext ignored = grid(0).context().security().withContext(secCtxDflt)) {
-            userSql(0, "CREATE USER test WITH PASSWORD 'test'");
-        }
+        grid(0).context().security().withContext(secCtxDflt);
+
+        userSql(0, "CREATE USER test WITH PASSWORD 'test'");
 
         for (int i = 0; i < NODES_COUNT; ++i) {
             final int idx = i;
 
-            try (OperationSecurityContext ignored = grid(idx).context().security().withContext(secCtxDflt)) {
-                GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
-                    @Override public Void call() throws Exception {
-                        userSql(idx, "CREATE USER test WITH PASSWORD 'test'");
+            grid(idx).context().security().withContext(secCtxDflt);
 
-                        return null;
-                    }
-                }, UserManagementException.class, "User already exists [login=TEST]");
-            }
+            GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    userSql(idx, "CREATE USER test WITH PASSWORD 'test'");
+
+                    return null;
+                }
+            }, UserManagementException.class, "User already exists [login=TEST]");
         }
     }
 
@@ -144,23 +143,23 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < NODES_COUNT; ++i) {
             final int idx = i;
 
-            try (OperationSecurityContext ignored = grid(idx).context().security().withContext(secCtxDflt)) {
-                GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
-                    @Override public Void call() throws Exception {
-                        userSql(idx, "ALTER USER test WITH PASSWORD 'test'");
+            grid(idx).context().security().withContext(secCtxDflt);
 
-                        return null;
-                    }
-                }, UserManagementException.class, "User doesn't exist [userName=TEST]");
+            GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    userSql(idx, "ALTER USER test WITH PASSWORD 'test'");
 
-                GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
-                    @Override public Void call() throws Exception {
-                        userSql(idx, "DROP USER test");
+                    return null;
+                }
+            }, UserManagementException.class, "User doesn't exist [userName=TEST]");
 
-                        return null;
-                    }
-                }, UserManagementException.class, "User doesn't exist [userName=TEST]");
-            }
+            GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    userSql(idx, "DROP USER test");
+
+                    return null;
+                }
+            }, UserManagementException.class, "User doesn't exist [userName=TEST]");
         }
     }
 
@@ -206,40 +205,40 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNotAuthorizedOperation() throws Exception {
-        try (OperationSecurityContext ignored = grid(0).context().security().withContext(secCtxDflt)) {
-            userSql(0, "CREATE USER user0 WITH PASSWORD 'user0'");
-        }
+        grid(0).context().security().withContext(secCtxDflt);
+
+        userSql(0, "CREATE USER user0 WITH PASSWORD 'user0'");
 
         SecurityContext secCtx = authenticate(grid(0), "USER0", "user0");
 
         for (int i = 0; i < NODES_COUNT; ++i) {
             final int idx = i;
 
-            try (OperationSecurityContext ignored = grid(idx).context().security().withContext(secCtx)) {
-                GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
-                    @Override public Void call() throws Exception {
-                        userSql(idx, "CREATE USER test WITH PASSWORD 'test'");
+            grid(idx).context().security().withContext(secCtx);
 
-                        return null;
-                    }
-                }, IgniteAccessControlException.class, "User management operations are not allowed for user");
+            GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    userSql(idx, "CREATE USER test WITH PASSWORD 'test'");
 
-                GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
-                    @Override public Void call() throws Exception {
-                        userSql(idx, "ALTER USER test WITH PASSWORD 'test'");
+                    return null;
+                }
+            }, IgniteAccessControlException.class, "User management operations are not allowed for user");
 
-                        return null;
-                    }
-                }, IgniteAccessControlException.class, "User management operations are not allowed for user");
+            GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    userSql(idx, "ALTER USER test WITH PASSWORD 'test'");
 
-                GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
-                    @Override public Void call() throws Exception {
-                        userSql(idx, "DROP USER test");
+                    return null;
+                }
+            }, IgniteAccessControlException.class, "User management operations are not allowed for user");
 
-                        return null;
-                    }
-                }, IgniteAccessControlException.class, "User management operations are not allowed for user");
-            }
+            GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    userSql(idx, "DROP USER test");
+
+                    return null;
+                }
+            }, IgniteAccessControlException.class, "User management operations are not allowed for user");
         }
     }
 
@@ -251,15 +250,15 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < NODES_COUNT; ++i) {
             final int idx = i;
 
-            try (OperationSecurityContext ignored = grid(idx).context().security().withContext(secCtxDflt)) {
-                GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
-                    @Override public Void call() throws Exception {
-                        userSql(idx, "DROP USER \"ignite\"");
+            grid(idx).context().security().withContext(secCtxDflt);
 
-                        return null;
-                    }
-                }, IgniteAccessControlException.class, "Default user cannot be removed");
-            }
+            GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    userSql(idx, "DROP USER \"ignite\"");
+
+                    return null;
+                }
+            }, IgniteAccessControlException.class, "Default user cannot be removed");
         }
     }
 
@@ -268,17 +267,17 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testQuotedUsername() throws Exception {
-        try (OperationSecurityContext ignored = grid(0).context().security().withContext(secCtxDflt)) {
-            userSql(0, "CREATE USER \"test\" with password 'test'");
+        grid(0).context().security().withContext(secCtxDflt);
 
-            userSql(0, "CREATE USER \" test\" with password 'test'");
+        userSql(0, "CREATE USER \"test\" with password 'test'");
 
-            userSql(0, "CREATE USER \" test \" with password 'test'");
+        userSql(0, "CREATE USER \" test\" with password 'test'");
 
-            userSql(0, "CREATE USER \"test \" with password 'test'");
+        userSql(0, "CREATE USER \" test \" with password 'test'");
 
-            userSql(0, "CREATE USER \"111\" with password 'test'");
-        }
+        userSql(0, "CREATE USER \"test \" with password 'test'");
+
+        userSql(0, "CREATE USER \"111\" with password 'test'");
     }
 
     /**

@@ -532,7 +532,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
                 SecuritySubject rmtSubj = security.securityContext().subject();
 
                 assertEquals(subj.id(), rmtSubj.id());
-                assertEquals(i != CLI_NODE ? rmtSubj.login() : null, rmtSubj.login());
+                assertEquals(i != CLI_NODE ? subj.login() : null, rmtSubj.login());
                 assertEquals(subj.type(), rmtSubj.type());
             }
         }
