@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.List;
 
+import java.util.UUID;
 import org.apache.calcite.config.Lex;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.sql.fun.SqlLibrary;
@@ -148,7 +149,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         msgSvc = new MessageServiceImpl(ctx);
         mappingSvc = new MappingServiceImpl(ctx);
         exchangeSvc = new ExchangeServiceImpl(ctx);
-        runningQryScv = new RunningQueryService(ctx);
+        runningQryScv = new RunningQueryService();
     }
 
     /**
@@ -260,11 +261,13 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         return executionSvc.executeQuery(qryCtx, schemaName, qry, params);
     }
 
+    /** {@inheritDoc} */
     @Override public List<RunningQueryInfo> runningSqlQueries() {
         return runningQryScv.runningSqlQueries();
     }
 
-    @Override public void cancelQuery(long qryId) {
+    /** {@inheritDoc} */
+    @Override public void cancelQuery(UUID qryId) {
         runningQryScv.cancelQuery(qryId);
     }
 

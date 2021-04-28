@@ -55,6 +55,7 @@ import org.apache.calcite.util.Pair;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -416,7 +417,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         PlanningContext pctx = createContext(Commons.convert(ctx), topologyVersion(), localNodeId(), schema, qry, params, qryCancel);
 
-        long planningId = runningQrySvc.register(pctx);
+        UUID planningId = runningQrySvc.register(pctx);
 
         List<QueryPlan> qryPlans;
         try {
@@ -787,7 +788,10 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             plan.target(fragment),
             plan.remotes(fragment));
 
-        UUID qryExecId = UUID.randomUUID();
+        // register query
+        //ToDo: In additional we should know text of concrete execution statement of multistatement query.
+        String qryText = pctx.query();
+        UUID qryExecId = runningQrySvc.register(qryText, pctx);
 
         ExecutionContext<Row> ectx = new ExecutionContext<>(
             taskExecutor(),
@@ -800,14 +804,17 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         Node<Row> node = new LogicalRelImplementor<>(ectx, partitionService(), mailboxRegistry(),
             exchangeService(), failureProcessor()).go(fragment.root());
 
-        // register query
-        QueryInfo qryInfo = new QueryInfo(ectx, plan, node);
-        executing.put(qryExecId, qryInfo);
+        QueryInfo qryInfo = new QueryInfo(ectx, plan, node, qryExecId);
+        try {
+            pctx.queryCancel().add(qryInfo);
+        }
+        catch (QueryCancelledException e) {
+            runningQrySvc.unregister(qryExecId);
 
-        //ToDo: In additional we should know text of concrete execution statement of multistatement query.
-        String qryText = pctx.query();
-        long runningId = runningQrySvc.register(qryText, pctx, qryInfo);
-        qryInfo.queryId(runningId);
+            throw new IgniteSQLException(e.getMessage(), IgniteQueryErrorCode.QUERY_CANCELED);
+        }
+
+        executing.put(qryExecId, qryInfo);
 
         // start remote execution
         for (int i = 1; i < fragments.size(); i++) {
@@ -1024,18 +1031,20 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         private final Set<RemoteFragmentKey> waiting;
 
         /** */
-        private volatile QueryState state;
+        private final UUID qryId;
 
         /** */
-        private volatile long queryId;
+        private volatile QueryState state;
 
         /**
          * @param ctx Execution context.
          * @param plan Plan.
          * @param root Root.
+         * @param qryId Query identifier.
          * */
-        private QueryInfo(ExecutionContext<Row> ctx, MultiStepPlan plan, Node<Row> root) {
+        private QueryInfo(ExecutionContext<Row> ctx, MultiStepPlan plan, Node<Row> root, UUID qryId) {
             this.ctx = ctx;
+            this.qryId = qryId;
 
             RootNode<Row> rootNode = new RootNode<>(ctx, plan.fieldsMetadata().rowType(), this::tryClose);
             rootNode.register(root);
@@ -1056,11 +1065,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             }
 
             state = QueryState.RUNNING;
-        }
-
-        /** */
-        public void queryId(long queryId) {
-            this.queryId = queryId;
         }
 
         /** */
@@ -1095,7 +1099,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
             if (state0 == QueryState.CLOSED) {
                 // 2) unregister runing query
-                runningQrySvc.unregister(queryId);
+                runningQrySvc.unregister(qryId);
 
                 // 4) close remote fragments
                 IgniteException wrpEx = null;

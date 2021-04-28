@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -44,6 +45,6 @@ public class NoOpQueryEngine extends GridProcessorAdapter implements QueryEngine
     }
 
     /** {@inheritDoc} */
-    @Override public void cancelQuery(long qryId) {
+    @Override public void cancelQuery(UUID qryId) {
     }
 }

@@ -19,50 +19,49 @@
 package org.apache.ignite.internal.processors.query;
 
 import java.util.UUID;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
-/** */
-    public final class RunningQueryInfo {
-    /** */
-    private final long id;
+/**
+ * Represents information about running query.
+ */
+public final class RunningQueryInfo {
+    /** Unique query identifier. */
+    private final UUID qryId;
 
-    /** Originating Node ID. */
-    private final UUID nodeId;
-
-    /** */
+    /** Query text. */
     private final String qry;
 
     /** Schema name. */
     private final String schemaName;
 
-    /** */
+    /**
+     *  Time of starting execution of query in milliseconds between the current time and midnight, January 1, 1970 UTC.
+     */
     private final long startTime;
 
-    /** */
+    /** Query cancel. */
     private final GridQueryCancel cancel;
 
-    /** */
+    /** Running stage. */
     private final RunningStage stage;
 
     /**
      * Constructor.
      *
      * @param stage Stage of execution.
-     * @param id Query ID.
-     * @param nodeId Originating node ID.
+     * @param qryId Unique query identifier.
      * @param qry Query text.
      * @param schemaName Schema name.
      * @param cancel Query cancel.
      */
-    public RunningQueryInfo(RunningStage stage, long id, UUID nodeId, String qry, String schemaName,
-        GridQueryCancel cancel) {
-        this.id = id;
-        this.nodeId = nodeId;
+    public RunningQueryInfo(RunningStage stage, UUID qryId, String qry, String schemaName, GridQueryCancel cancel) {
+        this.qryId = qryId;
         this.qry = qry;
         this.schemaName = schemaName;
         this.cancel = cancel;
         this.stage = stage;
 
-        startTime = System.currentTimeMillis();
+        startTime = U.currentTimeMillis();
     }
 
     /**
@@ -75,15 +74,8 @@ import java.util.UUID;
     /**
      * @return Query ID.
      */
-    public long id() {
-        return id;
-    }
-
-    /**
-     * @return Global query ID.
-     */
-    public String globalQueryId() {
-        return QueryUtils.globalQueryId(nodeId, id);
+    public UUID qryId() {
+        return qryId;
     }
 
     /**
@@ -120,12 +112,5 @@ import java.util.UUID;
      */
     public boolean cancelable() {
         return cancel != null;
-    }
-
-    /**
-     * @return Originating node ID.
-     */
-    public UUID nodeId() {
-        return nodeId;
     }
 }

@@ -24,13 +24,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-import java.util.concurrent.atomic.AtomicLong;
-import org.apache.ignite.cache.query.QueryCancelledException;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.query.GridQueryCancel;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.QueryCancellable;
 import org.apache.ignite.internal.processors.query.RunningQueryInfo;
 import org.apache.ignite.internal.processors.query.RunningStage;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
@@ -39,18 +32,11 @@ import org.apache.ignite.internal.processors.query.calcite.util.Service;
 /** */
 public class RunningQueryService implements Service {
     /** */
-    private final Map<Long, RunningQueryInfo> running;
-
-    /** Local node ID. */
-    private final UUID locNodeId;
-
-    /** Unique id for queries on single node. */
-    private final AtomicLong qryIdGen = new AtomicLong();
+    private final Map<UUID, RunningQueryInfo> running;
 
     /** */
-    public RunningQueryService(GridKernalContext ctx) {
+    public RunningQueryService() {
         running = new ConcurrentHashMap<>();
-        locNodeId = ctx.localNodeId();
     }
 
     /**
@@ -59,16 +45,19 @@ public class RunningQueryService implements Service {
      * @param pctx Planning context.
      * @return Id of registered query.
      */
-    public long register(PlanningContext pctx) {
-        RunningQueryInfo run = register(
+    public UUID register(PlanningContext pctx) {
+        UUID qryId = UUID.randomUUID();
+
+        RunningQueryInfo run = new RunningQueryInfo(
             RunningStage.PLANNING,
+            qryId,
             pctx.query(),
             pctx.schemaName(),
             pctx.queryCancel());
 
-        running.put(run.id(), run);
+        running.put(run.qryId(), run);
 
-        return run.id();
+        return qryId;
     }
 
     /**
@@ -76,47 +65,21 @@ public class RunningQueryService implements Service {
      *
      * @param qry Query text.
      * @param pctx Planning context.
-     * @param qryCancellable Query cancel. Should be passed in case query is cancelable, or {@code null} otherwise.
      * @return Id of registered query.
      */
-    public long register(String qry, PlanningContext pctx, QueryCancellable qryCancellable) {
-        GridQueryCancel qryCancel = pctx.queryCancel();
-
-        RunningQueryInfo run = register(
-            RunningStage.EXECUTION,
-            pctx.query(),
-            pctx.schemaName(),
-            qryCancel
-            );
-
-        running.put(run.id(), run);
-
-        try {
-            if(qryCancellable != null)
-                qryCancel.add(qryCancellable);
-
-            return run.id();
-        }
-        catch (QueryCancelledException e) {
-            running.remove(run.id());
-
-            throw new IgniteSQLException(e.getMessage(), IgniteQueryErrorCode.QUERY_CANCELED);
-        }
-    }
-
-    /** */
-    private RunningQueryInfo register(RunningStage stage, String qryText, String schema, GridQueryCancel cancel){
-        long qryId = qryIdGen.incrementAndGet();
+    public UUID register(String qry, PlanningContext pctx) {
+        UUID qryId = UUID.randomUUID();
 
         RunningQueryInfo run = new RunningQueryInfo(
-            stage,
+            RunningStage.EXECUTION,
             qryId,
-            locNodeId,
-            qryText,
-            schema,
-            cancel);
+            qry,
+            pctx.schemaName(),
+            pctx.queryCancel());
 
-        return run;
+        running.put(run.qryId(), run);
+
+        return qryId;
     }
 
     /**
@@ -124,7 +87,7 @@ public class RunningQueryService implements Service {
      *
      * @param qryId id of the query, which is given by {@link #register register} method.
      */
-    public void unregister(Long qryId) {
+    public void unregister(UUID qryId) {
         running.remove(qryId);
     }
 
@@ -133,7 +96,7 @@ public class RunningQueryService implements Service {
      *
      * @param qryId Query id.
      */
-    public void cancelQuery(Long qryId) {
+    public void cancelQuery(UUID qryId) {
         RunningQueryInfo runningInfo = running.get(qryId);
 
         if (runningInfo != null)

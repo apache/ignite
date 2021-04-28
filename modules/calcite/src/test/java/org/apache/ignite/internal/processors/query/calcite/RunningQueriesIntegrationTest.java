@@ -100,7 +100,7 @@ public class RunningQueriesIntegrationTest extends GridCommonAbstractTest {
         RunningQueryInfo run = running.get(0);
         assertEquals(RunningStage.PLANNING, run.stage());
 
-        engine.cancelQuery(run.id());
+        engine.cancelQuery(run.qryId());
 
         Assert.assertTrue(GridTestUtils.waitForCondition(
             () -> engine.runningSqlQueries().isEmpty(), TIMEOUT_IN_MS));
@@ -139,7 +139,7 @@ public class RunningQueriesIntegrationTest extends GridCommonAbstractTest {
         assertEquals(1, running.size());
 
         RunningQueryInfo run = running.get(0);
-        engine.cancelQuery(run.id());
+        engine.cancelQuery(run.qryId());
 
         Assert.assertTrue(GridTestUtils.waitForCondition(
             () -> engine.runningSqlQueries().isEmpty(), TIMEOUT_IN_MS));

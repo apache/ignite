@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query;
 
 import java.util.List;
+import java.util.UUID;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.jetbrains.annotations.Nullable;
@@ -49,5 +50,5 @@ public interface QueryEngine extends GridProcessor {
      *
      * @param qryId Queries ID to cancel.
      */
-    void cancelQuery(long qryId);
+    void cancelQuery(UUID qryId);
 }
