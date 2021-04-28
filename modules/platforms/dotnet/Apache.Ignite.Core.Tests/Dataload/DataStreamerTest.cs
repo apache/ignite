@@ -449,12 +449,12 @@ namespace Apache.Ignite.Core.Tests.Dataload
         {
             using (IDataStreamer<int, int> ldr = _grid.GetDataStreamer<int, int>(CacheName))
             {
-                var fut = ldr.AddData(1, 1);
+                var fut = ldr.GetCurrentBatchTask();
+                ldr.Add(1, 1);
 
                 ldr.Close(true);
 
-                fut.Wait();
-
+                Assert.IsTrue(fut.Wait(5000));
                 Assert.IsFalse(_cache.ContainsKey(1));
             }
         }
@@ -554,13 +554,15 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 fut.Wait();
 
                 // Test flush before stop.
-                fut = ldr.AddData(4, 4);
-                ldr.AutoFlushFrequency = 0;
+                fut = ldr.GetCurrentBatchTask();
+                ldr.Add(4, 4);
+                ldr.AutoFlushInterval = TimeSpan.Zero;
                 fut.Wait();
 
                 // Test flush after second turn on.
-                fut = ldr.AddData(5, 5);
-                ldr.AutoFlushFrequency = 1000;
+                fut = ldr.GetCurrentBatchTask();
+                ldr.Add(5, 5);
+                ldr.AutoFlushInterval = TimeSpan.FromSeconds(1);
                 fut.Wait();
 
                 Assert.AreEqual(1, _cache.Get(1));
