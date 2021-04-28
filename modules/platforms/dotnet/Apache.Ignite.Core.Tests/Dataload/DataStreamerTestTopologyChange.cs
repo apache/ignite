@@ -49,14 +49,15 @@ namespace Apache.Ignite.Core.Tests.Dataload
 
                 var streamer = gridNoCache.GetDataStreamer<int, int>(cacheName);
 
-                streamer.AddData(1, 2);
+                streamer.Add(1, 2);
                 streamer.Flush();
 
                 Ignition.Stop(gridWithCache.Name, true);
 
                 Thread.Sleep(500);  // Wait for node to stop
 
-                var task = streamer.AddData(2, 3);
+                streamer.Add(2, 3);
+                var task = streamer.BatchTask;
                 streamer.Flush();
 
                 var ex = Assert.Throws<AggregateException>(task.Wait).InnerException;
