@@ -179,13 +179,6 @@ namespace Apache.Ignite.Core.Datastream
         Task Task { get; }
 
         /// <summary>
-        /// Gets the task for the current batch. This task completes when current and all previous batches are flushed,
-        /// either explicitly with <see cref="Flush"/>, or automatically when the buffer is full or
-        /// <see cref="AutoFlushFrequency"/> is set.
-        /// </summary>
-        Task GetCurrentBatchTask();
-
-        /// <summary>
         /// Gets or sets custom stream receiver.
         /// </summary>
         IStreamReceiver<TK, TV> Receiver { get; set; }
@@ -300,5 +293,12 @@ namespace Apache.Ignite.Core.Datastream
         /// <li>Total timeout time for <see cref="Close"/> operation.</li>
         /// </summary>
         TimeSpan Timeout { get; set; }
+
+        /// <summary>
+        /// Gets the task for the current batch. This task completes when current and all previous batches are flushed,
+        /// either explicitly with <see cref="Flush"/>, or automatically when the buffer is full or
+        /// <see cref="AutoFlushFrequency"/> is set.
+        /// </summary>
+        Task GetCurrentBatchTask();
     }
 }
