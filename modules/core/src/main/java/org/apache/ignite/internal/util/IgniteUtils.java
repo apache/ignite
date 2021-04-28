@@ -9638,7 +9638,7 @@ public abstract class IgniteUtils {
                         "    <property name=\"workDirectory\" value=\"location\"/> in IgniteConfiguration <bean>.\n");
                 }
             }
-            catch (Exception e) {
+            catch (Exception ignore) {
                 // Ignore.
             }
 

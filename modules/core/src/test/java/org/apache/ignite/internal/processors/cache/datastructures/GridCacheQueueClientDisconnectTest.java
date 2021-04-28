@@ -89,7 +89,7 @@ public class GridCacheQueueClientDisconnectTest extends GridCommonAbstractTest {
                     catch (IgniteClientDisconnectedException icd) {
                         latch.countDown();
                     }
-                    catch (Exception e) {
+                    catch (Exception ignore) {
                     }
                 }
             });

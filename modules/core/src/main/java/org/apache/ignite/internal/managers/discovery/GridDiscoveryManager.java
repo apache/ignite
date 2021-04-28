@@ -104,6 +104,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteClosure;
@@ -1429,7 +1430,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     return null;
                 }
-            }, topVer, discoCache, evtType, evtNode, srvNodes.size(), clientNodes.size(), totalCpus, heap, offheap);
+            }, topVer, discoCache, evtType, evtNode, srvNodes.size(), clientNodes.size(), totalCpus, heap, offheap, false);
 
         if (log.isDebugEnabled()) {
             String dbg = "";
@@ -1480,7 +1481,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     return null;
                 }
-            }, topVer, discoCache, evtType, evtNode, srvNodes.size(), clientNodes.size(), totalCpus, heap, offheap);
+            }, topVer, discoCache, evtType, evtNode, srvNodes.size(), clientNodes.size(), totalCpus, heap, offheap, true);
     }
 
     /**
@@ -1546,23 +1547,54 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @param totalCpus Total cpu number.
      * @param heap Heap size.
      * @param offheap Offheap size.
+     * @param needNodesDetails Flag for additional alive nodes logging.
      */
-    private void topologySnapshotMessage(IgniteClosure<String, Void> clo, long topVer, DiscoCache discoCache,
-        int evtType, ClusterNode evtNode, int srvNodesNum, int clientNodesNum, int totalCpus, double heap,
-        double offheap) {
+    private void topologySnapshotMessage(
+        IgniteClosure<String, Void> clo,
+        long topVer,
+        DiscoCache discoCache,
+        int evtType,
+        ClusterNode evtNode,
+        int srvNodesNum,
+        int clientNodesNum,
+        int totalCpus,
+        double heap,
+        double offheap,
+        boolean needNodesDetails
+    ) {
         DiscoveryDataClusterState state = discoCache.state();
 
-        String summary = PREFIX + " [" +
-            (discoOrdered ? "ver=" + topVer + ", " : "") +
-            "locNode=" + U.id8(discoCache.localNode().id()) +
-            ", servers=" + srvNodesNum +
-            ", clients=" + clientNodesNum +
-            ", state=" + (state.active() ? "ACTIVE" : "INACTIVE") +
-            ", CPUs=" + totalCpus +
-            ", offheap=" + offheap + "GB" +
-            ", heap=" + heap + "GB]";
+        SB summary = new SB(PREFIX);
 
-        clo.apply(summary);
+        summary.a(" [");
+        summary.a(discoOrdered ? "ver=" + topVer + ", " : "");
+        summary.a("locNode=").a(U.id8(discoCache.localNode().id()));
+        summary.a(", servers=").a(srvNodesNum);
+        summary.a(", clients=").a(clientNodesNum);
+        summary.a(", state=").a(state.active() ? "ACTIVE" : "INACTIVE");
+        summary.a(", CPUs=").a(totalCpus);
+        summary.a(", offheap=").a(offheap).a("GB");
+        summary.a(", heap=").a(heap).a("GB");
+
+        if ((evtType == EVT_NODE_JOINED
+            || evtType == EVT_NODE_LEFT
+            || evtType == EVT_NODE_FAILED)
+            && needNodesDetails) {
+            summary.a(", aliveNodes=[");
+
+            for (ClusterNode clusterNode : discoCache.allNodes()) {
+                if (discoCache.alive(clusterNode.id()))
+                    summary.a(nodeDescription(clusterNode)).a(", ");
+            }
+
+            summary.setLength(summary.length() - 2);
+
+            summary.a(']');
+        }
+
+        summary.a(']');
+
+        clo.apply(summary.toString());
 
         ClusterNode currCrd = discoCache.oldestServerNode();
 
@@ -1604,6 +1636,20 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     clo.apply("  ^-- " + bltOffline + " nodes left for auto-activation" + offlineConsistentIds);
             }
         }
+    }
+
+    /**
+     * Provides text descrition of a cluster node.
+     *
+     * @param node Node.
+     */
+    private static String nodeDescription(ClusterNode node) {
+        return new SB(node.getClass().getSimpleName())
+            .a(" [id=").a(node.id())
+            .a(", consistentId=").a(node.consistentId())
+            .a(", isClient=").a(node.isClient())
+            .a(", ver=").a(node.version()).a(']')
+            .toString();
     }
 
     /** {@inheritDoc} */
