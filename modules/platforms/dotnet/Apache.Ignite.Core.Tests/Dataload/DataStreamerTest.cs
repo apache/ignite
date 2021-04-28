@@ -102,12 +102,12 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 ldr.AutoFlushInterval = TimeSpan.FromMinutes(5);
                 Assert.AreEqual(5, ldr.AutoFlushInterval.TotalMinutes);
 
-#pragma warning disable 618
+#pragma warning disable 618 // Type or member is obsolete
                 Assert.AreEqual(5 * 60 * 1000, ldr.AutoFlushFrequency);
                 ldr.AutoFlushFrequency = 9000;
                 Assert.AreEqual(9000, ldr.AutoFlushFrequency);
                 Assert.AreEqual(9, ldr.AutoFlushInterval.TotalSeconds);
-#pragma warning restore 618
+#pragma warning restore 618 // Type or member is obsolete
 
                 Assert.IsFalse(ldr.AllowOverwrite);
                 ldr.AllowOverwrite = true;
@@ -220,7 +220,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         [Test]
         public void TestAddRemoveObsolete()
         {
-#pragma warning disable 618
+#pragma warning disable 618 // Type or member is obsolete
             IDataStreamer<int, int> ldr;
 
             using (ldr = _grid.GetDataStreamer<int, int>(CacheName))
@@ -274,7 +274,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
             }
 
             Assert.IsTrue(ldr.Task.IsCompleted);
-#pragma warning restore 618
+#pragma warning restore 618 // Type or member is obsolete
         }
 
         /// <summary>
@@ -323,7 +323,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         [Test]
         public void TestTryFlushObsolete()
         {
-#pragma warning disable 618
+#pragma warning disable 618 // Type or member is obsolete
             using (IDataStreamer<int, int> ldr = _grid.GetDataStreamer<int, int>(CacheName))
             {
                 var fut = ldr.AddData(1, 1);
@@ -334,7 +334,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
 
                 Assert.AreEqual(1, _cache.Get(1));
             }
-#pragma warning restore 618
+#pragma warning restore 618 // Type or member is obsolete
         }
 
         /// <summary>
@@ -472,6 +472,51 @@ namespace Apache.Ignite.Core.Tests.Dataload
             GC.WaitForPendingFinalizers();
 
             Assert.IsNull(streamerRef.Target);
+        }
+
+        /// <summary>
+        /// Test auto-flush feature.
+        /// </summary>
+        [Test]
+        public void TestAutoFlushObsolete()
+        {
+#pragma warning disable 618 // Type or member is obsolete
+            using (IDataStreamer<int, int> ldr = _grid.GetDataStreamer<int, int>(CacheName))
+            {
+                // Test auto flush turning on.
+                var fut = ldr.AddData(1, 1);
+                Thread.Sleep(100);
+                Assert.IsFalse(fut.IsCompleted);
+                ldr.AutoFlushFrequency = 1000;
+                fut.Wait();
+
+                // Test forced flush after frequency change.
+                fut = ldr.AddData(2, 2);
+                ldr.AutoFlushFrequency = long.MaxValue;
+                fut.Wait();
+
+                // Test another forced flush after frequency change.
+                fut = ldr.AddData(3, 3);
+                ldr.AutoFlushFrequency = 1000;
+                fut.Wait();
+
+                // Test flush before stop.
+                fut = ldr.AddData(4, 4);
+                ldr.AutoFlushFrequency = 0;
+                fut.Wait();
+
+                // Test flush after second turn on.
+                fut = ldr.AddData(5, 5);
+                ldr.AutoFlushFrequency = 1000;
+                fut.Wait();
+
+                Assert.AreEqual(1, _cache.Get(1));
+                Assert.AreEqual(2, _cache.Get(2));
+                Assert.AreEqual(3, _cache.Get(3));
+                Assert.AreEqual(4, _cache.Get(4));
+                Assert.AreEqual(5, _cache.Get(5));
+            }
+#pragma warning restore 618 // Type or member is obsolete
         }
 
         /// <summary>
@@ -718,7 +763,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         [Test]
         public void TestDestroyCacheObsolete()
         {
-#pragma warning disable 618
+#pragma warning disable 618 // Type or member is obsolete
             var cache = _grid.CreateCache<int, int>(TestUtils.TestName);
 
             var streamer = _grid.GetDataStreamer<int, int>(cache.Name);
@@ -740,7 +785,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 ex.Message);
 
             Assert.Throws<CacheException>(() => streamer.Close(true));
-#pragma warning restore 618
+#pragma warning restore 618 // Type or member is obsolete
         }
 
 
