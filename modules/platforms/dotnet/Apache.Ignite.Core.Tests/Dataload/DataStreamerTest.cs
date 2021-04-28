@@ -211,7 +211,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
                     Assert.AreEqual(i, _cache.Get(i));
             }
 
-            Assert.IsTrue(ldr.Task.IsCompleted);
+            Assert.IsTrue(ldr.Task.Wait(5000));
         }
 
         /// <summary>
@@ -273,7 +273,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
                     Assert.AreEqual(i, _cache.Get(i));
             }
 
-            Assert.IsTrue(ldr.Task.IsCompleted);
+            Assert.IsTrue(ldr.Task.Wait(5000));
 #pragma warning restore 618 // Type or member is obsolete
         }
 
