@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.visor.cache.index;
 
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
@@ -28,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -68,98 +71,58 @@ public class IndexForceRebuildTask extends VisorOneNodeTask<IndexForceRebuildTas
         {
             //Either cacheNames or cacheGrps must be specified
             assert (arg.cacheNames() == null) ^ (arg.cacheGrps() == null) :
-                "Either cacheNames or cacheGroups must be specified";
-
-            Set<IndexRebuildStatusInfoContainer> rebuildIdxCaches = getCachesWithIndicesBeingRebuilt();
+                "Either cacheNames or cacheGroups must be specified.";
 
             if (arg.cacheNames() == null && arg.cacheGrps() == null) {
-                assert false : "Neither cache names nor cache groups specified";
+                assert false : "Neither cache names nor cache groups specified.";
 
                 return null;
             }
 
-            Set<String> cacheNamesToExclude = rebuildIdxCaches.stream()
-                .map(IndexRebuildStatusInfoContainer::cacheName)
-                .collect(Collectors.toSet());
-
-            Set<GridCacheContext> cachesToRebuild;
-            Set<String> notFoundCache;
+            Set<GridCacheContext> cachesToRebuild = new HashSet<>();
+            Set<String> notFound = new HashSet<>();
 
             final GridCacheProcessor cacheProcessor = ignite.context().cache();
 
             if (arg.cacheNames() != null) {
-                notFoundCache = arg.cacheNames().stream()
-                    .filter(name -> cacheProcessor.cache(name) == null)
-                    .collect(Collectors.toSet());
+                for (String cacheName : arg.cacheNames()) {
+                    IgniteInternalCache<Object, Object> cache = cacheProcessor.publicCache(cacheName);
 
-                cachesToRebuild = getCachesToRebuildByName(arg.cacheNames(), cacheNamesToExclude);
+                    if (cache != null)
+                        cachesToRebuild.add(cache.context());
+                    else
+                        notFound.add(cacheName);
+                }
             }
             else { //arg.cacheGrps() != null
-                notFoundCache = arg.cacheGrps().stream()
-                    .filter(grpName -> cacheProcessor.cacheGroup(CU.cacheId(grpName)) == null)
-                    .collect(Collectors.toSet());
+                for (String cacheGrpName : arg.cacheGrps()) {
+                    CacheGroupContext grpCtx = cacheProcessor.cacheGroup(CU.cacheId(cacheGrpName));
 
-                cachesToRebuild = getCachesToRebuildByGrp(arg.cacheGrps(), cacheNamesToExclude);
+                    if (grpCtx != null)
+                        cachesToRebuild.addAll(grpCtx.caches());
+                    else
+                        notFound.add(cacheGrpName);
+                }
             }
 
-            ignite.context().cache().context().database().forceRebuildIndexes(cachesToRebuild);
+            Collection<GridCacheContext> cachesCtxWithRebuildingInProgress =
+                ignite.context().cache().context().database().forceRebuildIndexes(cachesToRebuild);
 
             Set<IndexRebuildStatusInfoContainer> cachesWithStartedRebuild =
                 cachesToRebuild.stream()
                     .map(c -> new IndexRebuildStatusInfoContainer(c.config()))
                     .collect(Collectors.toSet());
 
-            return new IndexForceRebuildTaskRes(cachesWithStartedRebuild, rebuildIdxCaches, notFoundCache);
-        }
+            Set<IndexRebuildStatusInfoContainer> cachesWithRebuildingInProgress =
+                cachesCtxWithRebuildingInProgress.stream()
+                    .map(c -> new IndexRebuildStatusInfoContainer(c.config()))
+                    .collect(Collectors.toSet());
 
-        /**
-         * Caches with indices being rebuilt.
-         *
-         * @return Set of caches info with indices being rebuilt.
-         */
-        private Set<IndexRebuildStatusInfoContainer> getCachesWithIndicesBeingRebuilt() {
-
-            Function<IgniteCache<?, ?>, IndexRebuildStatusInfoContainer> cacheToInfo;
-            cacheToInfo = c -> new IndexRebuildStatusInfoContainer(c.getConfiguration(CacheConfiguration.class));
-
-            return ignite.context().cache().publicCaches()
-                .stream()
-                .filter(cache -> !cache.indexReadyFuture().isDone())
-                .map(cacheToInfo)
-                .collect(Collectors.toSet());
-        }
-
-        /**
-         * Collects cache contexts of caches that can be rebuilt atm.
-         *
-         * @param cacheNames Whitelist of cacheNames.
-         * @param cacheNamesToExclude Blacklist of cacheNames.
-         * @return Set of cache context that can be rebuilt.
-         */
-        private Set<GridCacheContext> getCachesToRebuildByName(Set<String> cacheNames, Set<String> cacheNamesToExclude) {
-            return ignite.context().cache().publicCaches()
-                .stream()
-                .filter(c -> !cacheNamesToExclude.contains(c.getName()))
-                .filter(c -> cacheNames.contains(c.getName()))
-                .map(IgniteCacheProxy::context)
-                .collect(Collectors.toSet());
-        }
-
-        /**
-         * Collects cache contexts of caches that can be rebuilt atm.
-         *
-         * @param cacheGrps Whitelist of cacheGroups.
-         * @param cacheNamesToExclude Blacklist of cacheNames.
-         * @return Set of cache context that can be rebuilt.
-         */
-        private Set<GridCacheContext> getCachesToRebuildByGrp(Set<String> cacheGrps, Set<String> cacheNamesToExclude) {
-            return ignite.context().cache().cacheGroups()
-                .stream()
-                .filter(grpContext -> cacheGrps.contains(grpContext.name()))
-                .map(CacheGroupContext::caches)
-                .flatMap(List::stream)
-                .filter(c -> !cacheNamesToExclude.contains(c.name()))
-                .collect(Collectors.toSet());
+            return new IndexForceRebuildTaskRes(
+                cachesWithStartedRebuild,
+                cachesWithRebuildingInProgress,
+                notFound
+            );
         }
     }
 }
