@@ -141,10 +141,13 @@ namespace Apache.Ignite.Core.Datastream
         int PerNodeParallelOperations { get; set; }
 
         /// <summary>
-        /// Automatic flush frequency in milliseconds. Essentially, this is the time after which the
-        /// streamer will make an attempt to submit all data added so far to remote nodes.
-        /// Note that there is no guarantee that data will be delivered after this concrete
-        /// attempt (e.g., it can fail when topology is changing), but it won't be lost anyway.
+        /// Gets or sets the automatic flush frequency. Data streamer buffers the data for performance reasons.
+        /// The buffer is flushed in the following cases:
+        /// <ul>
+        /// <li>Buffer is full.</li>
+        /// <li><see cref="Flush"/> or <see cref="TryFlush"/> is called.</li>
+        /// <li>Periodically when <see cref="AutoFlushInterval"/> is set.</li >
+        /// </ul>
         /// <para />
         /// If set to <c>0</c>, automatic flush is disabled.
         /// <para />
