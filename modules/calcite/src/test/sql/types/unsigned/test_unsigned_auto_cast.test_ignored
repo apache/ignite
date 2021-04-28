@@ -1,6 +1,7 @@
 # name: test/sql/types/unsigned/test_unsigned_auto_cast.test
 # description: Test unsigned auto cast
 # group: [unsigned]
+# Ignored: https://issues.apache.org/jira/browse/IGNITE-14632
 
 statement ok
 PRAGMA enable_verification

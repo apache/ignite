@@ -1,6 +1,7 @@
 # name: test/sql/types/unsigned/test_unsigned_arithmetic.test
 # description: Test various operations with unsigned
 # group: [unsigned]
+# Ignored: https://issues.apache.org/jira/browse/IGNITE-14632
 
 statement ok
 PRAGMA enable_verification
