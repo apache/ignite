@@ -26,8 +26,8 @@ namespace Apache.Ignite.BenchmarkDotNet.DataStreamer
     /// Data streamer benchmark.
     /// |                 Method |     Mean |   Error |  StdDev | Ratio | RatioSD |
     /// |----------------------- |---------:|--------:|--------:|------:|--------:|
-    /// |               Streamer | 226.6 ms | 3.34 ms | 2.96 ms |  1.00 |    0.00 |
-    /// | StreamerAllowOverwrite | 233.3 ms | 4.02 ms | 3.76 ms |  1.03 |    0.02 |
+    /// |               Streamer | 175.5 ms | 3.47 ms | 5.99 ms |  1.00 |    0.00 |
+    /// | StreamerAllowOverwrite | 187.5 ms | 3.66 ms | 4.49 ms |  1.06 |    0.04 |
     /// </summary>
     public class DataStreamerBenchmark
     {
