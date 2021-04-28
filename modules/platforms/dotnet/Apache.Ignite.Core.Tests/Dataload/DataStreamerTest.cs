@@ -528,20 +528,23 @@ namespace Apache.Ignite.Core.Tests.Dataload
             using (IDataStreamer<int, int> ldr = _grid.GetDataStreamer<int, int>(CacheName))
             {
                 // Test auto flush turning on.
-                var fut = ldr.AddData(1, 1);
+                var fut = ldr.BatchTask;
+                ldr.Add(1, 1);
                 Thread.Sleep(100);
                 Assert.IsFalse(fut.IsCompleted);
-                ldr.AutoFlushFrequency = 1000;
+                ldr.AutoFlushInterval = TimeSpan.FromSeconds(1);
                 fut.Wait();
 
                 // Test forced flush after frequency change.
-                fut = ldr.AddData(2, 2);
-                ldr.AutoFlushFrequency = long.MaxValue;
+                fut = ldr.BatchTask;
+                ldr.Add(2, 2);
+                ldr.AutoFlushInterval = TimeSpan.MaxValue;
                 fut.Wait();
 
                 // Test another forced flush after frequency change.
-                fut = ldr.AddData(3, 3);
-                ldr.AutoFlushFrequency = 1000;
+                fut = ldr.BatchTask;
+                ldr.Add(3, 3);
+                ldr.AutoFlushInterval = TimeSpan.FromSeconds(1);
                 fut.Wait();
 
                 // Test flush before stop.
