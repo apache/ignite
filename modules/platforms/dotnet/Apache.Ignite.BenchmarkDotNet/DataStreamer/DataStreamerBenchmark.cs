@@ -19,6 +19,7 @@ namespace Apache.Ignite.BenchmarkDotNet.DataStreamer
 {
     using System;
     using Apache.Ignite.Core;
+    using Apache.Ignite.Core.Cache;
     using global::BenchmarkDotNet.Attributes;
 
     /// <summary>
@@ -27,16 +28,16 @@ namespace Apache.Ignite.BenchmarkDotNet.DataStreamer
     public class DataStreamerBenchmark
     {
         /** */
-        private const string CacheName = "c";
-
-        /** */
-        private const int EntryCount = 50000;
+        private const int EntryCount = 90000;
 
         /** */
         private IIgnite Ignite { get; set; }
 
         /** */
         private IIgnite Client { get; set; }
+
+        /** */
+        private ICache<int, Guid> Cache { get; set; }
 
         /// <summary>
         /// Sets up the benchmark.
@@ -51,7 +52,7 @@ namespace Apache.Ignite.BenchmarkDotNet.DataStreamer
                 IgniteInstanceName = "Client"
             });
 
-            Ignite.CreateCache<int, int>(CacheName);
+            Cache = Ignite.CreateCache<int, Guid>("c");
         }
 
         /// <summary>
@@ -85,7 +86,9 @@ namespace Apache.Ignite.BenchmarkDotNet.DataStreamer
         /** */
         private void StreamData(bool allowOverwrite)
         {
-            using (var streamer = Ignite.GetDataStreamer<int, Guid>(CacheName))
+            Cache.Clear();
+
+            using (var streamer = Ignite.GetDataStreamer<int, Guid>(Cache.Name))
             {
                 streamer.AllowOverwrite = allowOverwrite;
 
