@@ -22,7 +22,6 @@ import java.util.Iterator;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cdc.CaptureDataChangeConsumer;
 import org.apache.ignite.cdc.ChangeEvent;
-import org.apache.ignite.cdc.ChangeEventOrder;
 import org.apache.ignite.cdc.ChangeEventType;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
@@ -112,16 +111,17 @@ public class WALRecordsConsumer<K, V> {
 
             GridCacheVersion ver = e.writeVersion();
 
-            ChangeEventOrder ord = new ChangeEventOrder(ver.topologyVersion(), ver.nodeOrderAndDrIdRaw(), ver.order());
+            ChangeEventOrderImpl ord =
+                new ChangeEventOrderImpl(ver.topologyVersion(), ver.nodeOrderAndDrIdRaw(), ver.order());
 
             GridCacheVersion replicaVer = ver.conflictVersion();
 
             if (replicaVer != ver) {
-                ord.otherDcOrder(new ChangeEventOrder(
+                ord.otherDcOrder(new ChangeEventOrderImpl(
                     replicaVer.topologyVersion(), replicaVer.nodeOrderAndDrIdRaw(), replicaVer.order()));
             }
 
-            return new ChangeEvent(
+            return new ChangeEventImpl(
                 ue.unwrappedKey(),
                 ue.unwrappedValue(),
                 e.primary(),

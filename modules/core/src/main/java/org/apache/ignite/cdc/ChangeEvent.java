@@ -19,7 +19,6 @@ package org.apache.ignite.cdc;
 
 import java.io.Serializable;
 import org.apache.ignite.internal.cdc.IgniteCDC;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteExperimental;
 
 /**
@@ -30,104 +29,41 @@ import org.apache.ignite.lang.IgniteExperimental;
  * @see CaptureDataChangeConsumer
  */
 @IgniteExperimental
-public class ChangeEvent implements Serializable {
-    /** Serial version uid. */
-    private static final long serialVersionUID = 0L;
-
-    /** Key. */
-    private final Object key;
-
-    /** Value. */
-    private final Object val;
-
-    /** {@code True} if changes made on primary node. */
-    private final boolean primary;
-
-    /** Partition. */
-    private final int part;
-
-    /** Order of the entry change. */
-    private final ChangeEventOrder ord;
-
-    /** Event type. */
-    private final ChangeEventType op;
-
-    /** Cache id. */
-    private final int cacheId;
-
-    /**
-     * @param key Key.
-     * @param val Value.
-     * @param primary {@code True} if changes made on primary node.
-     * @param part Partition.
-     * @param ord Order of the entry change.
-     * @param op Event type.
-     * @param cacheId Cache id.
-     */
-    public ChangeEvent(Object key, Object val, boolean primary, int part,
-        ChangeEventOrder ord, ChangeEventType op, int cacheId) {
-        this.key = key;
-        this.val = val;
-        this.primary = primary;
-        this.part = part;
-        this.ord = ord;
-        this.op = op;
-        this.cacheId = cacheId;
-    }
-
+public interface ChangeEvent extends Serializable {
     /**
      * @return Key for the changed entry.
      */
-    public Object key() {
-        return key;
-    }
+    public Object key();
 
     /**
      * @return Value for the changed entry.
      */
-    public Object value() {
-        return val;
-    }
+    public Object value();
 
     /**
      * @return {@code True} if event fired on primary node for partition containing this entry.
      * @see <a href="https://ignite.apache.org/docs/latest/configuring-caches/configuring-backups#configuring-partition-backups">Configuring partition backups.</a>
      */
-    public boolean primary() {
-        return primary;
-    }
+    public boolean primary();
 
     /**
      * @return Partition number.
      */
-    public int partition() {
-        return part;
-    }
+    public int partition();
 
     /**
      * @return Order of the update operation.
      */
-    public ChangeEventOrder order() {
-        return ord;
-    }
+    public ChangeEventOrder order();
 
     /**
      * @return Operation type.
      */
-    public ChangeEventType operation() {
-        return op;
-    }
+    public ChangeEventType operation();
 
     /**
      * @return Cache ID.
      * @see org.apache.ignite.internal.util.typedef.internal.CU#cacheId(String)
      */
-    public int cacheId() {
-        return cacheId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(ChangeEvent.class, this);
-    }
+    public int cacheId();
 }
