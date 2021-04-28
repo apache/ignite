@@ -70,9 +70,7 @@ public class ChangeEventOrder implements Comparable<ChangeEventOrder>, Serializa
         return nodeOrderDrId;
     }
 
-    /**
-     * @return DR mask.
-     */
+    /** @return Data center id. */
     public byte dataCenterId() {
         return (byte)((nodeOrderDrId >> DR_ID_SHIFT) & DR_ID_MASK);
     }
