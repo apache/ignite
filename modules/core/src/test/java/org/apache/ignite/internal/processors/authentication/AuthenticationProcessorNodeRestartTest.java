@@ -25,6 +25,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -32,6 +33,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.authenticate;
+import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.withSecurityContextOnAllNodes;
 import static org.apache.ignite.internal.processors.authentication.User.DFAULT_USER_NAME;
 
 /**
@@ -46,6 +48,9 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
 
     /** Client node. */
     private static final int CLI_NODE = NODES_COUNT - 1;
+
+    /** Authorization context for default user. */
+    private SecurityContext secCtxDflt;
 
     /** Random. */
     private static final Random RND = new Random(System.currentTimeMillis());
@@ -89,7 +94,9 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
 
         grid(0).cluster().active(true);
 
-        assertNotNull(authenticate(grid(0), DFAULT_USER_NAME, "ignite"));
+        secCtxDflt = authenticate(grid(0), DFAULT_USER_NAME, "ignite");
+
+        assertNotNull(secCtxDflt);
     }
 
     /** {@inheritDoc} */
@@ -107,9 +114,13 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
     public void testConcurrentAddUpdateRemoveNodeRestartCoordinator() throws Exception {
         final IgniteInternalFuture restartFut = restartCoordinator();
 
+        withSecurityContextOnAllNodes(secCtxDflt);
+
         final AtomicInteger usrCnt = new AtomicInteger();
 
         GridTestUtils.runMultiThreaded(() -> {
+            withSecurityContextOnAllNodes(secCtxDflt);
+
             String user = "test" + usrCnt.getAndIncrement();
 
             try {
@@ -163,6 +174,8 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
     @Test
     public void testConcurrentAuthorize() throws Exception {
         final int testUsersCnt = 10;
+
+        withSecurityContextOnAllNodes(secCtxDflt);
 
         for (int i = 0; i < testUsersCnt; ++i)
             grid(CLI_NODE).context().security().createUser("test" + i, ("passwd_test" + i).toCharArray());
@@ -248,6 +261,8 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
         final AtomicInteger usrCnt = new AtomicInteger();
 
         GridTestUtils.runMultiThreaded(() -> {
+            withSecurityContextOnAllNodes(secCtxDflt);
+
             try {
                 while (usrCnt.get() < 200) {
                     String user = "test" + usrCnt.getAndIncrement();
@@ -266,6 +281,8 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
         usrCnt.set(0);
 
         GridTestUtils.runMultiThreaded(() -> {
+            withSecurityContextOnAllNodes(secCtxDflt);
+
             try {
                 while (usrCnt.get() < 200) {
                     String user = "test" + usrCnt.getAndIncrement();
@@ -300,9 +317,13 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
     public void testConcurrentAddUpdateRemoveNodeRestartServer() throws Exception {
         IgniteInternalFuture restartFut = loopServerRestarts();
 
+        withSecurityContextOnAllNodes(secCtxDflt);
+
         final AtomicInteger usrCnt = new AtomicInteger();
 
         GridTestUtils.runMultiThreaded(() -> {
+            withSecurityContextOnAllNodes(secCtxDflt);
+
             String user = "test" + usrCnt.getAndIncrement();
 
             try {
@@ -331,9 +352,13 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
     public void testConcurrentFailedOperationNodeRestartServer() throws Exception {
         IgniteInternalFuture restartFut = loopServerRestarts();
 
+        withSecurityContextOnAllNodes(secCtxDflt);
+
         grid(CLI_NODE).context().security().createUser("test", "test".toCharArray());
 
         GridTestUtils.runMultiThreaded(() -> {
+            withSecurityContextOnAllNodes(secCtxDflt);
+
             try {
                 while (!restartFut.isDone()) {
                     GridTestUtils.assertThrows(log, () -> {

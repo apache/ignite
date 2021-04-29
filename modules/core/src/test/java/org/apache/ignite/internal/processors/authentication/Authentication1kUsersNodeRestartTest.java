@@ -18,18 +18,19 @@
 package org.apache.ignite.internal.processors.authentication;
 
 import java.util.stream.IntStream;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
+import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.authenticate;
+import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.withSecurityContextOnAllNodes;
 
 /**
  * Test for {@link IgniteAuthenticationProcessor} on unstable topology.
@@ -85,36 +86,40 @@ public class Authentication1kUsersNodeRestartTest extends GridCommonAbstractTest
      */
     @Test
     public void test1kUsersNodeRestartServer() throws Exception {
-       startGrid(0);
+        startGrid(0);
 
         grid(0).cluster().active(true);
 
         IgniteSecurity sec = grid(0).context().security();
 
-        IntStream.range(0, USERS_COUNT).parallel().forEach(
-            i -> {
-                try {
-                    sec.createUser("test" + i, "init".toCharArray());
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-            });
+        SecurityContext secCtxDflt = authenticate(grid(0), User.DFAULT_USER_NAME, "ignite");
 
-        IntStream.range(0, USERS_COUNT).parallel().forEach(
-            i -> {
-                try {
-                    sec.alterUser("test" + i, ("passwd_" + i).toCharArray());
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-            });
+        try (AutoCloseable ignored0 = withSecurityContextOnAllNodes(secCtxDflt)) {
+            IntStream.range(0, USERS_COUNT).parallel().forEach(
+                i -> {
+                    try (AutoCloseable ignored = withSecurityContextOnAllNodes(secCtxDflt)) {
+                        sec.createUser("test" + i, "init".toCharArray());
+                    }
+                    catch (Exception e) {
+                        throw new IgniteException(e);
+                    }
+                });
 
-        stopGrid(0);
+            IntStream.range(0, USERS_COUNT).parallel().forEach(
+                i -> {
+                    try (AutoCloseable ignored = withSecurityContextOnAllNodes(secCtxDflt)) {
+                        sec.alterUser("test" + i, ("passwd_" + i).toCharArray());
+                    }
+                    catch (Exception e) {
+                        throw new IgniteException(e);
+                    }
+                });
 
-        startGrid(0);
+            stopGrid(0);
 
-        authenticate(grid(0), "ignite", "ignite");
+            startGrid(0);
+
+            authenticate(grid(0), "ignite", "ignite");
+        }
     }
 }

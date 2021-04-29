@@ -58,8 +58,6 @@ import org.apache.ignite.internal.ServiceMXBeanImpl;
 import org.apache.ignite.internal.TransactionsMXBeanImpl;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
-import org.apache.ignite.internal.processors.authentication.IgniteAccessControlException;
-import org.apache.ignite.internal.processors.authentication.IgniteUserManagementSecurityException;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadAckClientParameters;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadCacheWriter;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadParser;
@@ -139,9 +137,6 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEna
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.txStart;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser.PARAM_WRAP_VALUE;
-import static org.apache.ignite.plugin.security.SecurityPermission.ALTER_USER;
-import static org.apache.ignite.plugin.security.SecurityPermission.CREATE_USER;
-import static org.apache.ignite.plugin.security.SecurityPermission.DROP_USER;
 
 /**
  * Processor responsible for execution of all non-SELECT and non-DML commands.
@@ -663,21 +658,15 @@ public class CommandProcessor {
             else if (cmd instanceof SqlCreateUserCommand) {
                 SqlCreateUserCommand addCmd = (SqlCreateUserCommand)cmd;
 
-                ctx.security().authorize(addCmd.userName(), CREATE_USER);
-
                 ctx.security().createUser(addCmd.userName(), addCmd.password().toCharArray());
             }
             else if (cmd instanceof SqlAlterUserCommand) {
                 SqlAlterUserCommand altCmd = (SqlAlterUserCommand)cmd;
 
-                ctx.security().authorize(altCmd.userName(), ALTER_USER);
-
                 ctx.security().alterUser(altCmd.userName(), altCmd.password().toCharArray());
             }
             else if (cmd instanceof SqlDropUserCommand) {
                 SqlDropUserCommand dropCmd = (SqlDropUserCommand)cmd;
-
-                ctx.security().authorize(dropCmd.userName(), DROP_USER);
 
                 ctx.security().dropUser(dropCmd.userName());
             }
@@ -687,11 +676,6 @@ public class CommandProcessor {
 
             if (fut != null)
                 fut.get();
-        }
-        catch (IgniteUserManagementSecurityException e) {
-            // The following exception transformation is needed to keep {@link IgniteAuthenticationProcessor} backward
-            // compatibility intact.
-            throw new IgniteSQLException(e.getMessage(), new IgniteAccessControlException(e.getMessage(), e));
         }
         catch (SchemaOperationException e) {
             throw convert(e);

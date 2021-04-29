@@ -26,7 +26,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -85,13 +84,9 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.AUTH_PROC;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_AUTHENTICATION_ENABLED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
-import static org.apache.ignite.internal.processors.authentication.User.DFAULT_USER_NAME;
 import static org.apache.ignite.internal.processors.authentication.UserManagementOperation.OperationType.ADD;
 import static org.apache.ignite.internal.processors.authentication.UserManagementOperation.OperationType.REMOVE;
 import static org.apache.ignite.internal.processors.authentication.UserManagementOperation.OperationType.UPDATE;
-import static org.apache.ignite.plugin.security.SecurityPermission.ALTER_USER;
-import static org.apache.ignite.plugin.security.SecurityPermission.CREATE_USER;
-import static org.apache.ignite.plugin.security.SecurityPermission.DROP_USER;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
 import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_CLIENT;
 import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_NODE;
@@ -502,6 +497,8 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                 throw new UserManagementException("Failed to initiate user management operation because "
                     + "client node is disconnected.");
             }
+
+            checkUserOperation(op);
 
             UserOperationFinishFuture fut = new UserOperationFinishFuture(op.id());
 
@@ -928,25 +925,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void authorize(String name, SecurityPermission perm, SecurityContext securityCtx) throws SecurityException {
-        if (perm != CREATE_USER && perm != DROP_USER && perm != ALTER_USER)
-            return;
-
-        SecuritySubject subj = ctx.security().securityContext().subject();
-
-        Object login = subj.login();
-
-        if (subj.type() == REMOTE_NODE) {
-            throw new IgniteUserManagementSecurityException("User management operations initiated on behalf of" +
-                " the Ignite node are not supported [igniteInstanceName=" + login + ']');
-        }
-
-        if (!DFAULT_USER_NAME.equals(login) && !(ALTER_USER == perm && Objects.equals(login, name))) {
-            throw new IgniteUserManagementSecurityException("User management operations are not allowed for user" +
-                " [curUser=" + login + ']');
-        }
-
-        if (DROP_USER == perm && DFAULT_USER_NAME.equals(name))
-            throw new IgniteUserManagementSecurityException("Default user cannot be removed.");
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -990,6 +969,31 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     /** Calculates user id based on specified login. */
     private UUID toSubjectId(String login) {
         return UUID.nameUUIDFromBytes(login.getBytes());
+    }
+
+    /**
+     * @param op User operation to check.
+     * @throws IgniteAccessControlException If operation check fails: user hasn't permissions for user management
+     *      or try to remove default user.
+     */
+    public void checkUserOperation(UserManagementOperation op) throws IgniteAccessControlException {
+        assert op != null;
+
+        SecuritySubject subj = ctx.security().securityContext().subject();
+
+        if (subj.type() == REMOTE_NODE) {
+            throw new IgniteAccessControlException("User management operations initiated on behalf of" +
+                " the Ignite node are not expected.");
+        }
+
+        if (!User.DFAULT_USER_NAME.equals(subj.login())
+            && !(UserManagementOperation.OperationType.UPDATE == op.type() && subj.login().equals(op.user().name())))
+            throw new IgniteAccessControlException("User management operations are not allowed for user. " +
+                "[curUser=" + subj.login() + ']');
+
+        if (op.type() == UserManagementOperation.OperationType.REMOVE
+            && User.DFAULT_USER_NAME.equals(op.user().name()))
+            throw new IgniteAccessControlException("Default user cannot be removed.");
     }
 
     /**

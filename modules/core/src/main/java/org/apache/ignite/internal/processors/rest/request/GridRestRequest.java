@@ -22,8 +22,10 @@ import java.security.cert.Certificate;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
+import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Grid command request.
@@ -47,6 +49,9 @@ public class GridRestRequest {
 
     /** Command. */
     private GridRestCommand cmd;
+
+    /** */
+    private SecurityContext secCtx;
 
     /** User attributes. */
     Map<String, String> userAttrs;
@@ -148,6 +153,20 @@ public class GridRestRequest {
      */
     public void address(InetSocketAddress addr) {
         this.addr = addr;
+    }
+
+    /**
+     * @return Security context.
+     */
+    @Nullable public SecurityContext securityContext() {
+        return secCtx;
+    }
+
+    /**
+     * @param secCtx Security context.
+     */
+    public void securityContext(SecurityContext secCtx) {
+        this.secCtx = secCtx;
     }
 
     /**

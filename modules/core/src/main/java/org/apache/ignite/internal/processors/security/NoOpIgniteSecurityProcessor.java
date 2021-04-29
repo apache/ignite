@@ -85,7 +85,7 @@ public class NoOpIgniteSecurityProcessor extends GridProcessorAdapter implements
 
     /** {@inheritDoc} */
     @Override public SecurityContext authenticate(AuthenticationContext ctx) {
-        return null;
+        throw new IgniteException(SECURITY_DISABLED_ERROR_MSG);
     }
 
     /** {@inheritDoc} */

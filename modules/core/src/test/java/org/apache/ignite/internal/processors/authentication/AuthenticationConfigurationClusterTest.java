@@ -174,7 +174,13 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
                 }
             }, IgniteException.class, SECURITY_DISABLED_ERROR_MSG);
 
-        authenticate(grid(0), "test", "test");
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    authenticate(grid(0), "test", "test");
+
+                    return null;
+                }
+            }, IgniteException.class, SECURITY_DISABLED_ERROR_MSG);
     }
 
     /**

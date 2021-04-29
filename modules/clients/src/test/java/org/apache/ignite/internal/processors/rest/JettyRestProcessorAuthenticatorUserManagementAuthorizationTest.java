@@ -61,10 +61,10 @@ public class JettyRestProcessorAuthenticatorUserManagementAuthorizationTest exte
         checkRestRequest(DFAULT_USER_NAME, dfltUserPwd, ADD_USER, userLogin, userPwd, null);
 
         checkRestRequest(userLogin, userPwd, ADD_USER, "not-allowed-user", userPwd,
-            "User management operations are not allowed for user [curUser=user]");
+            "User management operations are not allowed for user. [curUser=user]");
 
         checkRestRequest(userLogin, userPwd, UPDATE_USER, DFAULT_USER_NAME, "new-pwd",
-            "User management operations are not allowed for user [curUser=user]");
+            "User management operations are not allowed for user. [curUser=user]");
 
         checkRestRequest(DFAULT_USER_NAME, dfltUserPwd, UPDATE_USER, DFAULT_USER_NAME, "new-pwd", null);
         dfltUserPwd = "new-pwd";
@@ -74,7 +74,7 @@ public class JettyRestProcessorAuthenticatorUserManagementAuthorizationTest exte
         checkRestRequest(DFAULT_USER_NAME, dfltUserPwd, UPDATE_USER, userLogin, "pwd", null);
 
         checkRestRequest(userLogin, userPwd, REMOVE_USER, DFAULT_USER_NAME, null,
-            "User management operations are not allowed for user [curUser=user]");
+            "User management operations are not allowed for user. [curUser=user]");
 
         checkRestRequest(DFAULT_USER_NAME, dfltUserPwd, REMOVE_USER, DFAULT_USER_NAME, null,
             "Default user cannot be removed.");
@@ -99,10 +99,10 @@ public class JettyRestProcessorAuthenticatorUserManagementAuthorizationTest exte
 
         if (expErr == null) {
             assertEquals(0, res.get("successStatus").intValue());
-            assertEquals(null, res.get("error").textValue());
+            assertNull(res.get("error").textValue());
         }
         else
-            assertEquals(expErr, res.get("error").textValue());
+            assertTrue(res.get("error").textValue().contains(expErr));
     }
 
     /** {@inheritDoc} */
