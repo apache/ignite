@@ -50,7 +50,7 @@ public abstract class IgniteClusterSnapshotRestoreBaseTest extends AbstractSnaps
      * @throws Exception if failed.
      */
     protected IgniteEx startGridsWithSnapshot(int nodesCnt, int keysCnt, boolean startClient) throws Exception {
-        IgniteEx ignite = startGridsWithCache(nodesCnt, keysCnt, valueBuilder(), dfltCacheCfg.setBackups(0));
+        IgniteEx ignite = startGridsWithCache(nodesCnt, keysCnt, valueBuilder(), dfltCacheCfg);
 
         if (startClient)
             ignite = startClientGrid("client");
@@ -68,7 +68,7 @@ public abstract class IgniteClusterSnapshotRestoreBaseTest extends AbstractSnaps
      * @param cache Cache.
      * @param keysCnt Expected number of keys.
      */
-    protected void checkCacheKeys(IgniteCache<Object, Object> cache, int keysCnt) {
+    protected void assertCacheKeys(IgniteCache<Object, Object> cache, int keysCnt) {
         assertEquals(keysCnt, cache.size());
 
         for (int i = 0; i < keysCnt; i++)

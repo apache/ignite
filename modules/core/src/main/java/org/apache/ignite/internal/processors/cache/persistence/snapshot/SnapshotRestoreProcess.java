@@ -79,7 +79,7 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
  */
 public class SnapshotRestoreProcess {
     /** Temporary cache directory prefix. */
-    public static final String TMP_CACHE_DIR_PREFIX = ".tmp.snp.restore.";
+    public static final String TMP_CACHE_DIR_PREFIX = "_tmp_snp_restore_";
 
     /** Reject operation message. */
     private static final String OP_REJECT_MSG = "Cache group restore operation was rejected. ";

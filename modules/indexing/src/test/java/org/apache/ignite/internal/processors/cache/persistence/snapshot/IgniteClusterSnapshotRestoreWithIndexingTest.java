@@ -76,7 +76,7 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
 
         assertTrue(cache.indexReadyFuture().isDone());
 
-        checkCacheKeys(cache, CACHE_KEYS_RANGE);
+        assertCacheKeys(cache, CACHE_KEYS_RANGE);
     }
 
     /** @throws Exception If failed. */
@@ -97,7 +97,10 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
 
         assertTrue(cache.indexReadyFuture().isDone());
 
-        checkCacheKeys(cache, CACHE_KEYS_RANGE);
+        assertCacheKeys(cache, CACHE_KEYS_RANGE);
+
+        for (Ignite grid : G.allGrids())
+            assertNotNull(((IgniteEx)grid).context().cacheObjects().metadata(typeId));
     }
 
     /** @throws Exception If failed. */
@@ -138,12 +141,12 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
 
         awaitPartitionMapExchange();
 
-        checkCacheKeys(cache, CACHE_KEYS_RANGE);
+        assertCacheKeys(cache, CACHE_KEYS_RANGE);
     }
 
     /** {@inheritDoc} */
-    @Override protected void checkCacheKeys(IgniteCache<Object, Object> cache, int keysCnt) {
-        super.checkCacheKeys(cache, keysCnt);
+    @Override protected void assertCacheKeys(IgniteCache<Object, Object> cache, int keysCnt) {
+        super.assertCacheKeys(cache, keysCnt);
 
         String tblName = new BinaryBasicNameMapper(true).typeName(TYPE_NAME);
 

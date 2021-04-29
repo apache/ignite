@@ -122,9 +122,9 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         // Restore all cache groups.
         grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT);
 
-        checkCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
-        checkCacheKeys(ignite.cache(CACHE1), CACHE_KEYS_RANGE);
-        checkCacheKeys(ignite.cache(CACHE2), CACHE_KEYS_RANGE);
+        assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
+        assertCacheKeys(ignite.cache(CACHE1), CACHE_KEYS_RANGE);
+        assertCacheKeys(ignite.cache(CACHE2), CACHE_KEYS_RANGE);
     }
 
     /** @throws Exception If failed. */
@@ -144,33 +144,32 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
     /**
      * @param nodeIdxSupplier Ignite node index supplier.
      */
-    public void checkStartClusterSnapshotRestoreMultithreaded(IntSupplier nodeIdxSupplier) throws Exception {
+    private void checkStartClusterSnapshotRestoreMultithreaded(IntSupplier nodeIdxSupplier) throws Exception {
         Ignite ignite = startGridsWithSnapshot(2, CACHE_KEYS_RANGE);
 
-        CountDownLatch startLatch = new CountDownLatch(1);
         AtomicInteger successCnt = new AtomicInteger();
+        AtomicInteger failCnt = new AtomicInteger();
 
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(() -> {
             try {
-                startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS);
+                nodeIdxSupplier.getAsInt();
 
                 grid(nodeIdxSupplier.getAsInt()).snapshot().restoreSnapshot(
                     SNAPSHOT_NAME, Collections.singleton(DEFAULT_CACHE_NAME)).get(TIMEOUT);
 
                 successCnt.incrementAndGet();
             }
-            catch (Exception ignore) {
-                // Expected exception.
+            catch (Exception e) {
+                failCnt.incrementAndGet();
             }
         }, 2, "runner");
-
-        startLatch.countDown();
 
         fut.get(TIMEOUT);
 
         assertEquals(1, successCnt.get());
+        assertEquals(1, failCnt.get());
 
-        checkCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
+        assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
     }
 
     /** @throws Exception If failed. */
@@ -198,7 +197,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         fut.get(TIMEOUT);
 
-        checkCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
+        assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
     }
 
     /**
@@ -356,8 +355,8 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         snp.restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(SHARED_GRP)).get(TIMEOUT);
 
-        checkCacheKeys(ignite.cache(CACHE1), CACHE_KEYS_RANGE);
-        checkCacheKeys(ignite.cache(CACHE2), CACHE_KEYS_RANGE);
+        assertCacheKeys(ignite.cache(CACHE1), CACHE_KEYS_RANGE);
+        assertCacheKeys(ignite.cache(CACHE2), CACHE_KEYS_RANGE);
     }
 
     /** @throws Exception If failed. */
@@ -383,10 +382,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
             return objs[n];
         });
 
-        IgniteFuture<Void> fut =
-            ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(DEFAULT_CACHE_NAME));
-
-        fut.get(TIMEOUT);
+        ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(DEFAULT_CACHE_NAME)).get(TIMEOUT);
 
         // Ensure that existing type has been updated.
         BinaryType type = ignite.context().cacheObjects().metadata(typeId);
@@ -486,7 +482,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         fut.get(TIMEOUT);
 
-        checkCacheKeys(grid(0).cache(CACHE1), CACHE_KEYS_RANGE);
+        assertCacheKeys(grid(0).cache(CACHE1), CACHE_KEYS_RANGE);
     }
 
     /** @throws Exception If failed. */
@@ -602,7 +598,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         assertTrue(cache.indexReadyFuture().isDone());
 
-        checkCacheKeys(cache, CACHE_KEYS_RANGE);
+        assertCacheKeys(cache, CACHE_KEYS_RANGE);
     }
 
     /**
@@ -669,7 +665,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
             ignite.cluster().state(ClusterState.ACTIVE);
 
-            checkCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
+            assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
 
             return;
         }
@@ -684,7 +680,7 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         grid(nodesCnt - 1).snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(cacheName)).get(TIMEOUT);
 
-        checkCacheKeys(ignite.cache(cacheName), CACHE_KEYS_RANGE);
+        assertCacheKeys(ignite.cache(cacheName), CACHE_KEYS_RANGE);
     }
 
     /**
