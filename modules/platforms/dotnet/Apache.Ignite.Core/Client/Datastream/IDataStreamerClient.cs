@@ -27,24 +27,17 @@ namespace Apache.Ignite.Core.Client.Datastream
     public interface IDataStreamerClient<TK, TV> : IDisposable
     {
         string CacheName { get; }
-        
+
         DataStreamerClientOptions<TK, TV> Options { get; }
-        
-        void AddData(TK key, TV val);
 
-        Task AddDataAsync(TK key, TV val);
+        // TODO: We don't need async overloads - flushing should only happen in the background
+        void Add(TK key, TV val);
 
-        void AddData(IEnumerable<KeyValuePair<TK, TV>> entries);
+        void Add(IEnumerable<KeyValuePair<TK, TV>> entries);
 
-        Task AddDataAsync(IEnumerable<KeyValuePair<TK, TV>> entries);
+        void Remove(TK key);
 
-        void RemoveData(TK key);
-
-        Task RemoveDataAsync(TK key);
-
-        void RemoveData(IEnumerable<TK> keys);
-
-        Task RemoveDataAsync(IEnumerable<TK> keys);
+        void Remove(IEnumerable<TK> keys);
 
         void Flush();
 

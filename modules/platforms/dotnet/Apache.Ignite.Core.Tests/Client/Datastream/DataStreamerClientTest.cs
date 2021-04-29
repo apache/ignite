@@ -32,8 +32,8 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
             using (var streamer = Client.GetDataStreamer<int, string>(cache.Name))
             {
-                streamer.AddData(1, "1");
-                streamer.AddData(2, "2");
+                streamer.Add(1, "1");
+                streamer.Add(2, "2");
             }
 
             Assert.AreEqual("1", cache[1]);

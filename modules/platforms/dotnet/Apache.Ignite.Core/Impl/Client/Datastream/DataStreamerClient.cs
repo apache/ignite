@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         {
             Debug.Assert(client != null);
             Debug.Assert(!string.IsNullOrEmpty(cacheName));
-            
+
             _client = client;
             _cacheName = cacheName;
             _cacheId = BinaryUtils.GetCacheId(cacheName);
@@ -94,42 +94,22 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
         }
 
-        public void AddData(TK key, TV val)
+        public void Add(TK key, TV val)
         {
             _entries.Enqueue(new KeyValuePair<TK, TV>(key, val));
         }
 
-        public Task AddDataAsync(TK key, TV val)
+        public void Add(IEnumerable<KeyValuePair<TK, TV>> entries)
         {
             throw new System.NotImplementedException();
         }
 
-        public void AddData(IEnumerable<KeyValuePair<TK, TV>> entries)
+        public void Remove(TK key)
         {
             throw new System.NotImplementedException();
         }
 
-        public Task AddDataAsync(IEnumerable<KeyValuePair<TK, TV>> entries)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public void RemoveData(TK key)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public Task RemoveDataAsync(TK key)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public void RemoveData(IEnumerable<TK> keys)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public Task RemoveDataAsync(IEnumerable<TK> keys)
+        public void Remove(IEnumerable<TK> keys)
         {
             throw new System.NotImplementedException();
         }
