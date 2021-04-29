@@ -46,6 +46,7 @@ namespace Apache.Ignite.Core.Client.Datastream
                 return;
             }
 
+            // TODO: Auto flush interval
             ReceiverKeepBinary = options.ReceiverKeepBinary;
             Receiver = options.Receiver;
             AllowOverwrite = options.AllowOverwrite;
@@ -60,13 +61,13 @@ namespace Apache.Ignite.Core.Client.Datastream
         /// Gets or sets a value indicating whether <see cref="Receiver"/> should operate in binary mode.
         /// </summary>
         public bool ReceiverKeepBinary { get; set; }
-        
+
         /// <summary>
         /// Gets or sets a custom stream receiver.
         /// Stream receiver is invoked for every cache entry on the primary server node for that entry.
         /// </summary>
         public IStreamReceiver<TK, TV> Receiver { get; set; }
-        
+
         /// <summary>
         /// Gets or sets a value indicating whether existing values can be overwritten by the data streamer.
         /// Performance is better when this flag is false.
@@ -110,7 +111,7 @@ namespace Apache.Ignite.Core.Client.Datastream
         /// </summary>
         [DefaultValue(DataStreamerDefaults.DefaultPerThreadBufferSize)]
         public int ClientPerThreadBufferSize { get; set; }
-        
+
         /// <summary>
         /// Size of per thread key-value pairs buffer.
         /// <para />
