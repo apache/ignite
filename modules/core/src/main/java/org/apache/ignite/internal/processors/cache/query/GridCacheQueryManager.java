@@ -511,16 +511,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         Collection<ClusterNode> nodes) throws IgniteCheckedException;
 
     /**
-     * Loads page.
-     *
-     * @param id Query ID.
-     * @param qry Query.
-     * @param nodes Nodes.
-     * @param all Whether to load all pages.
-     */
-    public abstract void loadPage(long id, GridCacheQueryAdapter<?> qry, Collection<ClusterNode> nodes, boolean all);
-
-    /**
      * Executes distributed fields query.
      *
      * @param qry Query.

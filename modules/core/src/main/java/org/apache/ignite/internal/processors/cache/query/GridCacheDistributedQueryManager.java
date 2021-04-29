@@ -37,7 +37,6 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsQueryHelper;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.GridBoundedConcurrentOrderedSet;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
@@ -81,7 +80,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     private ConcurrentMap<Long, Thread> threads = new ConcurrentHashMap<>();
 
     /** {request ID -> future} */
-    private ConcurrentMap<Long, GridCacheDistributedQueryFuture<?, ?, ?>> futs =
+    private final ConcurrentMap<Long, GridCacheDistributedQueryFuture<?, ?, ?>> futs =
         new ConcurrentHashMap<>();
 
     /** Received requests to cancel. */
@@ -101,11 +100,29 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     /** Event listener. */
     private GridLocalEventListener lsnr;
 
+    /** Fetcher of cache query result pages. */
+    private CacheQueryResultFetcher pageFetcher;
+
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
         super.start0();
 
         assert cctx.config().getCacheMode() != LOCAL;
+
+        pageFetcher = new CacheQueryResultFetcher(cctx, futs) {
+            /** {@inheritDoc} */
+            @Override protected void sendLocal(UUID locNodeId, GridCacheQueryRequest req) {
+                cctx.closures().callLocalSafe(new GridPlainCallable<Object>() {
+                    @Override public Object call() throws Exception {
+                        req.beforeLocalExecution(cctx);
+
+                        processQueryRequest(locNodeId, req);
+
+                        return null;
+                    }
+                }, GridIoPolicy.QUERY_POOL);
+            }
+        };
 
         cctx.io().addCacheHandler(cctx.cacheId(), GridCacheQueryRequest.class, new CI2<UUID, GridCacheQueryRequest>() {
             @Override public void apply(UUID nodeId, GridCacheQueryRequest req) {
@@ -533,67 +550,15 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         long reqId = cctx.io().nextIoId();
 
         final GridCacheDistributedQueryFuture<K, V, ?> fut =
-            new GridCacheDistributedQueryFuture<>(cctx, reqId, qry, nodes);
+            new GridCacheDistributedQueryFuture<>(cctx, reqId, qry, nodes, pageFetcher);
 
-        try {
-            qry.query().validate();
-
-            String clsName = qry.query().queryClassName();
-            Boolean dataPageScanEnabled = qry.query().isDataPageScanEnabled();
-            MvccSnapshot mvccSnapshot = qry.query().mvccSnapshot();
-
-            boolean deployFilterOrTransformer = (qry.query().scanFilter() != null || qry.query().transform() != null)
-                && cctx.gridDeploy().enabled();
-
-            final GridCacheQueryRequest req = new GridCacheQueryRequest(
-                cctx.cacheId(),
-                reqId,
-                cctx.name(),
-                qry.query().type(),
-                false,
-                qry.query().clause(),
-                qry.query().limit(),
-                clsName,
-                qry.query().scanFilter(),
-                qry.query().partition(),
-                qry.reducer(),
-                qry.transform(),
-                qry.query().pageSize(),
-                qry.query().includeBackups(),
-                qry.arguments(),
-                false,
-                qry.query().keepBinary(),
-                qry.query().subjectId(),
-                qry.query().taskHash(),
-                queryTopologyVersion(),
-                mvccSnapshot,
-                // Force deployment anyway if scan query is used.
-                cctx.deploymentEnabled() || deployFilterOrTransformer,
-                dataPageScanEnabled);
-
-            addQueryFuture(req.id(), fut);
-
-            final Object topic = topic(cctx.nodeId(), req.id());
-
-            cctx.io().addOrderedCacheHandler(cctx.shared(), topic, resHnd);
-
-            fut.listen(new CI1<IgniteInternalFuture<?>>() {
-                @Override public void apply(IgniteInternalFuture<?> fut) {
-                    cctx.io().removeOrderedHandler(false, topic);
-                }
-            });
-
-            sendRequest(fut, req, nodes);
-        }
-        catch (IgniteCheckedException e) {
-            fut.onDone(e);
-        }
+        initDistributedQuery(reqId, fut, nodes);
 
         return fut;
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked", "serial"})
+    @SuppressWarnings({"unchecked"})
     @Override public GridCloseableIterator scanQueryDistributed(final GridCacheQueryAdapter qry,
         Collection<ClusterNode> nodes) throws IgniteCheckedException {
         assert !cctx.isLocal() : cctx.name();
@@ -722,40 +687,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     }
 
     /** {@inheritDoc} */
-    @Override public void loadPage(long id, GridCacheQueryAdapter<?> qry, Collection<ClusterNode> nodes, boolean all) {
-        assert cctx.config().getCacheMode() != LOCAL;
-        assert qry != null;
-        assert nodes != null;
-
-        GridCacheDistributedQueryFuture<?, ?, ?> fut = futs.get(id);
-
-        assert fut != null;
-
-        try {
-            GridCacheQueryRequest req = new GridCacheQueryRequest(
-                cctx.cacheId(),
-                id,
-                cctx.name(),
-                qry.pageSize(),
-                qry.includeBackups(),
-                fut.fields(),
-                all,
-                qry.keepBinary(),
-                qry.subjectId(),
-                qry.taskHash(),
-                queryTopologyVersion(),
-                // Force deployment anyway if scan query is used.
-                cctx.deploymentEnabled() || (qry.scanFilter() != null && cctx.gridDeploy().enabled()),
-                qry.isDataPageScanEnabled());
-
-            sendRequest(fut, req, nodes);
-        }
-        catch (IgniteCheckedException e) {
-            fut.onDone(e);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public CacheQueryFuture<?> queryFieldsLocal(GridCacheQueryBean qry) {
         assert cctx.config().getCacheMode() != LOCAL;
 
@@ -787,39 +718,21 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         long reqId = cctx.io().nextIoId();
 
         final GridCacheDistributedFieldsQueryFuture fut =
-            new GridCacheDistributedFieldsQueryFuture(cctx, reqId, qry, nodes);
+            new GridCacheDistributedFieldsQueryFuture(cctx, reqId, qry, nodes, pageFetcher);
 
+        initDistributedQuery(reqId, fut, nodes);
+
+        return fut;
+    }
+
+    /** Initialize distributed query: stores future, sends query requests to nodes. */
+    private void initDistributedQuery(long reqId, GridCacheDistributedQueryFuture fut, Collection<ClusterNode> nodes) {
         try {
-            qry.query().validate();
+            fut.qry.query().validate();
 
-            GridCacheQueryRequest req = new GridCacheQueryRequest(
-                cctx.cacheId(),
-                reqId,
-                cctx.name(),
-                qry.query().type(),
-                true,
-                qry.query().clause(),
-                qry.query().limit(),
-                null,
-                null,
-                null,
-                qry.reducer(),
-                qry.transform(),
-                qry.query().pageSize(),
-                qry.query().includeBackups(),
-                qry.arguments(),
-                qry.query().includeMetadata(),
-                qry.query().keepBinary(),
-                qry.query().subjectId(),
-                qry.query().taskHash(),
-                queryTopologyVersion(),
-                null,
-                cctx.deploymentEnabled(),
-                qry.query().isDataPageScanEnabled());
+            addQueryFuture(reqId, fut);
 
-            addQueryFuture(req.id(), fut);
-
-            final Object topic = topic(cctx.nodeId(), req.id());
+            final Object topic = topic(cctx.nodeId(), reqId);
 
             cctx.io().addOrderedCacheHandler(cctx.shared(), topic, resHnd);
 
@@ -829,80 +742,10 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 }
             });
 
-            sendRequest(fut, req, nodes);
+            pageFetcher.initFetchPages(reqId, fut, nodes);
         }
         catch (IgniteCheckedException e) {
             fut.onDone(e);
-        }
-
-        return fut;
-    }
-
-    /**
-     * Sends query request.
-     *
-     * @param fut Distributed future.
-     * @param req Request.
-     * @param nodes Nodes.
-     * @throws IgniteCheckedException In case of error.
-     */
-    private void sendRequest(
-        final GridCacheDistributedQueryFuture<?, ?, ?> fut,
-        final GridCacheQueryRequest req,
-        Collection<ClusterNode> nodes
-    ) throws IgniteCheckedException {
-        assert fut != null;
-        assert req != null;
-        assert nodes != null;
-
-        final UUID locNodeId = cctx.localNodeId();
-
-        ClusterNode locNode = null;
-
-        Collection<ClusterNode> rmtNodes = null;
-
-        for (ClusterNode n : nodes) {
-            if (n.id().equals(locNodeId))
-                locNode = n;
-            else {
-                if (rmtNodes == null)
-                    rmtNodes = new ArrayList<>(nodes.size());
-
-                rmtNodes.add(n);
-            }
-        }
-
-        // Request should be sent to remote nodes before the query is processed on the local node.
-        // For example, a remote reducer has a state, we should not serialize and then send
-        // the reducer changed by the local node.
-        if (!F.isEmpty(rmtNodes)) {
-            for (ClusterNode node : rmtNodes) {
-                try {
-                    cctx.io().send(node, req, GridIoPolicy.QUERY_POOL);
-                }
-                catch (IgniteCheckedException e) {
-                    if (cctx.io().checkNodeLeft(node.id(), e, true)) {
-                        fut.onNodeLeft(node.id());
-
-                        if (fut.isDone())
-                            return;
-                    }
-                    else
-                        throw e;
-                }
-            }
-        }
-
-        if (locNode != null) {
-            cctx.closures().callLocalSafe(new GridPlainCallable<Object>() {
-                @Override public Object call() throws Exception {
-                    req.beforeLocalExecution(cctx);
-
-                    processQueryRequest(locNodeId, req);
-
-                    return null;
-                }
-            }, GridIoPolicy.QUERY_POOL);
         }
     }
 

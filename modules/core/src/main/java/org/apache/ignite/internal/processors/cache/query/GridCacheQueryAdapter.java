@@ -885,7 +885,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                         return (cur = convert(fut.next())) != null;
 
                     try {
-                        fut.awaitFirstPage();
+                        fut.awaitFirstItem();
 
                         firstItemReturned = true;
 

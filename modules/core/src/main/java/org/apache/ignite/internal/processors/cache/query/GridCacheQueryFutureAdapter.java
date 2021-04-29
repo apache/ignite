@@ -21,11 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -39,7 +35,6 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -47,7 +42,10 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Query future adapter.
+ * Query future adapter. Future marked as done after all result pages are ready. Note that completeness of this future
+ * doesn't depend on whether all data are delievered to user or not. This class provides {@code Iterator} interface to
+ * access result data. Handling of recieved pages is triggered by {@code Iterator} methods.
+ * Reducing of result data (order, limit) is controlled by {@link Reducer}.
  *
  * @param <R> Result type.
  */
@@ -68,35 +66,23 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     /** */
     protected final GridCacheQueryBean qry;
 
-    /** */
-    private int capacity;
-
-    /** */
-    private boolean limitDisabled;
-
     /** Set of received keys used to deduplicate query result set. */
     private final Collection<K> keys;
-
-    /** */
-    private final Queue<Collection<R>> queue = new LinkedList<>();
 
     /** */
     private final AtomicInteger cnt = new AtomicInteger();
 
     /** */
-    private Iterator<R> iter;
-
-    /** */
-    private IgniteUuid timeoutId = IgniteUuid.randomUuid();
-
-    /** */
-    private long startTime;
+    private final IgniteUuid timeoutId = IgniteUuid.randomUuid();
 
     /** */
     private long endTime;
 
     /** */
     protected boolean loc;
+
+    /** Lock on all future operations. */
+    protected final Object lock = new Object();
 
     /** */
     protected GridCacheQueryFutureAdapter() {
@@ -117,11 +103,9 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, GridCacheQueryFutureAdapter.class);
 
-        startTime = U.currentTimeMillis();
+        long startTime = U.currentTimeMillis();
 
         long timeout = qry.query().timeout();
-        capacity = query().query().limit();
-        limitDisabled = capacity <= 0;
 
         if (timeout > 0) {
             endTime = startTime + timeout;
@@ -154,32 +138,41 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     @Override public boolean onDone(Collection<R> res, Throwable err) {
         cctx.time().removeTimeoutObject(this);
 
+        reducer().onLastPage();
+
         return super.onDone(res, err);
     }
 
     /** {@inheritDoc} */
     @Override public R next() {
         try {
-            R next = unmaskNull(internalIterator().next());
+            checkError();
+
+            R next = null;
+
+            if (reducer().hasNext())
+                next = unmaskNull(reducer().next());
+
+            checkError();
 
             cnt.decrementAndGet();
 
             return next;
-        }
-        catch (NoSuchElementException ignored) {
-            return null;
         }
         catch (IgniteCheckedException e) {
             throw CU.convertToCacheException(e);
         }
     }
 
+    /** @return Cache query results reducer. */
+    protected abstract Reducer<R> reducer();
+
     /**
-     * Waits for the first page to be received from remote node(s), if any.
+     * Waits for the first item to be received from remote node(s), if any.
      *
      * @throws IgniteCheckedException If query execution failed with an error.
      */
-    public abstract void awaitFirstPage() throws IgniteCheckedException;
+    public abstract void awaitFirstItem() throws IgniteCheckedException;
 
     /**
      * @throws IgniteCheckedException If future is done with an error.
@@ -193,65 +186,6 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     }
 
     /**
-     * @return Iterator.
-     * @throws IgniteCheckedException In case of error.
-     */
-    private Iterator<R> internalIterator() throws IgniteCheckedException {
-        checkError();
-
-        Iterator<R> it = null;
-
-        while (it == null || !it.hasNext()) {
-            Collection<R> c;
-
-            synchronized (this) {
-                it = iter;
-
-                if (it != null && it.hasNext())
-                    break;
-
-                c = queue.poll();
-
-                if (c != null)
-                    it = iter = c.iterator();
-
-                if (isDone() && queue.peek() == null)
-                    break;
-            }
-
-            if (c == null && !isDone()) {
-                loadPage();
-
-                long timeout = qry.query().timeout();
-
-                long waitTime = timeout == 0 ? Long.MAX_VALUE : timeout - (U.currentTimeMillis() - startTime);
-
-                if (waitTime <= 0) {
-                    it = Collections.<R>emptyList().iterator();
-
-                    break;
-                }
-
-                synchronized (this) {
-                    try {
-                        if (queue.isEmpty() && !isDone())
-                            wait(waitTime);
-                    }
-                    catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-
-                        throw new IgniteCheckedException("Query was interrupted: " + qry, e);
-                    }
-                }
-            }
-        }
-
-        checkError();
-
-        return it;
-    }
-
-    /**
      * @param evtNodeId Removed or failed node Id.
      */
     protected void onNodeLeft(UUID evtNodeId) {
@@ -259,30 +193,14 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     }
 
     /**
-     * @param col Collection.
+     * Checks lock and handles a page.
+     *
+     * @param page Query result page from a remote node.
      */
-    protected void enqueue(Collection<?> col) {
-        assert Thread.holdsLock(this);
+    private void enqueue(CacheQueryResultPage<R> page) {
+        assert Thread.holdsLock(lock);
 
-        if (limitDisabled) {
-            queue.add((Collection<R>)col);
-
-            cnt.addAndGet(col.size());
-        }
-        else {
-            if (capacity >= col.size()) {
-                queue.add((Collection<R>)col);
-                capacity -= col.size();
-
-                cnt.addAndGet(col.size());
-            }
-            else if (capacity > 0) {
-                queue.add(new ArrayList<>((Collection<R>)col).subList(0, capacity));
-                capacity = 0;
-
-                cnt.addAndGet(capacity);
-            }
-        }
+        reducer().addPage(page);
     }
 
     /**
@@ -296,7 +214,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
 
         Collection<Object> dedupCol = new ArrayList<>(col.size());
 
-        synchronized (this) {
+        synchronized (lock) {
             for (Object o : col)
                 if (!(o instanceof Map.Entry) || keys.add(((Map.Entry<K, V>)o).getKey()))
                     dedupCol.add(o);
@@ -306,12 +224,14 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     }
 
     /**
+     * Entrypoint for handling query result page from remote node.
+     *
      * @param nodeId Sender node.
      * @param data Page data.
      * @param err Error (if was).
      * @param finished Finished or not.
      */
-    public void onPage(@Nullable UUID nodeId, @Nullable Collection<?> data, @Nullable Throwable err, boolean finished) {
+    public void onPage(UUID nodeId, @Nullable Collection<?> data, @Nullable Throwable err, boolean finished) {
         if (isCancelled())
             return;
 
@@ -324,8 +244,8 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
 
         try {
             if (err != null)
-                synchronized (this) {
-                    enqueue(Collections.emptyList());
+                synchronized (lock) {
+                    enqueue(mapResultPage(nodeId, Collections.emptyList(), true));
 
                     if (err instanceof IgniteCheckedException)
                         onDone(err);
@@ -340,7 +260,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
 
                     onPage(nodeId, true);
 
-                    notifyAll();
+                    lock.notifyAll();
                 }
             else {
                 if (data == null)
@@ -350,8 +270,8 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
 
                 data = cctx.unwrapBinariesIfNeeded((Collection<Object>)data, qry.query().keepBinary());
 
-                synchronized (this) {
-                    enqueue(data);
+                synchronized (lock) {
+                    enqueue(mapResultPage(nodeId, data, finished));
 
                     if (onPage(nodeId, finished)) {
                         onDone(/* data */);
@@ -359,7 +279,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
                         clear();
                     }
 
-                    notifyAll();
+                    lock.notifyAll();
                 }
             }
         }
@@ -371,19 +291,28 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
         }
     }
 
+    /** TODO: do we need it? Depends on ordered reducer. */
+    protected <T> CacheQueryResultPage<T> mapResultPage(UUID nodeId, Collection<?> data, boolean finished) {
+        GridCacheQueryResponse resp = new GridCacheQueryResponse();
+        resp.data(data);
+        resp.finished(finished);
+
+        return new CacheQueryResultPage<>(cctx.kernalContext(), nodeId, resp);
+    }
+
     /**
      * @param nodeId Sender node id.
      * @param e Error.
      */
     private void onPageError(@Nullable UUID nodeId, Throwable e) {
-        synchronized (this) {
-            enqueue(Collections.emptyList());
+        synchronized (lock) {
+            enqueue(mapResultPage(nodeId, Collections.emptyList(), true));
 
             onPage(nodeId, true);
 
             onDone(e);
 
-            notifyAll();
+            lock.notifyAll();
         }
     }
 
@@ -448,16 +377,13 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     }
 
     /**
+     * Callback performs additional actions after page handling.
+     *
      * @param nodeId Sender node id.
-     * @param last Whether page is last.
+     * @param last Whether page is last for sender node.
      * @return Is query finished or not.
      */
     protected abstract boolean onPage(UUID nodeId, boolean last);
-
-    /**
-     * Loads next page.
-     */
-    protected abstract void loadPage();
 
     /**
      * Loads all left pages.
@@ -519,15 +445,5 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheQueryFutureAdapter.class, this);
-    }
-
-    /**
-     *
-     */
-    public void printMemoryStats() {
-        X.println(">>> Query future memory statistics.");
-        X.println(">>>  queueSize: " + queue.size());
-        X.println(">>>  keysSize: " + keys.size());
-        X.println(">>>  cnt: " + cnt);
     }
 }

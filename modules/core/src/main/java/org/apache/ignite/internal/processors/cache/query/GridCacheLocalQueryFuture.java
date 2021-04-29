@@ -41,6 +41,9 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
     /** */
     private IgniteInternalFuture<?> fut;
 
+    /** Local reducer for this query. */
+    private final Reducer<R> reducer;
+
     /**
      * @param ctx Context.
      * @param qry Query.
@@ -49,6 +52,8 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
         super(ctx, qry, true);
 
         run = new LocalQueryRunnable();
+
+        reducer = new UnorderedLocalReducer<>(this);
     }
 
     /**
@@ -70,17 +75,17 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
     }
 
     /** {@inheritDoc} */
-    @Override protected void loadPage() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override protected void loadAllPages() {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void awaitFirstPage() throws IgniteCheckedException {
+    @Override protected Reducer<R> reducer() {
+        return reducer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void awaitFirstItem() throws IgniteCheckedException {
         get();
     }
 
