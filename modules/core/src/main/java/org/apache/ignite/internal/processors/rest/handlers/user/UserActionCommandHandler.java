@@ -26,7 +26,6 @@ import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandle
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.processors.rest.request.RestUserActionRequest;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
-import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -67,20 +66,20 @@ public class UserActionCommandHandler extends GridRestCommandHandlerAdapter {
 
             IgniteSecurity security = ctx.security();
 
-            try (OperationSecurityContext ignored = security.withContext(req.securityContext())) {
-                switch (cmd) {
-                    case ADD_USER:
-                        security.createUser(req0.user(), req0.password().toCharArray());
-                        break;
+            security.withContext(req.securityContext());
 
-                    case REMOVE_USER:
-                        security.dropUser(req0.user());
-                        break;
+            switch (cmd) {
+                case ADD_USER:
+                    security.createUser(req0.user(), req0.password().toCharArray());
+                    break;
 
-                    case UPDATE_USER:
-                        security.alterUser(req0.user(), req0.password().toCharArray());
-                        break;
-                }
+                case REMOVE_USER:
+                    security.dropUser(req0.user());
+                    break;
+
+                case UPDATE_USER:
+                    security.alterUser(req0.user(), req0.password().toCharArray());
+                    break;
             }
 
             if (log.isDebugEnabled())
