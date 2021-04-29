@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.planner;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.sql.SqlExplainLevel;
@@ -39,6 +38,8 @@ import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteSingleA
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteSingleHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteSingleSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.hamcrest.core.IsInstanceOf;
 import org.junit.Assert;
@@ -168,6 +169,44 @@ public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
 
         if (algo == AggregateAlgorithm.SORT)
             assertNotNull(findFirstNode(phys, byClass(IgniteSort.class)));
+    }
+
+    /**
+     * Test that aggregate has single distribution output even if parrent node accept random distibution inputs.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void distribution() throws Exception {
+        TestTable tbl = createAffinityTable().addIndex(RelCollations.of(ImmutableIntList.of(3)), "grp0");
+
+        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
+
+        publicSchema.addTable("TEST", tbl);
+
+        String sql = "SELECT AVG(val0), grp0 FROM TEST GROUP BY grp0 UNION ALL SELECT val0, grp0 FROM test";
+
+        IgniteRel phys = physicalPlan(
+            sql,
+            publicSchema,
+            F.concat(algo.rulesToDisable, "SortMapReduceAggregateConverterRule",
+                "HashMapReduceAggregateConverterRule")
+        );
+
+        IgniteSingleAggregateBase singleAgg = findFirstNode(phys, byClass(algo.single));
+
+        assertEquals(IgniteDistributions.single(), TraitUtils.distribution(singleAgg));
+
+        phys = physicalPlan(
+            sql,
+            publicSchema,
+            F.concat(algo.rulesToDisable, "SortSingleAggregateConverterRule",
+                "HashSingleAggregateConverterRule")
+        );
+
+        IgniteReduceAggregateBase rdcAgg = findFirstNode(phys, byClass(algo.reduce));
+
+        assertEquals(IgniteDistributions.single(), TraitUtils.distribution(rdcAgg));
     }
 
     /** */
