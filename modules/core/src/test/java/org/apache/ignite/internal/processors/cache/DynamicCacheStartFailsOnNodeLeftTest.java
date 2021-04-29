@@ -56,7 +56,7 @@ public class DynamicCacheStartFailsOnNodeLeftTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     @Test
-    public void testRollbackOnRequiredTopologyWhenCrdFailsOnExhangeFinish() throws Exception {
+    public void testRollbackOnRequiredTopologyWhenCrdFailsOnExhange() throws Exception {
         checkRollbackOnRequiredTopologyWhenNodeFails(true);
     }
 
@@ -64,10 +64,9 @@ public class DynamicCacheStartFailsOnNodeLeftTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     @Test
-    public void testRollbackOnRequiredTopologyWhenNodeFailsOnExhangeFinish() throws Exception {
+    public void testRollbackOnRequiredTopologyWhenNodeFailsOnExhange() throws Exception {
         checkRollbackOnRequiredTopologyWhenNodeFails(false);
     }
-
 
     /**
      * @param crdStop {{@code True} to stop coordinator node.

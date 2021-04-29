@@ -54,7 +54,8 @@ public interface IgniteSnapshot {
     /**
      * Restore cache group(s) from the snapshot.
      * <p>
-     * <b>NOTE:</b> Cache groups to be restored from the snapshot must not present in the cluster, if they present, they must be destroyed by the user before starting this operation.
+     * <b>NOTE:</b> Cache groups to be restored from the snapshot must not present in the cluster, if they present,
+     * they must be destroyed by the user (eg with {@link IgniteCache#destroy()}) before starting this operation.
      *
      * @param name Snapshot name.
      * @param cacheGroupNames Cache groups to be restored or {@code null} to restore all cache groups from the snapshot.
