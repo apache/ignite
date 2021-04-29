@@ -14,25 +14,14 @@
 # limitations under the License
 
 """
-This module contains classes and utilities for Ignite ConnectorConfiguration.
+This module contains classes and utilities for Ignite Binary configuration.
 """
 
 from typing import NamedTuple
 
-from ignitetest.services.utils.ssl.ssl_params import SslParams
 
-
-class ClientConnectorConfiguration(NamedTuple):
+class BinaryConfiguration(NamedTuple):
     """
-    Ignite ClientConnectorConfiguration.
-    Used to configure thin client properties.
+    Ignite Binary Configuration
     """
-    port: int = 10800
-    ssl_enabled: bool = False
-    use_ignite_ssl_context_factory: bool = True
-    ssl_client_auth: bool = False
-    ssl_params: SslParams = None
-    ssl_enabled: bool = False
-    use_ignite_ssl_context_factory: bool = True
-    ssl_client_auth: bool = False
-    ssl_params: SslParams = None
+    compact_footer: bool = True
