@@ -25,12 +25,12 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.authenticate;
+import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.withSecurityContextOnAllNodes;
 
 /**
  * Tests for authenticated an non authenticated JDBC thin connection.
@@ -69,12 +69,11 @@ public class JdbcThinAuthenticateConnectionSelfTest extends JdbcThinAbstractSelf
 
         grid(0).cluster().active(true);
 
-        try (
-            OperationSecurityContext ignored = grid(0).context().security().withContext(
-                authenticate(grid(0), "ignite", "ignite"))
-        ) {
-            grid(0).context().security().createUser("another_user", "passwd".toCharArray());
-        }
+        AutoCloseable secCtxsHnd = withSecurityContextOnAllNodes(authenticate(grid(0), "ignite", "ignite"));
+
+        grid(0).context().security().createUser("another_user", "passwd".toCharArray());
+
+        secCtxsHnd.close();
     }
 
     /** {@inheritDoc} */

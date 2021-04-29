@@ -230,10 +230,10 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
 
                 grid(nodeIdx).context().security().alterUser("test", "test".toCharArray());
 
+                // Check error on empty auth context:
                 innerNodeCtxsHnd.close();
                 nodeCtxsHnd.close();
 
-                // Check error on empty auth context:
                 GridTestUtils.assertThrows(log, new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         grid(nodeIdx).context().security().dropUser("test");
