@@ -480,7 +480,7 @@ ducker_test() {
     #(test mvn) && mvn package -DskipTests -Dmaven.javadoc.skip=true -Plgpl,-examples,-clean-libs,-release,-scala,-clientDocs
     must_popd
     if [[ -n "${DUCKTAPE_EXTRA_SETUP}" ]]; then
-        echo "execing extra ducktape setup with '${DUCKTAPE_EXTRA_SETUP}'"
+        echo "executing extra ducktape setup with '${DUCKTAPE_EXTRA_SETUP}'"
         docker exec --user=root ducker01 bash -c "${DUCKTAPE_EXTRA_SETUP}"
         [[ $? -ne 0 ]] && die "failed to execute extra ducktape setup."
     fi

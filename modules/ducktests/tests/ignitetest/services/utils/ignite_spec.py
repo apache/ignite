@@ -111,7 +111,7 @@ class IgniteSpec(metaclass=ABCMeta):
         return config_templates
 
     # pylint: disable=unused-argument,no-self-use
-    def extend_config(self, config, test_globals, node, cluster):
+    def extend_config(self, config):
         """
         Extend config with custom variables
         """

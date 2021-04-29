@@ -82,7 +82,7 @@ class IgniteConfiguration(NamedTuple):
                                                                                 ssl_params=ssl_params))
         return self
 
-    def __prepare_discovery(self, node, cluster):
+    def __prepare_discovery(self, cluster, node):
         """
         Updates discovery configuration based on current environment.
         """
@@ -97,11 +97,11 @@ class IgniteConfiguration(NamedTuple):
         return config
 
     # pylint: disable=protected-access
-    def prepare_for_env(self, test_globals, shared_root, node, cluster):
+    def prepare_for_env(self, cluster, node):
         """
         Updates configuration based on current environment.
         """
-        return self.__prepare_ssl(test_globals, shared_root).__prepare_discovery(node, cluster)
+        return self.__prepare_ssl(cluster.globals, cluster.shared_root).__prepare_discovery(cluster, node)
 
     @property
     def service_type(self):
@@ -126,7 +126,7 @@ class IgniteThinClientConfiguration(NamedTuple):
     version: IgniteVersion = DEV_BRANCH
 
     # pylint: disable=unused-argument
-    def prepare_for_env(self, test_globals, shared_root, node, cluster):
+    def prepare_for_env(self, cluster, node):
         """
         Updates configuration based on current environment.
         """

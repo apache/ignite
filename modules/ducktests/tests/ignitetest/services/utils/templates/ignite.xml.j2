@@ -96,8 +96,8 @@
             <property name="clientConnectorConfiguration">
                 <bean class="org.apache.ignite.configuration.ClientConnectorConfiguration">
                     <property name="port" value="{{ config.client_connector_configuration.port }}"/>
-                    <property name="sslEnabled" value="{{ config.client_connector_configuration.ssl_enabled }}"/>
                     {% if config.client_connector_configuration.ssl_enabled %}
+                        <property name="sslEnabled" value="true"/>
                         <property name="sslContextFactory">
                             {{ ssl_params_util.ssl_params(config.client_connector_configuration.ssl_params) }}
                         </property>
