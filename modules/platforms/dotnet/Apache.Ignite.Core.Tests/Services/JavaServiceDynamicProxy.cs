@@ -374,7 +374,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /** <inheritDoc /> */
         public void testUTCDateFromCache()
         {
-            _svc.testDateFromCache();
+            _svc.testUTCDateFromCache();
         }
 
         /** <inheritDoc /> */

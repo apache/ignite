@@ -139,12 +139,14 @@
       url: persistence/swap
     - title: Implementing Custom Cache Store
       url: persistence/custom-cache-store
-    - title: Cluster Snapshots
-      url: persistence/snapshots
+    - title: Configuring Snapshot Directory
+      url: persistence/snapshot-directory
     - title: Disk Compression
       url: persistence/disk-compression
     - title: Tuning Persistence
       url: persistence/persistence-tuning
+- title: Cluster Snapshots
+  url: snapshots/snapshots
 - title: Configuring Caches
   items:
     - title: Cache Configuration 
@@ -378,6 +380,8 @@
       url: net-specific/net-deployment-options
     - title: Standalone Nodes
       url: net-specific/net-standalone-nodes
+    - title: Asynchronous APIs
+      url: net-specific/net-async
     - title: Logging
       url: net-specific/net-logging
     - title: LINQ
@@ -489,6 +493,8 @@
           url: extensions-and-integrations/spring/spring-data
         - title: Spring Caching
           url: extensions-and-integrations/spring/spring-caching
+        - title: Spring Transactions
+          url: extensions-and-integrations/spring/spring-tx
     - title: Ignite for Spark
       items:
         - title: Overview
@@ -541,6 +547,8 @@
           url: extensions-and-integrations/cassandra/ddl-generator
     - title: PHP PDO
       url: extensions-and-integrations/php-pdo
+    - title: Performance Statistics
+      url: extensions-and-integrations/performance-statistics
 - title: Plugins
   url: plugins
 - title: Performance and Troubleshooting

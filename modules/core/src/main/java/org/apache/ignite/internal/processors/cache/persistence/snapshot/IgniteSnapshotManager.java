@@ -37,12 +37,16 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -71,12 +75,17 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
+import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheType;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
@@ -88,22 +97,30 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.Metas
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
+import org.apache.ignite.internal.processors.cache.tree.DataRow;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridBusyLock;
+import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
+import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -131,20 +148,32 @@ import static org.apache.ignite.internal.GridClosureCallMode.BALANCE;
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
 import static org.apache.ignite.internal.IgniteFeatures.PERSISTENCE_CACHE_SNAPSHOT;
 import static org.apache.ignite.internal.MarshallerContextImpl.mappingFileStoreWorkDir;
+import static org.apache.ignite.internal.MarshallerContextImpl.resolveMappingFileStoreWorkDir;
 import static org.apache.ignite.internal.MarshallerContextImpl.saveMappings;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
+import static org.apache.ignite.internal.pagemem.PageIdUtils.flag;
+import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
+import static org.apache.ignite.internal.pagemem.PageIdUtils.pageIndex;
+import static org.apache.ignite.internal.pagemem.PageIdUtils.toDetailString;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
+import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.resolveBinaryWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_TEMPLATE;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirectories;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.DB_DEFAULT_FOLDER;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
+import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_DATA;
+import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getPageIO;
+import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getType;
+import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getVersion;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SKIP_AUTH;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
+import static org.apache.ignite.internal.util.GridUnsafe.bufferAddress;
 import static org.apache.ignite.internal.util.IgniteUtils.isLocalNodeCoordinator;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.END_SNAPSHOT;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.START_SNAPSHOT;
@@ -851,7 +880,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (!snpDir.exists())
             return Collections.emptyList();
 
-        return cacheDirectories(new File(snpDir, databaseRelativePath(folderName)));
+        return cacheDirectories(new File(snpDir, databaseRelativePath(folderName)), name -> true);
     }
 
     /**
@@ -1124,6 +1153,62 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
+     * @param snpName Snapshot name.
+     * @param folderName The node folder name, usually it's the same as the U.maskForFileName(consistentId).
+     * @param grpName Cache group name.
+     * @param partId Partition id.
+     * @return Iterator over partition.
+     * @throws IgniteCheckedException If and error occurs.
+     */
+    public GridCloseableIterator<CacheDataRow> partitionRowIterator(String snpName,
+        String folderName,
+        String grpName,
+        int partId
+    ) throws IgniteCheckedException {
+        File snpDir = snapshotLocalDir(snpName);
+
+        if (!snpDir.exists())
+            throw new IgniteCheckedException("Snapshot directory doesn't exists: " + snpDir.getAbsolutePath());
+
+        File nodePath = new File(snpDir, databaseRelativePath(folderName));
+
+        if (!nodePath.exists())
+            throw new IgniteCheckedException("Consistent id directory doesn't exists: " + nodePath.getAbsolutePath());
+
+        List<File> grps = cacheDirectories(nodePath, name -> name.equals(grpName));
+
+        if (F.isEmpty(grps))
+            throw new IgniteCheckedException("The snapshot cache group not found [dir=" + snpDir.getAbsolutePath() + ", grpName=" + grpName + ']');
+
+        if (grps.size() > 1)
+            throw new IgniteCheckedException("The snapshot cache group directory cannot be uniquely identified [dir=" + snpDir.getAbsolutePath() + ", grpName=" + grpName + ']');
+
+        File snpPart = getPartitionFile(new File(snapshotLocalDir(snpName), databaseRelativePath(folderName)),
+            grps.get(0).getName(), partId);
+
+        FilePageStore pageStore = (FilePageStore)storeFactory
+            .apply(CU.cacheId(grpName), false)
+            .createPageStore(getTypeByPartId(partId),
+                snpPart::toPath,
+                val -> {
+                });
+
+        GridKernalContext kctx = new StandaloneGridKernalContext(log,
+            resolveBinaryWorkDir(snpDir.getAbsolutePath(), folderName),
+            resolveMappingFileStoreWorkDir(snpDir.getAbsolutePath()));
+
+        CacheObjectContext coctx = new CacheObjectContext(kctx, grpName, null, false,
+            false, false, false, false);
+
+        GridCacheSharedContext<?, ?> sctx = new GridCacheSharedContext<>(kctx, null, null, null,
+            null, null, null, null, null, null,
+            null, null, null, null, null,
+            null, null, null, null, null, null);
+
+        return new DataPageIterator(sctx, coctx, pageStore, partId);
+    }
+
+    /**
      * @param snpName Unique snapshot name.
      * @param srcNodeId Node id which cause snapshot operation.
      * @param parts Collection of pairs group and appropriate cache partition to be snapshot.
@@ -1278,6 +1363,233 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
         catch (IOException e) {
             throw new IgniteException(e);
+        }
+    }
+
+    /**
+     * Ves pokrit assertami absolutely ves,
+     * PageScan iterator in the ignite core est.
+     */
+    private static class DataPageIterator extends GridCloseableIteratorAdapter<CacheDataRow> {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
+        /** Page store to iterate over. */
+        @GridToStringExclude
+        private final PageStore store;
+
+        /** Page store partition id. */
+        private final int partId;
+
+        /** Grid cache shared context. */
+        private final GridCacheSharedContext<?, ?> sctx;
+
+        /** Cache object context for key/value deserialization. */
+        private final CacheObjectContext coctx;
+
+        /** Buffer to read pages. */
+        private final ByteBuffer locBuff;
+
+        /** Buffer to read the rest part of fragmented rows. */
+        private final ByteBuffer fragmentBuff;
+
+        /** Total pages in the page store. */
+        private final int pages;
+
+        /**
+         * Data row greater than page size contains with header and tail parts. Such pages with tails contain only part
+         * of a cache key-value pair. These pages will be marked and skipped at the first partition iteration and
+         * will be processed on the second partition iteration when all the pages with key-value headers defined.
+         */
+        private final BitSet tailPages;
+
+        /** Pages which already read and must be skipped. */
+        private final BitSet readPages;
+
+        /** Batch of rows read through iteration. */
+        private final Deque<CacheDataRow> rows = new LinkedList<>();
+
+        /** {@code true} if the iteration though partition reached its end. */
+        private boolean secondScanComplete;
+
+        /**
+         * Current partition page index for read. Due to we read the partition twice it
+         * can't be greater that 2 * store.size().
+         */
+        private int currIdx;
+
+        /**
+         * During scanning a cache partition presented as {@code PageStore} we must guarantee the following:
+         * all the pages of this storage remains unchanged during the Iterator remains opened, the stored data
+         * keeps its consistency. We can't read the {@code PageStore} during an ongoing checkpoint over it.
+         *
+         * @param coctx Cache object context.
+         * @param store Page store to read.
+         * @param partId Partition id.
+         * @throws IgniteCheckedException If fails.
+         */
+        public DataPageIterator(
+            GridCacheSharedContext<?, ?> sctx,
+            CacheObjectContext coctx,
+            PageStore store,
+            int partId
+        ) throws IgniteCheckedException {
+            this.store = store;
+            this.partId = partId;
+            this.coctx = coctx;
+            this.sctx = sctx;
+
+            store.ensure();
+            pages = store.pages();
+            tailPages = new BitSet(pages);
+            readPages = new BitSet(pages);
+
+            locBuff = ByteBuffer.allocateDirect(store.getPageSize())
+                .order(ByteOrder.nativeOrder());
+            fragmentBuff = ByteBuffer.allocateDirect(store.getPageSize())
+                .order(ByteOrder.nativeOrder());
+        }
+
+        /** {@inheritDoc */
+        @Override protected CacheDataRow onNext() throws IgniteCheckedException {
+            if (secondScanComplete && rows.isEmpty())
+                throw new NoSuchElementException("[partId=" + partId + ", store=" + store + ", skipPages=" + readPages + ']');
+
+            return rows.poll();
+        }
+
+        /** {@inheritDoc */
+        @Override protected boolean onHasNext() throws IgniteCheckedException {
+            if (secondScanComplete && rows.isEmpty())
+                return false;
+
+            try {
+                for (; currIdx < 2 * pages && rows.isEmpty(); currIdx++) {
+                    boolean first = currIdx < pages;
+                    int pageIdx = currIdx % pages;
+
+                    if (readPages.get(pageIdx) || (!first && tailPages.get(pageIdx)))
+                        continue;
+
+                    if (!readPageFromStore(pageId(partId, FLAG_DATA, pageIdx), locBuff)) {
+                        // Skip not FLAG_DATA pages.
+                        setBit(readPages, pageIdx);
+
+                        continue;
+                    }
+
+                    long pageAddr = bufferAddress(locBuff);
+                    DataPageIO io = getPageIO(T_DATA, getVersion(pageAddr));
+                    int freeSpace = io.getFreeSpace(pageAddr);
+                    int rowsCnt = io.getDirectCount(pageAddr);
+
+                    if (first) {
+                        // Skip empty pages.
+                        if (rowsCnt == 0) {
+                            setBit(readPages, pageIdx);
+
+                            continue;
+                        }
+
+                        // There is no difference between a page containing an incomplete DataRow fragment and
+                        // the page where DataRow takes up all the free space. There is no a dedicated
+                        // flag for this case in page header.
+                        // During the storage scan we can skip such pages at the first iteration over the partition file,
+                        // since all the fragmented pages will be marked by BitSet array we will safely read the others
+                        // on the second iteration.
+                        if (freeSpace == 0 && rowsCnt == 1) {
+                            DataPagePayload payload = io.readPayload(pageAddr, 0, locBuff.capacity());
+
+                            long link = payload.nextLink();
+
+                            if (link != 0)
+                                setBit(tailPages, pageIndex(pageId(link)));
+
+                            continue;
+                        }
+                    }
+
+                    setBit(readPages, pageIdx);
+
+                    for (int itemId = 0; itemId < rowsCnt; itemId++) {
+                        DataRow row = new DataRow();
+
+                        row.partition(partId);
+
+                        row.initFromPageBuffer(
+                            sctx,
+                            coctx,
+                            new IgniteThrowableFunction<Long, ByteBuffer>() {
+                                @Override public ByteBuffer apply(Long nextPageId) throws IgniteCheckedException {
+                                    boolean success = readPageFromStore(nextPageId, fragmentBuff);
+
+                                    assert success : "Only FLAG_DATA pages allowed: " + toDetailString(nextPageId);
+
+                                    // Fragment of page has been read, might be skipped further.
+                                    setBit(readPages, pageIndex(nextPageId));
+
+                                    return fragmentBuff;
+                                }
+                            },
+                            locBuff,
+                            itemId,
+                            false,
+                            CacheDataRowAdapter.RowData.FULL,
+                            false);
+
+                        rows.add(row);
+                    }
+                }
+
+                if (currIdx == 2 * pages) {
+                    secondScanComplete = true;
+
+                    boolean set = true;
+
+                    for (int j = 0; j < pages; j++)
+                        set &= readPages.get(j);
+
+                    assert set : "readPages=" + readPages + ", pages=" + pages;
+                }
+
+                return !rows.isEmpty();
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteCheckedException("Error during iteration through page store: " + this, e);
+            }
+        }
+
+        /**
+         * @param bitSet BitSet to change bit index.
+         * @param idx Index of bit to change.
+         */
+        private static void setBit(BitSet bitSet, int idx) {
+            boolean bit = bitSet.get(idx);
+
+            assert !bit : "Bit with given index already set: " + idx;
+
+            bitSet.set(idx);
+        }
+
+        /**
+         * @param pageId Page id to read from store.
+         * @param buff Buffer to read page into.
+         * @return {@code true} if page read with given type flag.
+         * @throws IgniteCheckedException If fails.
+         */
+        private boolean readPageFromStore(long pageId, ByteBuffer buff) throws IgniteCheckedException {
+            buff.clear();
+
+            boolean read = store.read(pageId, buff, true);
+
+            assert read : toDetailString(pageId);
+
+            return getType(buff) == flag(pageId);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(DataPageIterator.class, this, super.toString());
         }
     }
 

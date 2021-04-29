@@ -1,1 +1,1 @@
->>> Current atomic reference value:
+>>> Current atomic reference value:*

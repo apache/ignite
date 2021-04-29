@@ -2,6 +2,6 @@
 
 successfully incremented cached value.
 
-failed to increment cached value. Caught an expected optimistic exception: Failed to prepare transaction
+failed to increment cached value. Caught an expected optimistic exception: Failed to prepare transaction*
 
 >>> Resulting value in cache: 1

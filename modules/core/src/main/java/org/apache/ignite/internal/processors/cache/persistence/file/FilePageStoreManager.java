@@ -1003,7 +1003,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @param dir Directory to check.
      * @return Files that match cache or cache group pattern.
      */
-    public static List<File> cacheDirectories(File dir) {
+    public static List<File> cacheDirectories(File dir, Predicate<String> names) {
         File[] files = dir.listFiles();
 
         if (files == null)
@@ -1013,6 +1013,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             .sorted()
             .filter(File::isDirectory)
             .filter(f -> f.getName().startsWith(CACHE_DIR_PREFIX) || f.getName().startsWith(CACHE_GRP_DIR_PREFIX))
+            .filter(f -> names.test(cacheGroupName(f)))
             .collect(Collectors.toList());
     }
 
@@ -1042,7 +1043,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         return Arrays.stream(files)
             .filter(File::isFile)
-            .filter(f -> f.getName().startsWith(PART_FILE_PREFIX))
+            .filter(f -> f.getName().endsWith(FILE_SUFFIX))
             .collect(Collectors.toList());
     }
 

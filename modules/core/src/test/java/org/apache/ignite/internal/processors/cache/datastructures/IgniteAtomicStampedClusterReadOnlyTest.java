@@ -122,7 +122,7 @@ public class IgniteAtomicStampedClusterReadOnlyTest extends GridCommonAbstractTe
     /** */
     @Test
     public void testCompareAndSetDenied() {
-        performAction(s -> s.compareAndSet(INITIAL_VAL, INITIAL_VAL + 1,INITIAL_STAMP, INITIAL_STAMP + 1));
+        performAction(s -> s.compareAndSet(INITIAL_VAL, INITIAL_VAL + 1, INITIAL_STAMP, INITIAL_STAMP + 1));
     }
 
     /** */

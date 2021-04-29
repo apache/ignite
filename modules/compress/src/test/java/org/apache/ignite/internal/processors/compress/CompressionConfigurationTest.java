@@ -46,13 +46,13 @@ public class CompressionConfigurationTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
-        CacheConfiguration<Object,Object> ccfg1 = new CacheConfiguration<>("cache1");
+        CacheConfiguration<Object, Object> ccfg1 = new CacheConfiguration<>("cache1");
 
         ccfg1.setDiskPageCompression(compression1);
         ccfg1.setDiskPageCompressionLevel(level1);
         ccfg1.setGroupName("myGroup");
 
-        CacheConfiguration<Object,Object> ccfg2 = new CacheConfiguration<>("cache2");
+        CacheConfiguration<Object, Object> ccfg2 = new CacheConfiguration<>("cache2");
 
         ccfg2.setDiskPageCompression(compression2);
         ccfg2.setDiskPageCompressionLevel(level2);

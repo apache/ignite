@@ -48,4 +48,4 @@ Loaded 460000 accounts.
 Loaded 470000 accounts.
 Loaded 480000 accounts.
 Loaded 490000 accounts.
->>> Loaded 500000 accounts in
+>>> Loaded 500000 accounts in *

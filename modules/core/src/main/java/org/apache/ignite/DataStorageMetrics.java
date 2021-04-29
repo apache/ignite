@@ -249,4 +249,18 @@ public interface DataStorageMetrics {
      *         or negative value is not supported.
      */
     public long getSparseStorageSize();
+
+    /**
+     * Getting the total number of logged bytes into the WAL.
+     *
+     * @return Number of bytes.
+     */
+    long getWalWrittenBytes();
+
+    /**
+     * Getting the total size of the compressed segments in bytes.
+     *
+     * @return Number of bytes.
+     */
+    long getWalCompressedBytes();
 }

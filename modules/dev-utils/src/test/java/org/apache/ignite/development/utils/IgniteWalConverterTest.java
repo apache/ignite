@@ -176,7 +176,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
             U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_MARSHALLER_PATH, false),
             false,
             null,
-            null, null, null, null, true,true, emptyList()
+            null, null, null, null, true, true, emptyList()
         );
 
         convert(out, arg);
@@ -239,7 +239,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
             null,
             false,
             null,
-            null, null, null, null, true,true, emptyList()
+            null, null, null, null, true, true, emptyList()
         );
 
         convert(out, arg);
@@ -355,7 +355,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
             U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_MARSHALLER_PATH, false),
             false,
             null,
-            null, null, null, null, true,true, emptyList()
+            null, null, null, null, true, true, emptyList()
         );
 
         convert(out, arg);
@@ -459,7 +459,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
             U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_MARSHALLER_PATH, false),
             false,
             null,
-            null, null, null, null, true,true, emptyList()
+            null, null, null, null, true, true, emptyList()
         );
 
         convert(out, arg);

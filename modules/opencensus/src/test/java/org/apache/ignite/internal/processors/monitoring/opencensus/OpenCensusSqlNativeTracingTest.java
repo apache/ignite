@@ -578,7 +578,7 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
      * @param fetchRequired Whether query need to fetch data before cache update.
      */
     private void checkDmlQuerySpans(String qry, boolean fetchRequired, int expCacheUpdates) throws Exception {
-        SpanId rootSpan = executeAndCheckRootSpan(qry, TEST_SCHEMA, false,false,false);
+        SpanId rootSpan = executeAndCheckRootSpan(qry, TEST_SCHEMA, false, false, false);
 
         checkChildSpan(SQL_QRY_PARSE, rootSpan);
 
@@ -609,7 +609,7 @@ public class OpenCensusSqlNativeTracingTest extends AbstractTracingTest {
      * @return Id of the the child span.
      */
     protected SpanId checkChildSpan(SpanType type, SpanId parentSpan) {
-        return checkSpan(type, parentSpan,1, null).get(0);
+        return checkSpan(type, parentSpan, 1, null).get(0);
     }
 
     /**

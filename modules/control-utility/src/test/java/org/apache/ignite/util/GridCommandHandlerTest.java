@@ -1996,28 +1996,21 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         node.cluster().active(true);
 
-        IgniteCache cache = node.createCache(new CacheConfiguration<>()
+        IgniteCache<Integer, Integer> cache = node.getOrCreateCache(new CacheConfiguration<Integer, Integer>()
             .setAffinity(new RendezvousAffinityFunction(false, 32))
             .setBackups(1)
-            .setName(DEFAULT_CACHE_NAME)
-        );
+            .setName(DEFAULT_CACHE_NAME));
 
         AtomicBoolean stopFlag = new AtomicBoolean();
 
-        Thread loadThread = new Thread(() -> {
+        IgniteInternalFuture<?> loadFut = GridTestUtils.runMultiThreadedAsync(() -> {
             ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-            while (!stopFlag.get()) {
+            while (!stopFlag.get() && !Thread.currentThread().isInterrupted())
                 cache.put(rnd.nextInt(1000), rnd.nextInt(1000));
-
-                if (Thread.interrupted())
-                    break;
-            }
-        });
+        }, 5, "load-thread-");
 
         try {
-            loadThread.start();
-
             doSleep(checkpointFreq);
 
             injectTestSystemOut();
@@ -2029,7 +2022,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
             stopFlag.set(true);
 
-            loadThread.join();
+            loadFut.get();
         }
 
         String out = testOut.toString();
@@ -2158,7 +2151,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         String outputStr = testOut.toString();
 
-        assertContains(log,outputStr, "The check procedure failed on 1 node.");
+        assertContains(log, outputStr, "The check procedure failed on 1 node.");
         assertContains(log, outputStr, "The check procedure has finished, no conflicts have been found.");
     }
 

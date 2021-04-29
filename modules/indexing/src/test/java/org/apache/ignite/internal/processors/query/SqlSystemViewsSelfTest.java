@@ -62,6 +62,7 @@ import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.managers.discovery.ClusterMetricsImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
@@ -111,7 +112,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         isPersistenceEnabled = false;
 
-        GridQueryProcessor.idxCls = null;
+        IndexProcessor.idxRebuildCls = null;
     }
 
     /** @return System schema name. */
@@ -360,7 +361,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         idxPaths.forEach(idxPath -> assertTrue(U.delete(idxPath)));
 
-        GridQueryProcessor.idxCls = BlockingIndexing.class;
+        IndexProcessor.idxRebuildCls = BlockingIndexesRebuildTask.class;
 
         srv = startGrid(getConfiguration());
 
@@ -369,14 +370,14 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         checkIndexRebuild(cacheName1, true);
         checkIndexRebuild(cacheName2, true);
 
-        ((BlockingIndexing)srv.context().query().getIndexing()).stopBlock(cacheSqlName1);
+        ((BlockingIndexesRebuildTask)srv.context().indexProcessor().idxRebuild()).stopBlock(cacheSqlName1);
 
         srv.cache(cacheSqlName1).indexReadyFuture().get(30_000);
 
         checkIndexRebuild(cacheName1, false);
         checkIndexRebuild(cacheName2, true);
 
-        ((BlockingIndexing)srv.context().query().getIndexing()).stopBlock(cacheSqlName2);
+        ((BlockingIndexesRebuildTask)srv.context().indexProcessor().idxRebuild()).stopBlock(cacheSqlName2);
 
         srv.cache(cacheSqlName2).indexReadyFuture().get(30_000);
 
@@ -568,7 +569,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             new CacheConfiguration<>(DEFAULT_CACHE_NAME).setIndexedTypes(Integer.class, String.class)
         );
 
-        cache.put(100,"200");
+        cache.put(100, "200");
 
         String sql = "SELECT SQL, QUERY_ID, SCHEMA_NAME, LOCAL, START_TIME, DURATION FROM " +
             systemSchemaName() + ".SQL_QUERIES";
@@ -616,7 +617,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         assertEquals(1, cache.query(new SqlFieldsQuery(sql)).getAll().size());
 
-        cache.put(100,"200");
+        cache.put(100, "200");
 
         QueryCursor notClosedQryCursor = cache.query(new SqlQuery<>(String.class, "_key=100"));
 

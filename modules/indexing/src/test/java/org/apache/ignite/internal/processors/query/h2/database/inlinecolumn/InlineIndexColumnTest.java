@@ -22,25 +22,34 @@ import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.TimeZone;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.commons.io.Charsets;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.internal.cache.query.index.IndexProcessor;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistry;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.JavaObjectKeySerializer;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.types.StringInlineIndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.JavaObjectIndexKey;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
-import org.apache.ignite.internal.processors.query.h2.database.InlineIndexColumn;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.testframework.junits.GridTestBinaryMarshaller;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
-import org.h2.table.Column;
+import org.h2.api.JavaObjectSerializer;
 import org.h2.util.DateTimeUtils;
-import org.h2.value.CompareMode;
+import org.h2.util.JdbcUtils;
 import org.h2.value.Value;
 import org.h2.value.ValueBoolean;
 import org.h2.value.ValueByte;
@@ -63,10 +72,10 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.query.h2.database.inlinecolumn.AbstractInlineIndexColumn.CANT_BE_COMPARE;
+import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.NullableInlineIndexKeyType.CANT_BE_COMPARE;
 
 /**
- * Simple tests for {@link InlineIndexColumn}.
+ * Simple tests for compatibility of {@link InlineIndexKeyType} and H2 Value.
  */
 @WithSystemProperty(key = "h2.serializeJavaObject", value = "false")
 @WithSystemProperty(key = "h2.objectCache", value = "false")
@@ -81,9 +90,6 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
     private static final long MB = 1024;
 
     /** */
-    private static final Comparator<Value> ALWAYS_FAILS_COMPARATOR = new AlwaysFailsComparator();
-
-    /** */
     private final GridTestBinaryMarshaller marsh = new GridTestBinaryMarshaller(log);
 
     /** Whether to inline objects as hash or as bytes. */
@@ -91,21 +97,33 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
 
     /** */
     @Before
-    public void resetState() {
+    public void resetState() throws Exception {
         inlineObjHash = false;
+
+        IndexProcessor.serializer = new JavaObjectKeySerializer(getConfiguration());
+
+        JdbcUtils.serializer = new JavaObjectSerializer() {
+            @Override public byte[] serialize(Object o) throws Exception {
+                return IndexProcessor.serializer.serialize(o);
+            }
+
+            @Override public Object deserialize(byte[] bytes) throws Exception {
+                return IndexProcessor.serializer.deserialize(bytes);
+            }
+        };
     }
 
     /** Test utf-8 string cutting. */
     @Test
     public void testConvert() {
         // 8 bytes total: 1b, 1b, 3b, 3b.
-        byte[] bytes = StringInlineIndexColumn.trimUTF8("00\u20ac\u20ac".getBytes(Charsets.UTF_8), 7);
+        byte[] bytes = StringInlineIndexKeyType.trimUTF8("00\u20ac\u20ac".getBytes(Charsets.UTF_8), 7);
         assertEquals(5, bytes.length);
 
         String s = new String(bytes);
         assertEquals(3, s.length());
 
-        bytes = StringInlineIndexColumn.trimUTF8("aaaaaa".getBytes(Charsets.UTF_8), 4);
+        bytes = StringInlineIndexKeyType.trimUTF8("aaaaaa".getBytes(Charsets.UTF_8), 4);
         assertEquals(4, bytes.length);
     }
 
@@ -239,13 +257,15 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
 
             int off = 0;
 
-            InlineIndexColumnFactory factory = new InlineIndexColumnFactory(CompareMode.getInstance(CompareMode.OFF, 1));
+            IndexKeyTypeSettings keyTypeSettings = new IndexKeyTypeSettings()
+                .inlineObjHash(inlineObjHash)
+                .stringOptimizedCompare(true);
 
-            InlineIndexColumn ih = factory.createInlineHelper(new Column("", wrap(v1, cls).getType()), inlineObjHash);
+            InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(wrap(v1, cls).getType(), keyTypeSettings);
 
-            ih.put(pageAddr, off, wrap(v1, cls), maxSize);
+            keyType.put(pageAddr, off, idxKey(wrap(v1, cls)), maxSize);
 
-            return ih.compare(pageAddr, off, maxSize, wrap(v2, cls), ALWAYS_FAILS_COMPARATOR);
+            return keyType.compare(pageAddr, off, maxSize, idxKey(wrap(v2, cls)));
         }
         finally {
             if (page != 0L)
@@ -255,11 +275,26 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
         }
     }
 
+    /** */
+    private static IndexKey idxKey(Value v) {
+        return idxKey(v, null);
+    }
+
+    /** */
+    private static IndexKey idxKey(Value v, IndexKeyTypeSettings keyTypeSettings) {
+        CacheObjectValueContext coctx = null;
+
+        if (v instanceof GridH2ValueCacheObject)
+            coctx = ((GridH2ValueCacheObject)v).valueContext();
+
+        return IndexKeyFactory.wrap(v.getObject(), v.getType(), coctx, keyTypeSettings);
+    }
+
     /** Limit is too small to cut */
     @Test
     public void testStringCut() {
         // 6 bytes total: 3b, 3b.
-        byte[] bytes = StringInlineIndexColumn.trimUTF8("\u20ac\u20ac".getBytes(Charsets.UTF_8), 2);
+        byte[] bytes = StringInlineIndexKeyType.trimUTF8("\u20ac\u20ac".getBytes(Charsets.UTF_8), 2);
 
         assertNull(bytes);
     }
@@ -291,21 +326,23 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
 
             int off = 0;
 
-            InlineIndexColumnFactory factory = new InlineIndexColumnFactory(CompareMode.getInstance(CompareMode.DEFAULT, 1));
+            IndexKeyTypeSettings keyTypeSettings = new IndexKeyTypeSettings()
+                .inlineObjHash(false)
+                .stringOptimizedCompare(false);
 
-            AbstractInlineIndexColumn ih = (AbstractInlineIndexColumn)factory.createInlineHelper(new Column("", Value.STRING), false);
+            InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(Value.STRING, keyTypeSettings);
 
-            ih.put(pageAddr, off, ValueString.get("aaaaaaa"), 3 + 5);
+            keyType.put(pageAddr, off, idxKey(ValueString.get("aaaaaaa")), 3 + 5);
 
-            assertEquals("aaaaa", ih.get(pageAddr, off, 3 + 5).getString());
+            assertEquals("aaaaa", keyType.get(pageAddr, off, 3 + 5).key());
 
-            ih.put(pageAddr, off, ValueString.get("aaa"), 3 + 5);
+            keyType.put(pageAddr, off, idxKey(ValueString.get("aaa")), 3 + 5);
 
-            assertEquals("aaa", ih.get(pageAddr, off, 3 + 5).getString());
+            assertEquals("aaa", keyType.get(pageAddr, off, 3 + 5).key());
 
-            ih.put(pageAddr, off, ValueString.get("\u20acaaa"), 3 + 2);
+            keyType.put(pageAddr, off, idxKey(ValueString.get("\u20acaaa")), 3 + 2);
 
-            assertNull(ih.get(pageAddr, off, 3 + 2));
+            assertNull(keyType.get(pageAddr, off, 3 + 2));
         }
         finally {
             if (page != 0L)
@@ -340,12 +377,15 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
 
             int off = 0;
 
-            InlineIndexColumnFactory factory = new InlineIndexColumnFactory(CompareMode.getInstance(CompareMode.DEFAULT, 1));
+            IndexKeyTypeSettings keyTypeSettings = new IndexKeyTypeSettings()
+                .inlineObjHash(false)
+                .stringOptimizedCompare(false);
 
-            AbstractInlineIndexColumn ih = (AbstractInlineIndexColumn)factory.createInlineHelper(new Column("", Value.BYTES), false);
+            InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(Value.BYTES, keyTypeSettings);
 
             int maxSize = 3 + 3;
-            int savedBytesCnt = ih.put(pageAddr, off, ValueBytes.get(new byte[] {1, 2, 3, 4, 5}), maxSize);
+            int savedBytesCnt = keyType.put(pageAddr, off,
+                idxKey(ValueBytes.get(new byte[] {1, 2, 3, 4, 5}), keyTypeSettings), maxSize);
 
             assertTrue(savedBytesCnt > 0);
 
@@ -353,15 +393,16 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
 
             maxSize = 3 + 5;
 
-            assertTrue(Arrays.equals(new byte[] {1, 2, 3}, ih.get(pageAddr, off, maxSize).getBytes()));
+            assertTrue(Arrays.equals(new byte[] {1, 2, 3}, (byte[]) keyType.get(pageAddr, off, maxSize).key()));
 
-            savedBytesCnt = ih.put(pageAddr, off, ValueBytes.get(new byte[] {1, 2, 3, 4, 5}), maxSize);
+            savedBytesCnt = keyType.put(pageAddr, off,
+                idxKey(ValueBytes.get(new byte[] {1, 2, 3, 4, 5}), keyTypeSettings), maxSize);
 
             assertTrue(savedBytesCnt > 0);
 
             assertTrue(savedBytesCnt <= maxSize);
 
-            assertTrue(Arrays.equals(new byte[] {1, 2, 3, 4, 5}, ih.get(pageAddr, off, maxSize).getBytes()));
+            assertTrue(Arrays.equals(new byte[] {1, 2, 3, 4, 5}, (byte[]) keyType.get(pageAddr, off, maxSize).key()));
         }
         finally {
             if (page != 0L)
@@ -396,14 +437,16 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
 
             int off = 0;
 
-            InlineIndexColumnFactory factory = new InlineIndexColumnFactory(CompareMode.getInstance(CompareMode.DEFAULT, 1));
+            IndexKeyTypeSettings keyTypeSettings = new IndexKeyTypeSettings()
+                .inlineObjHash(false)
+                .stringOptimizedCompare(false);
 
-            AbstractInlineIndexColumn ih = (AbstractInlineIndexColumn)factory.createInlineHelper(new Column("", Value.JAVA_OBJECT), false);
+            InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(Value.JAVA_OBJECT, keyTypeSettings);
 
             ValueJavaObject exp = ValueJavaObject.getNoCopy(new TestPojo(4, 3L), null, null);
 
             int maxSize = 3 + 3;
-            int savedBytesCnt = ih.put(pageAddr, off, exp, maxSize);
+            int savedBytesCnt = keyType.put(pageAddr, off, idxKey(exp), maxSize);
 
             assertTrue(savedBytesCnt > 0);
 
@@ -411,15 +454,19 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
 
             maxSize = 3 + exp.getBytesNoCopy().length;
 
-            assertTrue(Arrays.equals(Arrays.copyOf(exp.getBytesNoCopy(), 3), ih.get(pageAddr, off, maxSize).getBytes()));
+            assertTrue(Arrays.equals(
+                Arrays.copyOf(exp.getBytesNoCopy(), 3),
+                ((JavaObjectIndexKey) keyType.get(pageAddr, off, maxSize)).bytesNoCopy()));
 
-            savedBytesCnt = ih.put(pageAddr, off, ValueJavaObject.getNoCopy(null, exp.getBytesNoCopy(), null), maxSize);
+            savedBytesCnt = keyType.put(pageAddr, off, idxKey(ValueJavaObject.getNoCopy(null, exp.getBytesNoCopy(), null)), maxSize);
 
             assertTrue(savedBytesCnt > 0);
 
             assertTrue(savedBytesCnt <= maxSize);
 
-            assertTrue(Arrays.equals(exp.getBytesNoCopy(), ih.get(pageAddr, off, maxSize).getBytes()));
+            assertTrue(Arrays.equals(
+                exp.getBytesNoCopy(),
+                ((JavaObjectIndexKey) keyType.get(pageAddr, off, maxSize)).bytesNoCopy()));
         }
         finally {
             if (page != 0L)
@@ -454,16 +501,17 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
 
             int off = 0;
 
-            InlineIndexColumnFactory factory = new InlineIndexColumnFactory(CompareMode.getInstance(CompareMode.DEFAULT, 1));
+            IndexKeyTypeSettings keyTypeSettings = new IndexKeyTypeSettings()
+                .stringOptimizedCompare(false);
 
-            InlineIndexColumn ih = factory.createInlineHelper(new Column("", Value.JAVA_OBJECT), true);
+            InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(Value.JAVA_OBJECT, keyTypeSettings);
 
             Value exp = wrap(new TestPojo(4, 3L), TestPojo.class);
 
             {
                 int maxSize = 3;
 
-                int savedBytesCnt = ih.put(pageAddr, off, exp, maxSize);
+                int savedBytesCnt = keyType.put(pageAddr, off, idxKey(exp), maxSize);
 
                 Assert.assertEquals(0, savedBytesCnt);
             }
@@ -471,15 +519,15 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
             {
                 int maxSize = 7;
 
-                int savedBytesCnt = ih.put(pageAddr, off, exp, maxSize);
+                int savedBytesCnt = keyType.put(pageAddr, off, idxKey(exp), maxSize);
 
                 Assert.assertEquals(5, savedBytesCnt);
 
                 Assert.assertEquals(exp.getObject().hashCode(),
-                    ((ObjectHashInlineIndexColumn)ih).inlinedValue(pageAddr, off).getInt());
+                    keyType.get(pageAddr, off, maxSize).key().hashCode());
 
                 Assert.assertEquals(CANT_BE_COMPARE,
-                    ih.compare(pageAddr, off, maxSize, exp, null));
+                    keyType.compare(pageAddr, off, maxSize, idxKey(exp)));
             }
         }
         finally {
@@ -764,21 +812,23 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
             int off = 0;
             int max = 255;
 
-            InlineIndexColumnFactory factory = new InlineIndexColumnFactory(CompareMode.getInstance(CompareMode.DEFAULT, 1));
+            IndexKeyTypeSettings keyTypeSettings = new IndexKeyTypeSettings()
+                .inlineObjHash(false)
+                .stringOptimizedCompare(false);
 
-            AbstractInlineIndexColumn ih = (AbstractInlineIndexColumn)factory.createInlineHelper(new Column("", v1.getType()), false);
+            InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(v1.getType(), keyTypeSettings);
 
-            off += ih.put(pageAddr, off, v1, max - off);
-            off += ih.put(pageAddr, off, v2, max - off);
-            off += ih.put(pageAddr, off, v3, max - off);
+            off += keyType.put(pageAddr, off, idxKey(v1), max - off);
+            off += keyType.put(pageAddr, off, idxKey(v2), max - off);
+            off += keyType.put(pageAddr, off, idxKey(v3), max - off);
 
-            Value v11 = ih.get(pageAddr, 0, max);
-            Value v22 = ih.get(pageAddr, ih.fullSize(pageAddr, 0), max);
+            IndexKey v11 = keyType.get(pageAddr, 0, max);
+            IndexKey v22 = keyType.get(pageAddr, keyType.inlineSize(pageAddr, 0), max);
 
-            assertEquals(v1.getObject(), v11.getObject());
-            assertEquals(v2.getObject(), v22.getObject());
+            assertEquals(v1.getObject(), v11.key());
+            assertEquals(v2.getObject(), v22.key());
 
-            assertEquals(0, ih.compare(pageAddr, 0, max, v1, ALWAYS_FAILS_COMPARATOR));
+            assertEquals(0, keyType.compare(pageAddr, 0, max, idxKey(v1)));
         }
         finally {
             if (page != 0L)
@@ -833,16 +883,6 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
         }
 
         return new String(buffer);
-    }
-
-    /**
-     *
-     */
-    private static class AlwaysFailsComparator implements Comparator<Value> {
-        /** {@inheritDoc} */
-        @Override public int compare(Value o1, Value o2) {
-            throw new AssertionError("Optimized algorithm should be used.");
-        }
     }
 
     /** Test class to verify java object inlining */

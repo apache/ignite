@@ -504,7 +504,7 @@ public class IgniteSqlRoutingTest extends AbstractIndexingCommonTest {
     }
 
     /** Run query and check that only one node did generate 'query executed' event for it. */
-    private List<List<?>> runQueryEnsureUnicast(IgniteCache<?,?> cache, SqlFieldsQuery qry, int nodeCnt) throws Exception {
+    private List<List<?>> runQueryEnsureUnicast(IgniteCache<?, ?> cache, SqlFieldsQuery qry, int nodeCnt) throws Exception {
         try (EventCounter evtCounter = new EventCounter(nodeCnt)) {
             List<List<?>> result = cache.query(qry).getAll();
 

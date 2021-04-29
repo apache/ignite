@@ -2,7 +2,6 @@
 
 >>> Employees with zipcode 94109 (SQL):
 >>>     [Name=James Wilson, salary=12500]
->>>     [Name=James Wilson, salary=12500]
 >>>     [Name=Allison Mathis, salary=25300]
 
 >>> Employees working for Apache:
@@ -11,7 +10,6 @@
 >>>     Cristian Moss
 
 >>> Employees working for Apache (distributed joins enabled):
->>>     James Wilson
 >>>     James Wilson
 >>>     Daniel Adams
 >>>     Cristian Moss

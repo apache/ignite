@@ -134,7 +134,7 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
      */
     @SuppressWarnings("unchecked")
     private CacheConfiguration cacheConfigWithIndexedTypes() {
-        CacheConfiguration<?,?> cache = defaultCacheConfiguration();
+        CacheConfiguration<?, ?> cache = defaultCacheConfiguration();
 
         cache.setCacheMode(cacheMode);
         cache.setAtomicityMode(atomicityMode);
@@ -160,7 +160,7 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
      * @return The cache configuration.
      */
     private CacheConfiguration cacheConfigWithQueryEntity() {
-        CacheConfiguration<?,?> cache = defaultCacheConfiguration();
+        CacheConfiguration<?, ?> cache = defaultCacheConfiguration();
 
         cache.setCacheMode(PARTITIONED);
         cache.setBackups(1);

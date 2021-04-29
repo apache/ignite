@@ -195,4 +195,12 @@ public interface DataStorageMetricsMXBean extends DataStorageMetrics {
     /** {@inheritDoc} */
     @MXBeanDescription("Storage space allocated adjusted for possible sparsity, in bytes.")
     @Override long getSparseStorageSize();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Getting the total number of logged bytes into the WAL.")
+    @Override long getWalWrittenBytes();
+
+    /** {@inheritDoc} */
+    @MXBeanDescription("Getting the total size of the compressed segments in bytes.")
+    @Override long getWalCompressedBytes();
 }

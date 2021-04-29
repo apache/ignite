@@ -1121,7 +1121,28 @@ public class IgnitionEx {
         }
 
         if (old != null)
-            if (failIfStarted) {
+            if (old.grid() == null) { // Stopped but not removed from map yet.
+                boolean replaced;
+
+                if (name != null)
+                    replaced = grids.replace(name, old, grid);
+                else {
+                    synchronized (dfltGridMux) {
+                        replaced = old == dfltGrid;
+
+                        if (replaced)
+                            dfltGrid = grid;
+                    }
+                }
+
+                if (!replaced) {
+                    throw new IgniteCheckedException("Ignite instance with this name has been concurrently started: " +
+                        name);
+                }
+                else
+                    notifyStateChange(old.getName(), old.state());
+            }
+            else if (failIfStarted) {
                 if (name == null)
                     throw new IgniteCheckedException("Default Ignite instance has already been started.");
                 else

@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Examples
 {
     using System;
     using System.IO;
+    using System.Linq;
     using System.Text;
     using System.Text.RegularExpressions;
     using NUnit.Framework;
@@ -82,7 +83,7 @@ namespace Apache.Ignite.Core.Tests.Examples
                 StringAssert.Contains(line, output);
             }
 
-            var expectedOutputFile = Path.Combine(ExamplePaths.ExpectedOutputDir, example.Name)+ ".txt";
+            var expectedOutputFile = Path.Combine(ExamplePaths.ExpectedOutputDir, example.Name) + ".txt";
 
             Assert.IsTrue(File.Exists(expectedOutputFile), $"File.Exists({expectedOutputFile})");
 
@@ -94,13 +95,37 @@ namespace Apache.Ignite.Core.Tests.Examples
                 expectedOutputFile = expectedOutputFile2;
             }
 
-            var expectedLines = File.ReadAllLines(expectedOutputFile);
+            var expectedLines = File.ReadAllLines(expectedOutputFile)
+                .Where(l => !string.IsNullOrWhiteSpace(l))
+                .ToList();
 
-            foreach (var line in expectedLines)
+            if (example.UndefinedOutputOrder)
             {
-                if (!string.IsNullOrWhiteSpace(line))
+                var expLines = expectedLines.GroupBy(l => l)
+                    .Select(g => new {g.Key, Count = g.Count()})
+                    .ToList();
+
+                foreach (var line in expLines)
                 {
-                    StringAssert.Contains(line, output);
+                    var count = GetSubstringCount(output, GetExpectedLine(line.Key));
+
+                    Assert.AreEqual(line.Count, count, "Unexpected line occurence count: " + line.Key);
+                }
+            }
+            else
+            {
+                var lastIdx = 0;
+
+                foreach (var line in expectedLines)
+                {
+                    var idx = output.IndexOf(GetExpectedLine(line), lastIdx, StringComparison.Ordinal);
+
+                    if (idx < 0)
+                    {
+                        Assert.Fail("Expected line not found after index {0}: {1}", lastIdx, line);
+                    }
+
+                    lastIdx = idx;
                 }
             }
         }
@@ -109,5 +134,39 @@ namespace Apache.Ignite.Core.Tests.Examples
         /// Gets the example output.
         /// </summary>
         private string GetOutput() => Regex.Replace(_outSb.ToString(), @"idHash=(\d+)", "idHash=_");
+
+        /// <summary>
+        /// Gets substring count.
+        /// </summary>
+        private static int GetSubstringCount(string str, string substr)
+        {
+            int startIdx = 0;
+            int count = 0;
+
+            while (true)
+            {
+                var idx = str.IndexOf(substr, startIdx, StringComparison.Ordinal);
+
+                if (idx < startIdx)
+                {
+                    break;
+                }
+
+                startIdx = idx + substr.Length;
+                count++;
+            }
+
+            return count;
+        }
+
+        /// <summary>
+        /// Gets the expected line.
+        /// </summary>
+        private static string GetExpectedLine(string line)
+        {
+            return line.EndsWith("*")
+                ? line.Substring(0, line.Length - 1)
+                : line + "\n";
+        }
     }
 }
