@@ -82,7 +82,7 @@ public class JdbcThinPartitionAwarenessSelfTest extends JdbcThinAbstractSelfTest
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration<?,?> cache = defaultCacheConfiguration();
+        CacheConfiguration<?, ?> cache = defaultCacheConfiguration();
 
         cache.setCacheMode(PARTITIONED);
         cache.setBackups(1);
@@ -619,7 +619,7 @@ public class JdbcThinPartitionAwarenessSelfTest extends JdbcThinAbstractSelfTest
      */
     @SuppressWarnings("unchecked")
     protected CacheConfiguration<Object, Object> prepareCacheConfig(String cacheName) {
-        CacheConfiguration<Object,Object> cache = defaultCacheConfiguration();
+        CacheConfiguration<Object, Object> cache = defaultCacheConfiguration();
 
         cache.setName(cacheName);
         cache.setCacheMode(PARTITIONED);

@@ -114,7 +114,7 @@ public class SqlParserUtils {
 
                 // Fall through.
             }
-            catch (NumberFormatException e) {
+            catch (NumberFormatException ignore) {
                 // Fall through.
             }
         }

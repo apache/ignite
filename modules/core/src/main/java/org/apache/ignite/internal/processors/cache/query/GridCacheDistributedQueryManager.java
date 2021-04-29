@@ -92,7 +92,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     private Collection<Long> cancelled = new GridBoundedConcurrentOrderedSet<>(MAX_CANCEL_IDS);
 
     /** Query response handler. */
-    private IgniteBiInClosure<UUID,GridCacheQueryResponse> resHnd = new CI2<UUID, GridCacheQueryResponse>() {
+    private IgniteBiInClosure<UUID, GridCacheQueryResponse> resHnd = new CI2<UUID, GridCacheQueryResponse>() {
         @Override public void apply(UUID nodeId, GridCacheQueryResponse res) {
             processQueryResponse(nodeId, res);
         }

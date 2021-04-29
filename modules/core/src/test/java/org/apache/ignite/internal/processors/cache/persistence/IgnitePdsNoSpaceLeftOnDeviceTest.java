@@ -39,7 +39,6 @@ import org.junit.Test;
  *
  */
 public class IgnitePdsNoSpaceLeftOnDeviceTest extends GridCommonAbstractTest {
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -102,7 +101,7 @@ public class IgnitePdsNoSpaceLeftOnDeviceTest extends GridCommonAbstractTest {
 
                 tx.commit();
             }
-            catch (Exception e) {
+            catch (Exception ignore) {
             }
         }
 

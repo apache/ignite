@@ -19,6 +19,7 @@ package org.apache.ignite.util;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.file.DirectoryStream;
@@ -47,6 +48,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.commandline.CommandHandler;
+import org.apache.ignite.internal.commandline.cache.IdleVerify;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareFutureAdapter;
@@ -74,7 +76,6 @@ import static org.apache.ignite.configuration.EncryptionConfiguration.DFLT_REENC
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PASSWORD;
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.KEYSTORE_PATH;
 import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsDumpTask.IDLE_DUMP_FILE_PREFIX;
-import static org.apache.ignite.testframework.GridTestUtils.cleanIdleVerifyLogFiles;
 import static org.apache.ignite.util.GridCommandHandlerTestUtils.addSslParams;
 
 /**
@@ -164,7 +165,9 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
-        cleanIdleVerifyLogFiles();
+        // Clean idle_verify log files.
+        for (File f : new File(".").listFiles(n -> n.getName().startsWith(IdleVerify.IDLE_VERIFY_FILE_PREFIX)))
+            U.delete(f);
 
         GridClientFactory.stopAll(false);
     }

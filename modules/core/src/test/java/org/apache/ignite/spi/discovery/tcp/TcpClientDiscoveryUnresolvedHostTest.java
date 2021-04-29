@@ -61,7 +61,7 @@ public class TcpClientDiscoveryUnresolvedHostTest extends GridCommonAbstractTest
     public void test() throws Exception {
         try {
             startClientGrid(0);
-        } catch (IgniteCheckedException e) {
+        } catch (IgniteCheckedException ignore) {
             //Ignore.
         }
 

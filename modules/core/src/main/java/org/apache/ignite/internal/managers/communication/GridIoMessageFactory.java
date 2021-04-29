@@ -136,8 +136,6 @@ import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccQuerySnapshotReq
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccRecoveryFinishedMessage;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccSnapshotResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccTxSnapshotRequest;
-import org.apache.ignite.internal.processors.cache.mvcc.msg.PartitionCountersNeighborcastRequest;
-import org.apache.ignite.internal.processors.cache.mvcc.msg.PartitionCountersNeighborcastResponse;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
@@ -362,8 +360,6 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)162, GenerateEncryptionKeyRequest::new);
         factory.register((short)163, GenerateEncryptionKeyResponse::new);
         factory.register((short)164, MvccRecoveryFinishedMessage::new);
-        factory.register((short)165, PartitionCountersNeighborcastRequest::new);
-        factory.register((short)166, PartitionCountersNeighborcastResponse::new);
         factory.register((short)167, ServiceDeploymentProcessId::new);
         factory.register((short)168, ServiceSingleNodeDeploymentResultBatch::new);
         factory.register((short)169, ServiceSingleNodeDeploymentResult::new);

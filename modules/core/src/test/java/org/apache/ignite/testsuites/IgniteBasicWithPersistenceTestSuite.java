@@ -40,13 +40,16 @@ import org.apache.ignite.internal.encryption.MasterKeyChangeTest;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointReadLockFailureTest;
 import org.apache.ignite.internal.processors.cache.persistence.CommonPoolStarvationCheckpointTest;
 import org.apache.ignite.internal.processors.cache.persistence.SingleNodePersistenceSslTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotCheckTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotMXBeanTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManagerSelfTest;
 import org.apache.ignite.internal.processors.performancestatistics.CacheStartTest;
+import org.apache.ignite.internal.processors.performancestatistics.CheckpointTest;
 import org.apache.ignite.internal.processors.performancestatistics.ForwardReadTest;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsMultipleStartTest;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsPropertiesTest;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsRotateFileTest;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsSelfTest;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsThinClientTest;
 import org.apache.ignite.internal.processors.performancestatistics.StringCacheTest;
@@ -94,6 +97,7 @@ import org.junit.runners.Suite;
 
     IgniteSnapshotManagerSelfTest.class,
     IgniteClusterSnapshotSelfTest.class,
+    IgniteClusterSnapshotCheckTest.class,
     IgniteSnapshotMXBeanTest.class,
 
     IgniteClusterIdTagTest.class,
@@ -101,13 +105,15 @@ import org.junit.runners.Suite;
 
     PerformanceStatisticsSelfTest.class,
     PerformanceStatisticsThinClientTest.class,
+    PerformanceStatisticsRotateFileTest.class,
     TopologyChangesTest.class,
     IgniteClusterIdTagTest.class,
     StringCacheTest.class,
     PerformanceStatisticsPropertiesTest.class,
     PerformanceStatisticsMultipleStartTest.class,
     ForwardReadTest.class,
-    CacheStartTest.class
+    CacheStartTest.class,
+    CheckpointTest.class
 })
 public class IgniteBasicWithPersistenceTestSuite {
 }

@@ -31,34 +31,35 @@ class IgniteApplicationService(IgniteAwareService):
     """
 
     SERVICE_JAVA_CLASS_NAME = "org.apache.ignite.internal.ducktest.utils.IgniteAwareApplicationService"
+    APP_INIT_EVT_MSG = "IGNITE_APPLICATION_INITIALIZED"
+    APP_FINISH_EVT_MSG = "IGNITE_APPLICATION_FINISHED"
+    APP_BROKEN_EVT_MSG = "IGNITE_APPLICATION_BROKEN"
 
     # pylint: disable=R0913
     def __init__(self, context, config, java_class_name, num_nodes=1, params="", startup_timeout_sec=60,
-                 shutdown_timeout_sec=10, modules=None, servicejava_class_name=SERVICE_JAVA_CLASS_NAME, jvm_opts=None,
-                 full_jvm_opts=None, start_ignite=True):
-        super().__init__(context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, modules=modules,
-                         servicejava_class_name=servicejava_class_name, java_class_name=java_class_name, params=params,
-                         jvm_opts=jvm_opts, full_jvm_opts=full_jvm_opts, start_ignite=start_ignite)
+                 shutdown_timeout_sec=60, modules=None, main_java_class=SERVICE_JAVA_CLASS_NAME, jvm_opts=None,
+                 full_jvm_opts=None):
+        super().__init__(context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, main_java_class,
+                         modules, jvm_opts=jvm_opts, full_jvm_opts=full_jvm_opts)
 
-        self.servicejava_class_name = servicejava_class_name
         self.java_class_name = java_class_name
         self.params = params
 
     def await_started(self):
         super().await_started()
 
-        self.__check_status("IGNITE_APPLICATION_INITIALIZED", timeout=self.startup_timeout_sec)
+        self.__check_status(self.APP_INIT_EVT_MSG, timeout=self.startup_timeout_sec)
 
     def await_stopped(self):
         super().await_stopped()
 
-        self.__check_status("IGNITE_APPLICATION_FINISHED")
+        self.__check_status(self.APP_FINISH_EVT_MSG)
 
     def __check_status(self, desired, timeout=1):
-        self.await_event("%s\\|IGNITE_APPLICATION_BROKEN" % desired, timeout, from_the_beginning=True)
+        self.await_event("%s\\|%s" % (desired, self.APP_BROKEN_EVT_MSG), timeout, from_the_beginning=True)
 
         try:
-            self.await_event("IGNITE_APPLICATION_BROKEN", 1, from_the_beginning=True)
+            self.await_event(self.APP_BROKEN_EVT_MSG, 1, from_the_beginning=True)
             raise IgniteExecutionException("Java application execution failed. %s" % self.extract_result("ERROR"))
         except TimeoutError:
             pass
@@ -68,17 +69,21 @@ class IgniteApplicationService(IgniteAwareService):
         except Exception:
             raise Exception("Java application execution failed.") from None
 
-    def clean_node(self, node, **kwargs):
-        if self.alive(node):
-            self.logger.warn("%s %s was still alive at cleanup time. Killing forcefully..." %
-                             (self.__class__.__name__, node.account))
+    def get_init_time(self, selector=min):
+        """
+        Gets the time of application init event.
+        :param selector: Selector function, default is min.
+        :return: Application initialization time.
+        """
+        return self.get_event_time(self.APP_INIT_EVT_MSG, selector=selector)
 
-        node.account.kill_java_processes(self.servicejava_class_name, clean_shutdown=False, allow_fail=True)
-
-        node.account.ssh("rm -rf -- %s" % self.persistent_root, allow_fail=False)
-
-    def pids(self, node):
-        return node.account.java_pids(self.servicejava_class_name)
+    def get_finish_time(self, selector=max):
+        """
+        Gets the time of application finish event.
+        :param selector: Selector function, default is max.
+        :return: Application finish time.
+        """
+        return self.get_event_time(self.APP_FINISH_EVT_MSG, selector=selector)
 
     def extract_result(self, name):
         """

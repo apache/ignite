@@ -67,6 +67,7 @@
         <module>modules/jcl</module>
         <module>modules/codegen</module>
         <module>modules/gce</module>
+        <module>modules/azure</module>
         <module>modules/cloud</module>
         <module>modules/mesos</module>
         <module>modules/yarn</module>
@@ -758,6 +759,16 @@
                                             <substitution expression="\1'${new.ignite.version}'" />
                                             <fileset dir="${basedir}/">
                                                 <include name="**/build.gradle" />
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <echo message="Update ignite.version in ducktests" />
+
+                                        <replaceregexp byline="true" encoding="UTF-8">
+                                            <regexp pattern="(__version__ = ).*$"/>
+                                            <substitution expression="\1'${new.ignite.version}'" />
+                                            <fileset dir="${basedir}/">
+                                                <include name="modules/ducktests/tests/ignitetest/__init__.py" />
                                             </fileset>
                                         </replaceregexp>
                                     </target>

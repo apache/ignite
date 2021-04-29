@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.file;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -31,7 +32,7 @@ import org.apache.ignite.lang.IgniteOutClosure;
 /**
  * Checks version in files if it's present on the disk, creates store with latest version otherwise.
  */
-public class FileVersionCheckingFactory implements FilePageStoreFactory {
+public class FileVersionCheckingFactory {
     /** Property to override latest version. Should be used only in tests. */
     public static final String LATEST_VERSION_OVERRIDE_PROPERTY = "file.page.store.latest.version.override";
 
@@ -65,8 +66,29 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
         this.pageSize = pageSize;
     }
 
-    /** {@inheritDoc} */
-    @Override public PageStore createPageStore(
+    /**
+     * Creates instance of PageStore based on given file.
+     *
+     * @param type Data type, can be {@link PageStore#TYPE_IDX} or {@link PageStore#TYPE_DATA}.
+     * @param file File Page store file.
+     * @param allocatedTracker metrics updater.
+     * @return page store
+     * @throws IgniteCheckedException if failed.
+     */
+    public PageStore createPageStore(byte type, File file, LongConsumer allocatedTracker) throws IgniteCheckedException {
+        return createPageStore(type, file::toPath, allocatedTracker);
+    }
+
+    /**
+     * Creates instance of PageStore based on file path provider.
+     *
+     * @param type Data type, can be {@link PageStore#TYPE_IDX} or {@link PageStore#TYPE_DATA}
+     * @param pathProvider File Page store path provider.
+     * @param allocatedTracker metrics updater
+     * @return page store
+     * @throws IgniteCheckedException if failed
+     */
+    public PageStore createPageStore(
         byte type,
         IgniteOutClosure<Path> pathProvider,
         LongConsumer allocatedTracker
@@ -107,7 +129,7 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
 
         try {
             latestVer = Integer.parseInt(System.getProperty(LATEST_VERSION_OVERRIDE_PROPERTY));
-        } catch (NumberFormatException e) {
+        } catch (NumberFormatException ignore) {
             // No override.
         }
 

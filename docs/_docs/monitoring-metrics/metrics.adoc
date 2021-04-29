@@ -18,6 +18,9 @@
 
 == Overview
 
+The Apache Ignite 2.8 release introduced a new mechanism for collecting metrics, which is intended to replace all
+the legacy metrics below. Please, check the link:monitoring-metrics/new-metrics-system.adoc[New Metrics System].
+
 Ignite exposes a large number of metrics useful for monitoring your cluster or application.
 You can use JMX and a monitoring tool, such as JConsole to access these metrics via JMX.
 You can also access them programmatically.
@@ -324,6 +327,22 @@ group=<Cache Name>,name="org.apache.ignite.internal.processors.cache.CacheLocalM
 | CacheSize | long | The number of entries of the cache that are stored on the local node. | Node
 |===
 --
+
+=== Monitoring Build and Rebuild Indexes
+
+To get an estimate on how long it takes to rebuild cache indexes, you can use one of the metrics listed below:
+
+. `IsIndexRebuildInProgress` - tells whether indexes are being built or rebuilt at the moment;
+. `IndexBuildCountPartitionsLeft` - gives the remaining number of partitions (by cache group) for indexes to rebuild.
+
+Note that the `IndexBuildCountPartitionsLeft` metric allows to estimate only an approximate number of indexes left to rebuild.
+For a more accurate estimate, use the `IndexRebuildKeyProcessed` cache metric:
+
+* Use `org.apache.ignite.mxbean.CacheMetricsMXBean#isIndexRebuildInProgress` to know whether the indexes are being rebuilt for the cache.
+Note that presently only the `org.apache.ignite.internal.processors.cache.CacheLocalMetricsMXBeanImpl#isIndexRebuildInProgress` local metric is available.
+
+* Use `org.apache.ignite.mxbean.CacheMetricsMXBean#getIndexRebuildKeysProcessed` to know the number of keys with rebuilt indexes. If the rebuilding is in progress, it gives a number of keys with indexes being rebuilt at the current moment. Otherwise, it gives a total number of the of keys with rebuilt indexes. The values are reset before the start of each rebuilding.
+Note that presently only the `org.apache.ignite.internal.processors.cache.CacheLocalMetricsMXBeanImpl#getIndexRebuildKeysProcessed` local metric is available.
 
 == Monitoring Transactions
 Note that if a transaction spans multiple nodes (i.e., if the keys that are changed as a result of the transaction execution are located on multiple nodes), the counters will increase on each node. For example, the 'TransactionsCommittedNumber' counter will increase on each node where the keys affected by the transaction are stored.

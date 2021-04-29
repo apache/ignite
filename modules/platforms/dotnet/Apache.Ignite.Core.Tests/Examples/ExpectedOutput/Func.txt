@@ -1,0 +1,15 @@
+>>> Closure execution example started.
+
+>>> Calculating character count with manual reducing:
+Character count in word "closure": 7
+Character count in word "using": 5
+Character count in word "characters": 10
+Character count in word "Count": 5
+>>> Total character count: 27
+
+>>> Calculating character count with reducer:
+Character count in word "using": 5
+Character count in word "closure": 7
+Character count in word "Count": 5
+Character count in word "characters": 10
+>>> Total character count: 27

@@ -20,8 +20,9 @@ This module contains classes and utilities to start zookeeper cluster for testin
 import os.path
 from distutils.version import LooseVersion
 
-from ducktape.services.service import Service
 from ducktape.utils.util import wait_until
+
+from ignitetest.services.utils.ducktests_service import DucktestsService
 from ignitetest.services.utils.log_utils import monitor_log
 from ignitetest.services.utils.path import PathAware
 
@@ -49,7 +50,7 @@ class ZookeeperSettings:
         assert self.tick_time <= self.min_session_timeout // 2, "'tick_time' must be <= 'min_session_timeout' / 2"
 
 
-class ZookeeperService(Service, PathAware):
+class ZookeeperService(DucktestsService, PathAware):
     """
     Zookeeper service.
     """
@@ -62,8 +63,8 @@ class ZookeeperService(Service, PathAware):
         self.init_logs_attribute()
 
     @property
-    def version(self):
-        return self.settings.version
+    def product(self):
+        return "%s-%s" % ("zookeeper", self.settings.version)
 
     @property
     def globals(self):
@@ -76,10 +77,6 @@ class ZookeeperService(Service, PathAware):
     @property
     def config_file(self):
         return os.path.join(self.persistent_root, "zookeeper.properties")
-
-    @property
-    def project(self):
-        return "zookeeper"
 
     def start(self, **kwargs):
         super().start(**kwargs)
@@ -163,21 +160,13 @@ class ZookeeperService(Service, PathAware):
         """
         return ','.join([node.account.hostname + ":" + str(2181) for node in self.nodes])
 
-    def stop_node(self, node, **kwargs):
+    def stop_node(self, node, force_stop=False, **kwargs):
         idx = self.idx(node)
         self.logger.info("Stopping %s node %d on %s" % (type(self).__name__, idx, node.account.hostname))
-        node.account.kill_process("zookeeper", allow_fail=False)
+        node.account.kill_process("zookeeper", clean_shutdown=not force_stop, allow_fail=False)
 
     def clean_node(self, node, **kwargs):
-        self.logger.info("Cleaning Zookeeper node %d on %s", self.idx(node), node.account.hostname)
-        if self.alive(node):
-            self.logger.warn("%s %s was still alive at cleanup time. Killing forcefully..." %
-                             (self.__class__.__name__, node.account))
-        node.account.kill_process("zookeeper", clean_shutdown=False, allow_fail=True)
-        node.account.ssh(f"rm -rf -- {self.persistent_root}", allow_fail=False)
+        super().clean_node(node, **kwargs)
 
-    def kill(self):
-        """
-        Kills the service.
-        """
-        self.stop()
+        self.logger.info("Cleaning Zookeeper node %d on %s", self.idx(node), node.account.hostname)
+        node.account.ssh(f"rm -rf -- {self.persistent_root}", allow_fail=False)

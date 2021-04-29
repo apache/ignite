@@ -28,11 +28,14 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.communication.tcp.AttributeNames;
 
@@ -42,6 +45,10 @@ import org.apache.ignite.spi.communication.tcp.AttributeNames;
 public class CommunicationTcpUtils {
     /** No-op runnable. */
     public static final IgniteRunnable NOOP = () -> {};
+
+    /** */
+    private static final boolean THROUBLESHOOTING_LOG_ENABLED = IgniteSystemProperties
+        .getBoolean(IgniteSystemProperties.IGNITE_TROUBLESHOOTING_LOGGER);
 
     /**
      * @param node Node.
@@ -154,12 +161,43 @@ public class CommunicationTcpUtils {
      * @param errs Error.
      * @return {@code True} if error was caused by some connection IO error or IgniteCheckedException due to timeout.
      */
-    public static boolean isRecoverableException(Exception errs) {
+    public static boolean isRecoverableException(Throwable errs) {
         return X.hasCause(
             errs,
             IOException.class,
             HandshakeException.class,
             IgniteSpiOperationTimeoutException.class
         );
+    }
+
+    /**
+     * Forcibly fails client node.
+     *
+     * Is used in a single situation if a client node is visible to discovery but is not reachable via comm protocol.
+     *
+     * @param nodeToFail Client node to forcible fail.
+     * @param spiCtx Context to request node failing.
+     * @param err Error to fail client with.
+     * @param log Logger to print message about failed node to.
+     */
+    public static void failNode(ClusterNode nodeToFail,
+        IgniteSpiContext spiCtx,
+        Throwable err,
+        IgniteLogger log
+    ) {
+        assert nodeToFail.isClient();
+
+        String logMsg = "TcpCommunicationSpi failed to establish connection to node, node will be dropped from " +
+            "cluster [rmtNode=" + nodeToFail + ']';
+
+        if (THROUBLESHOOTING_LOG_ENABLED)
+            U.error(log, logMsg, err);
+        else
+            U.warn(log, logMsg);
+
+        spiCtx.failNode(nodeToFail.id(), "TcpCommunicationSpi failed to establish connection to node [" +
+            "rmtNode=" + nodeToFail +
+            ", err=" + err +
+            ", connectErrs=" + X.getSuppressedList(err) + ']');
     }
 }

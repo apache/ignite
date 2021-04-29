@@ -2213,8 +2213,8 @@ public class PageMemoryImpl implements PageMemoryEx {
                 if (PageIO.getType(pageAddr) != PageIO.T_DATA)
                     return;
 
-                final GridQueryRowCacheCleaner cleaner = ctx.kernalContext().query()
-                    .getIndexing().rowCacheCleaner(fullPageId.groupId());
+                final GridQueryRowCacheCleaner cleaner = ctx.kernalContext().indexProcessor()
+                    .rowCacheCleaner(fullPageId.groupId());
 
                 if (cleaner == null)
                     return;

@@ -208,6 +208,16 @@ namespace ignite
                  */
                 affinity::SP_AffinityAssignment GetAffinityAssignment(int32_t cacheId) const;
 
+                /**
+                 * Get IO timeout.
+                 *
+                 * @return IO timeout.
+                 */
+                int32_t GetIoTimeout()
+                {
+                    return ioTimeout;
+                }
+
             private:
                 IGNITE_NO_COPY_ASSIGNMENT(DataRouter);
 

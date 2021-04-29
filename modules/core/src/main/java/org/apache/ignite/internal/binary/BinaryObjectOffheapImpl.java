@@ -519,6 +519,11 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
         // No-op.
     }
 
+    /** {@inheritDoc} */
+    @Override public int size() {
+        return length();
+    }
+
     /**
      * @return Deserialized value.
      */

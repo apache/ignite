@@ -59,7 +59,7 @@ public class GridCacheSemaphoreState extends VolatileAtomicDataStructureValue im
      * @param failoverSafe Failover safe flag.
      * @param gridStartTime Cluster start time.
      */
-    public GridCacheSemaphoreState(int cnt, @Nullable Map<UUID,Integer> waiters, boolean failoverSafe, long gridStartTime) {
+    public GridCacheSemaphoreState(int cnt, @Nullable Map<UUID, Integer> waiters, boolean failoverSafe, long gridStartTime) {
         this.cnt = cnt;
         this.waiters = waiters;
         this.failoverSafe = failoverSafe;
@@ -100,7 +100,7 @@ public class GridCacheSemaphoreState extends VolatileAtomicDataStructureValue im
     /**
      * @return Waiters.
      */
-    public Map<UUID,Integer> getWaiters() {
+    public Map<UUID, Integer> getWaiters() {
         return waiters;
     }
 

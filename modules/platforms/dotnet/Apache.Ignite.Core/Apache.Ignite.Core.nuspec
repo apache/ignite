@@ -17,12 +17,12 @@
   limitations under the License.
 -->
 
-<!-- 
+<!--
 
 Creating NuGet package:
 1) Build Java: mvn clean package -DskipTests -U -Plgpl
 2) Build Apache.Ignite.sln (AnyCPU configuration)
-3) Create package (use csproj instead of nuspec so that template substitution works): 
+3) Create package (use csproj instead of nuspec so that template substitution works):
    nuget pack Apache.Ignite.Core.csproj -Prop Configuration=Release -Prop Platform=AnyCPU
 
 -->
@@ -42,7 +42,7 @@ Creating NuGet package:
         <description>
 Apache Ignite is a distributed database for high-performance computing with in-memory speed.
 Supports .NET 4+ and .NET Core 2.0+.
-            
+
 More info: https://ignite.apache.org/
         </description>
         <copyright>Copyright 2021</copyright>
@@ -53,7 +53,7 @@ More info: https://ignite.apache.org/
             <!-- Empty section is required to denote supported framework. -->
             <group targetFramework=".NETFramework4.0" />
             <group targetFramework=".NETStandard2.0">
-                <dependency id="System.Configuration.ConfigurationManager" version="[4.4.0, 5.0.0)" />
+                <dependency id="System.Configuration.ConfigurationManager" version="[4.4.0, 7.0.0)" />
             </group>
         </dependencies>
     </metadata>
@@ -74,10 +74,10 @@ More info: https://ignite.apache.org/
         <file src="..\bin\libs\*.jar" target="build\output\libs" />
         <file src="..\..\..\..\config\java.util.logging.properties" target="build\output\config" />
         <file src="Apache.Ignite.targets" target="build" />
-    
+
         <!-- LINQPad samples -->
         <file src="NuGet\LINQPad\*.*" target="linqpad-samples" />
-        
+
         <!-- Icon -->
         <file src="..\logo_ignite_128x128.png" target="images\" />
     </files>

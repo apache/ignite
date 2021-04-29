@@ -31,6 +31,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
@@ -120,6 +121,10 @@ public class ConnectionClientPool {
 
     /** Scheduled executor service which closed the socket if handshake timeout is out. **/
     private final ScheduledExecutorService handshakeTimeoutExecutorService;
+
+    /** Enable forcible node kill. */
+    private boolean forcibleNodeKillEnabled = IgniteSystemProperties
+        .getBoolean(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
 
     /**
      * @param cfg Config.
@@ -359,6 +364,8 @@ public class ConnectionClientPool {
         if (cfg.connectionRequestor() != null) {
             ConnectFuture fut0 = (ConnectFuture)fut;
 
+            final ConnectionKey key = new ConnectionKey(node.id(), connIdx, -1);
+
             ConnectionRequestFuture triggerFut = new ConnectionRequestFuture();
 
             triggerFut.listen(f -> {
@@ -368,9 +375,12 @@ public class ConnectionClientPool {
                 catch (Throwable t) {
                     fut0.onDone(t);
                 }
+                finally {
+                    clientFuts.remove(key, triggerFut);
+                }
             });
 
-            clientFuts.put(new ConnectionKey(node.id(), connIdx, -1), triggerFut);
+            clientFuts.put(key, triggerFut);
 
             fut = triggerFut;
 
@@ -381,12 +391,19 @@ public class ConnectionClientPool {
                     ? cfg.failureDetectionTimeout()
                     : cfg.connectionTimeout();
 
-                fut.get(failTimeout);
+                    fut.get(failTimeout);
             }
-            catch (IgniteCheckedException triggerException) {
-                IgniteSpiException spiE = new IgniteSpiException(triggerException);
+            catch (Throwable triggerException) {
+                if (forcibleNodeKillEnabled
+                    && node.isClient()
+                    && triggerException instanceof IgniteFutureTimeoutCheckedException
+                ) {
+                    CommunicationTcpUtils.failNode(node, tcpCommSpi.getSpiContext(), triggerException, log);
+                }
 
-                spiE.addSuppressed(e);
+                IgniteSpiException spiE = new IgniteSpiException(e);
+
+                spiE.addSuppressed(triggerException);
 
                 String msg = "Failed to wait for establishing inverse communication connection from node " + node;
 

@@ -76,5 +76,5 @@ public interface DatasetBuilder<K, V> {
      * Returns new instance of DatasetBuilder using conjunction of internal filter and {@code filterToAdd}.
      * @param filterToAdd Additional filter.
      */
-    public DatasetBuilder<K,V> withFilter(IgniteBiPredicate<K,V> filterToAdd);
+    public DatasetBuilder<K, V> withFilter(IgniteBiPredicate<K, V> filterToAdd);
 }

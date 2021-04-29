@@ -193,10 +193,10 @@ public class WarningOnBigQueryResultsBaseTest extends AbstractIndexingCommonTest
     protected void checkDurations(List<Long> durations) {
         assertFalse(F.isEmpty(durations));
 
-        assertTrue("Invalid durations: " + durations,durations.get(0) >= 0);
+        assertTrue("Invalid durations: " + durations, durations.get(0) >= 0);
 
         for (int i = 0; i < durations.size() - 1; ++i) {
-            assertTrue("Invalid durations: " + durations,durations.get(i + 1) >= 0);
+            assertTrue("Invalid durations: " + durations, durations.get(i + 1) >= 0);
             assertTrue("Invalid durations: " + durations, durations.get(i) <= durations.get(i + 1));
         }
     }

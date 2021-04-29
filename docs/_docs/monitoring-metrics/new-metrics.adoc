@@ -80,8 +80,8 @@ Register name: `cache.{cache_name}.{near}`
 |GetTime |histogram|   Get time in nanoseconds.
 |GetTimeTotal|long|The total time of cache gets, in nanoseconds.
 |HeapEntriesCount|long|Onheap entries count.
-|IndexRebuildKeyProcessed|long|Number of keys processed during the index rebuilding.
-|IsIndexRebuildInProgress|boolean | True if index rebuild is in progress.
+|IndexRebuildKeysProcessed|long | The number of keys with rebuilt indexes.
+|IsIndexRebuildInProgress|boolean | True if index build or rebuild is in progress.
 |OffHeapBackupEntriesCount|long|Offheap backup entries count.
 |OffHeapEntriesCount|long|Offheap entries count.
 |OffHeapEvictions|long|The total number of evictions from the off-heap memory.

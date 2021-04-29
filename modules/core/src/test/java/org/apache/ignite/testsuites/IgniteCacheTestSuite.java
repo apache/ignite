@@ -40,6 +40,7 @@ import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoWriteBehindStoreWithCoale
 import org.apache.ignite.cache.store.jdbc.GridCacheJdbcBlobStoreMultithreadedSelfTest;
 import org.apache.ignite.cache.store.jdbc.GridCacheJdbcBlobStoreSelfTest;
 import org.apache.ignite.cache.store.jdbc.JdbcTypesDefaultTransformerTest;
+import org.apache.ignite.cache.store.jdbc.dialect.OracleDialectTest;
 import org.apache.ignite.internal.IgniteInternalCacheRemoveTest;
 import org.apache.ignite.internal.managers.communication.GridIoManagerSelfTest;
 import org.apache.ignite.internal.managers.communication.IgniteCommunicationBalanceMultipleConnectionsTest;
@@ -53,6 +54,8 @@ import org.apache.ignite.internal.managers.communication.MessageDirectTypeIdConf
 import org.apache.ignite.internal.processors.cache.BinaryMetadataRegistrationInsideEntryProcessorTest;
 import org.apache.ignite.internal.processors.cache.CacheAffinityCallSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheAffinityKeyConfigurationMismatchTest;
+import org.apache.ignite.internal.processors.cache.CacheAsyncContinuationExecutorTest;
+import org.apache.ignite.internal.processors.cache.CacheAsyncContinuationSynchronousExecutorTest;
 import org.apache.ignite.internal.processors.cache.CacheAtomicSingleMessageCountSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheDeferredDeleteQueueTest;
 import org.apache.ignite.internal.processors.cache.CacheDeferredDeleteSanitySelfTest;
@@ -175,6 +178,7 @@ import org.apache.ignite.internal.processors.cache.query.continuous.CacheEntryPr
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessorPersistenceSelfTest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessorSelfTest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerClientReconnectAfterClusterRestartTest;
+import org.apache.ignite.internal.processors.datastreamer.DataStreamerCommunicationSpiExceptionTest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImplSelfTest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerMultiThreadedSelfTest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerMultinodeCreateCacheTest;
@@ -286,6 +290,7 @@ public class IgniteCacheTestSuite {
         GridTestUtils.addTestIfNeeded(suite, DataStreamerImplSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, DataStreamerTimeoutTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, DataStreamerClientReconnectAfterClusterRestartTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, DataStreamerCommunicationSpiExceptionTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheEntryMemorySizeSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheClearAllSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheObjectToStringSelfTest.class, ignoredTests);
@@ -332,6 +337,7 @@ public class IgniteCacheTestSuite {
         GridTestUtils.addTestIfNeeded(suite, GridCachePartitionsStateValidationTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCachePartitionsUpdateCountersAndSizeTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheConcurrentPutGetRemoveTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, OracleDialectTest.class, ignoredTests);
 
         suite.addAll(IgniteCacheTcpClientDiscoveryTestSuite.suite(ignoredTests));
 
@@ -392,6 +398,8 @@ public class IgniteCacheTestSuite {
         GridTestUtils.addTestIfNeeded(suite, InterceptorWithKeepBinaryCacheFullApiTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, BinaryMetadataRegistrationInsideEntryProcessorTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheAsyncContinuationExecutorTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheAsyncContinuationSynchronousExecutorTest.class, ignoredTests);
 
         suite.add(IgniteGetNonPlainKeyReadThroughSelfTest.class);
 

@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -37,6 +38,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.LongJVMPauseDetector;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
@@ -488,6 +490,11 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
+    @Override public IndexProcessor indexProcessor() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public GridEncryptionManager encryption() {
         return null;
     }
@@ -738,6 +745,11 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public PerformanceStatisticsProcessor performanceStatistics() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Executor getAsyncContinuationExecutor() {
         return null;
     }
 }

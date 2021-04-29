@@ -22,9 +22,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import javax.cache.configuration.CacheEntryListenerConfiguration;
+import javax.cache.event.CacheEntryListener;
 import javax.cache.expiry.ExpiryPolicy;
-
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -703,13 +705,28 @@ public interface ClientCache<K, V> {
     public <K1, V1> ClientCache<K1, V1> withExpirePolicy(ExpiryPolicy expirePlc);
 
     /**
-     * Queries cache. Supports {@link ScanQuery} and {@link SqlFieldsQuery}.
+     * Queries cache. Supports {@link ScanQuery}, {@link SqlFieldsQuery} and {@link ContinuousQuery}.
+     * <p>
+     * NOTE: For continuous query listeners there is no failover in case of client channel failure, this event should
+     * be handled on the user's side. Use {@link #query(ContinuousQuery, ClientDisconnectListener)} method to get
+     * notified about client disconnected event via {@link ClientDisconnectListener} interface if you need it.
      *
      * @param qry Query.
      * @return Cursor.
-     *
      */
     public <R> QueryCursor<R> query(Query<R> qry);
+
+    /**
+     * Start {@link ContinuousQuery} on the cache.
+     * <p>
+     * NOTE: There is no failover in case of client channel failure, this event should be handled on the user's side.
+     * Use {@code disconnectListener} to handle this.
+     *
+     * @param qry Query.
+     * @param disconnectListener Listener of client disconnected event.
+     * @return Cursor.
+     */
+    public <R> QueryCursor<R> query(ContinuousQuery<K, V> qry, ClientDisconnectListener disconnectListener);
 
     /**
      * Convenience method to execute {@link SqlFieldsQuery}.
@@ -718,4 +735,43 @@ public interface ClientCache<K, V> {
      * @return Cursor.
      */
     public FieldsQueryCursor<List<?>> query(SqlFieldsQuery qry);
+
+    /**
+     * Registers a {@link CacheEntryListener}. The supplied {@link CacheEntryListenerConfiguration} is used to
+     * instantiate a listener and apply it to those events specified in the configuration.
+     * <p>
+     * NOTE: There is no failover in case of client channel failure, this event should be handled on the user's side.
+     * Use {@link #registerCacheEntryListener(CacheEntryListenerConfiguration, ClientDisconnectListener)} method to get
+     * notified about client disconnected event via {@link ClientDisconnectListener} interface if you need it.
+     *
+     * @param cacheEntryListenerConfiguration a factory and related configuration for creating the listener.
+     * @throws IllegalArgumentException is the same CacheEntryListenerConfiguration is used more than once or
+     *          if some unsupported by thin client properties are set.
+     * @see CacheEntryListener
+     */
+    public void registerCacheEntryListener(CacheEntryListenerConfiguration<K, V> cacheEntryListenerConfiguration);
+
+    /**
+     * Registers a {@link CacheEntryListener}. The supplied {@link CacheEntryListenerConfiguration} is used to
+     * instantiate a listener and apply it to those events specified in the configuration.
+     * <p>
+     * NOTE: There is no failover in case of client channel failure, this event should be handled on the user's side.
+     * Use {@code disconnectListener} to handle this.
+     *
+     * @param cacheEntryListenerConfiguration a factory and related configuration for creating the listener.
+     * @param disconnectListener Listener of client disconnected event.
+     * @throws IllegalArgumentException is the same CacheEntryListenerConfiguration is used more than once or
+     *          if some unsupported by thin client properties are set.
+     * @see CacheEntryListener
+     */
+    public void registerCacheEntryListener(CacheEntryListenerConfiguration<K, V> cacheEntryListenerConfiguration,
+        ClientDisconnectListener disconnectListener);
+
+    /**
+     * Deregisters a listener, using the {@link CacheEntryListenerConfiguration} that was used to register it.
+     *
+     * @param cacheEntryListenerConfiguration the factory and related configuration that was used to create the
+     *         listener.
+     */
+    public void deregisterCacheEntryListener(CacheEntryListenerConfiguration<K, V> cacheEntryListenerConfiguration);
 }

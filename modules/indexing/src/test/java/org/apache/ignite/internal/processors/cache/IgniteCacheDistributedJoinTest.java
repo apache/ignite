@@ -117,9 +117,9 @@ public class IgniteCacheDistributedJoinTest extends GridCommonAbstractTest {
         GridRandom rnd = new GridRandom();
         Ignite ignite = ignite(0);
 
-        IgniteCache<Integer,A> a = ignite.cache("a");
-        IgniteCache<Integer,B> b = ignite.cache("b");
-        IgniteCache<Integer,C> c = ignite.cache("c");
+        IgniteCache<Integer, A> a = ignite.cache("a");
+        IgniteCache<Integer, B> b = ignite.cache("b");
+        IgniteCache<Integer, C> c = ignite.cache("c");
 
         for (int i = 0; i < 100; i++) {
             a.put(i, insert(s, new A(rnd.nextInt(50), rnd.nextInt(100), rnd.nextInt(150))));
@@ -199,9 +199,9 @@ public class IgniteCacheDistributedJoinTest extends GridCommonAbstractTest {
     public void testJoins() throws Exception {
         Ignite ignite = ignite(0);
 
-        IgniteCache<Integer,A> a = ignite.cache("a");
-        IgniteCache<Integer,B> b = ignite.cache("b");
-        IgniteCache<Integer,C> c = ignite.cache("c");
+        IgniteCache<Integer, A> a = ignite.cache("a");
+        IgniteCache<Integer, B> b = ignite.cache("b");
+        IgniteCache<Integer, C> c = ignite.cache("c");
 
         Statement s = conn.createStatement();
 

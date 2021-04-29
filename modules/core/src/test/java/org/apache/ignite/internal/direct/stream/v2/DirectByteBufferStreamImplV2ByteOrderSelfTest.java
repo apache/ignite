@@ -266,15 +266,15 @@ public class DirectByteBufferStreamImplV2ByteOrderSelfTest {
         for (int i = 0; i < ARR_LEN; i++)
             arr[i] = RND.nextInt();
 
-        testWriteArrayInternal(arr, false, false,2);
-        testWriteArrayInternal(arr, false, true,2);
-        testWriteArrayInternal(arr, true, false,2);
-        testWriteArrayInternal(arr, true, true,2);
+        testWriteArrayInternal(arr, false, false, 2);
+        testWriteArrayInternal(arr, false, true, 2);
+        testWriteArrayInternal(arr, true, false, 2);
+        testWriteArrayInternal(arr, true, true, 2);
 
-        testWriteArrayInternalOverflow(arr, false, false,2);
-        testWriteArrayInternalOverflow(arr, false, true,2);
-        testWriteArrayInternalOverflow(arr, true, false,2);
-        testWriteArrayInternalOverflow(arr, true, true,2);
+        testWriteArrayInternalOverflow(arr, false, false, 2);
+        testWriteArrayInternalOverflow(arr, false, true, 2);
+        testWriteArrayInternalOverflow(arr, true, false, 2);
+        testWriteArrayInternalOverflow(arr, true, true, 2);
     }
 
     /**

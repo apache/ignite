@@ -24,7 +24,7 @@ namespace Apache.Ignite.Core.Tests.Examples
     /// Tests thick examples.
     /// </summary>
     [Category(TestUtils.CategoryExamples)]
-    public class ThickExamplesExternalNodeTest
+    public class ThickExamplesExternalNodeTest : ExamplesTestBase
     {
         /** */
         private static readonly Example[] ThickExamples = Example.AllExamples
@@ -56,6 +56,8 @@ namespace Apache.Ignite.Core.Tests.Examples
         public void TestThickExampleWithExternalNode(Example example)
         {
             example.Run();
+
+            CheckOutput("_ExternalNode", example, "Ignite node started OK");
         }
     }
 }

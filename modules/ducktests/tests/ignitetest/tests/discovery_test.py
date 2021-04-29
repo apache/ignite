@@ -24,8 +24,10 @@ from time import monotonic
 from typing import NamedTuple
 
 from ducktape.mark import matrix
-from ignitetest.services.ignite import IgniteAwareService, IgniteService, get_event_time, node_failed_event_pattern
+
+from ignitetest.services.ignite import IgniteAwareService, IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
+from ignitetest.services.utils.ignite_aware import node_failed_event_pattern
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_zookeeper_cluster, from_ignite_cluster, \
@@ -33,9 +35,9 @@ from ignitetest.services.utils.ignite_configuration.discovery import from_zookee
 from ignitetest.services.utils.time_utils import epoch_mills
 from ignitetest.services.zk.zookeeper import ZookeeperService, ZookeeperSettings
 from ignitetest.utils import ignite_versions, ignore_if, cluster
+from ignitetest.utils.enum import constructible
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST, LATEST_2_7, V_2_8_0, V_2_9_0, IgniteVersion
-from ignitetest.utils.enum import constructible
 
 
 @constructible
@@ -83,7 +85,7 @@ class DiscoveryTest(IgniteTest):
 
     WARMUP_DATA_AMOUNT = 10_000
 
-    DEFAULT_DETECTION_TIMEOUT = 1000
+    DEFAULT_DETECTION_TIMEOUT = 2000
 
     def __init__(self, test_context):
         super().__init__(test_context=test_context)
@@ -92,32 +94,56 @@ class DiscoveryTest(IgniteTest):
 
     @cluster(num_nodes=MAX_CONTAINERS)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @matrix(nodes_to_kill=[1, 2], disable_conn_recovery=[False, True],
-            net_part=[IgniteService.NetPart.ALL, IgniteService.NetPart.INPUT],
+    @matrix(nodes_to_kill=[1, 2], net_part=[IgniteService.NetPart.ALL, IgniteService.NetPart.INPUT],
             load_type=[ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
-    def test_nodes_fail_not_sequential_tcp(self, ignite_version, nodes_to_kill, load_type, disable_conn_recovery: bool,
-                                           net_part: IgniteService.NetPart):
+    def test_nonsequential_failure_tcp(self, ignite_version, nodes_to_kill, load_type, net_part: IgniteService.NetPart):
         """
         Test nodes failure scenario with TcpDiscoverySpi not allowing nodes to fail in a row.
         """
         test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), nodes_to_kill=nodes_to_kill,
                                           load_type=ClusterLoad.construct_from(load_type), sequential_failure=False,
-                                          disable_conn_recovery=disable_conn_recovery, net_part=net_part)
+                                          net_part=net_part)
+
+        return self._perform_node_fail_scenario(test_config)
+
+    @cluster(num_nodes=MAX_CONTAINERS)
+    @ignite_versions(str(DEV_BRANCH), str(LATEST))
+    @matrix(nodes_to_kill=[1, 2], load_type=[ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
+    def test_nonsequential_failure_tcp_no_recovery(self, ignite_version, nodes_to_kill, load_type):
+        """
+        Test nodes failure scenario with TcpDiscoverySpi not allowing nodes to fail in a row with. The connection
+        recovery is disabled.
+        """
+        test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), nodes_to_kill=nodes_to_kill,
+                                          load_type=ClusterLoad.construct_from(load_type), sequential_failure=False,
+                                          disable_conn_recovery=True)
 
         return self._perform_node_fail_scenario(test_config)
 
     @cluster(num_nodes=MAX_CONTAINERS)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @matrix(load_type=[ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL],
-            net_part=[IgniteService.NetPart.ALL, IgniteService.NetPart.INPUT], disable_conn_recovery=[False, True])
-    def test_2_nodes_fail_sequential_tcp(self, ignite_version, load_type, disable_conn_recovery: bool,
-                                         net_part: IgniteService.NetPart):
+            net_part=[IgniteService.NetPart.ALL, IgniteService.NetPart.INPUT])
+    def test_sequential_failure_tcp(self, ignite_version, load_type, net_part: IgniteService.NetPart):
         """
         Test 2 nodes sequential failure scenario with TcpDiscoverySpi.
         """
         test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), nodes_to_kill=2,
                                           load_type=ClusterLoad.construct_from(load_type), sequential_failure=True,
-                                          disable_conn_recovery=disable_conn_recovery, net_part=net_part)
+                                          net_part=net_part)
+
+        return self._perform_node_fail_scenario(test_config)
+
+    @cluster(num_nodes=MAX_CONTAINERS)
+    @ignite_versions(str(DEV_BRANCH), str(LATEST))
+    @matrix(load_type=[ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
+    def test_sequential_failure_tcp_no_recovery(self, ignite_version, load_type):
+        """
+        Test 2 nodes sequential failure scenario with TcpDiscoverySpi. The connection recovery is disabled.
+        """
+        test_config = DiscoveryTestConfig(version=IgniteVersion(ignite_version), nodes_to_kill=2,
+                                          load_type=ClusterLoad.construct_from(load_type), sequential_failure=True,
+                                          disable_conn_recovery=True)
 
         return self._perform_node_fail_scenario(test_config)
 
@@ -243,8 +269,8 @@ class DiscoveryTest(IgniteTest):
 
         for survivor in [n for n in servers.nodes if n not in failed_nodes]:
             for failed_id in ids_to_wait:
-                logged_timestamps.append(get_event_time(servers, survivor, node_failed_event_pattern(failed_id),
-                                                        timeout=event_timeout_sec))
+                logged_timestamps.append(servers.get_event_time_on_node(survivor, node_failed_event_pattern(failed_id),
+                                                                        timeout=event_timeout_sec))
 
             self._check_failed_number(failed_nodes, survivor)
 
@@ -263,14 +289,14 @@ class DiscoveryTest(IgniteTest):
         """Ensures number of failed nodes is correct."""
         cmd = "grep '%s' %s | wc -l" % (node_failed_event_pattern(), survived_node.log_file)
 
-        failed_cnt = int(IgniteApplicationService.exec_command(survived_node, cmd))
+        failed_cnt = int(IgniteAwareService.exec_command(survived_node, cmd))
 
         # Cache survivor id, do not read each time.
         surv_id = IgniteApplicationService.node_id(survived_node)
 
         if failed_cnt != len(failed_nodes):
-            failed = IgniteApplicationService.exec_command(survived_node, "grep '%s' %s" % (node_failed_event_pattern(),
-                                                                                            survived_node.log_file))
+            failed = IgniteAwareService.exec_command(survived_node, "grep '%s' %s" % (node_failed_event_pattern(),
+                                                                                      survived_node.log_file))
 
             self.logger.warn("Node '%s' (%s) has detected the following failures:%s%s" %
                              (survived_node.name, surv_id, os.linesep, failed))
@@ -284,7 +310,7 @@ class DiscoveryTest(IgniteTest):
             for node in [srv_node for srv_node in service.nodes if srv_node not in failed_nodes]:
                 cmd = "grep -i '%s' %s | wc -l" % ("local node segmented", node.log_file)
 
-                failed = IgniteApplicationService.exec_command(node, cmd)
+                failed = IgniteAwareService.exec_command(node, cmd)
 
                 if int(failed) > 0:
                     raise AssertionError(
@@ -333,9 +359,9 @@ def choose_node_to_kill(servers, nodes_to_kill, sequential):
     """Choose node to kill during test"""
     assert nodes_to_kill > 0, "No nodes to kill passed. Check the parameters."
 
-    idx = random.randint(0, len(servers.nodes)-1)
+    idx = random.randint(0, len(servers.nodes) - 1)
 
-    to_kill = servers.nodes[idx:] + servers.nodes[:idx-1]
+    to_kill = servers.nodes[idx:] + servers.nodes[:idx - 1]
 
     if not sequential:
         to_kill = to_kill[0::2]

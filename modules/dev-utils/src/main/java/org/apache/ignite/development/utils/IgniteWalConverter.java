@@ -19,28 +19,34 @@ package org.apache.ignite.development.utils;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TimeStampRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.FilteredWalIterator;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
-import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerIO;
-import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasLeafIO;
-import org.apache.ignite.internal.processors.query.h2.database.io.H2InnerIO;
-import org.apache.ignite.internal.processors.query.h2.database.io.H2LeafIO;
-import org.apache.ignite.internal.processors.query.h2.database.io.H2MvccInnerIO;
-import org.apache.ignite.internal.processors.query.h2.database.io.H2MvccLeafIO;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+
+import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.WalFilters.checkpoint;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.WalFilters.pageOwner;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.WalFilters.partitionMetaStateUpdate;
 
 /**
  * Print WAL log data in human-readable form.
@@ -64,10 +70,6 @@ public class IgniteWalConverter {
      * @param params Parameters.
      */
     public static void convert(final PrintStream out, final IgniteWalConverterArguments params) {
-        PageIO.registerH2(H2InnerIO.VERSIONS, H2LeafIO.VERSIONS, H2MvccInnerIO.VERSIONS, H2MvccLeafIO.VERSIONS);
-        H2ExtrasInnerIO.register();
-        H2ExtrasLeafIO.register();
-
         System.setProperty(IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE,
             Boolean.toString(params.getProcessSensitiveData() == ProcessSensitiveData.HIDE));
 
@@ -94,7 +96,7 @@ public class IgniteWalConverter {
 
         boolean printAlways = F.isEmpty(params.getRecordTypes());
 
-        try (WALIterator stIt = factory.iterator(iteratorParametersBuilder)) {
+        try (WALIterator stIt = walIterator(factory.iterator(iteratorParametersBuilder), params.getPages())) {
             String currentWalPath = null;
 
             while (stIt.hasNextX()) {
@@ -155,27 +157,29 @@ public class IgniteWalConverter {
     }
 
     /**
-     * Get current wal file path, used in {@code WALIterator}
+     * Get current wal file path, used in {@code WALIterator}.
      *
      * @param it WALIterator.
      * @return Current wal file path.
      */
     private static String getCurrentWalFilePath(WALIterator it) {
-        String result = null;
+        String res = null;
 
         try {
-            final Integer curIdx = IgniteUtils.field(it, "curIdx");
+            WALIterator walIter = it instanceof FilteredWalIterator ? U.field(it, "delegateWalIter") : it;
 
-            final List<FileDescriptor> walFileDescriptors = IgniteUtils.field(it, "walFileDescriptors");
+            Integer curIdx = U.field(walIter, "curIdx");
 
-            if (curIdx != null && walFileDescriptors != null && !walFileDescriptors.isEmpty())
-                result = walFileDescriptors.get(curIdx).getAbsolutePath();
+            List<FileDescriptor> walFileDescriptors = U.field(walIter, "walFileDescriptors");
+
+            if (curIdx != null && walFileDescriptors != null && curIdx < walFileDescriptors.size())
+                res = walFileDescriptors.get(curIdx).getAbsolutePath();
         }
         catch (Exception e) {
             e.printStackTrace();
         }
 
-        return result;
+        return res;
     }
 
     /**
@@ -200,5 +204,33 @@ public class IgniteWalConverter {
             walRecord = new MetastoreDataRecordWrapper((MetastoreDataRecord)walRecord, sensitiveData);
 
         return walRecord.toString();
+    }
+
+    /**
+     * Getting WAL iterator.
+     *
+     * @param walIter WAL iterator.
+     * @param pageIds Pages for searching in format grpId:pageId.
+     * @return WAL iterator.
+     */
+    private static WALIterator walIterator(
+        WALIterator walIter,
+        Collection<T2<Integer, Long>> pageIds
+    ) throws IgniteCheckedException {
+        Predicate<IgniteBiTuple<WALPointer, WALRecord>> filter = null;
+
+        if (!pageIds.isEmpty()) {
+            Set<T2<Integer, Long>> grpAndPageIds0 = new HashSet<>(pageIds);
+
+            // Collect all (group, partition) partition pairs.
+            Set<T2<Integer, Integer>> grpAndParts = grpAndPageIds0.stream()
+                .map((tup) -> new T2<>(tup.get1(), PageIdUtils.partId(tup.get2())))
+                .collect(Collectors.toSet());
+
+            // Build WAL filter. (Checkoint, Page, Partition meta)
+            filter = checkpoint().or(pageOwner(grpAndPageIds0)).or(partitionMetaStateUpdate(grpAndParts));
+        }
+
+        return filter != null ? new FilteredWalIterator(walIter, filter) : walIter;
     }
 }

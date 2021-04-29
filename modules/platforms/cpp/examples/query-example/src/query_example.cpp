@@ -117,8 +117,8 @@ void DoSqlQueryWithJoin()
     // Execute query to get names of all employees.
     std::string sql(
         "select concat(firstName, ' ', lastName), org.name "
-        "from Person, \"Organization\".Organization as org "
-        "where Person.orgId = org._key");
+        "from Person inner join \"Organization\".Organization as org "
+        "on Person.orgId = org._key");
 
     QueryFieldsCursor cursor = cache.Query(SqlFieldsQuery(sql));
 
