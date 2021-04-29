@@ -65,7 +65,9 @@ public class GridCacheRebalancingUnmarshallingFailedSelfTest extends GridCommonA
         @QuerySqlField(index = true)
         private String field;
 
-        /** @param field Test key 1. */
+        /**
+         *  @param field Test key 1.
+         */
         public TestKey(String field) {
             this.field = field;
         }
