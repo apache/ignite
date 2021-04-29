@@ -20,8 +20,11 @@ package org.apache.ignite.internal.processors.query.calcite.exec.exp.agg;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Supplier;
+
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -40,6 +43,16 @@ import static org.apache.calcite.sql.type.SqlTypeName.VARCHAR;
 public class Accumulators {
     /** */
     public static Supplier<Accumulator> accumulatorFactory(AggregateCall call) {
+        if (!call.isDistinct())
+            return accumulatorFunctionFactory(call);
+
+        Supplier<Accumulator> fac = accumulatorFunctionFactory(call);
+
+        return () -> new DistinctAccumulator(fac);
+    }
+
+    /** */
+    public static Supplier<Accumulator> accumulatorFunctionFactory(AggregateCall call) {
         switch (call.getAggregation().getName()) {
             case "COUNT":
                 return LongCount.FACTORY;
@@ -993,6 +1006,56 @@ public class Accumulators {
         /** {@inheritDoc} */
         @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
             return typeFactory.createTypeWithNullability(typeFactory.createSqlType(DECIMAL), true);
+        }
+    }
+
+    /** */
+    private static class DistinctAccumulator implements Accumulator {
+        /** */
+        private final Accumulator acc;
+
+        /** */
+        private final Set<Object> set = new HashSet<>();
+
+
+        /** */
+        private DistinctAccumulator(Supplier<Accumulator> accSup) {
+            this.acc = accSup.get();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void add(Object... args) {
+            Object in = args[0];
+
+            if (in == null)
+                return;
+
+            set.add(in);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void apply(Accumulator other) {
+            DistinctAccumulator other0 = (DistinctAccumulator) other;
+
+            set.addAll(other0.set);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object end() {
+            for (Object o : set)
+                acc.add(o);
+
+            return acc.end();
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<RelDataType> argumentTypes(IgniteTypeFactory typeFactory) {
+            return acc.argumentTypes(typeFactory);
+        }
+
+        /** {@inheritDoc} */
+        @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
+            return acc.returnType(typeFactory);
         }
     }
 }

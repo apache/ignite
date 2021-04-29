@@ -292,6 +292,60 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
 
     /** */
     @Test
+    public void distinctSum() {
+        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+        IgniteTypeFactory tf = ctx.getTypeFactory();
+        RelDataType rowType = TypeUtils.createRowType(tf, int.class, int.class);
+        ScanNode<Object[]> scan = new ScanNode<>(ctx, rowType, Arrays.asList(
+            row(0, 200),
+            row(1, 200),
+            row(1, 300),
+            row(1, 300),
+            row(0, 1000),
+            row(0, 1000),
+            row(0, 1000),
+            row(0, 1000),
+            row(0, 200)
+        ));
+
+        AggregateCall call = AggregateCall.create(
+            SqlStdOperatorTable.SUM,
+            true,
+            false,
+            false,
+            ImmutableIntList.of(1),
+            -1,
+            RelCollations.EMPTY,
+            tf.createJavaType(int.class),
+            null);
+
+        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of(0));
+
+        RelDataType aggRowType = TypeUtils.createRowType(tf, int.class);
+
+        SingleNode<Object[]> aggChain = createAggregateNodesChain(
+            ctx,
+            grpSets,
+            call,
+            rowType,
+            aggRowType,
+            rowFactory(),
+            scan
+        );
+
+        RootNode<Object[]> root = new RootNode<>(ctx, aggRowType);
+        root.register(aggChain);
+
+        assertTrue(root.hasNext());
+
+        Assert.assertArrayEquals(row(0, 1200), root.next());
+        Assert.assertArrayEquals(row(1, 500), root.next());
+
+        assertFalse(root.hasNext());
+    }
+
+    /** */
+    @Test
     public void sumOnDifferentRowsCount() throws IgniteCheckedException {
         int bufSize = U.field(AbstractNode.class, "IN_BUFFER_SIZE");
 
