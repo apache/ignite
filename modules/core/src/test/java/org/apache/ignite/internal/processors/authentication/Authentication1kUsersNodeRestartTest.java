@@ -41,9 +41,6 @@ public class Authentication1kUsersNodeRestartTest extends GridCommonAbstractTest
     /** */
     private static final int USERS_COUNT = 1000;
 
-    /** */
-    private AutoCloseable nodeCtxsHnd;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -81,8 +78,6 @@ public class Authentication1kUsersNodeRestartTest extends GridCommonAbstractTest
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        nodeCtxsHnd.close();
-
         stopAllGrids();
 
         super.afterTest();
@@ -101,7 +96,7 @@ public class Authentication1kUsersNodeRestartTest extends GridCommonAbstractTest
 
         SecurityContext secCtxDflt = authenticate(grid(0), User.DFAULT_USER_NAME, "ignite");
 
-        nodeCtxsHnd = withSecurityContextOnAllNodes(secCtxDflt);
+        withSecurityContextOnAllNodes(secCtxDflt);
 
         IntStream.range(0, USERS_COUNT).parallel().forEach(
             i -> {
