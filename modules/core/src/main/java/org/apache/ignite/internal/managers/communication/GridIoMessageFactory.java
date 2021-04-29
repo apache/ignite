@@ -136,8 +136,6 @@ import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccQuerySnapshotReq
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccRecoveryFinishedMessage;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccSnapshotResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccTxSnapshotRequest;
-import org.apache.ignite.internal.processors.cache.mvcc.msg.PartitionCountersNeighborcastRequest;
-import org.apache.ignite.internal.processors.cache.mvcc.msg.PartitionCountersNeighborcastResponse;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
@@ -159,20 +157,6 @@ import org.apache.ignite.internal.processors.continuous.GridContinuousMessage;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerResponse;
-import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
-import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopDirectShuffleMessage;
-import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffleAck;
-import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffleFinishRequest;
-import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffleFinishResponse;
-import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffleMessage;
-import org.apache.ignite.internal.processors.igfs.IgfsAckMessage;
-import org.apache.ignite.internal.processors.igfs.IgfsBlockKey;
-import org.apache.ignite.internal.processors.igfs.IgfsBlocksMessage;
-import org.apache.ignite.internal.processors.igfs.IgfsDeleteMessage;
-import org.apache.ignite.internal.processors.igfs.IgfsFileAffinityRange;
-import org.apache.ignite.internal.processors.igfs.IgfsFragmentizerRequest;
-import org.apache.ignite.internal.processors.igfs.IgfsFragmentizerResponse;
-import org.apache.ignite.internal.processors.igfs.IgfsSyncMessage;
 import org.apache.ignite.internal.processors.marshaller.MissingMappingRequestMessage;
 import org.apache.ignite.internal.processors.marshaller.MissingMappingResponseMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
@@ -198,6 +182,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.collision.jobstealing.JobStealingRequest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.communication.tcp.internal.TcpInverseConnectionResponseMessage;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage2;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage;
@@ -222,12 +207,6 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)-45, GridChangeGlobalStateMessageResponse::new);
         factory.register((short)-44, HandshakeMessage2::new);
         factory.register((short)-43, IgniteIoTestMessage::new);
-        factory.register((short)-42, HadoopDirectShuffleMessage::new);
-        factory.register((short)-41, HadoopShuffleFinishResponse::new);
-        factory.register((short)-40, HadoopShuffleFinishRequest::new);
-        factory.register((short)-39, HadoopJobId::new);
-        factory.register((short)-38, HadoopShuffleAck::new);
-        factory.register((short)-37, HadoopShuffleMessage::new);
         factory.register((short)-36, GridDhtAtomicSingleUpdateRequest::new);
         factory.register((short)-27, GridDhtTxOnePhaseCommitAckRequest::new);
         factory.register((short)-26, TxLockList::new);
@@ -297,14 +276,6 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)61, GridContinuousMessage::new);
         factory.register((short)62, DataStreamerRequest::new);
         factory.register((short)63, DataStreamerResponse::new);
-        factory.register((short)64, IgfsAckMessage::new);
-        factory.register((short)65, IgfsBlockKey::new);
-        factory.register((short)66, IgfsBlocksMessage::new);
-        factory.register((short)67, IgfsDeleteMessage::new);
-        factory.register((short)68, IgfsFileAffinityRange::new);
-        factory.register((short)69, IgfsFragmentizerRequest::new);
-        factory.register((short)70, IgfsFragmentizerResponse::new);
-        factory.register((short)71, IgfsSyncMessage::new);
         factory.register((short)76, GridTaskResultRequest::new);
         factory.register((short)77, GridTaskResultResponse::new);
         factory.register((short)78, MissingMappingRequestMessage::new);
@@ -389,8 +360,6 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)162, GenerateEncryptionKeyRequest::new);
         factory.register((short)163, GenerateEncryptionKeyResponse::new);
         factory.register((short)164, MvccRecoveryFinishedMessage::new);
-        factory.register((short)165, PartitionCountersNeighborcastRequest::new);
-        factory.register((short)166, PartitionCountersNeighborcastResponse::new);
         factory.register((short)167, ServiceDeploymentProcessId::new);
         factory.register((short)168, ServiceSingleNodeDeploymentResultBatch::new);
         factory.register((short)169, ServiceSingleNodeDeploymentResult::new);
@@ -401,11 +370,14 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(GridIoSecurityAwareMessage.TYPE_CODE, GridIoSecurityAwareMessage::new);
         factory.register(SessionChannelMessage.TYPE_CODE, SessionChannelMessage::new);
         factory.register(SingleNodeMessage.TYPE_CODE, SingleNodeMessage::new);
+        factory.register((short)177, TcpInverseConnectionResponseMessage::new);
 
         // [-3..119] [124..129] [-23..-28] [-36..-55] - this
         // [120..123] - DR
         // [-4..-22, -30..-35] - SQL
         // [2048..2053] - Snapshots
+        // [-42..-37] - former hadoop.
+        // [64..71] - former IGFS.
     }
 
     /** {@inheritDoc} */

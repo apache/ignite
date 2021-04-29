@@ -1,0 +1,59 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Installing Apache Ignite in VMWare
+
+== Overview
+
+Apache Ignite can be deployed in virtual and cloud environments managed by VMWare. There are no specificities related to
+VMWare; however, we recommend you have an Ignite VM pinned to a single dedicated host, which allows you to:
+
+* Avoid the "noisy neighbor" problem when Ignite VM could compete for the host resources with other applications. This
+might cause performance spikes in your Ignite cluster.
+* Ensure high-availability. If a host goes down and you had two or more Ignite server node VMs pinned to it, then it could lead to data loss.
+
+The following sections cover vMotion usage aspects for Ignite nodes migration.
+
+== Cluster Nodes Migration With vMotion
+
+vMotion provides migration of a live VM from one host to another. There are some basic principles Ignite relies on to
+continue a normal operation after the migration:
+
+* Memory state on the new host is identical.
+* Disk state is identical (or the new host uses the same disk).
+* IP addresses, available ports, and other networking parameters are not changed.
+* All network resources are available, TCP connections are not interrupted.
+
+If vMotion is set up and works in accordance with above mentioned rules, then an Ignite node will function normally.
+
+However, the vMotion migration will impact the performance of the Ignite VM. During the transfer procedure a lot of resources
+-- mainly CPU and network capacity -- will be serving vMotion needs.
+
+To avoid negative performance spikes and unresponsive/frozen periods of the cluster state, we recommend the following:
+
+* Perform migration during the periods of low activity and load on your Ignite cluster. This ensures faster transfer with
+minimal impact on the cluster performance.
+* Perform migration of the nodes sequentially, one by one, if several nodes have to be migrated.
+* Set `IgniteConfiguration.failureDetectionTimeout` parameter to a value higher than the possible downtime for Ignite VM.
+This is because vMotion stops the CPU of your Ignite VM when a small chunk of state is left for transfer. It will take X
+time to transfer the chunk and `IgniteConfiguration.failureDetectionTimeout` has to be bigger than X; otherwise, the node
+will be removed from the cluster.
+* Use a high-throughput network. It's better if the vMotion migrator and Ignite cluster are using different networks to
+avoid network saturation.
+* If you have an option to choose between more nodes with less RAM vs. fewer nodes with more RAM, then go for the first option.
+Smaller RAM on the Ignite VM ensures faster vMotion migration, and faster migration ensures more stable operation of the Ignite cluster.
+* If it's applicable for your use case, you can even consider the migration with a downtime of the Ignite VM. Given that
+there are backup copies of the data on other nodes in the cluster, the node can be shut down and brought back up after the
+vMotion migration is over. This may result in better overall performance (both performance of the cluster and the vMotion
+transfer time) than with a live migration.

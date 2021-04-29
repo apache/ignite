@@ -49,7 +49,7 @@ public class MemcacheRestExampleNodeStartup {
     }
 
     /**
-     * Create Ignite configuration with IGFS and enabled IPC.
+     * Create Ignite configuration with enabled IPC.
      *
      * @return Ignite configuration.
      * @throws IgniteException If configuration creation failed.

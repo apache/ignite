@@ -39,7 +39,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Test class for diagnostics of long running transactions.
  */
-public class GridCacheLongRunningTransactionDiagnosticsTest extends GridCommonAbstractTest  {
+public class GridCacheLongRunningTransactionDiagnosticsTest extends GridCommonAbstractTest {
     /** */
     private static final long LONG_OP_TIMEOUT = 500;
 

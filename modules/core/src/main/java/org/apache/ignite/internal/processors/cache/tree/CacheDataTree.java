@@ -84,6 +84,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
      * @param rowStore Row store.
      * @param metaPageId Meta page ID.
      * @param initNew Initialize new index.
+     * @param pageFlag Default flag value for allocated pages.
      * @throws IgniteCheckedException If failed.
      */
     public CacheDataTree(
@@ -93,7 +94,8 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         CacheDataRowStore rowStore,
         long metaPageId,
         boolean initNew,
-        PageLockListener lockLsnr
+        PageLockListener lockLsnr,
+        byte pageFlag
     ) throws IgniteCheckedException {
         super(
             name,
@@ -106,6 +108,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
             reuseList,
             innerIO(grp),
             leafIO(grp),
+            pageFlag,
             grp.shared().kernalContext().failure(),
             lockLsnr
         );
@@ -149,7 +152,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
     @Override public GridCursor<CacheDataRow> find(
         CacheSearchRow lower,
         CacheSearchRow upper,
-        TreeRowClosure<CacheSearchRow,CacheDataRow> c,
+        TreeRowClosure<CacheSearchRow, CacheDataRow> c,
         Object x
     ) throws IgniteCheckedException {
         // If there is a group of caches, lower and upper bounds will not be null here.

@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -35,6 +36,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.client.thin.io.ClientConnectionMultiplexer;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -46,6 +48,7 @@ import static org.apache.ignite.configuration.ClientConnectorConfiguration.DFLT_
 /**
  * Abstract thin client partition awareness test.
  */
+@SuppressWarnings("rawtypes")
 public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommonAbstractTest {
     /** Wait timeout. */
     private static final long WAIT_TIMEOUT = 5_000L;
@@ -58,6 +61,15 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
 
     /** Partitioned with custom affinity cache name. */
     protected static final String PART_CUSTOM_AFFINITY_CACHE_NAME = "partitioned_custom_affinity_cache";
+
+    /* Name of a partitioned cache with 0 backups. */
+    protected static final String PART_CACHE_0_BACKUPS_NAME = "partitioned_0_backup_cache";
+
+    /** Name of a partitioned cache with 1 backups. */
+    protected static final String PART_CACHE_1_BACKUPS_NAME = "partitioned_1_backup_cache";
+
+    /** Name of a partitioned cache with 3 backups. */
+    protected static final String PART_CACHE_3_BACKUPS_NAME = "partitioned_3_backup_cache";
 
     /** Keys count. */
     protected static final int KEY_CNT = 30;
@@ -99,7 +111,22 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
                 new CacheKeyConfiguration(TestNotAnnotatedAffinityKey.class.getName(), "affinityKey"),
                 new CacheKeyConfiguration(TestAnnotatedAffinityKey.class));
 
-        return cfg.setCacheConfiguration(ccfg0, ccfg1, ccfg2);
+        CacheConfiguration ccfg3 = new CacheConfiguration()
+                .setName(PART_CACHE_0_BACKUPS_NAME)
+                .setCacheMode(CacheMode.PARTITIONED)
+                .setBackups(0);
+
+        CacheConfiguration ccfg4 = new CacheConfiguration()
+                .setName(PART_CACHE_1_BACKUPS_NAME)
+                .setCacheMode(CacheMode.PARTITIONED)
+                .setBackups(1);
+
+        CacheConfiguration ccfg5 = new CacheConfiguration()
+                .setName(PART_CACHE_3_BACKUPS_NAME)
+                .setCacheMode(CacheMode.PARTITIONED)
+                .setBackups(3);
+
+        return cfg.setCacheConfiguration(ccfg0, ccfg1, ccfg2, ccfg3, ccfg4, ccfg5);
     }
 
     /** {@inheritDoc} */
@@ -159,11 +186,11 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
      * @param chIdxs Channels to wait for initialization.
      */
     protected void initClient(ClientConfiguration clientCfg, int... chIdxs) throws IgniteInterruptedCheckedException {
-        client = new TcpIgniteClient(cfg -> {
+        client = new TcpIgniteClient((cfg, hnd) -> {
             try {
                 log.info("Establishing connection to " + cfg.getAddress());
 
-                TcpClientChannel ch = new TestTcpClientChannel(cfg);
+                TcpClientChannel ch = new TestTcpClientChannel(cfg, hnd);
 
                 log.info("Channel initialized: " + ch);
 
@@ -297,8 +324,8 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
         /**
          * @param cfg Config.
          */
-        public TestTcpClientChannel(ClientChannelConfiguration cfg) {
-            super(cfg);
+        public TestTcpClientChannel(ClientChannelConfiguration cfg, ClientConnectionMultiplexer hnd) {
+            super(cfg, hnd);
 
             this.cfg = cfg;
 
@@ -316,10 +343,23 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
             T res = super.service(op, payloadWriter, payloadReader);
 
             // Store all operations except binary type registration in queue to check later.
-            if (op != ClientOperation.REGISTER_BINARY_TYPE_NAME &&  op != ClientOperation.PUT_BINARY_TYPE)
+            if (op != ClientOperation.REGISTER_BINARY_TYPE_NAME && op != ClientOperation.PUT_BINARY_TYPE)
                 opsQueue.offer(new T2<>(this, op));
 
             return res;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <T> CompletableFuture<T> serviceAsync(
+                ClientOperation op,
+                Consumer<PayloadOutputChannel> payloadWriter,
+                Function<PayloadInputChannel, T> payloadReader)
+                throws ClientException {
+            // Store all operations except binary type registration in queue to check later.
+            if (op != ClientOperation.REGISTER_BINARY_TYPE_NAME && op != ClientOperation.PUT_BINARY_TYPE)
+                opsQueue.offer(new T2<>(this, op));
+
+            return super.serviceAsync(op, payloadWriter, payloadReader);
         }
 
         /** {@inheritDoc} */

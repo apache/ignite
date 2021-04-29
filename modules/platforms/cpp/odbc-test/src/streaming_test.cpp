@@ -115,7 +115,7 @@ struct StreamingTestSuiteFixture : odbc::OdbcTestSuite
         for (int32_t i = begin; i < end; ++i)
         {
             key = i;
-            std::string val = getTestString(i);
+            std::string val = GetTestString(i);
 
             strncpy(strField, val.c_str(), sizeof(strField));
             strFieldLen = SQL_NTS;
@@ -240,7 +240,7 @@ struct StreamingTestSuiteFixture : odbc::OdbcTestSuite
                 BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
             BOOST_CHECK_EQUAL(i, keyVal);
-            BOOST_CHECK_EQUAL(getTestString(i), std::string(strField, static_cast<size_t>(strFieldLen)));
+            BOOST_CHECK_EQUAL(GetTestString(i), std::string(strField, static_cast<size_t>(strFieldLen)));
         }
 
         // Resetting parameters.

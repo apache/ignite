@@ -99,7 +99,7 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
     public void testTask() throws Exception {
         Map map = U.field(((IgniteKernal)grid(0)).context().io(), "msgSetMap");
 
-        int initSize =  map.size();
+        int initSize = map.size();
 
         ComputeTaskFuture<?> fut = executeAsync(compute(grid(0).cluster().forRemotes()), Task.class, null);
 
@@ -113,7 +113,7 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
     public void testTaskException() throws Exception {
         Map map = U.field(((IgniteKernal)grid(0)).context().io(), "msgSetMap");
 
-        int initSize =  map.size();
+        int initSize = map.size();
 
         ComputeTaskFuture<?> fut = executeAsync(compute(grid(0).cluster().forRemotes()), FailTask.class, null);
 

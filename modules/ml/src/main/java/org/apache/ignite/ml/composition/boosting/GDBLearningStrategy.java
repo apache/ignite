@@ -103,7 +103,7 @@ public class GDBLearningStrategy {
      * @param <V> Type of a value in {@code upstream} data.
      * @return Updated models list.
      */
-    public <K, V> List<IgniteModel<Vector, Double>> update(GDBTrainer.GDBModel mdlToUpdate,
+    public <K, V> List<IgniteModel<Vector, Double>> update(GDBModel mdlToUpdate,
                                                            DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> preprocessor) {
         if (trainerEnvironment == null)
             throw new IllegalStateException("Learning environment builder is not set.");
@@ -148,7 +148,7 @@ public class GDBLearningStrategy {
      * @param mdlToUpdate Model to update.
      * @return List of already learned models.
      */
-    @NotNull protected List<IgniteModel<Vector, Double>> initLearningState(GDBTrainer.GDBModel mdlToUpdate) {
+    @NotNull protected List<IgniteModel<Vector, Double>> initLearningState(GDBModel mdlToUpdate) {
         List<IgniteModel<Vector, Double>> models = new ArrayList<>();
         if (mdlToUpdate != null) {
             models.addAll(mdlToUpdate.getModels());

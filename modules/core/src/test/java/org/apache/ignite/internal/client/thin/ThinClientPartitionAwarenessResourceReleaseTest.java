@@ -23,13 +23,13 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.client.thin.ReliableChannel.ASYNC_RUNNER_THREAD_NAME;
-import static org.apache.ignite.internal.client.thin.TcpClientChannel.RECEIVER_THREAD_PREFIX;
-
 /**
  * Test resource releasing by thin client.
  */
 public class ThinClientPartitionAwarenessResourceReleaseTest extends ThinClientAbstractPartitionAwarenessTest {
+    /** Worker thread prefix. */
+    private static final String THREAD_PREFIX = "thin-client-channel";
+
     /**
      * Test that resources are correctly released after closing client with partition awareness.
      */
@@ -46,15 +46,13 @@ public class ThinClientPartitionAwarenessResourceReleaseTest extends ThinClientA
 
         assertFalse(channels[0].isClosed());
         assertFalse(channels[1].isClosed());
-        assertEquals(1, threadsCount(ASYNC_RUNNER_THREAD_NAME));
-        assertEquals(2, threadsCount(RECEIVER_THREAD_PREFIX));
+        assertEquals(1, threadsCount(THREAD_PREFIX));
 
         client.close();
 
         assertTrue(channels[0].isClosed());
         assertTrue(channels[1].isClosed());
-        assertTrue(GridTestUtils.waitForCondition(() -> threadsCount(ASYNC_RUNNER_THREAD_NAME) == 0, 1_000L));
-        assertTrue(GridTestUtils.waitForCondition(() -> threadsCount(RECEIVER_THREAD_PREFIX) == 0, 1_000L));
+        assertTrue(GridTestUtils.waitForCondition(() -> threadsCount(THREAD_PREFIX) == 0, 1_000L));
     }
 
     /**
@@ -68,7 +66,7 @@ public class ThinClientPartitionAwarenessResourceReleaseTest extends ThinClientA
         for (long id : threadIds) {
             ThreadInfo info = U.getThreadMx().getThreadInfo(id);
 
-            if (info != null && info.getThreadState() != Thread.State.TERMINATED && info.getThreadName().startsWith(name))
+            if (info != null && info.getThreadState() != Thread.State.TERMINATED && info.getThreadName().contains(name))
                 cnt++;
         }
 

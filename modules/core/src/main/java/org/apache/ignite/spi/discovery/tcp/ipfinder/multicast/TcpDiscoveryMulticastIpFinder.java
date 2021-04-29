@@ -464,7 +464,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
         try {
             locAddrs = U.resolveLocalAddresses(U.resolveLocalHost(locAddr)).get1();
         }
-        catch (IOException | IgniteCheckedException e) {
+        catch (IOException e) {
             throw new IgniteSpiException("Failed to resolve local addresses [locAddr=" + locAddr + ']', e);
         }
 

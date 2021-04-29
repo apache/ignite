@@ -324,7 +324,7 @@ public class MvccUtils {
         if (snapshot != null)
             msg += ", txVer=" + snapshot.coordinatorVersion() + ":" + snapshot.counter() + ":" + snapshot.operationCounter();
 
-        msg += ", localNodeId=" + ctx.localNodeId()  + "]";
+        msg += ", localNodeId=" + ctx.localNodeId() + "]";
 
         return new IgniteTxUnexpectedStateCheckedException(msg);
     }
@@ -770,7 +770,8 @@ public class MvccUtils {
             cctx == null || !cctx.skipStore(),
             true,
             0,
-            null
+            null,
+            false
         );
 
         tx.syncMode(FULL_SYNC);

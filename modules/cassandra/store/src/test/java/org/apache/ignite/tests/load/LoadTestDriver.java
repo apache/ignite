@@ -193,7 +193,7 @@ public abstract class LoadTestDriver {
 
         float errPercent = errCnt == 0 ?
             0 :
-            cnt + errCnt ==  0 ? 0 : (float)(errCnt * 100 ) / (float)(cnt + errCnt);
+            cnt + errCnt == 0 ? 0 : (float)(errCnt * 100 ) / (float)(cnt + errCnt);
 
         StringBuilder builder = new StringBuilder();
         builder.append(SystemHelper.LINE_SEPARATOR);

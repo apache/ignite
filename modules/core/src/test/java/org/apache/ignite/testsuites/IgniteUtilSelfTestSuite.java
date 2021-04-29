@@ -18,13 +18,14 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.IgniteVersionUtilsSelfTest;
-import org.apache.ignite.internal.commandline.CommandHandlerParsingTest;
 import org.apache.ignite.internal.pagemem.impl.PageIdUtilsSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheUtilsSelfTest;
+import org.apache.ignite.internal.util.BasicRateLimiterTest;
+import org.apache.ignite.internal.util.DistributedProcessCoordinatorLeftTest;
 import org.apache.ignite.internal.util.GridArraysSelfTest;
-import org.apache.ignite.internal.util.GridCountDownCallbackTest;
-import org.apache.ignite.internal.util.IgniteDevOnlyLogTest;
 import org.apache.ignite.internal.util.GridConcurrentMultiPairQueueTest;
+import org.apache.ignite.internal.util.GridCountDownCallbackTest;
+import org.apache.ignite.internal.util.HostAndPortRangeTest;
+import org.apache.ignite.internal.util.IgniteDevOnlyLogTest;
 import org.apache.ignite.internal.util.IgniteExceptionRegistrySelfTest;
 import org.apache.ignite.internal.util.IgniteUtilsSelfTest;
 import org.apache.ignite.internal.util.nio.GridNioDelimitedBufferSelfTest;
@@ -49,6 +50,7 @@ import org.apache.ignite.spi.discovery.ClusterRebalancedMetricTest;
 import org.apache.ignite.thread.GridThreadPoolExecutorServiceSelfTest;
 import org.apache.ignite.thread.GridThreadTest;
 import org.apache.ignite.thread.IgniteThreadPoolSizeTest;
+import org.apache.ignite.thread.ThreadPoolMetricsTest;
 import org.apache.ignite.util.GridConcurrentLinkedDequeMultiThreadedTest;
 import org.apache.ignite.util.GridIntListSelfTest;
 import org.apache.ignite.util.GridLogThrottleTest;
@@ -62,6 +64,7 @@ import org.apache.ignite.util.GridSpinReadWriteLockSelfTest;
 import org.apache.ignite.util.GridStringBuilderFactorySelfTest;
 import org.apache.ignite.util.GridTopologyHeapSizeSelfTest;
 import org.apache.ignite.util.GridTransientTest;
+import org.apache.ignite.util.mbeans.GridMBeanBaselineTest;
 import org.apache.ignite.util.mbeans.GridMBeanDisableSelfTest;
 import org.apache.ignite.util.mbeans.GridMBeanExoticNamesSelfTest;
 import org.apache.ignite.util.mbeans.GridMBeanSelfTest;
@@ -86,12 +89,12 @@ import org.junit.runners.Suite;
     GridByteArrayListSelfTest.class,
     GridMBeanSelfTest.class,
     GridMBeanDisableSelfTest.class,
+    GridMBeanBaselineTest.class,
     GridMBeanExoticNamesSelfTest.class,
     GridLongListSelfTest.class,
     GridThreadTest.class,
     GridIntListSelfTest.class,
     GridArraysSelfTest.class,
-    GridCacheUtilsSelfTest.class,
     IgniteExceptionRegistrySelfTest.class,
     GridMessageCollectionTest.class,
     WorkersControlMXBeanTest.class,
@@ -114,6 +117,7 @@ import org.junit.runners.Suite;
     ClusterMetricsSnapshotSerializeCompatibilityTest.class,
     ClusterMetricsSelfTest.class,
     ClusterRebalancedMetricTest.class,
+    ThreadPoolMetricsTest.class,
 
     // Unsafe.
     GridUnsafeMemorySelfTest.class,
@@ -133,10 +137,13 @@ import org.junit.runners.Suite;
     //dbx
     PageIdUtilsSelfTest.class,
 
-    // control.sh
-    CommandHandlerParsingTest.class,
+    GridCountDownCallbackTest.class,
 
-    GridCountDownCallbackTest.class
+    DistributedProcessCoordinatorLeftTest.class,
+
+    BasicRateLimiterTest.class,
+
+    HostAndPortRangeTest.class
 })
 public class IgniteUtilSelfTestSuite {
 }

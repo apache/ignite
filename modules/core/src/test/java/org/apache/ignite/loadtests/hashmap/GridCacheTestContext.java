@@ -75,6 +75,7 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
                 null,
                 new WalStateManager(null),
                 new IgniteCacheDatabaseSharedManager(),
+                null,
                 new IgniteCacheSnapshotManager(),
                 new GridCacheDeploymentManager<K, V>(),
                 new GridCachePartitionExchangeManager<K, V>(),

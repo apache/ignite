@@ -935,7 +935,7 @@ public class ZookeeperDiscoveryCommunicationFailureTest extends ZookeeperDiscove
         private IgniteLogger log;
 
         /** */
-        Map<String, CacheConfiguration<?, ?>>  caches;
+        Map<String, CacheConfiguration<?, ?>> caches;
 
         /** */
         Map<String, List<List<ClusterNode>>> affMap;
@@ -1119,7 +1119,7 @@ public class ZookeeperDiscoveryCommunicationFailureTest extends ZookeeperDiscove
          * @param killOrders Killed nodes order.
          * @return Factory.
          */
-        static IgniteOutClosure<CommunicationFailureResolver> factory(final Collection<Long> killOrders)  {
+        static IgniteOutClosure<CommunicationFailureResolver> factory(final Collection<Long> killOrders) {
             return new IgniteOutClosure<CommunicationFailureResolver>() {
                 @Override public CommunicationFailureResolver apply() {
                     return new TestNodeKillCommunicationFailureResolver(killOrders);

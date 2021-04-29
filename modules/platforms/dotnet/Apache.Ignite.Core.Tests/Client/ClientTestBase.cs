@@ -19,8 +19,10 @@ namespace Apache.Ignite.Core.Tests.Client
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Security.Authentication;
     using System.Text.RegularExpressions;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
@@ -48,6 +50,12 @@ namespace Apache.Ignite.Core.Tests.Client
         /** Grid count. */
         private readonly int _gridCount = 1;
 
+        /** SSL. */
+        private readonly bool _enableSsl;
+
+        /** Partition Awareness */
+        private readonly bool _enablePartitionAwareness;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientTestBase"/> class.
         /// </summary>
@@ -59,9 +67,14 @@ namespace Apache.Ignite.Core.Tests.Client
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientTestBase"/> class.
         /// </summary>
-        public ClientTestBase(int gridCount)
+        public ClientTestBase(
+            int gridCount, 
+            bool enableSsl = false, 
+            bool enablePartitionAwareness = false)
         {
             _gridCount = gridCount;
+            _enableSsl = enableSsl;
+            _enablePartitionAwareness = enablePartitionAwareness;
         }
 
         /// <summary>
@@ -106,7 +119,7 @@ namespace Apache.Ignite.Core.Tests.Client
 
             Assert.AreEqual(0, cache.GetSize(CachePeekMode.All));
             Assert.AreEqual(0, GetClientCache<int>().GetSize(CachePeekMode.All));
-            
+
             ClearLoggers();
         }
 
@@ -116,11 +129,23 @@ namespace Apache.Ignite.Core.Tests.Client
         public IIgniteClient Client { get; set; }
 
         /// <summary>
+        /// Gets Ignite.
+        /// </summary>
+        protected static IIgnite GetIgnite(int? idx = null)
+        {
+            if (idx == null)
+            {
+                return Ignition.GetAll().First(i => i.Name == null);
+            }
+            return Ignition.GetIgnite(idx.ToString());
+        }
+
+        /// <summary>
         /// Gets the cache.
         /// </summary>
         protected static ICache<int, T> GetCache<T>()
         {
-            return Ignition.GetIgnite().GetOrCreateCache<int, T>(CacheName);
+            return Ignition.GetAll().First().GetOrCreateCache<int, T>(CacheName);
         }
 
         /// <summary>
@@ -152,11 +177,28 @@ namespace Apache.Ignite.Core.Tests.Client
         /// </summary>
         protected virtual IgniteClientConfiguration GetClientConfiguration()
         {
+            var port = _enableSsl ? 11110 : IgniteClientConfiguration.DefaultPort;
+
             return new IgniteClientConfiguration
             {
-                Endpoints = new List<string> {IPAddress.Loopback.ToString()},
+                Endpoints = new List<string> {IPAddress.Loopback + ":" + port},
                 SocketTimeout = TimeSpan.FromSeconds(15),
-                Logger = new ListLogger(new ConsoleLogger {MinLevel = LogLevel.Trace})
+                Logger = new ListLogger(new ConsoleLogger {MinLevel = LogLevel.Trace}),
+                SslStreamFactory = _enableSsl
+                    ? new SslStreamFactory
+                    {
+                        CertificatePath = Path.Combine("Config", "Client", "thin-client-cert.pfx"),
+                        CertificatePassword = "123456",
+                        SkipServerCertificateValidation = true,
+                        CheckCertificateRevocation = true,
+#if !NETCOREAPP
+                        SslProtocols = SslProtocols.Tls
+#else
+                        SslProtocols = SslProtocols.Tls12
+#endif
+                    }
+                    : null,
+                EnablePartitionAwareness = _enablePartitionAwareness
             };
         }
 
@@ -167,14 +209,15 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                Logger = new ListLogger()
+                Logger = new ListLogger(new TestUtils.TestContextLogger()),
+                SpringConfigUrl = _enableSsl ? Path.Combine("Config", "Client", "server-with-ssl.xml") : null
             };
         }
 
         /// <summary>
         /// Converts object to binary form.
         /// </summary>
-        protected IBinaryObject ToBinary(object o)
+        private IBinaryObject ToBinary(object o)
         {
             return Client.GetBinary().ToBinary<IBinaryObject>(o);
         }
@@ -221,7 +264,7 @@ namespace Apache.Ignite.Core.Tests.Client
             var listLogger = (ListLogger) logger;
             return listLogger.Entries;
         }
-        
+
         /// <summary>
         /// Gets client request names for a given server node.
         /// </summary>
@@ -230,7 +273,7 @@ namespace Apache.Ignite.Core.Tests.Client
             var instanceName = serverIndex == 0 ? null : serverIndex.ToString();
             var grid = Ignition.GetIgnite(instanceName);
             var logger = (ListLogger) grid.Logger;
-         
+
             return GetServerRequestNames(logger, prefix);
         }
 

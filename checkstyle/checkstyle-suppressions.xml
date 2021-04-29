@@ -21,9 +21,7 @@
     "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
     "https://checkstyle.org/dtds/suppressions_1_2.dtd">
 <suppressions>
-    <suppress checks="EmptyLineSeparator|MethodParamPad" files="BCrypt\.java|ConcurrentLinkedDeque8\.java"/>
-
-    <suppress checks="EmptyLineSeparator|MethodParamPad" files="XGBoostModelLexer\.java|XGBoostModelParser\.java"/>
-
+    <suppress checks="EmptyLineSeparator|MethodParamPad|SingleSpaceSeparator"
+              files="BCrypt\.java|ConcurrentLinkedDeque8\.java"/>
     <suppress checks="NoWhitespaceBefore" files="ConcurrentLinkedHashMap\.java"/>
 </suppressions>

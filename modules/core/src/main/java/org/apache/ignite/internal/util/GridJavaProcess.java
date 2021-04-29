@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -189,12 +190,16 @@ public final class GridJavaProcess {
             Runtime.getRuntime().exec(new String[] {"taskkill", "/pid", pid, "/f", "/t"}) :
             Runtime.getRuntime().exec(new String[] {"kill", "-9", pid});
 
-        killProc.waitFor();
+        if (!killProc.waitFor(5000, TimeUnit.MILLISECONDS))
+            throw new IllegalStateException("The kill process is hanging.");
 
         int exitVal = killProc.exitValue();
 
-        if (exitVal != 0)
-            log.info(String.format("Abnormal exit value of %s for pid %s", exitVal, pid));
+        if (exitVal != 0 && log.isInfoEnabled())
+            log.info(String.format("Abnormal exit value of %s for trying to kill the pid %s", exitVal, pid));
+
+        if (!proc.waitFor(5000, TimeUnit.MILLISECONDS))
+            throw new IllegalStateException("Failed to kill grid java process.");
 
         if (procKilledC != null)
             procKilledC.apply();

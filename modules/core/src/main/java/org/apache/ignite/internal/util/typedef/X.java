@@ -466,7 +466,7 @@ public final class X {
      *      {@code false} otherwise.
      */
     @SafeVarargs
-    public static boolean hasCause(@Nullable Throwable t,  @Nullable String msg, @Nullable Class<?>... cls) {
+    public static boolean hasCause(@Nullable Throwable t, @Nullable String msg, @Nullable Class<?>... cls) {
         if (t == null || F.isEmpty(cls))
             return false;
 

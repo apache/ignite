@@ -85,7 +85,7 @@ public class IntHashMap<V> implements IntMap<V> {
         n |= n >>> 8;
         n |= n >>> 16;
 
-        return  (n < INITIAL_CAPACITY) ? INITIAL_CAPACITY : (n >= MAXIMUM_CAPACITY) ? MAXIMUM_CAPACITY : n + 1;
+        return (n < INITIAL_CAPACITY) ? INITIAL_CAPACITY : (n >= MAXIMUM_CAPACITY) ? MAXIMUM_CAPACITY : n + 1;
     }
 
     /** Default constructor. */
@@ -178,6 +178,32 @@ public class IntHashMap<V> implements IntMap<V> {
     /** {@inheritDoc} */
     @Override public boolean isEmpty() {
         return size() == 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int[] keys() {
+        int[] keys = new int[size];
+
+        int idx = 0;
+
+        for (Entry<V> entry : entries)
+            if (entry != null)
+                keys[idx++] = entry.key;
+
+        return keys;
+    }
+
+    /** {@inheritDoc} */
+    @Override public V[] values() {
+        V[] vals = (V[])new Object[size];
+
+        int idx = 0;
+
+        for (Entry<V> entry : entries)
+            if (entry != null)
+                vals[idx++] = entry.val;
+
+        return vals;
     }
 
     /** {@inheritDoc} */

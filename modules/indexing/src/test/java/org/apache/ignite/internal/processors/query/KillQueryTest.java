@@ -622,7 +622,7 @@ public class KillQueryTest extends GridCommonAbstractTest {
 
         GridTestUtils.assertThrows(log, () -> {
             stmt.executeQuery("select * from Integer where _key in " +
-                "(select _key from Integer where awaitLatchCancelled() = 0) and shouldNotBeCalledInCaseOfCancellation()");
+                "(select abs(_key) from Integer where awaitLatchCancelled() = 0) and shouldNotBeCalledInCaseOfCancellation()");
 
             return null;
         }, SQLException.class, "The query was cancelled while executing.");
@@ -636,7 +636,7 @@ public class KillQueryTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCancelBeforeIteratorObtained() throws Exception {
-        FieldsQueryCursor<List<?>>  cur = ignite.context().query()
+        FieldsQueryCursor<List<?>> cur = ignite.context().query()
             .querySqlFields(new SqlFieldsQuery("select * from \"default\".Integer").setLazy(false), false);
 
         Long qryId = ignite.context().query().runningQueries(-1).iterator().next().id();
@@ -693,7 +693,7 @@ public class KillQueryTest extends GridCommonAbstractTest {
      */
     @Test
     public void testCancelBeforeIteratorObtainedLazy() throws Exception {
-        FieldsQueryCursor<List<?>>  cur = ignite.context().query()
+        FieldsQueryCursor<List<?>> cur = ignite.context().query()
             .querySqlFields(new SqlFieldsQuery("select * from \"default\".Integer").setLazy(true), false);
 
         Long qryId = ignite.context().query().runningQueries(-1).iterator().next().id();
@@ -1034,7 +1034,7 @@ public class KillQueryTest extends GridCommonAbstractTest {
         GridTestUtils.assertThrows(log, () -> {
             ignite.cache(DEFAULT_CACHE_NAME).query(
                 new SqlFieldsQuery("select * from Integer where _key in " +
-                    "(select _key from Integer where awaitLatchCancelled() = 0) and shouldNotBeCalledInCaseOfCancellation()")
+                    "(select abs(_key) from Integer where awaitLatchCancelled() = 0) and shouldNotBeCalledInCaseOfCancellation()")
                     .setPartitions(partitions)
             ).getAll();
 

@@ -92,7 +92,7 @@ public class CacheGroupMetricsImpl {
 
         DataStorageConfiguration dsCfg = ctx.shared().kernalContext().config().getDataStorageConfiguration();
 
-        boolean persistentEnabled = CU.isPersistentCache(cacheCfg, dsCfg);
+        boolean persistentEnabled = !ctx.shared().kernalContext().clientNode() && CU.isPersistentCache(cacheCfg, dsCfg);
 
         MetricRegistry mreg = ctx.shared().kernalContext().metric().registry(metricGroupName());
 
@@ -175,6 +175,16 @@ public class CacheGroupMetricsImpl {
         mreg.register("TotalAllocatedSize",
             this::getTotalAllocatedSize,
             "Total size of memory allocated for group, in bytes.");
+
+        if (ctx.config().isEncryptionEnabled()) {
+            mreg.register("ReencryptionFinished",
+                () -> !ctx.shared().kernalContext().encryption().reencryptionInProgress(ctx.groupId()),
+                "The flag indicates whether reencryption is finished or not.");
+
+            mreg.register("ReencryptionBytesLeft",
+                () -> ctx.shared().kernalContext().encryption().getBytesLeftForReencryption(ctx.groupId()),
+                "The number of bytes left for re-ecryption.");
+        }
     }
 
     /** */
@@ -464,12 +474,16 @@ public class CacheGroupMetricsImpl {
 
     /** */
     public long getTotalAllocatedPages() {
-        return grpPageAllocationTracker.value();
+        return ctx.shared().kernalContext().clientNode() ?
+            0 :
+            grpPageAllocationTracker.value();
     }
 
     /** */
     public long getTotalAllocatedSize() {
-        return getTotalAllocatedPages() * ctx.dataRegion().pageMemory().pageSize();
+        return ctx.shared().kernalContext().clientNode() ?
+            0 :
+            getTotalAllocatedPages() * ctx.dataRegion().pageMemory().pageSize();
     }
 
     /** */

@@ -178,7 +178,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
             // Ensure not exists.
             assert g.reentrantLock("lock", failoverSafe, fair, false) == null;
 
-            IgniteLock lock  = g.reentrantLock("lock", failoverSafe, fair, true);
+            IgniteLock lock = g.reentrantLock("lock", failoverSafe, fair, true);
 
             lock.lock();
 
@@ -752,7 +752,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
 
                 lock.getOrCreateCondition("c1").signal();
 
-                lock.getOrCreateCondition("c2").await(10,MILLISECONDS);
+                lock.getOrCreateCondition("c2").await(10, MILLISECONDS);
             }
             finally {
                 lock.unlock();
@@ -1565,6 +1565,25 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
             assertFalse(lock0.hasQueuedThread(t));
 
         lock0.close();
+    }
+
+    /**
+     * Tests that closed lock throws meaningful exception.
+     */
+    @Test (expected = IgniteException.class)
+    public void testClosedLockThrowsIgniteException() {
+        final String lockName = "lock";
+
+        IgniteLock lock1 = grid(0).reentrantLock(lockName, false, false, true);
+        IgniteLock lock2 = grid(0).reentrantLock(lockName, false, false, true);
+        lock1.close();
+        try {
+            lock2.lock();
+        } catch (IgniteException e) {
+            String msg = String.format("Failed to find reentrant lock with given name: " + lockName);
+            assertEquals(msg, e.getMessage());
+            throw e;
+        }
     }
 
     /**

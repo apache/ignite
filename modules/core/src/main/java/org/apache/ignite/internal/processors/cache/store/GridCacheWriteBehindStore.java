@@ -849,7 +849,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
      */
     private boolean updateStore(
         StoreOperation operation,
-        Map<K, Entry<? extends K, ? extends  V>> vals,
+        Map<K, Entry<? extends K, ? extends V>> vals,
         boolean initSes,
         Flusher flusher
     ) {
@@ -901,7 +901,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                 overflow = flusher.isOverflowed() || stopping.get();
 
             if (overflow) {
-                for (Map.Entry<K, Entry<? extends K, ? extends  V>> entry : vals.entrySet()) {
+                for (Map.Entry<K, Entry<? extends K, ? extends V>> entry : vals.entrySet()) {
                     Object val = entry.getValue() != null ? entry.getValue().getValue() : null;
 
                     log.error("Failed to update store (value will be lost as current buffer size is greater " +
@@ -936,10 +936,10 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
      */
     private class Flusher extends GridWorker {
         /** Queue to flush. */
-        private final FastSizeDeque<IgniteBiTuple<K, StatefulValue<K,V>>> queue;
+        private final FastSizeDeque<IgniteBiTuple<K, StatefulValue<K, V>>> queue;
 
         /** Flusher write map. */
-        private final ConcurrentHashMap<K, StatefulValue<K,V>> flusherWriteMap;
+        private final ConcurrentHashMap<K, StatefulValue<K, V>> flusherWriteMap;
 
         /** Critical size of flusher local queue. */
         private final int flusherCacheCriticalSize;
@@ -1267,7 +1267,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                 }
                 else {
                     // Return values to queue
-                    ArrayList<Map.Entry<K, StatefulValue<K,V>>> pendingList = new ArrayList(pending.entrySet());
+                    ArrayList<Map.Entry<K, StatefulValue<K, V>>> pendingList = new ArrayList(pending.entrySet());
 
                     for (int i = pendingList.size() - 1; i >= 0; i--)
                         queue.addFirst(F.t(pendingList.get(i).getKey(), pendingList.get(i).getValue()));
@@ -1339,8 +1339,8 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
      *
      * @return Flusher maps for the underlying store operations.
      */
-    Map<K, StatefulValue<K,V>>[] flusherMaps() {
-        Map<K, StatefulValue<K,V>>[] result = new Map[flushThreadCnt];
+    Map<K, StatefulValue<K, V>>[] flusherMaps() {
+        Map<K, StatefulValue<K, V>>[] result = new Map[flushThreadCnt];
 
         for (int i = 0; i < flushThreadCnt; i++)
             result[i] = flushThreads[i].flusherWriteMap;

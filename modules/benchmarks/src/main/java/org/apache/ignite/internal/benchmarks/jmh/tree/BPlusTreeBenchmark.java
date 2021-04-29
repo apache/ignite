@@ -104,6 +104,11 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
         }
 
         /** {@inheritDoc} */
+        @Override public long initRecycledPage(long pageId, byte flag, PageIO initIO) throws IgniteCheckedException {
+            return pageId;
+        }
+
+        /** {@inheritDoc} */
         @Override public long recycledPagesCount() throws IgniteCheckedException {
             return deque.size();
         }
@@ -186,6 +191,7 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
                 reuseList,
                 new IOVersions<>(new LongInnerIO()),
                 new IOVersions<>(new LongLeafIO()),
+                PageIdAllocator.FLAG_IDX,
                 null,
                 null
             );
@@ -296,7 +302,7 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
         }
 
         /** {@inheritDoc} */
-        @Override public Long getLookupRow(BPlusTree<Long,?> tree, long pageAddr, int idx) {
+        @Override public Long getLookupRow(BPlusTree<Long, ?> tree, long pageAddr, int idx) {
             return PageUtils.getLong(pageAddr, offset(idx));
         }
     }
@@ -332,7 +338,7 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
         }
 
         /** {@inheritDoc} */
-        @Override public Long getLookupRow(BPlusTree<Long,?> tree, long pageAddr, int idx) {
+        @Override public Long getLookupRow(BPlusTree<Long, ?> tree, long pageAddr, int idx) {
             return PageUtils.getLong(pageAddr, offset(idx));
         }
     }

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.binary;
 
-import com.google.common.collect.ImmutableList;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -53,6 +52,9 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import com.google.common.collect.ImmutableList;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -77,13 +79,19 @@ import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
+import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
+import org.apache.ignite.internal.managers.systemview.JmxSystemViewExporterSpi;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
+import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -91,7 +99,6 @@ import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.systemview.jmx.JmxSystemViewExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -101,7 +108,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.INSTANCE;
+import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.THREAD_LOCAL;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNotEquals;
 
@@ -2637,6 +2644,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
                 obj.array().length);
 
             assertTrue(offheapObj.equals(offheapObj));
+            assertEquals(offheapObj.size(), obj.size());
             assertFalse(offheapObj.equals(null));
             assertFalse(offheapObj.equals("str"));
             assertTrue(offheapObj.equals(obj));
@@ -2828,28 +2836,28 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     @Test
     public void testThreadLocalArrayReleased() throws Exception {
         // Checking the writer directly.
-        assertEquals(false, INSTANCE.isAcquired());
+        assertEquals(false, THREAD_LOCAL.isAcquired());
 
         BinaryMarshaller marsh = binaryMarshaller();
 
         try (BinaryWriterExImpl writer = new BinaryWriterExImpl(binaryContext(marsh))) {
-            assertEquals(true, INSTANCE.isAcquired());
+            assertEquals(true, THREAD_LOCAL.isAcquired());
 
             writer.writeString("Thread local test");
 
             writer.array();
 
-            assertEquals(true, INSTANCE.isAcquired());
+            assertEquals(true, THREAD_LOCAL.isAcquired());
         }
 
         // Checking the binary marshaller.
-        assertEquals(false, INSTANCE.isAcquired());
+        assertEquals(false, THREAD_LOCAL.isAcquired());
 
         marsh = binaryMarshaller();
 
         marsh.marshal(new SimpleObject());
 
-        assertEquals(false, INSTANCE.isAcquired());
+        assertEquals(false, THREAD_LOCAL.isAcquired());
 
         marsh = binaryMarshaller();
 
@@ -2861,7 +2869,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObject binaryObj = builder.build();
 
-        assertEquals(false, INSTANCE.isAcquired());
+        assertEquals(false, THREAD_LOCAL.isAcquired());
     }
 
     /**
@@ -2941,6 +2949,128 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         Class cls1 = portObj.field("cls1");
 
         assertEquals(obj.cls1, cls1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testReadDetachedMap() throws Exception {
+        Map<Key, Value> map = IntStream.range(0, 1000).mapToObj(i -> new T2<>(new Key(i), new Value(i)))
+            .collect(Collectors.toMap(T2::getKey, T2::getValue));
+
+        testReadDetachObjectProperly(map, obj -> {
+            Map<BinaryObject, BinaryObject> desMap = (Map<BinaryObject, BinaryObject>)obj;
+
+            assertEquals(map.size(), desMap.size());
+
+            desMap.forEach((k, v) -> {
+                Key key = new Key(k.field("key"));
+                Value val = new Value(v.field("val"));
+
+                assertTrue(map.containsKey(key));
+                assertEquals(val, map.get(key));
+            });
+        }, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testReadDetachedCollection() throws Exception {
+        Collection<Value> col = IntStream.range(0, 1000).mapToObj(Value::new).collect(Collectors.toSet());
+
+        testReadDetachObjectProperly(col, obj -> {
+            Collection<BinaryObject> desCol = (Collection<BinaryObject>)obj;
+
+            assertEquals(col.size(), desCol.size());
+
+            desCol.forEach(v -> {
+                Value val = new Value(v.field("val"));
+
+                assertTrue(col.contains(val));
+            });
+        }, false);
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testReadDetachedTypedArray() throws Exception {
+        Value[] arr = IntStream.range(0, 1000).mapToObj(Value::new).toArray(Value[]::new);
+
+        testReadDetachObjectProperly(arr, obj -> {
+            assertArrayEquals(arr, (Value[])obj);
+
+            Object[] args = new Object[] {obj};
+
+            assertTrue(args[0] instanceof Value[]);
+
+            args = PlatformUtils.unwrapBinariesInArray(args);
+
+            assertTrue(args[0] instanceof Value[]);
+            assertArrayEquals(arr, (Value[])args[0]);
+        }, true);
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testReadArrayOfCollections() throws Exception {
+        Collection[] arr = new Collection[] { Arrays.asList(new Value(1), new Value(2), new Value(3)) };
+        testReadDetachObjectProperly(arr, obj -> {
+            assertArrayEquals(arr, (Collection[])obj);
+
+            Object[] args = new Object[] {obj};
+
+            assertTrue(args[0] instanceof Collection[]);
+
+            args = PlatformUtils.unwrapBinariesInArray(args);
+
+            assertTrue(args[0] instanceof Collection[]);
+            assertArrayEquals(arr, (Collection[])args[0]);
+        }, true);
+    }
+
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testReadArrayOfBinaryCollections() throws Exception {
+        Collection[] arr = new Collection[] { new ArrayList<>(Arrays.asList(new Value(1), new Value(2), new Value(3))) };
+
+        testReadDetachObjectProperly(arr, obj -> {
+            Object[] args = PlatformUtils.unwrapBinariesInArray(new Object[] {obj});
+
+            Collection deserVals = (Collection)((Object[])args[0])[0];
+
+            assertEqualsCollections(arr[0], deserVals);
+        }, false);
+    }
+
+    /**
+     * Perform action on binary object after unmarshalling from offheap data, when offheap memory chunk cleared.
+     *
+     * @param obj Object to marshal-unmarshal.
+     * @param action Action to perform on object.
+     * @throws Exception If failed.
+     */
+    private void testReadDetachObjectProperly(Object obj, IgniteThrowableConsumer<Object> action, boolean deserialize) throws Exception {
+        BinaryMarshaller marsh = binaryMarshaller();
+
+        BinaryHeapOutputStream os = new BinaryHeapOutputStream(1024);
+
+        BinaryWriterExImpl writer = marsh.binaryMarshaller().writer(os);
+
+        writer.writeObject(obj);
+
+        BinaryHeapInputStream is = new BinaryHeapInputStream(os.array());
+
+        BinaryReaderExImpl reader = marsh.binaryMarshaller().reader(is);
+
+        Object bObj = reader.readObjectDetached(deserialize);
+
+        Arrays.fill(os.array(), (byte)0);
+
+        action.accept(bObj);
     }
 
     /**
@@ -3388,7 +3518,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObjectImpl binObj = marshal(simpleObject(), m);
 
-        Collection<String> fieldsBin =  binObj.type().fieldNames();
+        Collection<String> fieldsBin = binObj.type().fieldNames();
 
         Field[] fields = SimpleObject.class.getDeclaredFields();
 
@@ -3425,7 +3555,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObject binObj = builder.build();
 
-        Collection<String> fieldsBin =  binObj.type().fieldNames();
+        Collection<String> fieldsBin = binObj.type().fieldNames();
 
         assertEquals(fieldNames.length, fieldsBin.size());
 
@@ -5408,27 +5538,6 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
             rawVal = rawReader.readDecimal();
             rawValArr = rawReader.readDecimalArray();
-        }
-    }
-
-    /**
-     * Wrapper object.
-     */
-    private static class Wrapper {
-
-        /** Value. */
-        private final Object value;
-
-        /** Constructor. */
-        public Wrapper(Object value) {
-            this.value = value;
-        }
-
-        /**
-         * @return Value.
-         */
-        public Object getValue() {
-            return value;
         }
     }
 

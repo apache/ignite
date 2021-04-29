@@ -75,6 +75,7 @@ import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.lang.gridfunc.ReadOnlyCollectionView2X;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -518,7 +519,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         }
 
         if (discoProtoVer == 2) {
-            if (data.hasJoiningNodeData())    {
+            if (data.hasJoiningNodeData()) {
                 ContinuousRoutinesJoiningNodeDiscoveryData nodeData = (ContinuousRoutinesJoiningNodeDiscoveryData)
                     data.joiningNodeData();
 
@@ -702,7 +703,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         if (ctx.config().isPeerClassLoadingEnabled()) {
             // Peer class loading cannot be performed before a node joins, so we delay the deployment.
             // Run the deployment task in the system pool to avoid blocking of the discovery thread.
-            ctx.discovery().localJoinFuture().listen(f -> ctx.closure().runLocalSafe(() -> {
+            ctx.discovery().localJoinFuture().listen(f -> ctx.closure().runLocalSafe((GridPlainRunnable)() -> {
                 try {
                     hnd.p2pUnmarshal(srcNodeId, ctx);
                 }
@@ -1013,7 +1014,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             assert discoProtoVer == 2 : discoProtoVer;
 
             byte[] nodeFilterBytes = nodeFilter != null ? U.marshal(marsh, nodeFilter) : null;
-            byte[] hndBytes =  U.marshal(marsh, hnd);
+            byte[] hndBytes = U.marshal(marsh, hnd);
 
             StartRequestDataV2 reqData = new StartRequestDataV2(nodeFilterBytes,
                 hndBytes,
@@ -1674,7 +1675,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             err != null);
 
         try {
-            ctx.io().sendToGridTopic(node, TOPIC_CONTINUOUS, msg, SYSTEM_POOL, null);
+            ctx.io().sendToGridTopic(node, TOPIC_CONTINUOUS, msg, SYSTEM_POOL);
         }
         catch (ClusterTopologyCheckedException e) {
             if (log.isDebugEnabled())
@@ -2022,8 +2023,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     if (info.autoUnsubscribe)
                         unregisterRemote(routineId);
 
-                    if (info.hnd.isQuery())
-                        info.hnd.onNodeLeft();
+                    info.hnd.flushOnNodeLeft();
                 }
             }
 
@@ -2172,7 +2172,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      */
     public static class RemoteRoutineInfo implements RoutineInfo {
         /** Master node ID. */
-        private UUID nodeId;
+        private final UUID nodeId;
 
         /** Continuous routine handler. */
         private final GridContinuousHandler hnd;
@@ -2193,7 +2193,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         private long lastSndTime = U.currentTimeMillis();
 
         /** Automatic unsubscribe flag. */
-        private boolean autoUnsubscribe;
+        private final boolean autoUnsubscribe;
 
         /** Delayed register flag. */
         private boolean delayedRegister;

@@ -33,15 +33,15 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientQueryCursor{TK, TV}" /> class.
         /// </summary>
-        /// <param name="ignite">The ignite.</param>
+        /// <param name="socket">Connection that holds the cursor.</param>
         /// <param name="cursorId">The cursor identifier.</param>
         /// <param name="keepBinary">Keep binary flag.</param>
         /// <param name="initialBatchStream">Optional stream with initial batch.</param>
         /// <param name="getPageOp">The get page op.</param>
         /// <param name="columns">The columns.</param>
-        public ClientFieldsQueryCursor(IgniteClient ignite, long cursorId, bool keepBinary,
+        public ClientFieldsQueryCursor(ClientSocket socket, long cursorId, bool keepBinary,
             IBinaryStream initialBatchStream, ClientOp getPageOp, IList<string> columns)
-            : base(ignite, cursorId, keepBinary, initialBatchStream, getPageOp,
+            : base(socket, cursorId, keepBinary, initialBatchStream, getPageOp,
                 r =>
                 {
                     var res = new List<object>(columns.Count);

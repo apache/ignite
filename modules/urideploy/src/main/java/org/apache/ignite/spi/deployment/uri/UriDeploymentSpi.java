@@ -1397,12 +1397,12 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi 
 
         /** {@inheritDoc} */
         @Override public List<String> getUriList() {
-            return  UriDeploymentSpi.this.getUriList();
+            return UriDeploymentSpi.this.getUriList();
         }
 
         /** {@inheritDoc} */
         @Override public boolean isCheckMd5() {
-            return  UriDeploymentSpi.this.isCheckMd5();
+            return UriDeploymentSpi.this.isCheckMd5();
         }
     }
 }

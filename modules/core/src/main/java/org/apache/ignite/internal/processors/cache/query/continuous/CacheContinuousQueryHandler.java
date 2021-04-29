@@ -41,6 +41,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.SystemProperty;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.query.ContinuousQueryWithTransformer.EventListener;
 import org.apache.ignite.cluster.ClusterNode;
@@ -67,6 +68,7 @@ import org.apache.ignite.internal.processors.continuous.GridContinuousQueryBatch
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformContinuousQueryFilter;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -83,6 +85,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.toCountersMap;
+import static org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryEntry.createFilteredEntry;
 
 /**
  * Continuous query handler.
@@ -91,13 +94,32 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** @see #IGNITE_CONTINUOUS_QUERY_BACKUP_ACK_THRESHOLD */
+    public static final int DFLT_CONTINUOUS_QUERY_BACKUP_ACK_THRESHOLD = 100;
+
+    /** @see #IGNITE_CONTINUOUS_QUERY_LISTENER_MAX_BUFFER_SIZE */
+    public static final int DFLT_CONTINUOUS_QUERY_LISTENER_MAX_BUFFER_SIZE = 10_000;
+
+    /** */
+    @SystemProperty(value = "The size of the buffer with acknowledgment events that are sent to backup nodes",
+        type = Long.class, defaults = "" + DFLT_CONTINUOUS_QUERY_BACKUP_ACK_THRESHOLD)
+    public static final String IGNITE_CONTINUOUS_QUERY_BACKUP_ACK_THRESHOLD = "IGNITE_CONTINUOUS_QUERY_BACKUP_ACK_THRESHOLD";
+
+    /** */
+    @SystemProperty(value = "The maximum size of the continuous query listener buffer. " +
+        "10% of events are dropped once the buffer is full", type = Long.class,
+        defaults = "" + DFLT_CONTINUOUS_QUERY_LISTENER_MAX_BUFFER_SIZE)
+    public static final String IGNITE_CONTINUOUS_QUERY_LISTENER_MAX_BUFFER_SIZE = "IGNITE_CONTINUOUS_QUERY_LISTENER_MAX_BUFFER_SIZE";
+
     /** */
     static final int BACKUP_ACK_THRESHOLD =
-        IgniteSystemProperties.getInteger("IGNITE_CONTINUOUS_QUERY_BACKUP_ACK_THRESHOLD", 100);
+        IgniteSystemProperties.getInteger(IGNITE_CONTINUOUS_QUERY_BACKUP_ACK_THRESHOLD,
+            DFLT_CONTINUOUS_QUERY_BACKUP_ACK_THRESHOLD);
 
     /** */
     static final int LSNR_MAX_BUF_SIZE =
-        IgniteSystemProperties.getInteger("IGNITE_CONTINUOUS_QUERY_LISTENER_MAX_BUFFER_SIZE", 10_000);
+        IgniteSystemProperties.getInteger(IGNITE_CONTINUOUS_QUERY_LISTENER_MAX_BUFFER_SIZE,
+            DFLT_CONTINUOUS_QUERY_LISTENER_MAX_BUFFER_SIZE);
 
     /**
      * Transformer implementation for processing received remote events.
@@ -392,6 +414,20 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         log = ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY);
 
         CacheContinuousQueryListener<K, V> lsnr = new CacheContinuousQueryListener<K, V>() {
+            @Override public void onBeforeRegister() {
+                GridCacheContext<K, V> cctx = cacheContext(ctx);
+
+                if (cctx != null && !cctx.isLocal())
+                    cctx.topology().readLock();
+            }
+
+            @Override public void onAfterRegister() {
+                GridCacheContext<K, V> cctx = cacheContext(ctx);
+
+                if (cctx != null && !cctx.isLocal())
+                    cctx.topology().readUnlock();
+            }
+
             @Override public void onRegister() {
                 GridCacheContext<K, V> cctx = cacheContext(ctx);
 
@@ -419,7 +455,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 if (cctx == null)
                     return;
 
-                if (!needNotify(false, cctx, -1, -1,  evt))
+                if (!needNotify(false, cctx, -1, -1, evt))
                     return;
 
                 // skipPrimaryCheck is set only when listen locally for replicated cache events.
@@ -465,16 +501,16 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 }
             }
 
-            @Override public void cleanupBackupQueue(Map<Integer, Long> updateCntrs) {
+            @Override public void cleanupOnAck(Map<Integer, Long> updateCntrs) {
                 for (Map.Entry<Integer, Long> e : updateCntrs.entrySet()) {
                     CacheContinuousQueryEventBuffer buf = entryBufs.get(e.getKey());
 
                     if (buf != null)
-                        buf.cleanupBackupQueue(e.getValue());
+                        buf.cleanupOnAck(e.getValue());
                 }
             }
 
-            @Override public void flushBackupQueue(GridKernalContext ctx, AffinityTopologyVersion topVer) {
+            @Override public void flushOnExchangeDone(GridKernalContext ctx, AffinityTopologyVersion topVer) {
                 assert topVer != null;
 
                 try {
@@ -485,18 +521,20 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                     for (Map.Entry<Integer, CacheContinuousQueryEventBuffer> bufE : entryBufs.entrySet()) {
                         CacheContinuousQueryEventBuffer buf = bufE.getValue();
 
-                        Collection<CacheContinuousQueryEntry> backupQueue = buf.flushOnExchange();
+                        Collection<CacheContinuousQueryEntry> entries = buf.flushOnExchange((cntr, filtered) ->
+                            createFilteredEntry(cctx.cacheId(), bufE.getKey(), topVer, cntr, filtered));
 
-                        if (backupQueue != null && node != null) {
-                            for (CacheContinuousQueryEntry e : backupQueue) {
-                                e.markBackup();
+                        if (entries == null || node == null)
+                            continue;
 
-                                if (!e.isFiltered())
-                                    prepareEntry(cctx, nodeId, e);
-                            }
+                        for (CacheContinuousQueryEntry e : entries) {
+                            e.markBackup();
 
-                            ctx.continuous().addBackupNotification(nodeId, routineId, backupQueue, topic);
+                            if (!e.isFiltered())
+                                prepareEntry(cctx, nodeId, e);
                         }
+
+                        ctx.continuous().addBackupNotification(nodeId, routineId, entries, topic);
                     }
                 }
                 catch (IgniteCheckedException e) {
@@ -951,22 +989,11 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
         GridCacheContext<K, V> cctx = cacheContext(ctx);
 
-        final IgniteCache cache = cctx.kernalContext().cache().jcache(cctx.name());
-
-        if (internal) {
-            if (e.isFiltered())
-                return Collections.emptyList();
-            else
-                return F.<CacheEntryEvent<? extends K, ? extends V>>
-                    asList(new CacheContinuousQueryEvent<K, V>(cache, cctx, e));
-        }
+        IgniteCache<?, ?> cache = ctx.cache().jcache(cctx.name());
 
         // Initial query entry or evicted entry. These events should be fired immediately.
-        if (e.updateCounter() == -1L) {
-            return !e.isFiltered() ? F.<CacheEntryEvent<? extends K, ? extends V>>asList(
-                new CacheContinuousQueryEvent<K, V>(cache, cctx, e)) :
-                Collections.<CacheEntryEvent<? extends K, ? extends V>>emptyList();
-        }
+        if (internal || e.updateCounter() == -1L)
+            return e.isFiltered() ? Collections.emptyList() : F.asList(new CacheContinuousQueryEvent<>(cache, cctx, e));
 
         CacheContinuousQueryPartitionRecovery rec = getOrCreatePartitionRecovery(ctx, e.partition(), e.topologyVersion());
 
@@ -1023,10 +1050,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                     if (!internal && !skipPrimaryCheck)
                         sendBackupAcknowledge(ackBuf.onAcknowledged(entry), routineId, ctx);
                 }
-                else {
-                    if (!entry.isFiltered())
-                        notifyLocalListener(F.<CacheEntryEvent<? extends K, ? extends V>>asList(evt), trans);
-                }
+                else if (!entry.isFiltered())
+                    notifyLocalListener(F.asList(evt), trans);
             }
             else {
                 if (!entry.isFiltered()) {
@@ -1062,7 +1087,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             }
             catch (IgniteCheckedException e) {
                 if (log.isDebugEnabled()) {
-                    log.debug("Failed to trigger a continuoue query event. " +
+                    log.debug("Failed to trigger a continuous query event. " +
                         "[routineId=" + routineId + ", cacheName=" + cacheName + ", err=" + e + "]");
                 }
 
@@ -1219,43 +1244,28 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
     /**
      * @param cctx Cache context.
-     * @param part Partition.
+     * @param partId Partition id.
      * @return Event buffer.
      */
-    private CacheContinuousQueryEventBuffer partitionBuffer(final GridCacheContext cctx, int part) {
-        CacheContinuousQueryEventBuffer buf = entryBufs.get(part);
+    CacheContinuousQueryEventBuffer partitionBuffer(GridCacheContext<?, ?> cctx, int partId) {
+        return entryBufs.computeIfAbsent(partId,
+            id -> new CacheContinuousQueryEventBuffer((backup) -> {
+                GridDhtLocalPartition locPart = cctx.topology().localPartition(id, null, false);
 
-        if (buf == null) {
-            buf = new CacheContinuousQueryEventBuffer(part) {
-                @Override protected long currentPartitionCounter(boolean backup) {
-                    GridDhtLocalPartition locPart = cctx.topology().localPartition(part, null, false);
+                if (locPart == null)
+                    return -1L;
 
-                    if (locPart == null)
-                        return -1L;
-
-                    // Use HWM for primary, LWM for backup.
-                    return backup ? locPart.updateCounter() : locPart.reservedCounter();
-                }
-            };
-
-            CacheContinuousQueryEventBuffer oldBuf = entryBufs.putIfAbsent(part, buf);
-
-            if (oldBuf != null)
-                buf = oldBuf;
-        }
-
-        return buf;
+                // Use HWM for primary, LWM for backup.
+                return backup > 0 ? locPart.updateCounter() : locPart.reservedCounter();
+            }, ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY)));
     }
 
     /** {@inheritDoc} */
-    @Override public void onNodeLeft() {
+    @Override public void flushOnNodeLeft() {
         nodeLeft = true;
 
-        for (Map.Entry<Integer, CacheContinuousQueryEventBuffer> bufE : entryBufs.entrySet()) {
-            CacheContinuousQueryEventBuffer buf = bufE.getValue();
-
-            buf.flushOnExchange();
-        }
+        for (CacheContinuousQueryEventBuffer buf : entryBufs.values())
+            buf.flushOnExchange(null);
     }
 
     /** {@inheritDoc} */
@@ -1332,7 +1342,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         final UUID routineId,
         final GridKernalContext ctx) {
         if (t != null) {
-            ctx.closure().runLocalSafe(new Runnable() {
+            ctx.closure().runLocalSafe(new GridPlainRunnable() {
                 @Override public void run() {
                     GridCacheContext<K, V> cctx = cacheContext(ctx);
 

@@ -18,14 +18,13 @@
 package org.apache.ignite.binary;
 
 import java.io.Serializable;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 /**
  * Defines configuration properties for a specific binary type. Providing per-type

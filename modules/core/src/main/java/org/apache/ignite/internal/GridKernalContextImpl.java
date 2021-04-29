@@ -30,7 +30,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ForkJoinPool;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -38,6 +41,8 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.cache.query.index.IndexProcessor;
+import org.apache.ignite.internal.maintenance.MaintenanceProcessor;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
@@ -49,12 +54,15 @@ import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
+import org.apache.ignite.internal.managers.tracing.GridTracingManager;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
 import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
+import org.apache.ignite.internal.processors.cache.persistence.defragmentation.IgniteDefragmentation;
+import org.apache.ignite.internal.processors.cache.persistence.defragmentation.IgniteDefragmentationImpl;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
@@ -67,18 +75,15 @@ import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
-import org.apache.ignite.internal.processors.hadoop.HadoopHelper;
-import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
-import org.apache.ignite.internal.processors.igfs.IgfsHelper;
-import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
-import org.apache.ignite.internal.processors.localtask.DurableBackgroundTasksProcessor;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
+import org.apache.ignite.internal.processors.localtask.DurableBackgroundTasksProcessor;
 import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.platform.plugin.PlatformPluginProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
@@ -95,6 +100,7 @@ import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.StripedExecutor;
@@ -106,6 +112,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
@@ -171,7 +178,19 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
+    private IndexProcessor indexProc;
+
+    /** */
+    @GridToStringExclude
     private GridEncryptionManager encryptionMgr;
+
+    /** */
+    @GridToStringExclude
+    private IgniteDefragmentation defragMgr;
+
+    /** */
+    @GridToStringExclude
+    private GridTracingManager tracingMgr;
 
     /*
      * Processors.
@@ -260,18 +279,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringInclude
-    private IgfsProcessorAdapter igfsProc;
-
-    /** */
-    @GridToStringInclude
-    private IgfsHelper igfsHelper;
-
-    /** */
-    @GridToStringInclude
-    private HadoopHelper hadoopHelper;
-
-    /** */
-    @GridToStringInclude
     private GridSegmentationProcessor segProc;
 
     /** */
@@ -281,10 +288,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringExclude
     private GridContinuousProcessor contProc;
-
-    /** */
-    @GridToStringExclude
-    private HadoopProcessorAdapter hadoopProc;
 
     /** */
     @GridToStringExclude
@@ -336,6 +339,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
+    private MaintenanceProcessor maintenanceProc;
+
+    /** */
+    @GridToStringExclude
     private List<GridComponent> comps = new LinkedList<>();
 
     /** */
@@ -361,10 +368,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringExclude
     private ExecutorService mgmtExecSvc;
-
-    /** */
-    @GridToStringExclude
-    private ExecutorService igfsExecSvc;
 
     /** */
     @GridToStringExclude
@@ -425,6 +428,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringExclude
     private DurableBackgroundTasksProcessor durableBackgroundTasksProcessor;
+
+    /** Performance statistics processor. */
+    @GridToStringExclude
+    private PerformanceStatisticsProcessor perfStatProc;
 
     /** */
     private Thread.UncaughtExceptionHandler hnd;
@@ -491,7 +498,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      * @param stripedExecSvc Striped executor.
      * @param p2pExecSvc P2P executor service.
      * @param mgmtExecSvc Management executor service.
-     * @param igfsExecSvc IGFS executor service.
      * @param dataStreamExecSvc data stream executor service.
      * @param restExecSvc REST executor service.
      * @param affExecSvc Affinity executor service.
@@ -521,7 +527,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         StripedExecutor stripedExecSvc,
         ExecutorService p2pExecSvc,
         ExecutorService mgmtExecSvc,
-        ExecutorService igfsExecSvc,
         StripedExecutor dataStreamExecSvc,
         ExecutorService restExecSvc,
         ExecutorService affExecSvc,
@@ -553,7 +558,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.stripedExecSvc = stripedExecSvc;
         this.p2pExecSvc = p2pExecSvc;
         this.mgmtExecSvc = mgmtExecSvc;
-        this.igfsExecSvc = igfsExecSvc;
         this.dataStreamExecSvc = dataStreamExecSvc;
         this.restExecSvc = restExecSvc;
         this.affExecSvc = affExecSvc;
@@ -570,6 +574,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.pauseDetector = pauseDetector;
 
         marshCtx = new MarshallerContextImpl(plugins, clsFilter);
+
+        defragMgr = new IgniteDefragmentationImpl(this);
 
         try {
             spring = SPRING.create(false);
@@ -630,6 +636,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             indexingMgr = (GridIndexingManager)comp;
         else if (comp instanceof GridEncryptionManager)
             encryptionMgr = (GridEncryptionManager)comp;
+        else if (comp instanceof GridTracingManager)
+            tracingMgr = (GridTracingManager) comp;
 
         /*
          * Processors.
@@ -678,12 +686,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             restProc = (IgniteRestProcessor)comp;
         else if (comp instanceof DataStreamProcessor)
             dataLdrProc = (DataStreamProcessor)comp;
-        else if (comp instanceof IgfsProcessorAdapter)
-            igfsProc = (IgfsProcessorAdapter)comp;
         else if (comp instanceof GridContinuousProcessor)
             contProc = (GridContinuousProcessor)comp;
-        else if (comp instanceof HadoopProcessorAdapter)
-            hadoopProc = (HadoopProcessorAdapter)comp;
         else if (comp instanceof IgniteCacheObjectProcessor)
             cacheObjProc = (IgniteCacheObjectProcessor)comp;
         else if (comp instanceof IgnitePluginProcessor)
@@ -718,6 +722,12 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             diagnosticProcessor = (DiagnosticProcessor)comp;
         else if (comp instanceof DurableBackgroundTasksProcessor)
             durableBackgroundTasksProcessor = (DurableBackgroundTasksProcessor)comp;
+        else if (comp instanceof MaintenanceProcessor)
+            maintenanceProc = (MaintenanceProcessor) comp;
+        else if (comp instanceof PerformanceStatisticsProcessor)
+            perfStatProc = (PerformanceStatisticsProcessor)comp;
+        else if (comp instanceof IndexProcessor)
+            indexProc = (IndexProcessor)comp;
         else if (!(comp instanceof DiscoveryNodeValidationProcessor
             || comp instanceof PlatformPluginProcessor))
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
@@ -732,12 +742,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     public void addHelper(Object helper) {
         assert helper != null;
 
-        if (helper instanceof IgfsHelper)
-            igfsHelper = (IgfsHelper)helper;
-        else if (helper instanceof HadoopHelper)
-            hadoopHelper = (HadoopHelper)helper;
-        else
-            assert false : "Unknown helper class: " + helper.getClass();
+        assert false : "Unknown helper class: " + helper.getClass();
     }
 
     /** {@inheritDoc} */
@@ -816,6 +821,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
+    @Override public MaintenanceRegistry maintenanceRegistry() {
+        return maintenanceProc;
+    }
+
+    /** {@inheritDoc} */
     @Override public GridCacheProcessor cache() {
         return cacheProc;
     }
@@ -833,6 +843,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public DistributedConfigurationProcessor distributedConfiguration() {
         return distributedConfigurationProcessor;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Tracing tracing() {
+        return tracingMgr;
     }
 
     /** {@inheritDoc} */
@@ -911,8 +926,18 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
+    @Override public IndexProcessor indexProcessor() {
+        return indexProc;
+    }
+
+    /** {@inheritDoc} */
     @Override public GridEncryptionManager encryption() {
         return encryptionMgr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteDefragmentation defragmentation() {
+        return defragMgr;
     }
 
     /** {@inheritDoc} */
@@ -941,28 +966,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public IgfsProcessorAdapter igfs() {
-        return igfsProc;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgfsHelper igfsHelper() {
-        return igfsHelper;
-    }
-
-    /** {@inheritDoc} */
-    @Override public HadoopHelper hadoopHelper() {
-        return hadoopHelper;
-    }
-
-    /** {@inheritDoc} */
     @Override public GridContinuousProcessor continuous() {
         return contProc;
-    }
-
-    /** {@inheritDoc} */
-    @Override public HadoopProcessorAdapter hadoop() {
-        return hadoopProc;
     }
 
     /** {@inheritDoc} */
@@ -1154,11 +1159,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public ExecutorService getIgfsExecutorService() {
-        return igfsExecSvc;
-    }
-
-    /** {@inheritDoc} */
     @Override public StripedExecutor getDataStreamerExecutorService() {
         return dataStreamExecSvc;
     }
@@ -1330,5 +1330,17 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public ExecutorService buildIndexExecutorService() {
         return buildIdxExecSvc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PerformanceStatisticsProcessor performanceStatistics() {
+        return perfStatProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Executor getAsyncContinuationExecutor() {
+        return config().getAsyncContinuationExecutor() == null
+                ? ForkJoinPool.commonPool()
+                : config().getAsyncContinuationExecutor();
     }
 }

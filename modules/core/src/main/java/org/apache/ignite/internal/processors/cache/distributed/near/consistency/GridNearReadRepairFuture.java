@@ -132,7 +132,8 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
                 false,
                 null,
                 0,
-                0);
+                0,
+                null);
         }
 
         Map<UUID, Map<Object, Object>> originalMap = new HashMap<>();
@@ -162,7 +163,8 @@ public class GridNearReadRepairFuture extends GridNearReadRepairAbstractFuture {
                         false,
                         null,
                         0,
-                        0);
+                        0,
+                        null);
                 }
             }
         }

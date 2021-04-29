@@ -1,0 +1,1416 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Key-Value Queries
+
+This page describes the key-value operations that you can perform with a cache. The key-value operations are equivalent to Ignite's native cache operations. Each operation has a link:binary-client-protocol/binary-client-protocol#standard-message-header[header] and operation-specific data.
+
+Refer to the Data Format page for a list of available data types and data format specification.
+
+== Operation Codes
+
+Upon successful handshake with an Ignite server node, a client can start performing various key-value operations by sending a request (see request/response structure below) with a specific operation code:
+
+
+[cols="2,1",opts="header"]
+|===
+
+
+|Operation|   OP_CODE
+|OP_CACHE_GET|    1000
+|OP_CACHE_PUT|    1001
+|OP_CACHE_PUT_IF_ABSENT|  1002
+|OP_CACHE_GET_ALL|    1003
+|OP_CACHE_PUT_ALL|    1004
+|OP_CACHE_GET_AND_PUT|    1005
+|OP_CACHE_GET_AND_REPLACE|    1006
+|OP_CACHE_GET_AND_REMOVE| 1007
+|OP_CACHE_GET_AND_PUT_IF_ABSENT|  1008
+|OP_CACHE_REPLACE|    1009
+|OP_CACHE_REPLACE_IF_EQUALS|  1010
+|OP_CACHE_CONTAINS_KEY|   1011
+|OP_CACHE_CONTAINS_KEYS|  1012
+|OP_CACHE_CLEAR|  1013
+|OP_CACHE_CLEAR_KEY|  1014
+|OP_CACHE_CLEAR_KEYS| 1015
+|OP_CACHE_REMOVE_KEY| 1016
+|OP_CACHE_REMOVE_IF_EQUALS|   1017
+|OP_CACHE_REMOVE_KEYS|    1018
+|OP_CACHE_REMOVE_ALL| 1019
+|OP_CACHE_GET_SIZE|   1020
+
+|===
+
+
+Note that the above mentioned op_codes are part of the request header, as explained link:binary-client-protocol/binary-client-protocol#standard-message-header[here].
+
+[NOTE]
+====
+[discrete]
+=== Customs Methods Used in Sample Code Snippets Implementation
+
+Some of the code snippets below use `readDataObject(...)` introduced in link:binary-client-protocol/binary-client-protocol#data-objects[this section] and little-endian versions of methods for reading and writing multiple-byte values that are covered in link:binary-client-protocol/binary-client-protocol#data-objects[this example].
+====
+
+== OP_CACHE_GET
+
+Retrieves a value from a cache by key. If the cache does not contain the key, null is returned.
+
+[cols="1,2",opts="header"]
+|===
+|Request Type|    Description
+|Header|  Request header.
+|int| Cache ID: Java-style hash code of the cache name.
+|byte|    Use 0. This field is deprecated and will be removed in the future.
+|Data Object| The key of the cache entry to be returned.
+|===
+
+[cols="1,2",opts="header"]
+|===
+|Response Type |   Description
+|Header|  Response header.
+|Data Object| The value that corresponds to the given key. null if the cache does not contain the key.
+
+|===
+
+[tabs]
+--
+tab:Request[]
+
+[source, java]
+----
+DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+
+// Request header
+writeRequestHeader(10, OP_CACHE_GET, 1, out);
+
+// Cache id
+writeIntLittleEndian(cacheName.hashCode(), out);
+
+// Flags = none
+writeByteLittleEndian(0, out);
+
+// Data object
+writeByteLittleEndian(3, out);  // Integer type code
+writeIntLittleEndian(key, out);   // Cache key
+----
+
+tab:Response[]
+
+[source, java]
+----
+// Read result
+DataInputStream in = new DataInputStream(socket.getInputStream());
+
+// Response header
+readResponseHeader(in);
+
+// Resulting cache value (Data Object)
+int resTypeCode = readByteLittleEndian(in);
+int value = readIntLittleEndian(in);
+
+----
+--
+
+
+== OP_CACHE_GET_ALL
+
+Retrieves multiple key-value pairs from a cache.
+
+[cols="1,2",opts="header"]
+|===
+|Request Type|    Description
+|Header|  Request header.
+|int| Cache ID: Java-style hash code of the cache name.
+|byte|    Use 0. This field is deprecated and will be removed in the future.
+|int| Key count.
+|Data Object| Key for the cache entry.
+
+Repeat for as many times as the key count that is passed in the previous parameter.
+|===
+
+
+[cols="1,2",opts="header"]
+|===
+|Response Type  | Description
+|Header|  Response header.
+|int| Result count.
+|Key Data Object + Value Data Object| Resulting key-value pairs. Keys that are not present in the cache are not included.
+
+Repeat for as many times as the result count that is obtained in the previous parameter.
+
+|===
+
+[tabs]
+--
+tab:Request[]
+
+[source, java]
+----
+DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+// Request header
+writeRequestHeader(19, OP_CACHE_GET_ALL, 1, out);
+
+// Cache id
+writeIntLittleEndian(cacheName.hashCode(), out);
+
+// Flags = none
+writeByteLittleEndian(0, out);
+
+// Key count
+writeIntLittleEndian(2, out);
+
+// Data object 1
+writeByteLittleEndian(3, out);  // Integer type code
+writeIntLittleEndian(key1, out);   // Cache key
+
+// Data object 2
+writeByteLittleEndian(3, out);  // Integer type code
+writeIntLittleEndian(key2, out);   // Cache key
+----
+
+tab:Response[]
+
+[source, java]
+----
+// Read result
+DataInputStream in = new DataInputStream(socket.getInputStream());
+
+// Response header
+readResponseHeader(in);
+
+// Result count
+int resCount = readIntLittleEndian(in);
+
+for (int i = 0; i < resCount; i++) {
+  // Resulting data object
+  int resKeyTypeCode = readByteLittleEndian(in); // Integer type code
+  int resKey = readIntLittleEndian(in); // Cache key
+
+  // Resulting data object
+  int resValTypeCode = readByteLittleEndian(in); // Integer type code
+  int resValue = readIntLittleEndian(in); // Cache value
+}
+
+----
+--
+
+
+== OP_CACHE_PUT
+
+Puts a value with a given key to a cache (overwriting existing value if any).
+
+[cols="1,2",opts="header"]
+|===
+|Request Type  |  Description
+|Header|  Request Header.
+|int| Cache ID: Java-style hash code of the cache name.
+|byte|    Use 0. This field is deprecated and will be removed in the future.
+|Data Object| Key for the cache entry.
+|Data Object| Value for the key.
+
+|===
+
+[cols="1,2",opts="header"]
+|===
+|Response Type |   Description
+|Header|  Response Header
+|===
+
+[tabs]
+--
+tab:Request[]
+
+[source, java]
+----
+DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+// Request header
+writeRequestHeader(15, OP_CACHE_PUT, 1, out);
+
+// Cache id
+writeIntLittleEndian(cacheName.hashCode(), out);
+
+// Flags = none
+writeByteLittleEndian(0, out);
+
+// Cache key data object
+writeByteLittleEndian(3, out);  // Integer type code
+writeIntLittleEndian(key, out);   // Cache key
+
+// Cache value data object
+writeByteLittleEndian(3, out);  // Integer type code
+writeIntLittleEndian(value, out);   // Cache value
+----
+
+tab:Response[]
+
+[source, java]
+----
+// Read result
+DataInputStream in = new DataInputStream(socket.getInputStream());
+
+// Response header
+readResponseHeader(in);
+
+----
+--
+
+
+== OP_CACHE_PUT_ALL
+
+Puts multiple key-value pairs to cache (overwriting existing associations if any).
+
+[cols="1,2",opts="header"]
+|===
+|Request Type |    Description
+|Header|  Request Header.
+|int| Cache ID: Java-style hash code of the cache name.
+|byte|    Use 0. This field is deprecated and will be removed in the future.
+|int| Key-value pair count
+|Key Data Object + Value Data | Object Key-value pairs.
+
+Repeat for as many times as the key-value pair count that is passed in the previous parameter.
+|===
+
+
+[cols="1,2",opts="header"]
+|===
+|Response Type |   Description
+|Header|  Response header.
+
+|===
+
+[tabs]
+--
+tab:Request[]
+
+[source, java]
+----
+DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+// Request header
+writeRequestHeader(29, OP_CACHE_PUT_ALL, 1, out);
+
+// Cache id
+writeIntLittleEndian(cacheName.hashCode(), out);
+
+// Flags = none
+writeByteLittleEndian(0, out);
+
+// Entry Count
+writeIntLittleEndian(2, out);
+
+// Cache key data object 1
+writeByteLittleEndian(3, out);  // Integer type code
+writeIntLittleEndian(key1, out);   // Cache key
+
+// Cache value data object 1
+writeByteLittleEndian(3, out);  // Integer type code
+writeIntLittleEndian(value1, out);   // Cache value
+
+// Cache key data object 2
+writeByteLittleEndian(3, out);  // Integer type code
+writeIntLittleEndian(key2, out);   // Cache key
+
+// Cache value data object 2
+writeByteLittleEndian(3, out);  // Integer type code
+writeIntLittleEndian(value2, out);   // Cache value
+----
+
+tab:Response[]
+
+[source, java]
+----
+// Read result
+DataInputStream in = new DataInputStream(socket.getInputStream());
+
+// Response header
+readResponseHeader(in);
+----
+--
+
+
+== OP_CACHE_CONTAINS_KEY
+
+Returns a value indicating whether given key is present in cache.
+
+[cols="1,2",opts="header"]
+|===
+|Request Type|    Description
+|Header|  Request Header.
+|int| Cache ID: Java-style hash code of the cache name.
+|byte|    Use 0. This field is deprecated and will be removed in the future.
+|Data Object| Key for the cache entry.
+|===
+
+[cols="1,2",opts="header"]
+|===
+|Response Type|   Description
+|Header | Response header.
+|bool  |  True when key is present, false otherwise.
+|===
+
+[tabs]
+--
+tab:Request[]
+
+[source, java]
+----
+DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+// Request header
+writeRequestHeader(10, OP_CACHE_CONTAINS_KEY, 1, out);
+
+// Cache id
+writeIntLittleEndian(cacheName.hashCode(), out);
+
+// Flags = none
+writeByteLittleEndian(0, out);
+
+// Cache key data object
+writeByteLittleEndian(3, out);  // Integer type code
+writeIntLittleEndian(key, out);   // Cache key
+----
+
+tab:Response[]
+
+[source, java]
+----
+// Read result
+DataInputStream in = new DataInputStream(socket.getInputStream());
+
+// Response header
+readResponseHeader(in);
+
+// Result
+boolean res = readBooleanLittleEndian(in);
+
+----
+--
+
+
+== OP_CACHE_CONTAINS_KEYS
+
+Returns a value indicating whether all given keys are present in cache.
+
+[cols="1,2",opts="header"]
+|===
+|Request Type|    Description
+|Header|  Request Header.
+|int| Cache ID: Java-style hash code of the cache name.
+|byte|    Use 0. This field is deprecated and will be removed in the future.
+|int| Key count.
+|Data Object |Key obtained from cache.
+
+Repeat for as many times as the key count that is passed in the previous parameter.
+|===
+
+[cols="1,2",opts="header"]
+|===
+|Response Type|   Description
+|Header|  Response header.
+|bool|    True when keys are present, false otherwise.
+
+|===
+
+[tabs]
+--
+tab:Request[]
+
+[source, java]
+----
+DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+// Request header
+writeRequestHeader(19, OP_CACHE_CONTAINS_KEYS, 1, out);
+
+// Cache id
+writeIntLittleEndian(cacheName.hashCode(), out);
+
+// Flags = none
+writeByteLittleEndian(0, out);
+
+//Count
+writeIntLittleEndian(2, out);
+
+// Cache key data object 1
+int key1 = 11;
+writeByteLittleEndian(3, out);  // Integer type code
+writeIntLittleEndian(key1, out);   // Cache key
+
+// Cache key data object 2
+int key2 = 22;
+writeByteLittleEndian(3, out);  // Integer type code
+writeIntLittleEndian(key2, out);   // Cache key
+----
+
+tab:Response[]
+
+[source, java]
+----
+// Read result
+DataInputStream in = new DataInputStream(socket.getInputStream());
+
+// Response header
+readResponseHeader(in);
+
+// Resulting boolean value
+boolean res = readBooleanLittleEndian(in);
+
+----
+--
+
+
+== OP_CACHE_GET_AND_PUT
+
+Puts a key and an associated value into a cache and returns the previous value for that key. If the cache does not contain the key, a new entry is created and null is returned.
+
+[cols="1,2",opts="header"]
+|===
+|Request Type |    Description
+|Header|  Request Header.
+|int| Cache ID: Java-style hash code of the cache name.
+|byte|    Use 0. This field is deprecated and will be removed in the future.
+|Data Object| The key to be updated.
+|Data Object| The new value for the specified key.
+|===
+
+[cols="1,2",opts="header"]
+|===
+|Response Type |  Description
+|Header|  Response header.
+|Data Object| The existing value associated with the specified key, or null.
+
+|===
+
+[tabs]
+--
+tab:Request[]
+
+[source, java]
+----
+DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+// Request header
+writeRequestHeader(15, OP_CACHE_GET_AND_PUT, 1, out);
+
+// Cache id
+writeIntLittleEndian(cacheName.hashCode(), out);
+
+// Flags = none
+writeByteLittleEndian(0, out);
+
+// Cache key data object
+writeByteLittleEndian(3, out);  // Integer type code
+writeIntLittleEndian(key, out);   // Cache key
+
+// Cache value data object
+writeByteLittleEndian(3, out);  // Integer type code
+writeIntLittleEndian(value, out);   // Cache value
+----
+
+tab:Response[]
+
+[source, java]
+----
+// Read result
+DataInputStream in = new DataInputStream(socket.getInputStream());
+
+// Response header
+readResponseHeader(in);
+
+// Resulting cache value (Data Object)
+int resTypeCode = readByteLittleEndian(in);
+int value = readIntLittleEndian(in);
+
+----
+--
+
+
+== OP_CACHE_GET_AND_REPLACE
+
+
+Replaces the value associated with the given key in the specified cache and returns the previous value. If the cache does not contain the key, the operation returns null without changing the cache.
+
+[cols="1,2",opts="header"]
+|===
+|Request Type  |  Description
+|Header|  Request Header.
+|int| Cache ID: Java-style hash code of the cache name.
+|byte|    Use 0. This field is deprecated and will be removed in the future.
+|Data Object| The key whose value is to be replaced.
+|Data Object| The new value to be associated with the specified key.
+
+|===
+
+[cols="1,2",opts="header"]
+|===
+| Response Type |  Description
+|Header|  Response header.
+|Data Object| The previous value associated with the given key, or null if the key does not exist.
+|===
+
+[tabs]
+--
+tab:Request[]
+
+[source, java]
+----
+DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+// Request header
+writeRequestHeader(15, OP_CACHE_GET_AND_REPLACE, 1, out);
+
+// Cache id
+writeIntLittleEndian(cacheName.hashCode(), out);
+
+// Flags = none
+writeByteLittleEndian(0, out);
+
+// Cache key data object
+writeByteLittleEndian(3, out);  // Integer type code
+writeIntLittleEndian(key, out);   // Cache key
+
+// Cache value data object
+writeByteLittleEndian(3, out);  // Integer type code
+writeIntLittleEndian(value, out);   // Cache value
+----
+
+tab:Response[]
+
+[source, java]
+----
+// Read result
+DataInputStream in = new DataInputStream(socket.getInputStream());
+
+// Response header
+readResponseHeader(in);
+
+// Resulting cache value (Data Object)
+int resTypeCode = readByteLittleEndian(in);
+int value = readIntLittleEndian(in);
+
+----
+--
+
+
+== OP_CACHE_GET_AND_REMOVE
+
+Removes a specific entry from a cache and returns the entry's value. If the key does not exist, null is returned.
+
+[cols="1,2",opts="header"]
+|===
+|Request Type|    Description
+|Header|  Request Header.
+|int| Cache ID: Java-style hash code of the cache name.
+|byte|    Use 0. This field is deprecated and will be removed in the future.
+|Data Object| The key to be removed.
+
+|===
+
+
+[cols="1,2",opts="header"]
+|===
+|Response Type  | Description
+|Header|  Response header.
+|Data Object| The existing value associated with the specified key or null, if the key does not exist.
+
+|===
+
+[tabs]
+--
+tab:Request[]
+
+[source, java]
+----
+DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+// Request header
+writeRequestHeader(10, OP_CACHE_GET_AND_REMOVE, 1, out);
+
+// Cache id
+writeIntLittleEndian(cacheName.hashCode(), out);
+
+// Flags = none
+writeByteLittleEndian(0, out);
+
+// Cache key data object
+writeByteLittleEndian(3, out);  // Integer type code
+writeIntLittleEndian(key, out);   // Cache key
+----
+
+tab:Response[]
+
+[source, java]
+----
+// Read result
+DataInputStream in = new DataInputStream(socket.getInputStream());
+
+// Response header
+readResponseHeader(in);
+
+// Resulting cache value (Data Object)
+int resTypeCode = readByte(in);
+int value = readInt(in);
+
+----
+--
+
+
+== OP_CACHE_PUT_IF_ABSENT
+
+Puts an entry to a cache if that entry does not exist.
+
+[cols="1,2",opts="header"]
+|===
+|Request Type |    Description
+|Header|  Request Header.
+|int| Cache ID: Java-style hash code of the cache name.
+|byte|    Use 0. This field is deprecated and will be removed in the future.
+|Data Object| The key of the entry to be added.
+|Data Object| The value of the key to be added.
+|===
+
+
+[cols="1,2",opts="header"]
+|===
+|Response Type |   Description
+|Header|  Response header.
+|bool|    true if the new entry is created, false if the entry already exists.
+|===
+
+[tabs]
+--
+tab:Request[]
+
+[source, java]
+----
+DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+// Request header
+writeRequestHeader(15, OP_CACHE_PUT_IF_ABSENT, 1, out);
+
+// Cache id
+writeIntLittleEndian(cacheName.hashCode(), out);
+
+// Flags = none
+writeByteLittleEndian(0, out);
+
+// Cache key data object
+writeByteLittleEndian(3, out);  // Integer type code
+writeIntLittleEndian(key, out);   // Cache key
+
+// Cache value data object
+writeByteLittleEndian(3, out);  // Integer type code
+writeIntLittleEndian(value, out);   // Cache Value
+----
+
+tab:Response[]
+
+[source, java]
+----
+// Read result
+DataInputStream in = new DataInputStream(socket.getInputStream());
+
+// Response header
+readResponseHeader(in);
+
+// Resulting boolean value
+boolean res = readBooleanLittleEndian(in);
+
+----
+--
+
+
+== OP_CACHE_GET_AND_PUT_IF_ABSENT
+
+Puts an entry to a cache if it does not exist; otherwise, returns the existing value.
+
+[cols="1,2",opts="header"]
+|===
+|Request Type|    Description
+|Header|  Request Header.
+|int| Cache ID: Java-style hash code of the cache name.
+|byte|    Use 0. This field is deprecated and will be removed in the future.
+|Data Object| The key of the entry to be added.
+|Data Object| The value of the entry to be added.
+|===
+
+
+[cols="1,2",opts="header"]
+|===
+|Response Type|   Description
+|Header|  Response header.
+|Data Object| null if the cache does not contain the entry (in this case a new entry is created) or the existing value associated with the given key.
+
+|===
+
+[tabs]
+--
+tab:Request[]
+
+[source, java]
+----
+DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+// Request header
+writeRequestHeader(15, OP_CACHE_GET_AND_PUT_IF_ABSENT, 1, out);
+
+// Cache id
+writeIntLittleEndian(cacheName.hashCode(), out);
+
+// Flags = none
+writeByteLittleEndian(0, out);
+
+// Cache key data object
+writeByteLittleEndian(3, out);  // Integer type code
+writeIntLittleEndian(key, out);   // Cache key
+
+// Cache value data object
+writeByteLittleEndian(3, out);  // Integer type code
+writeIntLittleEndian(value, out);   // Cache value
+----
+
+tab:Response[]
+
+[source, java]
+----
+// Read result
+DataInputStream in = new DataInputStream(socket.getInputStream());
+
+// Response header
+readResponseHeader(in);
+
+// Resulting cache value (Data Object)
+int resTypeCode = readByteLittleEndian(in);
+int value = readIntLittleEndian(in);
+
+----
+--
+
+
+== OP_CACHE_REPLACE
+
+Puts a value with a given key to cache only if the key already exists.
+
+[cols="1,2",opts="header"]
+|===
+|Request Type|    Description
+|Header|  Request Header.
+|int| Cache ID: Java-style hash code of the cache name.
+|byte|    Use 0. This field is deprecated and will be removed in the future.
+|Data Object| Key for the cache entry.
+|Data Object| Value for the key.
+|===
+
+
+[cols="1,2",opts="header"]
+|===
+|Response Type|   Description
+|Header|  Response header.
+|bool|    Value indicating whether replace happened.
+|===
+
+[tabs]
+--
+tab:Request[]
+
+[source, java]
+----
+DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+// Request header
+writeRequestHeader(15, OP_CACHE_REPLACE, 1, out);
+
+// Cache id
+writeIntLittleEndian(cacheName.hashCode(), out);
+
+// Flags = none
+writeByteLittleEndian(0, out);
+
+// Cache key data object
+writeByteLittleEndian(3, out);  // Integer type code
+writeIntLittleEndian(key, out);   // Cache key
+
+// Cache value data object
+writeByteLittleEndian(3, out);  // Integer type code
+writeIntLittleEndian(value, out);   // Cache value
+----
+
+tab:Response[]
+
+[source, java]
+----
+// Read result
+DataInputStream in = new DataInputStream(socket.getInputStream());
+
+// Response header
+readResponseHeader(in);
+
+boolean res = readBooleanLittleEndian(in);
+
+----
+--
+
+
+== OP_CACHE_REPLACE_IF_EQUALS
+
+Puts a value with a given key to cache only if the key already exists and value equals provided value.
+
+[cols="1,2",opts="header"]
+|===
+|Request Type|    Description
+|Header|  Request Header.
+|int| Cache ID: Java-style hash code of the cache name.
+|byte|    Use 0. This field is deprecated and will be removed in the future.
+|Data Object| Key for the cache entry.
+|Data Object| Value to be compared with the existing value in the cache for the given key.
+|Data Object| New value for the key.
+|===
+
+[cols="1,2",opts="header"]
+|===
+| Response Type |   Description
+|Header|  Response header.
+|bool|    Value indicating whether replace happened.
+
+|===
+
+[tabs]
+--
+tab:Request[]
+
+[source, java]
+----
+DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+// Request header
+writeRequestHeader(20, OP_CACHE_REPLACE_IF_EQUALS, 1, out);
+
+// Cache id
+writeIntLittleEndian(cacheName.hashCode(), out);
+
+// Flags = none
+writeByteLittleEndian(0, out);
+
+// Cache key data object
+writeByteLittleEndian(3, out);  // Integer type code
+writeIntLittleEndian(key, out);   // Cache key
+
+// Cache value data object
+writeByteLittleEndian(3, out);  // Integer type code
+writeIntLittleEndian(value, out);   // Cache value to compare
+
+// Cache value data object
+writeByteLittleEndian(3, out);  // Integer type code
+writeIntLittleEndian(newValue, out);   // New cache value
+----
+
+tab:Response[]
+
+[source, java]
+----
+// Read result
+DataInputStream in = new DataInputStream(socket.getInputStream());
+
+// Response header
+readResponseHeader(in);
+
+boolean res = readBooleanLittleEndian(in);
+
+----
+--
+
+
+== OP_CACHE_CLEAR
+
+Clears the cache without notifying listeners or cache writers. See the javadoc for the corresponding cache method.
+
+[cols="1,2",opts="header"]
+|===
+|Request Type|    Description
+|Header|  Request Header.
+|int| Cache ID: Java-style hash code of the cache name.
+|byte|    Use 0. This field is deprecated and will be removed in the future.
+|===
+
+[cols="1,2",opts="header"]
+|===
+|Response Type  | Description
+|Header|  Response header.
+|===
+
+[tabs]
+--
+tab:Request[]
+
+[source, java]
+----
+DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+// Request header
+writeRequestHeader(5, OP_CACHE_CLEAR, 1, out);
+
+// Cache id
+writeIntLittleEndian(cacheName.hashCode(), out);
+
+// Flags = none
+writeByteLittleEndian(0, out);
+----
+
+tab:Response[]
+
+[source, java]
+----
+// Read result
+DataInputStream in = new DataInputStream(socket.getInputStream());
+
+// Response header
+readResponseHeader(in);
+
+----
+--
+
+
+== OP_CACHE_CLEAR_KEY
+
+Clears the cache key without notifying listeners or cache writers. See the javadoc for the corresponding cache method.
+
+[cols="1,2",opts="header"]
+|===
+|Request Type|    Description
+|Header|  Request Header.
+|int| Cache ID: Java-style hash code of the cache name.
+|byte|    Use 0. This field is deprecated and will be removed in the future.
+|Data Object| Key for the cache entry.
+|===
+
+[cols="1,2",opts="header"]
+|===
+|Response Type|   Description
+|Header|  Response header.
+|===
+
+[tabs]
+--
+tab:Request[]
+
+[source, java]
+----
+DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+// Request header
+writeRequestHeader(10, OP_CACHE_CLEAR_KEY, 1, out);;
+
+// Cache id
+writeIntLittleEndian(cacheName.hashCode(), out);
+
+// Flags = none
+writeByteLittleEndian(0, out);
+
+// Cache key data object
+writeByteLittleEndian(3, out);  // Integer type code
+writeIntLittleEndian(key, out);   // Cache key
+----
+
+tab:Response[]
+
+[source, java]
+----
+// Read result
+DataInputStream in = new DataInputStream(socket.getInputStream());
+
+// Response header
+readResponseHeader(in);
+
+----
+--
+
+
+== OP_CACHE_CLEAR_KEYS
+
+Clears the cache keys without notifying listeners or cache writers. See the javadoc for the corresponding cache method.
+
+[cols="1,2",opts="header"]
+|===
+|Request Type |    Description
+|Header|  Request Header.
+|int| Cache ID: Java-style hash code of the cache name.
+|byte|    Use 0. This field is deprecated and will be removed in the future.
+|int| Key count.
+|Data Object * count| Keys
+|===
+
+[cols="1,2",opts="header"]
+|===
+|Response Type|   Description
+|Header|  Response header.
+|===
+
+[tabs]
+--
+tab:Request[]
+
+[source, java]
+----
+DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+// Request header
+writeRequestHeader(19, OP_CACHE_CLEAR_KEYS, 1, out);
+
+// Cache id
+writeIntLittleEndian(cacheName.hashCode(), out);
+
+// Flags = none
+writeByteLittleEndian(0, out);
+
+// key count
+writeIntLittleEndian(2, out);
+
+// Cache key data object 1
+writeByteLittleEndian(3, out);  // Integer type code
+writeIntLittleEndian(key1, out);   // Cache key
+
+// Cache key data object 2
+writeByteLittleEndian(3, out);  // Integer type code
+writeIntLittleEndian(key2, out);   // Cache key
+----
+
+tab:Response[]
+
+[source, java]
+----
+// Read result
+DataInputStream in = new DataInputStream(socket.getInputStream());
+
+// Response header
+readResponseHeader(in);
+
+----
+--
+
+
+== OP_CACHE_REMOVE_KEY
+
+Removes an entry with a given key, notifying listeners and cache writers. See the javadoc for the corresponding cache method.
+
+[cols="1,2",opts="header"]
+|===
+|Request Type |    Description
+|Header|  Request Header.
+|int| Cache ID: Java-style hash code of the cache name.
+|byte|    Use 0. This field is deprecated and will be removed in the future.
+|Data Object| Key for the cache entry.
+|===
+
+[cols="1,2",opts="header"]
+|===
+|Response Type|   Description
+|Header|  Response header.
+|bool|    Value indicating whether remove happened.
+|===
+
+[tabs]
+--
+tab:Request[]
+
+[source, java]
+----
+DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+// Request header
+writeRequestHeader(10, OP_CACHE_REMOVE_KEY, 1, out);
+
+// Cache id
+writeIntLittleEndian(cacheName.hashCode(), out);
+
+// Flags = none
+writeByteLittleEndian(0, out);
+
+// Cache key data object
+writeByteLittleEndian(3, out);  // Integer type code
+writeIntLittleEndian(key1, out);   // Cache key
+----
+
+tab:Response[]
+
+[source, java]
+----
+// Read result
+DataInputStream in = new DataInputStream(socket.getInputStream());
+
+// Response header
+readResponseHeader(in);
+
+// Resulting boolean value
+boolean res = readBooleanLittleEndian(in);
+
+----
+--
+
+
+== OP_CACHE_REMOVE_IF_EQUALS
+
+Removes an entry with a given key if the specified value is equal to the current value, notifying listeners and cache writers.
+
+[cols="1,2",opts="header"]
+|===
+|Request Type  |  Description
+|Header|  Request Header.
+|int| Cache ID: Java-style hash code of the cache name.
+|byte|    Use 0. This field is deprecated and will be removed in the future.
+|Data Object| The key of the entry to be removed.
+|Data Object| The value to be compared with the current value.
+|===
+
+[cols="1,2",opts="header"]
+|===
+|Response Type|   Description
+|Header|  Response header.
+|bool|    Value indicating whether remove happened
+|===
+
+
+[tabs]
+--
+tab:Request[]
+
+[source, java]
+----
+DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+// Request header
+writeRequestHeader(15, OP_CACHE_REMOVE_IF_EQUALS, 1, out);
+
+// Cache id
+writeIntLittleEndian(cacheName.hashCode(), out);
+
+// Flags = none
+writeByteLittleEndian(0, out);
+
+// Cache key data object
+writeByteLittleEndian(3, out);  // Integer type code
+writeIntLittleEndian(key, out);   // Cache key
+
+// Cache value data object
+writeByteLittleEndian(3, out);  // Integer type code
+writeIntLittleEndian(value, out);   // Cache value
+----
+
+tab:Response[]
+
+[source, java]
+----
+// Read result
+DataInputStream in = new DataInputStream(socket.getInputStream());
+
+// Response header
+readResponseHeader(in);
+
+// Resulting boolean value
+boolean res = readBooleanLittleEndian(in);
+
+----
+--
+
+
+== OP_CACHE_GET_SIZE
+
+Gets the number of entries in a cache. This method is equivalent to `IgniteCache.size(CachePeekMode... peekModes)`.
+
+[cols="1,2",opts="header"]
+|===
+|Request Type|    Description
+|Header|  Request Header.
+|int| Cache ID: Java-style hash code of the cache name.
+|byte|    Use 0. This field is deprecated and will be removed in the future.
+|int| The number of peek modes you are going to request. When set to 0, CachePeekMode.ALL is used. When set to a positive value, you need to specify in the following fields the type of entries that should be counted: all, backup, primary, or near cache entries.
+|byte|    Indicates which type of entries should be counted: 0 = all, 1 = near cache entries, 2 = primary entries, 3 = backup entries.
+
+This field must be provided as many times as specified in the previous field.
+|===
+
+
+[cols="1,2",opts="header"]
+|===
+|Response Type|   Description
+|Header|  Response header.
+|long|    Cache size.
+|===
+
+[tabs]
+--
+tab:Request[]
+
+[source, java]
+----
+DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+// Request header
+writeRequestHeader(10, OP_CACHE_GET_SIZE, 1, out);
+
+// Cache id
+writeIntLittleEndian(cacheName.hashCode(), out);
+
+// Flags = none
+writeByteLittleEndian(0, out);
+
+// Peek mode count; '0' means All
+writeIntLittleEndian(0, out);
+
+// Peek mode
+writeByteLittleEndian(0, out);
+----
+
+tab:Response[]
+
+[source, java]
+----
+// Read result
+DataInputStream in = new DataInputStream(socket.getInputStream());
+
+// Response header
+readResponseHeader(in);
+
+// Number of entries in cache
+long cacheSize = readLongLittleEndian(in);
+
+----
+--
+
+
+== OP_CACHE_REMOVE_KEYS
+
+Removes entries with given keys, notifying listeners and cache writers. See the javadoc for the corresponding cache method.
+
+[cols="1,2",opts="header"]
+|===
+|Request Type  |  Description
+|Header|  Request Header.
+|int| Cache ID: Java-style hash code of the cache name.
+|byte|    Use 0. This field is deprecated and will be removed in the future.
+|int| Number of keys to remove.
+|Data Object| The key to be removed. If the cache does not contain the key, it is ignored. This field must be provided for each key to be removed.
+|....|
+|Data Object| The key to be removed.
+|===
+
+[cols="1,2",opts="header"]
+|===
+|Response Type   Description
+|Header|  Response header.
+|===
+
+[tabs]
+--
+tab:Request[]
+
+[source, java]
+----
+DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+// Request header
+writeRequestHeader(19, OP_CACHE_REMOVE_KEYS, 1, out);
+
+// Cache id
+writeIntLittleEndian(cacheName.hashCode(), out);
+
+// Flags = none
+writeByteLittleEndian(0, out);
+
+// key count
+writeIntLittleEndian(2, out);
+
+// Cache key data object 1
+writeByteLittleEndian(3, out);  // Integer type code
+writeIntLittleEndian(key1, out);   // Cache key
+
+// Cache value data object 2
+writeByteLittleEndian(3, out);  // Integer type code
+writeIntLittleEndian(key2, out);   // Cache key
+----
+
+tab:Response[]
+
+[source, java]
+----
+// Read result
+DataInputStream in = new DataInputStream(socket.getInputStream());
+
+// Response header
+readResponseHeader(in);
+
+----
+--
+
+
+== OP_CACHE_REMOVE_ALL
+
+Removes all entries from cache, notifying listeners and cache writers. See the javadoc for the corresponding cache method.
+
+[cols="1,2",opts="header"]
+|===
+|Request Type |    Description
+|Header|  Request Header.
+|int| Cache ID: Java-style hash code of the cache name.
+|byte|    Use 0. This field is deprecated and will be removed in the future.
+
+|===
+
+[cols="1,2",opts="header"]
+|===
+|Response Type|   Description
+|Header|  Response header.
+|===
+
+[tabs]
+--
+tab:Request[]
+
+[source, java]
+----
+DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+
+// Request header
+writeRequestHeader(5, OP_CACHE_REMOVE_ALL, 1, out);
+
+// Cache id
+writeIntLittleEndian(cacheName.hashCode(), out);
+
+// Flags = none
+writeByteLittleEndian(0, out);
+----
+
+tab:Response[]
+
+[source, java]
+----
+// Read result
+DataInputStream in = new DataInputStream(socket.getInputStream());
+
+// Response length
+final int len = readIntLittleEndian(in);
+
+// Request id
+long resReqId = readLongLittleEndian(in);
+
+// Success
+int statusCode = readIntLittleEndian(in);
+
+----
+--
+

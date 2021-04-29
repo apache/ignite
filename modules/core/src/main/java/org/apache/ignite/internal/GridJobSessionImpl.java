@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.compute.ComputeJobSibling;
 import org.apache.ignite.compute.ComputeTaskSessionAttributeListener;
 import org.apache.ignite.compute.ComputeTaskSessionScope;
+import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -60,6 +61,15 @@ public class GridJobSessionImpl implements GridTaskSessionInternal {
         this.ctx = ctx;
         this.ses = ses;
         this.jobId = jobId;
+    }
+
+    /**
+     * Grid job deployment.
+     *
+     * @return Grid deployment.
+     */
+    public GridDeployment deployment() {
+        return ses.deployment();
     }
 
     /** {@inheritDoc} */

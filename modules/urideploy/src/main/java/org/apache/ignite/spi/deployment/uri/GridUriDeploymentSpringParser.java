@@ -60,7 +60,7 @@ final class GridUriDeploymentSpringParser {
         assert in != null;
 
         // Note: use ByteArrayResource instead of InputStreamResource because InputStreamResource doesn't work.
-        ByteArrayOutputStream out  = new ByteArrayOutputStream();
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
 
         try {
             U.copy(in, out);

@@ -63,8 +63,8 @@ public class FilterDataForClientNodeDiscoveryTest extends GridCommonAbstractTest
         startClientGrid(configuration(2));
         startClientGrid(configuration(3));
 
-        assertEquals(5, joinSrvCnt);
-        assertEquals(4, joinCliCnt);
+        assertEquals(3, joinSrvCnt);
+        assertEquals(6, joinCliCnt);
     }
 
     /**

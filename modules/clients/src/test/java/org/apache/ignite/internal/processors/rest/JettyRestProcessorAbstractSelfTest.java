@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.processors.rest;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonNode;
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
@@ -32,6 +29,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -43,6 +41,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -54,12 +55,11 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
@@ -103,16 +103,6 @@ import org.apache.ignite.internal.visor.file.VisorFileBlockTask;
 import org.apache.ignite.internal.visor.file.VisorFileBlockTaskArg;
 import org.apache.ignite.internal.visor.file.VisorLatestTextFilesTask;
 import org.apache.ignite.internal.visor.file.VisorLatestTextFilesTaskArg;
-import org.apache.ignite.internal.visor.igfs.VisorIgfsFormatTask;
-import org.apache.ignite.internal.visor.igfs.VisorIgfsFormatTaskArg;
-import org.apache.ignite.internal.visor.igfs.VisorIgfsProfilerClearTask;
-import org.apache.ignite.internal.visor.igfs.VisorIgfsProfilerClearTaskArg;
-import org.apache.ignite.internal.visor.igfs.VisorIgfsProfilerTask;
-import org.apache.ignite.internal.visor.igfs.VisorIgfsProfilerTaskArg;
-import org.apache.ignite.internal.visor.igfs.VisorIgfsResetMetricsTask;
-import org.apache.ignite.internal.visor.igfs.VisorIgfsResetMetricsTaskArg;
-import org.apache.ignite.internal.visor.igfs.VisorIgfsSamplingStateTask;
-import org.apache.ignite.internal.visor.igfs.VisorIgfsSamplingStateTaskArg;
 import org.apache.ignite.internal.visor.log.VisorLogSearchTask;
 import org.apache.ignite.internal.visor.log.VisorLogSearchTaskArg;
 import org.apache.ignite.internal.visor.misc.VisorAckTask;
@@ -151,17 +141,24 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_MARSHALLER_BLACKLIST;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.configuration.WALMode.NONE;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 import static org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor.DATA_LOST_ON_DEACTIVATION_WARNING;
 import static org.apache.ignite.internal.processors.query.QueryUtils.TEMPLATE_PARTITIONED;
 import static org.apache.ignite.internal.processors.query.QueryUtils.TEMPLATE_REPLICATED;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_ACTIVATE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_ACTIVE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_DEACTIVATE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_INACTIVE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CLUSTER_SET_STATE;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SUCCESS;
 
@@ -175,13 +172,27 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        String path = U.resolveIgnitePath("modules/core/src/test/config/class_list_exploit_included.txt").getPath();
+        System.setProperty(IGNITE_MARSHALLER_BLACKLIST, path);
+
         super.beforeTestsStarted();
 
         initCache();
     }
 
     /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        System.clearProperty(IGNITE_MARSHALLER_BLACKLIST);
+
+        super.afterTestsStopped();
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        grid(0).cluster().state(ACTIVE);
+
         grid(0).cache(DEFAULT_CACHE_NAME).removeAll();
 
         if (memoryMetricsEnabled) {
@@ -189,6 +200,13 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
             restartGrid();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        grid(0).cluster().state(ACTIVE);
+
+        super.afterTest();
     }
 
     /**
@@ -386,7 +404,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
             assertEquals(simple.getSalary(), val.get("salary").doubleValue());
             assertEquals(simple.getFirstName(), val.get("firstName").textValue());
             assertEquals(simple.getLastName(), val.get("lastName").textValue());
-        } finally {
+        }
+        finally {
             grid(0).cache(cacheName).remove(300);
         }
     }
@@ -475,7 +494,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
             assertEquals(newTypeUpdate.timestamp, Timestamp.valueOf(res.get(2).textValue()));
             assertEquals(newTypeUpdate.igniteUuid, IgniteUuid.fromString(res.get(3).textValue()));
             assertTrue(Arrays.equals(newTypeUpdate.longs, JSON_MAPPER.treeToValue(res.get(4), long[].class)));
-        } finally {
+        }
+        finally {
             grid(0).destroyCache(ccfg.getName());
         }
     }
@@ -655,6 +675,23 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         );
 
         assertResponseContainsError(ret, "Failed to convert value to specified type");
+
+        // Check forbidden type.
+        ForbiddenType forbidden = new ForbiddenType(new Exploit[] {
+            new Exploit(1),
+            new Exploit(2)
+        });
+
+        json = JSON_MAPPER.writeValueAsString(forbidden);
+
+        ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_PUT,
+            "keyType", "int",
+            "key", "5",
+            "valueType", ForbiddenType.class.getName(),
+            "val", json
+        );
+
+        assertResponseContainsError(ret, "Deserialization of class " + Exploit.class.getName() + " is disallowed.");
     }
 
     /**
@@ -1216,32 +1253,69 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     }
 
     /**
+     * Performs all possible cluster state transitions via REST commands.
+     *
      * @throws Exception If failed.
      */
     @Test
-    public void testDeactivateActivate() throws Exception {
-        assertClusterState(true);
+    public void testClusterStateChange() throws Exception {
+        try {
+            changeClusterState(CLUSTER_SET_STATE, ACTIVE, ACTIVE_READ_ONLY, false, true);
 
-        changeClusterState(GridRestCommand.CLUSTER_SET_STATE, "state", INACTIVE.name());
+            changeClusterState(CLUSTER_SET_STATE, ACTIVE_READ_ONLY, INACTIVE, false, false);
+            changeClusterState(CLUSTER_SET_STATE, ACTIVE_READ_ONLY, INACTIVE, true, true);
 
-        changeClusterState(GridRestCommand.CLUSTER_SET_STATE, "state", INACTIVE.name(), "force", "true");
+            changeClusterState(CLUSTER_SET_STATE, INACTIVE, ACTIVE, false, true);
 
-        changeClusterState(GridRestCommand.CLUSTER_SET_STATE, "state", ACTIVE.name());
+            changeClusterState(CLUSTER_SET_STATE, ACTIVE, ACTIVE, false, true);
 
-        changeClusterState(GridRestCommand.CLUSTER_DEACTIVATE);
+            changeClusterState(CLUSTER_SET_STATE, ACTIVE, INACTIVE, false, false);
+            changeClusterState(CLUSTER_SET_STATE, ACTIVE, INACTIVE, true, true);
 
-        changeClusterState(GridRestCommand.CLUSTER_DEACTIVATE, "force", "true");
+            changeClusterState(CLUSTER_SET_STATE, INACTIVE, INACTIVE, false, true);
+            changeClusterState(CLUSTER_SET_STATE, INACTIVE, INACTIVE, true, true);
 
-        changeClusterState(GridRestCommand.CLUSTER_ACTIVATE);
+            changeClusterState(CLUSTER_SET_STATE, INACTIVE, ACTIVE_READ_ONLY, false, true);
 
-        // same for deprecated.
-        changeClusterState(GridRestCommand.CLUSTER_INACTIVE);
+            changeClusterState(CLUSTER_SET_STATE, ACTIVE_READ_ONLY, ACTIVE_READ_ONLY, false, true);
 
-        changeClusterState(GridRestCommand.CLUSTER_INACTIVE, "force", "true");
+            changeClusterState(CLUSTER_SET_STATE, ACTIVE_READ_ONLY, ACTIVE, false, true);
 
-        changeClusterState(GridRestCommand.CLUSTER_ACTIVE);
+            changeClusterStateByDepricatedCommands(CLUSTER_ACTIVATE, CLUSTER_DEACTIVATE);
+            changeClusterStateByDepricatedCommands(CLUSTER_ACTIVE, CLUSTER_INACTIVE);
+        }
+        finally {
+            grid(0).cluster().state(ACTIVE);
 
-        initCache();
+            initCache();
+        }
+    }
+
+    /**
+     * Performs all cluster state change transitions by depricated commands.
+     *
+     * @param activateCmd Cluster activate command.
+     * @param deactivateCmd Cluster deactive command.
+     * @throws Exception If failed.
+     */
+    private void changeClusterStateByDepricatedCommands(
+        GridRestCommand activateCmd,
+        GridRestCommand deactivateCmd
+    ) throws Exception {
+        assertTrue(activateCmd.name(), activateCmd == CLUSTER_ACTIVE || activateCmd == CLUSTER_ACTIVATE);
+        assertTrue(deactivateCmd.name(), deactivateCmd == CLUSTER_INACTIVE || deactivateCmd == CLUSTER_DEACTIVATE);
+
+        grid(0).cluster().state(ACTIVE);
+
+        changeClusterState(deactivateCmd, ACTIVE, INACTIVE, false, false);
+        changeClusterState(deactivateCmd, ACTIVE, INACTIVE, true, true);
+
+        changeClusterState(activateCmd, INACTIVE, ACTIVE, false, true);
+
+        grid(0).cluster().state(ACTIVE_READ_ONLY);
+
+        changeClusterState(deactivateCmd, ACTIVE_READ_ONLY, INACTIVE, false, false);
+        changeClusterState(deactivateCmd, ACTIVE_READ_ONLY, INACTIVE, true, true);
     }
 
     /**
@@ -2037,47 +2111,6 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
             .argument(VisorCacheResetMetricsTaskArg.class, "person"));
 
         info("VisorCacheResetMetricsTask result: " + ret);
-
-        jsonTaskResult(ret);
-
-        ret = content(new VisorGatewayArgument(VisorIgfsSamplingStateTask.class)
-            .forNode(locNode)
-            .argument(VisorIgfsSamplingStateTaskArg.class, "igfs", false));
-
-        info("VisorIgfsSamplingStateTask result: " + ret);
-
-        jsonTaskResult(ret);
-
-        ret = content(new VisorGatewayArgument(VisorIgfsProfilerClearTask.class)
-            .forNode(locNode)
-            .argument(VisorIgfsProfilerClearTaskArg.class, "igfs"));
-
-        info("VisorIgfsProfilerClearTask result: " + ret);
-
-        jsonTaskResult(ret);
-
-        ret = content(new VisorGatewayArgument(VisorIgfsProfilerTask.class)
-            .forNode(locNode)
-            .argument(VisorIgfsProfilerTaskArg.class, "igfs"));
-
-        info("VisorIgfsProfilerTask result: " + ret);
-
-        jsonTaskResult(ret);
-
-        ret = content(new VisorGatewayArgument(VisorIgfsFormatTask.class)
-            .forNode(locNode)
-            .argument(VisorIgfsFormatTaskArg.class, "igfs"));
-
-        info("VisorIgfsFormatTask result: " + ret);
-
-        jsonTaskResult(ret);
-
-        ret = content(new VisorGatewayArgument(VisorIgfsResetMetricsTask.class)
-            .forNode(locNode)
-            .argument(VisorIgfsResetMetricsTaskArg.class)
-            .set(String.class, "igfs"));
-
-        info("VisorIgfsResetMetricsTask result: " + ret);
 
         jsonTaskResult(ret);
 
@@ -3027,6 +3060,98 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     }
 
     /**
+     * Test to check work of Cache REST commands without cache name
+     *
+     * Steps:
+     * 1) Start test node
+     * 2) From REST client call all Cache commands
+     * 3) All requests except request for CACHE_METADATA should fail with
+     * "Failed to find mandatory parameter in request: cacheName" exception
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCacheCommandsWithoutCacheName() throws Exception {
+        final String ERROR_MSG = "Failed to find mandatory parameter in request: cacheName";
+
+        EnumSet<GridRestCommand> cacheCommands = EnumSet.of(GridRestCommand.DESTROY_CACHE,
+            GridRestCommand.GET_OR_CREATE_CACHE,
+            GridRestCommand.CACHE_CONTAINS_KEYS,
+            GridRestCommand.CACHE_CONTAINS_KEY,
+            GridRestCommand.CACHE_GET,
+            GridRestCommand.CACHE_GET_AND_PUT,
+            GridRestCommand.CACHE_GET_AND_REPLACE,
+            GridRestCommand.CACHE_GET_AND_PUT_IF_ABSENT,
+            GridRestCommand.CACHE_PUT_IF_ABSENT,
+            GridRestCommand.CACHE_GET_ALL,
+            GridRestCommand.CACHE_PUT,
+            GridRestCommand.CACHE_ADD,
+            GridRestCommand.CACHE_PUT_ALL,
+            GridRestCommand.CACHE_REMOVE,
+            GridRestCommand.CACHE_REMOVE_VALUE,
+            GridRestCommand.CACHE_REPLACE_VALUE,
+            GridRestCommand.CACHE_GET_AND_REMOVE,
+            GridRestCommand.CACHE_REMOVE_ALL,
+            GridRestCommand.CACHE_REPLACE,
+            GridRestCommand.CACHE_CAS,
+            GridRestCommand.CACHE_APPEND,
+            GridRestCommand.CACHE_PREPEND,
+            GridRestCommand.CACHE_METRICS,
+            GridRestCommand.CACHE_SIZE,
+            GridRestCommand.CACHE_METADATA);
+
+        for (GridRestCommand command : cacheCommands) {
+            String ret = content(null, command);
+
+            if (command == GridRestCommand.CACHE_METADATA)
+                validateJsonResponse(ret);
+            else {
+                JsonNode json = JSON_MAPPER.readTree(ret);
+                assertFalse(json.isNull());
+                assertTrue(json.get("error").asText().contains(ERROR_MSG));
+            }
+        }
+    }
+
+    /**
+     * Test to check work of Query REST commands without cache name
+     *
+     * Steps:
+     * 1) Start test node
+     * 2) From REST client call all Query commands
+     * 3) All requests except requests for FETCH_SQL_QUERY and CLOSE_SQL_QUERY should fail with
+     * "Failed to find mandatory parameter in request: cacheName" exception
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testQueryCommandsWithoutCacheName() throws Exception {
+        final String ERROR_MSG = "Failed to find mandatory parameter in request: cacheName";
+
+        EnumSet<GridRestCommand> qryCommands = EnumSet.of(GridRestCommand.EXECUTE_SQL_QUERY,
+            GridRestCommand.EXECUTE_SQL_FIELDS_QUERY,
+            GridRestCommand.EXECUTE_SCAN_QUERY,
+            GridRestCommand.FETCH_SQL_QUERY,
+            GridRestCommand.CLOSE_SQL_QUERY);
+
+        for (GridRestCommand command : qryCommands) {
+            String ret = content(null, command,
+                "pageSize", "1",
+                "qry", "SELECT * FROM table");
+
+            JsonNode json = JSON_MAPPER.readTree(ret);
+            assertFalse(json.isNull());
+
+            if (command == GridRestCommand.EXECUTE_SQL_QUERY ||
+                command == GridRestCommand.EXECUTE_SCAN_QUERY ||
+                command == GridRestCommand.EXECUTE_SQL_FIELDS_QUERY)
+                assertTrue(json.get("error").asText().contains(ERROR_MSG));
+            else
+                assertFalse(json.get("error").asText().contains(ERROR_MSG));
+        }
+    }
+
+    /**
      * @return True if any query cursor is available.
      */
     private boolean queryCursorFound() {
@@ -3280,8 +3405,46 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     }
 
     /** */
+    private static class ForbiddenType {
+        /** Data. */
+        @JsonProperty
+        private Exploit[] data;
+
+        /** */
+        ForbiddenType() {
+            // No-op.
+        }
+
+        /**
+         * @param data Data.
+         */
+        ForbiddenType(Exploit[] data) {
+            this.data = data;
+        }
+    }
+
+    /** */
+    private static class Exploit {
+        /** Value. */
+        @JsonProperty
+        private int val = 10;
+
+        /**
+         * @param val Value
+         */
+        Exploit(int val) {
+            this.val = val;
+        }
+
+        /** */
+        Exploit() {
+            // No-op.
+        }
+    }
+
+    /** */
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public static class OuterClass {
+    private static class OuterClass {
         /** */
         @JsonProperty
         private long id;
@@ -3329,7 +3492,6 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         }
 
         /** */
-        @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
         OuterClass(long id, String name, double doubleVal, List<Integer> list, Timestamp timestamp, long[] longs,
             UUID uuid, IgniteUuid igniteUuid, OptionalObject optional) {
             this.id = id;
@@ -3412,7 +3574,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     }
 
     /** */
-    public enum Color {
+    private enum Color {
         /** */
         RED,
 
@@ -3424,8 +3586,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     }
 
     /** Complex entity. */
-    @SuppressWarnings({"InnerClassMayBeStatic", "AssignmentOrReturnOfFieldWithMutableType"})
-    static class Complex implements Serializable {
+    private static class Complex implements Serializable {
         /** */
         @QuerySqlField(index = true)
         @JsonProperty
@@ -3900,13 +4061,6 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        FileSystemConfiguration igfs = new FileSystemConfiguration();
-
-        igfs.setName("igfs");
-        igfs.setIpcEndpointConfiguration(new IgfsIpcEndpointConfiguration());
-
-        cfg.setFileSystemConfiguration(igfs);
-
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
 
         DataRegionConfiguration drCfg = new DataRegionConfiguration();
@@ -3927,56 +4081,90 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     }
 
     /**
+     * Test if current cluster state equals expected. Checks both REST commands: {@link GridRestCommand#CLUSTER_STATE}
+     * and {@link GridRestCommand#CLUSTER_CURRENT_STATE}.
+     *
+     * @param expState Expected state.
+     * @throws Exception If failed.
+     */
+    private void checkState(ClusterState expState) throws Exception {
+        assertClusterState(expState);
+        assertClusterState(expState.active());
+    }
+
+    /**
+     * Test if current cluster state equals expected.
+     *
+     * @param expState Expected state.
+     * @throws Exception If failed.
+     */
+    private void assertClusterState(ClusterState expState) throws Exception {
+        String ret = content(null, GridRestCommand.CLUSTER_STATE);
+
+        info("Cluster state: " + ret);
+        JsonNode res = validateJsonResponse(ret);
+
+        assertEquals(ret, expState.toString(), res.asText());
+        assertEquals(ret, expState, grid(0).cluster().state());
+    }
+
+    /**
      * Test if current cluster state equals expected.
      *
      * @param exp Expected state.
      * @throws Exception If failed.
      */
     private void assertClusterState(boolean exp) throws Exception {
-        String ret = content("cmd", GridRestCommand.CLUSTER_CURRENT_STATE);
+        String ret = content(null, GridRestCommand.CLUSTER_CURRENT_STATE);
 
         info("Cluster state: " + ret);
         JsonNode res = validateJsonResponse(ret);
 
-        assertEquals(exp, res.asBoolean());
-        assertEquals(exp, grid(0).cluster().active());
+        assertEquals(ret, exp, res.asBoolean());
+        assertEquals(ret, exp, grid(0).cluster().active());
     }
 
     /**
-     * Change cluster state and test new state.
+     * Checks that cluster has state {@code curState}, tries to change state to {@code newState} by {@code cmd} command
+     * and checks state after change.
      *
-     * @param cmd Command.
-     * @param params Arguments for {@code cmd}.
+     * @param cmd State change command.
+     * @param curState Expected cluster state before change.
+     * @param newState New cluster state after change.
+     * @param force Add force flag to the command parameters.
+     * @param success Excepted result of cluster state change.
      * @throws Exception If failed.
      */
-    private void changeClusterState(GridRestCommand cmd, String... params) throws Exception {
-        String ret = content(null, cmd, params);
+    private void changeClusterState(
+        GridRestCommand cmd,
+        ClusterState curState,
+        ClusterState newState,
+        boolean force,
+        boolean success
+    ) throws Exception {
+        checkState(curState);
 
-        boolean force = false;
+        Map<String, String> params = new LinkedHashMap<>();
 
-        boolean deactivate = cmd == GridRestCommand.CLUSTER_INACTIVE || cmd == GridRestCommand.CLUSTER_DEACTIVATE;
+        params.put("cmd", cmd.key());
 
-        for (int i = 0; i < params.length; ++i) {
-            String p = params[i];
+        if (force)
+            params.put("force", "true");
 
-            if ("force".equals(p) && params[i + 1].equals("true"))
-                force = true;
+        if (cmd == CLUSTER_SET_STATE)
+            params.put("state", newState.name());
 
-            if (cmd == GridRestCommand.CLUSTER_SET_STATE && p.equals("state"))
-                deactivate = params[i + 1].equals(INACTIVE.name());
-        }
+        String ret = content(params);
 
-        boolean errorExpected = !force && deactivate;
-
-        JsonNode res = validateJsonResponse(ret, errorExpected);
+        JsonNode res = validateJsonResponse(ret, !success);
 
         assertFalse(res.isNull());
 
-        if (errorExpected)
-            assertTrue(res.asText().contains(DATA_LOST_ON_DEACTIVATION_WARNING));
-        else
+        if (success)
             assertTrue(res.asText().startsWith(cmd.key()));
+        else
+            assertTrue(res.asText().contains(DATA_LOST_ON_DEACTIVATION_WARNING));
 
-        assertClusterState(!deactivate || !force);
+        checkState(success ? newState : curState);
     }
 }

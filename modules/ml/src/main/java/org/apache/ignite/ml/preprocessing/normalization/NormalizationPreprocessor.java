@@ -87,8 +87,8 @@ public final class NormalizationPreprocessor<K, V> implements Preprocessor<K, V>
      * @param zero Zero value for fold operation.
      * @return Folded value of this vector.
      */
-    private double foldMap(Vector vec, IgniteBiFunction<Double,Double,Double> foldFun, IgniteDoubleFunction<Double> mapFun, double zero) {
-        for (int i = 0;  i < vec.size(); i++)
+    private double foldMap(Vector vec, IgniteBiFunction<Double, Double, Double> foldFun, IgniteDoubleFunction<Double> mapFun, double zero) {
+        for (int i = 0; i < vec.size(); i++)
             zero = foldFun.apply(zero, mapFun.apply(vec.get(i)));
 
         return zero;

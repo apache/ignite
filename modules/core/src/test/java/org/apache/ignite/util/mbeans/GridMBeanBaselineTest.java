@@ -17,6 +17,8 @@
 
 package org.apache.ignite.util.mbeans;
 
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.BaselineNode;
@@ -26,8 +28,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.junit.Test;
 
 /**

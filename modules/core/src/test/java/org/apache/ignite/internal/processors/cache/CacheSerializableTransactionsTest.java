@@ -74,7 +74,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionOptimisticException;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -186,7 +185,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     private void txStreamerLoad(Ignite ignite,
         Integer key,
         String cacheName,
-        boolean allowOverwrite) throws Exception {
+        boolean allowOverwrite) {
         IgniteCache<Integer, Integer> cache = ignite.cache(cacheName);
 
         log.info("Test key: " + key);
@@ -2824,7 +2823,6 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9226")
     @Test
     public void testReadWriteTransactionsNoDeadlock() throws Exception {
         checkReadWriteTransactionsNoDeadlock(false);
@@ -2833,7 +2831,6 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9226")
     @Test
     public void testReadWriteTransactionsNoDeadlockMultinode() throws Exception {
         checkReadWriteTransactionsNoDeadlock(true);
@@ -2844,8 +2841,6 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkReadWriteTransactionsNoDeadlock(final boolean multiNode) throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-9226");
-
         final Ignite ignite0 = ignite(0);
 
         for (final CacheConfiguration<Integer, Integer> ccfg : cacheConfigurations()) {
@@ -4130,9 +4125,9 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
             final AtomicInteger idx = new AtomicInteger();
 
-            final int THREADS =  SF.applyLB(20, 5);
+            final int THREADS = SF.applyLB(20, 5);
 
-            final long testTime =  SF.applyLB(30_000, 5_000);
+            final long testTime = SF.applyLB(30_000, 5_000);
 
             final long stopTime = System.currentTimeMillis() + testTime;
 
@@ -4140,7 +4135,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
             if (nonSer) {
                 nonSerFut = runMultiThreadedAsync(new Callable<Void>() {
-                    @Override public Void call() throws Exception {
+                    @Override public Void call() {
                         int nodeIdx = idx.getAndIncrement() % clients.size();
 
                         Ignite node = clients.get(nodeIdx);
@@ -4198,7 +4193,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
             }
 
             final IgniteInternalFuture<?> fut = runMultiThreadedAsync(new Callable<Void>() {
-                @Override public Void call() throws Exception {
+                @Override public Void call() {
                     int nodeIdx = idx.getAndIncrement() % clients.size();
 
                     Ignite node = clients.get(nodeIdx);
@@ -4210,8 +4205,8 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                     final IgniteTransactions txs = node.transactions();
 
                     final IgniteCache<Integer, Account> cache =
-                        nearCache ? node.createNearCache(cacheName, new NearCacheConfiguration<Integer, Account>()) :
-                            node.<Integer, Account>cache(cacheName);
+                        nearCache ? node.createNearCache(cacheName, new NearCacheConfiguration<>()) :
+                            node.cache(cacheName);
 
                     assertNotNull(cache);
 

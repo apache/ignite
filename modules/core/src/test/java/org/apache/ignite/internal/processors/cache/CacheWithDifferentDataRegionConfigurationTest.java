@@ -174,8 +174,6 @@ public class CacheWithDifferentDataRegionConfigurationTest extends GridCommonAbs
             .andExclusiveCache(CACHE_2, REGION_2)
             .start();
 
-        node1.cluster().active(true);
-
         populateCache(node1, CACHE_1, 1000);
         populateCache(node2, CACHE_2, 350);
 

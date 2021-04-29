@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.logging.Logger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
@@ -40,6 +41,12 @@ import static org.junit.Assert.assertEquals;
  */
 @RunWith(Parameterized.class)
 public class ServiceDeploymentProcessIdSelfTest {
+    /** Logger. */
+    private static final Logger LOG = Logger.getLogger(ServiceDeploymentProcessIdSelfTest.class.getName());
+
+    /** Tests discovery event type. */
+    private final String testLabel;
+
     /** Tests discovery event. */
     private final DiscoveryEvent evt;
 
@@ -52,7 +59,8 @@ public class ServiceDeploymentProcessIdSelfTest {
     /**
      * @param data Tests data.
      */
-    public ServiceDeploymentProcessIdSelfTest(IgniteBiTuple<DiscoveryEvent, AffinityTopologyVersion> data) {
+    public ServiceDeploymentProcessIdSelfTest(String testLabel, IgniteBiTuple<DiscoveryEvent, AffinityTopologyVersion> data) {
+        this.testLabel = testLabel;
         this.evt = data.get1();
         this.topVer = data.get2();
 
@@ -65,7 +73,7 @@ public class ServiceDeploymentProcessIdSelfTest {
     /**
      * @return Tests data.
      */
-    @Parameterized.Parameters(name = "Test event={0}")
+    @Parameterized.Parameters(name = "Test event class={0}")
     public static Collection<Object[]> instancesToTest() {
         DiscoveryEvent evt = new DiscoveryEvent(
             new GridTestNode(UUID.randomUUID()), "", 10, new GridTestNode(UUID.randomUUID()));
@@ -83,13 +91,17 @@ public class ServiceDeploymentProcessIdSelfTest {
         customEvt.eventNode(node);
 
         return Arrays.asList(new Object[][] {
-            {new IgniteBiTuple<>(customEvt, new AffinityTopologyVersion(ThreadLocalRandom.current().nextLong()))},
-            {new IgniteBiTuple<>(evt, new AffinityTopologyVersion(ThreadLocalRandom.current().nextLong()))}});
+            {customEvt.getClass().getSimpleName(), new IgniteBiTuple<>(customEvt, new AffinityTopologyVersion(ThreadLocalRandom.current().nextLong()))},
+            {evt.getClass().getSimpleName(), new IgniteBiTuple<>(evt, new AffinityTopologyVersion(ThreadLocalRandom.current().nextLong()))}});
     }
 
     /** */
     @Test
     public void topologyVersion() {
+        LOG.info("test with event type: " + testLabel);
+        LOG.info("event = " + evt);
+        LOG.info("topology version = " + topVer);
+
         AffinityTopologyVersion topVer = evt instanceof DiscoveryCustomEvent ? null : this.topVer;
 
         assertEquals(topVer, sut.topologyVersion());
@@ -98,6 +110,10 @@ public class ServiceDeploymentProcessIdSelfTest {
     /** */
     @Test
     public void requestId() {
+        LOG.info("test with event type: " + testLabel);
+        LOG.info("event = " + evt);
+        LOG.info("topology version = " + topVer);
+
         IgniteUuid reqId = evt instanceof DiscoveryCustomEvent ? ((DiscoveryCustomEvent)evt).customMessage().id() : null;
 
         assertEquals(reqId, sut.requestId());

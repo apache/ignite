@@ -199,7 +199,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         /// <summary>
         /// Writes the specified config.
         /// </summary>
-        public static void Write(IBinaryStream stream, CacheClientConfiguration cfg, ClientProtocolVersion srvVer,
+        public static void Write(IBinaryStream stream, CacheClientConfiguration cfg, ClientFeatures features,
             bool skipCodes = false)
         {
             Debug.Assert(stream != null);
@@ -307,7 +307,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             writer.WriteCollectionRaw(cfg.KeyConfiguration);
             
             code(Op.QueryEntities);
-            writer.WriteCollectionRaw(cfg.QueryEntities, (w, qe) => WriteQueryEntity(w, qe, srvVer));
+            writer.WriteCollectionRaw(cfg.QueryEntities, (w, qe) => WriteQueryEntity(w, qe, features));
 
             code(Op.ExpiryPolicy);
             ExpiryPolicySerializer.WritePolicyFactory(writer, cfg.ExpiryPolicyFactory);
@@ -320,7 +320,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         /// <summary>
         /// Write query entity of the config.
         /// </summary>
-        private static void WriteQueryEntity(BinaryWriter writer, QueryEntity entity, ClientProtocolVersion srvVer)
+        private static void WriteQueryEntity(BinaryWriter writer, QueryEntity entity, ClientFeatures features)
         {
             writer.WriteString(entity.KeyTypeName);
             writer.WriteString(entity.ValueTypeName);
@@ -336,7 +336,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
 
                 foreach (var field in entityFields)
                 {
-                    WriteQueryField(writer, field, srvVer);
+                    WriteQueryField(writer, field, features);
                 }
             }
             else
@@ -378,7 +378,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         /// <summary>
         /// Writes query field instance to the specified writer.
         /// </summary>
-        private static void WriteQueryField(BinaryWriter writer, QueryField field, ClientProtocolVersion srvVer)
+        private static void WriteQueryField(BinaryWriter writer, QueryField field, ClientFeatures features)
         {
             Debug.Assert(writer != null);
 
@@ -388,7 +388,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             writer.WriteBoolean(field.NotNull);
             writer.WriteObject(field.DefaultValue);
 
-            if (srvVer.CompareTo(ClientSocket.Ver120) >= 0)
+            if (features.HasQueryFieldPrecisionAndScale())
             {
                 writer.WriteInt(field.Precision);
                 writer.WriteInt(field.Scale);
@@ -398,7 +398,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         /// <summary>
         /// Reads the config.
         /// </summary>
-        public static void Read(IBinaryStream stream, CacheClientConfiguration cfg, ClientProtocolVersion srvVer)
+        public static void Read(IBinaryStream stream, CacheClientConfiguration cfg, ClientFeatures features)
         {
             Debug.Assert(stream != null);
 
@@ -437,9 +437,12 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             cfg.SqlSchema = reader.ReadString();
             cfg.WriteSynchronizationMode = (CacheWriteSynchronizationMode)reader.ReadInt();
             cfg.KeyConfiguration = reader.ReadCollectionRaw(r => new CacheKeyConfiguration(r));
-            cfg.QueryEntities = reader.ReadCollectionRaw(r => ReadQueryEntity(r, srvVer));
-            if (srvVer.CompareTo(ClientSocket.Ver160) >= 0)
+            cfg.QueryEntities = reader.ReadCollectionRaw(r => ReadQueryEntity(r, features));
+
+            if (features.HasCacheConfigurationExpiryPolicyFactory())
+            {
                 cfg.ExpiryPolicyFactory = ExpiryPolicySerializer.ReadPolicyFactory(reader);
+            }
 
             Debug.Assert(len == reader.Stream.Position - pos);
         }
@@ -447,7 +450,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         /// <summary>
         /// Reads query entity of the config.
         /// </summary>
-        private static QueryEntity ReadQueryEntity(BinaryReader reader, ClientProtocolVersion srvVer)
+        private static QueryEntity ReadQueryEntity(BinaryReader reader, ClientFeatures features)
         {
             Debug.Assert(reader != null);
 
@@ -463,7 +466,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             var count = reader.ReadInt();
             value.Fields = count == 0
                 ? null
-                : Enumerable.Range(0, count).Select(x => ReadQueryField(reader, srvVer)).ToList();
+                : Enumerable.Range(0, count).Select(x => ReadQueryField(reader, features)).ToList();
 
             count = reader.ReadInt();
             value.Aliases = count == 0 ? null : Enumerable.Range(0, count)
@@ -478,7 +481,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
         /// <summary>
         /// Read query field.
         /// </summary>
-        private static QueryField ReadQueryField(BinaryReader reader, ClientProtocolVersion srvVer)
+        private static QueryField ReadQueryField(BinaryReader reader, ClientFeatures features)
         {
             Debug.Assert(reader != null);
 
@@ -491,7 +494,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
                 DefaultValue = reader.ReadObject<object>()
             };
 
-            if (srvVer.CompareTo(ClientSocket.Ver120) >= 0)
+            if (features.HasQueryFieldPrecisionAndScale())
             {
                 value.Precision = reader.ReadInt();
                 value.Scale = reader.ReadInt();

@@ -68,6 +68,27 @@ public class DoPrivilegedOnRemoteNodeTest extends AbstractSandboxTest {
             "    }\n" +
             "}";
 
+    /** */
+    private static final String CALLABLE_BINARYLIZABLE_SRC = "import org.apache.ignite.binary.BinaryObjectException;\n" +
+        "import org.apache.ignite.binary.BinaryReader;\n" +
+        "import org.apache.ignite.binary.BinaryWriter;\n" +
+        "import org.apache.ignite.binary.Binarylizable;\n" +
+        "import org.apache.ignite.lang.IgniteCallable;\n" +
+        "\n" +
+        "public class TestBinarylizable implements IgniteCallable<String>, Binarylizable {\n" +
+        "    @Override public String call() throws Exception {\n" +
+        "        return null;\n" +
+        "    }\n" +
+        "\n" +
+        "    @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {\n" +
+        "        //No-op\n" +
+        "    }\n" +
+        "\n" +
+        "    @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {\n" +
+        "        System.getProperty(\"user.home\");\n" +
+        "    }\n" +
+        "}";
+
     /** Client node name. */
     private static final String CLNT_NODE = "clnt";
 
@@ -94,11 +115,17 @@ public class DoPrivilegedOnRemoteNodeTest extends AbstractSandboxTest {
 
     /** {@inheritDoc} */
     @Override protected void prepareCluster() throws Exception {
-        Ignite srv = startGrid("srv", ALLOW_ALL,  false);
+        startGrid("srv", ALLOW_ALL, false);
 
         startGrid(CLNT_NODE, ALLOW_ALL, true);
+    }
 
-        srv.cluster().active(true);
+    /** */
+    @Test
+    public void testBinarylizable() {
+        assertThrowsWithCause(
+            () -> clientCompute().broadcast(callable(srcTmpDir, "TestBinarylizable", CALLABLE_BINARYLIZABLE_SRC)),
+            AccessControlException.class);
     }
 
     /** */

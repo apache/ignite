@@ -22,16 +22,20 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.client.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageTree;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask.DurableBackgroundTask;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
+import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.thread.IgniteThread;
@@ -42,7 +46,8 @@ import static org.apache.ignite.internal.util.IgniteUtils.awaitForWorkersStop;
  * Processor that is responsible for durable background tasks that are executed on local node
  * and should be continued even after node restart.
  */
-public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implements MetastorageLifecycleListener {
+public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implements MetastorageLifecycleListener,
+    CheckpointListener {
     /** Prefix for metastorage keys for durable background tasks. */
     private static final String STORE_DURABLE_BACKGROUND_TASK_PREFIX = "durable-background-task-";
 
@@ -61,6 +66,16 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
     /** Durable background tasks map. */
     private final ConcurrentHashMap<String, DurableBackgroundTask> durableBackgroundTasks = new ConcurrentHashMap<>();
 
+    /** Set of started tasks' names. */
+    private final Set<String> startedTasks = new GridConcurrentHashSet<>();
+
+    /**
+     * Ban to start new tasks. The first time the cluster is activated, it will try again to run existing tasks.
+     *
+     *  @see #onStateChangeFinish(ChangeGlobalStateFinishMessage)
+     */
+    private volatile boolean forbidStartingNewTasks;
+
     /**
      * @param ctx Kernal context.
      */
@@ -74,36 +89,46 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
     private void asyncDurableBackgroundTasksExecution() {
         assert durableBackgroundTasks != null;
 
-        for (DurableBackgroundTask task : durableBackgroundTasks.values())
-            asyncDurableBackgroundTaskExecute(task, false);
+        for (DurableBackgroundTask task : durableBackgroundTasks.values()) {
+            if (!task.isCompleted() && startedTasks.add(task.shortName()))
+                asyncDurableBackgroundTaskExecute(task);
+        }
     }
 
     /**
      * Creates a worker to execute single durable background task.
+     *
      * @param task Task.
-     * @param dropTaskIfFailed Whether to delete task from metastorage, if it has failed.
      */
-    private void asyncDurableBackgroundTaskExecute(DurableBackgroundTask task, boolean dropTaskIfFailed) {
+    private void asyncDurableBackgroundTaskExecute(DurableBackgroundTask task) {
         String workerName = "async-durable-background-task-executor-" + asyncDurableBackgroundTasksWorkersCntr.getAndIncrement();
 
         GridWorker worker = new GridWorker(ctx.igniteInstanceName(), workerName, log) {
+            @Override public void cancel() {
+                task.onCancel();
+
+                super.cancel();
+            }
+
             @Override protected void body() {
                 try {
+                    if (forbidStartingNewTasks)
+                        return;
+
                     log.info("Executing durable background task: " + task.shortName());
 
                     task.execute(ctx);
 
-                    log.info("Execution of durable background task completed: " + task.shortName());
+                    task.complete();
 
-                    removeDurableBackgroundTask(task);
+                    log.info("Execution of durable background task completed: " + task.shortName());
                 }
                 catch (Throwable e) {
                     log.error("Could not execute durable background task: " + task.shortName(), e);
-
-                    if (dropTaskIfFailed)
-                        removeDurableBackgroundTask(task);
                 }
                 finally {
+                    startedTasks.remove(task.shortName());
+
                     asyncDurableBackgroundTaskWorkers.remove(this);
                 }
             }
@@ -123,8 +148,9 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
-        // Waiting for workers, but not cancelling them, trying to complete running tasks.
-        awaitForWorkersStop(asyncDurableBackgroundTaskWorkers, false, log);
+        forbidStartingNewTasks = true;
+
+        awaitForWorkersStop(asyncDurableBackgroundTaskWorkers, true, log);
     }
 
     /** {@inheritDoc} */
@@ -135,9 +161,23 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
     /**
      * @param msg Message.
      */
-    public void onStateChangeFinish(ChangeGlobalStateFinishMessage msg) {
-        if (!msg.clusterActive())
+    public void onStateChange(ChangeGlobalStateMessage msg) {
+        if (msg.state() == ClusterState.INACTIVE) {
+            forbidStartingNewTasks = true;
+
             awaitForWorkersStop(asyncDurableBackgroundTaskWorkers, true, log);
+        }
+    }
+
+    /**
+     * @param msg Message.
+     */
+    public void onStateChangeFinish(ChangeGlobalStateFinishMessage msg) {
+        if (msg.state() != ClusterState.INACTIVE) {
+            forbidStartingNewTasks = false;
+
+            asyncDurableBackgroundTasksExecution();
+        }
     }
 
     /** {@inheritDoc} */
@@ -171,6 +211,8 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
                 throw new IgniteException("Failed to read key from durable background tasks storage.", e);
             }
         }
+
+        ((GridCacheDatabaseSharedManager)ctx.cache().context().database()).addCheckpointListener(this);
 
         this.metastorage = metastorage;
     }
@@ -260,6 +302,29 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
         if (CU.isPersistentCache(ccfg, ctx.config().getDataStorageConfiguration()))
             addDurableBackgroundTask(task);
 
-        asyncDurableBackgroundTaskExecute(task, false);
+        asyncDurableBackgroundTaskExecute(task);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onMarkCheckpointBegin(Context ctx) {
+        /* No op. */
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onCheckpointBegin(Context ctx) {
+        /* No op. */
+    }
+
+    /** {@inheritDoc} */
+    @Override public void beforeCheckpointBegin(Context ctx) {
+        /* No op. */
+    }
+
+    /** {@inheritDoc} */
+    @Override public void afterCheckpointEnd(Context ctx) {
+        for (DurableBackgroundTask task : durableBackgroundTasks.values()) {
+            if (task.isCompleted())
+                removeDurableBackgroundTask(task);
+        }
     }
 }

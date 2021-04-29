@@ -32,6 +32,7 @@ import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
@@ -46,6 +47,7 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 /**
  * Interop continuous query handle.
  */
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
     /** */
     private static final long serialVersionUID = 0L;
@@ -72,7 +74,7 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     /** Wrapped initial qry cursor. */
-    private PlatformQueryCursor initialQryCur;
+    private PlatformAbstractQueryCursor initialQryCur;
 
     /**
      * Constructor.
@@ -126,11 +128,12 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
      * @param bufSize Buffer size.
      * @param timeInterval Time interval.
      * @param autoUnsubscribe Auto-unsubscribe flag.
+     * @param includeExpired Whether to include expired events.
      * @param initialQry Initial query.
      */
     @SuppressWarnings("unchecked")
     @Override public void start(IgniteCacheProxy cache, boolean loc, int bufSize, long timeInterval,
-        boolean autoUnsubscribe, Query initialQry) throws IgniteCheckedException {
+        boolean autoUnsubscribe, Query initialQry, boolean includeExpired) throws IgniteCheckedException {
         lock.writeLock().lock();
 
         try {
@@ -138,37 +141,19 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
                 ContinuousQuery qry = new ContinuousQuery();
 
                 qry.setLocalListener(this);
+
+                //noinspection deprecation
                 qry.setRemoteFilter(this); // Filter must be set always for correct resource release.
+
                 qry.setPageSize(bufSize);
                 qry.setTimeInterval(timeInterval);
                 qry.setAutoUnsubscribe(autoUnsubscribe);
                 qry.setInitialQuery(initialQry);
+                qry.setIncludeExpired(includeExpired);
 
                 cursor = cache.query(qry.setLocal(loc));
 
-                if (initialQry != null)
-                    initialQryCur = new PlatformQueryCursor(platformCtx, new QueryCursorEx<Cache.Entry>() {
-                        @Override public Iterator<Cache.Entry> iterator() {
-                            return cursor.iterator();
-                        }
-
-                        @Override public List<Cache.Entry> getAll() {
-                            return cursor.getAll();
-                        }
-
-                        @Override public void close() {
-                            // No-op: do not close whole continuous query when initial query cursor closes.
-                        }
-
-                        @Override public void getAll(Consumer<Cache.Entry> clo) throws IgniteCheckedException {
-                            for (Cache.Entry t : this)
-                                clo.consume(t);
-                        }
-
-                        @Override public List<GridQueryFieldMetadata> fieldsMeta() {
-                            return null;
-                        }
-                    }, initialQry.getPageSize() > 0 ? initialQry.getPageSize() : Query.DFLT_PAGE_SIZE);
+                initialQryCur = getInitialQueryCursor(initialQry);
             }
             catch (Exception e) {
                 try
@@ -189,7 +174,6 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public void onUpdated(Iterable evts) throws CacheEntryListenerException {
         lock.readLock().lock();
 
@@ -205,7 +189,6 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public boolean evaluate(CacheEntryEvent evt) throws CacheEntryListenerException {
         if (javaFilter != null)
             return javaFilter.evaluate(evt);
@@ -246,6 +229,66 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
     }
 
     /**
+     * Gets the initial query cursor.
+     *
+     * @param initialQry Initial query.
+     * @return Cursor.
+     */
+    private PlatformAbstractQueryCursor getInitialQueryCursor(Query initialQry) {
+        if (initialQry == null)
+            return null;
+
+        int batchSize = initialQry.getPageSize() > 0 ? initialQry.getPageSize() : Query.DFLT_PAGE_SIZE;
+
+        if (initialQry instanceof SqlFieldsQuery)
+            return new PlatformFieldsQueryCursor(platformCtx, new QueryCursorEx<List<?>>() {
+                @Override public Iterator<List<?>> iterator() {
+                    return cursor.iterator();
+                }
+
+                @Override public List<List<?>> getAll() {
+                    return cursor.getAll();
+                }
+
+                @Override public void close() {
+                    // No-op: do not close whole continuous query when initial query cursor closes.
+                }
+
+                @Override public void getAll(Consumer<List<?>> clo) throws IgniteCheckedException {
+                    for (List t : this)
+                        clo.consume(t);
+                }
+
+                @Override public List<GridQueryFieldMetadata> fieldsMeta() {
+                    return ((QueryCursorEx)cursor).fieldsMeta();
+                }
+            }, batchSize);
+
+        return new PlatformQueryCursor(platformCtx, new QueryCursorEx<Cache.Entry>() {
+            @Override public Iterator<Cache.Entry> iterator() {
+                return cursor.iterator();
+            }
+
+            @Override public List<Cache.Entry> getAll() {
+                return cursor.getAll();
+            }
+
+            @Override public void close() {
+                // No-op: do not close whole continuous query when initial query cursor closes.
+            }
+
+            @Override public void getAll(Consumer<Cache.Entry> clo) throws IgniteCheckedException {
+                for (Cache.Entry t : this)
+                    clo.consume(t);
+            }
+
+            @Override public List<GridQueryFieldMetadata> fieldsMeta() {
+                return null;
+            }
+        }, batchSize);
+    }
+
+    /**
      * Internal close routine.
      */
     private void close0() {
@@ -267,7 +310,7 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
      * @return Filter to be deployed on remote node.
      * @throws ObjectStreamException If failed.
      */
-    Object writeReplace() throws ObjectStreamException {
+    protected Object writeReplace() throws ObjectStreamException {
         if (javaFilter != null)
             return javaFilter;
 

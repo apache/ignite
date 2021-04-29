@@ -18,9 +18,13 @@
 package org.apache.ignite.configuration;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ForkJoinPool;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
+import org.apache.ignite.client.ClientAddressFinder;
 import org.apache.ignite.client.SslMode;
 import org.apache.ignite.client.SslProtocol;
 import org.apache.ignite.internal.client.thin.TcpIgniteClient;
@@ -29,6 +33,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * {@link TcpIgniteClient} configuration.
  */
+@SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
 public final class ClientConfiguration implements Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
@@ -36,11 +41,14 @@ public final class ClientConfiguration implements Serializable {
     /** @serial Server addresses. */
     private String[] addrs = null;
 
+    /** Server addresses finder. */
+    private transient ClientAddressFinder addrFinder;
+
     /** @serial Tcp no delay. */
     private boolean tcpNoDelay = true;
 
     /** @serial Timeout. 0 means infinite. */
-    private int timeout = 0;
+    private int timeout;
 
     /** @serial Send buffer size. 0 means system default. */
     private int sndBufSize = 32 * 1024;
@@ -115,18 +123,48 @@ public final class ClientConfiguration implements Serializable {
     /** Reconnect throttling retries. See {@code reconnectThrottlingPeriod}. */
     private int reconnectThrottlingRetries = 3;
 
+    /** Retry limit. */
+    private int retryLimit = 0;
+
+    /** Executor for async operations continuations. */
+    private Executor asyncContinuationExecutor;
+
     /**
      * @return Host addresses.
      */
     public String[] getAddresses() {
-        return addrs;
+        if (addrs != null)
+            return Arrays.copyOf(addrs, addrs.length);
+
+        return null;
     }
 
     /**
+     * Set addresses of Ignite server nodes within a cluster. An address can be IPv4 address or hostname, with or
+     * without port. If port is not set then Ignite will generate multiple addresses for default port range. See
+     * {@link ClientConnectorConfiguration#DFLT_PORT}, {@link ClientConnectorConfiguration#DFLT_PORT_RANGE}.
+     *
      * @param addrs Host addresses.
      */
     public ClientConfiguration setAddresses(String... addrs) {
-        this.addrs = addrs;
+        if (addrs != null)
+            this.addrs = Arrays.copyOf(addrs, addrs.length);
+
+        return this;
+    }
+
+    /**
+     * @return Finder that finds server node addresses.
+     */
+    public ClientAddressFinder getAddressesFinder() {
+        return addrFinder;
+    }
+
+    /**
+     * @param finder Finds server node addresses.
+     */
+    public ClientConfiguration setAddressesFinder(ClientAddressFinder finder) {
+        addrFinder = finder;
 
         return this;
     }
@@ -414,7 +452,7 @@ public final class ClientConfiguration implements Serializable {
      * @param newVal SSL Context Factory.
      */
     public ClientConfiguration setSslContextFactory(Factory<SSLContext> newVal) {
-        this.sslCtxFactory = newVal;
+        sslCtxFactory = newVal;
 
         return this;
     }
@@ -493,6 +531,26 @@ public final class ClientConfiguration implements Serializable {
         return this;
     }
 
+    /**
+     * Get retry limit.
+     */
+    public int getRetryLimit() {
+        return retryLimit;
+    }
+
+    /**
+     * Sets the retry limit. When a request fails due to a connection error, and multiple server connections
+     * are available, Ignite will retry the request on every connection. When this property is greater than zero,
+     * Ignite will limit the number of retries.
+     *
+     * @return {@code this} for chaining.
+     */
+    public ClientConfiguration setRetryLimit(int retryLimit) {
+        this.retryLimit = retryLimit;
+
+        return this;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(ClientConfiguration.class, this);
@@ -520,6 +578,41 @@ public final class ClientConfiguration implements Serializable {
      */
     public ClientConfiguration setUserAttributes(Map<String, String> userAttrs) {
         this.userAttrs = userAttrs;
+
+        return this;
+    }
+
+    /**
+     * Gets the async continuation executor.
+     * <p />
+     * When <code>null</code> (default), {@link ForkJoinPool#commonPool()} is used.
+     * <p />
+     * When async client operation completes, corresponding {@link org.apache.ignite.lang.IgniteFuture} listeners
+     * will be invoked using this executor. Thin client operation results are handled by a dedicated thread.
+     * This thread should be free from any extra work, and should not be not be used to execute future listeners
+     * directly.
+     *
+     * @return Executor for async continuations.
+     */
+    public Executor getAsyncContinuationExecutor() {
+        return asyncContinuationExecutor;
+    }
+
+    /**
+     * Sets the async continuation executor.
+     * <p />
+     * When <code>null</code> (default), {@link ForkJoinPool#commonPool()} is used.
+     * <p />
+     * When async client operation completes, corresponding {@link org.apache.ignite.lang.IgniteFuture} listeners
+     * will be invoked using this executor. Thin client operation results are handled by a dedicated thread.
+     * This thread should be free from any extra work, and should not be not be used to execute future listeners
+     * directly.
+     *
+     * @param asyncContinuationExecutor Executor for async continuations.
+     * @return {@code this} for chaining.
+     */
+    public ClientConfiguration setAsyncContinuationExecutor(Executor asyncContinuationExecutor) {
+        this.asyncContinuationExecutor = asyncContinuationExecutor;
 
         return this;
     }

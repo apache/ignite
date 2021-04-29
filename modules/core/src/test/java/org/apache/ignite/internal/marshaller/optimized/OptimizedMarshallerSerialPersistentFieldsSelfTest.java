@@ -28,7 +28,7 @@ import org.junit.Test;
 /**
  * Test that Optimized Marshaller works with classes with serialPersistentFields.
  */
-public class OptimizedMarshallerSerialPersistentFieldsSelfTest  extends GridMarshallerAbstractTest {
+public class OptimizedMarshallerSerialPersistentFieldsSelfTest extends GridMarshallerAbstractTest {
     /** {@inheritDoc} */
     @Override protected Marshaller marshaller() {
         return new OptimizedMarshaller(false);

@@ -32,8 +32,11 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.tracing.NoopTracing;
+import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -50,6 +53,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_METRICS_QNT_WARN;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
+import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_DISCOVERY_METRICS_QNT_WARN;
 
 /**
  *
@@ -89,7 +93,7 @@ abstract class TcpDiscoveryImpl {
     protected ConcurrentLinkedDeque<String> debugLogQ;
 
     /** Logging a warning message when metrics quantity exceeded a specified number. */
-    protected int METRICS_QNT_WARN = getInteger(IGNITE_DISCOVERY_METRICS_QNT_WARN, 500);
+    protected int METRICS_QNT_WARN = getInteger(IGNITE_DISCOVERY_METRICS_QNT_WARN, DFLT_DISCOVERY_METRICS_QNT_WARN);
 
     /** */
     protected long endTimeMetricsSizeProcessWait = System.currentTimeMillis();
@@ -120,6 +124,9 @@ abstract class TcpDiscoveryImpl {
         }
     };
 
+    /** Tracing. */
+    protected Tracing tracing;
+
     /**
      * Upcasts collection type.
      *
@@ -139,6 +146,11 @@ abstract class TcpDiscoveryImpl {
         this.spi = spi;
 
         log = spi.log;
+
+        if (spi.ignite() instanceof IgniteEx)
+            tracing = ((IgniteEx) spi.ignite()).context().tracing();
+        else
+            tracing = new NoopTracing();
     }
 
     /**

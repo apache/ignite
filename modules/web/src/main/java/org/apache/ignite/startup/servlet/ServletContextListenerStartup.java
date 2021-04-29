@@ -136,7 +136,7 @@ public class ServletContextListenerStartup implements ServletContextListener {
             }
 
             cfgs = t.get1();
-            rsrcCtx  = t.get2();
+            rsrcCtx = t.get2();
 
             if (cfgs.isEmpty())
                 throw new IgniteException("Can't find grid factory configuration in: " + cfgUrl);

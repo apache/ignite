@@ -15,32 +15,104 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+source "${IGNITE_HOME}"/bin/include/functions.sh
 
-if [ ! -z "$OPTION_LIBS" ]; then
-  IFS=, LIBS_LIST=("$OPTION_LIBS")
+#
+# Discover path to Java executable and check it's version.
+#
+checkJava
 
+#
+# Set IGNITE_LIBS.
+#
+source "${IGNITE_HOME}"/bin/include/setenv.sh
+CP="${IGNITE_LIBS}"
+DEFAULT_CONFIG=config/default-config.xml
+
+#
+# Add optional libs to classpath
+#
+if [ -n "${OPTION_LIBS}" ]; then
+    IFS=, LIBS_LIST=("$(tr -d '[:space:]' <<< ${OPTION_LIBS})")
   for lib in ${LIBS_LIST[@]}; do
-    cp -r $IGNITE_HOME/libs/optional/"$lib" \
-        $IGNITE_HOME/libs/
+    LIBS=$(JARS=("${IGNITE_HOME}/libs/optional/${lib}"/*); IFS=:; echo "${JARS[*]}")
+    if [ -z "${USER_LIBS}" ]; then
+      export USER_LIBS="${LIBS}"
+    else
+      export USER_LIBS="${USER_LIBS}:${LIBS}"
+    fi
   done
 fi
 
-if [ ! -z "$EXTERNAL_LIBS" ]; then
-  IFS=, LIBS_LIST=("$EXTERNAL_LIBS")
-
-  for lib in ${LIBS_LIST[@]}; do
-    wget $lib -P $IGNITE_HOME/libs
+#
+# Add external libs to classpath
+#
+if [ -n "${EXTERNAL_LIBS}" ]; then
+  IFS=, LIBS_LIST=("${EXTERNAL_LIBS}")
+  for lib in "${LIBS_LIST[@]}"; do
+    echo "${lib}" >> "${IGNITE_HOME}"/work/external_libs
   done
+  wget --content-disposition -i "${IGNITE_HOME}"/work/external_libs -P "${IGNITE_HOME}"/libs/external
+  rm "${IGNITE_HOME}"/work/external_libs
 fi
 
-QUIET=""
+#
+# Define classpath
+#
+if [ "${USER_LIBS:-}" != "" ]; then
+    IGNITE_LIBS=${USER_LIBS:-}:${IGNITE_LIBS}
+fi
+CP="${IGNITE_LIBS}"
+unset IFS
 
-if [ "$IGNITE_QUIET" = "false" ]; then
-  QUIET="-v"
+#
+# Define default Java options
+#
+if [ -z "${JVM_OPTS}" ] ; then
+    JVM_OPTS="-Xms1g -Xmx1g -server -XX:MaxMetaspaceSize=256m"
 fi
 
-if [ -z $CONFIG_URI ]; then
-  $IGNITE_HOME/bin/ignite.sh $QUIET
+#
+# Add Java extra option 
+#
+if [ "${version}" -eq 8 ] ; then
+    JVM_OPTS="\
+        -XX:+AggressiveOpts \
+         ${JVM_OPTS}"
+elif [ "${version}" -gt 8 ] && [ "${version}" -lt 11 ]; then
+    JVM_OPTS="\
+        -XX:+AggressiveOpts \
+        --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED \
+        --add-exports=java.base/sun.nio.ch=ALL-UNNAMED \
+        --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED \
+        --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED \
+        --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED \
+        --illegal-access=permit \
+        --add-modules=java.xml.bind \
+        ${JVM_OPTS}"
+elif [ "${version}" -ge 11 ] ; then
+    JVM_OPTS="\
+        --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED \
+        --add-exports=java.base/sun.nio.ch=ALL-UNNAMED \
+        --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED \
+        --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED \
+        --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED \
+        --add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED \
+        --illegal-access=permit \
+        ${JVM_OPTS}"
+fi
+
+DIGNITE_QUIET=$(printenv JVM_OPTS | grep -o 'IGNITE_QUIET=[^ ,]\+' | cut -d "=" -f 2)
+
+if [ "${IGNITE_QUIET}" == "false" -o "${DIGNITE_QUIET}" == "false" ]; then
+    JVM_OPTS="${JVM_OPTS} -DIGNITE_QUIET=false"
+fi
+
+#
+# Start Ignite node
+#
+if [ -z "${CONFIG_URI}" ]; then
+  exec "${JAVA}" ${JVM_OPTS} -DIGNITE_HOME="${IGNITE_HOME}" -cp "${CP}" org.apache.ignite.startup.cmdline.CommandLineStartup "${DEFAULT_CONFIG}"
 else
-  $IGNITE_HOME/bin/ignite.sh $QUIET $CONFIG_URI
+  exec "${JAVA}" ${JVM_OPTS} -DIGNITE_HOME="${IGNITE_HOME}" -cp "${CP}" org.apache.ignite.startup.cmdline.CommandLineStartup "${CONFIG_URI}"
 fi

@@ -86,7 +86,7 @@ public class RowCountTableStatisticsSurvivesNodeRestartTest extends TableStatist
      */
     @Test
     public void statisticsSurvivesRestart() throws Exception {
-        String sql  = "SELECT COUNT(*) FROM t1 JOIN t2 ON t1.c = t2.c " +
+        String sql = "SELECT COUNT(*) FROM t1 JOIN t2 ON t1.c = t2.c " +
             "WHERE t1.b >= 0 AND t2.b >= 0";
 
         checkOptimalPlanChosenForDifferentJoinOrders(grid(0), sql, "small", "big");

@@ -1599,12 +1599,14 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             IgniteCacheProxyImpl proxyImpl = (IgniteCacheProxyImpl) delegate;
 
             try {
-                IgniteInternalCache<K, V> cache = context().kernalContext().cache().<K, V>publicJCache(context().name()).internalProxy();
+                IgniteCacheProxy<K, V> proxy = context().kernalContext().cache().publicJCache(context().name());
 
-                proxyImpl.opportunisticRestart(cache);
+                if (proxy != null) {
+                    proxyImpl.opportunisticRestart(proxy.internalProxy());
 
-                return gate();
-            } catch (IgniteCheckedException ice) {
+                    return gate();
+                }
+            } catch (IgniteCheckedException ignore) {
                 // Opportunity didn't work out.
             }
         }

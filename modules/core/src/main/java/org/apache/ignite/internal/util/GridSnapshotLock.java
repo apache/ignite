@@ -63,7 +63,7 @@ public abstract class GridSnapshotLock<X> {
         if (sync0.flip())
             takeSnapshotAndReplaceSync(sync0);
 
-        return  sync0.get();
+        return sync0.get();
     }
 
     /**

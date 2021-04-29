@@ -33,7 +33,7 @@ public class ModelsCompositionFormat implements Serializable {
     private static final long serialVersionUID = 9115341364082681837L;
 
     /** Models. */
-    private List<IgniteModel<Vector, Double>> models;
+    private List<? extends IgniteModel<Vector, Double>> models;
 
     /** Predictions aggregator. */
     private PredictionsAggregator predictionsAggregator;
@@ -44,13 +44,13 @@ public class ModelsCompositionFormat implements Serializable {
      * @param models Models.
      * @param predictionsAggregator Predictions aggregator.
      */
-    public ModelsCompositionFormat(List<IgniteModel<Vector, Double>> models,PredictionsAggregator predictionsAggregator) {
+    public ModelsCompositionFormat(List<? extends IgniteModel<Vector, Double>> models, PredictionsAggregator predictionsAggregator) {
         this.models = models;
         this.predictionsAggregator = predictionsAggregator;
     }
 
     /** */
-    public List<IgniteModel<Vector, Double>> models() {
+    public List<? extends IgniteModel<Vector, Double>> models() {
         return models;
     }
 

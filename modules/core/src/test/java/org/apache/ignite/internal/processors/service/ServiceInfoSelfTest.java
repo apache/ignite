@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.processors.service;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.HashMap;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
@@ -96,6 +100,25 @@ public class ServiceInfoSelfTest {
         assertEquals(top, sut.topologySnapshot());
 
         assertNotSame(top, sut.topologySnapshot());
+    }
+
+    /**
+     * Tests serialization/deserialization of ServiceInfo.
+     */
+    @Test
+    public void testSerializeDeserialize() throws Exception {
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+
+        new ObjectOutputStream(os).writeObject(sut);
+
+        ObjectInputStream is = new ObjectInputStream(new ByteArrayInputStream(os.toByteArray()));
+
+        ServiceInfo srvcInfo = (ServiceInfo)is.readObject();
+
+        assertEquals(sut.name(), srvcInfo.name());
+        assertEquals(sut.originNodeId(), srvcInfo.originNodeId());
+        assertEquals(sut.serviceId(), srvcInfo.serviceId());
+        assertEquals(sut.serviceClass(), srvcInfo.serviceClass());
     }
 
     /**

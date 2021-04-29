@@ -32,9 +32,13 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.spi.tracing.TracingConfigurationManager;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -63,7 +67,6 @@ import org.jetbrains.annotations.Nullable;
  * <li>{@link IgniteQueue} - distributed blocking queue.</li>
  * <li>{@link IgniteSet} - distributed concurrent set.</li>
  * <li>{@link IgniteScheduler} - functionality for scheduling jobs using UNIX Cron syntax.</li>
- * <li>{@link IgniteFileSystem} - functionality for distributed Hadoop-compliant in-memory file system and map-reduce.</li>
  * </ul>
  */
 public interface Ignite extends AutoCloseable {
@@ -358,27 +361,44 @@ public interface Ignite extends AutoCloseable {
         throws CacheException;
 
     /**
-     * Stops dynamically started cache.
+     * Destroys a cache with the given name and cleans data that was written to the cache. The call will
+     * deallocate all resources associated with the given cache on all nodes in the cluster. There is no way
+     * to undo the action and recover destroyed data.
+     * <p>
+     * All existing instances of {@link IgniteCache} will be invalidated, subsequent calls to the API
+     * will throw exceptions.
+     * <p>
+     * If a cache with the specified name does not exist in the grid, the operation has no effect.
      *
-     * @param cacheName Cache name to stop.
+     * @param cacheName Cache name to destroy.
      * @throws CacheException If error occurs.
      */
     public void destroyCache(String cacheName) throws CacheException;
 
     /**
-     * Stops dynamically started caches.
+     * Destroys caches with the given names and cleans data that was written to the caches. The call will
+     * deallocate all resources associated with the given caches on all nodes in the cluster. There is no way
+     * to undo the action and recover destroyed data.
+     * <p>
+     * All existing instances of {@link IgniteCache} will be invalidated, subsequent calls to the API
+     * will throw exceptions.
+     * <p>
+     * If the specified collection contains {@code null} or an empty value,
+     * this method will throw {@link IllegalArgumentException} and the caches will not be destroyed.
+     * <p>
+     * If a cache with the specified name does not exist in the grid, the specified value will be skipped.
      *
-     * @param cacheNames Collection of cache names to stop.
+     * @param cacheNames Collection of cache names to destroy.
      * @throws CacheException If error occurs.
      */
     public void destroyCaches(Collection<String> cacheNames) throws CacheException;
 
     /**
-     * Gets an instance of {@link IgniteCache} API. {@code IgniteCache} is a fully-compatible
-     * implementation of {@code JCache (JSR 107)} specification.
+     * Gets an instance of {@link IgniteCache} API for the given name if one is configured or {@code null} otherwise.
+     * {@code IgniteCache} is a fully-compatible implementation of {@code JCache (JSR 107)} specification.
      *
      * @param name Cache name.
-     * @return Instance of the cache for the specified name.
+     * @return Instance of the cache for the specified name or {@code null} if one does not exist.
      * @throws CacheException If error occurs.
      */
     public <K, V> IgniteCache<K, V> cache(String name) throws CacheException;
@@ -407,27 +427,6 @@ public interface Ignite extends AutoCloseable {
      * @throws IllegalStateException If node is stopping.
      */
     public <K, V> IgniteDataStreamer<K, V> dataStreamer(String cacheName) throws IllegalStateException;
-
-    /**
-     * Gets an instance of IGFS (Ignite In-Memory File System). If one is not
-     * configured then {@link IllegalArgumentException} will be thrown.
-     * <p>
-     * IGFS is fully compliant with Hadoop {@code FileSystem} APIs and can
-     * be plugged into Hadoop installations. For more information refer to
-     * documentation on Hadoop integration shipped with Ignite.
-     *
-     * @param name IGFS name.
-     * @return IGFS instance.
-     * @throws IllegalArgumentException If IGFS with such name is not configured.
-     */
-    public IgniteFileSystem fileSystem(String name) throws IllegalArgumentException;
-
-    /**
-     * Gets all instances of IGFS (Ignite In-Memory File System).
-     *
-     * @return Collection of IGFS instances.
-     */
-    public Collection<IgniteFileSystem> fileSystems();
 
     /**
      * Will get an atomic sequence from cache and create one if it has not been created yet and {@code create} flag
@@ -676,26 +675,29 @@ public interface Ignite extends AutoCloseable {
 
     /**
      * Clears partition's lost state and moves caches to a normal mode.
+     * <p>
+     * To avoid permanent data loss for persistent caches it's recommended to return all previously failed baseline
+     * nodes to the topology before calling this method.
      */
     public void resetLostPartitions(Collection<String> cacheNames);
 
     /**
      * @return Collection of {@link MemoryMetrics} snapshots.
-     * @deprecated Use {@link #dataRegionMetrics()} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=io.dataregion.{data_region_name}" instead.
      */
     @Deprecated
     public Collection<MemoryMetrics> memoryMetrics();
 
     /**
      * @return {@link MemoryMetrics} snapshot or {@code null} if no memory region is configured under specified name.
-     * @deprecated Use {@link #dataRegionMetrics(String)} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=io.dataregion.{data_region_name}" instead.
      */
     @Deprecated
     @Nullable public MemoryMetrics memoryMetrics(String memPlcName);
 
     /**
      * @return {@link PersistenceMetrics} snapshot.
-     * @deprecated Use {@link #dataStorageMetrics()} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=io.dataregion.{data_region_name}" instead.
      */
     @Deprecated
     public PersistenceMetrics persistentStoreMetrics();
@@ -707,6 +709,7 @@ public interface Ignite extends AutoCloseable {
      * configured with {@link DataRegionConfiguration configuration} on this Ignite node instance.
      *
      * @return Collection of {@link DataRegionMetrics} snapshots.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=io.dataregion.{data_region_name}" instead.
      */
     public Collection<DataRegionMetrics> dataRegionMetrics();
 
@@ -724,6 +727,7 @@ public interface Ignite extends AutoCloseable {
 
     /**
      * @return {@link DataStorageMetrics} snapshot.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=io.datastorage" instead.
      */
     public DataStorageMetrics dataStorageMetrics();
 
@@ -733,4 +737,23 @@ public interface Ignite extends AutoCloseable {
      * @return Instance of {@link IgniteEncryption} interface.
      */
     public IgniteEncryption encryption();
+
+    /**
+     * @return Snapshot manager.
+     */
+    public IgniteSnapshot snapshot();
+
+    /**
+     * Returns the {@link TracingConfigurationManager} instance that allows to
+     * <ul>
+     *     <li>Configure tracing parameters such as sampling rate for the specific tracing coordinates
+     *          such as scope and label.</li>
+     *     <li>Retrieve the most specific tracing parameters for the specified tracing coordinates (scope and label)</li>
+     *     <li>Restore the tracing parameters for the specified tracing coordinates to the default.</li>
+     *     <li>List all pairs of tracing configuration coordinates and tracing configuration parameters.</li>
+     * </ul>
+     * @return {@link TracingConfigurationManager} instance.
+     */
+    @IgniteExperimental
+    public @NotNull TracingConfigurationManager tracingConfiguration();
 }

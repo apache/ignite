@@ -83,7 +83,7 @@ public class TcpClientDiscoverySpiCoordinatorChangeTest extends GridCommonAbstra
      * @return Started node.
      * @throws Exception If a node was not started.
      */
-    private Ignite startNode(String instanceName, TcpDiscoveryIpFinder ipFinder,  boolean clientMode) throws Exception {
+    private Ignite startNode(String instanceName, TcpDiscoveryIpFinder ipFinder, boolean clientMode) throws Exception {
         IgniteConfiguration cfg = getConfiguration(instanceName)
             .setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(ipFinder))
             .setClientMode(clientMode);

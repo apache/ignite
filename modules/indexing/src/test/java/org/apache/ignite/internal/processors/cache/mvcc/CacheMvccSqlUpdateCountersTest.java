@@ -270,7 +270,7 @@ public class CacheMvccSqlUpdateCountersTest extends CacheMvccAbstractTest {
         checkUpdateCounters(DEFAULT_CACHE_NAME, part1, 2);
 
         try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            SqlFieldsQuery qry  = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (" + key1 + ", 2)");
+            SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (" + key1 + ", 2)");
 
             cache.query(qry).getAll();
 
@@ -278,7 +278,7 @@ public class CacheMvccSqlUpdateCountersTest extends CacheMvccAbstractTest {
 
             cache.query(qry).getAll();
 
-            qry  = new SqlFieldsQuery("MERGE INTO Integer (_key, _val) values (" + key1 + ", 3)");
+            qry = new SqlFieldsQuery("MERGE INTO Integer (_key, _val) values (" + key1 + ", 3)");
 
             cache.query(qry).getAll();
 
@@ -292,7 +292,7 @@ public class CacheMvccSqlUpdateCountersTest extends CacheMvccAbstractTest {
 
             cache.query(qry).getAll();
 
-            qry  = new SqlFieldsQuery("MERGE INTO Integer (_key, _val) values (" + key1 + ",5)");
+            qry = new SqlFieldsQuery("MERGE INTO Integer (_key, _val) values (" + key1 + ",5)");
 
             cache.query(qry).getAll();
 
@@ -306,7 +306,7 @@ public class CacheMvccSqlUpdateCountersTest extends CacheMvccAbstractTest {
         checkUpdateCounters(DEFAULT_CACHE_NAME, part1, 4);
 
         try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            SqlFieldsQuery qry  = new SqlFieldsQuery("MERGE INTO Integer (_key, _val) values (" + key1 + ",6)");
+            SqlFieldsQuery qry = new SqlFieldsQuery("MERGE INTO Integer (_key, _val) values (" + key1 + ",6)");
 
             cache.query(qry).getAll();
 
@@ -320,7 +320,7 @@ public class CacheMvccSqlUpdateCountersTest extends CacheMvccAbstractTest {
 
             cache.query(qry).getAll();
 
-            qry  = new SqlFieldsQuery("MERGE INTO Integer (_key, _val) values (" + key1 + ",7)");
+            qry = new SqlFieldsQuery("MERGE INTO Integer (_key, _val) values (" + key1 + ",7)");
 
             cache.query(qry).getAll();
 

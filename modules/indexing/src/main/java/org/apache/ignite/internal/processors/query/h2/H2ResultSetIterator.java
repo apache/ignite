@@ -30,6 +30,9 @@ import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
+import org.apache.ignite.internal.processors.tracing.MTC;
+import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
+import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridIteratorAdapter;
 import org.apache.ignite.internal.util.typedef.F;
@@ -39,6 +42,10 @@ import org.h2.engine.Session;
 import org.h2.jdbc.JdbcResultSet;
 import org.h2.result.ResultInterface;
 import org.h2.value.Value;
+
+import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_PAGE_ROWS;
+import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_ITER_CLOSE;
+import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_PAGE_FETCH;
 
 /**
  * Iterator over result set.
@@ -97,17 +104,32 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
     /** Canceled. */
     private boolean canceled;
 
+    /** Fetch size interceptor. */
+    final H2QueryFetchSizeInterceptor fetchSizeInterceptor;
+
+    /** Tracing processor. */
+    protected final Tracing tracing;
+
     /**
      * @param data Data array.
      * @param log Logger.
      * @param h2 Indexing H2.
      * @param pageSize Page size.
+     * @param tracing Tracing processor.
      * @throws IgniteCheckedException If failed.
      */
-    protected H2ResultSetIterator(ResultSet data, int pageSize, IgniteLogger log, IgniteH2Indexing h2)
+    protected H2ResultSetIterator(
+        ResultSet data,
+        int pageSize,
+        IgniteLogger log,
+        IgniteH2Indexing h2,
+        H2QueryInfo qryInfo,
+        Tracing tracing
+    )
         throws IgniteCheckedException {
         this.pageSize = pageSize;
         this.data = data;
+        this.tracing = tracing;
 
         try {
             res = (ResultInterface)RESULT_FIELD.get(data);
@@ -137,6 +159,9 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
 
         assert log != null;
         assert h2 != null;
+        assert qryInfo != null;
+
+        fetchSizeInterceptor = new H2QueryFetchSizeInterceptor(h2, qryInfo, log);
     }
 
     /**
@@ -146,7 +171,7 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
     private boolean fetchPage() throws IgniteCheckedException {
         lockTables();
 
-        try {
+        try (TraceSurroundings ignored = MTC.support(tracing.create(SQL_PAGE_FETCH, MTC.span()))) {
             GridH2Table.checkTablesVersions(ses);
 
             page.clear();
@@ -185,6 +210,8 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
                     throw new IgniteSQLException(e);
                 }
             }
+
+            MTC.span().addTag(SQL_PAGE_ROWS, () -> Integer.toString(page.size()));
 
             if (F.isEmpty(page)) {
                 rowIter = null;
@@ -250,6 +277,8 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
         if (rowIter != null && rowIter.hasNext()) {
             row = rowIter.next();
 
+            fetchSizeInterceptor.checkOnFetchNext();
+
             return true;
         }
 
@@ -261,6 +290,8 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
 
         if (rowIter != null && rowIter.hasNext()) {
             row = rowIter.next();
+
+            fetchSizeInterceptor.checkOnFetchNext();
 
             return true;
         }
@@ -284,6 +315,8 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
         lockTables();
 
         try {
+            fetchSizeInterceptor.checkOnClose();
+
             data.close();
         }
         catch (SQLException e) {
@@ -315,9 +348,11 @@ public abstract class H2ResultSetIterator<T> extends GridIteratorAdapter<T> impl
         if (closed)
             return;
 
-        closed = true;
+        try (TraceSurroundings ignored = MTC.support(tracing.create(SQL_ITER_CLOSE, MTC.span()))) {
+            closed = true;
 
-        onClose();
+            onClose();
+        }
     }
 
     /** {@inheritDoc} */

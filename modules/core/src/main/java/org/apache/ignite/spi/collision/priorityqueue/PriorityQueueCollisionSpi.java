@@ -262,7 +262,7 @@ public class PriorityQueueCollisionSpi extends IgniteSpiAdapter implements Colli
      */
     @IgniteSpiConfiguration(optional = true)
     public PriorityQueueCollisionSpi setParallelJobsNumber(int parallelJobsNum) {
-        A.ensure(parallelJobsNum > 0,  "parallelJobsNum > 0");
+        A.ensure(parallelJobsNum > 0, "parallelJobsNum > 0");
 
         this.parallelJobsNum = parallelJobsNum;
 
@@ -684,7 +684,7 @@ public class PriorityQueueCollisionSpi extends IgniteSpiAdapter implements Colli
     /**
      * Comparator for by priority comparison of collision contexts.
      */
-    private class PriorityGridCollisionJobContextComparator implements Comparator<GridCollisionJobContextWrapper>,Serializable {
+    private class PriorityGridCollisionJobContextComparator implements Comparator<GridCollisionJobContextWrapper>, Serializable {
         /** */
         private static final long serialVersionUID = 0L;
 

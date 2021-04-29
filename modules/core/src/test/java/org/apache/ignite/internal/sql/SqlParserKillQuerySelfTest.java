@@ -58,11 +58,11 @@ public class SqlParserKillQuerySelfTest extends SqlParserAbstractSelfTest {
 
         assertParseError("KILL QUERY '" + nodeId + "_a'", expectedExceptionMessageIncorrectQueryId());
 
-        assertParseError("KILL QUERY '" + nodeId  + "_1 1'", expectedExceptionMessageIncorrectQueryId());
+        assertParseError("KILL QUERY '" + nodeId + "_1 1'", expectedExceptionMessageIncorrectQueryId());
 
         assertParseError("KILL QUERY 1'", expectedExceptionMessageNoAsyncAndQueryId());
 
-        assertParseError("KILL QUERY '" + nodeId  + "_1' 1", "Unexpected token: \"1\"");
+        assertParseError("KILL QUERY '" + nodeId + "_1' 1", "Unexpected token: \"1\"");
 
         assertParseError("KILL '" + nodeId + "_" + TEST_QRY_ID + "'", "Unexpected token: \"" + nodeId + "_341\" (expected: \"QUERY\")");
 

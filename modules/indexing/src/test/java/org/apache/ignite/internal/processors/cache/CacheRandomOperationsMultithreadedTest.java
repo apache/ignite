@@ -313,7 +313,7 @@ public class CacheRandomOperationsMultithreadedTest extends GridCommonAbstractTe
     private CacheConfiguration<Object, Object> cacheConfiguration(
         CacheMode cacheMode,
         CacheAtomicityMode atomicityMode,
-        @Nullable  EvictionPolicy<Object, Object> evictionPlc,
+        @Nullable EvictionPolicy<Object, Object> evictionPlc,
         boolean indexing) {
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 

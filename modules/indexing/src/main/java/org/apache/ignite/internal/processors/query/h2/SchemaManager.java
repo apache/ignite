@@ -169,7 +169,7 @@ public class SchemaManager {
         ctx.systemView().registerInnerCollectionView(SQL_IDXS_VIEW, SQL_IDXS_VIEW_DESC,
             new SqlIndexViewWalker(),
             dataTables.values(),
-            GridH2Table::getIndexes,
+            GridH2Table::indexesInformation,
             SqlIndexView::new);
 
         ctx.systemView().registerInnerArrayView(SQL_TBL_COLS_VIEW, SQL_TBL_COLS_VIEW_DESC,
@@ -220,8 +220,10 @@ public class SchemaManager {
         boolean disabled = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SQL_DISABLE_SYSTEM_VIEWS);
 
         if (disabled) {
-            log.info("SQL system views will not be created because they are disabled (see " +
-                IgniteSystemProperties.IGNITE_SQL_DISABLE_SYSTEM_VIEWS + " system property)");
+            if (log.isInfoEnabled()) {
+                log.info("SQL system views will not be created because they are disabled (see " +
+                    IgniteSystemProperties.IGNITE_SQL_DISABLE_SYSTEM_VIEWS + " system property)");
+            }
 
             return;
         }
@@ -540,7 +542,7 @@ public class SchemaManager {
 
         GridH2RowDescriptor rowDesc = new GridH2RowDescriptor(tbl, tbl.type());
 
-        GridH2Table h2Tbl = H2TableEngine.createTable(conn.connection(), sql, rowDesc, tbl);
+        GridH2Table h2Tbl = H2TableEngine.createTable(conn.connection(), sql, rowDesc, tbl, ctx.indexProcessor());
 
         for (GridH2IndexBase usrIdx : tbl.createUserIndexes())
             createInitialUserIndex(schemaName, tbl, usrIdx);
@@ -622,7 +624,7 @@ public class SchemaManager {
     }
 
     /**
-     * Create index.
+     * Create index dynamically.
      *
      * @param schemaName Schema name.
      * @param tblName Table name.
@@ -645,16 +647,11 @@ public class SchemaManager {
         GridH2Table h2Tbl = desc.table();
 
         // Create index.
-        final GridH2IndexBase h2Idx = desc.createUserIndex(idxDesc);
+        final GridH2IndexBase h2Idx = desc.createUserIndex(idxDesc, cacheVisitor);
 
         h2Tbl.proposeUserIndex(h2Idx);
 
         try {
-            // Populate index with existing cache data.
-            final GridH2RowDescriptor rowDesc = h2Tbl.rowDescriptor();
-
-            cacheVisitor.visit(new IndexBuildClosure(rowDesc, h2Idx));
-
             // At this point index is in consistent state, promote it through H2 SQL statement, so that cached
             // prepared statements are re-built.
             String sql = H2Utils.indexCreateSql(desc.fullTableName(), h2Idx, ifNotExists);

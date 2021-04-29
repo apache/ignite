@@ -17,17 +17,16 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt.join;
 
-import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRange;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowRangeBounds;
-
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
 
 import static java.util.Collections.emptyIterator;
 
@@ -48,7 +47,7 @@ public class RangeSource {
     private final int segment;
 
     /** */
-    private final BPlusTree.TreeRowClosure<H2Row, H2Row> filter;
+    private final IndexQueryContext qryCtx;
 
     /** Iterator. */
     private Iterator<H2Row> iter = emptyIterator();
@@ -56,17 +55,17 @@ public class RangeSource {
     /**
      * @param bounds Bounds.
      * @param segment Segment.
-     * @param filter Filter.
+     * @param qryCtx Index query context.
      */
     public RangeSource(
         H2TreeIndex idx,
         Iterable<GridH2RowRangeBounds> bounds,
         int segment,
-        BPlusTree.TreeRowClosure<H2Row, H2Row> filter
+        IndexQueryContext qryCtx
     ) {
         this.idx = idx;
         this.segment = segment;
-        this.filter = filter;
+        this.qryCtx = qryCtx;
 
         boundsIter = bounds.iterator();
     }
@@ -120,7 +119,7 @@ public class RangeSource {
 
             curRangeId = bounds.rangeId();
 
-            iter = idx.findForSegment(bounds, segment, filter);
+            iter = idx.findForSegment(bounds, segment, qryCtx);
 
             if (!iter.hasNext()) {
                 // We have to return empty range here.

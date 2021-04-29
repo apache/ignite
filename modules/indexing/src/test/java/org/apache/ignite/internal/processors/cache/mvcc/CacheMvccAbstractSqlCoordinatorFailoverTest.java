@@ -31,7 +31,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
@@ -203,7 +202,7 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
 
         IgniteCache<Integer, Integer> cache = node.cache(DEFAULT_CACHE_NAME);
 
-        cache.put(1,1);
+        cache.put(1, 1);
 
         Semaphore sem = new Semaphore(0);
 
@@ -241,8 +240,8 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
 
         assert crd.local() && crd.initialized();
 
-        cache.put(1,2);
-        cache.put(1,3);
+        cache.put(1, 2);
+        cache.put(1, 3);
 
         sem.release(2);
 
@@ -282,8 +281,6 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
                 return null;
             }
         }, "start-cache");
-
-        U.sleep(1000);
 
         assertFalse(fut.isDone());
 

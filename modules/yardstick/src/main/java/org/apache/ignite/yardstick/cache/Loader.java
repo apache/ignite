@@ -134,7 +134,7 @@ public class Loader implements IgniteClosure<Integer, Integer> {
             });
 
             Future<?> checkFut = serv.submit(new Runnable() {
-                @Override public void run()  {
+                @Override public void run() {
                     while (!loaded.get()) {
                         if (impl.getTotalAllocatedPages() >= pagesToLoad)
                             loaded.getAndSet(true);

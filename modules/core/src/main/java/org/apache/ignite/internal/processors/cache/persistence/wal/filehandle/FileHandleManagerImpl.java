@@ -32,12 +32,11 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -57,7 +56,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.sleep;
  */
 public class FileHandleManagerImpl implements FileHandleManager {
     /** Default wal segment sync timeout. */
-    private static final long DFLT_WAL_SEGMENT_SYNC_TIMEOUT = 500L;
+    public static final long DFLT_WAL_SEGMENT_SYNC_TIMEOUT = 500L;
 
     /** WAL writer worker. */
     private final WALWriter walWriter;
@@ -247,15 +246,15 @@ public class FileHandleManagerImpl implements FileHandleManager {
         if (cur == null)
             return null;
 
-        FileWALPointer filePtr;
+        WALPointer filePtr;
 
         if (ptr == null) {
             long pos = cur.buf.tail();
 
-            filePtr = new FileWALPointer(cur.getSegmentId(), (int)pos, 0);
+            filePtr = new WALPointer(cur.getSegmentId(), (int)pos, 0);
         }
         else
-            filePtr = (FileWALPointer)ptr;
+            filePtr = ptr;
 
         if (mode == LOG_ONLY)
             cur.flushOrWait(filePtr);

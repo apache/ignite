@@ -92,11 +92,10 @@ namespace ignite
                 /**
                  * Process remote job result.
                  *
-                 * @param job Job.
                  * @param reader Reader for stream with result.
                  * @return Policy.
                  */
-                virtual int32_t JobResultRemote(ComputeJobHolder& job, binary::BinaryReaderImpl& reader)
+                virtual int32_t JobResultRemote(binary::BinaryReaderImpl& reader)
                 {
                     ComputeJobResult<ResultType> res;
 
@@ -105,6 +104,36 @@ namespace ignite
                     ProcessResult(res);
 
                     return ComputeJobResultPolicy::WAIT;
+                }
+
+                /**
+                 * Process remote job result.
+                 *
+                 * @param reader Reader for stream with result.
+                 * @return Policy.
+                 */
+                virtual void JobResultError(const IgniteError& err)
+                {
+                    ComputeJobResult<ResultType> res;
+
+                    res.SetError(err);
+
+                    ProcessResult(res);
+                }
+
+                /**
+                 * Process successfull result.
+                 *
+                 * @param reader Reader for stream with result.
+                 * @param err Error.
+                 */
+                virtual void JobResultSuccess(binary::BinaryReaderImpl& reader)
+                {
+                    ComputeJobResult<ResultType> res;
+
+                    res.SetResult(reader.ReadObject<ResultType>());
+
+                    ProcessResult(res);
                 }
 
                 /**
@@ -202,11 +231,10 @@ namespace ignite
                 /**
                  * Process remote job result.
                  *
-                 * @param job Job.
                  * @param reader Reader for stream with result.
                  * @return Policy.
                  */
-                virtual int32_t JobResultRemote(ComputeJobHolder& job, binary::BinaryReaderImpl& reader)
+                virtual int32_t JobResultRemote(binary::BinaryReaderImpl& reader)
                 {
                     ComputeJobResult<void> res;
 
@@ -215,6 +243,36 @@ namespace ignite
                     ProcessResult(res);
 
                     return ComputeJobResultPolicy::WAIT;
+                }
+
+                /**
+                 * Process remote job result.
+                 *
+                 * @param reader Reader for stream with result.
+                 * @return Policy.
+                 */
+                virtual void JobResultError(const IgniteError& err)
+                {
+                    ComputeJobResult<void> res;
+
+                    res.SetError(err);
+
+                    ProcessResult(res);
+                }
+
+                /**
+                 * Process successfull result.
+                 *
+                 * @param reader Reader for stream with result.
+                 * @param err Error.
+                 */
+                virtual void JobResultSuccess(binary::BinaryReaderImpl&)
+                {
+                    ComputeJobResult<void> res;
+
+                    res.SetResult();
+
+                    ProcessResult(res);
                 }
 
                 /**

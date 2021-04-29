@@ -107,6 +107,28 @@ public class IntRWHashMap<V> implements IntMap<V> {
     }
 
     /** {@inheritDoc} */
+    @Override public int[] keys() {
+        lock.readLock().lock();
+        try {
+            return delegate.keys();
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public V[] values() {
+        lock.readLock().lock();
+        try {
+            return delegate.values();
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean containsKey(int key) {
         lock.readLock().lock();
         try {

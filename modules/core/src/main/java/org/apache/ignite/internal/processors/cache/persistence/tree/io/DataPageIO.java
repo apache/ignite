@@ -102,7 +102,7 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
             addr += row.key().putValue(addr);
         }
         else
-            addr += (2 + mvccInfoSize + cacheIdSize  + row.key().valueBytesLength(null));
+            addr += (2 + mvccInfoSize + cacheIdSize + row.key().valueBytesLength(null));
 
         addr += row.value().putValue(addr);
 

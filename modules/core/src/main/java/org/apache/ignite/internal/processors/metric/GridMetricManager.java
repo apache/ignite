@@ -36,9 +36,11 @@ import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
@@ -51,6 +53,7 @@ import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -58,8 +61,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
-import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -77,6 +80,9 @@ import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
  * @see MetricRegistry
  */
 public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> implements ReadOnlyMetricManager {
+    /** Class name for a SQL view metrics exporter. */
+    public static final String SQL_SPI = "org.apache.ignite.internal.processors.metric.sql.SqlViewMetricExporterSpi";
+
     /** */
     public static final String ACTIVE_COUNT_DESC = "Approximate number of threads that are actively executing tasks.";
 
@@ -238,7 +244,26 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @param ctx Kernal context.
      */
     public GridMetricManager(GridKernalContext ctx) {
-        super(ctx, ctx.config().getMetricExporterSpi());
+        super(ctx, ((Supplier<MetricExporterSpi[]>)() -> {
+            MetricExporterSpi[] spi = ctx.config().getMetricExporterSpi();
+
+            if (!IgniteComponentType.INDEXING.inClassPath())
+                return spi;
+
+            MetricExporterSpi[] spiWithSql = new MetricExporterSpi[spi != null ? spi.length + 1 : 1];
+
+            if (!F.isEmpty(spi))
+                System.arraycopy(spi, 0, spiWithSql, 0, spi.length);
+
+            try {
+                spiWithSql[spiWithSql.length - 1] = U.newInstance(SQL_SPI);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+
+            return spiWithSql;
+        }).get());
 
         ctx.addNodeAttribute(ATTR_PHY_RAM, totalSysMemory());
 
@@ -385,33 +410,40 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @param regName Metric registry name.
      */
     public void remove(String regName) {
-        ReadOnlyMetricRegistry mreg = registries.remove(regName);
+        GridCompoundFuture opsFut = new GridCompoundFuture<>();
 
-        if (mreg == null)
-            return;
+        registries.computeIfPresent(regName, (key, mreg) -> {
+            notifyListeners(mreg, metricRegRemoveLsnrs, log);
 
-        notifyListeners(mreg, metricRegRemoveLsnrs, log);
+            DistributedMetaStorage metastorage0 = metastorage;
 
-        DistributedMetaStorage metastorage0 = metastorage;
+            if (metastorage0 == null)
+                return null;
 
-        if (metastorage0 == null)
-            return;
-
-        try {
-            GridCompoundFuture opsFut = new GridCompoundFuture<>();
-
-            for (Metric m : mreg) {
-                if (m instanceof HitRateMetric)
-                    opsFut.add(metastorage0.removeAsync(metricName(HITRATE_CFG_PREFIX, m.name())));
-                else if (m instanceof HistogramMetric)
-                    opsFut.add(metastorage0.removeAsync(metricName(HISTOGRAM_CFG_PREFIX, m.name())));
+            try {
+                for (Metric m : mreg) {
+                    if (m instanceof HitRateMetric)
+                        opsFut.add(metastorage0.removeAsync(metricName(HITRATE_CFG_PREFIX, m.name())));
+                    else if (m instanceof HistogramMetric)
+                        opsFut.add(metastorage0.removeAsync(metricName(HISTOGRAM_CFG_PREFIX, m.name())));
+                }
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
             }
 
+            return null;
+        });
+
+        try {
             opsFut.markInitialized();
             opsFut.get();
         }
+        catch (NodeStoppingException ignored) {
+            // No-op.
+        }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            log.error("Failed to remove metrics configuration.", e);
         }
     }
 
@@ -538,7 +570,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @param stripedExecSvc Striped executor.
      * @param p2pExecSvc P2P executor service.
      * @param mgmtExecSvc Management executor service.
-     * @param igfsExecSvc IGFS executor service.
      * @param dataStreamExecSvc Data stream executor service.
      * @param restExecSvc Reset executor service.
      * @param affExecSvc Affinity executor service.
@@ -558,7 +589,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         StripedExecutor stripedExecSvc,
         ExecutorService p2pExecSvc,
         ExecutorService mgmtExecSvc,
-        ExecutorService igfsExecSvc,
         StripedExecutor dataStreamExecSvc,
         ExecutorService restExecSvc,
         ExecutorService affExecSvc,
@@ -577,7 +607,6 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         monitorExecutor("GridSystemExecutor", sysExecSvc);
         monitorExecutor("GridClassLoadingExecutor", p2pExecSvc);
         monitorExecutor("GridManagementExecutor", mgmtExecSvc);
-        monitorExecutor("GridIgfsExecutor", igfsExecSvc);
         monitorExecutor("GridAffinityExecutor", affExecSvc);
         monitorExecutor("GridCallbackExecutor", callbackExecSvc);
         monitorExecutor("GridQueryExecutor", qryExecSvc);
@@ -752,7 +781,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      */
     private long totalSysMemory() {
         try {
-            return U.<Long>property(os, "totalPhysicalMemorySize");
+            com.sun.management.OperatingSystemMXBean sunOs = (com.sun.management.OperatingSystemMXBean) os;
+
+            return sunOs.getTotalPhysicalMemorySize();
         }
         catch (RuntimeException ignored) {
             return -1;
@@ -811,9 +842,11 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             long cpuTime;
 
             try {
-                cpuTime = U.<Long>property(os, "processCpuTime");
+                com.sun.management.OperatingSystemMXBean sunOs = (com.sun.management.OperatingSystemMXBean) os;
+
+                cpuTime = sunOs.getProcessCpuTime();
             }
-            catch (IgniteException ignored) {
+            catch (RuntimeException ignored) {
                 return -1;
             }
 

@@ -17,21 +17,31 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.concurrent.atomic.AtomicInteger;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Represents information of a progress of a given checkpoint and
- * allows to obtain future to wait for a particular checkpoint state.
+ * Represents information of a progress of a current checkpoint and allows to obtain future to wait for a particular
+ * checkpoint state.
  */
 public interface CheckpointProgress {
-    /** */
+    /**
+     * @return Description of the reason of the current checkpoint.
+     */
+    public @Nullable String reason();
+
+    /**
+     * @return {@code true} if the current checkpoint is in {@link CheckpointState} which shows that checkpoint has
+     * already started but not finished yet.
+     */
     public boolean inProgress();
 
-    /** */
+    /**
+     * @return The future which can be used for detection when current checkpoint reaches the specific state.
+     */
     public GridFutureAdapter futureFor(CheckpointState state);
 
     /**
@@ -80,27 +90,39 @@ public interface CheckpointProgress {
      */
     public void currentCheckpointPagesCount(int num);
 
-    /** Initialize all counters before checkpoint.  */
+    /** Initialize all counters before checkpoint. */
     public void initCounters(int pagesSize);
 
     /**
      * Update synced pages in checkpoint;
      *
-     * @param deltha Pages num to update.
+     * @param delta Pages num to update.
      */
-    public void updateSyncedPages(int deltha);
+    public void updateSyncedPages(int delta);
 
     /**
      * Update written pages in checkpoint;
      *
-     * @param deltha Pages num to update.
+     * @param delta Pages num to update.
      */
-    public void updateWrittenPages(int deltha);
+    public void updateWrittenPages(int delta);
 
     /**
      * Update evicted pages in checkpoint;
      *
-     * @param deltha Pages num to update.
+     * @param delta Pages num to update.
      */
-    public void updateEvictedPages(int deltha);
+    public void updateEvictedPages(int delta);
+
+    /** Clear cp progress counters. */
+    public void clearCounters();
+
+    /**
+     * Invokes a callback closure then a checkpoint reaches specific state. The closure will not be called if an error
+     * has happened while transitting to the state.
+     *
+     * @param state State.
+     * @param clo Closure to call.
+     */
+    public void onStateChanged(CheckpointState state, Runnable clo);
 }

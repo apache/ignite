@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import com.google.common.collect.ImmutableMap;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -31,6 +30,7 @@ import javax.cache.expiry.TouchedExpiryPolicy;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
+import com.google.common.collect.ImmutableMap;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -1479,7 +1479,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
      * @param name Metric name to find.
      * @return Metric.
      */
-    protected  <M extends Metric> M metric(String name) {
+    protected <M extends Metric> M metric(String name) {
         IgniteEx grid = grid(0);
 
         boolean isNear = ((IgniteKernal)grid).internalCache(DEFAULT_CACHE_NAME).isNear();

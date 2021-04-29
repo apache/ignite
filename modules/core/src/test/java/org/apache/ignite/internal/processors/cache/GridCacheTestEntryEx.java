@@ -745,7 +745,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** @inheritDoc */
-    @Override public boolean lockedByThread()  {
+    @Override public boolean lockedByThread() {
         return lockedByThread(Thread.currentThread().getId());
     }
 
@@ -954,6 +954,11 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     /** {@inheritDoc} */
     @Override public void unlockEntry() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean tryLockEntry(long timeout) {
+        return false;
     }
 
     /** {@inheritDoc} */

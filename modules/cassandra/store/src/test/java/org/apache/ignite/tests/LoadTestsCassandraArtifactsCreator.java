@@ -17,12 +17,11 @@
 
 package org.apache.ignite.tests;
 
+import java.util.LinkedList;
+import java.util.List;
 import org.apache.ignite.cache.store.cassandra.persistence.KeyValuePersistenceSettings;
 import org.apache.ignite.tests.utils.CassandraHelper;
 import org.apache.ignite.tests.utils.TestsHelper;
-
-import java.util.LinkedList;
-import java.util.List;
 
 /**
  * Recreates all required Cassandra database objects (keyspace, table, indexes) for load tests

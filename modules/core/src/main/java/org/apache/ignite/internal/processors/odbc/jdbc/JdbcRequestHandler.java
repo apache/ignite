@@ -40,6 +40,9 @@ import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteVersionUtils;
+import org.apache.ignite.internal.ThinProtocolFeature;
+import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinPartitionAwarenessMappingGroup;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
@@ -50,6 +53,7 @@ import org.apache.ignite.internal.processors.bulkload.BulkLoadProcessor;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
@@ -72,6 +76,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.transactions.TransactionAlreadyCompletedException;
 import org.apache.ignite.transactions.TransactionDuplicateKeyException;
 import org.apache.ignite.transactions.TransactionMixedModeException;
@@ -86,8 +91,13 @@ import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionCont
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_4_0;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_7_0;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_8_0;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_9_0;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BATCH_EXEC;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BATCH_EXEC_ORDERED;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BINARY_TYPE_GET;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BINARY_TYPE_NAME_GET;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BINARY_TYPE_NAME_PUT;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BINARY_TYPE_PUT;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BULK_LOAD_BATCH;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.CACHE_PARTITIONS;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_COLUMNS;
@@ -311,7 +321,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     break;
 
                 case QRY_FETCH:
-                    resp =  fetchQuery((JdbcQueryFetchRequest)req);
+                    resp = fetchQuery((JdbcQueryFetchRequest)req);
                     break;
 
                 case QRY_CLOSE:
@@ -364,6 +374,22 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                 case CACHE_PARTITIONS:
                     resp = getCachePartitions((JdbcCachePartitionsRequest)req);
+                    break;
+
+                case BINARY_TYPE_NAME_PUT:
+                    resp = registerBinaryType((JdbcBinaryTypeNamePutRequest)req);
+                    break;
+
+                case BINARY_TYPE_NAME_GET:
+                    resp = getBinaryTypeName((JdbcBinaryTypeNameGetRequest)req);
+                    break;
+
+                case BINARY_TYPE_PUT:
+                    resp = putBinaryType((JdbcBinaryTypePutRequest)req);
+                    break;
+
+                case BINARY_TYPE_GET:
+                    resp = getBinaryType((JdbcBinaryTypeGetRequest)req);
                     break;
 
                 default:
@@ -486,7 +512,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public ClientListenerResponse handleException(Exception e, ClientListenerRequest req) {
+    @Override public ClientListenerResponse handleException(Throwable e, ClientListenerRequest req) {
         return exceptionToResult(e);
     }
 
@@ -506,6 +532,10 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         // Write node id.
         if (protocolVer.compareTo(VER_2_8_0) >= 0)
             writer.writeUuid(connCtx.kernalContext().localNodeId());
+
+        // Write all features supported by the node.
+        if (protocolVer.compareTo(VER_2_9_0) >= 0)
+            writer.writeByteArray(ThinProtocolFeature.featuresAsBytes(connCtx.protocolContext().features()));
     }
 
     /**
@@ -601,6 +631,11 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             qry.setArgs(req.arguments());
             qry.setAutoCommit(req.autoCommit());
+
+            if (req.explicitTimeout()) {
+                // Timeout is handled on a client side, do not handle it on a server side.
+                qry.setTimeout(0, TimeUnit.MILLISECONDS);
+            }
 
             if (req.pageSize() <= 0)
                 return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Invalid fetch size: " + req.pageSize());
@@ -973,7 +1008,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         qry.setLazy(cliCtx.isLazy());
         qry.setNestedTxMode(nestedTxMode);
         qry.setSchema(schemaName);
-        qry.setTimeout(0, TimeUnit.MILLISECONDS);
+        qry.setQueryInitiatorId(connCtx.clientDescriptor());
 
         if (cliCtx.updateBatchSize() != null)
             qry.setUpdateBatchSize(cliCtx.updateBatchSize());
@@ -997,7 +1032,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     qry.getSchema(),
                     cliCtx,
                     qry.getSql(),
-                    qry.batchedArguments()
+                    qry.batchedArguments(),
+                    connCtx.clientDescriptor()
                 );
 
                 for (int i = 0; i < cnt.size(); i++)
@@ -1118,6 +1154,100 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     }
 
     /**
+     * Handler for updating binary type requests.
+     *
+     * @param req Incoming request.
+     * @return Acknowledgement in case of successful updating.
+     */
+    private JdbcResponse putBinaryType(JdbcBinaryTypePutRequest req) {
+        try {
+            getBinaryCtx().updateMetadata(req.meta().typeId(), req.meta(), false);
+
+            return resultToResonse(new JdbcUpdateBinarySchemaResult(req.requestId(), true));
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to update binary schema [reqId=" + req.requestId() + ", req=" + req + ']', e);
+
+            return exceptionToResult(e);
+        }
+    }
+
+    /**
+     * Handler for querying binary type requests.
+     *
+     * @param req Incoming request.
+     * @return Response with binary type schema.
+     */
+    private JdbcResponse getBinaryType(JdbcBinaryTypeGetRequest req) {
+        try {
+            BinaryTypeImpl type = (BinaryTypeImpl)connCtx.kernalContext().cacheObjects().binary().type(req.typeId());
+
+            return resultToResonse(new JdbcBinaryTypeGetResult(req.requestId(), type != null ? type.metadata() : null));
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to get binary type name [reqId=" + req.requestId() + ", req=" + req + ']', e);
+
+            return exceptionToResult(e);
+        }
+    }
+
+    /**
+     * Handler for querying binary type name requests.
+     *
+     * @param req Incoming request.
+     * @return Response with binary type name.
+     */
+    private JdbcResponse getBinaryTypeName(JdbcBinaryTypeNameGetRequest req) {
+        try {
+            String name = getMarshallerCtx().getClassName(req.platformId(), req.typeId());
+
+            return resultToResonse(new JdbcBinaryTypeNameGetResult(req.requestId(), name));
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to get binary type name [reqId=" + req.requestId() + ", req=" + req + ']', e);
+
+            return exceptionToResult(e);
+        }
+    }
+
+    /**
+     * Handler for register new binary type requests.
+     *
+     * @param req Incoming request.
+     * @return Acknowledgement in case of successful registration.
+     */
+    private JdbcResponse registerBinaryType(JdbcBinaryTypeNamePutRequest req) {
+        try {
+            boolean res = getMarshallerCtx().registerClassName(req.platformId(), req.typeId(), req.typeName(), false);
+
+            return resultToResonse(new JdbcUpdateBinarySchemaResult(req.requestId(), res));
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to register new type [reqId=" + req.requestId() + ", req=" + req + ']', e);
+
+            return exceptionToResult(e);
+        }
+    }
+
+    /**
+     * Get marshaller context from connection context.
+     *
+     * @return Marshaller context.
+     */
+    private MarshallerContext getMarshallerCtx() {
+        return connCtx.kernalContext().marshallerContext();
+    }
+
+    /**
+     * Get binary context from connection context.
+     *
+     * @return Binary context.
+     */
+    private BinaryContext getBinaryCtx() {
+        return ((CacheObjectBinaryProcessorImpl)connCtx.kernalContext().cacheObjects()).binaryContext();
+    }
+
+    /**
      * @param req Request.
      * @return Response.
      */
@@ -1203,7 +1333,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param e Exception to convert.
      * @return resulting {@link JdbcResponse}.
      */
-    private JdbcResponse exceptionToResult(Exception e) {
+    private JdbcResponse exceptionToResult(Throwable e) {
         if (e instanceof QueryCancelledException)
             return new JdbcResponse(IgniteQueryErrorCode.QUERY_CANCELED, e.getMessage());
         if (e instanceof TransactionSerializationException)

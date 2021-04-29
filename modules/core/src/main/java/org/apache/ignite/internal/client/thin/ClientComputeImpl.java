@@ -17,38 +17,39 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import java.nio.ByteBuffer;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.client.ClientClusterGroup;
 import org.apache.ignite.client.ClientCompute;
+import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
-import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.client.IgniteClientFuture;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryByteBufferInputStream;
+import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.client.thin.ClientNotificationType.COMPUTE_TASK_FINISHED;
 import static org.apache.ignite.internal.client.thin.ClientOperation.COMPUTE_TASK_EXECUTE;
 import static org.apache.ignite.internal.client.thin.ClientOperation.RESOURCE_CLOSE;
 
 /**
  * Implementation of {@link ClientCompute}.
  */
-class ClientComputeImpl implements ClientCompute, NotificationListener {
+class ClientComputeImpl implements ClientCompute {
     /** No failover flag mask. */
     private static final byte NO_FAILOVER_FLAG_MASK = 0x01;
 
@@ -58,76 +59,56 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
     /** Channel. */
     private final ReliableChannel ch;
 
-    /** Binary marshaller. */
-    private final ClientBinaryMarshaller marsh;
-
     /** Utils for serialization/deserialization. */
     private final ClientUtils utils;
 
-    /** ClientCluster instance. */
-    private final ClientClusterImpl cluster;
+    /** Default cluster group. */
+    private final ClientClusterGroupImpl dfltGrp;
 
-    /** Active tasks. */
-    private final Map<ClientChannel, Map<Long, ClientComputeTask<Object>>> activeTasks = new ConcurrentHashMap<>();
-
-    /** Guard lock for active tasks. */
-    private final ReadWriteLock guard = new ReentrantReadWriteLock();
+    /** Active tasks count. */
+    private final AtomicInteger tasksCnt = new AtomicInteger();
 
     /** Constructor. */
-    ClientComputeImpl(ReliableChannel ch, ClientBinaryMarshaller marsh, ClientClusterImpl cluster) {
+    ClientComputeImpl(ReliableChannel ch, ClientBinaryMarshaller marsh, ClientClusterGroupImpl dfltGrp) {
         this.ch = ch;
-        this.marsh = marsh;
-        this.cluster = cluster;
+        this.dfltGrp = dfltGrp;
 
         utils = new ClientUtils(marsh);
-
-        ch.addNotificationListener(this);
-
-        ch.addChannelCloseListener(clientCh -> {
-            guard.writeLock().lock();
-
-            try {
-                Map<Long, ClientComputeTask<Object>> chTasks = activeTasks.remove(clientCh);
-
-                if (!F.isEmpty(chTasks)) {
-                    for (ClientComputeTask<?> task : chTasks.values())
-                        task.fut.onDone(new ClientException("Channel to server is closed"));
-                }
-            }
-            finally {
-                guard.writeLock().unlock();
-            }
-        });
     }
 
     /** {@inheritDoc} */
     @Override public ClientClusterGroup clusterGroup() {
-        return cluster;
+        return dfltGrp;
     }
 
     /** {@inheritDoc} */
     @Override public <T, R> R execute(String taskName, @Nullable T arg) throws ClientException, InterruptedException {
-        return execute0(taskName, arg, cluster, (byte)0, 0L);
+        return execute0(taskName, arg, dfltGrp, (byte)0, 0L);
     }
 
     /** {@inheritDoc} */
     @Override public <T, R> Future<R> executeAsync(String taskName, @Nullable T arg) throws ClientException {
-        return executeAsync0(taskName, arg, cluster, (byte)0, 0L);
+        return executeAsync0(taskName, arg, dfltGrp, (byte)0, 0L);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T, R> IgniteClientFuture<R> executeAsync2(String taskName, @Nullable T arg) throws ClientException {
+        return executeAsync0(taskName, arg, dfltGrp, (byte)0, 0L);
     }
 
     /** {@inheritDoc} */
     @Override public ClientCompute withTimeout(long timeout) {
-        return timeout == 0L ? this : new ClientComputeModificator(this, cluster, (byte)0, timeout);
+        return timeout == 0L ? this : new ClientComputeModificator(this, dfltGrp, (byte)0, timeout);
     }
 
     /** {@inheritDoc} */
     @Override public ClientCompute withNoFailover() {
-        return new ClientComputeModificator(this, cluster, NO_FAILOVER_FLAG_MASK, 0L);
+        return new ClientComputeModificator(this, dfltGrp, NO_FAILOVER_FLAG_MASK, 0L);
     }
 
     /** {@inheritDoc} */
     @Override public ClientCompute withNoResultCache() {
-        return new ClientComputeModificator(this, cluster, NO_RESULT_CACHE_FLAG_MASK, 0L);
+        return new ClientComputeModificator(this, dfltGrp, NO_RESULT_CACHE_FLAG_MASK, 0L);
     }
 
     /**
@@ -157,11 +138,23 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
             return (R)executeAsync0(taskName, arg, clusterGrp, flags, timeout).get();
         }
         catch (ExecutionException | InterruptedException e) {
-            if (e.getCause() instanceof ClientException)
-                throw (ClientException)e.getCause();
-            else
-                throw new ClientException(e);
+            throw convertException(e);
         }
+    }
+
+    /**
+     * Converts the exception.
+     *
+     * @param t Throwable.
+     * @return Resulting client exception.
+     */
+    private ClientException convertException(Throwable t) {
+        if (t instanceof ClientException)
+            return (ClientException) t;
+        else if (t.getCause() instanceof ClientException)
+            return (ClientException)t.getCause();
+        else
+            return new ClientException(t);
     }
 
     /**
@@ -171,14 +164,14 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
      * @param flags Flags.
      * @param timeout Timeout.
      */
-    private <T, R> Future<R> executeAsync0(
+    private <T, R> IgniteClientFuture<R> executeAsync0(
         String taskName,
         @Nullable T arg,
         ClientClusterGroupImpl clusterGrp,
         byte flags,
         long timeout
     ) throws ClientException {
-        Collection<UUID> nodeIds = clusterGrp == cluster ? null : clusterGrp.nodeIds();
+        Collection<UUID> nodeIds = clusterGrp.nodeIds();
 
         if (F.isEmpty(taskName))
             throw new ClientException("Task name can't be null or empty.");
@@ -186,30 +179,94 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
         if (nodeIds != null && nodeIds.isEmpty())
             throw new ClientException("Cluster group is empty.");
 
-        while (true) {
-            Consumer<PayloadOutputChannel> payloadWriter =
+        Consumer<PayloadOutputChannel> payloadWriter =
                 ch -> writeExecuteTaskRequest(ch, taskName, arg, nodeIds, flags, timeout);
 
-            Function<PayloadInputChannel, T2<ClientChannel, Long>> payloadReader =
-                ch -> new T2<>(ch.clientChannel(), ch.in().readLong());
+        Function<PayloadInputChannel, ClientComputeTask<R>> payloadReader = ch -> {
+            Long taskId = ch.in().readLong();
 
-            T2<ClientChannel, Long> taskParams;
+            ClientComputeTask<R> task = new ClientComputeTask<>(utils, ch.clientChannel(), taskId);
 
-            try {
-                taskParams = ch.service(COMPUTE_TASK_EXECUTE, payloadWriter, payloadReader);
+            ch.clientChannel().addNotificationListener(COMPUTE_TASK_FINISHED, taskId, task);
+
+            return task;
+        };
+
+        IgniteClientFuture<ClientComputeTask<R>> initFut = ch.serviceAsync(
+                COMPUTE_TASK_EXECUTE, payloadWriter, payloadReader);
+
+        CompletableFuture<R> resFut = new CompletableFuture<>();
+        AtomicReference<Object> cancellationToken = new AtomicReference<>();
+
+        initFut.handle((task, err) -> handleExecuteInitFuture(resFut, cancellationToken, task, err));
+
+        return new IgniteClientFutureImpl<>(resFut, mayInterruptIfRunning -> {
+            // 1. initFut has not completed - store cancellation flag.
+            // 2. initFut has completed - cancel compute future.
+            if (!cancellationToken.compareAndSet(null, mayInterruptIfRunning)) {
+                GridFutureAdapter<?> fut = (GridFutureAdapter<?>) cancellationToken.get();
+
+                if (!cancelGridFuture(fut, mayInterruptIfRunning))
+                    return false;
             }
-            catch (ClientServerError error) {
-                throw new ClientException(error.getMessage());
-            }
 
-            ClientComputeTask<Object> task = addTask(taskParams.get1(), taskParams.get2());
+            resFut.cancel(mayInterruptIfRunning);
 
-            if (task == null) // Channel is closed concurrently, retry with another channel.
-                continue;
+            return true;
+        });
+    }
 
-            task.fut.listen(f -> removeTask(task.ch, task.taskId));
+    /**
+     * Handles execute initialization.
+     *
+     * @param resFut Resulting future.
+     * @param cancellationToken Cancellation token holder.
+     * @param task Task.
+     * @param err Error
+     * @param <R> Result type.
+     * @return Null.
+     */
+    private <R> Object handleExecuteInitFuture(
+            CompletableFuture<R> resFut,
+            AtomicReference<Object> cancellationToken,
+            ClientComputeTask<R> task,
+            Throwable err) {
+        if (err != null)
+            resFut.completeExceptionally(new ClientException(err));
+        else {
+            if (!cancellationToken.compareAndSet(null, task.fut))
+                cancelGridFuture(task.fut, (Boolean) cancellationToken.get());
 
-            return new ClientFutureImpl<>((GridFutureAdapter<R>)task.fut);
+            tasksCnt.incrementAndGet();
+
+            task.fut.listen(f -> {
+                tasksCnt.decrementAndGet();
+
+                if (!f.isCancelled()) {
+                    if (f.error() == null)
+                        resFut.complete(f.result());
+                    else
+                        resFut.completeExceptionally(f.error());
+                }
+            });
+        }
+
+        return null;
+    }
+
+    /**
+     * Cancels grid future.
+     *
+     * @param fut Future.
+     * @param mayInterruptIfRunning true if the thread executing this task should be interrupted;
+     *                             otherwise, in-progress tasks are allowed to complete.
+     */
+    private static boolean cancelGridFuture(GridFutureAdapter<?> fut, Boolean mayInterruptIfRunning) {
+        try {
+            return mayInterruptIfRunning ? fut.cancel() : fut.onCancelled();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
     }
 
@@ -229,99 +286,31 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
                 "client not supported by server node (" + ch.clientChannel().serverNodeId() + ')');
         }
 
-        try (BinaryRawWriterEx w = new BinaryWriterExImpl(marsh.context(), ch.out(), null, null)) {
+        try (BinaryRawWriterEx w = utils.createBinaryWriter(ch.out())) {
             if (nodeIds == null) // Include all nodes.
                 w.writeInt(0);
             else {
                 w.writeInt(nodeIds.size());
 
-                for (UUID nodeId : nodeIds)
-                    w.writeUuid(nodeId);
+                for (UUID nodeId : nodeIds) {
+                    w.writeLong(nodeId.getMostSignificantBits());
+                    w.writeLong(nodeId.getLeastSignificantBits());
+                }
             }
 
             w.writeByte(flags);
             w.writeLong(timeout);
             w.writeString(taskName);
-            utils.writeObject(ch.out(), arg);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void acceptNotification(
-        ClientChannel ch,
-        ClientOperation op,
-        long rsrcId,
-        byte[] payload,
-        Exception err
-    ) {
-        if (op == ClientOperation.COMPUTE_TASK_FINISHED) {
-            Object res = payload == null ? null : utils.readObject(new BinaryHeapInputStream(payload), false);
-
-            ClientComputeTask<Object> task = removeTask(ch, rsrcId);
-
-            if (task != null) { // If channel is closed concurrently, task is already done with "channel closed" reason.
-                if (err == null)
-                    task.fut.onDone(res);
-                else
-                    task.fut.onDone(err);
-            }
+            w.writeObject(arg);
         }
     }
 
     /**
-     * @param ch Client channel.
-     * @param taskId Task id.
-     * @return Already registered task, new task if task wasn't registered before, or {@code null} if channel was
-     * closed concurrently.
+     * Gets count of active tasks started by client.
+     * Used only for tests.
      */
-    private ClientComputeTask<Object> addTask(ClientChannel ch, long taskId) {
-        guard.readLock().lock();
-
-        try {
-            // If channel is closed we should only get task if it was registered before, but not add new one.
-            boolean closed = ch.closed();
-
-            Map<Long, ClientComputeTask<Object>> chTasks = closed ? activeTasks.get(ch) :
-                activeTasks.computeIfAbsent(ch, c -> new ConcurrentHashMap<>());
-
-            if (chTasks == null)
-                return null;
-
-            return closed ? chTasks.get(taskId) :
-                chTasks.computeIfAbsent(taskId, t -> new ClientComputeTask<>(ch, taskId));
-        }
-        finally {
-            guard.readLock().unlock();
-        }
-    }
-
-    /**
-     * @param ch Client channel.
-     * @param taskId Task id.
-     */
-    private ClientComputeTask<Object> removeTask(ClientChannel ch, long taskId) {
-        Map<Long, ClientComputeTask<Object>> chTasks = activeTasks.get(ch);
-
-        if (!F.isEmpty(chTasks))
-            return chTasks.remove(taskId);
-
-        return null;
-    }
-
-    /**
-     * Gets tasks future for active tasks started by client.
-     *
-     * @return Map of active tasks keyed by their unique per client task ID.
-     */
-    Map<IgniteUuid, IgniteInternalFuture<?>> activeTaskFutures() {
-        Map<IgniteUuid, IgniteInternalFuture<?>> res = new HashMap<>();
-
-        for (Map.Entry<ClientChannel, Map<Long, ClientComputeTask<Object>>> chTasks : activeTasks.entrySet()) {
-            for (Map.Entry<Long, ClientComputeTask<Object>> task : chTasks.getValue().entrySet())
-                res.put(new IgniteUuid(chTasks.getKey().serverNodeId(), task.getKey()), task.getValue().fut);
-        }
-
-        return res;
+    int activeTasksCount() {
+        return tasksCnt.get();
     }
 
     /**
@@ -362,7 +351,12 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
         }
 
         /** {@inheritDoc} */
-        @Override public <T, R> Future<R> executeAsync(String taskName, @Nullable T arg) throws ClientException {
+        @Override public <T, R> IgniteClientFuture<R> executeAsync(String taskName, @Nullable T arg) throws ClientException {
+            return delegate.executeAsync0(taskName, arg, clusterGrp, flags, timeout);
+        }
+
+        /** {@inheritDoc} */
+        @Override public <T, R> IgniteClientFuture<R> executeAsync2(String taskName, @Nullable T arg) throws ClientException {
             return delegate.executeAsync0(taskName, arg, clusterGrp, flags, timeout);
         }
 
@@ -389,7 +383,7 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
      *
      * @param <R> Result type.
      */
-    private static class ClientComputeTask<R> {
+    private static class ClientComputeTask<R> implements NotificationListener {
         /** Client channel. */
         private final ClientChannel ch;
 
@@ -399,18 +393,31 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
         /** Future. */
         private final GridFutureAdapter<R> fut;
 
+        /** */
+        private final ClientUtils utils;
+
         /**
          * @param ch Client channel.
          * @param taskId Task id.
          */
-        private ClientComputeTask(ClientChannel ch, long taskId) {
+        private ClientComputeTask(ClientUtils utils, ClientChannel ch, Long taskId) {
+            this.utils = utils;
             this.ch = ch;
             this.taskId = taskId;
 
             fut = new GridFutureAdapter<R>() {
                 @Override public boolean cancel() {
                     if (onCancelled()) {
-                        ch.service(RESOURCE_CLOSE, req -> req.out().writeLong(taskId), null);
+                        try {
+                            ch.service(RESOURCE_CLOSE, req -> req.out().writeLong(taskId), null);
+                        }
+                        catch (ClientServerError e) {
+                            // Ignore "resource doesn't exist" error. The task can be completed concurrently on the
+                            // server, but we already complete future with "cancelled" state, so result will never be
+                            // received by a client.
+                            if (e.getCode() != ClientStatus.RESOURCE_DOES_NOT_EXIST)
+                                throw new ClientException(e);
+                        }
 
                         return true;
                     }
@@ -418,6 +425,30 @@ class ClientComputeImpl implements ClientCompute, NotificationListener {
                         return false;
                 }
             };
+        }
+
+        /** {@inheritDoc} */
+        @Override public void acceptNotification(ByteBuffer payload, Exception err) {
+            if (err == null) {
+                try {
+                    R res = payload == null ? null :
+                        utils.readObject(BinaryByteBufferInputStream.create(payload), false);
+
+                    fut.onDone(res);
+                }
+                catch (Throwable e) {
+                    fut.onDone(e);
+                }
+            }
+            else
+                fut.onDone(err);
+
+            ch.removeNotificationListener(COMPUTE_TASK_FINISHED, taskId);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onChannelClosed(Exception reason) {
+            fut.onDone(new ClientConnectionException("Connection to server is closed", reason));
         }
     }
 }

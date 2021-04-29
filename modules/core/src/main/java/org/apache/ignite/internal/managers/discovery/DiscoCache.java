@@ -141,7 +141,7 @@ public class DiscoCache {
         Map<UUID, ClusterNode> nodeMap,
         Set<UUID> alives0,
         @Nullable Map<UUID, Short> nodeIdToConsIdx,
-        @Nullable  Map<Short, UUID> consIdxToNodeId,
+        @Nullable Map<Short, UUID> consIdxToNodeId,
         IgniteProductVersion minNodeVer,
         IgniteProductVersion minSrvNodeVer
     ) {

@@ -69,7 +69,7 @@ public class VisorCacheLostPartitionsTaskArg extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException   {
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         cacheNames = U.readList(in);
         modifiedCaches = U.readString(in);
     }

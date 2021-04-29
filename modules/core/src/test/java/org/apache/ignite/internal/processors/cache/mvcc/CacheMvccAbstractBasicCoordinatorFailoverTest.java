@@ -462,7 +462,7 @@ public abstract class CacheMvccAbstractBasicCoordinatorFailoverTest extends Cach
         WriteMode writeMode) throws Exception {
         for (boolean readInTx : new boolean[]{false, true}) {
             for (int i = 1; i <= 3; i++) {
-                readInProgressCoordinatorFailsSimple(fromClient, i, readInTx,cfgC, readMode, writeMode);
+                readInProgressCoordinatorFailsSimple(fromClient, i, readInTx, cfgC, readMode, writeMode);
 
                 afterTest();
             }
@@ -795,7 +795,7 @@ public abstract class CacheMvccAbstractBasicCoordinatorFailoverTest extends Cach
             for (Thread t : stopThreads)
                 t.start();
         }
-        else  {
+        else {
             // We should stop the oldest node last.
             GridCachePartitionExchangeManager exch = ((IgniteEx)survivors.get(1)).context().cache().context().exchange();
 

@@ -114,6 +114,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             return GetComplexTypeHashCode(val, marsh, affinityKeyFieldIds);
         }
 
+        // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
         private static int GetComplexTypeHashCode<T>(T val, Marshaller marsh, IDictionary<int, int> affinityKeyFieldIds)
         {
             using (var stream = new BinaryHeapStream(128))

@@ -17,7 +17,11 @@
 
 package org.apache.ignite.ml.dataset.feature;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TreeMap;
 
 /**
  * Basic implementation of {@link Histogram} that implements also {@link DistributionComputer}.
@@ -56,9 +60,9 @@ public abstract class ObjectHistogram<T> implements Histogram<T, ObjectHistogram
         TreeMap<Integer, Double> res = new TreeMap<>();
 
         double accum = 0.0;
-        for (Integer bucket : hist.keySet()) {
-            accum += hist.get(bucket);
-            res.put(bucket, accum);
+        for (Map.Entry<Integer, Double> entry : hist.entrySet()) {
+            accum += entry.getValue();
+            res.put(entry.getKey(), accum);
         }
 
         return res;
@@ -67,7 +71,7 @@ public abstract class ObjectHistogram<T> implements Histogram<T, ObjectHistogram
     /** {@inheritDoc} */
     @Override public ObjectHistogram<T> plus(ObjectHistogram<T> other) {
         ObjectHistogram<T> res = newInstance();
-        addTo(this.hist, res.hist);
+        addTo(hist, res.hist);
         addTo(other.hist, res.hist);
         return res;
     }

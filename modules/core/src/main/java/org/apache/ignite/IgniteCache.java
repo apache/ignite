@@ -43,6 +43,7 @@ import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -56,6 +57,7 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -132,7 +134,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public IgniteCache<K, V> withNoRetries();
 
     /**
-     * Gets an instance of {@code IgniteCache} that will be allowed to execute cache operations (read, write)
+     * Gets an instance of {@code IgniteCache} that will be allowed to execute cache read operations
      * regardless of partition loss policy.
      *
      * @return Cache without partition loss protection.
@@ -397,6 +399,8 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return New lock instance associated with passed key.
      * @see Lock#lock()
      * @see Lock#tryLock(long, TimeUnit)
+     * @deprecated It is recommended to use {@link Ignite#reentrantLock(String, boolean, boolean, boolean)} instead.
+     *      This method will be removed in future releases.
      */
     public Lock lockAll(Collection<? extends K> keys);
 
@@ -407,7 +411,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * or access to persistent storage in any way.
      *
      * @param key Key to check.
-     * @param byCurrThread If {@code true} method will check that current thread owns a lock on this key, other vise
+     * @param byCurrThread If {@code true} method will check that current thread owns a lock on this key, otherwise
      *     will check that any thread on any node owns a lock on this key.
      * @return {@code True} if lock is owned by some node.
      */
@@ -1607,7 +1611,16 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     /**
      * Gets a collection of lost partition IDs.
      *
+     * This method provides a facility for fine-tuned handling of lost partitions.
+     * Once all lost partitions are considered recovered (for example, after the previously failed
+     * primary and backup nodes, that stored partition data in Ignite persistence, are booted)
+     * {@link Ignite#resetLostPartitions(Collection)} can used in order to clear {@code lost} flag
+     * making all partitions fully operational.
+     *
      * @return Lost partitions.
+     * @see PartitionLossPolicy
+     * @see EventType#EVT_CACHE_REBALANCE_PART_DATA_LOST
+     * @see Ignite#resetLostPartitions(Collection)
      */
     public Collection<Integer> lostPartitions();
 

@@ -45,6 +45,9 @@ public class ProtocolVersionFeature {
     /** Expiry policy feature. */
     public static final ProtocolVersionFeature EXPIRY_POLICY = new ProtocolVersionFeature(V1_6_0);
 
+    /** Cluster API (activation and WAL enable/disable) feature. */
+    public static final ProtocolVersionFeature CLUSTER_API = new ProtocolVersionFeature(V1_6_0);
+
     /** Bitmap features introduced. */
     public static final ProtocolVersionFeature BITMAP_FEATURES = new ProtocolVersionFeature(V1_7_0);
 

@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.processors.bulkload.pipeline;
 
-import org.apache.ignite.IgniteCheckedException;
-
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
  * A {@link PipelineBlock}, which splits input stream of char[] into lines using the specified {@link Pattern}

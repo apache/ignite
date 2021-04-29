@@ -87,7 +87,7 @@ public class RowCountTableStatisticsUsageTest extends TableStatisticsAbstractTes
      */
     @Test
     public void compareJoinsWithConditionsOnBothTables() {
-        String sql  = "SELECT COUNT(*) FROM t1 JOIN t2 ON t1.c = t2.c " +
+        String sql = "SELECT COUNT(*) FROM t1 JOIN t2 ON t1.c = t2.c " +
             "WHERE t1.b >= 0 AND t2.b >= 0";
 
         checkOptimalPlanChosenForDifferentJoinOrders(grid(0), sql, "small", "big");
@@ -98,7 +98,7 @@ public class RowCountTableStatisticsUsageTest extends TableStatisticsAbstractTes
      */
     @Test
     public void compareJoinsWithoutConditions() {
-        String sql  = "SELECT COUNT(*) FROM t1 JOIN t2 ON t1.c = t2.c";
+        String sql = "SELECT COUNT(*) FROM t1 JOIN t2 ON t1.c = t2.c";
 
         checkOptimalPlanChosenForDifferentJoinOrders(grid(0), sql, "big", "small");
     }
@@ -108,7 +108,7 @@ public class RowCountTableStatisticsUsageTest extends TableStatisticsAbstractTes
      */
     @Test
     public void compareJoinsConditionSingleTable() {
-        final String sql  = "SELECT * FROM t1 JOIN t2 ON t1.c = t2.c WHERE t1.b >= 0";
+        final String sql = "SELECT * FROM t1 JOIN t2 ON t1.c = t2.c WHERE t1.b >= 0";
 
         checkOptimalPlanChosenForDifferentJoinOrders(grid(0), sql, "big", "small");
     }
@@ -118,7 +118,7 @@ public class RowCountTableStatisticsUsageTest extends TableStatisticsAbstractTes
      */
     @Test
     public void compareJoinsThreeTablesNoConditions() {
-        String sql  = "SELECT * FROM t1 JOIN t2 ON t1.c = t2.c JOIN t3 ON t3.c = t2.c ";
+        String sql = "SELECT * FROM t1 JOIN t2 ON t1.c = t2.c JOIN t3 ON t3.c = t2.c ";
 
         checkOptimalPlanChosenForDifferentJoinOrders(grid(0), sql, "big", "med", "small");
         checkOptimalPlanChosenForDifferentJoinOrders(grid(0), sql, "small", "big", "med");
@@ -131,7 +131,7 @@ public class RowCountTableStatisticsUsageTest extends TableStatisticsAbstractTes
      */
     @Test
     public void compareJoinsThreeTablesConditionsOnAllTables() {
-        String sql  = "SELECT * FROM t1 JOIN t2 ON t1.c = t2.c JOIN t3 ON t3.c = t2.c " +
+        String sql = "SELECT * FROM t1 JOIN t2 ON t1.c = t2.c JOIN t3 ON t3.c = t2.c " +
             " WHERE t1.b >= 0 AND t2.b >= 0 AND t3.b >= 0";
 
         checkOptimalPlanChosenForDifferentJoinOrders(grid(0), sql, "big", "med", "small");
@@ -146,8 +146,8 @@ public class RowCountTableStatisticsUsageTest extends TableStatisticsAbstractTes
     @Test
     public void checkUpdateStatisticsOnTableSizeChange() {
         // t2 size is bigger than t1
-        String sql  = "SELECT COUNT(*) FROM t2 JOIN t1 ON t1.c = t2.c " +
-            "WHERE t1.b > " + 0  + " AND t2.b > " + 0;
+        String sql = "SELECT COUNT(*) FROM t2 JOIN t1 ON t1.c = t2.c " +
+            "WHERE t1.b > " + 0 + " AND t2.b > " + 0;
 
         checkOptimalPlanChosenForDifferentJoinOrders(grid(0), sql, "small", "big");
 
@@ -156,8 +156,8 @@ public class RowCountTableStatisticsUsageTest extends TableStatisticsAbstractTes
             runSql("INSERT INTO small(a, b, c) VALUES(" + i + "," + i + "," + i % 10 + ")");
 
         // t1 size is now bigger than t2
-        sql  = "SELECT COUNT(*) FROM t1 JOIN t2 ON t1.c = t2.c " +
-            "WHERE t1.b > " + 0  + " AND t2.b > " + 0;
+        sql = "SELECT COUNT(*) FROM t1 JOIN t2 ON t1.c = t2.c " +
+            "WHERE t1.b > " + 0 + " AND t2.b > " + 0;
 
         checkOptimalPlanChosenForDifferentJoinOrders(grid(0), sql, "small", "big");
     }
@@ -167,7 +167,7 @@ public class RowCountTableStatisticsUsageTest extends TableStatisticsAbstractTes
      */
     @Test
     public void testStatisticsAfterRebalance() throws Exception {
-        String sql  = "SELECT COUNT(*) FROM t1 JOIN t2 ON t1.c = t2.c";
+        String sql = "SELECT COUNT(*) FROM t1 JOIN t2 ON t1.c = t2.c";
 
         checkOptimalPlanChosenForDifferentJoinOrders(grid(0), sql, "big", "small");
 

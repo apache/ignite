@@ -17,17 +17,19 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotOperation;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.LOCK_RELEASED;
@@ -75,7 +77,10 @@ public class CheckpointProgressImpl implements CheckpointProgress {
     /**
      * @param cpFreq Timeout until next checkpoint.
      */
-    public CheckpointProgressImpl(long cpFreq) {
+    CheckpointProgressImpl(long cpFreq) {
+        // Avoid overflow on nextCpNanos.
+        cpFreq = Math.min(TimeUnit.DAYS.toMillis(365), cpFreq);
+
         nextCpNanos = System.nanoTime() + U.millisToNanos(cpFreq);
     }
 
@@ -153,7 +158,7 @@ public class CheckpointProgressImpl implements CheckpointProgress {
     /**
      * @return Destroy queue.
      */
-    public PartitionDestroyQueue getDestroyQueue() {
+    @Override public PartitionDestroyQueue getDestroyQueue() {
         return destroyQueue;
     }
 
@@ -167,21 +172,19 @@ public class CheckpointProgressImpl implements CheckpointProgress {
     /**
      * @return Scheduled time of checkpoint.
      */
-    public long nextCopyNanos() {
+    public long nextCpNanos() {
         return nextCpNanos;
     }
 
     /**
      * @param nextCpNanos New scheduled time of checkpoint.
      */
-    public void nextCopyNanos(long nextCpNanos) {
+    public void nextCpNanos(long nextCpNanos) {
         this.nextCpNanos = nextCpNanos;
     }
 
-    /**
-     * @return Wakeup reason.
-     */
-    public String reason() {
+    /** {@inheritDoc} */
+    @Override public String reason() {
         return reason;
     }
 
@@ -267,5 +270,24 @@ public class CheckpointProgressImpl implements CheckpointProgress {
         writtenPagesCntr = new AtomicInteger();
         syncedPagesCntr = new AtomicInteger();
         evictedPagesCntr = new AtomicInteger();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void clearCounters() {
+        currCheckpointPagesCnt = 0;
+
+        writtenPagesCntr = null;
+        syncedPagesCntr = null;
+        evictedPagesCntr = null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onStateChanged(CheckpointState state, Runnable clo) {
+        GridFutureAdapter<?> fut0 = futureFor(state);
+
+        fut0.listen((IgniteInClosure<IgniteInternalFuture>)fut -> {
+            if (fut.error() == null)
+                clo.run();
+        });
     }
 }

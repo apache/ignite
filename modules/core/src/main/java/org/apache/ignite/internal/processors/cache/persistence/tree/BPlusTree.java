@@ -59,6 +59,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusLeaf
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.LongListReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
@@ -90,6 +91,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlus
 import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree.Result.NOT_FOUND;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree.Result.RETRY;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree.Result.RETRY_ROOT;
+import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver.DEFAULT_PAGE_IO_RESOLVER;
 
 /**
  * Abstract B+Tree.
@@ -102,6 +104,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /** Wrapper for tree pages operations. Noop by default. Override for test purposes. */
     public static PageHandlerWrapper<Result> testHndWrapper = null;
 
+    /** */
+    public static final ThreadLocal<Boolean> suspendFailureDiagnostic = ThreadLocal.withInitial(() -> false);
+
     /** Destroy msg. */
     public static final String CONC_DESTROY_MSG = "Tree is being concurrently destroyed: ";
 
@@ -109,7 +114,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     private static volatile boolean interrupted;
 
     /** */
-    private static final int IGNITE_BPLUS_TREE_LOCK_RETRIES_DEFAULT = 1000;
+    public static final int IGNITE_BPLUS_TREE_LOCK_RETRIES_DEFAULT = 1000;
 
     /** */
     private static final int LOCK_RETRIES = IgniteSystemProperties.getInteger(
@@ -147,6 +152,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
     /** Failure processor. */
     private final FailureProcessor failureProcessor;
+
+    /** Flag for enabling single-threaded append-only tree creation. */
+    private boolean sequentialWriteOptsEnabled;
 
     /** */
     private final GridTreePrinter<Long> treePrinter = new GridTreePrinter<Long>() {
@@ -371,7 +379,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     public class Replace extends GetPageHandler<Put> {
         /** {@inheritDoc} */
         @Override public Result run0(long pageId, long page, long pageAddr, BPlusIO<L> io, Put p, int lvl)
-            throws IgniteCheckedException  {
+            throws IgniteCheckedException {
             // Check the triangle invariant.
             if (io.getForward(pageAddr) != p.fwdId)
                 return RETRY;
@@ -751,6 +759,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param reuseList Reuse list.
      * @param innerIos Inner IO versions.
      * @param leafIos Leaf IO versions.
+     * @param pageFlag Default flag value for allocated pages.
      * @param failureProcessor if the tree is corrupted.
      * @throws IgniteCheckedException If failed.
      */
@@ -765,6 +774,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         ReuseList reuseList,
         IOVersions<? extends BPlusInnerIO<L>> innerIos,
         IOVersions<? extends BPlusLeafIO<L>> leafIos,
+        byte pageFlag,
         @Nullable FailureProcessor failureProcessor,
         @Nullable PageLockListener lockLsnr
     ) throws IgniteCheckedException {
@@ -777,8 +787,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             globalRmvId,
             metaPageId,
             reuseList,
+            pageFlag,
             failureProcessor,
-            lockLsnr
+            lockLsnr,
+            DEFAULT_PAGE_IO_RESOLVER
         );
 
         setIos(innerIos, leafIos);
@@ -793,6 +805,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param globalRmvId Remove ID.
      * @param metaPageId Meta page ID.
      * @param reuseList Reuse list.
+     * @param pageFlag Default flag value for allocated pages.
      * @param failureProcessor if the tree is corrupted.
      * @throws IgniteCheckedException If failed.
      */
@@ -805,10 +818,12 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         AtomicLong globalRmvId,
         long metaPageId,
         ReuseList reuseList,
+        byte pageFlag,
         @Nullable FailureProcessor failureProcessor,
-        @Nullable PageLockListener lsnr
+        @Nullable PageLockListener lsnr,
+        PageIoResolver pageIoRslvr
     ) throws IgniteCheckedException {
-        super(cacheGrpId, grpName, pageMem, wal, lsnr);
+        super(cacheGrpId, grpName, pageMem, wal, lsnr, pageIoRslvr, pageFlag);
 
         assert !F.isEmpty(name);
 
@@ -869,6 +884,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      */
     public final String getName() {
         return name;
+    }
+
+    /** Flag for enabling single-threaded append-only tree creation. */
+    public void enableSequentialWriteMode() {
+        sequentialWriteOptsEnabled = true;
     }
 
     /**
@@ -1031,7 +1051,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         long firstPageId;
 
         long metaPage = acquirePage(metaPageId);
-        try  {
+        try {
             firstPageId = getFirstPageId(metaPageId, metaPage, 0); // Level 0 is always at the bottom.
         }
         finally {
@@ -1385,6 +1405,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @throws IgniteCheckedException If failed.
      */
     private void doFind(Get g) throws IgniteCheckedException {
+        assert !sequentialWriteOptsEnabled;
+
         for (;;) { // Go down with retries.
             g.init();
 
@@ -1498,7 +1520,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         int rootLvl;
 
         long metaPage = acquirePage(metaPageId);
-        try  {
+        try {
             rootLvl = getRootLevel();
 
             if (rootLvl < 0)
@@ -1604,7 +1626,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                     return io.getLookupRow(this, pageAddr, cnt - 1);
                 }
 
-                long rightId = inner(io).getLeft(pageAddr, cnt);// The same as getRight(cnt - 1), but good for routing pages.
+                long rightId = inner(io).getLeft(pageAddr, cnt); // The same as getRight(cnt - 1), but good for routing pages.
 
                 return getGreatestRowInSubTree(rightId);
             }
@@ -2041,6 +2063,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @throws IgniteCheckedException If failed.
      */
     private T doRemove(L row, boolean needOld) throws IgniteCheckedException {
+        assert !sequentialWriteOptsEnabled;
+
         checkDestroyed();
 
         Remove r = new Remove(row, needOld);
@@ -2521,7 +2545,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
         long metaPage = acquirePage(metaPageId);
 
-        try  {
+        try {
             long metaPageAddr = writeLock(metaPageId, metaPage); // No checks, we must be out of use.
 
             lockedPages.push(new GridTuple3<>(metaPageId, metaPage, metaPageAddr));
@@ -2698,7 +2722,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         long pageId, long page, long pageAddr, BPlusIO io, long fwdId, long fwdBuf, int idx
     ) throws IgniteCheckedException {
         int cnt = io.getCount(pageAddr);
-        int mid = cnt >>> 1;
+
+        int mid = sequentialWriteOptsEnabled ? (int)(cnt * 0.85) : cnt >>> 1;
 
         boolean res = false;
 
@@ -2754,7 +2779,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @return Result code.
      * @throws IgniteCheckedException If failed.
      */
-    private Result putDown(final Put p, final long pageId, final long fwdId, final int lvl)
+    private Result putDown(final Put p, final long pageId, final long fwdId, int lvl)
         throws IgniteCheckedException {
         assert lvl >= 0 : lvl;
 
@@ -3115,7 +3140,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param x Implementation specific argument.
          * @param findLast Ignore row passed, find last row
          */
-        private GetOne(L row, TreeRowClosure<L,T> c, Object x, boolean findLast) {
+        private GetOne(L row, TreeRowClosure<L, T> c, Object x, boolean findLast) {
             super(row, findLast);
 
             this.x = x;
@@ -3128,7 +3153,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             if (lvl != 0 && !canGetRowFromInner)
                 return false;
 
-            row = c == null || c.apply(BPlusTree.this, io,pageAddr, idx) ? getRow(io, pageAddr, idx, x) : null;
+            row = c == null || c.apply(BPlusTree.this, io, pageAddr, idx) ? getRow(io, pageAddr, idx, x) : null;
 
             return true;
         }
@@ -4114,7 +4139,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             if (isRemove())
                 return ((Remove)op).tryRemoveFromLeaf(pageId, page, backId, fwdId, lvl);
 
-            return  ((Put)op).tryReplace(pageId, page, fwdId, lvl);
+            return ((Put)op).tryReplace(pageId, page, fwdId, lvl);
         }
 
         /**
@@ -5289,6 +5314,12 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         throws IgniteCheckedException {
         assert row != null;
 
+        if (sequentialWriteOptsEnabled) {
+            assert io.getForward(buf) == 0L;
+
+            return -cnt - 1;
+        }
+
         int high = cnt - 1;
 
         while (low <= high) {
@@ -6117,7 +6148,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param e Exception.
      */
     protected void processFailure(FailureType failureType, Throwable e) {
-        if (failureProcessor != null)
+        if (failureProcessor != null && !suspendFailureDiagnostic.get())
             failureProcessor.process(new FailureContext(failureType, e));
     }
 

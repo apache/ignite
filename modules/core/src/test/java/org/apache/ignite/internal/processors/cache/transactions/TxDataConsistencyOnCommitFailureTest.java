@@ -187,7 +187,7 @@ public class TxDataConsistencyOnCommitFailureTest extends GridCommonAbstractTest
             }
         }).when(mockTm).
             newTx(locTx.implicit(), locTx.implicitSingle(), null, locTx.concurrency(),
-                locTx.isolation(), locTx.timeout(), locTx.storeEnabled(), null, locTx.size(), locTx.label());
+                locTx.isolation(), locTx.timeout(), locTx.storeEnabled(), null, locTx.size(), locTx.label(), false);
 
         ctx.setTxManager(mockTm);
     }
@@ -202,10 +202,6 @@ public class TxDataConsistencyOnCommitFailureTest extends GridCommonAbstractTest
 
     /** */
     private static class MockGridNearTxLocal extends GridNearTxLocal {
-        /** Empty constructor. */
-        public MockGridNearTxLocal() {
-        }
-
         /**
          * @param ctx Context.
          * @param implicit Implicit.
@@ -228,7 +224,7 @@ public class TxDataConsistencyOnCommitFailureTest extends GridCommonAbstractTest
             boolean storeEnabled, Boolean mvccOp, int txSize, @Nullable UUID subjId, int taskNameHash, @Nullable String lb,
             IgniteTxManager.TxDumpsThrottling txDumpsThrottling) {
             super(ctx, implicit, implicitSingle, sys, plc, concurrency, isolation, timeout, storeEnabled, mvccOp,
-                txSize, subjId, taskNameHash, lb, txDumpsThrottling);
+                txSize, subjId, taskNameHash, lb, txDumpsThrottling, false);
         }
 
         /** {@inheritDoc} */

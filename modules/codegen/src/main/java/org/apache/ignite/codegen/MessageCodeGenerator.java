@@ -892,7 +892,7 @@ public class MessageCodeGenerator {
 
         ClassLoader ldr = getClass().getClassLoader();
 
-        for (URL url :  IgniteUtils.classLoaderUrls(ldr)) {
+        for (URL url : IgniteUtils.classLoaderUrls(ldr)) {
             File file = new File(url.toURI());
 
             int prefixLen = file.getPath().length() + 1;

@@ -40,6 +40,7 @@ import static org.apache.ignite.internal.sql.SqlKeyword.SCAN;
 import static org.apache.ignite.internal.sql.SqlKeyword.SERVICE;
 import static org.apache.ignite.internal.sql.SqlKeyword.TRANSACTION;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
+import static org.apache.ignite.util.KillCommandsTests.PAGES_CNT;
 import static org.apache.ignite.util.KillCommandsTests.PAGE_SZ;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelContinuousQuery;
@@ -51,7 +52,7 @@ import static org.apache.ignite.util.KillCommandsTests.doTestScanQueryCancel;
 /** Tests cancel of user created entities via SQL. */
 public class KillCommandsSQLTest extends GridCommonAbstractTest {
     /** */
-    public static final int  NODES_CNT = 3;
+    public static final int NODES_CNT = 3;
 
     /** */
     public static final String KILL_SQL_QRY = KILL + " " + QUERY;
@@ -98,7 +99,9 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
             new CacheConfiguration<>(DEFAULT_CACHE_NAME).setIndexedTypes(Integer.class, Integer.class)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
-        for (int i = 0; i < PAGE_SZ * PAGE_SZ; i++)
+        // There must be enough cache entries to keep scan query cursor opened.
+        // Cursor may be concurrently closed when all the data retrieved.
+        for (int i = 0; i < PAGES_CNT * PAGE_SZ; i++)
             cache.put(i, i);
     }
 

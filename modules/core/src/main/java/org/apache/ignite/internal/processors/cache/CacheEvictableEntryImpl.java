@@ -193,7 +193,7 @@ public class CacheEvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
 
     /** {@inheritDoc} */
     @Override public <T> boolean replaceMeta(T curVal, T newVal) {
-        return cached.replaceMeta(META_KEY,curVal, newVal);
+        return cached.replaceMeta(META_KEY, curVal, newVal);
     }
 
     /** {@inheritDoc} */

@@ -41,6 +41,7 @@ public class CacheFreeList extends AbstractFreeList<CacheDataRow> {
      * @param wal Wal.
      * @param metaPageId Meta page id.
      * @param initNew Initialize new.
+     * @param pageFlag Default flag value for allocated pages.
      */
     public CacheFreeList(
         int cacheId,
@@ -52,7 +53,8 @@ public class CacheFreeList extends AbstractFreeList<CacheDataRow> {
         boolean initNew,
         PageLockListener lockLsnr,
         GridKernalContext ctx,
-        AtomicLong pageListCacheLimit
+        AtomicLong pageListCacheLimit,
+        byte pageFlag
     ) throws IgniteCheckedException {
         super(
             cacheId,
@@ -65,7 +67,8 @@ public class CacheFreeList extends AbstractFreeList<CacheDataRow> {
             initNew,
             lockLsnr,
             ctx,
-            pageListCacheLimit
+            pageListCacheLimit,
+            pageFlag
         );
     }
 

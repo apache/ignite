@@ -1,0 +1,77 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Updating Trained Models
+
+Updating Already Trained Models in Apache Ignite
+
+The model updating interface in Ignite ML provides relearning of an already trained model on a new portion of data using the state of the model trained earlier. This interface is represented in the DatasetTrainer class and it repeats the training interface with an already learned model as the first parameter:
+
+* M update (M mdl, DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor).
+* M update (M mdl, Ignite ignite, IgniteCache<K, V> cache, IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor).
+* M update (M mdl, Ignite ignite, IgniteCache<K, V> cache, IgniteBiPredicate<K, V> filter, IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor).
+*   M update(M mdl, Map<K, V> data, int parts, IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor).
+*  M update (M mdl, Map<K, V> data, IgniteBiPredicate<K, V> filter, int parts, IgniteBiFunction<K, V, Vector> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor).
+
+The interface brings online learning and online batch learning. Online learning means that you can train a model and when you get a new example for learning, such as clicks on a website, you can update the model as if the model were trained on this example too. Batch online learning requires a batch of examples instead of one training example for model update. Some models allow both update strategies, some allow only batch updating. It depends upon the learning algorithm. Further details of model update capabilities in terms of online and batch online learning can be found below.
+
+[NOTE]
+====
+The new portion of data should be compatible with the first trainer’s parameters and previous dataset that was used for previous pieces of training in terms of feature vector size and feature value distributions. For example, if you train an ANN model then you should provide the trainer with distance measure and candidates parameter count as at the first learning stage. If you update k-means then the new dataset should contain at least k-rows.
+====
+
+Each model has a special implementation of this interface. Read the next section to get more information about the updating process for each algorithm.
+
+
+== KMeans
+
+Model updating takes already learned centroids and updates them by new rows. We recommend to use batch online learning for this model. First, the dataset should have a size equal to the k-value at least. Second, a dataset with a small number of rows can move centroids to invalid positions.
+
+== KNN
+
+Model updating just adds a new dataset to the old dataset. In this case, model updating isn’t restricted.
+
+== ANN
+
+As in the case of KNN, a new trainer should provide the same distance measure and k-value. Those parameters are important because internally ANN use KMeans and statistics over centroids provided by KMeans. During an update, the trainer gets statistics over centroids from the last learning and updates it with new observations. From this point of view, ANN allows “mini-batch” online learning where batch size is equal to the k-parameter.
+
+== Neural Network (NN)
+
+NN updating just gets current neural network state and updates it according to the gradient of error on a new dataset. In this case the NN requires only feature vector compatibility between different datasets.
+
+== Logistic Regression
+
+Logistic regression inherits all restrictions from the neural network trainer because it uses perceptron internally.
+
+== Linear Regression
+
+The LinearRegressionSGD trainer inherits all restrictions from the neural network trainer. LinearRegressionLSQRTrainer restores state from the last learning and uses it as a first approximation in learning on a new dataset. In this way, LinearRegressionLSQRTrainer also requires only feature vectors compatibility.
+
+== SVM
+
+SVM trainer uses the state of a learned model as first approximation during a training process. From this point of view, the algorithm only requires feature vectors compatibility.
+
+== Decision Tree
+
+There is no correct implementation for decision tree updating. Updating learns a new model on a given dataset.
+
+== GDB
+
+GDB trainer updating gets already learned models from composition and tries to minimize the error gradient on a given dataset through learning of new models predicting gradient. It also uses a convergence checker and if there is no large error on a new dataset then GDB skips the update stage. From this point of view, GDB requires only feature vector compatibility.
+
+NOTE: Every update can increase the model composition size. All models depend upon each other. So, frequent updating based upon small datasets can produce an enormous model that requires a lot of memory.
+
+== Random Forest (RF)
+
+The RF trainer just learns new decision trees on a given dataset and adds them to an already learned composition. In this way, RF requires feature vector compatibility and the dataset should have a size bigger than one element because a decision tree cannot be trained on such a small dataset. In contrast to GDB models in a trained composition, RF models aren’t dependent upon each other and if the composition is too big then a user can manually remove some models.

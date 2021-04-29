@@ -214,7 +214,7 @@ public class TcpDiscoveryNodeJoinAndFailureTest extends GridCommonAbstractTest {
 
         specialIpFinder0 = new TcpDiscoveryVmIpFinder(false);
 
-        ((TcpDiscoveryVmIpFinder)specialIpFinder0).setAddresses(Arrays.asList("127.0.0.1:47501","127.0.0.1:47503"));
+        ((TcpDiscoveryVmIpFinder)specialIpFinder0).setAddresses(Arrays.asList("127.0.0.1:47501", "127.0.0.1:47503"));
 
         specialIpFinder1 = new TcpDiscoveryVmIpFinder(false);
 

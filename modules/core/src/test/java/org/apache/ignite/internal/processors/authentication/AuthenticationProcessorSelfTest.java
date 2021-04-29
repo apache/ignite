@@ -524,7 +524,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
             startClientGrid(CLI_NODE);
 
             for (int i = 0; i < NODES_COUNT; ++i) {
-                AuthorizationContext  actx = grid(i).context().authentication()
+                AuthorizationContext actx = grid(i).context().authentication()
                     .authenticate("ignite", "ignite");
 
                 assertNotNull(actx);

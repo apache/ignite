@@ -1,0 +1,65 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Hyper-parameter tuning
+
+In machine learning, hyperparameter optimization or tuning is the problem of choosing a set of optimal hyperparameters for a learning algorithm. A hyperparameter is a parameter whose value is used to control the learning process. By contrast, the values of other parameters (typically node weights) are learned.
+
+In Apache Ignite ML you could tune the model by changing of hyper-parameters (preprocessor and trainer's hyper-parameters).
+
+The main object to keep the all possible values of hyper-parameters is the ParamGrid object.
+
+
+[source, java]
+----
+DecisionTreeClassificationTrainer trainerCV = new DecisionTreeClassificationTrainer();
+
+ParamGrid paramGrid = new ParamGrid()
+    .addHyperParam("maxDeep", trainerCV::withMaxDeep,
+                   new Double[] {1.0, 2.0, 3.0, 4.0, 5.0, 10.0})
+    .addHyperParam("minImpurityDecrease", trainerCV::withMinImpurityDecrease,
+                   new Double[] {0.0, 0.25, 0.5});
+----
+
+There are a few approaches to find the optimal set of hyper-parameters:
+
+* *BruteForce (GridSearch)* - The traditional way of performing hyperparameter optimization has been grid search, or a parameter sweep, which is simply an exhaustive searching through a manually specified subset of the hyperparameter space of a learning algorithm.
+* *Random search* - It replaces the exhaustive enumeration of all combinations by selecting them randomly.
+* *Evolutionary optimization* - Evolutionary optimization is a methodology for the global optimization of noisy black-box functions. In hyperparameter optimization, evolutionary optimization uses evolutionary algorithms to search the space of hyperparameters for a given algorithm.
+
+The Random Search ParamGrid is could be set up as follows:
+
+
+[source, java]
+----
+ParamGrid paramGrid = new ParamGrid()
+    .withParameterSearchStrategy(
+         new RandomStrategy()
+             .withMaxTries(10)
+             .withSeed(12L))
+    .addHyperParam("p", normalizationTrainer::withP,
+                   new Double[] {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0})
+    .addHyperParam("maxDeep", trainerCV::withMaxDeep,
+                   new Double[] {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0})
+    .addHyperParam("minImpurityDecrease", trainerCV::withMinImpurityDecrease,
+                   new Double[] {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1.0});
+----
+
+
+[TIP]
+====
+Performance Tip:
+
+The GridSearch (BruteForce) and Evolutionary optimization methods could be easily parallelized because all training runs are independent from each other.
+====

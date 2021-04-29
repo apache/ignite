@@ -47,7 +47,6 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteEncryption;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteLogger;
@@ -57,6 +56,7 @@ import org.apache.ignite.IgniteScheduler;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.IgniteSet;
+import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.Ignition;
@@ -80,7 +80,6 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.hadoop.Hadoop;
 import org.apache.ignite.internal.util.GridJavaProcess;
 import org.apache.ignite.internal.util.lang.IgnitePredicateX;
 import org.apache.ignite.internal.util.typedef.G;
@@ -97,7 +96,9 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.spi.tracing.TracingConfigurationManager;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -127,7 +128,7 @@ public class IgniteProcessProxy implements IgniteEx {
     private final transient IgniteLogger log;
 
     /** Grid id. */
-    private final UUID id = UUID.randomUUID();
+    private final UUID id;
 
     /**
      * @param cfg Configuration.
@@ -167,6 +168,7 @@ public class IgniteProcessProxy implements IgniteEx {
     )
         throws Exception {
         this.cfg = cfg;
+        this.id = cfg.getNodeId() == null ? UUID.randomUUID() : cfg.getNodeId();
         this.locJvmGrid = locJvmGrid;
         this.log = logger(log, "jvm-" + id.toString().substring(0, id.toString().indexOf('-')));
 
@@ -501,16 +503,6 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFileSystem igfsx(String name) {
-        throw new UnsupportedOperationException("Operation isn't supported yet.");
-    }
-
-    /** {@inheritDoc} */
-    @Override public Hadoop hadoop() {
-        throw new UnsupportedOperationException("Operation isn't supported yet.");
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteClusterEx cluster() {
         return new IgniteClusterProcessProxy(this);
     }
@@ -646,7 +638,7 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Override  public <K, V> IgniteCache<K, V> createNearCache(
+    @Override public <K, V> IgniteCache<K, V> createNearCache(
         @Nullable String cacheName,
         NearCacheConfiguration<K, V> nearCfg)
     {
@@ -701,17 +693,7 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFileSystem fileSystem(String name) {
-        throw new UnsupportedOperationException("Operation isn't supported yet.");
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<IgniteFileSystem> fileSystems() {
-        throw new UnsupportedOperationException("Operation isn't supported yet.");
-    }
-
-    /** {@inheritDoc} */
-    @Override  public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create)
+    @Override public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create)
         throws IgniteException {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
@@ -746,7 +728,7 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Override  public <T, S> IgniteAtomicStamped<T, S> atomicStamped(
+    @Override public <T, S> IgniteAtomicStamped<T, S> atomicStamped(
         String name,
         @Nullable T initVal,
         @Nullable S initStamp,
@@ -826,6 +808,11 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteSnapshot snapshot() {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
     @Override public Collection<MemoryMetrics> memoryMetrics() {
         return DataRegionMetricsAdapter.collectionOf(dataRegionMetrics());
     }
@@ -838,6 +825,11 @@ public class IgniteProcessProxy implements IgniteEx {
     /** {@inheritDoc} */
     @Override public PersistenceMetrics persistentStoreMetrics() {
         return DataStorageMetricsAdapter.valueOf(dataStorageMetrics());
+    }
+
+    /** {@inheritDoc} */
+    @Override public @NotNull TracingConfigurationManager tracingConfiguration() {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
     /** {@inheritDoc} */

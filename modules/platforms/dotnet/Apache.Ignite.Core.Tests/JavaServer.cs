@@ -18,14 +18,13 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System;
-    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Text.RegularExpressions;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Unmanaged;
-    using Apache.Ignite.Core.Tests.Process;
+    using Apache.Ignite.Core.Impl.Unmanaged.Jni;
 
     /// <summary>
     /// Starts Java server nodes.
@@ -40,7 +39,7 @@ namespace Apache.Ignite.Core.Tests
 
         /** Apache Ignite artifact group ID. */
         public const string GroupIdIgnite = "org.apache.ignite";
-        
+
         /** Maven command to execute the main class. */
         private const string MavenCommandExec = "compile exec:java -D\"exec.mainClass\"=\"Runner\"";
 
@@ -65,48 +64,47 @@ namespace Apache.Ignite.Core.Tests
 
             var pomWrapper =
                 ReplaceIgniteVersionInPomFile(groupId, version, Path.Combine(JavaServerSourcePath, "pom.xml"));
-            
-            var process = new System.Diagnostics.Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = Os.IsWindows ? "cmd.exe" : "/bin/bash",
-                    Arguments = Os.IsWindows
-                        ? string.Format("/c \"{0} {1}\"", MavenPath, MavenCommandExec)
-                        : string.Format("-c \"{0} {1}\"", MavenPath, MavenCommandExec.Replace("\"", "\\\"")),
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    WorkingDirectory = JavaServerSourcePath,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true
-                }
-            };
 
-            process.Start();
-            
-            var processWrapper = new DisposeAction(() =>
+            EnsureJvmCreated();
+
+            var time = DateTime.Now;
+
+            TestUtilsJni.StartProcess(
+                file: Os.IsWindows ? "cmd.exe" : "/bin/bash",
+                arg1: Os.IsWindows ? "/c" : "-c",
+                arg2: string.Format("{0} {1}", MavenPath, MavenCommandExec),
+                workDir: JavaServerSourcePath,
+                waitForOutput: "Ignite node started OK");
+
+            // Java can not end process tree on Windows - detect the process manually and use taskkill.
+            var serverProc = Os.IsWindows
+                ? System.Diagnostics.Process
+                    .GetProcesses()
+                    .Single(p => p.ProcessName == "java" && p.StartTime > time)
+                : null;
+
+            return new DisposeAction(() =>
             {
-                process.KillProcessTree();
+                if (serverProc != null)
+                {
+                    serverProc.KillProcessTree();
+                }
+
+                TestUtilsJni.DestroyProcess();
                 pomWrapper.Dispose();
             });
+        }
 
-            try
+        /// <summary>
+        /// Ensures that JVM is created.
+        /// When corresponding test runs individually we have to start/stop Ignite node to create the JVM,
+        /// otherwise it already exists.
+        /// </summary>
+        private static void EnsureJvmCreated()
+        {
+            if (Jvm.Get(ignoreMissing: true) == null)
             {
-                var listDataReader = new ListDataReader();
-                process.AttachProcessConsoleReader(listDataReader, new IgniteProcessConsoleOutputReader());
-
-                // Wait for node to come up with a thin client connection.
-                if (WaitForStart())
-                {
-                    return processWrapper;
-                }
-
-                throw new Exception("Failed to start Java node: " + string.Join(",", listDataReader.GetOutput()));
-            }
-            catch (Exception)
-            {
-                processWrapper.Dispose();
-                throw;
+                Ignition.Start(TestUtils.GetTestConfiguration()).Dispose();
             }
         }
 
@@ -117,17 +115,17 @@ namespace Apache.Ignite.Core.Tests
         {
             var pomContent = File.ReadAllText(pomFile);
             var originalPomContent = pomContent;
-            
+
             pomContent = Regex.Replace(pomContent,
                 @"<version>\d+\.\d+\.\d+</version>",
                 string.Format("<version>{0}</version>", version));
-            
+
             pomContent = Regex.Replace(pomContent,
                 @"<groupId>org.*?</groupId>",
                 string.Format("<groupId>{0}</groupId>", groupId));
-            
+
             File.WriteAllText(pomFile, pomContent);
-            
+
             return new DisposeAction(() => File.WriteAllText(pomFile, originalPomContent));
         }
 
@@ -136,40 +134,18 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         public static IgniteClientConfiguration GetClientConfiguration()
         {
-            return new IgniteClientConfiguration("127.0.0.1:" + ClientPort);
+            var endpoint = string.Format("127.0.0.1:{0}..{1}", ClientPort, ClientPort + 5);
+
+            return new IgniteClientConfiguration(endpoint);
         }
 
         /// <summary>
-        /// Waits for server node to fully start.
-        /// </summary>
-        private static bool WaitForStart()
-        {
-            return TestUtils.WaitForCondition(() =>
-            {
-                try
-                {
-                    // Port 10890 is set in Runner.java
-                    using (var client = Ignition.StartClient(GetClientConfiguration()))
-                    {
-                        // Create cache to ensure valid grid state.
-                        client.GetOrCreateCache<int, int>(typeof(JavaServer).FullName);
-                        return true;
-                    }
-                }
-                catch (Exception)
-                {
-                    return false;
-                }
-            }, 180000);
-        }
-
-        /// <summary>
-        /// Gets maven path. 
+        /// Gets maven path.
         /// </summary>
         private static string GetMaven()
         {
             var extensions = Os.IsWindows ? new[] {".cmd", ".bat"} : new[] {string.Empty};
-            
+
             return new[] {"MAVEN_HOME", "M2_HOME", "M3_HOME", "MVN_HOME"}
                 .Select(Environment.GetEnvironmentVariable)
                 .Where(x => !string.IsNullOrEmpty(x))

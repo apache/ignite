@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.processors.affinity;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
@@ -66,11 +66,17 @@ import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVE
  * Affinity cached function.
  */
 public class GridAffinityAssignmentCache {
+    /** @see IgniteSystemProperties#IGNITE_AFFINITY_HISTORY_SIZE */
+    public static final int DFLT_AFFINITY_HISTORY_SIZE = 25;
+
+    /** @see IgniteSystemProperties#IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD */
+    public static final float DFLT_PART_DISTRIBUTION_WARN_THRESHOLD = 50f;
+
     /**
      * Affinity cache will shrink when total number of non-shallow (see {@link HistoryAffinityAssignmentImpl})
      * historical instances will be greater than value of this constant.
      */
-    private final int MAX_NON_SHALLOW_HIST_SIZE = getInteger(IGNITE_AFFINITY_HISTORY_SIZE, 25);
+    private final int MAX_NON_SHALLOW_HIST_SIZE = getInteger(IGNITE_AFFINITY_HISTORY_SIZE, DFLT_AFFINITY_HISTORY_SIZE);
 
     /**
      * Affinity cache will also shrink when total number of both shallow ({@link HistoryAffinityAssignmentShallowCopy})
@@ -89,7 +95,8 @@ public class GridAffinityAssignmentCache {
     private final int MIN_NON_SHALLOW_HIST_SIZE = 2;
 
     /** Partition distribution. */
-    private final float partDistribution = getFloat(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, 50f);
+    private final float partDistribution =
+        getFloat(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, DFLT_PART_DISTRIBUTION_WARN_THRESHOLD);
 
     /** Group name if specified or cache name. */
     private final String cacheOrGrpName;
@@ -535,7 +542,7 @@ public class GridAffinityAssignmentCache {
         float deltaPrimary = Math.abs(1 - (float)locPrimaryCnt / expCnt) * 100;
         float deltaBackup = Math.abs(1 - (float)locBackupCnt / (expCnt * backups)) * 100;
 
-        if (deltaPrimary > partDistribution || deltaBackup > partDistribution) {
+        if ((deltaPrimary > partDistribution || deltaBackup > partDistribution) && log.isInfoEnabled()) {
             log.info(String.format("Local node affinity assignment distribution is not ideal " +
                     "[cache=%s, expectedPrimary=%.2f, actualPrimary=%d, " +
                     "expectedBackups=%.2f, actualBackups=%d, warningThreshold=%.2f%%]",
@@ -594,6 +601,13 @@ public class GridAffinityAssignmentCache {
      */
     public AffinityTopologyVersion lastVersion() {
         return head.get().topologyVersion();
+    }
+
+    /**
+     * @return Last initialized affinity assignment.
+     */
+    public AffinityAssignment lastReadyAffinity() {
+        return head.get();
     }
 
     /**
@@ -997,7 +1011,7 @@ public class GridAffinityAssignmentCache {
     /**
      * @return All initialized versions.
      */
-    public Collection<AffinityTopologyVersion> cachedVersions() {
+    public NavigableSet<AffinityTopologyVersion> cachedVersions() {
         return affCache.keySet();
     }
 

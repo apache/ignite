@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.schema.message;
 
+import java.nio.ByteBuffer;
+import java.util.UUID;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -24,9 +26,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
-
-import java.nio.ByteBuffer;
-import java.util.UUID;
 
 /**
  * Schema operation status message.

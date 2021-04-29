@@ -22,12 +22,12 @@ import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PREFER_WAL_REBALANCE;
 
 /**
  *
  */
-@WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value = "0")
+@WithSystemProperty(key = IGNITE_PREFER_WAL_REBALANCE, value = "true")
 public class TxPartitionCounterStateOnePrimaryTwoBackupsHistoryRebalanceTest
     extends TxPartitionCounterStateOnePrimaryTwoBackupsTest {
     /** {@inheritDoc} */
@@ -55,5 +55,165 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsHistoryRebalanceTest
     @Ignore
     @Override public void testCommitReorderWithRollbackNoRebalanceAfterRestart() throws Exception {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Ignore("Rebalance may be not triggered because all prepared txs may have counters greater than commited tx's " +
+        "and will be rolled back on recovery, so, nothing to rebalance")
+    @Override public void testPartialPrepare_2TX_1_1() throws Exception {
+        super.testPartialPrepare_2TX_1_1();
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Ignore("Rebalance may be not triggered because all prepared txs may have counters greater than commited tx's " +
+        "and will be rolled back on recovery, so, nothing to rebalance")
+    @Override public void testPartialPrepare_2TX_1_2() throws Exception {
+        super.testPartialPrepare_2TX_1_2();
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Ignore("Rebalance may be not triggered because all prepared txs may have counters greater than commited tx's " +
+        "and will be rolled back on recovery, so, nothing to rebalance")
+    @Override public void testPartialPrepare_2TX_1_3() throws Exception {
+        super.testPartialPrepare_2TX_1_3();
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Ignore("Rebalance may be not triggered because all prepared txs may have counters greater than commited tx's " +
+        "and will be rolled back on recovery, so, nothing to rebalance")
+    @Override public void testPartialPrepare_2TX_1_4() throws Exception {
+        super.testPartialPrepare_2TX_1_4();
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Ignore("Rebalance may be not triggered because all prepared txs may have counters greater than commited tx's " +
+        "and will be rolled back on recovery, so, nothing to rebalance")
+    @Override public void testPartialPrepare_2TX_2_1() throws Exception {
+        super.testPartialPrepare_2TX_2_1();
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Ignore("Rebalance may be not triggered because all prepared txs may have counters greater than commited tx's " +
+        "and will be rolled back on recovery, so, nothing to rebalance")
+    @Override public void testPartialPrepare_2TX_2_2() throws Exception {
+        super.testPartialPrepare_2TX_2_2();
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Ignore("Rebalance may be not triggered because all prepared txs may have counters greater than commited tx's " +
+        "and will be rolled back on recovery, so, nothing to rebalance")
+    @Override public void testPartialPrepare_2TX_2_3() throws Exception {
+        super.testPartialPrepare_2TX_2_3();
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Ignore("Rebalance may be not triggered because all prepared txs may have counters greater than commited tx's " +
+        "and will be rolled back on recovery, so, nothing to rebalance")
+    @Override public void testPartialPrepare_2TX_2_4() throws Exception {
+        super.testPartialPrepare_2TX_2_4();
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Ignore("Rebalance may be not triggered because all prepared txs may have counters greater than commited tx's " +
+        "and will be rolled back on recovery, so, nothing to rebalance")
+    @Override public void testPartialPrepare_3TX_1_1() throws Exception {
+        super.testPartialPrepare_3TX_1_1();
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Ignore("Rebalance may be not triggered because all prepared txs may have counters greater than commited tx's " +
+        "and will be rolled back on recovery, so, nothing to rebalance")
+    @Override public void testPartialPrepare_3TX_2_1() throws Exception {
+        super.testPartialPrepare_3TX_2_1();
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Ignore("Rebalance may be not triggered because all prepared txs may have counters greater than commited tx's " +
+        "and will be rolled back on recovery, so, nothing to rebalance")
+    @Override public void testPartialPrepare_3TX_3_1() throws Exception {
+        super.testPartialPrepare_3TX_3_1();
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Ignore("Rebalance may be not triggered because all prepared txs may have counters greater than commited tx's " +
+        "and will be rolled back on recovery, so, nothing to rebalance")
+    @Override public void testPartialPrepare_3TX_4_1() throws Exception {
+        super.testPartialPrepare_3TX_4_1();
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Ignore("Rebalance may be not triggered because all prepared txs may have counters greater than commited tx's " +
+        "and will be rolled back on recovery, so, nothing to rebalance")
+    @Override public void testPartialPrepare_3TX_5_1() throws Exception {
+        super.testPartialPrepare_3TX_5_1();
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Ignore("Rebalance may be not triggered because all prepared txs may have counters greater than commited tx's " +
+        "and will be rolled back on recovery, so, nothing to rebalance")
+    @Override public void testPartialPrepare_3TX_6_1() throws Exception {
+        super.testPartialPrepare_3TX_6_1();
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Ignore("Rebalance may be not triggered because all prepared txs may have counters greater than commited tx's " +
+        "and will be rolled back on recovery, so, nothing to rebalance")
+    @Override public void testPartialPrepare_3TX_1_2() throws Exception {
+        super.testPartialPrepare_3TX_1_2();
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Ignore("Rebalance may be not triggered because all prepared txs may have counters greater than commited tx's " +
+        "and will be rolled back on recovery, so, nothing to rebalance")
+    @Override public void testPartialPrepare_3TX_2_2() throws Exception {
+        super.testPartialPrepare_3TX_2_2();
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Ignore("Rebalance may be not triggered because all prepared txs may have counters greater than commited tx's " +
+        "and will be rolled back on recovery, so, nothing to rebalance")
+    @Override public void testPartialPrepare_3TX_3_2() throws Exception {
+        super.testPartialPrepare_3TX_3_2();
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Ignore("Rebalance may be not triggered because all prepared txs may have counters greater than commited tx's " +
+        "and will be rolled back on recovery, so, nothing to rebalance")
+    @Override public void testPartialPrepare_3TX_4_2() throws Exception {
+        super.testPartialPrepare_3TX_4_2();
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Ignore("Rebalance may be not triggered because all prepared txs may have counters greater than commited tx's " +
+        "and will be rolled back on recovery, so, nothing to rebalance")
+    @Override public void testPartialPrepare_3TX_5_2() throws Exception {
+        super.testPartialPrepare_3TX_5_2();
+    }
+
+    /** {@inheritDoc} */
+    @Test
+    @Ignore("Rebalance may be not triggered because all prepared txs may have counters greater than commited tx's " +
+        "and will be rolled back on recovery, so, nothing to rebalance")
+    @Override public void testPartialPrepare_3TX_6_2() throws Exception {
+        super.testPartialPrepare_3TX_6_2();
     }
 }

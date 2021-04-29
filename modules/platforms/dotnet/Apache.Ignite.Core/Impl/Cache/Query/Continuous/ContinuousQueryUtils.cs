@@ -94,6 +94,8 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
                     return new CacheEntryUpdateEvent<TK, TV>(key, oldVal, val);
                 case 2:
                     return new CacheEntryRemoveEvent<TK, TV>(key, oldVal);
+                case 3:
+                    return new CacheEntryExpireEvent<TK, TV>(key, oldVal);
                 default:
                     throw new NotSupportedException(eventType.ToString());
             }

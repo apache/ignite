@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.MetricsMxBean;
 import org.apache.ignite.spi.metric.Metric;
@@ -110,20 +111,26 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     /** */
     private final GridMetricManager mmgr;
 
+    /** Performance statistics processor. */
+    private final PerformanceStatisticsProcessor psproc;
+
     /** Time interval (in milliseconds) when allocations/evictions are counted to calculate rate. */
     private volatile long rateTimeInterval;
 
     /**
      * @param memPlcCfg DataRegionConfiguration.
      * @param mmgr Metrics manager.
+     * @param psproc Performance statistics processor.
      * @param dataRegionMetricsProvider Data region metrics provider.
      */
     public DataRegionMetricsImpl(DataRegionConfiguration memPlcCfg,
         GridMetricManager mmgr,
+        PerformanceStatisticsProcessor psproc,
         DataRegionMetricsProvider dataRegionMetricsProvider) {
         this.memPlcCfg = memPlcCfg;
         this.dataRegionMetricsProvider = dataRegionMetricsProvider;
         this.mmgr = mmgr;
+        this.psproc = psproc;
 
         metricsEnabled = memPlcCfg.isMetricsEnabled();
 
@@ -188,6 +195,12 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         totalThrottlingTime = mreg.longAdderMetric("TotalThrottlingTime",
             "Total throttling threads time in milliseconds. The Ignite throttles threads that generate " +
                 "dirty pages during the ongoing checkpoint.");
+
+        mreg.longMetric("InitialSize", "Initial memory region size in bytes defined by its data region.")
+            .value(memPlcCfg.getInitialSize());
+
+        mreg.longMetric("MaxSize", "Maximum memory region size in bytes defined by its data region.")
+            .value(memPlcCfg.getMaxSize());
     }
 
     /** {@inheritDoc} */
@@ -575,6 +588,9 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
     /** @param time Time to add to {@code totalThrottlingTime} metric in milliseconds. */
     public void addThrottlingTime(long time) {
+        if (psproc.enabled())
+            psproc.pagesWriteThrottle(U.currentTimeMillis(), time);
+
         if (metricsEnabled)
             totalThrottlingTime.add(time);
     }

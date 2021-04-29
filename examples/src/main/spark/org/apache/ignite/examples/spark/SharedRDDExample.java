@@ -17,6 +17,8 @@
 
 package org.apache.ignite.examples.spark;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.ignite.spark.JavaIgniteContext;
 import org.apache.ignite.spark.JavaIgniteRDD;
 import org.apache.log4j.Level;
@@ -30,9 +32,6 @@ import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.sql.Dataset;
 import scala.Tuple2;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * This example demonstrates how to create an JavaIgnitedRDD and share it with multiple spark workers. The goal of this
@@ -65,7 +64,7 @@ public class SharedRDDExample {
 
         // Creates Ignite context with specific configuration and runs Ignite in the embedded mode.
         JavaIgniteContext<Integer, Integer> igniteContext = new JavaIgniteContext<Integer, Integer>(
-            sparkContext,"examples/config/spark/example-shared-rdd.xml", false);
+            sparkContext, "examples/config/spark/example-shared-rdd.xml", false);
 
         // Create a Java Ignite RDD of Type (Int,Int) Integer Pair.
         JavaIgniteRDD<Integer, Integer> sharedRDD = igniteContext.<Integer, Integer>fromCache("sharedRDD");

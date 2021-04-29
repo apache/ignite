@@ -330,7 +330,7 @@ public class VisorFindAndDeleteGarbageInPersistenceClosure implements IgniteCall
         if (e instanceof InterruptedException)
             return new IgniteInterruptedException((InterruptedException)e);
         else if (e.getCause() instanceof IgniteException)
-            return  (IgniteException)e.getCause();
+            return (IgniteException)e.getCause();
         else
             return new IgniteException(e.getCause());
     }

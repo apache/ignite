@@ -223,7 +223,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
      */
     @Test
     public void testSelectStar() {
-        assertEquals(1, cachePers.query(new SqlQuery<AffinityKey<?>,Person>(
+        assertEquals(1, cachePers.query(new SqlQuery<AffinityKey<?>, Person>(
             Person.class, "\t\r\n  select  \n*\t from Person limit 1")).getAll().size());
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
@@ -716,7 +716,7 @@ public class BaseH2CompareQueryTest extends AbstractH2CompareQueryTest {
 
     @QuerySqlFunction
     public static ResultSet table0(Connection c, String a, int b) throws SQLException {
-        return c.createStatement().executeQuery("select '" + a + "' as a, " +  b + " as b");
+        return c.createStatement().executeQuery("select '" + a + "' as a, " + b + " as b");
     }
 
     /**

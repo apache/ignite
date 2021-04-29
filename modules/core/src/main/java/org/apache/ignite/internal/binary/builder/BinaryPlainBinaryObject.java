@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.binary.builder;
 
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryObjectOffheapImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.binary.BinaryObject;
 
 /**
  *

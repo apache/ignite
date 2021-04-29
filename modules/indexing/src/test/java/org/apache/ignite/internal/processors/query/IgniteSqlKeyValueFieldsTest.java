@@ -49,7 +49,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 /**
  * Test hidden _key, _val, _ver columns
  */
-public class IgniteSqlKeyValueFieldsTest  extends AbstractIndexingCommonTest {
+public class IgniteSqlKeyValueFieldsTest extends AbstractIndexingCommonTest {
     /** */
     private static String NODE_BAD_CONF_MISS_KEY_FIELD = "badConf1";
 

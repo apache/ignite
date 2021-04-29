@@ -20,17 +20,21 @@ package org.apache.ignite.internal.processors.query;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryEntityPatch;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAddQueryEntityOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAlterTableAddColumnOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAlterTableDropColumnOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexCreateOperation;
@@ -94,7 +98,32 @@ public class QuerySchema implements Serializable {
      * @see QuerySchemaPatch
      */
     public QuerySchemaPatch makePatch(Collection<QueryEntity> target) {
+        return makePatch(null, target);
+    }
+
+    /**
+     * Make query schema patch.
+     *
+     * @param targetCfg Cache configuration when it should be changed (enabling indexing dynamically).
+     * @param target Query entity list to which current schema should be expanded.
+     * @return Patch to achieve entity which is a result of merging current one and target.
+     * @see QuerySchemaPatch
+     */
+    public QuerySchemaPatch makePatch(CacheConfiguration<?, ?> targetCfg, Collection<QueryEntity> target) {
         synchronized (mux) {
+            if (entities.isEmpty() && targetCfg != null) {
+                SchemaAddQueryEntityOperation op = new SchemaAddQueryEntityOperation(
+                    UUID.randomUUID(),
+                    targetCfg.getName(),
+                    targetCfg.getSqlSchema(),
+                    target,
+                    targetCfg.getQueryParallelism(),
+                    targetCfg.isSqlEscapeAll()
+                );
+
+                return new QuerySchemaPatch(Collections.singletonList(op), Collections.emptyList(), "");
+            }
+
             Map<String, QueryEntity> localEntities = new HashMap<>();
 
             for (QueryEntity entity : entities) {
@@ -276,9 +305,7 @@ public class QuerySchema implements Serializable {
                 if (replaceTarget)
                     ((List<QueryEntity>)entities).set(targetIdx, target);
             }
-            else {
-                assert op instanceof SchemaAlterTableDropColumnOperation;
-
+            else if (op instanceof SchemaAlterTableDropColumnOperation) {
                 SchemaAlterTableDropColumnOperation op0 = (SchemaAlterTableDropColumnOperation)op;
 
                 int targetIdx = -1;
@@ -305,6 +332,14 @@ public class QuerySchema implements Serializable {
                         + ", ifExists=" + op0.ifExists() + ']';
                 }
             }
+            else {
+                assert op instanceof SchemaAddQueryEntityOperation : "Unsupported schema operation [" + op.toString() + "]";
+
+                assert entities.isEmpty();
+
+                for (QueryEntity opEntity: ((SchemaAddQueryEntityOperation)op).entities())
+                    entities.add(QueryUtils.copy(opEntity));
+            }
         }
     }
 
@@ -314,6 +349,15 @@ public class QuerySchema implements Serializable {
     public Collection<QueryEntity> entities() {
         synchronized (mux) {
             return new ArrayList<>(entities);
+        }
+    }
+
+    /**
+     * @return {@code True} if entities is not empty.
+     */
+    public boolean isEmpty() {
+        synchronized (mux) {
+            return entities.isEmpty();
         }
     }
 

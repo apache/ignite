@@ -238,7 +238,7 @@ public class CacheRegisterMetadataLocallyTest extends GridCommonAbstractTest {
      */
     private void assertCommunicationMessages() {
         communicationMessages.forEach(cm ->
-            assertFalse(cm.toString(), cm instanceof MetadataRequestMessage || cm instanceof MetadataResponseMessage)
+            assertFalse(cm.getClass().getName(), cm instanceof MetadataRequestMessage || cm instanceof MetadataResponseMessage)
         );
     }
 

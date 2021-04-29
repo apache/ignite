@@ -154,7 +154,7 @@ public class IgniteCacheConnectionRecoveryTest extends GridCommonAbstractTest {
             }
         }, TEST_THREADS, "test-thread");
 
-        while  (System.currentTimeMillis() < stopTime) {
+        while (System.currentTimeMillis() < stopTime) {
             boolean closed = false;
 
             for (Ignite node : G.allGrids()) {

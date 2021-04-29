@@ -26,6 +26,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterMetrics;
@@ -69,11 +70,6 @@ public class IgniteClusterProcessProxy implements IgniteClusterEx {
     /** {@inheritDoc} */
     @Override public ClusterGroup forCacheNodes(@Nullable String cacheName, boolean affNodes, boolean nearNodes,
         boolean clientNodes) {
-        throw new UnsupportedOperationException("Operation is not supported yet.");
-    }
-
-    /** {@inheritDoc} */
-    @Override public ClusterGroup forIgfsMetadataDataNodes(String igfsName, @Nullable String metaCacheName) {
         throw new UnsupportedOperationException("Operation is not supported yet.");
     }
 
@@ -189,6 +185,21 @@ public class IgniteClusterProcessProxy implements IgniteClusterEx {
 
     /** {@inheritDoc} */
     @Override public boolean isWalEnabled(String cacheName) {
+        throw new UnsupportedOperationException("Operation is not supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID id() {
+        throw new UnsupportedOperationException("Operation is not supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public String tag() {
+        throw new UnsupportedOperationException("Operation is not supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void tag(String tag) {
         throw new UnsupportedOperationException("Operation is not supported yet.");
     }
 
@@ -399,6 +410,16 @@ public class IgniteClusterProcessProxy implements IgniteClusterEx {
 
     /** {@inheritDoc} */
     @Override public void state(ClusterState newState) throws IgniteException {
+        throw new UnsupportedOperationException("Operation is not supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public ShutdownPolicy shutdownPolicy() {
+        throw new UnsupportedOperationException("Operation is not supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void shutdownPolicy(ShutdownPolicy policy) {
         throw new UnsupportedOperationException("Operation is not supported yet.");
     }
 

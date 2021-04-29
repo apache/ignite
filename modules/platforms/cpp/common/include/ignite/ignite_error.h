@@ -207,6 +207,12 @@ namespace ignite
 
         /** SSL/TLS error. */
         static const int IGNITE_ERR_SECURE_CONNECTION_FAILURE = 2026;
+
+        /** Transaction already started by current thread. */
+        static const int IGNITE_ERR_TX_THIS_THREAD = 2027;
+
+        /** Generic transaction error. */
+        static const int IGNITE_ERR_TX = 2028;
         
         
         /** Unknown error. */

@@ -310,6 +310,7 @@ public class GridSqlQuerySplitter {
         List<Integer> cacheIds = H2Utils.collectCacheIds(idx, null, splitter.tbls);
         boolean mvccEnabled = H2Utils.collectMvccEnabled(idx, cacheIds);
         boolean replicatedOnly = splitter.mapSqlQrys.stream().noneMatch(GridCacheSqlQuery::isPartitioned);
+        boolean treatReplicatedAsPartitioned = splitter.mapSqlQrys.stream().anyMatch(GridCacheSqlQuery::hasOuterJoinReplicatedPartitioned);
 
         H2Utils.checkQuery(idx, cacheIds, splitter.tbls);
 
@@ -327,7 +328,8 @@ public class GridSqlQuerySplitter {
             splitter.extractor.mergeMapQueries(splitter.mapSqlQrys),
             cacheIds,
             mvccEnabled,
-            locSplit
+            locSplit,
+            treatReplicatedAsPartitioned
         );
     }
 
@@ -695,7 +697,7 @@ public class GridSqlQuerySplitter {
         GridSqlSelect select = model.ast();
 
         Set<GridSqlAlias> tblAliases = U.newIdentityHashSet();
-        Map<String,GridSqlAlias> cols = new HashMap<>();
+        Map<String, GridSqlAlias> cols = new HashMap<>();
 
         // Collect all the tables for push down.
         for (int i = begin; i <= end; i++) {
@@ -735,7 +737,7 @@ public class GridSqlQuerySplitter {
      */
     private void pushDownJoins(
         Set<GridSqlAlias> tblAliases,
-        Map<String,GridSqlAlias> cols,
+        Map<String, GridSqlAlias> cols,
         SplitterQueryModel model,
         int begin,
         int end,
@@ -899,7 +901,7 @@ public class GridSqlQuerySplitter {
     @SuppressWarnings("IfMayBeConditional")
     private void pushDownSelectColumns(
         Set<GridSqlAlias> tblAliases,
-        Map<String,GridSqlAlias> cols,
+        Map<String, GridSqlAlias> cols,
         GridSqlAlias wrapAlias,
         GridSqlSelect select
     ) {
@@ -943,7 +945,7 @@ public class GridSqlQuerySplitter {
      */
     private void pushDownColumnsInExpression(
         Set<GridSqlAlias> tblAliases,
-        Map<String,GridSqlAlias> cols,
+        Map<String, GridSqlAlias> cols,
         GridSqlAlias wrapAlias,
         GridSqlAst parent,
         int childIdx
@@ -967,7 +969,7 @@ public class GridSqlQuerySplitter {
      */
     private void pushDownColumn(
         Set<GridSqlAlias> tblAliases,
-        Map<String,GridSqlAlias> cols,
+        Map<String, GridSqlAlias> cols,
         GridSqlAlias wrapAlias,
         GridSqlAst parent,
         int childIdx
@@ -1048,7 +1050,7 @@ public class GridSqlQuerySplitter {
      */
     private void pushDownWhereConditions(
         Set<GridSqlAlias> tblAliases,
-        Map<String,GridSqlAlias> cols,
+        Map<String, GridSqlAlias> cols,
         GridSqlAlias wrapAlias,
         GridSqlSelect select
     ) {
@@ -1265,6 +1267,7 @@ public class GridSqlQuerySplitter {
         map.sortColumns(mapQry.sort());
         map.partitioned(SplitterUtils.hasPartitionedTables(mapQry));
         map.hasSubQueries(SplitterUtils.hasSubQueries(mapQry));
+        map.hasOuterJoinReplicatedPartitioned(SplitterUtils.hasOuterJoinReplicatedPartitioned(mapQry.from()));
 
         if (map.isPartitioned() && canExtractPartitions)
             map.derivedPartitions(extractor.extract(mapQry));
@@ -1321,7 +1324,7 @@ public class GridSqlQuerySplitter {
      * @return Map of columns with types.
      */
     @SuppressWarnings("IfMayBeConditional")
-    private LinkedHashMap<String,?> collectColumns(List<GridSqlAst> cols) {
+    private LinkedHashMap<String, ?> collectColumns(List<GridSqlAst> cols) {
         LinkedHashMap<String, GridSqlType> res = new LinkedHashMap<>(cols.size(), 1f, false);
 
         for (int i = 0; i < cols.size(); i++) {
@@ -1673,7 +1676,7 @@ public class GridSqlQuerySplitter {
                         SplitterUtils.aggregate(false, SUM).addChild(SplitterUtils.column(cntMapAggAlias));
 
                     if (!SplitterUtils.isFractionalType(agg.resultType().type())) {
-                        sumUpRdc =  new GridSqlFunction(CAST).resultType(GridSqlType.BIGINT).addChild(sumUpRdc);
+                        sumUpRdc = new GridSqlFunction(CAST).resultType(GridSqlType.BIGINT).addChild(sumUpRdc);
                         sumDownRdc = new GridSqlFunction(CAST).resultType(GridSqlType.BIGINT).addChild(sumDownRdc);
                     }
 
