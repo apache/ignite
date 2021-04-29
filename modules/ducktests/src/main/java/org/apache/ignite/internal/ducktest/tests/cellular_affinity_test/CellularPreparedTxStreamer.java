@@ -60,7 +60,7 @@ public class CellularPreparedTxStreamer extends IgniteAwareApplication {
         int i = 0; // Negative keys to have no intersection with load.
 
         // Single key transactions affects only current cell.
-        // Will cause delay during current cell recovery.
+        // Will cause delay during current cell switch.
 
         while (cnt != txCnt && !terminated()) {
             if (getCellIdByKey(aff, --i, attr).equals(cell)) {
@@ -76,7 +76,7 @@ public class CellularPreparedTxStreamer extends IgniteAwareApplication {
         }
 
         // Multikey transactions.
-        // May cause delay during current and other cell recovery.
+        // May cause delay during current and other cell switch.
 
         cnt = 0;
 
@@ -103,7 +103,7 @@ public class CellularPreparedTxStreamer extends IgniteAwareApplication {
         }
 
         // Transactions started from this node but contain no local keys.
-        // Will cause delay during other cells recovery.
+        // Should not cause significant delay during any cell switch.
 
         cnt = 0;
         assert i > -20_000_000;
