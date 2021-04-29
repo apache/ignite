@@ -59,6 +59,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         public void Dispose()
         {
+            // TODO: Dispose should not throw - how can we achieve that?
+            // Require Flush, like Transaction requires Commit?
+            // Log errors, but don't throw?
             _client.Socket.DoOutInOp(ClientOp.DataStreamerStart, ctx =>
             {
                 var w = ctx.Writer;
