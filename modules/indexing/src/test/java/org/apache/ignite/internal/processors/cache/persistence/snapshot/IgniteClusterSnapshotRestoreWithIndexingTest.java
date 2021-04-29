@@ -29,6 +29,7 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.typedef.F;
@@ -72,11 +73,7 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
 
         grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(DEFAULT_CACHE_NAME)).get(TIMEOUT);
 
-        IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
-
-        assertTrue(cache.indexReadyFuture().isDone());
-
-        assertCacheKeys(cache, CACHE_KEYS_RANGE);
+        assertCacheKeys(client.cache(DEFAULT_CACHE_NAME), CACHE_KEYS_RANGE);
     }
 
     /** @throws Exception If failed. */
@@ -93,11 +90,7 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
 
         ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(DEFAULT_CACHE_NAME)).get(TIMEOUT);
 
-        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME).withKeepBinary();
-
-        assertTrue(cache.indexReadyFuture().isDone());
-
-        assertCacheKeys(cache, CACHE_KEYS_RANGE);
+        assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME).withKeepBinary(), CACHE_KEYS_RANGE);
 
         for (Ignite grid : G.allGrids())
             assertNotNull(((IgniteEx)grid).context().cacheObjects().metadata(typeId));
@@ -135,13 +128,9 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
         ignite.snapshot().restoreSnapshot(
             SNAPSHOT_NAME, Collections.singleton(DEFAULT_CACHE_NAME)).get(TIMEOUT);
 
-        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME).withKeepBinary();
-
-        assertTrue(cache.indexReadyFuture().isDone());
-
         awaitPartitionMapExchange();
 
-        assertCacheKeys(cache, CACHE_KEYS_RANGE);
+        assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME).withKeepBinary(), CACHE_KEYS_RANGE);
     }
 
     /** {@inheritDoc} */
@@ -151,17 +140,27 @@ public class IgniteClusterSnapshotRestoreWithIndexingTest extends IgniteClusterS
         String tblName = new BinaryBasicNameMapper(true).typeName(TYPE_NAME);
 
         for (Ignite grid : G.allGrids()) {
+            GridKernalContext ctx = ((IgniteEx)grid).context();
+
+            String nodeId = ctx.localNodeId().toString();
+
+            assertTrue("nodeId=" + nodeId, grid.cache(cache.getName()).indexReadyFuture().isDone());
+
+            // Make sure no index rebuild happened.
+            assertEquals("nodeId=" + nodeId,
+                0, ctx.cache().cache(cache.getName()).context().cache().metrics0().getIndexRebuildKeysProcessed());
+
             GridQueryProcessor qry = ((IgniteEx)grid).context().query();
 
             // Make sure  SQL works fine.
-            assertEquals((long)keysCnt, qry.querySqlFields(new SqlFieldsQuery(
+            assertEquals("nodeId=" + nodeId, (long)keysCnt, qry.querySqlFields(new SqlFieldsQuery(
                 "SELECT count(*) FROM " + tblName), true).getAll().get(0).get(0));
 
             // Make sure the index is in use.
             String explainPlan = (String)qry.querySqlFields(new SqlFieldsQuery(
                 "explain SELECT * FROM " + tblName + " WHERE id < 10"), true).getAll().get(0).get(0);
 
-            assertTrue("id=" + grid.cluster().localNode().id() + "\n" + explainPlan, explainPlan.contains("ID_ASC_IDX"));
+            assertTrue("nodeId=" + nodeId + "\n" + explainPlan, explainPlan.contains("ID_ASC_IDX"));
         }
     }
 
