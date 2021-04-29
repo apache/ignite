@@ -123,7 +123,7 @@ public class IgniteSnapshotWithMetastorageTest extends AbstractSnapshotSelfTest 
 
         stopAllGrids();
 
-        IgniteEx snp0 = startGridsFromSnapshot(new HashSet<>(Collections.singletonList(0)),
+        IgniteEx snp0 = startGridsFromSnapshot(Collections.singleton(0),
             cfg -> resolveSnapshotWorkDirectory(cfg).getAbsolutePath(), SNAPSHOT_NAME, false);
 
         Set<String> allKeys = new HashSet<>();
@@ -131,7 +131,7 @@ public class IgniteSnapshotWithMetastorageTest extends AbstractSnapshotSelfTest 
 
         stopGrid(0);
 
-        IgniteEx snp1 = startGridsFromSnapshot(new HashSet<>(Collections.singletonList(1)),
+        IgniteEx snp1 = startGridsFromSnapshot(Collections.singleton(1),
             cfg -> resolveSnapshotWorkDirectory(cfg).getAbsolutePath(), SNAPSHOT_NAME, false);
 
         // Iterator reads keys from the node heap map.

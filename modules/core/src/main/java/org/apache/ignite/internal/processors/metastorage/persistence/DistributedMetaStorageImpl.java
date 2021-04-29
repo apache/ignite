@@ -1216,27 +1216,20 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     public Future<?> flush() {
         assert isPersistenceEnabled;
 
-        lock.readLock().lock();
-
-        try {
-            return worker.flush();
-        }
-        finally {
-            lock.readLock().unlock();
-        }
+        return worker.flush();
     }
 
     /**
      * @param compFut Future which should be completed when worker may proceed with updates.
      */
-    public void pauseMetaStorage(IgniteInternalFuture<?> compFut) {
+    public void suspend(IgniteInternalFuture<?> compFut) {
         assert isPersistenceEnabled;
 
         lock.readLock().lock();
 
         try {
             // Read lock taken, so no other distributed updated will be added to the queue.
-            worker.pause(compFut);
+            worker.suspend(compFut);
         }
         finally {
             lock.readLock().unlock();

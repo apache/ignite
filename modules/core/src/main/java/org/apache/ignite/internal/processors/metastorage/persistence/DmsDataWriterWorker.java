@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.metastorage.persistence;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
@@ -69,16 +70,13 @@ public class DmsDataWriterWorker extends GridWorker {
     private volatile ReadWriteMetastorage metastorage;
 
     /** */
-    private volatile RunnableFuture<?> curTask;
-
-    /** */
     private volatile CountDownLatch latch = new CountDownLatch(0);
 
     /**
      * This task is used to pause processing of the {@code updateQueue}. If this task completed it means that all the updates
      * prior to it already flushed to the local metastorage.
      */
-    private volatile RunnableFuture<?> pauseTask;
+    private volatile Future<?> suspendFut = CompletableFuture.completedFuture(AWAIT);
 
     /** */
     public DmsDataWriterWorker(
@@ -91,10 +89,6 @@ public class DmsDataWriterWorker extends GridWorker {
         this.lock = lock;
         this.errorHnd = errorHnd;
 
-        pauseTask = new FutureTask<>(() -> AWAIT);
-        // Completed future task.
-        pauseTask.run();
-
         // Put restore task to the queue, so it will be executed on worker start.
         updateQueue.offer(newDmsTask(this::restore));
     }
@@ -105,19 +99,19 @@ public class DmsDataWriterWorker extends GridWorker {
     }
 
     /**
-     * @return Future which will be completed will all the tasks prior to the pause task completed.
+     * @return Future which will be completed when all tasks prior to the pause task are finished.
      */
     public Future<?> flush() {
-        return pauseTask;
+        return suspendFut;
     }
 
     /**
      * @param compFut Future which should be completed when worker may proceed with updates.
      */
-    public void pause(IgniteInternalFuture<?> compFut) {
+    public void suspend(IgniteInternalFuture<?> compFut) {
         latch = new CountDownLatch(1);
 
-        updateQueue.offer(pauseTask = new FutureTask<>(() -> AWAIT));
+        updateQueue.offer((RunnableFuture<?>)(suspendFut = new FutureTask<>(() -> AWAIT)));
 
         compFut.listen(f -> latch.countDown());
     }
@@ -185,18 +179,16 @@ public class DmsDataWriterWorker extends GridWorker {
     /** {@inheritDoc} */
     @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
         while (true) {
-            try {
-                curTask = updateQueue.take();
-            }
-            catch (InterruptedException ignore) {
-            }
-
-            curTask.run();
+            RunnableFuture<?> curTask;
 
             // Result will be null for any runnable executed tasks over metastorage and non-null for system DMS tasks.
             Object res = null;
 
             try {
+                curTask = updateQueue.take();
+
+                curTask.run();
+
                 res = curTask.get();
             }
             catch (Exception ignore) {
