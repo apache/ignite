@@ -485,7 +485,19 @@ public class GridClientNioTcpConnection extends GridClientConnection {
 
             assert old == null;
 
-            GridNioFuture<?> sndFut = ses.send(msg);
+            GridNioFuture<?> sndFut;
+            if (sesTok == null && credentials() != null) {
+                fut.retryState(TcpClientFuture.STATE_AUTH_RETRY);
+
+                GridClientAuthenticationRequest req = buildAuthRequest();
+
+                req.requestId(reqId);
+
+                sndFut = ses.send(req);
+            }
+            else {
+                sndFut = ses.send(msg);
+            }
 
             lastMsgSndTime = System.currentTimeMillis();
 

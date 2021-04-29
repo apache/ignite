@@ -34,6 +34,7 @@ import org.apache.ignite.internal.client.impl.ClientDataImplSelfTest;
 import org.apache.ignite.internal.client.impl.ClientFutureAdapterSelfTest;
 import org.apache.ignite.internal.client.impl.ClientPropertiesConfigurationSelfTest;
 import org.apache.ignite.internal.client.integration.ClientPreferDirectSelfTest;
+import org.apache.ignite.internal.client.integration.ClientTcpAuthTest;
 import org.apache.ignite.internal.client.integration.ClientTcpConnectivitySelfTest;
 import org.apache.ignite.internal.client.integration.ClientTcpDirectMultiNodeSelfTest;
 import org.apache.ignite.internal.client.integration.ClientTcpDirectSelfTest;
@@ -146,6 +147,7 @@ import org.junit.runners.Suite;
 
     // Test client authentication.
     ClientTcpSslAuthenticationSelfTest.class,
+    ClientTcpAuthTest.class,
 
     ClientTcpConnectivitySelfTest.class,
     ClientReconnectionSelfTest.class,

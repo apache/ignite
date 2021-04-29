@@ -30,7 +30,7 @@ public interface DiscoverySpiNodeAuthenticator {
      * Security credentials.
      *
      * @param node Node to authenticate.
-     * @param cred Security credentials.
+     * @param cred Security credentials or {@code null}
      * @return Security context if authentication succeeded or {@code null} if authentication failed.
      * @throws IgniteException If authentication process failed
      *      (invalid credentials should not lead to this exception).
