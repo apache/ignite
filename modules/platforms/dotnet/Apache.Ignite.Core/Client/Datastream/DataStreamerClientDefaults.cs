@@ -17,30 +17,21 @@
 
 namespace Apache.Ignite.Core.Client.Datastream
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Threading.Tasks;
-
     /// <summary>
-    /// Thin client data streamer.
+    /// Data streamer configuration defaults.
     /// </summary>
-    public interface IDataStreamerClient<TK, TV> : IDisposable
+    public static class DataStreamerClientDefaults
     {
-        string CacheName { get; }
+        /// <summary>
+        /// The default per node buffer size,
+        /// see <see cref="DataStreamerClientOptions{TK,TV}.ServerPerNodeBufferSize"/>.
+        /// </summary>
+        public const int ServerPerNodeBufferSize = 512;
 
-        DataStreamerClientOptions<TK, TV> Options { get; }
-
-        // TODO: We don't need async overloads - flushing should only happen in the background
-        void Add(TK key, TV val);
-
-        void Add(IEnumerable<KeyValuePair<TK, TV>> entries);
-
-        void Remove(TK key);
-
-        void Remove(IEnumerable<TK> keys);
-
-        void Flush();
-
-        Task FlushAsync();
+        /// <summary>
+        /// The default per thread buffer size,
+        /// see <see cref="DataStreamerClientOptions{TK,TV}.ServerPerThreadBufferSize"/>.
+        /// </summary>
+        public const int ServerPerThreadBufferSize = 4096;
     }
 }

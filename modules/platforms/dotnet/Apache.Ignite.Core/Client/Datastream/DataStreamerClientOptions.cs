@@ -21,7 +21,7 @@ namespace Apache.Ignite.Core.Client.Datastream
     using Apache.Ignite.Core.Datastream;
 
     /// <summary>
-    /// Data streamer options.
+    /// Thin client data streamer options.
     /// <para />
     /// See also <see cref="IDataStreamerClient{TK,TV}"/>, <see cref="IIgniteClient.GetDataStreamer{TK,TV}(string)"/>.
     /// </summary>
@@ -32,14 +32,15 @@ namespace Apache.Ignite.Core.Client.Datastream
         /// </summary>
         public DataStreamerClientOptions()
         {
-            // No-op.
+            ServerPerNodeBufferSize = DataStreamerClientDefaults.ServerPerNodeBufferSize;
+            ServerPerThreadBufferSize = DataStreamerClientDefaults.ServerPerThreadBufferSize;
         }
 
         /// <summary>
         /// Initializes a new instance of <see cref="DataStreamerClientOptions{TK,TV}"/>.
         /// </summary>
         /// <param name="options">Options to copy from.</param>
-        public DataStreamerClientOptions(DataStreamerClientOptions<TK, TV> options)
+        public DataStreamerClientOptions(DataStreamerClientOptions<TK, TV> options) : this()
         {
             if (options == null)
             {
@@ -93,7 +94,6 @@ namespace Apache.Ignite.Core.Client.Datastream
         /// <para />
         /// Default is <see cref="DataStreamerDefaults.DefaultPerNodeBufferSize"/>.
         /// </summary>
-        [DefaultValue(DataStreamerDefaults.DefaultPerNodeBufferSize)]
         public int ClientPerNodeBufferSize { get; set; }
 
         /// <summary>
@@ -101,7 +101,7 @@ namespace Apache.Ignite.Core.Client.Datastream
         /// <para />
         /// Default is <see cref="DataStreamerDefaults.DefaultPerNodeBufferSize"/>.
         /// </summary>
-        [DefaultValue(DataStreamerDefaults.DefaultPerNodeBufferSize)]
+        [DefaultValue(DataStreamerClientDefaults.ServerPerNodeBufferSize)]
         public int ServerPerNodeBufferSize { get; set; }
 
         /// <summary>
@@ -109,7 +109,6 @@ namespace Apache.Ignite.Core.Client.Datastream
         /// <para />
         /// Default is <see cref="DataStreamerDefaults.DefaultPerThreadBufferSize"/>.
         /// </summary>
-        [DefaultValue(DataStreamerDefaults.DefaultPerThreadBufferSize)]
         public int ClientPerThreadBufferSize { get; set; }
 
         /// <summary>
@@ -117,7 +116,7 @@ namespace Apache.Ignite.Core.Client.Datastream
         /// <para />
         /// Default is <see cref="DataStreamerDefaults.DefaultPerThreadBufferSize"/>.
         /// </summary>
-        [DefaultValue(DataStreamerDefaults.DefaultPerThreadBufferSize)]
+        [DefaultValue(DataStreamerClientDefaults.ServerPerThreadBufferSize)]
         public int ServerPerThreadBufferSize { get; set; }
     }
 }
