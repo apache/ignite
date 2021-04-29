@@ -81,7 +81,7 @@ public class IndexForceRebuildTask extends VisorOneNodeTask<IndexForceRebuildTas
 
             if (arg.cacheNames() != null) {
                 for (String cacheName : arg.cacheNames()) {
-                    IgniteInternalCache<Object, Object> cache = cacheProcessor.publicCache(cacheName);
+                    IgniteInternalCache<Object, Object> cache = cacheProcessor.cache(cacheName);
 
                     if (cache != null)
                         cachesToRebuild.add(cache.context());
@@ -103,14 +103,15 @@ public class IndexForceRebuildTask extends VisorOneNodeTask<IndexForceRebuildTas
             Collection<GridCacheContext> cachesCtxWithRebuildingInProgress =
                 ignite.context().cache().context().database().forceRebuildIndexes(cachesToRebuild);
 
-            Set<IndexRebuildStatusInfoContainer> cachesWithStartedRebuild =
-                cachesToRebuild.stream()
-                    .map(c -> new IndexRebuildStatusInfoContainer(c.config()))
-                    .collect(Collectors.toSet());
-
             Set<IndexRebuildStatusInfoContainer> cachesWithRebuildingInProgress =
                 cachesCtxWithRebuildingInProgress.stream()
                     .map(c -> new IndexRebuildStatusInfoContainer(c.config()))
+                    .collect(Collectors.toSet());
+
+            Set<IndexRebuildStatusInfoContainer> cachesWithStartedRebuild =
+                cachesToRebuild.stream()
+                    .map(c -> new IndexRebuildStatusInfoContainer(c.config()))
+                    .filter(c -> !cachesWithRebuildingInProgress.contains(c))
                     .collect(Collectors.toSet());
 
             return new IndexForceRebuildTaskRes(
