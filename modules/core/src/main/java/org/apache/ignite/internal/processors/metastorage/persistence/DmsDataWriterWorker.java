@@ -30,7 +30,6 @@ import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
 import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -177,29 +176,29 @@ public class DmsDataWriterWorker extends GridWorker {
     }
 
     /** {@inheritDoc} */
-    @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
+    @Override protected void body() {
         while (true) {
-            RunnableFuture<?> curTask;
-
-            // Result will be null for any runnable executed tasks over metastorage and non-null for system DMS tasks.
-            Object res = null;
-
             try {
-                curTask = updateQueue.take();
+                RunnableFuture<?> curTask = updateQueue.take();
 
                 curTask.run();
 
-                res = curTask.get();
-            }
-            catch (Exception ignore) {
-                // Ignored exception will be handled by errHnd.
-            }
+                // Result will be null for any runnable executed tasks over metastorage and non-null for system DMS tasks.
+                Object res = curTask.get();
 
-            if (res == STOP)
+                if (res == STOP)
+                    break;
+
+                if (res == AWAIT)
+                    U.awaitQuiet(latch);
+            }
+            catch (InterruptedException ignore) {
+            }
+            catch (Throwable t) {
+                errorHnd.accept(t);
+
                 break;
-
-            if (res == AWAIT)
-                U.awaitQuiet(latch);
+            }
         }
     }
 
@@ -289,8 +288,8 @@ public class DmsDataWriterWorker extends GridWorker {
             try {
                 task.run();
             }
-            catch (Throwable t) {
-                errorHnd.accept(t);
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
             }
             finally {
                 lock.unlock();
