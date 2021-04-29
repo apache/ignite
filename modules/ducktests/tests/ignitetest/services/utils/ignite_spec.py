@@ -187,12 +187,12 @@ class IgniteSpec(metaclass=ABCMeta):
         self.service.logger.debug("Local shared dir not exists. Creating. " + local_dir)
         os.mkdir(local_dir)
 
-        self.__runcmd(f"touch {local_dir}/duck.lock")
+        self._runcmd(f"touch {local_dir}/duck.lock")
 
         script_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "certs")
 
         self._runcmd(f"{script_dir}/mkcerts.sh {local_dir}")
-        self.__runcmd(f"rm {local_dir}/duck.lock")
+        self._runcmd(f"rm {local_dir}/duck.lock")
 
         return local_dir
 
