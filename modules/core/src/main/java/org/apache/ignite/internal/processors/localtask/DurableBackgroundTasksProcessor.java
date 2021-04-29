@@ -17,7 +17,6 @@
 package org.apache.ignite.internal.processors.localtask;
 
 import java.util.Iterator;
-import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -123,8 +122,8 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
 
     /** {@inheritDoc} */
     @Override public void onMarkCheckpointBegin(Context ctx) {
-        for (Iterator<Entry<String, DurableBackgroundTaskState>> it = tasks.entrySet().iterator(); it.hasNext(); ) {
-            DurableBackgroundTaskState taskState = it.next().getValue();
+        for (Iterator<DurableBackgroundTaskState> it = tasks.values().iterator(); it.hasNext(); ) {
+            DurableBackgroundTaskState taskState = it.next();
 
             if (taskState.state() == COMPLETED) {
                 assert taskState.saved();
@@ -145,8 +144,8 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
 
     /** {@inheritDoc} */
     @Override public void afterCheckpointEnd(Context ctx) {
-        for (Iterator<Entry<String, DurableBackgroundTask>> it = toRmv.entrySet().iterator(); it.hasNext(); ) {
-            DurableBackgroundTask t = it.next().getValue();
+        for (Iterator<DurableBackgroundTask> it = toRmv.values().iterator(); it.hasNext(); ) {
+            DurableBackgroundTask t = it.next();
 
             metaStorageOperation(metaStorage -> {
                 if (metaStorage != null && toRmv.containsKey(t.name()))
@@ -252,16 +251,16 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
                     log.info("Executing durable background task: " + t.name());
 
                 t.executeAsync(ctx).listen(f -> {
-                    DurableBackgroundTaskResult res;
+                    DurableBackgroundTaskResult res = null;
 
                     try {
                         res = f.get();
-
-                        assert res != null;
                     }
                     catch (Throwable e) {
-                        throw new AssertionError("Task completed with an error", e);
+                        log.error("Task completed with an error: " + t.name(), e);
                     }
+
+                    assert res != null;
 
                     if (res.error() != null)
                         log.error("Could not execute durable background task: " + t.name(), res.error());
@@ -280,14 +279,14 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
                         if (outFut != null)
                             outFut.onDone(res.error());
                     }
-                    else if (res.restart()) {
+                    else {
+                        assert res.restart();
+
                         if (log.isInfoEnabled())
                             log.info("Execution of durable background task will be restarted: " + t.name());
 
                         taskState.state(INIT);
                     }
-                    else
-                        throw new AssertionError("Not supported: " + res);
                 });
 
                 taskState.state(PREPARE, STARTED);

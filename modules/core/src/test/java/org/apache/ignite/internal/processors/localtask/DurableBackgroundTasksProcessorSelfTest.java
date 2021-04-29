@@ -180,11 +180,6 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
         IgniteEx n = startGrid(0);
         n.cluster().state(ACTIVE);
 
-        ObservingCheckpointListener checkpointLsnr = null;
-
-        if (save)
-            dbMgr(n).addCheckpointListener(checkpointLsnr = new ObservingCheckpointListener());
-
         SimpleTask t = new SimpleTask("t");
         IgniteInternalFuture<Void> execAsyncFut = execAsync(n, t, save);
 
@@ -193,14 +188,17 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
         assertFalse(execAsyncFut.isDone());
 
         if (save) {
+            ObservingCheckpointListener checkpointLsnr = new ObservingCheckpointListener();
+            dbMgr(n).addCheckpointListener(checkpointLsnr);
+
             dbMgr(n).enableCheckpoints(false).get(getTestTimeout());
 
             t.taskFut.onDone(restart(null));
-            checkStateAndMetaStorage(n, t, INIT, save);
+            checkStateAndMetaStorage(n, t, INIT, true);
             assertFalse(execAsyncFut.isDone());
 
             GridFutureAdapter<Void> onMarkCheckpointBeginFut = checkpointLsnr.onMarkCheckpointBeginAsync(ctx -> {
-                checkStateAndMetaStorage(n, t, INIT, save);
+                checkStateAndMetaStorage(n, t, INIT, true);
                 assertFalse(toRmv(n).containsKey(t.name()));
             });
 
@@ -209,7 +207,7 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
         }
         else {
             t.taskFut.onDone(restart(null));
-            checkStateAndMetaStorage(n, t, INIT, save);
+            checkStateAndMetaStorage(n, t, INIT, false);
             assertFalse(execAsyncFut.isDone());
         }
 

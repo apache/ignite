@@ -25,7 +25,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
@@ -128,7 +127,7 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
             log
         ) {
             /** {@inheritDoc} */
-            @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
+            @Override protected void body() {
                 try {
                     execute(ctx);
 
@@ -147,54 +146,6 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
         new IgniteThread(worker).start();
 
         return fut;
-    }
-
-    /**
-     * Checks that pageId is still relevant and has not been deleted / reused.
-     * @param grpId Cache group id.
-     * @param pageMem Page memory instance.
-     * @param rootPageId Root page identifier.
-     * @return {@code true} if root page was deleted/reused, {@code false} otherwise.
-     */
-    private boolean skipDeletedRoot(int grpId, PageMemory pageMem, long rootPageId) {
-        try {
-            long page = pageMem.acquirePage(grpId, rootPageId);
-
-            try {
-                long pageAddr = pageMem.readLock(grpId, rootPageId, page);
-
-                try {
-                    return pageAddr == 0;
-                }
-                finally {
-                    pageMem.readUnlock(grpId, rootPageId, page);
-                }
-            }
-            finally {
-                pageMem.releasePage(grpId, rootPageId, page);
-            }
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException("Cannot acquire tree root page.", e);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void cancel() {
-        trees = null;
-
-        GridWorker w = worker;
-
-        if (w != null) {
-            worker = null;
-
-            U.awaitForWorkersStop(singleton(w), true, log);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(DurableBackgroundCleanupIndexTreeTask.class, this);
     }
 
     /**
@@ -305,6 +256,55 @@ public class DurableBackgroundCleanupIndexTreeTask implements DurableBackgroundT
         finally {
             ctx.cache().context().database().checkpointReadUnlock();
         }
+    }
+
+    /**
+     * Checks that pageId is still relevant and has not been deleted / reused.
+     * @param grpId Cache group id.
+     * @param pageMem Page memory instance.
+     * @param rootPageId Root page identifier.
+     * @return {@code true} if root page was deleted/reused, {@code false} otherwise.
+     */
+    private boolean skipDeletedRoot(int grpId, PageMemory pageMem, long rootPageId) {
+        try {
+            long page = pageMem.acquirePage(grpId, rootPageId);
+
+            try {
+                long pageAddr = pageMem.readLock(grpId, rootPageId, page);
+
+                try {
+                    return pageAddr == 0;
+                }
+                finally {
+                    if (pageAddr != 0)
+                        pageMem.readUnlock(grpId, rootPageId, page);
+                }
+            }
+            finally {
+                pageMem.releasePage(grpId, rootPageId, page);
+            }
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Cannot acquire tree root page.", e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void cancel() {
+        trees = null;
+
+        GridWorker w = worker;
+
+        if (w != null) {
+            worker = null;
+
+            U.awaitForWorkersStop(singleton(w), true, log);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DurableBackgroundCleanupIndexTreeTask.class, this);
     }
 
     /** */
