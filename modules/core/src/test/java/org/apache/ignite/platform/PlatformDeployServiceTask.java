@@ -744,6 +744,18 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         }
 
         /** */
+        public void testException(String exCls) throws Exception {
+            switch (exCls) {
+                case "InterruptedException": throw new InterruptedException("Test");
+                case "IllegalArgumentException": throw new IllegalArgumentException("Test");
+                case "TestMapped1Exception": throw new TestMapped1Exception("Test");
+                case "TestMapped2Exception": throw new TestMapped2Exception("Test");
+                case "TestUnmappedException": throw new TestUnmappedException("Test");
+                default: throw new IgniteException("Unexpected exception class: " + exCls);
+            }
+        }
+
+        /** */
         public void sleep(long delayMs) {
             try {
                 U.sleep(delayMs);
@@ -751,6 +763,30 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             catch (Exception e) {
                 throw new IgniteException(e);
             }
+        }
+    }
+
+    /** */
+    public static class TestMapped1Exception extends RuntimeException {
+        /** */
+        public TestMapped1Exception(String msg) {
+            super(msg);
+        }
+    }
+
+    /** */
+    public static class TestMapped2Exception extends RuntimeException {
+        /** */
+        public TestMapped2Exception(String msg) {
+            super(msg);
+        }
+    }
+
+    /** */
+    public static class TestUnmappedException extends RuntimeException {
+        /** */
+        public TestUnmappedException(String msg) {
+            super(msg);
         }
     }
 }

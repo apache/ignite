@@ -41,7 +41,6 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformWriterBiClosure;
 import org.apache.ignite.internal.processors.platform.utils.PlatformWriterClosure;
 import org.apache.ignite.internal.processors.service.GridServiceProxy;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -291,7 +290,7 @@ public class PlatformServices extends PlatformAbstractTarget {
 
                     PlatformUtils.writeInvocationResult(writer, result, null);
                 }
-                catch (Exception e) {
+                catch (Throwable e) {
                     PlatformUtils.writeInvocationResult(writer, null, e);
                 }
 
@@ -610,8 +609,7 @@ public class PlatformServices extends PlatformAbstractTarget {
          * @throws IgniteCheckedException On error.
          * @throws NoSuchMethodException On error.
          */
-        public Object invoke(String mthdName, boolean srvKeepBinary, Object[] args)
-            throws IgniteCheckedException, NoSuchMethodException {
+        public Object invoke(String mthdName, boolean srvKeepBinary, Object[] args) throws Throwable {
             if (isPlatformService())
                 return ((PlatformService)proxy).invokeMethod(mthdName, srvKeepBinary, args);
             else {
@@ -624,12 +622,7 @@ public class PlatformServices extends PlatformAbstractTarget {
                 Method mtd = getMethod(serviceClass, mthdName, args);
                 convertArrayArgs(args, mtd);
 
-                try {
-                    return ((GridServiceProxy)proxy).invokeMethod(mtd, args);
-                }
-                catch (Throwable t) {
-                    throw IgniteUtils.cast(t);
-                }
+                return ((GridServiceProxy)proxy).invokeMethod(mtd, args);
             }
         }
 
