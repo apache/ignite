@@ -35,7 +35,6 @@ import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
-import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.authentication.IgniteAccessControlException;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
@@ -193,17 +192,8 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
 
             ClientListenerResponse resp;
 
-            AuthorizationContext authCtx = connCtx.authorizationContext();
-
-            if (authCtx != null)
-                AuthorizationContext.context(authCtx);
-
             try (OperationSecurityContext s = ctx.security().withContext(connCtx.securityContext())) {
                 resp = handler.handle(req);
-            }
-            finally {
-                if (authCtx != null)
-                    AuthorizationContext.clear();
             }
 
             if (resp != null) {

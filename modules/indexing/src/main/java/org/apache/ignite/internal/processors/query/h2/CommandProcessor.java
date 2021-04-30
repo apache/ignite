@@ -657,17 +657,17 @@ public class CommandProcessor {
             else if (cmd instanceof SqlCreateUserCommand) {
                 SqlCreateUserCommand addCmd = (SqlCreateUserCommand)cmd;
 
-                ctx.authentication().addUser(addCmd.userName(), addCmd.password());
+                ctx.security().createUser(addCmd.userName(), addCmd.password().toCharArray());
             }
             else if (cmd instanceof SqlAlterUserCommand) {
                 SqlAlterUserCommand altCmd = (SqlAlterUserCommand)cmd;
 
-                ctx.authentication().updateUser(altCmd.userName(), altCmd.password());
+                ctx.security().alterUser(altCmd.userName(), altCmd.password().toCharArray());
             }
             else if (cmd instanceof SqlDropUserCommand) {
                 SqlDropUserCommand dropCmd = (SqlDropUserCommand)cmd;
 
-                ctx.authentication().removeUser(dropCmd.userName());
+                ctx.security().dropUser(dropCmd.userName());
             }
             else
                 throw new IgniteSQLException("Unsupported DDL operation: " + sql,

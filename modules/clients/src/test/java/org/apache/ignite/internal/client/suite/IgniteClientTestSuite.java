@@ -57,6 +57,7 @@ import org.apache.ignite.internal.processors.rest.ChangeStateCommandHandlerTest;
 import org.apache.ignite.internal.processors.rest.ClientMemcachedProtocolSelfTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorAuthenticationWithCredsSelfTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorAuthenticationWithTokenSelfTest;
+import org.apache.ignite.internal.processors.rest.JettyRestProcessorAuthenticatorUserManagementAuthorizationTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorBaselineSelfTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorBeforeNodeStartSelfTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorGetAllAsArrayTest;
@@ -99,6 +100,7 @@ import org.junit.runners.Suite;
     JettyRestProcessorUnsignedSelfTest.class,
     JettyRestProcessorAuthenticationWithCredsSelfTest.class,
     JettyRestProcessorAuthenticationWithTokenSelfTest.class,
+    JettyRestProcessorAuthenticatorUserManagementAuthorizationTest.class,
     JettyRestProcessorGetAllAsArrayTest.class,
     JettyRestProcessorBaselineSelfTest.class,
     JettyRestProcessorBeforeNodeStartSelfTest.class,
