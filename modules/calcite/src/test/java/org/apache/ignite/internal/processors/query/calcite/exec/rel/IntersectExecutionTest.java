@@ -24,13 +24,13 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType;
 
 /**
- * Test execution of MINUS (EXCEPT) operator.
+ * Test execution of INTERSECT operator.
  */
-public class MinusExecutionTest extends AbstractSetOpExecutionTest {
+public class IntersectExecutionTest extends AbstractSetOpExecutionTest {
     /** {@inheritDoc} */
     @Override protected AbstractSetOpNode<Object[]> setOpNodeFactory(ExecutionContext<Object[]> ctx,
         RelDataType rowType, AggregateType type, boolean all, int inputsCnt) {
-        return new MinusNode<>(ctx, rowType, type, all, rowFactory());
+        return new IntersectNode<>(ctx, rowType, type, all, rowFactory(), inputsCnt);
     }
 
     /** {@inheritDoc} */
@@ -42,21 +42,22 @@ public class MinusExecutionTest extends AbstractSetOpExecutionTest {
             row("Roman", 2),
             row("Igor", 1),
             row("Igor", 1),
-            row("Igor", 1),
-            row("Igor", 2),
-            row("Alexey", 2)
+            row("Igor", 2)
         );
 
         List<Object[]> ds2 = Arrays.asList(
             row("Igor", 1),
             row("Roman", 1),
             row("Igor", 1),
+            row("Igor", 1),
             row("Alexey", 1)
         );
 
         List<Object[]> ds3 = Arrays.asList(
             row("Igor", 1),
-            row("Alexey", 1),
+            row("Roman", 1),
+            row("Igor", 1),
+            row("Roman", 2),
             row("Alexey", 2)
         );
 
@@ -66,14 +67,13 @@ public class MinusExecutionTest extends AbstractSetOpExecutionTest {
             expectedResult = Arrays.asList(
                 row("Igor", 1),
                 row("Igor", 1),
-                row("Igor", 2),
-                row("Roman", 2)
+                row("Roman", 1)
             );
         }
         else {
             expectedResult = Arrays.asList(
-                row("Igor", 2),
-                row("Roman", 2)
+                row("Igor", 1),
+                row("Roman", 1)
             );
         }
 

@@ -24,20 +24,34 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Aggregat
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.GroupKey;
 
 /**
- * Execution node for MINUS (EXCEPT) operator.
+ * Execution node for INTERSECT operator.
  */
-public class MinusNode<Row> extends AbstractSetOpNode<Row> {
+public class IntersectNode<Row> extends AbstractSetOpNode<Row> {
     /** */
-    public MinusNode(ExecutionContext<Row> ctx, RelDataType rowType, AggregateType type, boolean all,
-        RowFactory<Row> rowFactory) {
-        super(ctx, rowType, type, all, rowFactory, new MinusGrouping<>(ctx, rowFactory, type, all));
+    public IntersectNode(ExecutionContext<Row> ctx, RelDataType rowType, AggregateType type, boolean all,
+        RowFactory<Row> rowFactory, int inputsCnt) {
+        super(ctx, rowType, type, all, rowFactory, new IntersectGrouping<>(ctx, rowFactory, type, all, inputsCnt));
     }
 
     /** */
-    private static class MinusGrouping<Row> extends Grouping<Row> {
+    private static class IntersectGrouping<Row> extends Grouping<Row> {
+        /** Inputs count. */
+        private final int inputsCnt;
+
         /** */
-        private MinusGrouping(ExecutionContext<Row> ctx, RowFactory<Row> rowFactory, AggregateType type, boolean all) {
+        private IntersectGrouping(ExecutionContext<Row> ctx, RowFactory<Row> rowFactory, AggregateType type,
+            boolean all, int inputsCnt) {
             super(ctx, rowFactory, type, all);
+
+            this.inputsCnt = inputsCnt;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void endOfSet(int setIdx) {
+            if (type == AggregateType.SINGLE && rowsCnt == 0)
+                groups.clear();
+
+            super.endOfSet(setIdx);
         }
 
         /** */
@@ -47,9 +61,7 @@ public class MinusNode<Row> extends AbstractSetOpNode<Row> {
             GroupKey key = key(row);
 
             if (setIdx == 0) {
-                // Value in the map will always have 2 elements, first - count of keys in the first set,
-                // second - count of keys in all sets except first.
-                cntrs = groups.computeIfAbsent(key, k -> new int[2]);
+                cntrs = groups.computeIfAbsent(key, k -> new int[inputsCnt]);
 
                 cntrs[0]++;
             }
@@ -57,36 +69,42 @@ public class MinusNode<Row> extends AbstractSetOpNode<Row> {
                 cntrs = groups.get(key);
 
                 if (cntrs != null) {
-                    cntrs[1]++;
-
-                    if (cntrs[1] >= cntrs[0])
+                    if (cntrs[setIdx - 1] == 0)
                         groups.remove(key);
+                    else
+                        cntrs[setIdx]++;
                 }
             }
         }
 
         /** */
         @Override protected void addOnMapper(Row row, int setIdx) {
-            // Value in the map will always have 2 elements, first - count of keys in the first set,
-            // second - count of keys in all sets except first.
-            int[] cntrs = groups.computeIfAbsent(key(row), k -> new int[2]);
+            int[] cntrs = groups.computeIfAbsent(key(row), k -> new int[inputsCnt]);
 
-            cntrs[setIdx == 0 ? 0 : 1]++;
+            cntrs[setIdx]++;
         }
 
         /** {@inheritDoc} */
         @Override protected boolean affectResult(int[] cntrs) {
-            return cntrs[0] != cntrs[1];
+            return true;
         }
 
         /** {@inheritDoc} */
         @Override protected int availableRows(int[] cntrs) {
-            assert cntrs.length == 2;
+            int cnt = cntrs[0];
 
-            if (all)
-                return Math.max(cntrs[0] - cntrs[1], 0);
+            for (int i = 1; i < cntrs.length; i++) {
+                if (cntrs[i] < cnt)
+                    cnt = cntrs[i];
+            }
+
+            if (all) {
+                cntrs[0] = cnt; // Whith this we can decrement only the first element to get the same result.
+
+                return cnt;
+            }
             else
-                return cntrs[1] == 0 ? 1 : 0;
+                return cnt == 0 ? 0 : 1;
         }
 
         /** {@inheritDoc} */
@@ -96,6 +114,5 @@ public class MinusNode<Row> extends AbstractSetOpNode<Row> {
 
             cntrs[0] -= amount;
         }
-
     }
 }
