@@ -82,10 +82,10 @@
         {% endif %}
 
         {% if config.ssl_params %}
-             <property name="sslContextFactory">
-                 {{ ssl_params_util.ssl_params(config.ssl_params) }}
-             </property>
-         {% endif %}
+            <property name="sslContextFactory">
+                {{ ssl_params_util.ssl_params(config.ssl_params) }}
+            </property>
+        {% endif %}
 
         {% if config.connector_configuration %}
             <property name="connectorConfiguration">
