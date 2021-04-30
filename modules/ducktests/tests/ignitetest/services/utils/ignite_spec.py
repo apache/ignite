@@ -191,8 +191,10 @@ class IgniteSpec(metaclass=ABCMeta):
 
         script_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "certs")
 
-        self._runcmd(f"{script_dir}/mkcerts.sh {local_dir}")
         self._runcmd(f"rm {local_dir}/duck.lock")
+        self._runcmd(f"cp {script_dir}/* {local_dir}")
+        self._runcmd(f"chmod a+x {local_dir}/*.sh")
+        self._runcmd(f"{local_dir}/mkcerts.sh")
 
         return local_dir
 
