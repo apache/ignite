@@ -43,9 +43,15 @@ public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTa
                 RelMetadataQuery mq,
                 IgniteLogicalIndexScan rel
             ) {
+                RelTraitSet traits = rel.getTraitSet().replace(IgniteConvention.INSTANCE);
+
+                Set<CorrelationId> corrIds = RexUtils.extractCorrelationIds(rel.condition());
+                if (!corrIds.isEmpty())
+                    traits = traits.replace(CorrelationTrait.correlations(corrIds));
+
                 return new IgniteIndexScan(
                     rel.getCluster(),
-                    rel.getTraitSet().replace(IgniteConvention.INSTANCE),
+                    traits,
                     rel.getTable(),
                     rel.indexName(),
                     rel.projects(),
