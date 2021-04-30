@@ -20,9 +20,13 @@ import os
 
 from jinja2 import FileSystemLoader, Environment
 
-DEFAULT_CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
-DEFAULT_IGNITE_CONF = os.path.join(DEFAULT_CONFIG_PATH, "ignite.xml.j2")
-DEFAULT_THIN_CLIENT_CONF = os.path.join(DEFAULT_CONFIG_PATH, "thin_client_config.xml.j2")
+IGNITE_TEMPLATE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
+ZK_TEMPLATE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "zk", "templates")
+DEFAULT_IGNITE_CONF = "ignite.xml.j2"
+DEFAULT_THIN_CLIENT_CONF = "thin_client_config.xml.j2"
+DEFAULT_LOG4J_CONF = "log4j.xml.j2"
+
+TEMPLATE_PATHES = [IGNITE_TEMPLATE_PATH, ZK_TEMPLATE_PATH]
 
 
 class ConfigTemplate:
@@ -30,13 +34,9 @@ class ConfigTemplate:
     Basic configuration.
     """
     def __init__(self, path):
-        tmpl_dir = os.path.dirname(path)
-        tmpl_file = os.path.basename(path)
+        env = Environment(loader=FileSystemLoader(searchpath=TEMPLATE_PATHES))
 
-        tmpl_loader = FileSystemLoader(searchpath=[DEFAULT_CONFIG_PATH, tmpl_dir])
-        env = Environment(loader=tmpl_loader)
-
-        self.template = env.get_template(tmpl_file)
+        self.template = env.get_template(path)
         self.default_params = {}
 
     def render(self, **kwargs):
@@ -79,4 +79,4 @@ class IgniteLoggerConfigTemplate(ConfigTemplate):
     Ignite logger configuration.
     """
     def __init__(self):
-        super().__init__(os.path.join(DEFAULT_CONFIG_PATH, "log4j.xml.j2"))
+        super().__init__(DEFAULT_LOG4J_CONF)
