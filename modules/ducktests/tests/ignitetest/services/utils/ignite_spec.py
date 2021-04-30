@@ -183,7 +183,7 @@ class IgniteSpec(metaclass=ABCMeta):
             self.service.logger.debug("Local shared dir already exists. Exiting. " + local_dir)
             return local_dir
 
-        lock = FileLock("ducktape.lock", timeout=10)
+        lock = FileLock("ducktape.lock", timeout=30)
         with lock:
             if not os.path.exists(os.path.join(local_dir, ".ducktape-generated")):
                 self.service.logger.debug("Local shared dir not exists. Creating. " + local_dir)
