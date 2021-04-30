@@ -355,7 +355,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
 
             if (withMetaStorage) {
                 U.ensureDirectory(cacheWorkDir(tmpConsIdDir, MetaStorage.METASTORAGE_DIR_NAME),
-                    "directory for snapshotting cache group",
+                    "directory for snapshotting metastorage",
                     log);
             }
 
