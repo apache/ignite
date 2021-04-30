@@ -6025,7 +6025,7 @@ public abstract class IgniteUtils {
 
     /**
      * Gets resource name.
-     * Returns a task name {@see getTaskName} if it is a Compute task or a class name otherwise.
+     * Returns a task name if it is a Compute task or a class name otherwise.
      *
      * @param rscCls Class of resource.
      * @return Name of resource.
