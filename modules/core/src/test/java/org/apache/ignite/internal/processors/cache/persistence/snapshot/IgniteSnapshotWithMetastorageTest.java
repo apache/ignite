@@ -143,14 +143,18 @@ public class IgniteSnapshotWithMetastorageTest extends AbstractSnapshotSelfTest 
     public void testMetastorageUpdateOnSnapshotFail() throws Exception {
         AtomicInteger keyCnt = new AtomicInteger();
         AtomicBoolean stop = new AtomicBoolean();
+        Set<String> writtenKeys = new TreeSet<>();
 
         IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
 
         IgniteInternalFuture<?> updFut = GridTestUtils.runMultiThreadedAsync(() -> {
             while (!Thread.currentThread().isInterrupted() && !stop.get()) {
                 try {
-                    ignite.context().distributedMetastorage()
-                        .write(SNAPSHOT_PREFIX + keyCnt.getAndIncrement(), "value");
+                    String key = SNAPSHOT_PREFIX + keyCnt.getAndIncrement();
+
+                    ignite.context().distributedMetastorage().write(key, "value");
+
+                    writtenKeys.add(key);
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException(e);
@@ -158,53 +162,35 @@ public class IgniteSnapshotWithMetastorageTest extends AbstractSnapshotSelfTest 
             }
         }, 3, "dms-updater");
 
-        GridCacheSharedContext<?, ?> cctx = ignite.context().cache().context();
-        GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)cctx.database();
+        ((GridCacheDatabaseSharedManager)ignite.context().cache().context().database())
+            .addCheckpointListener(new CheckpointListener() {
+                @Override public void onMarkCheckpointBegin(Context ctx) {
+                    if (ctx.progress().reason().contains(SNAPSHOT_NAME)) {
+                        Map<String, SnapshotFutureTask> locMap =
+                            GridTestUtils.getFieldValue(snp(ignite), IgniteSnapshotManager.class, "locSnpTasks");
 
-        db.addCheckpointListener(new CheckpointListener() {
-            /** {@inheritDoc} */
-            @Override public void onMarkCheckpointBegin(Context ctx) {
-                if (ctx.progress().reason().contains("Snapshot")) {
-                    Map<String, SnapshotFutureTask> locMap = GridTestUtils.getFieldValue(snp(ignite), IgniteSnapshotManager.class,
-                        "locSnpTasks");
-
-                    // Fail the snapshot task with an exception, all metastorage keys must be successfully continued.
-                    locMap.get(SNAPSHOT_NAME).acceptException(new IgniteCheckedException("Test exception"));
+                        // Fail the snapshot task with an exception, all metastorage keys must be successfully continued.
+                        locMap.get(SNAPSHOT_NAME).acceptException(new IgniteCheckedException("Test exception"));
+                    }
                 }
-            }
 
-            /** {@inheritDoc} */
-            @Override public void onCheckpointBegin(Context ctx) {}
+                @Override public void onCheckpointBegin(Context ctx) {}
 
-            /** {@inheritDoc} */
-            @Override public void beforeCheckpointBegin(Context ctx) {}
-        });
+                @Override public void beforeCheckpointBegin(Context ctx) {}
+            });
 
         IgniteFuture<?> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
 
-        GridTestUtils.assertThrowsAnyCause(log,
-            fut::get,
-            IgniteCheckedException.class,
-            "Test exception");
+        GridTestUtils.assertThrowsAnyCause(log, fut::get, IgniteCheckedException.class, "Test exception");
 
         stop.set(true);
 
         // Load future must complete without exceptions, all metastorage keys must be written.
         updFut.get();
 
-        Set<Integer> allKeys = IntStream.range(0, keyCnt.get()).boxed().collect(Collectors.toSet());
+        Set<String> readedKeys = new TreeSet<>();
 
-        ignite.context().distributedMetastorage().iterate(SNAPSHOT_PREFIX, new BiConsumer<String, Serializable>() {
-            @Override public void accept(String key, Serializable val) {
-                try {
-                    assertTrue(allKeys.remove(Integer.parseInt(key.replace(SNAPSHOT_PREFIX, ""))));
-                }
-                catch (Throwable t) {
-                    fail("Exception reading metastorage: " + t.getMessage());
-                }
-            }
-        });
+        ignite.context().distributedMetastorage().iterate(SNAPSHOT_PREFIX, (key, val) -> readedKeys.add(key));
 
-        assertTrue("Not all metastorage keys have been written: " + allKeys, allKeys.isEmpty());
+        assertEquals("Not all metastorage keys have been written", writtenKeys, readedKeys);
     }
-}
