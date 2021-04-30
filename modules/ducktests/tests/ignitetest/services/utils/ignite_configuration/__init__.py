@@ -143,11 +143,11 @@ class IgniteThinClientConfiguration(NamedTuple):
         return self
 
     # pylint: disable=unused-argument,protected-access
-    def prepare_for_env(self, test_globals, shared_root, node, cluster):
+    def prepare_for_env(self, cluster, node):
         """
         Updates configuration based on current environment.
         """
-        return self.__prepare_ssl(test_globals, shared_root)
+        return self.__prepare_ssl(cluster.globals, cluster.shared_root)
 
     @property
     def service_type(self):
