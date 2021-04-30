@@ -123,30 +123,19 @@ public class IgniteSnapshotWithMetastorageTest extends AbstractSnapshotSelfTest 
 
         stopAllGrids();
 
-        IgniteEx snp0 = startGridsFromSnapshot(Collections.singleton(0),
-            cfg -> resolveSnapshotWorkDirectory(cfg).getAbsolutePath(), SNAPSHOT_NAME, false);
+        Function<IgniteConfiguration, String> pathProv = cfg -> resolveSnapshotWorkDirectory(cfg).getAbsolutePath();
+        Set<String> keySet0 = new TreeSet<>();
+        Set<String> keySet1 = new TreeSet<>();
 
-        Set<String> allKeys = new HashSet<>();
-        snp0.context().distributedMetastorage().iterate(SNAPSHOT_PREFIX, (key, val) -> allKeys.add(key));
+        IgniteEx snp0 = startGridsFromSnapshot(Collections.singleton(0), pathProv, SNAPSHOT_NAME, false);
+        snp0.context().distributedMetastorage().iterate(SNAPSHOT_PREFIX, (key, val) -> keySet0.add(key));
 
         stopGrid(0);
 
-        IgniteEx snp1 = startGridsFromSnapshot(Collections.singleton(1),
-            cfg -> resolveSnapshotWorkDirectory(cfg).getAbsolutePath(), SNAPSHOT_NAME, false);
+        IgniteEx snp1 = startGridsFromSnapshot(Collections.singleton(1), pathProv, SNAPSHOT_NAME, false);
+        snp1.context().distributedMetastorage().iterate(SNAPSHOT_PREFIX, (key, val) -> keySet1.add(key));
 
-        // Iterator reads keys from the node heap map.
-        snp1.context().distributedMetastorage()
-            .iterate(SNAPSHOT_PREFIX, new BiConsumer<String, Serializable>() {
-                @Override public void accept(String key, Serializable value) {
-                    try {
-                        assertTrue("Keys must be the same on all nodes [key=" + key + ", all=" + allKeys + ']',
-                            allKeys.contains(key));
-                    }
-                    catch (Throwable t) {
-                        fail("Exception reading metastorage: " + t.getMessage());
-                    }
-                }
-            });
+        assertEquals("Keys must be the same on all nodes", keySet0, keySet1);
     }
 
     /** @throws Exception If fails. */
