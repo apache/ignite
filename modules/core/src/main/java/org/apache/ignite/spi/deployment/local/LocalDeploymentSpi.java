@@ -201,9 +201,7 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSp
 
         // move forward, localDeployTask compatibility issue.
         if (clsLdrRsrcs != null) {
-            if (ldrRsrcs0.size() > 1) {
-                ldrRsrcs0.remove(ldr);
-
+            if (ldrRsrcs0.remove(ldr) != null) {
                 ldrRsrcs0.put(ldr, clsLdrRsrcs);
 
                 ldrRsrcs = ldrRsrcs0;
