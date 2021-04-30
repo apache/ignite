@@ -2378,11 +2378,11 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /**
      * @param res Response.
      */
-    protected void assertPartitionsSame(IdleVerifyResultV2 res) throws AssertionFailedError {
+    protected static void assertPartitionsSame(IdleVerifyResultV2 res) throws AssertionFailedError {
         if (res.hasConflicts()) {
             StringBuilder b = new StringBuilder();
 
-            res.print(b::append);
+            res.print(b::append, true);
 
             fail(b.toString());
         }
