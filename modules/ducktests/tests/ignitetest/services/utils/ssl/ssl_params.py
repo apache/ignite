@@ -27,7 +27,6 @@ DEFAULT_CLIENT_KEYSTORE = 'client.jks'
 DEFAULT_ADMIN_KEYSTORE = 'admin.jks'
 DEFAULT_PASSWORD = "123456"
 DEFAULT_TRUSTSTORE = "truststore.jks"
-DEFAULT_ROOT = "/opt/"
 
 SSL_PARAMS_KEY = "params"
 SSL_KEY = "ssl"
