@@ -17,39 +17,19 @@
 
 package org.apache.ignite.configuration.schemas.table;
 
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
 import org.apache.ignite.configuration.annotation.Config;
-import org.apache.ignite.configuration.annotation.NamedConfigValue;
 import org.apache.ignite.configuration.annotation.Value;
 import org.apache.ignite.configuration.validation.Immutable;
 
-/**
- * Table configuartion schema class.
- */
+/** Configuration for single column in index. */
 @Config
-public class TableConfigurationSchema {
-    /** Table name. */
+public class IndexColumnConfigurationSchema {
+    /** Column name. */
     @Value
     @Immutable
-    public String name;
+    String name;
 
-    /** Table partitions. */
-    @Min(0)
-    @Max(65000)
-    @Value(hasDefault = true)
-    public int partitions = 1024;
-
-    /** Count of table partition replicas. */
-    @Min(1)
-    @Value(hasDefault = true)
-    public int replicas = 0;
-
-    /** Columns configuration. */
-    @NamedConfigValue
-    ColumnConfigurationSchema columns;
-
-    /** Indices configuration. */
-    @NamedConfigValue
-    TableIndexConfigurationSchema indices;
+    /** Ascending flag. */
+    @Value
+    boolean asc;
 }

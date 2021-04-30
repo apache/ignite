@@ -17,39 +17,40 @@
 
 package org.apache.ignite.configuration.schemas.table;
 
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
 import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.NamedConfigValue;
 import org.apache.ignite.configuration.annotation.Value;
 import org.apache.ignite.configuration.validation.Immutable;
 
-/**
- * Table configuartion schema class.
- */
+/** SQL index configuration. */
 @Config
-public class TableConfigurationSchema {
-    /** Table name. */
+public class TableIndexConfigurationSchema {
+    /** Index name. */
     @Value
     @Immutable
-    public String name;
+    String name;
 
-    /** Table partitions. */
-    @Min(0)
-    @Max(65000)
+    /** Index type name. */
+    @Value
+    String type;
+
+    /** Has default value flag. */
     @Value(hasDefault = true)
-    public int partitions = 1024;
+    boolean uniq = false;
 
-    /** Count of table partition replicas. */
-    @Min(1)
+    /** Columns configuration for sorted indexes. */
+    @NamedConfigValue
+    IndexColumnConfigurationSchema columns;
+
+    /** Columns names for hash indexes. */
     @Value(hasDefault = true)
-    public int replicas = 0;
+    String[] colNames = new String[0];
 
-    /** Columns configuration. */
-    @NamedConfigValue
-    ColumnConfigurationSchema columns;
+    /** Expression for PartialIndex: PARTIAL indexes. */
+    @Value(hasDefault = true)
+    String expr = "";
 
-    /** Indices configuration. */
-    @NamedConfigValue
-    TableIndexConfigurationSchema indices;
+    /** Affinity column names for PrimaryIndex. */
+    @Value(hasDefault = true)
+    String[] affinityColumns = new String[0];
 }
