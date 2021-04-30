@@ -61,7 +61,7 @@ class TxPrepType(IntEnum):
     """
     CELL_ONLY = 0
     CELL_WITH_MULTIKEY = 1
-    CELL_WITH_NONCOLLOCATED = 2
+    CELL_WITH_NONCOLOCATED = 2
 
 
 # pylint: disable=W0223
@@ -81,7 +81,7 @@ class CellularAffinity(IgniteTest):
 
     PREPARED_TX_CNT = 500  # possible amount at real cluster under load (per cell).
     PREPARED_MULTIKEY_TX_CNT = PREPARED_TX_CNT / 2  # should not cause full recovery waiting on alive nodes (per cell)
-    PREPARED_NONCOLLOCATED_TX_CNT = PREPARED_TX_CNT * 2  # huge value, should not affect dramatically on switch speed
+    PREPARED_NONCOLOCATED_TX_CNT = PREPARED_TX_CNT * 2  # huge value, should not affect dramatically on switch speed
 
     CONFIG_TEMPLATE = """
             <property name="cacheConfiguration">
@@ -152,7 +152,7 @@ class CellularAffinity(IgniteTest):
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @matrix(stop_type=[StopType.SIGTERM],
             discovery_type=[DiscoreryType.ZooKeeper],
-            prep_type=[TxPrepType.CELL_ONLY, TxPrepType.CELL_WITH_MULTIKEY, TxPrepType.CELL_WITH_NONCOLLOCATED])
+            prep_type=[TxPrepType.CELL_ONLY, TxPrepType.CELL_WITH_MULTIKEY, TxPrepType.CELL_WITH_NONCOLOCATED])
     def test_latency(self, ignite_version, stop_type, discovery_type, prep_type):
         """
         Tests Cellular switch tx latency.
@@ -200,8 +200,8 @@ class CellularAffinity(IgniteTest):
             multi_cnt = self.PREPARED_MULTIKEY_TX_CNT * cells_amount \
                 if cell_id == failed_cell_id and prep_type == TxPrepType.CELL_WITH_MULTIKEY else 0
 
-            noncoll_cnt = self.PREPARED_NONCOLLOCATED_TX_CNT * cells_amount \
-                if cell_id == failed_cell_id and prep_type == TxPrepType.CELL_WITH_NONCOLLOCATED else 0
+            noncoll_cnt = self.PREPARED_NONCOLOCATED_TX_CNT * cells_amount \
+                if cell_id == failed_cell_id and prep_type == TxPrepType.CELL_WITH_NONCOLOCATED else 0
 
             node, prepared_tx_loader = \
                 self.start_cell_with_prepared_txs(ignite_version, f'C{cell_id}', discovery_spi, modules, multi_cnt,
@@ -284,7 +284,7 @@ class CellularAffinity(IgniteTest):
             modules=modules, startup_timeout_sec=180)
 
     # pylint: disable=too-many-arguments
-    def start_cell_with_prepared_txs(self, version, cell_id, discovery_spi, modules, multi_cnt=0, noncoll_cnt=0):
+    def start_cell_with_prepared_txs(self, version, cell_id, discovery_spi, modules, multi_cnt=0, noncol_cnt=0):
         """
         Starts cell with prepared transactions.
         """
@@ -303,7 +303,7 @@ class CellularAffinity(IgniteTest):
                     "cell": cell_id,
                     "txCnt": CellularAffinity.PREPARED_TX_CNT,
                     "multiTxCnt": multi_cnt,
-                    "noncollocatedTxCnt": noncoll_cnt},
+                    "noncolocatedTxCnt": noncol_cnt},
             jvm_opts=['-D' + CellularAffinity.ATTRIBUTE + '=' + cell_id], modules=modules, startup_timeout_sec=180)
 
         prepared_tx_streamer.start_async()  # starts last server node and creates prepared txs on it.

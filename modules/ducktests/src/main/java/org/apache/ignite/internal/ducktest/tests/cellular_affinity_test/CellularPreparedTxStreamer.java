@@ -42,7 +42,7 @@ public class CellularPreparedTxStreamer extends IgniteAwareApplication {
         final String cell = jsonNode.get("cell").asText();
         final int txCnt = jsonNode.get("txCnt").asInt();
         final int multiTxCnt = jsonNode.get("multiTxCnt").asInt();
-        final int noncollocatedTxCnt = jsonNode.get("noncollocatedTxCnt").asInt();
+        final int noncolocatedTxCnt = jsonNode.get("noncolocatedTxCnt").asInt();
 
         final String avoidCell = "C0"; // Always exist, should show speed of non-affected cell.
 
@@ -109,7 +109,7 @@ public class CellularPreparedTxStreamer extends IgniteAwareApplication {
         assert i > -20_000_000;
         i = -20_000_000; // To have no intersection with other node's txs.
 
-        while (cnt != noncollocatedTxCnt && !terminated()) {
+        while (cnt != noncolocatedTxCnt && !terminated()) {
             String keyCell = getCellIdByKey(aff, --i, attr);
 
             if (!keyCell.equals(cell) && !keyCell.equals(avoidCell)) {
@@ -120,7 +120,7 @@ public class CellularPreparedTxStreamer extends IgniteAwareApplication {
                 ((TransactionProxyImpl<?, ?>)tx).tx().prepare(true);
 
                 if (cnt++ % 100 == 0)
-                    log.info("Long Noncollocated Tx prepared [key=" + i + ",cnt=" + cnt + "]");
+                    log.info("Long Noncolocated Tx prepared [key=" + i + ",cnt=" + cnt + "]");
             }
         }
 
