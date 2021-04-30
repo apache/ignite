@@ -188,16 +188,15 @@ class IgniteSpec(metaclass=ABCMeta):
                 self.service.logger.debug("Local shared dir already exists. Exiting. " + local_dir)
                 return local_dir
 
-            else:
-                self.service.logger.debug("Local shared dir not exists. Creating. " + local_dir)
-                os.mkdir(local_dir)
+            self.service.logger.debug("Local shared dir not exists. Creating. " + local_dir)
+            os.mkdir(local_dir)
 
-                script_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "certs")
+            script_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "certs")
 
-                self._runcmd(f"cp {script_dir}/* {local_dir}")
-                self._runcmd(f"chmod a+x {local_dir}/*.sh")
-                self._runcmd(f"{local_dir}/mkcerts.sh")
-                self._runcmd(f"touch {local_dir}/.ducktape-generated")
+            self._runcmd(f"cp {script_dir}/* {local_dir}")
+            self._runcmd(f"chmod a+x {local_dir}/*.sh")
+            self._runcmd(f"{local_dir}/mkcerts.sh")
+            self._runcmd(f"touch {local_dir}/.ducktape-generated")
 
         return local_dir
 
