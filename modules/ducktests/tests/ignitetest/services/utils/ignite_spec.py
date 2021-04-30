@@ -26,7 +26,6 @@ import tempfile
 from abc import ABCMeta, abstractmethod
 from filelock import FileLock
 
-
 from ignitetest.services.utils import IgniteServiceType
 from ignitetest.services.utils.config_template import IgniteClientConfigTemplate, IgniteServerConfigTemplate, \
     IgniteLoggerConfigTemplate, IgniteThinClientConfigTemplate
@@ -183,9 +182,13 @@ class IgniteSpec(metaclass=ABCMeta):
             self.service.logger.debug("Local shared dir already exists. Exiting. " + local_dir)
             return local_dir
 
-        lock = FileLock("ducktape.lock", timeout=30)
+        lock = FileLock("ducktape.lock", timeout=120)
         with lock:
-            if not os.path.exists(os.path.join(local_dir, ".ducktape-generated")):
+            if os.path.exists(os.path.join(local_dir, ".ducktape-generated")):
+                self.service.logger.debug("Local shared dir already exists. Exiting. " + local_dir)
+                return local_dir
+
+            else:
                 self.service.logger.debug("Local shared dir not exists. Creating. " + local_dir)
                 os.mkdir(local_dir)
 
