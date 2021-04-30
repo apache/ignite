@@ -17,25 +17,22 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.Serializable;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -174,9 +171,11 @@ public class IgniteSnapshotWithMetastorageTest extends AbstractSnapshotSelfTest 
                     }
                 }
 
-                @Override public void onCheckpointBegin(Context ctx) {}
+                @Override public void onCheckpointBegin(Context ctx) {
+                }
 
-                @Override public void beforeCheckpointBegin(Context ctx) {}
+                @Override public void beforeCheckpointBegin(Context ctx) {
+                }
             });
 
         IgniteFuture<?> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
@@ -194,3 +193,4 @@ public class IgniteSnapshotWithMetastorageTest extends AbstractSnapshotSelfTest 
 
         assertEquals("Not all metastorage keys have been written", writtenKeys, readedKeys);
     }
+}

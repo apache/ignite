@@ -307,6 +307,9 @@ public class DmsDataWriterWorkerTest extends GridCommonAbstractTest {
         worker.update(histItem("key2", "val2"));
 
         latch.await();
+
+        Thread.sleep(20);
+
         updating.countDown();
 
         worker.cancel(true);
