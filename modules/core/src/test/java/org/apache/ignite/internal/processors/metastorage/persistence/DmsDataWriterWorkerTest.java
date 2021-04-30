@@ -308,7 +308,7 @@ public class DmsDataWriterWorkerTest extends GridCommonAbstractTest {
 
         latch.await();
 
-        Thread.sleep(20);
+        Thread.sleep(100);
 
         updating.countDown();
 
