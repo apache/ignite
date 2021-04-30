@@ -23,8 +23,9 @@ import json
 import os
 import subprocess
 import tempfile
-import time
 from abc import ABCMeta, abstractmethod
+from filelock import FileLock
+
 
 from ignitetest.services.utils import IgniteServiceType
 from ignitetest.services.utils.config_template import IgniteClientConfigTemplate, IgniteServerConfigTemplate, \
@@ -178,23 +179,22 @@ class IgniteSpec(metaclass=ABCMeta):
             self.service.logger.debug("Ssl disabled. Nothing to generate.")
             return local_dir
 
-        if os.path.isdir(local_dir):
+        if os.path.isdir(local_dir) and os.path.exists(os.path.join(local_dir, ".ducktape-generated")):
             self.service.logger.debug("Local shared dir already exists. Exiting. " + local_dir)
-            while os.path.exists(os.path.join(local_dir, "duck.lock")):
-                time.sleep(1)
             return local_dir
 
-        self.service.logger.debug("Local shared dir not exists. Creating. " + local_dir)
-        os.mkdir(local_dir)
+        lock = FileLock("ducktape.lock", timeout=10)
+        with lock:
+            if not os.path.exists(os.path.join(local_dir, ".ducktape-generated")):
+                self.service.logger.debug("Local shared dir not exists. Creating. " + local_dir)
+                os.mkdir(local_dir)
 
-        self._runcmd(f"touch {local_dir}/duck.lock")
+                script_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "certs")
 
-        script_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "certs")
-
-        self._runcmd(f"rm {local_dir}/duck.lock")
-        self._runcmd(f"cp {script_dir}/* {local_dir}")
-        self._runcmd(f"chmod a+x {local_dir}/*.sh")
-        self._runcmd(f"{local_dir}/mkcerts.sh")
+                self._runcmd(f"cp {script_dir}/* {local_dir}")
+                self._runcmd(f"chmod a+x {local_dir}/*.sh")
+                self._runcmd(f"{local_dir}/mkcerts.sh")
+                self._runcmd(f"touch {local_dir}/.ducktape-generated")
 
         return local_dir
 
