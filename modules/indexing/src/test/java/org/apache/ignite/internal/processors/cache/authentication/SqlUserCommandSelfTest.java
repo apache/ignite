@@ -205,8 +205,6 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
     public void testNotAuthorizedOperation() throws Exception {
         withSecurityContextOnAllNodes(secCtxDflt);
 
-        grid(0).context().security().withContext(secCtxDflt);
-
         userSql(0, "CREATE USER user0 WITH PASSWORD 'user0'");
 
         SecurityContext secCtx = authenticate(grid(0), "USER0", "user0");
