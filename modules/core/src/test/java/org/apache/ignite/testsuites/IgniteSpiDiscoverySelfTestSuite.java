@@ -72,6 +72,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySslSecuredUnsecuredTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySslSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySslTrustedSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySslTrustedUntrustedTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryWithAddressFilterTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryWithWrongServerTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc.TcpDiscoveryJdbcIpFinderSelfTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinderSelfTest;
@@ -135,6 +136,8 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
     AuthenticationRestartTest.class,
 
     TcpDiscoveryWithWrongServerTest.class,
+
+    TcpDiscoveryWithAddressFilterTest.class,
 
     TcpDiscoverySpiReconnectDelayTest.class,
 
