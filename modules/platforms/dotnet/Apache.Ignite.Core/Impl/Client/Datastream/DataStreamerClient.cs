@@ -105,6 +105,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         public void Add(TK key, TV val)
         {
             // TODO:
+            // 0. What if current topology is not yet discovered (socket just connected)??? 
             // 1. Get current topology from the FailoverSocket (if partition awareness is enabled),
             // or use default node.
             // 2. Get or create a buffer for target node id
