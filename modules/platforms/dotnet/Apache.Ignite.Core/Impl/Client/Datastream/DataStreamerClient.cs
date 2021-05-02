@@ -47,11 +47,15 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         private readonly ConcurrentDictionary<ClientSocket, DataStreamerClientBuffer<TK, TV>> _buffers =
             new ConcurrentDictionary<ClientSocket, DataStreamerClientBuffer<TK, TV>>();
         
-        public DataStreamerClient(ClientFailoverSocket socket, string cacheName, DataStreamerClientOptions<TK, TV> options)
+        public DataStreamerClient(
+            ClientFailoverSocket socket, 
+            string cacheName,
+            DataStreamerClientOptions<TK, TV> options)
         {
             Debug.Assert(socket != null);
             Debug.Assert(!string.IsNullOrEmpty(cacheName));
 
+            // TODO: Validate options (non-zero buffer sizes).
             _socket = socket;
             _cacheName = cacheName;
             _cacheId = BinaryUtils.GetCacheId(cacheName);

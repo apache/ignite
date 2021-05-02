@@ -34,6 +34,7 @@ namespace Apache.Ignite.Core.Client.Datastream
         {
             ServerPerNodeBufferSize = DataStreamerClientDefaults.ServerPerNodeBufferSize;
             ServerPerThreadBufferSize = DataStreamerClientDefaults.ServerPerThreadBufferSize;
+            ClientPerNodeBufferSize = DataStreamerClientDefaults.ClientPerNodeBufferSize;
         }
 
         /// <summary>

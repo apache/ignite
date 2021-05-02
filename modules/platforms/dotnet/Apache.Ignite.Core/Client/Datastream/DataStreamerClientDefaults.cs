@@ -29,6 +29,12 @@ namespace Apache.Ignite.Core.Client.Datastream
         public const int ServerPerNodeBufferSize = 512;
 
         /// <summary>
+        /// The default per node buffer size,
+        /// see <see cref="DataStreamerClientOptions{TK,TV}.ClientPerNodeBufferSize"/>.
+        /// </summary>
+        public const int ClientPerNodeBufferSize = 512;
+
+        /// <summary>
         /// The default per thread buffer size,
         /// see <see cref="DataStreamerClientOptions{TK,TV}.ServerPerThreadBufferSize"/>.
         /// </summary>
