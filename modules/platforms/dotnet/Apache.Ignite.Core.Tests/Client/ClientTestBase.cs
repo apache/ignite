@@ -129,6 +129,14 @@ namespace Apache.Ignite.Core.Tests.Client
         public IIgniteClient Client { get; set; }
 
         /// <summary>
+        /// Gets the value indicating whether partition awareness is enabled for this instance.
+        /// </summary>
+        public bool EnablePartitionAwareness
+        {
+            get { return _enablePartitionAwareness; }
+        }
+
+        /// <summary>
         /// Gets Ignite.
         /// </summary>
         protected static IIgnite GetIgnite(int? idx = null)
