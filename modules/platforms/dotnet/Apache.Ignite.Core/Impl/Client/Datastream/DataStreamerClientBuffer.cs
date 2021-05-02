@@ -17,13 +17,15 @@
 
 namespace Apache.Ignite.Core.Impl.Client.Datastream
 {
+    using System.Collections;
     using System.Collections.Concurrent;
+    using System.Collections.Generic;
     using System.Threading;
 
     /// <summary>
     /// Client data streamer buffer.
     /// </summary>
-    internal sealed class DataStreamerClientBuffer<TK, TV>
+    internal sealed class DataStreamerClientBuffer<TK, TV> : IEnumerable<DataStreamerClientEntry<TK, TV>>
     {
         /** Concurrent bag already has per-thread buffers. */
         private readonly ConcurrentBag<DataStreamerClientEntry<TK, TV>> _entries = 
@@ -41,6 +43,11 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         public DataStreamerClientBuffer(int maxSize)
         {
             _maxSize = maxSize;
+        }
+
+        public int Count
+        {
+            get { return _entries.Count; }
         }
 
         public bool Add(TK key, TV val)
@@ -70,6 +77,16 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         public bool MarkForFlush()
         {
             return Interlocked.CompareExchange(ref _flushing, 1, 0) == 0;
+        }
+
+        public IEnumerator<DataStreamerClientEntry<TK, TV>> GetEnumerator()
+        {
+            return _entries.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
         }
     }
 }

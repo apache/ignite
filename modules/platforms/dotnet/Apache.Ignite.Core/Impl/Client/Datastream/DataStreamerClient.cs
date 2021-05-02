@@ -43,9 +43,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /** */
         private readonly DataStreamerClientOptions<TK, TV> _options;
 
-        /** TODO: Handle removals for value types */
-        private readonly ConcurrentQueue<KeyValuePair<TK, TV>> _entries = new ConcurrentQueue<KeyValuePair<TK, TV>>();
-
         /** */
         private readonly ConcurrentDictionary<ClientSocket, DataStreamerClientBuffer<TK, TV>> _buffers =
             new ConcurrentDictionary<ClientSocket, DataStreamerClientBuffer<TK, TV>>();
@@ -68,25 +65,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             // TODO: Dispose should not throw - how can we achieve that?
             // Require Flush, like Transaction requires Commit?
             // Log errors, but don't throw?
-            _socket.DoOutInOp(ClientOp.DataStreamerStart, ctx =>
-            {
-                var w = ctx.Writer;
-
-                w.WriteInt(_cacheId);
-                w.WriteByte(0x10); // Close
-                w.WriteInt(_options.ServerPerNodeBufferSize); // PerNodeBufferSize
-                w.WriteInt(_options.ServerPerThreadBufferSize); // PerThreadBufferSize
-                w.WriteObject(_options.Receiver); // Receiver
-
-                w.WriteInt(_entries.Count);
-
-                foreach (var entry in _entries)
-                {
-                    w.WriteObjectDetached(entry.Key);
-                    w.WriteObjectDetached(entry.Value);
-                }
-            }, ctx => ctx.Stream.ReadLong());
-        }
 
         /** <inheritdoc /> */
         public string CacheName
@@ -111,7 +89,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             // or server node leaves the cluster.
             // We should track such topology changes by subscribing to topology update events.  
             var socket = _socket.GetAffinitySocket(_cacheId, key) ?? _socket.GetSocket();
-
             var buffer = _buffers.GetOrAdd(socket, _ => CreateBuffer());
 
             while (true)
@@ -123,27 +100,43 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
                 if (buffer.MarkForFlush())
                 {
-                    ThreadPool.QueueUserWorkItem(_ => FlushBuffer(buffer, socket));
+                    var oldBuffer = buffer;
+                    ThreadPool.QueueUserWorkItem(_ => FlushBuffer(oldBuffer, socket));
 
-                    // TODO: Concurrent update should not be possible.
-                    _buffers[socket] = CreateBuffer();
+                    buffer = CreateBuffer();
+                    _buffers[socket] = buffer;
                 }
             }
-            
-            // TODO:
-            // 0. What if current topology is not yet discovered (socket just connected)??? 
-            // 1. Get current topology from the FailoverSocket (if partition awareness is enabled),
-            // or use default node.
-            // 2. Get or create a buffer for target node id
-            // 3. If buffer is full, send it to the node
-            // 4. If the node is not available, retry with other nodes until successful.
-            _entries.Enqueue(new KeyValuePair<TK, TV>(key, val));
         }
 
         private void FlushBuffer(DataStreamerClientBuffer<TK, TV> buffer, ClientSocket socket)
         {
-            // TODO: Flush until succeeded.
-            throw new NotImplementedException();
+            socket.DoOutInOp(ClientOp.DataStreamerStart, ctx =>
+            {
+                var w = ctx.Writer;
+
+                w.WriteInt(_cacheId);
+                w.WriteByte(0x10); // Close
+                w.WriteInt(_options.ServerPerNodeBufferSize); // PerNodeBufferSize
+                w.WriteInt(_options.ServerPerThreadBufferSize); // PerThreadBufferSize
+                w.WriteObject(_options.Receiver); // Receiver
+
+                w.WriteInt(buffer.Count);
+
+                foreach (var entry in buffer)
+                {
+                    w.WriteObjectDetached(entry.Key);
+
+                    if (entry.Remove)
+                    {
+                        w.WriteObject<object>(null);
+                    }
+                    else
+                    {
+                        w.WriteObjectDetached(entry.Val);
+                    }
+                }
+            }, ctx => ctx.Stream.ReadLong());
         }
 
         private DataStreamerClientBuffer<TK, TV> CreateBuffer()
