@@ -17,8 +17,51 @@
 
 namespace Apache.Ignite.Core.Impl.Client.Datastream
 {
-    internal class DataStreamerClientBuffer
+    using System.Collections.Concurrent;
+    using System.Threading;
+
+    /// <summary>
+    /// Client data streamer buffer.
+    /// </summary>
+    internal sealed class DataStreamerClientBuffer<TK, TV>
     {
+        /** Concurrent bag already has per-thread buffers. */
+        private readonly ConcurrentBag<DataStreamerClientEntry<TK, TV>> _entries = 
+            new ConcurrentBag<DataStreamerClientEntry<TK, TV>>();
+
+        /** */
+        private readonly int _maxSize;
+
+        /** */
+        private int _size;
+
+        public DataStreamerClientBuffer(int maxSize)
+        {
+            _maxSize = maxSize;
+        }
+
+        public bool Add(TK key, TV val)
+        {
+            if (Interlocked.Increment(ref _size) > _maxSize)
+            {
+                return false;
+            }
+            
+            _entries.Add(new DataStreamerClientEntry<TK, TV>(key, val));
+
+            return true;
+        }
         
+        public bool Remove(TK key)
+        {
+            if (Interlocked.Increment(ref _size) > _maxSize)
+            {
+                return false;
+            }
+            
+            _entries.Add(new DataStreamerClientEntry<TK, TV>(key));
+
+            return true;
+        }
     }
 }

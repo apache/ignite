@@ -28,11 +28,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     /// <summary>
     ///
     /// </summary>
-    internal class DataStreamerClient<TK, TV> : IDataStreamerClient<TK, TV>
+    internal sealed class DataStreamerClient<TK, TV> : IDataStreamerClient<TK, TV>
     {
-        /** */
-        private static readonly Guid DefaultNodeId = Guid.Empty;
-        
         /** */
         private readonly ClientFailoverSocket _socket;
 
@@ -49,8 +46,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         private readonly ConcurrentQueue<KeyValuePair<TK, TV>> _entries = new ConcurrentQueue<KeyValuePair<TK, TV>>();
 
         /** */
-        private readonly ConcurrentDictionary<Guid, DataStreamerClientBuffer> _buffers =
-            new ConcurrentDictionary<Guid, DataStreamerClientBuffer>();
+        private readonly ConcurrentDictionary<Guid, DataStreamerClientBuffer<TK, TV>> _buffers =
+            new ConcurrentDictionary<Guid, DataStreamerClientBuffer<TK, TV>>();
         
         public DataStreamerClient(ClientFailoverSocket socket, string cacheName, DataStreamerClientOptions<TK, TV> options)
         {
