@@ -65,6 +65,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             // TODO: Dispose should not throw - how can we achieve that?
             // Require Flush, like Transaction requires Commit?
             // Log errors, but don't throw?
+        }
 
         /** <inheritdoc /> */
         public string CacheName
