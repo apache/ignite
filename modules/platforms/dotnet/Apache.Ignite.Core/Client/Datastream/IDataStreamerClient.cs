@@ -30,7 +30,15 @@ namespace Apache.Ignite.Core.Client.Datastream
 
         DataStreamerClientOptions<TK, TV> Options { get; }
 
-        // TODO: We don't need async overloads - flushing should only happen in the background
+        // TODO: Handle removals when val is null.
+        /// <summary>
+        /// Adds an entry to the streamer.
+        /// <para />
+        /// This method adds an entry to the buffer - it does not block the thread and does not perform IO.
+        /// When the buffer gets full, it is scheduled for asynchronous flush. 
+        /// </summary>
+        /// <param name="key">Key.</param>
+        /// <param name="val">Value.</param>
         void Add(TK key, TV val);
 
         void Add(IEnumerable<KeyValuePair<TK, TV>> entries);
