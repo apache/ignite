@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Impl.Client.Datastream
 {
-    using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
@@ -25,6 +24,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Client.Datastream;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     ///
@@ -69,6 +69,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             // TODO: Dispose should not throw - how can we achieve that?
             // Require Flush, like Transaction requires Commit?
             // Log errors, but don't throw?
+            
+            // TODO: Lock?
+            Flush();
         }
 
         /** <inheritdoc /> */
@@ -106,7 +109,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 if (buffer.MarkForFlush())
                 {
                     var oldBuffer = buffer;
-                    ThreadPool.QueueUserWorkItem(_ => FlushBuffer(oldBuffer, socket));
+                    ThreadPool.QueueUserWorkItem(_ => FlushBufferAsync(oldBuffer, socket));
 
                     buffer = CreateBuffer();
                     _buffers[socket] = buffer;
@@ -114,9 +117,10 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
         }
 
-        private void FlushBuffer(DataStreamerClientBuffer<TK, TV> buffer, ClientSocket socket)
+        private Task FlushBufferAsync(DataStreamerClientBuffer<TK, TV> buffer, ClientSocket socket)
         {
-            socket.DoOutInOp(ClientOp.DataStreamerStart, ctx =>
+            // TODO: Flush in a loop until succeeded.
+            return socket.DoOutInOpAsync(ClientOp.DataStreamerStart, ctx =>
             {
                 var w = ctx.Writer;
 
@@ -166,11 +170,18 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         public void Flush()
         {
-            throw new System.NotImplementedException();
+            FlushAsync().Wait();
         }
 
         public Task FlushAsync()
         {
+            if (_buffers.IsEmpty)
+            {
+                return TaskRunner.CompletedTask;
+            }
+            
+            var tasks = new List<Task>(_buffers.Count);
+            
             foreach (var pair in _buffers)
             {
                 var buffer = pair.Value;
@@ -179,12 +190,12 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 {
                     var socket = pair.Key;
                     
-                    ThreadPool.QueueUserWorkItem(_ => FlushBuffer(buffer, socket));
+                    // TODO: FlushBufferAsync is not true async, we want to write in a separate thread too?
+                    tasks.Add(FlushBufferAsync(buffer, socket));
                 }
             }
             
-            // TODO: Compose flush tasks.
-            return Task.CompletedTask;
+            return TaskRunner.WhenAll(tasks.ToArray());
         }
     }
 }
