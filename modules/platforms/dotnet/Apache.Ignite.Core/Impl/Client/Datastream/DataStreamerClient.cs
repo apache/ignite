@@ -171,10 +171,20 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         public Task FlushAsync()
         {
-            foreach (var buffer in _buffers)
+            foreach (var pair in _buffers)
             {
-                throw new NotImplementedException();
+                var buffer = pair.Value;
+
+                if (buffer.MarkForFlush())
+                {
+                    var socket = pair.Key;
+                    
+                    ThreadPool.QueueUserWorkItem(_ => FlushBuffer(buffer, socket));
+                }
             }
+            
+            // TODO: Compose flush tasks.
+            return Task.CompletedTask;
         }
     }
 }
