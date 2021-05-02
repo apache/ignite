@@ -298,7 +298,7 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             IgniteArgumentCheck.NotNullOrEmpty(cacheName, "cacheName");
             
-            return new DataStreamerClient<TK, TV>(this, cacheName, options);
+            return new DataStreamerClient<TK, TV>(_socket, cacheName, options);
         }
 
         /** <inheritDoc /> */

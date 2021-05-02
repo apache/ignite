@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     internal class DataStreamerClient<TK, TV> : IDataStreamerClient<TK, TV>
     {
         /** */
-        private readonly IgniteClient _client;
+        private readonly ClientFailoverSocket _socket;
 
         /** */
         private readonly int _cacheId;
@@ -44,12 +44,12 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /** TODO: Handle removals for value types */
         private readonly ConcurrentQueue<KeyValuePair<TK, TV>> _entries = new ConcurrentQueue<KeyValuePair<TK, TV>>();
 
-        public DataStreamerClient(IgniteClient client, string cacheName, DataStreamerClientOptions<TK, TV> options)
+        public DataStreamerClient(ClientFailoverSocket socket, string cacheName, DataStreamerClientOptions<TK, TV> options)
         {
-            Debug.Assert(client != null);
+            Debug.Assert(socket != null);
             Debug.Assert(!string.IsNullOrEmpty(cacheName));
 
-            _client = client;
+            _socket = socket;
             _cacheName = cacheName;
             _cacheId = BinaryUtils.GetCacheId(cacheName);
 
@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             // TODO: Dispose should not throw - how can we achieve that?
             // Require Flush, like Transaction requires Commit?
             // Log errors, but don't throw?
-            _client.Socket.DoOutInOp(ClientOp.DataStreamerStart, ctx =>
+            _socket.DoOutInOp(ClientOp.DataStreamerStart, ctx =>
             {
                 var w = ctx.Writer;
 
@@ -99,6 +99,12 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         public void Add(TK key, TV val)
         {
+            // TODO:
+            // 1. Get current topology from the FailoverSocket (if partition awareness is enabled),
+            // or use default node.
+            // 2. Get or create a buffer for target node id
+            // 3. If buffer is full, send it to the node
+            // 4. If the node is not available, retry with other nodes until successful.
             _entries.Enqueue(new KeyValuePair<TK, TV>(key, val));
         }
 
