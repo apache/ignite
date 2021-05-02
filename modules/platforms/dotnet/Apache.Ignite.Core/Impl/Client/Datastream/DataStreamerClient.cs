@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Client.Datastream
 {
+    using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
@@ -29,6 +30,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     /// </summary>
     internal class DataStreamerClient<TK, TV> : IDataStreamerClient<TK, TV>
     {
+        /** */
+        private static readonly Guid DefaultNodeId = Guid.Empty;
+        
         /** */
         private readonly ClientFailoverSocket _socket;
 
@@ -44,6 +48,10 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /** TODO: Handle removals for value types */
         private readonly ConcurrentQueue<KeyValuePair<TK, TV>> _entries = new ConcurrentQueue<KeyValuePair<TK, TV>>();
 
+        /** */
+        private readonly ConcurrentDictionary<Guid, DataStreamerClientBuffer> _buffers =
+            new ConcurrentDictionary<Guid, DataStreamerClientBuffer>();
+        
         public DataStreamerClient(ClientFailoverSocket socket, string cacheName, DataStreamerClientOptions<TK, TV> options)
         {
             Debug.Assert(socket != null);
