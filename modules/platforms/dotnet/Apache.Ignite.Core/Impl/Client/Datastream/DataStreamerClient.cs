@@ -171,7 +171,10 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         public Task FlushAsync()
         {
-            throw new System.NotImplementedException();
+            foreach (var buffer in _buffers)
+            {
+                throw new NotImplementedException();
+            }
         }
     }
 }

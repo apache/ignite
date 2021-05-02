@@ -76,6 +76,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         public bool MarkForFlush()
         {
+            // TODO: Block add/remove here
             return Interlocked.CompareExchange(ref _flushing, 1, 0) == 0;
         }
 
