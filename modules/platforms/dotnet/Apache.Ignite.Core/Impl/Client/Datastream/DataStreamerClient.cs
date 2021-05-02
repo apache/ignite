@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Client.Datastream
 {
+    using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
@@ -92,6 +93,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         public void Add(TK key, TV val)
         {
+            IgniteArgumentCheck.NotNull(key, "key");
+            
             // ClientFailoverSocket is responsible for maintaining connections and affinity logic.
             // We simply get the socket for the key.
             // TODO: Some buffers may become abandoned when a socket for them is disconnected
@@ -118,45 +121,14 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
         }
 
-        private Task FlushBufferAsync(DataStreamerClientBuffer<TK, TV> buffer, ClientSocket socket)
-        {
-            // TODO: Flush in a loop until succeeded.
-            return socket.DoOutInOpAsync(ClientOp.DataStreamerStart, ctx =>
-            {
-                var w = ctx.Writer;
-
-                w.WriteInt(_cacheId);
-                w.WriteByte(0x10); // Close
-                w.WriteInt(_options.ServerPerNodeBufferSize); // PerNodeBufferSize
-                w.WriteInt(_options.ServerPerThreadBufferSize); // PerThreadBufferSize
-                w.WriteObject(_options.Receiver); // Receiver
-
-                w.WriteInt(buffer.Count);
-
-                foreach (var entry in buffer)
-                {
-                    w.WriteObjectDetached(entry.Key);
-
-                    if (entry.Remove)
-                    {
-                        w.WriteObject<object>(null);
-                    }
-                    else
-                    {
-                        w.WriteObjectDetached(entry.Val);
-                    }
-                }
-            }, ctx => ctx.Stream.ReadLong());
-        }
-
-        private DataStreamerClientBuffer<TK, TV> CreateBuffer()
-        {
-            return new DataStreamerClientBuffer<TK, TV>(_options.ClientPerNodeBufferSize);
-        }
-
         public void Add(IEnumerable<KeyValuePair<TK, TV>> entries)
         {
-            throw new System.NotImplementedException();
+            IgniteArgumentCheck.NotNull(entries, "entries");
+            
+            foreach (var entry in entries)
+            {
+                Add(entry.Key, entry.Value);
+            }
         }
 
         public void Remove(TK key)
@@ -197,6 +169,42 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
             
             return TaskRunner.WhenAll(tasks.ToArray());
+        }
+
+        private Task FlushBufferAsync(DataStreamerClientBuffer<TK, TV> buffer, ClientSocket socket)
+        {
+            // TODO: Flush in a loop until succeeded.
+            return socket.DoOutInOpAsync(ClientOp.DataStreamerStart, ctx =>
+            {
+                var w = ctx.Writer;
+
+                w.WriteInt(_cacheId);
+                w.WriteByte(0x10); // Close
+                w.WriteInt(_options.ServerPerNodeBufferSize); // PerNodeBufferSize
+                w.WriteInt(_options.ServerPerThreadBufferSize); // PerThreadBufferSize
+                w.WriteObject(_options.Receiver); // Receiver
+
+                w.WriteInt(buffer.Count);
+
+                foreach (var entry in buffer)
+                {
+                    w.WriteObjectDetached(entry.Key);
+
+                    if (entry.Remove)
+                    {
+                        w.WriteObject<object>(null);
+                    }
+                    else
+                    {
+                        w.WriteObjectDetached(entry.Val);
+                    }
+                }
+            }, ctx => ctx.Stream.ReadLong());
+        }
+
+        private DataStreamerClientBuffer<TK, TV> CreateBuffer()
+        {
+            return new DataStreamerClientBuffer<TK, TV>(_options.ClientPerNodeBufferSize);
         }
     }
 }
