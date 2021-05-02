@@ -54,16 +54,15 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         public void TestStreamLongList()
         {
             var cache = GetClientCache<int>();
-            var keys = Enumerable.Range(1, 100000).ToArray();
+            var keys = Enumerable.Range(1, 50000).ToArray();
 
-            using (var streamer = Client.GetDataStreamer<int, string>(cache.Name))
+            using (var streamer = Client.GetDataStreamer<int, int>(cache.Name))
             {
-                streamer.Add(1, "1");
-                streamer.Add(2, "2");
+                streamer.Add(keys.ToDictionary(k => k, k => -k));
             }
 
-            Assert.AreEqual("1", cache[1]);
-            Assert.AreEqual("2", cache[2]);
+            Assert.AreEqual(keys.Length, cache.GetSize());
+            Assert.AreEqual(-2, cache[2]);
         }
     }
 }
