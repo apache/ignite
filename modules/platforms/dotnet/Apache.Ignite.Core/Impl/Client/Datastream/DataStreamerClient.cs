@@ -71,6 +71,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             // Log errors, but don't throw?
             
             // TODO: Lock?
+            // TODO: ThrowIfDisposed everywhere.
             Flush();
         }
 
