@@ -1031,7 +1031,13 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      * @return {@code True} if {@code done} flag was changed as a result of this call.
      */
     private boolean onComplete(@Nullable GridNearTxPrepareResponse res) {
-        if (!tx.onePhaseCommit() && ((last || tx.isSystemInvalidate()) && !(tx.near() && tx.local())))
+        if (res.error() != null) {
+            if (log.isDebugEnabled())
+                log.debug("Transaction marked for rollback because of error on dht prepare [tx=" + tx + ", error=" + res.error() + "]");
+
+            tx.setRollbackOnly();
+        }
+        else if (!tx.onePhaseCommit() && ((last || tx.isSystemInvalidate()) && !(tx.near() && tx.local())))
             tx.state(PREPARED);
 
         if (super.onDone(res, res == null ? err : null)) {
