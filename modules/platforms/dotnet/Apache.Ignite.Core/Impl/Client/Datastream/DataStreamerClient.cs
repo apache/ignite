@@ -153,6 +153,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 return TaskRunner.CompletedTask;
             }
             
+            // TODO: Wait for ongoing flushes.
             var tasks = new List<Task>(_buffers.Count);
             
             foreach (var pair in _buffers)
@@ -169,6 +170,11 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
             
             return TaskRunner.WhenAll(tasks.ToArray());
+        }
+
+        public void Close(bool cancel)
+        {
+            throw new NotImplementedException();
         }
 
         private Task FlushBufferAsync(DataStreamerClientBuffer<TK, TV> buffer, ClientSocket socket)

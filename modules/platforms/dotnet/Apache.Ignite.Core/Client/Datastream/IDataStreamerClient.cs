@@ -50,5 +50,12 @@ namespace Apache.Ignite.Core.Client.Datastream
         void Flush();
 
         Task FlushAsync();
+        
+        /// <summary>
+        /// Closes this streamer, optionally loading any remaining data into the cache.
+        /// </summary>
+        /// <param name="cancel">Whether to cancel ongoing loading operations. When set to <c>true</c>,
+        /// there is no guarantee which part of remaining data will be actually loaded into the cache.</param>
+        void Close(bool cancel);
     }
 }

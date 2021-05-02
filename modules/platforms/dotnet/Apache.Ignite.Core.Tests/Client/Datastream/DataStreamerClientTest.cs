@@ -85,12 +85,14 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         {
             // TODO: More entries
             var cache = GetClientCache<int>();
-            var keys = Enumerable.Range(1, 15000).ToArray();
+            var keys = Enumerable.Range(1, 1500).ToArray();
 
             using (var streamer = Client.GetDataStreamer<int, int>(cache.Name))
             {
                 // ReSharper disable once AccessToDisposedClosure
                 Parallel.ForEach(keys, k => streamer.Add(k, k + 2));
+                
+                streamer.Flush();
             }
 
             Assert.AreEqual(keys.Length, cache.GetSize());
