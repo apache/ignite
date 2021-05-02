@@ -2714,4 +2714,14 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         return Optional.ofNullable(n.cachex(cacheName)).map(IgniteInternalCache::context)
             .map(GridCacheContext::cache).map(GridCacheAdapter::metrics0).orElse(null);
     }
+
+    /**
+     * Getting database manager.
+     *
+     * @param n Node.
+     * @return Database manager.
+     */
+    protected GridCacheDatabaseSharedManager dbMgr(IgniteEx n) {
+        return (GridCacheDatabaseSharedManager)n.context().cache().context().database();
+    }
 }

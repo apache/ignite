@@ -39,7 +39,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.systemview.walker.ClientConnectionViewWalker;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
-import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -412,8 +411,6 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
         GridNioSession ses,
         ClientListenerConnectionContext ctx
     ) {
-        AuthorizationContext authCtx = ctx.authorizationContext();
-
         StringBuilder sb = new StringBuilder();
 
         if (ctx instanceof JdbcConnectionContext)
@@ -432,14 +429,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
         String rmtAddrStr = rmtAddr.getHostString() + ":" + rmtAddr.getPort();
         String locAddrStr = locAddr.getHostString() + ":" + locAddr.getPort();
 
-        String login;
-
-        if (authCtx != null)
-            login = authCtx.userName();
-        else if (ctx.securityContext() != null)
-            login = "@" + ctx.securityContext().subject().login();
-        else
-            login = "<anonymous>";
+        String login = ctx.securityContext() == null ? "<anonymous>" : "@" + ctx.securityContext().subject().login();
 
         sb.append("id=" + ctx.connectionId());
         sb.append(", user=").append(login);
