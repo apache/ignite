@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Client.Datastream;
     using Apache.Ignite.Core.Impl.Binary;
@@ -46,8 +47,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         private readonly ConcurrentQueue<KeyValuePair<TK, TV>> _entries = new ConcurrentQueue<KeyValuePair<TK, TV>>();
 
         /** */
-        private readonly ConcurrentDictionary<Guid, DataStreamerClientBuffer<TK, TV>> _buffers =
-            new ConcurrentDictionary<Guid, DataStreamerClientBuffer<TK, TV>>();
+        private readonly ConcurrentDictionary<ClientSocket, DataStreamerClientBuffer<TK, TV>> _buffers =
+            new ConcurrentDictionary<ClientSocket, DataStreamerClientBuffer<TK, TV>>();
         
         public DataStreamerClient(ClientFailoverSocket socket, string cacheName, DataStreamerClientOptions<TK, TV> options)
         {
@@ -104,6 +105,31 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         public void Add(TK key, TV val)
         {
+            // ClientFailoverSocket is responsible for maintaining connections and affinity logic.
+            // We simply get the socket for the key.
+            // TODO: Some buffers may become abandoned when a socket for them is disconnected
+            // or server node leaves the cluster.
+            // We should track such topology changes by subscribing to topology update events.  
+            var socket = _socket.GetAffinitySocket(_cacheId, key) ?? _socket.GetSocket();
+
+            var buffer = _buffers.GetOrAdd(socket, _ => CreateBuffer());
+
+            while (true)
+            {
+                if (buffer.Add(key, val))
+                {
+                    return;
+                }
+
+                if (buffer.MarkForFlush())
+                {
+                    ThreadPool.QueueUserWorkItem(_ => FlushBuffer(buffer, socket));
+
+                    // TODO: Concurrent update should not be possible.
+                    _buffers[socket] = CreateBuffer();
+                }
+            }
+            
             // TODO:
             // 0. What if current topology is not yet discovered (socket just connected)??? 
             // 1. Get current topology from the FailoverSocket (if partition awareness is enabled),
@@ -112,6 +138,17 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             // 3. If buffer is full, send it to the node
             // 4. If the node is not available, retry with other nodes until successful.
             _entries.Enqueue(new KeyValuePair<TK, TV>(key, val));
+        }
+
+        private void FlushBuffer(DataStreamerClientBuffer<TK, TV> buffer, ClientSocket socket)
+        {
+            // TODO: Flush until succeeded.
+            throw new NotImplementedException();
+        }
+
+        private DataStreamerClientBuffer<TK, TV> CreateBuffer()
+        {
+            return new DataStreamerClientBuffer<TK, TV>(_options.ClientPerNodeBufferSize);
         }
 
         public void Add(IEnumerable<KeyValuePair<TK, TV>> entries)

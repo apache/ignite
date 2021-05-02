@@ -35,6 +35,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /** */
         private int _size;
 
+        /** */
+        private int _flushing;
+
         public DataStreamerClientBuffer(int maxSize)
         {
             _maxSize = maxSize;
@@ -62,6 +65,11 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             _entries.Add(new DataStreamerClientEntry<TK, TV>(key));
 
             return true;
+        }
+
+        public bool MarkForFlush()
+        {
+            return Interlocked.CompareExchange(ref _flushing, 1, 0) == 0;
         }
     }
 }
