@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Client.Datastream
 {
+    using System;
     using System.Collections;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
@@ -35,10 +36,13 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         private readonly int _maxSize;
 
         /** */
+        private readonly ReaderWriterLockSlim _flushLock = new ReaderWriterLockSlim();
+
+        /** */
         private int _size;
 
         /** */
-        private int _flushing;
+        private bool _flushing;
 
         public DataStreamerClientBuffer(int maxSize)
         {
@@ -52,32 +56,32 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         public bool Add(TK key, TV val)
         {
-            if (Interlocked.Increment(ref _size) > _maxSize)
-            {
-                return false;
-            }
-            
-            _entries.Add(new DataStreamerClientEntry<TK, TV>(key, val));
-
-            return true;
+            return Add(new DataStreamerClientEntry<TK, TV>(key, val));
         }
         
         public bool Remove(TK key)
         {
-            if (Interlocked.Increment(ref _size) > _maxSize)
-            {
-                return false;
-            }
-            
-            _entries.Add(new DataStreamerClientEntry<TK, TV>(key));
-
-            return true;
+            return Add(new DataStreamerClientEntry<TK, TV>(key));
         }
 
         public bool MarkForFlush()
         {
-            // TODO: Block add/remove here
-            return Interlocked.CompareExchange(ref _flushing, 1, 0) == 0;
+            _flushLock.EnterWriteLock();
+
+            try
+            {
+                if (_flushing)
+                {
+                    return false;
+                }
+                
+                _flushing = true;
+                return true;
+            }
+            finally
+            {
+                _flushLock.ExitWriteLock();
+            }
         }
 
         public IEnumerator<DataStreamerClientEntry<TK, TV>> GetEnumerator()
@@ -88,6 +92,35 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
+        }
+
+        private bool Add(DataStreamerClientEntry<TK, TV> entry)
+        {
+            if (Interlocked.Increment(ref _size) > _maxSize)
+            {
+                return false;
+            }
+
+            if (!_flushLock.TryEnterReadLock(0))
+            {
+                return false;
+            }
+
+            try
+            {
+                if (_flushing)
+                {
+                    return false;
+                }
+
+                _entries.Add(entry);
+
+                return true;
+            }
+            finally
+            {
+                _flushLock.ExitReadLock();
+            }
         }
     }
 }
