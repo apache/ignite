@@ -25,6 +25,15 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
     /// </summary>
     public class DataStreamerClientTest : ClientTestBase
     {
+        /// <summary>
+        /// Initializes a new instance of <see cref="DataStreamerClientTest"/>.
+        /// </summary>
+        public DataStreamerClientTest()
+            : base(gridCount: 3, enableSsl: false, enablePartitionAwareness: true)
+        {
+            // No-op.
+        }
+
         [Test]
         public void TestBasicStreaming()
         {
