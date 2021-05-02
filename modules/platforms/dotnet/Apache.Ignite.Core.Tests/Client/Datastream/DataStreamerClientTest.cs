@@ -18,11 +18,16 @@
 namespace Apache.Ignite.Core.Tests.Client.Datastream
 {
     using System.Linq;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Client.Datastream;
     using NUnit.Framework;
 
     /// <summary>
     /// Tests for <see cref="IDataStreamerClient{TK,TV}"/>.
+    /// TODO:
+    /// * Test for small buffer size
+    /// * Test for mismatching buffer size
+    /// *
     /// </summary>
     public class DataStreamerClientTest : ClientTestBase
     {
@@ -72,6 +77,25 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
             Assert.AreEqual(keys.Length, cache.GetSize());
             Assert.AreEqual(-2, cache[2]);
+            Assert.AreEqual(-200, cache[200]);
+        }
+        
+        [Test]
+        public void TestStreamMultithreaded()
+        {
+            // TODO: More entries
+            var cache = GetClientCache<int>();
+            var keys = Enumerable.Range(1, 15000).ToArray();
+
+            using (var streamer = Client.GetDataStreamer<int, int>(cache.Name))
+            {
+                // ReSharper disable once AccessToDisposedClosure
+                Parallel.ForEach(keys, k => streamer.Add(k, k + 2));
+            }
+
+            Assert.AreEqual(keys.Length, cache.GetSize());
+            Assert.AreEqual(4, cache[2]);
+            Assert.AreEqual(22, cache[20]);
         }
     }
 }
