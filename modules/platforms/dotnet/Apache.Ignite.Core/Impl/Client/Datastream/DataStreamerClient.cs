@@ -104,8 +104,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            ThrowIfClosed();
-
             // ClientFailoverSocket is responsible for maintaining connections and affinity logic.
             // We simply get the socket for the key.
             // TODO: Some buffers may become abandoned when a socket for them is disconnected
@@ -116,11 +114,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
             while (true)
             {
-                ThrowIfClosed();
-
                 if (buffer.Add(key, val))
                 {
-                    return;
+                    break;
                 }
 
                 if (buffer.MarkForFlush())
@@ -137,6 +133,11 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                     buffer = GetOrAddBuffer(socket);
                 }
             }
+
+            // Check in the end: we guarantee that if Add completes without errors, then the data won't be lost.
+            // TODO: This provides unclear message - current entry may be loaded successfully.
+            // The only way to fix this properly is an RW lock - use benchmarks to check how this performs.
+            ThrowIfClosed();
         }
 
         public void Add(IEnumerable<KeyValuePair<TK, TV>> entries)
