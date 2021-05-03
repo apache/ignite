@@ -103,7 +103,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         public void Add(TK key, TV val)
         {
             // TODO: There is no backpressure - it is possible to have a lot of pending buffers
-            // Does Thick streamer have anything like this?
+            // See perNodeParallelOperations and timeout in thick streamer - this blocks Add methods!
             IgniteArgumentCheck.NotNull(key, "key");
 
             // ClientFailoverSocket is responsible for maintaining connections and affinity logic.
