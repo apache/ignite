@@ -104,6 +104,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
+            ThrowIfClosed();
+
             // ClientFailoverSocket is responsible for maintaining connections and affinity logic.
             // We simply get the socket for the key.
             // TODO: Some buffers may become abandoned when a socket for them is disconnected
@@ -114,6 +116,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
             while (true)
             {
+                ThrowIfClosed();
+
                 if (buffer.Add(key, val))
                 {
                     return;
@@ -199,6 +203,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
 
             // TODO: Race condition - we should use rw lock to prevent new buffers being created.
+            // Or do we care? If someone performs Close and Add in parallel, it is an exception anyway.
             _isClosed = true;
 
             if (cancel)
@@ -215,6 +220,11 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         private Task FlushBufferAsync(DataStreamerClientBuffer<TK, TV> buffer, ClientSocket socket)
         {
+            if (buffer.Count == 0)
+            {
+                return Task.CompletedTask;
+            }
+
             Interlocked.Increment(ref _activeFlushes);
 
             // TODO: Flush in a loop until succeeded.
@@ -269,6 +279,14 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 socket,
                 (_, sz) => new DataStreamerClientBuffer<TK, TV>(sz),
                 _options.ClientPerNodeBufferSize);
+        }
+
+        private void ThrowIfClosed()
+        {
+            if (_isClosed)
+            {
+                throw new ObjectDisposedException("DataStreamerClient", "Data streamer has been disposed");
+            }
         }
     }
 }
