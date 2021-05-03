@@ -76,6 +76,9 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 streamer.Add(keys.ToDictionary(k => k, k => -k));
             }
 
+            // TODO: Flush does not wait for all threads to complete
+            Thread.Sleep(2000);
+
             Assert.AreEqual(keys.Length, cache.GetSize());
             Assert.AreEqual(-2, cache[2]);
             Assert.AreEqual(-200, cache[200]);
@@ -96,7 +99,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             }
 
             // TODO: Flush does not wait for all threads to complete
-            Thread.Sleep(5000);
+            Thread.Sleep(2000);
 
             Assert.AreEqual(keys.Length, cache.GetSize());
             Assert.AreEqual(4, cache[2]);
