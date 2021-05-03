@@ -198,6 +198,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 return _closeTaskSource.Task;
             }
 
+            // TODO: Race condition - we should use rw lock to prevent new buffers being created.
             _isClosed = true;
 
             if (cancel)
