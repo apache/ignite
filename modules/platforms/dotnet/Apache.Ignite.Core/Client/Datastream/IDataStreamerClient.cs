@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Client.Datastream
         /// Adds an entry to the streamer.
         /// <para />
         /// This method adds an entry to the buffer - it does not block the thread and does not perform IO.
-        /// When the buffer gets full, it is scheduled for asynchronous flush. 
+        /// When the buffer gets full, it is scheduled for asynchronous flush.
         /// </summary>
         /// <param name="key">Key.</param>
         /// <param name="val">Value.</param>
@@ -50,12 +50,19 @@ namespace Apache.Ignite.Core.Client.Datastream
         void Flush();
 
         Task FlushAsync();
-        
+
         /// <summary>
         /// Closes this streamer, optionally loading any remaining data into the cache.
         /// </summary>
         /// <param name="cancel">Whether to cancel ongoing loading operations. When set to <c>true</c>,
         /// there is no guarantee which part of remaining data will be actually loaded into the cache.</param>
         void Close(bool cancel);
+
+        /// <summary>
+        /// Closes this streamer, optionally loading any remaining data into the cache.
+        /// </summary>
+        /// <param name="cancel">Whether to cancel ongoing loading operations. When set to <c>true</c>,
+        /// there is no guarantee which part of remaining data will be actually loaded into the cache.</param>
+        Task CloseAsync(bool cancel);
     }
 }

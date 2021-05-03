@@ -48,6 +48,15 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         private readonly ConcurrentDictionary<ClientSocket, DataStreamerClientBuffer<TK, TV>> _buffers =
             new ConcurrentDictionary<ClientSocket, DataStreamerClientBuffer<TK, TV>>();
 
+        /** */
+        private readonly TaskCompletionSource<object> _closeTaskSource = new TaskCompletionSource<object>();
+
+        /** */
+        private int _activeFlushes;
+
+        /** */
+        private volatile bool _isClosed;
+
         public DataStreamerClient(
             ClientFailoverSocket socket,
             string cacheName,
@@ -73,7 +82,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
             // TODO: Lock?
             // TODO: ThrowIfDisposed everywhere.
-            Flush();
+            Close(cancel: false);
         }
 
         /** <inheritdoc /> */
@@ -179,38 +188,78 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         public void Close(bool cancel)
         {
-            throw new NotImplementedException();
+            CloseAsync(cancel).Wait();
+        }
+
+        public Task CloseAsync(bool cancel)
+        {
+            if (_isClosed)
+            {
+                return _closeTaskSource.Task;
+            }
+
+            _isClosed = true;
+
+            if (cancel)
+            {
+                // TODO: ?
+            }
+            else
+            {
+                Flush();
+            }
+
+            return _closeTaskSource.Task;
         }
 
         private Task FlushBufferAsync(DataStreamerClientBuffer<TK, TV> buffer, ClientSocket socket)
         {
+            Interlocked.Increment(ref _activeFlushes);
+
             // TODO: Flush in a loop until succeeded.
-            return socket.DoOutInOpAsync(ClientOp.DataStreamerStart, ctx =>
+            return socket.DoOutInOpAsync(
+                    ClientOp.DataStreamerStart,
+                    ctx => WriteBuffer(buffer, ctx.Writer),
+                    ctx => ctx.Stream.ReadLong())
+                .ContWith(_ => OnFlushCompleted());
+        }
+
+        private void WriteBuffer(DataStreamerClientBuffer<TK, TV> buffer, BinaryWriter w)
+        {
+            w.WriteInt(_cacheId);
+            w.WriteByte(0x10); // Close
+            w.WriteInt(_options.ServerPerNodeBufferSize); // PerNodeBufferSize
+            w.WriteInt(_options.ServerPerThreadBufferSize); // PerThreadBufferSize
+            w.WriteObject(_options.Receiver); // Receiver
+
+            w.WriteInt(buffer.Count);
+
+            foreach (var entry in buffer)
             {
-                var w = ctx.Writer;
+                w.WriteObjectDetached(entry.Key);
 
-                w.WriteInt(_cacheId);
-                w.WriteByte(0x10); // Close
-                w.WriteInt(_options.ServerPerNodeBufferSize); // PerNodeBufferSize
-                w.WriteInt(_options.ServerPerThreadBufferSize); // PerThreadBufferSize
-                w.WriteObject(_options.Receiver); // Receiver
-
-                w.WriteInt(buffer.Count);
-
-                foreach (var entry in buffer)
+                if (entry.Remove)
                 {
-                    w.WriteObjectDetached(entry.Key);
-
-                    if (entry.Remove)
-                    {
-                        w.WriteObject<object>(null);
-                    }
-                    else
-                    {
-                        w.WriteObjectDetached(entry.Val);
-                    }
+                    w.WriteObject<object>(null);
                 }
-            }, ctx => ctx.Stream.ReadLong());
+                else
+                {
+                    w.WriteObjectDetached(entry.Val);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Called when a flush operation completes.
+        /// </summary>
+        private void OnFlushCompleted()
+        {
+            var res = Interlocked.Decrement(ref _activeFlushes);
+
+            if (_isClosed && res == 0)
+            {
+                _closeTaskSource.TrySetResult(null);
+            }
         }
 
         private DataStreamerClientBuffer<TK, TV> GetOrAddBuffer(ClientSocket socket)
