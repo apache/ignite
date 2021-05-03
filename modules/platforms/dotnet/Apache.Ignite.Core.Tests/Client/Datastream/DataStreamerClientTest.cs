@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Client.Datastream
 {
     using System.Linq;
+    using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Client.Datastream;
     using NUnit.Framework;
@@ -93,6 +94,9 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
                 streamer.Flush();
             }
+
+            // TODO: Flush does not wait for all threads to complete
+            Thread.Sleep(5000);
 
             Assert.AreEqual(keys.Length, cache.GetSize());
             Assert.AreEqual(4, cache[2]);
