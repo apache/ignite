@@ -66,6 +66,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         }
 
         [Test]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestStreamLongList()
         {
             var cache = GetClientCache<int>();
@@ -87,6 +88,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         }
 
         [Test]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestStreamMultithreaded()
         {
             var cache = GetClientCache<int>();
@@ -118,13 +120,26 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         }
 
         [Test]
-        public void TestCloseWithNoDataAdded()
+        public void TestDisposeWithNoDataAdded()
         {
             var cache = GetClientCache<int>();
 
             using (Client.GetDataStreamer<int, int>(cache.Name))
             {
                 // No-op.
+            }
+
+            Assert.AreEqual(0, cache.GetSize());
+        }
+
+        [Test]
+        public void TestCloseWithNoDataAdded([Values(true, false)] bool cancel)
+        {
+            var cache = GetClientCache<int>();
+
+            using (var streamer = Client.GetDataStreamer<int, int>(cache.Name))
+            {
+                streamer.Close(cancel);
             }
 
             Assert.AreEqual(0, cache.GetSize());
