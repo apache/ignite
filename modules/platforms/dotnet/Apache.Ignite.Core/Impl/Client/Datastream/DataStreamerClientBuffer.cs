@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     internal sealed class DataStreamerClientBuffer<TK, TV> : IEnumerable<DataStreamerClientEntry<TK, TV>>
     {
         /** Concurrent bag already has per-thread buffers. */
-        private readonly ConcurrentBag<DataStreamerClientEntry<TK, TV>> _entries = 
+        private readonly ConcurrentBag<DataStreamerClientEntry<TK, TV>> _entries =
             new ConcurrentBag<DataStreamerClientEntry<TK, TV>>();
 
         /** */
@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         private int _size;
 
         /** */
-        private bool _flushing;
+        private volatile bool _flushing;
 
         public DataStreamerClientBuffer(int maxSize)
         {
@@ -58,7 +58,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         {
             return Add(new DataStreamerClientEntry<TK, TV>(key, val));
         }
-        
+
         public bool Remove(TK key)
         {
             return Add(new DataStreamerClientEntry<TK, TV>(key));
@@ -66,6 +66,11 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         public bool MarkForFlush()
         {
+            if (_flushing)
+            {
+                return false;
+            }
+
             _flushLock.EnterWriteLock();
 
             try
@@ -74,7 +79,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 {
                     return false;
                 }
-                
+
                 _flushing = true;
                 return true;
             }

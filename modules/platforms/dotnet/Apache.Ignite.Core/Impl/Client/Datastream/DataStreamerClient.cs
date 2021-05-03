@@ -101,7 +101,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             // or server node leaves the cluster.
             // We should track such topology changes by subscribing to topology update events.
             var socket = _socket.GetAffinitySocket(_cacheId, key) ?? _socket.GetSocket();
-            var buffer = _buffers.GetOrAdd(socket, (_, sz) => new DataStreamerClientBuffer<TK, TV>(sz), _options.ClientPerNodeBufferSize);
+            var buffer = GetOrAddBuffer(socket);
 
             while (true)
             {
@@ -120,8 +120,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 }
                 else
                 {
-                    // Another thread started the flush process - retry
-                    buffer = _buffers.GetOrAdd(socket, (_, sz) => new DataStreamerClientBuffer<TK, TV>(sz), _options.ClientPerNodeBufferSize);
+                    // Another thread started the flush process - retry.
+                    buffer = GetOrAddBuffer(socket);
                 }
             }
         }
@@ -211,6 +211,14 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                     }
                 }
             }, ctx => ctx.Stream.ReadLong());
+        }
+
+        private DataStreamerClientBuffer<TK, TV> GetOrAddBuffer(ClientSocket socket)
+        {
+            return _buffers.GetOrAdd(
+                socket,
+                (_, sz) => new DataStreamerClientBuffer<TK, TV>(sz),
+                _options.ClientPerNodeBufferSize);
         }
     }
 }
