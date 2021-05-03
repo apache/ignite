@@ -144,5 +144,11 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
             Assert.AreEqual(0, cache.GetSize());
         }
+
+        [Test]
+        public void TestBackPressure()
+        {
+            Assert.Fail("TODO: Test that Add method blocks when too many parallel operations are active");
+        }
     }
 }
