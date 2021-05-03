@@ -204,23 +204,15 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 return _closeTaskSource.Task;
             }
 
-            // TODO: Race condition - we should use rw lock to prevent new buffers being created.
-            // Or do we care? If someone performs Close and Add in parallel, it is an exception anyway.
             _isClosed = true;
 
             if (cancel)
             {
-                // TODO: ?
+                SetCloseResultIfNoActiveFlushes();
             }
             else
             {
-                FlushAsync().ContinueWith(_ =>
-                {
-                    if (Interlocked.CompareExchange(ref _activeFlushes, 0, 0) == 0)
-                    {
-                        _closeTaskSource.TrySetResult(null);
-                    }
-                });
+                FlushAsync().ContinueWith(_ => SetCloseResultIfNoActiveFlushes());
             }
 
             return _closeTaskSource.Task;
@@ -236,6 +228,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             Interlocked.Increment(ref _activeFlushes);
 
             // TODO: Flush in a loop until succeeded.
+            // TODO: Make sure to call OnFlushCompleted in any case.
             return socket.DoOutInOpAsync(
                     ClientOp.DataStreamerStart,
                     ctx => WriteBuffer(buffer, ctx.Writer),
@@ -294,6 +287,14 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             if (_isClosed)
             {
                 throw new ObjectDisposedException("DataStreamerClient", "Data streamer has been disposed");
+            }
+        }
+
+        private void SetCloseResultIfNoActiveFlushes()
+        {
+            if (Interlocked.CompareExchange(ref _activeFlushes, 0, 0) == 0)
+            {
+                _closeTaskSource.TrySetResult(null);
             }
         }
     }
