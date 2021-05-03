@@ -23,6 +23,13 @@ namespace Apache.Ignite.BenchmarkDotNet.ThinClient
 
     /// <summary>
     /// Thin vs Thick client data streamer benchmark.
+    /// <para />
+    /// Results on Core i7-9700K, Ubuntu 20.04, .NET Core 2.0:
+    /// Thin Client: new streamer for every batch.
+    /// |            Method |     Mean |    Error |   StdDev |     Gen 0 | Gen 1 | Gen 2 | Allocated |
+    /// |------------------ |---------:|---------:|---------:|----------:|------:|------:|----------:|
+    /// |  StreamThinClient | 37.25 ms | 2.787 ms | 8.085 ms | 1000.0000 |     - |     - |   9.83 MB |
+    /// | StreamThickClient | 40.76 ms | 0.970 ms | 2.768 ms |         - |     - |     - |   4.53 MB |
     /// </summary>
     [MemoryDiagnoser]
     public class ThinClientDataStreamerBenchmark : ThinClientBenchmarkBase
@@ -31,7 +38,7 @@ namespace Apache.Ignite.BenchmarkDotNet.ThinClient
         private const string CacheName = "c";
 
         /** */
-        private const int EntryCount = 20000;
+        private const int EntryCount = 50000;
 
         /** */
         public IIgnite ThickClient { get; set; }
