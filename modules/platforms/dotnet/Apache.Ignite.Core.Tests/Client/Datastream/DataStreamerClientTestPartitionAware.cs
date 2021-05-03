@@ -17,13 +17,13 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Datastream
 {
-    using System.Linq;
     using Apache.Ignite.Core.Client.Datastream;
     using NUnit.Framework;
 
     /// <summary>
     /// Tests for <see cref="IDataStreamerClient{TK,TV}"/>.
     /// </summary>
+    [TestFixture]
     public class DataStreamerClientTestPartitionAware : DataStreamerClientTest
     {
         /// <summary>

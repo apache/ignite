@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Impl.Client.Datastream
 {
-    using System;
     using System.Collections;
     using System.Collections.Concurrent;
     using System.Collections.Generic;

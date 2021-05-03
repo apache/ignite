@@ -147,12 +147,12 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         public void Remove(TK key)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
 
         public void Remove(IEnumerable<TK> keys)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
 
         public void Flush()
