@@ -63,7 +63,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             Assert.AreEqual("1", cache[1]);
             Assert.AreEqual("2", cache[2]);
         }
-        
+
         [Test]
         public void TestStreamLongList()
         {
@@ -79,19 +79,18 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             Assert.AreEqual(-2, cache[2]);
             Assert.AreEqual(-200, cache[200]);
         }
-        
+
         [Test]
         public void TestStreamMultithreaded()
         {
-            // TODO: More entries
             var cache = GetClientCache<int>();
-            var keys = Enumerable.Range(1, 1500).ToArray();
+            var keys = Enumerable.Range(1, 150000).ToArray();
 
             using (var streamer = Client.GetDataStreamer<int, int>(cache.Name))
             {
                 // ReSharper disable once AccessToDisposedClosure
                 Parallel.ForEach(keys, k => streamer.Add(k, k + 2));
-                
+
                 streamer.Flush();
             }
 
