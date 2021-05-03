@@ -122,14 +122,15 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 if (buffer.MarkForFlush())
                 {
                     var oldBuffer = buffer;
-                    ThreadPool.QueueUserWorkItem(_ => FlushBufferAsync(oldBuffer, socket));
-
                     buffer = new DataStreamerClientBuffer<TK, TV>(_options.ClientPerNodeBufferSize);
                     _buffers[socket] = buffer;
+
+                    ThreadPool.QueueUserWorkItem(_ => FlushBufferAsync(oldBuffer, socket));
                 }
                 else
                 {
                     // Another thread started the flush process - retry.
+                    // TODO: This can cause too many retries in highly concurrent scenarios - do we care?
                     buffer = GetOrAddBuffer(socket);
                 }
             }
