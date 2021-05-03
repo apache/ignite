@@ -24,7 +24,7 @@ namespace Apache.Ignite.BenchmarkDotNet.ThinClient
     /// <summary>
     /// Thin vs Thick client data streamer benchmark.
     /// <para />
-    /// Results on Core i7-9700K, Ubuntu 20.04, .NET Core 2.0:
+    /// Results on Core i7-9700K, Ubuntu 20.04, .NET Core 5.0.5:
     /// Thin Client: new streamer for every batch.
     /// |            Method |     Mean |    Error |   StdDev |     Gen 0 | Gen 1 | Gen 2 | Allocated |
     /// |------------------ |---------:|---------:|---------:|----------:|------:|------:|----------:|
