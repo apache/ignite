@@ -70,8 +70,8 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             var cache = GetClientCache<int>();
             const int count = 50000;
 
-            // TODO: Why is this 10 times slower than the benchmark?
-            // Something is wrong with AllowOverwrite or cache mode?
+            // Note: this test is ~10 times slower than ThinClientDataStreamerBenchmark
+            // because of the logging in the base class.
             using (var streamer = Client.GetDataStreamer<int, int>(cache.Name))
             {
                 for (var k = 0; k < count; k++)
