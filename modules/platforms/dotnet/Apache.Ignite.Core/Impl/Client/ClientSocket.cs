@@ -991,10 +991,10 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 _exception = _exception ?? new ObjectDisposedException(typeof(ClientSocket).FullName);
                 EndRequestsWithError();
-                
+
                 // This will call Socket.Shutdown and Socket.Close.
                 _stream.Close();
-                
+
                 _listenerEvent.Set();
                 _listenerEvent.Dispose();
 
@@ -1005,6 +1005,12 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 _isDisposed = true;
             }
+        }
+
+        /** <inheritDoc /> */
+        public override string ToString()
+        {
+            return $"ClientSocket [RemoteEndPoint={RemoteEndPoint}]";
         }
 
         /// <summary>
