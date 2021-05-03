@@ -76,9 +76,6 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 streamer.Add(keys.ToDictionary(k => k, k => -k));
             }
 
-            // TODO: Flush does not wait for all threads to complete
-            Thread.Sleep(2000);
-
             Assert.AreEqual(keys.Length, cache.GetSize());
             Assert.AreEqual(-2, cache[2]);
             Assert.AreEqual(-200, cache[200]);
@@ -94,16 +91,24 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             {
                 // ReSharper disable once AccessToDisposedClosure
                 Parallel.ForEach(keys, k => streamer.Add(k, k + 2));
-
-                streamer.Flush();
             }
-
-            // TODO: Flush does not wait for all threads to complete
-            Thread.Sleep(2000);
 
             Assert.AreEqual(keys.Length, cache.GetSize());
             Assert.AreEqual(4, cache[2]);
             Assert.AreEqual(22, cache[20]);
+        }
+
+        [Test]
+        public void TestCloseWithNoDataAdded()
+        {
+            var cache = GetClientCache<int>();
+
+            using (Client.GetDataStreamer<int, int>(cache.Name))
+            {
+                // No-op.
+            }
+
+            Assert.AreEqual(0, cache.GetSize());
         }
     }
 }
