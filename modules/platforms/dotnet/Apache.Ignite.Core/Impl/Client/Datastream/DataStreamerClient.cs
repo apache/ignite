@@ -212,7 +212,13 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
             else
             {
-                Flush();
+                FlushAsync().ContinueWith(_ =>
+                {
+                    if (Interlocked.CompareExchange(ref _activeFlushes, 0, 0) == 0)
+                    {
+                        _closeTaskSource.TrySetResult(null);
+                    }
+                });
             }
 
             return _closeTaskSource.Task;
