@@ -76,7 +76,7 @@ namespace Apache.Ignite.BenchmarkDotNet.ThinClient
             {
                 for (var i = 0; i < EntryCount; i++)
                 {
-                    streamer.Add(i, i);
+                    streamer.Add(i, -i);
                 }
             }
         }
@@ -91,7 +91,7 @@ namespace Apache.Ignite.BenchmarkDotNet.ThinClient
             {
                 for (var i = 0; i < EntryCount; i++)
                 {
-                    streamer.Add(i, i);
+                    streamer.Add(i, -i);
                 }
             }
         }

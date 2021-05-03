@@ -68,14 +68,19 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         public void TestStreamLongList()
         {
             var cache = GetClientCache<int>();
-            var keys = Enumerable.Range(1, 50000).ToArray();
+            const int count = 50000;
 
+            // TODO: Why is this 10 times slower than the benchmark?
+            // Something is wrong with AllowOverwrite or cache mode?
             using (var streamer = Client.GetDataStreamer<int, int>(cache.Name))
             {
-                streamer.Add(keys.ToDictionary(k => k, k => -k));
+                for (var k = 0; k < count; k++)
+                {
+                    streamer.Add(k, -k);
+                }
             }
 
-            Assert.AreEqual(keys.Length, cache.GetSize());
+            Assert.AreEqual(count, cache.GetSize());
             Assert.AreEqual(-2, cache[2]);
             Assert.AreEqual(-200, cache[200]);
         }
