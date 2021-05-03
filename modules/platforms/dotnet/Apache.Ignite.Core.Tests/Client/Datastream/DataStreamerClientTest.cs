@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Client.Datastream
 {
     using System.Linq;
+    using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Client.Datastream;
     using NUnit.Framework;
@@ -89,15 +90,29 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         public void TestStreamMultithreaded()
         {
             var cache = GetClientCache<int>();
-            var keys = Enumerable.Range(1, 150000).ToArray();
+            const int count = 150000;
+            int id = 0;
 
             using (var streamer = Client.GetDataStreamer<int, int>(cache.Name))
             {
-                // ReSharper disable once AccessToDisposedClosure
-                Parallel.ForEach(keys, k => streamer.Add(k, k + 2));
+                TestUtils.RunMultiThreaded(() =>
+                {
+                    while (true)
+                    {
+                        var key = Interlocked.Increment(ref id);
+
+                        if (key > count)
+                        {
+                            break;
+                        }
+
+                        // ReSharper disable once AccessToDisposedClosure
+                        streamer.Add(key, key + 2);
+                    }
+                }, 8);
             }
 
-            Assert.AreEqual(keys.Length, cache.GetSize());
+            Assert.AreEqual(count, cache.GetSize());
             Assert.AreEqual(4, cache[2]);
             Assert.AreEqual(22, cache[20]);
         }
