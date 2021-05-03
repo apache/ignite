@@ -47,9 +47,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /** */
         private readonly ConcurrentDictionary<ClientSocket, DataStreamerClientBuffer<TK, TV>> _buffers =
             new ConcurrentDictionary<ClientSocket, DataStreamerClientBuffer<TK, TV>>();
-        
+
         public DataStreamerClient(
-            ClientFailoverSocket socket, 
+            ClientFailoverSocket socket,
             string cacheName,
             DataStreamerClientOptions<TK, TV> options)
         {
@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             // TODO: Dispose should not throw - how can we achieve that?
             // Require Flush, like Transaction requires Commit?
             // Log errors, but don't throw?
-            
+
             // TODO: Lock?
             // TODO: ThrowIfDisposed everywhere.
             Flush();
@@ -94,14 +94,14 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         public void Add(TK key, TV val)
         {
             IgniteArgumentCheck.NotNull(key, "key");
-            
+
             // ClientFailoverSocket is responsible for maintaining connections and affinity logic.
             // We simply get the socket for the key.
             // TODO: Some buffers may become abandoned when a socket for them is disconnected
             // or server node leaves the cluster.
-            // We should track such topology changes by subscribing to topology update events.  
+            // We should track such topology changes by subscribing to topology update events.
             var socket = _socket.GetAffinitySocket(_cacheId, key) ?? _socket.GetSocket();
-            var buffer = _buffers.GetOrAdd(socket, _ => CreateBuffer());
+            var buffer = _buffers.GetOrAdd(socket, (_, sz) => new DataStreamerClientBuffer<TK, TV>(sz), _options.ClientPerNodeBufferSize);
 
             while (true)
             {
@@ -115,8 +115,13 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                     var oldBuffer = buffer;
                     ThreadPool.QueueUserWorkItem(_ => FlushBufferAsync(oldBuffer, socket));
 
-                    buffer = CreateBuffer();
+                    buffer = new DataStreamerClientBuffer<TK, TV>(_options.ClientPerNodeBufferSize);
                     _buffers[socket] = buffer;
+                }
+                else
+                {
+                    // Another thread started the flush process - retry
+                    buffer = _buffers.GetOrAdd(socket, (_, sz) => new DataStreamerClientBuffer<TK, TV>(sz), _options.ClientPerNodeBufferSize);
                 }
             }
         }
@@ -124,7 +129,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         public void Add(IEnumerable<KeyValuePair<TK, TV>> entries)
         {
             IgniteArgumentCheck.NotNull(entries, "entries");
-            
+
             foreach (var entry in entries)
             {
                 Add(entry.Key, entry.Value);
@@ -152,10 +157,10 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             {
                 return TaskRunner.CompletedTask;
             }
-            
+
             // TODO: Wait for ongoing flushes.
             var tasks = new List<Task>(_buffers.Count);
-            
+
             foreach (var pair in _buffers)
             {
                 var buffer = pair.Value;
@@ -163,12 +168,12 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 if (buffer.MarkForFlush())
                 {
                     var socket = pair.Key;
-                    
+
                     // TODO: FlushBufferAsync is not true async, we want to write in a separate thread too?
                     tasks.Add(FlushBufferAsync(buffer, socket));
                 }
             }
-            
+
             return TaskRunner.WhenAll(tasks.ToArray());
         }
 
@@ -206,11 +211,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                     }
                 }
             }, ctx => ctx.Stream.ReadLong());
-        }
-
-        private DataStreamerClientBuffer<TK, TV> CreateBuffer()
-        {
-            return new DataStreamerClientBuffer<TK, TV>(_options.ClientPerNodeBufferSize);
         }
     }
 }
