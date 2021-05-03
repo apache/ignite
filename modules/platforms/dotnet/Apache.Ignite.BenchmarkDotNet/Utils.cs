@@ -60,7 +60,8 @@ namespace Apache.Ignite.BenchmarkDotNet
                     {
                         MaxActiveComputeTasksPerConnection = 100
                     }
-                }
+                },
+                AutoGenerateIgniteInstanceName = true
             };
         }
 
