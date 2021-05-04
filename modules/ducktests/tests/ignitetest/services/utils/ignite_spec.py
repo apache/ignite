@@ -94,7 +94,7 @@ class IgniteSpec(metaclass=ABCMeta):
 
         self._add_jvm_opts(["-XX:+UnlockCommercialFeatures",
                             "-XX:+FlightRecorder",
-                            "-XX:StartFlightRecording=dumponexit=true,disk=true," +
+                            "-XX:StartFlightRecording=dumponexit=true," +
                             f"filename={self.service.jfr_dir}/rec.jfr"])
 
     @property
