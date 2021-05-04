@@ -896,6 +896,42 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
     /** */
     @Test
+    public void aggregateNested() throws Exception {
+        String cacheName = "employer";
+
+        IgniteCache<Integer, Employer> employer = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
+            .setName(cacheName)
+            .setSqlSchema("PUBLIC")
+            .setIndexedTypes(Integer.class, Employer.class)
+            .setBackups(2)
+        );
+
+        awaitPartitionMapExchange(true, true, null);
+
+        List<Integer> keysNode0 = primaryKeys(grid(0).cache(cacheName), 2);
+        List<Integer> keysNode1 = primaryKeys(grid(1).cache(cacheName), 1);
+
+        employer.putAll(ImmutableMap.of(
+            keysNode0.get(0), new Employer("Igor", 10d),
+            keysNode0.get(1), new Employer("Roman", 20d) ,
+            keysNode1.get(0), new Employer("Nikolay", 30d)
+        ));
+
+        QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
+
+        List<FieldsQueryCursor<List<?>>> qry = engine.query(null, "PUBLIC",
+            "SELECT avg(salary) FROM " +
+                "(SELECT avg(salary) as salary FROM employer UNION ALL SELECT salary FROM employer)");
+
+        assertEquals(1, qry.size());
+
+        List<List<?>> rows = qry.get(0).getAll();
+        assertEquals(1, rows.size());
+        assertEquals(20d, F.first(F.first(rows)));
+    }
+
+    /** */
+    @Test
     public void query() throws Exception {
         IgniteCache<Integer, Developer> developer = grid(1).createCache(new CacheConfiguration<Integer, Developer>()
             .setName("developer")
