@@ -32,8 +32,8 @@ public final class Operations {
      *
      * @return Operation of type <i>remove</i>.
      */
-    public static Operation remove() {
-        return new Operation(new Operation.RemoveOp());
+    public static Operation remove(Key key) {
+        return new Operation(new Operation.RemoveOp(key));
     }
 
     /**
@@ -42,8 +42,8 @@ public final class Operations {
      * @param value Value.
      * @return Operation of type <i>put</i>.
      */
-    public static Operation put(byte[] value) {
-        return new Operation(new Operation.PutOp(value));
+    public static Operation put(Key key, byte[] value) {
+        return new Operation(new Operation.PutOp(key, value));
     }
 
     /**

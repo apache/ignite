@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.metastorage;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -31,11 +32,13 @@ import org.apache.ignite.lang.IgniteInternalCheckedException;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.metastorage.client.MetaStorageService;
+import org.apache.ignite.metastorage.common.CompactedException;
 import org.apache.ignite.metastorage.common.Condition;
 import org.apache.ignite.metastorage.common.Cursor;
 import org.apache.ignite.metastorage.common.Entry;
 import org.apache.ignite.metastorage.common.Key;
 import org.apache.ignite.metastorage.common.Operation;
+import org.apache.ignite.metastorage.common.OperationTimeoutException;
 import org.apache.ignite.metastorage.common.WatchListener;
 import org.apache.ignite.network.ClusterService;
 import org.jetbrains.annotations.NotNull;
@@ -303,15 +306,27 @@ import org.jetbrains.annotations.Nullable;
     }
 
     /**
-     * @see MetaStorageService#invoke(Key, Condition, Operation, Operation)
+     * Invoke with single success/failure operation.
+     *
+     * @see MetaStorageService#invoke(Condition, Collection, Collection)
      */
     public @NotNull CompletableFuture<Boolean> invoke(
-        @NotNull Key key,
         @NotNull Condition cond,
         @NotNull Operation success,
         @NotNull Operation failure
     ) {
-        return metaStorageSvc.invoke(key, cond, success, failure);
+        return metaStorageSvc.invoke(cond, Collections.singletonList(success), Collections.singletonList(failure));
+    }
+
+    /**
+     * @see MetaStorageService#invoke(Condition, Collection, Collection)
+     */
+    public @NotNull CompletableFuture<Boolean> invoke(
+        @NotNull Condition cond,
+        @NotNull Collection<Operation> success,
+        @NotNull Collection<Operation> failure
+    ) {
+        return metaStorageSvc.invoke(cond, success, failure);
     }
 
     /**
@@ -331,6 +346,28 @@ import org.jetbrains.annotations.Nullable;
      */
     public @NotNull Cursor<Entry> range(@NotNull Key keyFrom, @Nullable Key keyTo, long revUpperBound) {
         return metaStorageSvc.range(keyFrom, keyTo, revUpperBound);
+    }
+
+    /**
+     * Retrieves entries for the given key range in lexicographic order.
+     * Entries will be filtered out by the current applied revision as an upper bound.
+     * Applied revision is a revision of the last successful vault update.
+     *
+     * @param keyFrom Start key of range (inclusive). Couldn't be {@code null}.
+     * @param keyTo End key of range (exclusive). Could be {@code null}.
+     * @return Cursor built upon entries corresponding to the given range and applied revision.
+     * @throws OperationTimeoutException If the operation is timed out.
+     * @throws CompactedException If the desired revisions are removed from the storage due to a compaction.
+     * @see Key
+     * @see Entry
+     */
+    public @NotNull Cursor<Entry> rangeWithAppliedRevision(@NotNull Key keyFrom, @Nullable Key keyTo) {
+        try {
+            return metaStorageSvc.range(keyFrom, keyTo, vaultMgr.appliedRevision());
+        }
+        catch (IgniteInternalCheckedException e) {
+            throw new IgniteInternalException(e);
+        }
     }
 
     /**

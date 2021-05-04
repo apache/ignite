@@ -24,14 +24,27 @@ package org.apache.ignite.metastorage.common;
  * @see Condition
  */
 public final class Conditions {
+
+    /** Key. */
+    private Key key;
+
+    /**
+     * Creates new condition for entry with concrete key.
+     *
+     * @param key Key
+     */
+    private Conditions(Key key) {
+        this.key = key;
+    }
+
     /**
      * Creates condition on entry revision.
      *
      * @return Condition on entry revision.
      * @see Condition.RevisionCondition
      */
-    public static Condition.RevisionCondition revision() {
-        return new Condition.RevisionCondition();
+    public Condition.RevisionCondition revision() {
+        return new Condition.RevisionCondition(key);
     }
 
     /**
@@ -40,8 +53,18 @@ public final class Conditions {
      * @return Condition on entry value.
      * @see Condition.ValueCondition
      */
-    public static Condition.ValueCondition value() {
-        return new Condition.ValueCondition();
+    public Condition.ValueCondition value() {
+        return new Condition.ValueCondition(key);
+    }
+
+    /**
+     * Creates key-based condition.
+     *
+     * @param key Key of condition.
+     * @return Key-based condition instance.
+     */
+    public static Conditions key(Key key) {
+        return new Conditions(key);
     }
 
     /**

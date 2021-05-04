@@ -38,11 +38,16 @@ public final class Operation {
      * Represents operation of type <i>remove</i>.
      */
     public static final class RemoveOp implements InnerOp {
+        /** Key. */
+        private final Key key;
+
         /**
-         * Default no-op constructor.
+         * Creates a new remove operation for the given {@code key}.
+         *
+         * @param key Key.
          */
-        RemoveOp() {
-            // No-op.
+        RemoveOp(Key key) {
+            this.key = key;
         }
     }
 
@@ -50,6 +55,9 @@ public final class Operation {
      * Represents operation of type <i>put</i>.
      */
     public static final class PutOp implements InnerOp {
+        /** Key. */
+        private final Key key;
+
         /** Value. */
         private final byte[] val;
 
@@ -58,7 +66,8 @@ public final class Operation {
          *
          * @param val The value to which the entry should be updated.
          */
-        PutOp(byte[] val) {
+        PutOp(Key key, byte[] val) {
+            this.key = key;
             this.val = val;
         }
     }

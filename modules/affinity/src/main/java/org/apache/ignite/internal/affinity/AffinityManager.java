@@ -150,9 +150,10 @@ public class AffinityManager {
                             int replicas = configurationMgr.configurationRegistry().getConfiguration(TablesConfiguration.KEY)
                                 .tables().get(name).replicas().value();
 
-                            metaStorageMgr.invoke(evt.newEntry().key(),
-                                Conditions.value().eq(assignmentVal),
-                                Operations.put(ByteUtils.toBytes(
+                            var key = evt.newEntry().key();
+                            metaStorageMgr.invoke(
+                                Conditions.key(key).value().eq(assignmentVal),
+                                Operations.put(key, ByteUtils.toBytes(
                                     RendezvousAffinityFunction.assignPartitions(
                                         baselineMgr.nodes(),
                                         partitions,

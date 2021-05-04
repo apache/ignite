@@ -261,8 +261,8 @@ public class IgnitionImpl implements Ignition {
                 throw new UnsupportedOperationException("Metastorage service is not implemented yet");
             }
 
-            @Override public @NotNull CompletableFuture<Boolean> invoke(@NotNull Key key, @NotNull Condition condition,
-                @NotNull Operation success, @NotNull Operation failure) {
+            @Override public @NotNull CompletableFuture<Boolean> invoke(@NotNull Condition condition,
+                @NotNull Collection<Operation> success, @NotNull Collection<Operation> failure) {
                 throw new UnsupportedOperationException("Metastorage service is not implemented yet");
             }
 

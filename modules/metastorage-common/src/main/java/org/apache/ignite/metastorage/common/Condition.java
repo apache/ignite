@@ -59,16 +59,19 @@ public final class Condition {
          */
         private Type type;
 
-        /**
-         * The revision as the condition argument.
-         */
+        /** The revision as the condition argument. */
         private long rev;
 
+        /** Key of entry, which will be tested for condition. */
+        private final Key key;
+
         /**
-         * Default no-op constructor.
+         * Creates a new condition for the given {@code key}.
+         *
+         * @param key Key of entry, to be tested for the condition.
          */
-        RevisionCondition() {
-            // No-op.
+        RevisionCondition(Key key) {
+            this.key = key;
         }
 
         /**
@@ -175,9 +178,13 @@ public final class Condition {
 
         /** {@inheritDoc} */
         @Override public boolean test(Entry e) {
-            int res = Long.compare(e.revision(), rev);
+            if ((e.key() == key) || (e.key() != null && e.key().equals(key))) {
+                int res = Long.compare(e.revision(), rev);
 
-            return type.test(res);
+                return type.test(res);
+            }
+            else
+                return false;
         }
 
         /**
@@ -249,16 +256,19 @@ public final class Condition {
          */
         private Type type;
 
-        /**
-         * The value as the condition argument.
-         */
+        /** The value as the condition argument. */
         private byte[] val;
 
+        /** Key of entry, which will be tested for condition. */
+        private final Key key;
+
         /**
-         * Default no-op constructor.
+         * Creates a new condition for the given {@code key}.
+         *
+         * @param key Key of entry, to be tested for the condition.
          */
-        ValueCondition() {
-            // No-op.
+        ValueCondition(Key key) {
+            this.key = key;
         }
 
         /**
@@ -297,9 +307,13 @@ public final class Condition {
 
         /** {@inheritDoc} */
         @Override public boolean test(Entry e) {
-            int res = Arrays.compare(e.value(), val);
+            if ((e.key() == key) || (e.key() != null && e.key().equals(key))) {
+                int res = Arrays.compare(e.value(), val);
 
-            return type.test(res);
+                return type.test(res);
+            }
+            else
+               return false;
         }
 
         /**
