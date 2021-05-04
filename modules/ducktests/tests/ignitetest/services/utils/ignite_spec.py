@@ -92,6 +92,11 @@ class IgniteSpec(metaclass=ABCMeta):
                             "-Dlog4j.configuration=file:" + self.service.log_config_file,
                             "-Dlog4j.configDebug=true"])
 
+        self._add_jvm_opts(["-XX:+UnlockCommercialFeatures",
+                            "-XX:+FlightRecorder",
+                            "-XX:StartFlightRecording=dumponexit=true,disk=true," +
+                            f"filename={self.service.jfr_dir}/rec.jfr"])
+
     @property
     def config_templates(self):
         """

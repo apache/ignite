@@ -52,7 +52,7 @@ class IgniteTest(Test):
             assert isinstance(service, DucktestsService)
 
             try:
-                service.kill()
+                service.stop()
             except RemoteCommandError:
                 pass  # Process may be already self-killed on segmentation.
 
