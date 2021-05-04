@@ -546,7 +546,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
      * Validates control.sh output when caches by group not found.
      *
      * @param outputStr CLI {@code control.sh} utility output.
-     * @param cacheGrps cache groups to print.
+     * @param cacheGrps Cache groups to print.
      */
     private void validateOutputCacheGroupsNotFound(String outputStr, String... cacheGrps) {
         assertContains(
@@ -557,9 +557,9 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
     }
 
     /**
-     * Makes new-line list with indent.
-     * @param strings list of strings.
-     * @return formated text.
+     * Makes new-line List with indent.
+     * @param strings List of strings.
+     * @return Formated text.
      */
     private String makeStringListWithIndent(String... strings) {
         return INDENT + String.join(U.nl() + INDENT, strings);
@@ -587,7 +587,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
     /**
      * Validates control.sh output when some indices rebuilt in progress.
      *
-     * @param outputStr control.sh output.
+     * @param outputStr CLI {@code control.sh} utility output.
      * @param cacheGroputToNames Cache groups mapping to non-existing cache names.
      */
     private void validateOutputIndicesRebuildingInProgress(String outputStr, Map<String, List<String>> cacheGroputToNames) {
@@ -603,7 +603,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
     /**
      * Validates control.sh output when indices started to rebuild.
      *
-     * @param outputStr control.sh output.
+     * @param outputStr CLI {@code control.sh} utility output.
      * @param cacheGroputToNames Cache groups mapping to non-existing cache names.
      */
     private void validateOutputIndicesRebuildWasStarted(String outputStr, Map<String, List<String>> cacheGroputToNames) {
