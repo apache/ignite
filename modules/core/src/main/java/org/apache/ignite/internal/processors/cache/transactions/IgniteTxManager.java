@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -34,6 +35,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
@@ -53,6 +55,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.managers.eventstorage.HighPriorityListener;
 import org.apache.ignite.internal.managers.systemview.walker.TransactionViewWalker;
+import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.MvccTxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -88,6 +91,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearOpti
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccRecoveryFinishedMessage;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetection.TxDeadlockFuture;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -197,6 +201,23 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     /** Slow tx warn timeout (initialized to 0). */
     private static final int SLOW_TX_WARN_TIMEOUT =
         Integer.getInteger(IGNITE_SLOW_TX_WARN_TIMEOUT, DFLT_SLOW_TX_WARN_TIMEOUT);
+
+    /** Returns {@code true} if transaction has completed states. */
+    public static final Predicate<TxRecord> COMPLETED_TX_STATES = new Predicate<TxRecord>() {
+        @Override public boolean test(TxRecord txRec) {
+            return txRec.state() == COMMITTED || txRec.state() == ROLLED_BACK;
+        }
+    };
+
+    /** Returns {@code true} if transaction has prepared states. */
+    public static final Predicate<TxRecord> PREPARED_TX_STATES = new Predicate<TxRecord>() {
+        @Override public boolean test(TxRecord txRec) {
+            return txRec.state() == PREPARED || txRec.state() == PREPARING;
+        }
+    };
+
+    /** Uncommited tx states. */
+    private Set<GridCacheVersion> uncommitedTx = new HashSet<>();
 
     /** One phase commit deferred ack request timeout. */
     public static final int DEFERRED_ONE_PHASE_COMMIT_ACK_REQUEST_TIMEOUT =
@@ -2842,17 +2863,33 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param tx Transaction.
      * @param state New state.
      */
-    public void setMvccState(IgniteInternalTx tx, byte state) {
+    public void setMvccState(IgniteInternalTx tx, TransactionState state) {
         if (cctx.kernalContext().clientNode() || tx.mvccSnapshot() == null || tx.near() && !tx.local())
             return;
+
+        byte state0 = toMvccState(state);
 
         cctx.database().checkpointReadLock();
 
         try {
-            cctx.coordinators().updateState(tx.mvccSnapshot(), state, tx.local());
+            cctx.coordinators().updateState(tx.mvccSnapshot(), state0, tx.local());
         }
         finally {
             cctx.database().checkpointReadUnlock();
+        }
+    }
+
+    /** */
+    private byte toMvccState(TransactionState state) {
+        switch (state) {
+            case PREPARED:
+                return TxState.PREPARED;
+            case COMMITTED:
+                return TxState.COMMITTED;
+            case ROLLED_BACK:
+                return TxState.ABORTED;
+            default:
+                throw new IllegalStateException("Unexpected state: " + state);
         }
     }
 
@@ -3763,5 +3800,30 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         @Override public int order() {
             return 0;
         }
+    }
+
+    /**
+     * Collects tx states {@link TransactionState} for further correct restoring.
+     *
+     * @param txRec tx Record.
+     */
+    public void collectTxStates(final TxRecord txRec) {
+        if (COMPLETED_TX_STATES.test(txRec))
+            uncommitedTx.remove(txRec.nearXidVersion());
+        else if (PREPARED_TX_STATES.test(txRec))
+            uncommitedTx.add(txRec.nearXidVersion());
+    }
+
+    /**
+     * @param dataEntry Processing entry.
+     * @return {@code true} If entry contains not completed tx version.
+     */
+    public boolean uncommitedTx(final DataEntry dataEntry) {
+        return uncommitedTx.contains(dataEntry.nearXidVersion());
+    }
+
+    /** Clears tx states collections. */
+    public void clearUncommitedStates() {
+        uncommitedTx = Collections.emptySet();
     }
 }
