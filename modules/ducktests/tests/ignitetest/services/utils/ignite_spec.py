@@ -169,7 +169,7 @@ class IgniteSpec(metaclass=ABCMeta):
 
     def prepare_shared_files(self, local_dir):
         """
-        :return: path to local share folder. Files should be copied on all nodes in `shared_root` folder.
+        Prepare files that should be copied on all nodes
         """
         if os.path.exists(os.path.join(local_dir, ".ssl-generated")):
             return
