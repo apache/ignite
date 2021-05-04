@@ -70,9 +70,10 @@ public class Loza {
      * @return A RAFT group client.
      */
     public RaftGroupService startRaftGroup(String groupId, List<ClusterNode> peers, RaftGroupCommandListener lsnr) {
-        assert peers.size() > 1;
+        assert !peers.isEmpty();
 
         //Now we are using only one node in a raft group.
+        //TODO: IGNITE-13885 Investigate jraft implementation for replication framework based on RAFT protocol.
         if (peers.get(0).name().equals(clusterNetSvc.topologyService().localMember().name()))
             raftServer.setListener(groupId, lsnr);
 
@@ -85,5 +86,20 @@ public class Loza {
             true,
             DELAY
         );
+    }
+
+    /**
+     * Stops a RAFT group.
+     *
+     * @param groupId RAFT group id.
+     * @param peers Group peers.
+     */
+    public void stopRaftGroup(String groupId, List<ClusterNode> peers) {
+        assert !peers.isEmpty();
+
+        //Now we are using only one node in a raft group.
+        //TODO: IGNITE-13885 Investigate jraft implementation for replication framework based on RAFT protocol.
+        if (peers.get(0).name().equals(clusterNetSvc.topologyService().localMember().name()))
+            raftServer.clearListener(groupId);
     }
 }

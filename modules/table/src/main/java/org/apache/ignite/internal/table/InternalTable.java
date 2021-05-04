@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.table;
 
 import java.util.Collection;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.internal.schema.BinaryRow;
 import org.jetbrains.annotations.NotNull;
@@ -27,6 +28,13 @@ import org.jetbrains.annotations.NotNull;
  * The facade hides TX/replication protocol over table storage abstractions.
  */
 public interface InternalTable {
+    /**
+     * Gets a table id.
+     *
+     * @return Table id as UUID.
+     */
+    @NotNull UUID tableId();
+
     /**
      * Asynchronously gets a row with same key columns values as given one from the table.
      *

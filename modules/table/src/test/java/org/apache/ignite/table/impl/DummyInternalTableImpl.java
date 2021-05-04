@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -74,6 +75,11 @@ public class DummyInternalTableImpl implements InternalTable {
         @Override public int hashCode() {
             return hash;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public @NotNull UUID tableId() {
+        return UUID.randomUUID();
     }
 
     /** {@inheritDoc} */

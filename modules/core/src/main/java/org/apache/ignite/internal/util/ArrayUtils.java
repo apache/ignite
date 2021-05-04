@@ -179,11 +179,6 @@ public final class ArrayUtils {
         }
     };
 
-    /** */
-    public static boolean empty(byte[] arr) {
-        return arr == null || arr.length == 0;
-    }
-
     /**
      * Stub.
      */

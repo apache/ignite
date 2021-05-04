@@ -40,6 +40,13 @@ public interface IgniteTables {
     Table createTable(String name, Consumer<TableChange> tableInitChange);
 
     /**
+     * Drops a table with the name specified.
+     *
+     * @param name Table name.
+     */
+    void dropTable(String name);
+
+    /**
      * Gets a list of all started tables.
      *
      * @return List of tables.

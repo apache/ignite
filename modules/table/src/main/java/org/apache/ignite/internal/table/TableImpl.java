@@ -57,6 +57,24 @@ public class TableImpl extends AbstractTableView implements Table {
         marsh = new TupleMarshallerImpl(schemaMgr);
     }
 
+    /**
+     * Gets an internal table associated with the table.
+     *
+     * @return Internal table.
+     */
+    public @NotNull InternalTable internalTable() {
+        return tbl;
+    }
+
+    /**
+     * Gets a schema view for the table.
+     *
+     * @return Schema view.
+     */
+    public TableSchemaView schemaView() {
+        return schemaMgr;
+    }
+
     /** {@inheritDoc} */
     @Override public <R> RecordView<R> recordView(RecordMapper<R> recMapper) {
         return new RecordViewImpl<>(tbl, schemaMgr, recMapper);

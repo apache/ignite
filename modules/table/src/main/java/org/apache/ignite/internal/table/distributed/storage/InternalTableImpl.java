@@ -42,6 +42,9 @@ public class InternalTableImpl implements InternalTable {
     /** Partitions. */
     private int partitions;
 
+    /** Table identifier. */
+    private UUID tableId;
+
     /**
      * @param tableId Table id.
      * @param partMap Map partition id to raft group.
@@ -52,8 +55,18 @@ public class InternalTableImpl implements InternalTable {
         Map<Integer, RaftGroupService> partMap,
         int partitions
     ) {
+        this.tableId = tableId;
         this.partitionMap = partMap;
         this.partitions = partitions;
+    }
+
+    /**
+     * Gets a table id.
+     *
+     * @return Table id as UUID.
+     */
+    @Override public @NotNull UUID tableId() {
+        return tableId;
     }
 
     /** {@inheritDoc} */
