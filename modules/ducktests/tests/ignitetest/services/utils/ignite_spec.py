@@ -22,9 +22,7 @@ import importlib
 import json
 import os
 import subprocess
-import tempfile
 from abc import ABCMeta, abstractmethod
-from filelock import FileLock
 
 from ignitetest.services.utils import IgniteServiceType
 from ignitetest.services.utils.config_template import IgniteClientConfigTemplate, IgniteServerConfigTemplate, \

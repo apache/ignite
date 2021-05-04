@@ -38,7 +38,6 @@ from ignitetest.services.utils.ignite_spec import resolve_spec
 from ignitetest.services.utils.jmx_utils import ignite_jmx_mixin
 from ignitetest.services.utils.log_utils import monitor_log
 from ignitetest.services.utils.path import IgnitePathAware
-from ignitetest.services.utils.ssl.ssl_params import is_ssl_enabled
 from ignitetest.utils.enum import constructible
 
 
