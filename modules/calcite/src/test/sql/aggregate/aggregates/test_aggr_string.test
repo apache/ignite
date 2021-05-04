@@ -2,6 +2,12 @@
 # description: Test aggregations on strings
 # group: [aggregates]
 
+query TTTTI
+SELECT NULL as a, NULL as b, NULL as c, NULL as d, 1 as id UNION SELECT 'Кирилл' as a, 'Müller' as b, '我是谁' as c, 'ASCII' as d, 2 as id ORDER BY 1
+----
+NULL	NULL	NULL	NULL	1
+Кирилл	Müller	我是谁	ASCII	2
+
 statement ok
 CREATE TABLE test (a INTEGER, s VARCHAR);
 
@@ -52,10 +58,4 @@ query II
 SELECT MAX(s), MIN(s) FROM test_strings2;
 ----
 aa	A
-
-query TTTTI
-SELECT NULL as a, NULL as b, NULL as c, NULL as d, 1 as id UNION SELECT 'Кирилл' as a, 'Müller' as b, '我是谁' as c, 'ASCII' as d, 2 as id ORDER BY 1 NULLS FIRST
-----
-NULL	NULL	NULL	NULL	1
-Кирилл	Müller	我是谁	ASCII	2
 

@@ -3,6 +3,12 @@
 # group: [aggregates]
 # Ignore: https://issues.apache.org/jira/browse/IGNITE-14544
 
+query TTTTI
+SELECT NULL as a, NULL as b, NULL as c, NULL as d, 1 as id UNION SELECT 'Кирилл' as a, 'Müller' as b, '我是谁' as c, 'ASCII' as d, 2 as id ORDER BY 1
+----
+NULL	NULL	NULL	NULL	1
+Кирилл	Müller	我是谁	ASCII	2
+
 statement ok
 CREATE TABLE test (a INTEGER, s VARCHAR);
 
