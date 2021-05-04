@@ -79,7 +79,7 @@ class CellularAffinity(IgniteTest):
 
     CACHE_NAME = "test-cache"
 
-    PREPARED_TX_CNT = 500  # possible amount at real cluster under load (per cell).
+    PREPARED_TX_CNT = 500 * 3  # possible amount at real cluster under load (per cell).
     PREPARED_MULTIKEY_TX_CNT = PREPARED_TX_CNT / 2  # should not cause full recovery waiting on alive nodes (per cell)
     PREPARED_NONCOLOCATED_TX_CNT = PREPARED_TX_CNT * 2  # huge value, should not affect dramatically on switch speed
 
@@ -152,7 +152,7 @@ class CellularAffinity(IgniteTest):
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @matrix(stop_type=[StopType.SIGTERM],
             discovery_type=[DiscoreryType.ZooKeeper],
-            prep_type=[TxPrepType.CELL_ONLY, TxPrepType.CELL_WITH_MULTIKEY, TxPrepType.CELL_WITH_NONCOLOCATED])
+            prep_type=[TxPrepType.CELL_ONLY])
     def test_latency(self, ignite_version, stop_type, discovery_type, prep_type):
         """
         Tests Cellular switch tx latency.
