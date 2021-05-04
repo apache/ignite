@@ -64,15 +64,8 @@ public class IndexForceRebuildTask extends VisorOneNodeTask<IndexForceRebuildTas
         @Override protected IndexForceRebuildTaskRes run(@Nullable IndexForceRebuildTaskArg arg)
             throws IgniteException
         {
-            //Either cacheNames or cacheGrps must be specified
             assert (arg.cacheNames() == null) ^ (arg.cacheGrps() == null) :
                 "Either cacheNames or cacheGroups must be specified.";
-
-            if (arg.cacheNames() == null && arg.cacheGrps() == null) {
-                assert false : "Neither cache names nor cache groups specified.";
-
-                return null;
-            }
 
             Set<GridCacheContext> cachesToRebuild = new HashSet<>();
             Set<String> notFound = new HashSet<>();
@@ -81,7 +74,7 @@ public class IndexForceRebuildTask extends VisorOneNodeTask<IndexForceRebuildTas
 
             if (arg.cacheNames() != null) {
                 for (String cacheName : arg.cacheNames()) {
-                    IgniteInternalCache<Object, Object> cache = cacheProcessor.cache(cacheName);
+                    IgniteInternalCache cache = cacheProcessor.cache(cacheName);
 
                     if (cache != null)
                         cachesToRebuild.add(cache.context());
@@ -89,7 +82,7 @@ public class IndexForceRebuildTask extends VisorOneNodeTask<IndexForceRebuildTas
                         notFound.add(cacheName);
                 }
             }
-            else { //arg.cacheGrps() != null
+            else {
                 for (String cacheGrpName : arg.cacheGrps()) {
                     CacheGroupContext grpCtx = cacheProcessor.cacheGroup(CU.cacheId(cacheGrpName));
 

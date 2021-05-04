@@ -4463,7 +4463,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param <K> type of keys.
      * @param <V> type of values.
      * @return Cache instance for given name.
-     * @throws IllegalArgumentException if cache not exists.
+     * @throws IllegalArgumentException If cache not exists.
      */
     public <K, V> IgniteInternalCache<K, V> publicCache(String name) {
         assert name != null;

@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.query.schema.SchemaIndexOperationCa
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -500,10 +501,38 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
     }
 
     /**
+     * Checking that a sequence of forced rebuild of indexes is possible
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testSequentialForceRebuildIndexes() throws Exception {
+        IgniteEx grid = grid(0);
+
+        injectTestSystemOut();
+
+        String outputStr;
+
+        forceRebuildIndices(F.asList(CACHE_NAME_1_1), grid);
+
+        outputStr = testOut.toString();
+
+        validateOutputIndicesRebuildWasStarted(outputStr, F.asMap(GRP_NAME_1, F.asList(CACHE_NAME_1_1)));
+
+        assertFalse(outputStr.contains("WARNING: These caches have indexes rebuilding in progress:"));
+
+        forceRebuildIndices(F.asList(CACHE_NAME_1_1), grid);
+
+        validateOutputIndicesRebuildWasStarted(outputStr, F.asMap(GRP_NAME_1, F.asList(CACHE_NAME_1_1)));
+
+        assertFalse(outputStr.contains("WARNING: These caches have indexes rebuilding in progress:"));
+    }
+
+    /**
      * Validates control.sh output when caches by name not found.
      *
-     * @param outputStr control.sh output.
-     * @param cacheNames cache names to print.
+     * @param outputStr CLI {@code control.sh} utility output.
+     * @param cacheNames Cache names to print.
      */
     private void validateOutputCacheNamesNotFound(String outputStr, String... cacheNames) {
         assertContains(
@@ -516,7 +545,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
     /**
      * Validates control.sh output when caches by group not found.
      *
-     * @param outputStr control.sh output.
+     * @param outputStr CLI {@code control.sh} utility output.
      * @param cacheGrps cache groups to print.
      */
     private void validateOutputCacheGroupsNotFound(String outputStr, String... cacheGrps) {
@@ -540,20 +569,16 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
      * Makes formatted text for given caches.
      *
      * @param cacheGroputToNames Cache groups mapping to non-existing cache names.
-     * @return text for CLI print output for given caches.
+     * @return Text for CLI print output for given caches.
      */
     private String makeStringListForCacheGroupsAndNames(Map<String, List<String>> cacheGroputToNames) {
-        StringBuilder sb = new StringBuilder();
+        SB sb = new SB();
 
         for (Map.Entry<String, List<String>> entry : cacheGroputToNames.entrySet()) {
             String cacheGrp = entry.getKey();
 
-            for (String cacheName : entry.getValue()) {
-                sb.append(INDENT)
-                    .append("groupName=").append(cacheGrp)
-                    .append(", cacheName=").append(cacheName)
-                    .append(U.nl());
-            }
+            for (String cacheName : entry.getValue())
+                sb.a(INDENT).a("groupName=").a(cacheGrp).a(", cacheName=").a(cacheName).a(U.nl());
         }
 
         return sb.toString();
@@ -742,7 +767,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
      *
      * @param cacheNames Cache names need indices to rebuild.
      * @param grid Ignite node.
-     * @throws Exception if failed.
+     * @throws Exception If failed.
      */
     private void forceRebuildIndices(Iterable<String> cacheNames, IgniteEx grid) throws Exception {
         String cacheNamesArg = String.join(",", cacheNames);
@@ -757,33 +782,5 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
         );
 
         waitForIndexesRebuild(grid, getTestTimeout(), Collections.emptyList());
-    }
-
-    /**
-     * Checking that a sequence of forced rebuild of indexes is possible
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testSequentialForceRebuildIndexes() throws Exception {
-        IgniteEx grid = grid(0);
-
-        injectTestSystemOut();
-
-        String outputStr;
-
-        forceRebuildIndices(F.asList(CACHE_NAME_1_1), grid);
-
-        outputStr = testOut.toString();
-
-        validateOutputIndicesRebuildWasStarted(outputStr, F.asMap(GRP_NAME_1, F.asList(CACHE_NAME_1_1)));
-
-        assertFalse(outputStr.contains("WARNING: These caches have indexes rebuilding in progress:"));
-
-        forceRebuildIndices(F.asList(CACHE_NAME_1_1), grid);
-
-        validateOutputIndicesRebuildWasStarted(outputStr, F.asMap(GRP_NAME_1, F.asList(CACHE_NAME_1_1)));
-
-        assertFalse(outputStr.contains("WARNING: These caches have indexes rebuilding in progress:"));
     }
 }
