@@ -202,7 +202,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         with lock:
             if not os.path.isdir(local_dir):
                 self.logger.debug("Local shared dir not exists. Creating. " + local_dir)
-            os.mkdir(local_dir)
+                os.mkdir(local_dir)
 
             self.spec.prepare_shared_files(local_dir)
 
