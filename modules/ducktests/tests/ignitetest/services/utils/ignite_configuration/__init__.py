@@ -28,6 +28,7 @@ from ignitetest.services.utils.ignite_configuration.discovery import DiscoverySp
 from ignitetest.services.utils.ignite_configuration.binary_configuration import BinaryConfiguration
 from ignitetest.services.utils.ssl.ssl_params import SslParams, is_ssl_enabled, get_ssl_params, IGNITE_CLIENT_ALIAS, \
     IGNITE_SERVER_ALIAS
+from ignitetest.services.utils.ignite_configuration.keystore_encryption import KeystoreEncryptionConfiguration
 from ignitetest.utils.version import IgniteVersion, DEV_BRANCH
 
 
@@ -64,6 +65,7 @@ class IgniteConfiguration(NamedTuple):
     local_event_listeners: str = None
     include_event_types: str = None
     event_storage_spi: str = None
+    keystore_encryption: KeystoreEncryptionConfiguration = None
 
     def __prepare_ssl(self, test_globals, shared_root):
         """

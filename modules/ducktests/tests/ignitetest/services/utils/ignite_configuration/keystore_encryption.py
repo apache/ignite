@@ -14,17 +14,17 @@
 # limitations under the License
 
 """
-This module contains classes and utilities for Ignite Cache configuration.
+This module contains classes and utilities for Ignite keystore encryption SPI configuration.
 """
 from typing import NamedTuple
 
 
-class CacheConfiguration(NamedTuple):
+class KeystoreEncryptionConfiguration(NamedTuple):
     """
-    Ignite Cache configuration.
+    Ignite Keystore encryption SPI configuration.
     """
-    name: str
-    cache_mode: str = 'PARTITIONED'
-    atomicity_mode: str = 'ATOMIC'
-    backups: int = 0
-    encryption_enabled: bool = False
+    keystore_path: str = '/tmp/tde.jks'
+    keystore_password: str = 'love_sex_god'
+    master_key_name: str = 'ignite.master.key'
+    key_size: int = 256
+

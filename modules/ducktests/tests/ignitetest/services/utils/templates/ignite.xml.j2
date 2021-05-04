@@ -24,6 +24,7 @@
 {% import 'misc_macro.j2' as misc_utils %}
 {% import 'ssl_params_macro.j2' as ssl_params_util %}
 {% import 'connector_configuration.j2' as connector_configuration_util %}
+{% import 'keystore_encryption_macro.j2' as encryption_utils %}
 
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -75,6 +76,10 @@
 
         {% if config.local_host %}
             <property name="localHost" value="{{ config.local_host }}"/>
+        {% endif %}
+
+        {% if not config.client_mode %}
+            {{ encryption_utils.keystore_encryption(config.keystore_encryption) }}
         {% endif %}
 
         {% if config.properties %}

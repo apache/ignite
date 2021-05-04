@@ -53,6 +53,8 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         OUTPUT = 1
         ALL = 2
 
+    tde_cfg = None
+
     # pylint: disable=R0913
     def __init__(self, context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, main_java_class, modules,
                  **kwargs):
@@ -60,6 +62,9 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         **kwargs are params that passed to IgniteSpec
         """
         super().__init__(context, num_nodes)
+        if config.keystore_encryption is not None:
+            tde_cfg = config.keystore_encryption
+            self.generateKeystore(tde_cfg)
 
         # Ducktape checks a Service implementation attribute 'logs' to get config for logging.
         # IgniteAwareService uses IgnitePersistenceAware mixin to override default Service 'log' definition.
@@ -150,6 +155,11 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
     def stop_node(self, node, force_stop=False, **kwargs):
         pids = self.pids(node)
 
+        # cleanup generated keystorage
+        if self.tde_cfg is not None:
+            for node in self.nodes:
+                node.account.ssh("rm " + self.tde_cfg.keystore_path)
+
         for pid in pids:
             node.account.signal(pid, signal.SIGKILL if force_stop else signal.SIGTERM, allow_fail=False)
 
@@ -209,6 +219,33 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         :return: List of service's pids.
         """
         return node.account.java_pids(self.main_java_class)
+
+    def generateKeystore(self, cfg):
+        """
+        Generate keystorage
+        :param cfg: KeystoreEncryptionConfiguration
+        """
+        self.encryption_enabled = True
+
+        first = True
+
+        firstNode = {}
+
+        for node in self.nodes:
+            if first:
+                node.account.ssh("rm -f " + cfg.keystore_path + " && " +
+                                 "keytool -genseckey -noprompt" +
+                                 " -alias " + cfg.master_key_name +
+                                 " -keyalg AES" +
+                                 " -keysize " + str(cfg.key_size) +
+                                 " -keystore " + cfg.keystore_path +
+                                 " -storetype PKCS12" +
+                                 " -storepass " + cfg.keystore_password +
+                                 " -keypass " + cfg.keystore_password)
+                first = False
+                firstNode = node
+            else:
+                firstNode.account.copy_between(cfg.keystore_path, cfg.keystore_path, node)
 
     # pylint: disable=W0613
     def worker(self, idx, node, **kwargs):

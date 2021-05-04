@@ -22,7 +22,9 @@ from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
-from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
+from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration, \
+    KeystoreEncryptionConfiguration
+from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
 from ignitetest.utils import cluster
 from ignitetest.utils.ignite_test import IgniteTest
@@ -47,15 +49,21 @@ class PdsCompatibilityTest(IgniteTest):
     CHECK_OPERATION = "check"
 
     @cluster(num_nodes=2)
-    @parametrize(version_from=str(LATEST), version_to=str(DEV_BRANCH))
-    def test_pds_compatibility(self, version_from, version_to):
+    @parametrize(version_from=str(LATEST), version_to=str(DEV_BRANCH), encryption="false")
+    def test_pds_compatibility(self, version_from, version_to, encryption):
         """
         Saves data using one version of ignite and then load with another.
         """
+        encrypted = (encryption.lower() == "true")
 
         server_configuration_from = IgniteConfiguration(version=IgniteVersion(version_from),
+                                                        caches=[CacheConfiguration(
+                                                            name="users",
+                                                            encryption_enabled=encrypted)
+                                                        ],
                                                         data_storage=DataStorageConfiguration(
-                                                            default=DataRegionConfiguration(persistent=True)))
+                                                            default=DataRegionConfiguration(persistent=True)),
+                                                        keystore_encryption=KeystoreEncryptionConfiguration() if encrypted else None)
         ignite_from = IgniteService(self.test_context, server_configuration_from, num_nodes=1)
 
         ignite_from.start()
