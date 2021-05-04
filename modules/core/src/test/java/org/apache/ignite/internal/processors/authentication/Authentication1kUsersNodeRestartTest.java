@@ -18,14 +18,12 @@
 package org.apache.ignite.internal.processors.authentication;
 
 import java.util.stream.IntStream;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.SecurityContext;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -100,32 +98,22 @@ public class Authentication1kUsersNodeRestartTest extends GridCommonAbstractTest
 
         IntStream.range(0, USERS_COUNT).parallel().forEach(
             i -> {
-                AutoCloseable innerNodeSecHnd = withSecurityContextOnAllNodes(secCtxDflt);
-
-                try {
+                try (AutoCloseable ignored = withSecurityContextOnAllNodes(secCtxDflt)) {
                     sec.createUser("test" + i, "init".toCharArray());
                 }
-                catch (IgniteCheckedException e) {
+                catch (Exception e) {
                     throw new IgniteException(e);
-                }
-                finally {
-                    IgniteUtils.closeQuiet(innerNodeSecHnd);
                 }
             }
         );
 
         IntStream.range(0, USERS_COUNT).parallel().forEach(
             i -> {
-                AutoCloseable innerNodeSecHnd = withSecurityContextOnAllNodes(secCtxDflt);
-
-                try {
+                try (AutoCloseable ignored = withSecurityContextOnAllNodes(secCtxDflt)) {
                     sec.alterUser("test" + i, ("passwd_" + i).toCharArray());
                 }
-                catch (IgniteCheckedException e) {
+                catch (Exception e) {
                     throw new IgniteException(e);
-                }
-                finally {
-                    IgniteUtils.closeQuiet(innerNodeSecHnd);
                 }
             }
         );
