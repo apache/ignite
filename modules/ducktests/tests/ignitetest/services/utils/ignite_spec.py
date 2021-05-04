@@ -167,38 +167,21 @@ class IgniteSpec(metaclass=ABCMeta):
         """
         return self.service.config_file
 
-    def init_local_shared(self):
+    def prepare_shared_files(self, local_dir):
         """
         :return: path to local share folder. Files should be copied on all nodes in `shared_root` folder.
         """
-        local_dir = os.path.join(tempfile.gettempdir(), str(self.service.context.session_context.session_id))
+        if os.path.exists(os.path.join(local_dir, ".ssl-generated")):
+            return
 
-        if not is_ssl_enabled(self.service.context.globals) and \
-                not (self.service.config.service_type == IgniteServiceType.NODE and self.service.config.ssl_params):
-            self.service.logger.debug("Ssl disabled. Nothing to generate.")
-            return local_dir
-
-        if os.path.isdir(local_dir) and os.path.exists(os.path.join(local_dir, ".ducktape-generated")):
-            self.service.logger.debug("Local shared dir already exists. Exiting. " + local_dir)
-            return local_dir
-
-        lock = FileLock("ducktape.lock", timeout=120)
-        with lock:
-            if os.path.exists(os.path.join(local_dir, ".ducktape-generated")):
-                self.service.logger.debug("Local shared dir already exists. Exiting. " + local_dir)
-                return local_dir
-
-            self.service.logger.debug("Local shared dir not exists. Creating. " + local_dir)
-            os.mkdir(local_dir)
-
+        if is_ssl_enabled(self.service.context.globals) or \
+                (self.service.config.service_type == IgniteServiceType.NODE and self.service.config.ssl_params):
             script_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "certs")
 
             self._runcmd(f"cp {script_dir}/* {local_dir}")
             self._runcmd(f"chmod a+x {local_dir}/*.sh")
             self._runcmd(f"{local_dir}/mkcerts.sh")
-            self._runcmd(f"touch {local_dir}/.ducktape-generated")
-
-        return local_dir
+            self._runcmd(f"touch {local_dir}/.ssl-generated")
 
     def _jvm_opts(self):
         """
