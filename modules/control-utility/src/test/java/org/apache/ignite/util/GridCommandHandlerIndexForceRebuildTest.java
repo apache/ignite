@@ -301,6 +301,15 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
     }
 
     /**
+     * Checks illegal parameter after indexes_force_rebuild.
+     */
+    @Test
+    public void testIllegalArgument() {
+        int code = execute("--cache", "indexes_force_rebuild", "--illegal_parameter");
+        assertEquals(1, code);
+    }
+
+    /**
      * Checks client node id as an agrument. Command shoul
      *
      * @throws Exception If failed to start client node.
@@ -406,15 +415,15 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
 
             waitForIndexesRebuild(n);
 
+            intlRebIdxFut.get(getTestTimeout());
+            destroyCacheFut.get(getTestTimeout());
+            putCacheFut.get(getTestTimeout());
+
             injectTestSystemOut();
 
             assertEquals(EXIT_CODE_OK, execute("--cache", "validate_indexes", "--check-crc", cacheName1));
 
             assertContains(log, testOut.toString(), "no issues found.");
-
-            intlRebIdxFut.get(getTestTimeout());
-            destroyCacheFut.get(getTestTimeout());
-            putCacheFut.get(getTestTimeout());
         }
         finally {
             stopLoad.set(true);

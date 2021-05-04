@@ -480,7 +480,7 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
                 .collect(Collectors.toList());
 
             Assert.assertTrue("There was unexpected rebalance for some groups" +
-                    " [node=" + node.name() + ", groups=" + rebalancedGroups + ']', rebalancedGroups.isEmpty());
+                " [node=" + node.name() + ", groups=" + rebalancedGroups + ']', rebalancedGroups.isEmpty());
         }
     }
 

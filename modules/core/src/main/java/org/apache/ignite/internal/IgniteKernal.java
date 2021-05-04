@@ -1250,7 +1250,14 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 startTimer.finishGlobalStage("Configure binary metadata");
 
                 startProcessor(createComponent(IGridClusterStateProcessor.class, ctx));
-                startProcessor(new IgniteAuthenticationProcessor(ctx));
+
+                if (cfg.isAuthenticationEnabled()) {
+                    IgniteSecurityProcessor sec = (IgniteSecurityProcessor)ctx.security();
+
+                    ((IgniteAuthenticationProcessor)sec.securityProcessor()).startProcessor();
+                }
+
+                startProcessor(new PerformanceStatisticsProcessor(ctx));
                 startProcessor(new GridCacheProcessor(ctx));
                 startProcessor(new IndexProcessor(ctx));
                 startProcessor(new GridQueryProcessor(ctx));
@@ -1268,7 +1275,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 startProcessor(new DistributedMetaStorageImpl(ctx));
                 startProcessor(new DistributedConfigurationProcessor(ctx));
                 startProcessor(new DurableBackgroundTasksProcessor(ctx));
-                startProcessor(new PerformanceStatisticsProcessor(ctx));
 
                 startTimer.finishGlobalStage("Start processors");
 
@@ -1534,7 +1540,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 private final DecimalFormat dblFmt = doubleFormat();
 
                 @Override public void run() {
-                    ackNodeMetrics(dblFmt, execSvc, sysExecSvc, customExecSvcs);
+                    ackNodeMetrics(dblFmt, execSvc, sysExecSvc, stripedExecSvc, customExecSvcs);
                 }
             }, metricsLogFreq, metricsLogFreq);
         }
@@ -1568,6 +1574,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     private GridProcessor securityProcessor() throws IgniteCheckedException {
         GridSecurityProcessor prc = createComponent(GridSecurityProcessor.class, ctx);
 
+        if (cfg.isAuthenticationEnabled() && !(prc instanceof IgniteAuthenticationProcessor)) {
+            throw new IgniteCheckedException("Invalid security configuration: both authentication is enabled" +
+                " and external security plugin is provided.");
+        }
+
         return prc != null && prc.enabled()
             ? new IgniteSecurityProcessor(ctx, prc)
             : new NoOpIgniteSecurityProcessor(ctx);
@@ -1580,19 +1591,26 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @param execSvc Service to create a description for.
      */
     private String createExecutorDescription(String execSvcName, ExecutorService execSvc) {
+        int poolSize = 0;
         int poolActiveThreads = 0;
-        int poolIdleThreads = 0;
         int poolQSize = 0;
 
         if (execSvc instanceof ThreadPoolExecutor) {
             ThreadPoolExecutor exec = (ThreadPoolExecutor)execSvc;
 
-            int poolSize = exec.getPoolSize();
-
+            poolSize = exec.getPoolSize();
             poolActiveThreads = Math.min(poolSize, exec.getActiveCount());
-            poolIdleThreads = poolSize - poolActiveThreads;
             poolQSize = exec.getQueue().size();
         }
+        else if (execSvc instanceof StripedExecutor) {
+            StripedExecutor exec = (StripedExecutor) execSvc;
+
+            poolSize = exec.stripesCount();
+            poolActiveThreads = exec.activeStripesCount();
+            poolQSize = exec.queueSize();
+        }
+
+        int poolIdleThreads = poolSize - poolActiveThreads;
 
         return execSvcName + " [active=" + poolActiveThreads + ", idle=" + poolIdleThreads + ", qSize=" + poolQSize + "]";
     }
@@ -2243,6 +2261,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     private void ackNodeMetrics(DecimalFormat dblFmt,
         ExecutorService execSvc,
         ExecutorService sysExecSvc,
+        ExecutorService stripedExecSvc,
         Map<String, ? extends ExecutorService> customExecSvcs
     ) {
         if (!log.isInfoEnabled())
@@ -2321,7 +2340,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 .a(dataStorageInfo)
                 .a("    ^-- Outbound messages queue [size=").a(m.getOutboundMessagesQueueSize()).a("]").nl()
                 .a("    ^-- ").a(createExecutorDescription("Public thread pool", execSvc)).nl()
-                .a("    ^-- ").a(createExecutorDescription("System thread pool", sysExecSvc));
+                .a("    ^-- ").a(createExecutorDescription("System thread pool", sysExecSvc)).nl()
+                .a("    ^-- ").a(createExecutorDescription("Striped thread pool", stripedExecSvc));
 
             if (customExecSvcs != null) {
                 for (Map.Entry<String, ? extends ExecutorService> entry : customExecSvcs.entrySet())
@@ -4348,7 +4368,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             return (T)new GridClusterStateProcessor(ctx);
 
         if (cls.equals(GridSecurityProcessor.class))
-            return null;
+            return ctx.config().isAuthenticationEnabled() ? (T)new IgniteAuthenticationProcessor(ctx) : null;
 
         if (cls.equals(IgniteRestProcessor.class))
             return (T)new GridRestProcessor(ctx);

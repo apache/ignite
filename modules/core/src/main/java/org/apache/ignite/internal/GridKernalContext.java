@@ -20,6 +20,7 @@ package org.apache.ignite.internal;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -36,7 +37,6 @@ import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
-import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.IgniteDefragmentation;
@@ -308,13 +308,6 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Data streamer processor.
      */
     public <K, V> DataStreamProcessor<K, V> dataStream();
-
-    /**
-     * Gets authentication processor.
-     *
-     * @return Authentication processor.
-     */
-    public IgniteAuthenticationProcessor authentication();
 
     /**
      * Gets event continuous processor.
@@ -784,4 +777,11 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Performance statistics processor.
      */
     public PerformanceStatisticsProcessor performanceStatistics();
+
+    /**
+     * Executor that is in charge of processing user async continuations.
+     *
+     * @return Executor that is in charge of processing user async continuations.
+     */
+    public Executor getAsyncContinuationExecutor();
 }

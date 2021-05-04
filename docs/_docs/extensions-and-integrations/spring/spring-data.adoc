@@ -32,7 +32,7 @@ tab:pom.xml[]
 ----
 <dependency>
     <groupId>org.apache.ignite</groupId>
-    <artifactId>ignite-spring-data_2.2</artifactId>
+    <artifactId>ignite-spring-data-2.2-ext</artifactId>
     <version>${ignite-spring-data-ext.version}</version>
 </dependency>
 
@@ -66,10 +66,19 @@ Replace `${ignite-spring-data-ext.version}`, `${spring.data.version}`, and
 `${ignite.version}` with an actual version of Apache Ignite Spring Data extension, Spring Data, and Apache Ignite
 dependencies you are interested in, respectively.
 
+The table below shows available versions of the Apache Ignite Spring Data extension and corresponding versions of the
+Apache Ignite each one is compatible with.
+
+[cols="4,5", opts="header"]
+|===
+|Apache Ignite Spring Data extension version | Compatible Apache Ignite versions
+| 1.0.0 | All versions since 2.8.0
+|===
+
 [NOTE]
 ====
-If your Spring Data version is earlier than Spring Data 2.2 then set `ignite-spring-data_2.0`
-or `ignite-spring-data` as an `artifactId` in the pom.xml configuration.
+If your Spring Data version is earlier than Spring Data 2.2 then set `ignite-spring-data-2.0-ext`
+or `ignite-spring-data-ext` as an `artifactId` in the pom.xml configuration.
 ====
 
 == Apache Ignite Repository

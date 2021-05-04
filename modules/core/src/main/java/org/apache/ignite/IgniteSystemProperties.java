@@ -1013,9 +1013,8 @@ public final class IgniteSystemProperties {
      * When set to {@code true} fields are written by BinaryMarshaller in sorted order. Otherwise
      * the natural order is used.
      * <p>
-     * @deprecated Should be removed in Apache Ignite 2.0.
+     * NOTICE: Should be the default in Apache Ignite 3.0
      */
-    @Deprecated
     @SystemProperty("Enables fields to be written by BinaryMarshaller in sorted order. " +
         "By default, the natural order is used")
     public static final String IGNITE_BINARY_SORT_OBJECT_FIELDS = "IGNITE_BINARY_SORT_OBJECT_FIELDS";

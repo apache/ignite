@@ -38,9 +38,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
-import static java.util.Objects.isNull;
-import static java.util.Objects.nonNull;
-
 /**
  * Task that rebuilds indexes.
  */
@@ -48,9 +45,15 @@ public class IndexesRebuildTask {
     /** Index rebuilding futures for caches. Mapping: cacheId -> rebuild indexes future. */
     private final Map<Integer, SchemaIndexCacheFuture> idxRebuildFuts = new ConcurrentHashMap<>();
 
-    /** Start to rebuild. */
-    public IgniteInternalFuture<?> rebuild(GridCacheContext cctx) {
-        assert nonNull(cctx);
+    /**
+     * Start to rebuild.
+     *
+     * @param cctx Cache context.
+     * @param force Force rebuild indexes.
+     * @return A future of rebuilding cache indexes.
+     */
+    @Nullable public IgniteInternalFuture<?> rebuild(GridCacheContext cctx, boolean force) {
+        assert cctx != null;
 
         if (!CU.affinityNode(cctx.localNode(), cctx.config().getNodeFilter()))
             return null;
@@ -68,7 +71,7 @@ public class IndexesRebuildTask {
             clo = row -> cctx.queries().store(row, null, mvccEnabled);
         }
         else {
-            Collection<InlineIndex> toRebuild = cctx.kernalContext().indexProcessor().treeIndexes(cctx, true);
+            Collection<InlineIndex> toRebuild = cctx.kernalContext().indexProcessor().treeIndexes(cctx, !force);
 
             if (F.isEmpty(toRebuild))
                 return null;
@@ -84,17 +87,20 @@ public class IndexesRebuildTask {
         // To avoid possible data race.
         GridFutureAdapter<Void> outRebuildCacheIdxFut = new GridFutureAdapter<>();
 
-        // An internal future for the ability to cancel index rebuilding.
-        // This behavior should be discussed in IGNITE-14321.
         IgniteLogger log = cctx.kernalContext().grid().log();
 
+        // An internal future for the ability to cancel index rebuilding.
         SchemaIndexCacheFuture intRebFut = new SchemaIndexCacheFuture(new SchemaIndexOperationCancellationToken());
-        cancelIndexRebuildFuture(idxRebuildFuts.put(cctx.cacheId(), intRebFut), log);
+
+        SchemaIndexCacheFuture prevIntRebFut = idxRebuildFuts.put(cctx.cacheId(), intRebFut);
+
+        // Check that the previous rebuild is completed.
+        assert prevIntRebFut == null;
 
         rebuildCacheIdxFut.listen(fut -> {
             Throwable err = fut.error();
 
-            if (isNull(err)) {
+            if (err == null) {
                 try {
                     cctx.kernalContext().query().markAsRebuildNeeded(cctx, false);
                 }
@@ -103,13 +109,13 @@ public class IndexesRebuildTask {
                 }
             }
 
-            if (nonNull(err))
+            if (err != null)
                 U.error(log, "Failed to rebuild indexes for cache: " + cacheName, err);
-
-            outRebuildCacheIdxFut.onDone(err);
 
             idxRebuildFuts.remove(cctx.cacheId(), intRebFut);
             intRebFut.onDone(err);
+
+            outRebuildCacheIdxFut.onDone(err);
         });
 
         startRebuild(cctx, rebuildCacheIdxFut, clo, intRebFut.cancelToken());
@@ -117,9 +123,20 @@ public class IndexesRebuildTask {
         return outRebuildCacheIdxFut;
     }
 
-    /** Actual start rebuilding. Use this method for test purposes only. */
-    protected void startRebuild(GridCacheContext cctx, GridFutureAdapter<Void> fut,
-        SchemaIndexCacheVisitorClosure clo, SchemaIndexOperationCancellationToken cancel) {
+    /**
+     * Actual start rebuilding. Use this method for test purposes only.
+     *
+     * @param cctx Cache context.
+     * @param fut Future for rebuild indexes.
+     * @param clo Closure.
+     * @param cancel Cancellation token.
+     */
+    protected void startRebuild(
+        GridCacheContext cctx,
+        GridFutureAdapter<Void> fut,
+        SchemaIndexCacheVisitorClosure clo,
+        SchemaIndexOperationCancellationToken cancel
+    ) {
         new SchemaIndexCacheVisitorImpl(cctx, cancel, fut).visit(clo);
     }
 
@@ -127,6 +144,7 @@ public class IndexesRebuildTask {
      * Stop rebuilding indexes.
      *
      * @param cacheInfo Cache context info.
+     * @param log Logger.
      */
     public void stopRebuild(GridCacheContextInfo cacheInfo, IgniteLogger log) {
         cancelIndexRebuildFuture(idxRebuildFuts.remove(cacheInfo.cacheId()), log);
@@ -136,6 +154,7 @@ public class IndexesRebuildTask {
      * Cancel rebuilding indexes for the cache through a future.
      *
      * @param rebFut Index rebuilding future.
+     * @param log Logger.
      */
     private void cancelIndexRebuildFuture(@Nullable SchemaIndexCacheFuture rebFut, IgniteLogger log) {
         if (rebFut != null && !rebFut.isDone() && rebFut.cancelToken().cancel()) {

@@ -105,11 +105,12 @@ public interface GridQueryIndexing {
      * @param qry Query.
      * @param params Query parameters.
      * @param streamer Data streamer to feed data to.
+     * @param qryInitiatorId Query initiator ID.
      * @return Update counter.
      * @throws IgniteCheckedException If failed.
      */
     public long streamUpdateQuery(String schemaName, String qry, @Nullable Object[] params,
-        IgniteDataStreamer<?, ?> streamer) throws IgniteCheckedException;
+        IgniteDataStreamer<?, ?> streamer, String qryInitiatorId) throws IgniteCheckedException;
 
     /**
      * Execute a batched INSERT statement using data streamer as receiver.
@@ -118,11 +119,12 @@ public interface GridQueryIndexing {
      * @param qry Query.
      * @param params Query parameters.
      * @param cliCtx Client connection context.
+     * @param qryInitiatorId Query initiator ID.
      * @return Update counters.
      * @throws IgniteCheckedException If failed.
      */
     public List<Long> streamBatchedUpdateQuery(String schemaName, String qry, List<Object[]> params,
-        SqlClientContext cliCtx) throws IgniteCheckedException;
+        SqlClientContext cliCtx, String qryInitiatorId) throws IgniteCheckedException;
 
     /**
      * Executes text query.

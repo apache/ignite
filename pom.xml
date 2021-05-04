@@ -67,6 +67,7 @@
         <module>modules/jcl</module>
         <module>modules/codegen</module>
         <module>modules/gce</module>
+        <module>modules/azure</module>
         <module>modules/cloud</module>
         <module>modules/mesos</module>
         <module>modules/yarn</module>

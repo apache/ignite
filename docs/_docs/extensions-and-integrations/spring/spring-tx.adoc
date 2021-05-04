@@ -79,6 +79,15 @@ Replace `${ignite-spring-tx-ext.version}`, `${spring.version}`, and
 `${ignite.version}` with an actual version of Apache Ignite Spring Transactions extension, Spring Transactions, and
 Apache Ignite dependency you are interested in, respectively.
 
+The table below shows available versions of the Apache Ignite Spring Transactions extension and corresponding versions
+of the Apache Ignite each one is compatible with.
+
+[cols="4,5", opts="header"]
+|===
+|Apache Ignite Spring Transactions extension version | Compatible Apache Ignite versions
+| 1.0.0 | All versions since 2.8.0
+|===
+
 == Apache Ignite Node Transaction Manager Configuration
 This chapter shows how to set up `SpringTransactionManager` that relies on Apache Ignite node to connect to the cluster
 and to manage transactions. The configuration consists of two steps -

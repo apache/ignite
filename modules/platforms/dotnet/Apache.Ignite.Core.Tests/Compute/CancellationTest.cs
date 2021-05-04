@@ -112,7 +112,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                 cts.Cancel();
 
-                Assert.IsTrue(task.IsCanceled);
+                TestUtils.WaitForTrueCondition(() => task.IsCanceled);
 
                 // Pass cancelled token
                 Assert.IsTrue(runner(Compute, cts.Token).IsCanceled);
