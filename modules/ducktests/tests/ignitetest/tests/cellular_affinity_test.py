@@ -152,7 +152,7 @@ class CellularAffinity(IgniteTest):
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @matrix(stop_type=[StopType.SIGTERM],
             discovery_type=[DiscoreryType.ZooKeeper],
-            prep_type=[TxPrepType.CELL_ONLY])
+            prep_type=[TxPrepType.CELL_ONLY, TxPrepType.CELL_WITH_MULTIKEY, TxPrepType.CELL_WITH_NONCOLOCATED])
     def test_latency(self, ignite_version, stop_type, discovery_type, prep_type):
         """
         Tests Cellular switch tx latency.

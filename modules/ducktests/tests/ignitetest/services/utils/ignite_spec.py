@@ -95,7 +95,8 @@ class IgniteSpec(metaclass=ABCMeta):
         if service.context.globals.get(JFR_ENABLED, False):
             self._add_jvm_opts(["-XX:+UnlockCommercialFeatures",
                                 "-XX:+FlightRecorder",
-                                f"-XX:StartFlightRecording=dumponexit=true,filename={self.service.jfr_dir}/rec.jfr"])
+                                f"-XX:StartFlightRecording=dumponexit=true," +
+                                f"filename={self.service.jfr_dir}/recording.jfr"])
 
     @property
     def config_templates(self):
