@@ -114,6 +114,31 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         }
 
         [Test]
+        public void TestManualFlush()
+        {
+            var cache = GetClientCache<string>();
+
+            using (var streamer = Client.GetDataStreamer<int, int>(cache.Name))
+            {
+                streamer.Add(1, 1);
+                streamer.Add(2, 2);
+
+                streamer.Flush();
+
+                streamer.Add(3, 3);
+
+                Assert.AreEqual(2, cache.GetSize());
+                Assert.AreEqual(1, cache[1]);
+                Assert.AreEqual(2, cache[2]);
+
+                streamer.Flush();
+
+                Assert.AreEqual(3, cache.GetSize());
+                Assert.AreEqual(3, cache[3]);
+            }
+        }
+
+        [Test]
         public void TestRemoveNoAllowOverwriteThrows()
         {
             var cache = GetClientCache<string>();
