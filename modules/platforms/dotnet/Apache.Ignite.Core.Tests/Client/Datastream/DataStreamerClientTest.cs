@@ -17,9 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Datastream
 {
-    using System.Linq;
     using System.Threading;
-    using System.Threading.Tasks;
     using Apache.Ignite.Core.Client.Datastream;
     using NUnit.Framework;
 
