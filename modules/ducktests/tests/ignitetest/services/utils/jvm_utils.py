@@ -26,6 +26,8 @@ JVM_PARAMS_GENERIC = "-server -XX:+DisableExplicitGC -XX:+AlwaysPreTouch " \
                      "-XX:+ParallelRefProcEnabled -XX:+DoEscapeAnalysis " \
                      "-XX:+OptimizeStringConcat -XX:+UseStringDeduplication"
 
+JFR_ENABLED = "jfr_enabled"
+
 
 # pylint: disable=R0913
 def create_jvm_settings(heap_size=DEFAULT_HEAP, gc_settings=JVM_PARAMS_GC_G1, generic_params=JVM_PARAMS_GENERIC,

@@ -22,6 +22,7 @@ from time import monotonic
 
 # pylint: disable=W0223
 from ignitetest.services.utils.ducktests_service import DucktestsService
+from ignitetest.services.utils.jvm_utils import JFR_ENABLED
 
 
 class IgniteTest(Test):
@@ -45,21 +46,21 @@ class IgniteTest(Test):
 
     def tearDown(self):
         # jfr requires graceful shutdown to save the recording.
-        # if not self.test_context.globals.get("jfr_enabled", False):
-        #     self.logger.debug("Killing all runned services to speed-up the tearing down.")
-        #
-        #     # pylint: disable=W0212
-        #     for service in self.test_context.services._services.values():
-        #         assert isinstance(service, DucktestsService)
-        #
-        #         try:
-        #             service.kill()
-        #         except RemoteCommandError:
-        #             pass  # Process may be already self-killed on segmentation.
-        #
-        #         assert service.stopped
-        #
-        #     self.logger.debug("All runned services killed.")
+        if not self.test_context.globals.get(JFR_ENABLED, False):
+            self.logger.debug("Killing all runned services to speed-up the tearing down.")
+
+            # pylint: disable=W0212
+            for service in self.test_context.services._services.values():
+                assert isinstance(service, DucktestsService)
+
+                try:
+                    service.kill()
+                except RemoteCommandError:
+                    pass  # Process may be already self-killed on segmentation.
+
+                assert service.stopped
+
+            self.logger.debug("All runned services killed.")
 
         super().tearDown()
 
