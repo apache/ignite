@@ -179,6 +179,9 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         Init shared directory. Content of shared directory must be equal on all test nodes.
         :param node: Ignite service node.
         """
+
+        node.account.ssh("sudo chown -R ducker:ducker /mnt")
+
         local_shared_dir = self._init_local_shared()
 
         if not os.path.isdir(local_shared_dir):
@@ -197,12 +200,11 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
         local_dir = os.path.join(tempfile.gettempdir(), str(self.context.session_context.session_id))
 
+        if not self.spec.prepare_shared_files(local_dir, pretend=True):
+            return local_dir
+
         lock = FileLock("init_shared.lock", timeout=120)
         with lock:
-            if not os.path.isdir(local_dir):
-                self.logger.debug("Local shared dir not exists. Creating. " + local_dir)
-                os.mkdir(local_dir)
-
             self.spec.prepare_shared_files(local_dir)
 
         return local_dir

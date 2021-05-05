@@ -165,16 +165,26 @@ class IgniteSpec(metaclass=ABCMeta):
         """
         return self.service.config_file
 
-    def prepare_shared_files(self, local_dir):
+    def prepare_shared_files(self, local_dir, pretend: bool = False):
         """
         Prepare files that should be copied on all nodes
+        :return True if pretend = True and function have any work to do
         """
+        if not os.path.isdir(local_dir):
+            if pretend:
+                return True
+
+            self.service.logger.debug("Local shared dir not exists. Creating. " + local_dir)
+            os.mkdir(local_dir)
+
         if os.path.exists(os.path.join(local_dir, ".ssl-generated")):
-            return
+            return False
 
         if is_ssl_enabled(self.service.context.globals) or \
                 (self.service.config.service_type == IgniteServiceType.NODE and self.service.config.ssl_params):
             script_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "certs")
+            if pretend:
+                return True
 
             self._runcmd(f"cp {script_dir}/* {local_dir}")
             self._runcmd(f"chmod a+x {local_dir}/*.sh")
