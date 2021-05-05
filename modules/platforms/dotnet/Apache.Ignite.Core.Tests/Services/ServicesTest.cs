@@ -57,6 +57,9 @@ namespace Apache.Ignite.Core.Tests.Services
         protected IIgnite Grid3;
 
         /** */
+        private IIgnite _client;
+
+        /** */
         protected IIgnite[] Grids;
 
         [TestFixtureTearDown]
@@ -861,7 +864,31 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Tests Java service invocation.
         /// </summary>
         [Test]
-        public void TestCallJavaService()
+        public void TestCallJavaServiceRemote()
+        {
+            // Deploy Java service
+            var javaSvcName = TestUtils.DeployJavaService(Grid1);
+
+            // Verify descriptor
+            var descriptor = _client.GetServices().GetServiceDescriptors().Single(x => x.Name == javaSvcName);
+            Assert.AreEqual(javaSvcName, descriptor.Name);
+
+            var svc = _client.GetServices().GetServiceProxy<IJavaService>(javaSvcName, false);
+            var binSvc = _client.GetServices().WithKeepBinary().WithServerKeepBinary()
+                .GetServiceProxy<IJavaService>(javaSvcName, false);
+
+            DoTestService(svc, binSvc, true);
+
+            DoTestBinary(svc, binSvc);
+
+            Services.Cancel(javaSvcName);
+        }
+
+        /// <summary>
+        /// Tests Java service invocation.
+        /// </summary>
+        [Test]
+        public void TestCallJavaServiceLocal()
         {
             // Deploy Java service
             var javaSvcName = TestUtils.DeployJavaService(Grid1);
@@ -874,6 +901,18 @@ namespace Apache.Ignite.Core.Tests.Services
             var binSvc = Services.WithKeepBinary().WithServerKeepBinary()
                 .GetServiceProxy<IJavaService>(javaSvcName, false);
 
+            DoTestService(svc, binSvc);
+
+            DoTestBinary(svc, binSvc);
+
+            Services.Cancel(javaSvcName);
+        }
+
+        /// <summary>
+        /// Tests service methods.
+        /// </summary>
+        private void DoTestService(IJavaService svc, IJavaService binSvc, bool isClient = false)
+        {
             // Basics
             Assert.IsTrue(svc.isInitialized());
             Assert.IsTrue(TestUtils.WaitForCondition(() => svc.isExecuted(), 500));
@@ -901,15 +940,50 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual('b', svc.testWrapper('a'));
 
             // Arrays
-            Assert.AreEqual(new byte[] {2, 3, 4}, svc.testArray(new byte[] {1, 2, 3}));
-            Assert.AreEqual(new short[] {2, 3, 4}, svc.testArray(new short[] {1, 2, 3}));
-            Assert.AreEqual(new[] {2, 3, 4}, svc.testArray(new[] {1, 2, 3}));
-            Assert.AreEqual(new long[] {2, 3, 4}, svc.testArray(new long[] {1, 2, 3}));
-            Assert.AreEqual(new float[] {2, 3, 4}, svc.testArray(new float[] {1, 2, 3}));
-            Assert.AreEqual(new double[] {2, 3, 4}, svc.testArray(new double[] {1, 2, 3}));
-            Assert.AreEqual(new[] {"a1", "b1"}, svc.testArray(new [] {"a", "b"}));
-            Assert.AreEqual(new[] {'c', 'd'}, svc.testArray(new[] {'b', 'c'}));
-            Assert.AreEqual(new[] {false, true, false}, svc.testArray(new[] {true, false, true}));
+            var bytes = svc.testArray(new byte[] {1, 2, 3});
+
+            Assert.AreEqual(bytes.GetType(), typeof(byte[]));
+            Assert.AreEqual(new byte[] {2, 3, 4}, bytes);
+
+            var shorts = svc.testArray(new short[] {1, 2, 3});
+
+            Assert.AreEqual(shorts.GetType(), typeof(short[]));
+            Assert.AreEqual(new short[] {2, 3, 4}, shorts);
+
+            var ints = svc.testArray(new[] {1, 2, 3});
+
+            Assert.AreEqual(ints.GetType(), typeof(int[]));
+            Assert.AreEqual(new[] {2, 3, 4}, ints);
+
+            var longs = svc.testArray(new long[] {1, 2, 3});
+
+            Assert.AreEqual(longs.GetType(), typeof(long[]));
+            Assert.AreEqual(new long[] {2, 3, 4}, longs);
+
+            var floats = svc.testArray(new float[] {1, 2, 3});
+
+            Assert.AreEqual(floats.GetType(), typeof(float[]));
+            Assert.AreEqual(new float[] {2, 3, 4}, floats);
+
+            var doubles = svc.testArray(new double[] {1, 2, 3});
+
+            Assert.AreEqual(doubles.GetType(), typeof(double[]));
+            Assert.AreEqual(new double[] {2, 3, 4}, doubles);
+
+            var strs = svc.testArray(new [] {"a", "b"});
+
+            Assert.AreEqual(strs.GetType(), typeof(string[]));
+            Assert.AreEqual(new[] {"a1", "b1"}, strs);
+
+            var chars = svc.testArray(new[] {'b', 'c'});
+
+            Assert.AreEqual(chars.GetType(), typeof(char[]));
+            Assert.AreEqual(new[] {'c', 'd'}, chars);
+
+            var bools = svc.testArray(new[] {true, false, true});
+
+            Assert.AreEqual(bools.GetType(), typeof(bool[]));
+            Assert.AreEqual(new[] {false, true, false}, bools);
 
             // Nulls
             Assert.AreEqual(9, svc.testNull(8));
@@ -926,24 +1000,6 @@ namespace Apache.Ignite.Core.Tests.Services
             // Binary
             Assert.AreEqual(7, svc.testBinarizable(new PlatformComputeBinarizable {Field = 6}).Field);
 
-            // Binary collections
-            var arr  = new[] {10, 11, 12}.Select(
-                x => new PlatformComputeBinarizable {Field = x}).ToArray();
-            var arrOfObj = arr.ToArray<object>();
-
-            Assert.AreEqual(new[] {11, 12, 13}, svc.testBinarizableCollection(arr)
-                .OfType<PlatformComputeBinarizable>().Select(x => x.Field));
-
-            Assert.AreEqual(new[] {11, 12, 13}, svc.testBinarizableArrayOfObjects(arrOfObj)
-                .OfType<PlatformComputeBinarizable>().Select(x => x.Field));
-
-            Assert.IsNull(svc.testBinarizableArrayOfObjects(null));
-
-            Assert.AreEqual(new[] {11, 12, 13}, svc.testBinarizableArray(arr)
-                .Select(x => x.Field));
-
-            Assert.IsNull(svc.testBinarizableArray(null));
-
             // Binary object
             Assert.AreEqual(15,
                 binSvc.testBinaryObject(
@@ -955,20 +1011,22 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(dt, svc.test(dt));
             Assert.AreEqual(dt, svc.testNullTimestamp(dt));
             Assert.IsNull(svc.testNullTimestamp(null));
-            Assert.AreEqual(dt, svc.testArray(new DateTime?[] {dt})[0]);
+
+            var dates = svc.testArray(new DateTime?[] {dt});
+
+            Assert.AreEqual(dates.GetType(), typeof(DateTime?[]));
+            Assert.AreEqual(dt, dates[0]);
 
             Guid guid = Guid.NewGuid();
 
             Assert.AreEqual(guid, svc.test(guid));
             Assert.AreEqual(guid, svc.testNullUUID(guid));
             Assert.IsNull(svc.testNullUUID(null));
-            Assert.AreEqual(guid, svc.testArray(new Guid?[] {guid})[0]);
 
-            // Binary object array.
-            var binArr = arr.Select(Grid1.GetBinary().ToBinary<IBinaryObject>).ToArray();
+            var guids = svc.testArray(new Guid?[] {guid});
 
-            Assert.AreEqual(new[] {11, 12, 13}, binSvc.testBinaryObjectArray(binArr)
-                .Select(x => x.GetField<int>("Field")));
+            Assert.AreEqual(guids.GetType(), typeof(Guid?[]));
+            Assert.AreEqual(guid, guids[0]);
 
             DateTime dt1 = new DateTime(1982, 4, 1, 0, 0, 0, 0, DateTimeKind.Utc);
             DateTime dt2 = new DateTime(1991, 10, 1, 0, 0, 0, 0, DateTimeKind.Utc);
@@ -1000,19 +1058,25 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual("Test", ex.Message);
 
             // Test user defined exception mapping by pattern.
-            ((IIgniteInternal)Grid1).PluginProcessor.RegisterExceptionMapping(
+            ((IIgniteInternal) Grid1).PluginProcessor.RegisterExceptionMapping(
                 "org.apache.ignite.platform.PlatformDeployServiceTask$TestMapped*",
                 (c, m, e, i) => new TestServiceException(m, e));
 
             ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("TestMapped1Exception"));
             ex = ex.InnerException;
-            Assert.IsInstanceOf<TestServiceException>(ex);
-            Assert.AreEqual("Test", ex.Message);
+            if (isClient)
+                Assert.IsInstanceOf<IgniteException>(ex);
+            else
+                Assert.IsInstanceOf<TestServiceException>(ex);
+            Assert.IsTrue(ex.Message.Contains("Test"));
 
             ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("TestMapped2Exception"));
             ex = ex.InnerException;
-            Assert.IsInstanceOf<TestServiceException>(ex);
-            Assert.AreEqual("Test", ex.Message);
+            if (isClient)
+                Assert.IsInstanceOf<IgniteException>(ex);
+            else
+                Assert.IsInstanceOf<TestServiceException>(ex);
+            Assert.IsTrue(ex.Message.Contains("Test"));
 
             // Test user defined unmapped exception.
             ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("TestUnmappedException"));
@@ -1044,8 +1108,6 @@ namespace Apache.Ignite.Core.Tests.Services
             cache.Put(9, now);
             Assert.AreEqual(now.ToUniversalTime(), cache.Get(9).ToUniversalTime());
 #endif
-
-            Services.Cancel(javaSvcName);
         }
 
         /// <summary>
@@ -1056,128 +1118,50 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             // Deploy Java service
             var javaSvcName = TestUtils.DeployJavaService(Grid1);
-            var svc = Grid1.GetServices().GetDynamicServiceProxy(javaSvcName, true);
 
-            // Basics
-            Assert.IsTrue(svc.isInitialized());
-            Assert.IsTrue(TestUtils.WaitForCondition(() => svc.isExecuted(), 500));
-            Assert.IsFalse(svc.isCancelled());
+            var svc = new JavaServiceDynamicProxy(Grid1.GetServices().GetDynamicServiceProxy(javaSvcName, true));
 
-            // Primitives
-            Assert.AreEqual(4, svc.test((byte)3));
-            Assert.AreEqual(5, svc.test((short)4));
-            Assert.AreEqual(6, svc.test(5));
-            Assert.AreEqual(6, svc.test((long)5));
-            Assert.AreEqual(3.8f, svc.test(2.3f));
-            Assert.AreEqual(5.8, svc.test(3.3));
-            Assert.IsFalse(svc.test(true));
-            Assert.AreEqual('b', svc.test('a'));
-            Assert.AreEqual("Foo!", svc.test("Foo"));
+            DoTestService(
+                svc,
+                new JavaServiceDynamicProxy(Services.WithKeepBinary().WithServerKeepBinary()
+                    .GetDynamicServiceProxy(javaSvcName))
+            );
+        }
 
-            // Nullables (Java wrapper types)
-            Assert.AreEqual(4, svc.testWrapper(3));
-            Assert.AreEqual(5, svc.testWrapper((short?)4));
-            Assert.AreEqual(6, svc.testWrapper((int?)5));
-            Assert.AreEqual(6, svc.testWrapper((long?)5));
-            Assert.AreEqual(3.8f, svc.testWrapper(2.3f));
-            Assert.AreEqual(5.8, svc.testWrapper(3.3));
-            Assert.AreEqual(false, svc.testWrapper(true));
-            Assert.AreEqual('b', svc.testWrapper('a'));
+        /// <summary>
+        /// Tets binary methods in services.
+        /// </summary>
+        private void DoTestBinary(IJavaService svc, IJavaService binSvc)
+        {
+            // Binary collections
+            var arr = new[] {10, 11, 12}.Select(
+                x => new PlatformComputeBinarizable {Field = x}).ToArray();
+            var arrOfObj = arr.ToArray<object>();
 
-            // Arrays
-            Assert.AreEqual(new byte[] { 2, 3, 4 }, svc.testArray(new byte[] { 1, 2, 3 }));
-            Assert.AreEqual(new short[] { 2, 3, 4 }, svc.testArray(new short[] { 1, 2, 3 }));
-            Assert.AreEqual(new[] { 2, 3, 4 }, svc.testArray(new[] { 1, 2, 3 }));
-            Assert.AreEqual(new long[] { 2, 3, 4 }, svc.testArray(new long[] { 1, 2, 3 }));
-            Assert.AreEqual(new float[] { 2, 3, 4 }, svc.testArray(new float[] { 1, 2, 3 }));
-            Assert.AreEqual(new double[] { 2, 3, 4 }, svc.testArray(new double[] { 1, 2, 3 }));
-            Assert.AreEqual(new[] { "a1", "b1" }, svc.testArray(new[] { "a", "b" }));
-            Assert.AreEqual(new[] { 'c', 'd' }, svc.testArray(new[] { 'b', 'c' }));
-            Assert.AreEqual(new[] { false, true, false }, svc.testArray(new[] { true, false, true }));
+            Assert.AreEqual(new[] {11, 12, 13}, svc.testBinarizableCollection(arr)
+                .OfType<PlatformComputeBinarizable>().Select(x => x.Field));
 
-            // Nulls
-            Assert.AreEqual(9, svc.testNull(8));
-            Assert.IsNull(svc.testNull(null));
+            var binarizableObjs = svc.testBinarizableArrayOfObjects(arrOfObj);
 
-            // Overloads
-            Assert.AreEqual(3, svc.test(2, "1"));
-            Assert.AreEqual(3, svc.test("1", 2));
+            Assert.AreEqual(typeof(object[]), binarizableObjs.GetType());
+            Assert.AreEqual(new[] {11, 12, 13},binarizableObjs
+                .OfType<PlatformComputeBinarizable>().Select(x => x.Field));
 
-            // Binary
-            Assert.AreEqual(7, svc.testBinarizable(new PlatformComputeBinarizable { Field = 6 }).Field);
+            Assert.IsNull(svc.testBinarizableArrayOfObjects(null));
 
-            // Binary object
-            var binSvc = Services.WithKeepBinary().WithServerKeepBinary().GetDynamicServiceProxy(javaSvcName);
+            var bins = svc.testBinarizableArray(arr);
 
-            Assert.AreEqual(15,
-                binSvc.testBinaryObject(
-                    Grid1.GetBinary().ToBinary<IBinaryObject>(new PlatformComputeBinarizable { Field = 6 }))
-                    .GetField<int>("Field"));
+            Assert.AreEqual(typeof(PlatformComputeBinarizable[]), bins.GetType());
+            Assert.AreEqual(new[] {11, 12, 13},bins.Select(x => x.Field));
 
-            DateTime dt = new DateTime(1992, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+            Assert.IsNull(svc.testBinarizableArray(null));
 
-            Assert.AreEqual(dt, svc.test(dt));
-            Assert.AreEqual(dt, svc.testNullTimestamp(dt));
-            Assert.IsNull(svc.testNullTimestamp(null));
-            Assert.AreEqual(dt, svc.testArray(new DateTime?[] { dt })[0]);
+            // Binary object array.
+            var binArr = arr.Select(Grid1.GetBinary().ToBinary<IBinaryObject>).ToArray();
 
-            Guid guid = Guid.NewGuid();
+            var binObjs = binSvc.testBinaryObjectArray(binArr);
 
-            Assert.AreEqual(guid, svc.test(guid));
-            Assert.AreEqual(guid, svc.testNullUUID(guid));
-            Assert.IsNull(svc.testNullUUID(null));
-            Assert.AreEqual(guid, svc.testArray(new Guid?[] { guid })[0]);
-
-            DateTime dt1 = new DateTime(1982, 4, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-            DateTime dt2 = new DateTime(1991, 10, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-
-            Assert.AreEqual(dt2, svc.testDate(dt1));
-
-            var cache = Grid1.GetOrCreateCache<int, DateTime>("net-dates");
-
-            cache.Put(1, dt1);
-            cache.Put(2, dt2);
-
-            svc.testUTCDateFromCache();
-
-            Assert.AreEqual(dt1, cache.Get(3));
-            Assert.AreEqual(dt2, cache.Get(4));
-
-            // Test standard java checked exception.
-            Exception ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("InterruptedException"));
-            ex = ex.InnerException;
-            Assert.IsInstanceOf<ThreadInterruptedException>(ex);
-            Assert.AreEqual("Test", ex.Message);
-
-            // Test standard java unchecked exception.
-            ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("IllegalArgumentException"));
-            ex = ex.InnerException;
-            Assert.IsInstanceOf<ArgumentException>(ex);
-            Assert.AreEqual("Test", ex.Message);
-
-            // Test user defined exception mapping by pattern.
-            ((IIgniteInternal)Grid1).PluginProcessor.RegisterExceptionMapping(
-                "org.apache.ignite.platform.PlatformDeployServiceTask$TestMapped*",
-                (c, m, e, i) => new TestServiceException(m, e));
-
-            ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("TestMapped1Exception"));
-            ex = ex.InnerException;
-            Assert.IsInstanceOf<TestServiceException>(ex);
-            Assert.AreEqual("Test", ex.Message);
-
-            ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("TestMapped2Exception"));
-            ex = ex.InnerException;
-            Assert.IsInstanceOf<TestServiceException>(ex);
-            Assert.AreEqual("Test", ex.Message);
-
-            // Test user defined unmapped exception.
-            ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("TestUnmappedException"));
-            ex = ex.InnerException;
-            Assert.IsInstanceOf<IgniteException>(ex);
-            var javaEx = ex.InnerException as JavaException;
-            Assert.IsNotNull(javaEx);
-            Assert.AreEqual("Test", javaEx.JavaMessage);
-            Assert.AreEqual("org.apache.ignite.platform.PlatformDeployServiceTask$TestUnmappedException", javaEx.JavaClassName);
+            Assert.AreEqual(new[] {11, 12, 13}, binObjs.Select(x => x.GetField<int>("Field")));
         }
 
         /// <summary>
@@ -1204,9 +1188,17 @@ namespace Apache.Ignite.Core.Tests.Services
             var path = Path.Combine("Config", "Compute", "compute-grid");
             Grid1 = Ignition.Start(GetConfiguration(path + "1.xml"));
             Grid2 = Ignition.Start(GetConfiguration(path + "2.xml"));
-            Grid3 = Ignition.Start(GetConfiguration(path + "3.xml"));
 
-            Grids = new[] { Grid1, Grid2, Grid3 };
+            var cfg = GetConfiguration(path + "3.xml");
+
+            Grid3 = Ignition.Start(cfg);
+
+            cfg.ClientMode = true;
+            cfg.IgniteInstanceName = "client";
+
+            _client = Ignition.Start(cfg);
+
+            Grids = new[] { Grid1, Grid2, Grid3, _client };
         }
 
         /// <summary>
