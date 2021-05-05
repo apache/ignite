@@ -22,16 +22,12 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Threading;
-    using Apache.Ignite.Core.Client.Datastream;
 
     /// <summary>
     /// Client data streamer buffer.
     /// </summary>
     internal sealed class DataStreamerClientBuffer<TK, TV> : IEnumerable<DataStreamerClientEntry<TK, TV>>
     {
-        /** */
-        private readonly DataStreamerClientOptions<TK, TV> _options;
-
         /** Concurrent bag already has per-thread buffers. */
         private readonly ConcurrentBag<DataStreamerClientEntry<TK, TV>> _entries =
             new ConcurrentBag<DataStreamerClientEntry<TK, TV>>();
@@ -40,16 +36,19 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         private readonly ReaderWriterLockSlim _flushLock = new ReaderWriterLockSlim();
 
         /** */
+        private readonly int _maxSize;
+
+        /** */
         private int _size;
 
         /** */
         private volatile bool _flushing;
 
-        public DataStreamerClientBuffer(DataStreamerClientOptions<TK, TV> options)
+        public DataStreamerClientBuffer(int maxSize)
         {
-            Debug.Assert(options != null);
+            Debug.Assert(maxSize > 0);
 
-            _options = options;
+            _maxSize = maxSize;
         }
 
         public int Count
@@ -59,7 +58,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         public bool Add(DataStreamerClientEntry<TK, TV> entry)
         {
-            if (Interlocked.Increment(ref _size) > _options.ClientPerNodeBufferSize)
+            if (Interlocked.Increment(ref _size) > _maxSize)
             {
                 return false;
             }
