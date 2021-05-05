@@ -18,10 +18,12 @@
 package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThread;
 import org.junit.After;
@@ -283,14 +285,18 @@ public class DmsDataWriterWorkerTest extends GridCommonAbstractTest {
     @Test
     public void testHalt() throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
-        CountDownLatch updating = new CountDownLatch(1);
+
+        LinkedBlockingQueue<RunnableFuture<?>> queue = GridTestUtils.getFieldValue(worker, DmsDataWriterWorker.class,
+            "updateQueue");
 
         metastorage = new MyReadWriteMetaStorageMock() {
             @Override public void writeRaw(String key, byte[] data) {
                 try {
+                    assertTrue(GridTestUtils.waitForCondition(() -> queue.size() == 3, getTestTimeout()));
+
                     latch.countDown();
 
-                    U.await(updating);
+                    assertTrue(GridTestUtils.waitForCondition(() -> queue.size() == 1, getTestTimeout()));
                 }
                 catch (Exception ignore) {
                 }
@@ -305,12 +311,10 @@ public class DmsDataWriterWorkerTest extends GridCommonAbstractTest {
 
         worker.update(histItem("key1", "val1"));
         worker.update(histItem("key2", "val2"));
+        worker.update(histItem("key3", "val3"));
+        worker.update(histItem("key4", "val4"));
 
         latch.await();
-
-        Thread.sleep(100);
-
-        updating.countDown();
 
         worker.cancel(true);
 
