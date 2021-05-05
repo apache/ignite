@@ -42,7 +42,7 @@ public class Utils {
     public static ClassName getConfigurationName(ClassName schemaClassName) {
         return ClassName.get(
             schemaClassName.packageName(),
-            schemaClassName.simpleName().replace("Schema", "Impl")
+            schemaClassName.simpleName().replaceAll("Schema$", "Impl")
         );
     }
 
@@ -55,7 +55,7 @@ public class Utils {
     public static ClassName getConfigurationInterfaceName(ClassName schemaClassName) {
         return ClassName.get(
             schemaClassName.packageName(),
-            schemaClassName.simpleName().replace("Schema", "")
+            schemaClassName.simpleName().replaceAll("Schema$", "")
         );
     }
 

@@ -23,7 +23,7 @@ import java.lang.annotation.Target;
 import org.apache.ignite.configuration.storage.ConfigurationType;
 
 import static java.lang.annotation.ElementType.TYPE;
-import static java.lang.annotation.RetentionPolicy.SOURCE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
  * Annotation that marks underlying class as a root configuration schema. Has basically the same properties as
@@ -32,7 +32,7 @@ import static java.lang.annotation.RetentionPolicy.SOURCE;
  * @see Config
  */
 @Target(TYPE)
-@Retention(SOURCE)
+@Retention(RUNTIME)
 @Documented
 public @interface ConfigurationRoot {
     /** @return Unique root name. */
