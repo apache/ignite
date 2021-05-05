@@ -233,6 +233,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 }
 
                 // TODO: Combine Add and MarkForFlush - this should reduce retry count and simplify the logic.
+                // TODO: Somehow exchange the buffer in the map atomically so there are no retries at all?
                 if (buffer.MarkForFlush())
                 {
                     var oldBuffer = buffer;
