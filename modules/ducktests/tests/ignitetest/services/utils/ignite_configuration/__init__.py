@@ -25,6 +25,7 @@ from ignitetest.services.utils.ssl.client_connector_configuration import ClientC
 from ignitetest.services.utils.ssl.connector_configuration import ConnectorConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import DiscoverySpi, TcpDiscoverySpi
+from ignitetest.services.utils.ignite_configuration.binary_configuration import BinaryConfiguration
 from ignitetest.services.utils.ssl.ssl_params import SslParams, is_ssl_enabled, get_ssl_params, IGNITE_CLIENT_ALIAS, \
     IGNITE_SERVER_ALIAS
 from ignitetest.utils.version import IgniteVersion, DEV_BRANCH
@@ -45,6 +46,7 @@ class IgniteConfiguration(NamedTuple):
     sys_worker_blocked_timeout: int = 10000
     properties: str = None
     data_storage: DataStorageConfiguration = None
+    binary_configuration: BinaryConfiguration = None
     caches: list = []
     local_host: str = None
     ssl_params: SslParams = None
@@ -52,11 +54,16 @@ class IgniteConfiguration(NamedTuple):
     client_connector_configuration: ClientConnectorConfiguration = None
     auth_enabled: bool = False
     plugins: list = []
+    ext_beans: list = []
+    peer_class_loading_enabled: bool = True
     metric_exporter: str = None
     rebalance_thread_pool_size: int = None
     rebalance_batch_size: int = None
     rebalance_batches_prefetch_count: int = None
     rebalance_throttle: int = None
+    local_event_listeners: str = None
+    include_event_types: str = None
+    event_storage_spi: str = None
 
     def __prepare_ssl(self, test_globals, shared_root):
         """
@@ -75,7 +82,7 @@ class IgniteConfiguration(NamedTuple):
                                                                                 ssl_params=ssl_params))
         return self
 
-    def __prepare_discovery(self, node, cluster):
+    def __prepare_discovery(self, cluster, node):
         """
         Updates discovery configuration based on current environment.
         """
@@ -90,11 +97,11 @@ class IgniteConfiguration(NamedTuple):
         return config
 
     # pylint: disable=protected-access
-    def prepare_for_env(self, test_globals, shared_root, node, cluster):
+    def prepare_for_env(self, cluster, node):
         """
         Updates configuration based on current environment.
         """
-        return self.__prepare_ssl(test_globals, shared_root).__prepare_discovery(node, cluster)
+        return self.__prepare_ssl(cluster.globals, cluster.shared_root).__prepare_discovery(cluster, node)
 
     @property
     def service_type(self):
@@ -119,7 +126,7 @@ class IgniteThinClientConfiguration(NamedTuple):
     version: IgniteVersion = DEV_BRANCH
 
     # pylint: disable=unused-argument
-    def prepare_for_env(self, test_globals, shared_root, node, cluster):
+    def prepare_for_env(self, cluster, node):
         """
         Updates configuration based on current environment.
         """

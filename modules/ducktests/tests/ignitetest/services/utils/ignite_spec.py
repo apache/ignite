@@ -98,7 +98,6 @@ class IgniteSpec(metaclass=ABCMeta):
                                 "-XX:StartFlightRecording=dumponexit=true," +
                                 f"filename={self.service.jfr_dir}/recording.jfr"])
 
-    @property
     def config_templates(self):
         """
         :return: config that service will use to start on a node
@@ -116,6 +115,13 @@ class IgniteSpec(metaclass=ABCMeta):
             config_templates.append((IgnitePathAware.IGNITE_THIN_CLIENT_CONFIG_NAME, IgniteThinClientConfigTemplate()))
 
         return config_templates
+
+    # pylint: disable=unused-argument,no-self-use
+    def extend_config(self, config):
+        """
+        Extend config with custom variables
+        """
+        return config
 
     def __home(self, product=None):
         """
@@ -186,8 +192,9 @@ class IgniteSpec(metaclass=ABCMeta):
 
         script_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "certs")
 
-        self.__runcmd(f"cp {script_dir}/*.sh {local_dir}")
-        self.__runcmd(f"{local_dir}/mkcerts.sh")
+        self._runcmd(f"cp {script_dir}/* {local_dir}")
+        self._runcmd(f"chmod a+x {local_dir}/*.sh")
+        self._runcmd(f"{local_dir}/mkcerts.sh")
 
         return local_dir
 
@@ -202,7 +209,7 @@ class IgniteSpec(metaclass=ABCMeta):
         """Properly adds JVM options to current"""
         self.jvm_opts = merge_jvm_settings(self.jvm_opts, opts)
 
-    def __runcmd(self, cmd):
+    def _runcmd(self, cmd):
         self.service.logger.debug(cmd)
         proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         stdout, _ = proc.communicate()

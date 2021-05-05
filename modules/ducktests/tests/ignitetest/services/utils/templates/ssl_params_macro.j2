@@ -21,5 +21,13 @@
     <property name="keyStorePassword" value="{{ ctx.key_store_password }}"/>
     <property name="trustStoreFilePath" value="{{ ctx.trust_store_path }}"/>
     <property name="trustStorePassword" value="{{ ctx.trust_store_password }}"/>
+
+    {% if ctx.cipher_suites %}
+        <property name="cipherSuites" value="{{ ctx.cipher_suites }}"/>
+    {% endif %}
+
+    {% if ctx.trust_managers %}
+        <property name="trustManagers" ref="{{ ctx.trust_managers }}"/>
+    {% endif %}
 </bean>
 {% endmacro %}

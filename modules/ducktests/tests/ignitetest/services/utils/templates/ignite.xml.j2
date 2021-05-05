@@ -27,8 +27,9 @@
 
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xsi:schemaLocation="http://www.springframework.org/schema/beans
-                            http://www.springframework.org/schema/beans/spring-beans.xsd">
+       xmlns:util="http://www.springframework.org/schema/util" xsi:schemaLocation="
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
     <bean class="org.apache.ignite.configuration.IgniteConfiguration">
         <property name="workDirectory" value="{{ service.work_dir }}" />
         <property name="gridLogger">
@@ -41,6 +42,7 @@
         <property name="consistentId" value="{{ config.consistent_id }}"/>
         <property name="failureDetectionTimeout" value="{{ config.failure_detection_timeout }}"/>
         <property name="systemWorkerBlockedTimeout" value="{{ config.sys_worker_blocked_timeout }}"/>
+        <property name="peerClassLoadingEnabled" value="{{ config.peer_class_loading_enabled }}"/>
         <property name="authenticationEnabled" value="{{ config.auth_enabled | lower }}"/>
         {% if config.rebalance_thread_pool_size %}
             <property name="rebalanceThreadPoolSize" value="{{ config.rebalance_thread_pool_size }}"/>
@@ -93,9 +95,41 @@
         {% if config.client_connector_configuration %}
             <property name="clientConnectorConfiguration">
                 <bean class="org.apache.ignite.configuration.ClientConnectorConfiguration">
-                        <property name="port" value="{{ config.client_connector_configuration.port }}"/>
+                    <property name="port" value="{{ config.client_connector_configuration.port }}"/>
+                    {% if config.client_connector_configuration.ssl_enabled %}
+                        <property name="sslEnabled" value="true"/>
+                        <property name="sslContextFactory">
+                            {{ ssl_params_util.ssl_params(config.client_connector_configuration.ssl_params) }}
+                        </property>
+                        <property name="useIgniteSslContextFactory" value="{{ config.client_connector_configuration.use_ignite_ssl_context_factory }}"/>
+                        <property name="sslClientAuth" value="{{ config.client_connector_configuration.ssl_client_auth }}"/>
+                    {% endif %}
                 </bean>
             </property>
         {% endif %}
+
+        {% if config.binary_configuration %}
+            <property name="binaryConfiguration">
+                <bean class="org.apache.ignite.configuration.BinaryConfiguration">
+                    <property name="compactFooter" value="{{ config.binary_configuration.compact_footer }}"/>
+                </bean>
+            </property>
+        {% endif %}
+
+        {% if config.local_event_listeners %}
+            <property name="localEventListeners" ref="{{ config.local_event_listeners }}"/>
+        {% endif %}
+
+        {% if config.include_event_types %}
+            <property name="includeEventTypes" ref="{{ config.include_event_types }}"/>
+        {% endif %}
+
+        {% if config.event_storage_spi %}
+            <property name="eventStorageSpi" ref="{{ config.event_storage_spi }}"/>
+        {% endif %}
+
+        {{ misc_utils.plugins(config) }}
     </bean>
+
+    {{ misc_utils.ext_beans(config) }}
 </beans>

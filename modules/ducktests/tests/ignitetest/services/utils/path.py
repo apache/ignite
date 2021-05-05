@@ -68,6 +68,10 @@ class PathAware:
                 "path": self.config_dir,
                 "collect_default": True
             },
+            "shared": {
+                "path": self.shared_root,
+                "collect_default": True
+            },
             "jfr": {
                 "path": self.jfr_dir,
                 "collect_default": True

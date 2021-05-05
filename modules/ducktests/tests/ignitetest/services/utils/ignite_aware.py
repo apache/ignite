@@ -190,9 +190,11 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
             node.account.copy_to(os.path.join(local_shared_dir, file), self.shared_root)
 
     def _prepare_configs(self, node):
-        config = self.config.prepare_for_env(self.globals, self.shared_root, node, self)
+        config = self.spec \
+            .extend_config(self.config) \
+            .prepare_for_env(self, node)
 
-        for name, template in self.spec.config_templates:
+        for name, template in self.spec.config_templates():
             config_txt = template.render(service=self, config=config)
 
             node.account.create_file(os.path.join(self.config_dir, name), config_txt)
