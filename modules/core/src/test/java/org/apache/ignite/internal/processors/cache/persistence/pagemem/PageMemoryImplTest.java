@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
@@ -594,6 +595,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
 
         kernalCtx.add(new IgnitePluginProcessor(kernalCtx, igniteCfg, Collections.<PluginProvider>emptyList()));
         kernalCtx.add(new GridInternalSubscriptionProcessor(kernalCtx));
+        kernalCtx.add(new PerformanceStatisticsProcessor(kernalCtx));
         kernalCtx.add(new GridEncryptionManager(kernalCtx));
         kernalCtx.add(new GridMetricManager(kernalCtx));
         kernalCtx.add(new GridSystemViewManager(kernalCtx));
@@ -656,6 +658,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             },
             new DataRegionMetricsImpl(igniteCfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration(),
                 kernalCtx.metric(),
+                kernalCtx.performanceStatistics(),
                 NO_OP_METRICS),
             throttlingPlc,
             noThrottle
@@ -676,6 +679,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
         },
             new DataRegionMetricsImpl(igniteCfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration(),
                 kernalCtx.metric(),
+                kernalCtx.performanceStatistics(),
                 NO_OP_METRICS),
             throttlingPlc,
             noThrottle
