@@ -16,19 +16,19 @@
  */
 package org.apache.ignite.network.scalecube;
 
-import io.scalecube.cluster.ClusterImpl;
-import io.scalecube.cluster.transport.api.Transport;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import io.scalecube.cluster.ClusterImpl;
+import io.scalecube.cluster.transport.api.Transport;
 import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;
@@ -48,6 +48,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** */
 class ITScaleCubeNetworkMessagingTest {
+    /**
+     * Test cluster.
+     * <p>
+     * Each test should create its own cluster with the required number of nodes.
+     */
     private Cluster testCluster;
 
     /** */
@@ -78,7 +83,7 @@ class ITScaleCubeNetworkMessagingTest {
 
         testCluster.startAwait();
 
-        TestMessage testMessage = new TestMessage("Message from Alice", Collections.emptyMap());
+        TestMessage testMessage = new TestMessage("Message from Alice");
 
         ClusterService alice = testCluster.members.get(0);
 
@@ -111,6 +116,76 @@ class ITScaleCubeNetworkMessagingTest {
     @Test
     public void testForcefulShutdown() throws Exception {
         testShutdown0(true);
+    }
+
+    /**
+     * Sends a message from a node to itself and verifies that it gets delivered successfully.
+     */
+    @Test
+    public void testSendMessageToSelf() throws Exception {
+        testCluster = new Cluster(1);
+        testCluster.startAwait();
+
+        ClusterService member = testCluster.members.get(0);
+
+        ClusterNode self = member.topologyService().localMember();
+
+        class Data {
+            private final NetworkMessage message;
+            private final ClusterNode sender;
+            private final String correlationId;
+
+            private Data(NetworkMessage message, ClusterNode sender, String correlationId) {
+                this.message = message;
+                this.sender = sender;
+                this.correlationId = correlationId;
+            }
+        }
+
+        var dataFuture = new CompletableFuture<Data>();
+
+        member.messagingService().addMessageHandler(
+            (message, sender, correlationId) -> dataFuture.complete(new Data(message, sender, correlationId))
+        );
+
+        var requestMessage = new TestMessage("request");
+        var correlationId = "foobar";
+
+        member.messagingService().send(self, requestMessage, correlationId);
+
+        Data actualData = dataFuture.get(3, TimeUnit.SECONDS);
+
+        assertThat(actualData.message, is(requestMessage));
+        assertThat(actualData.sender, is(self));
+        assertThat(actualData.correlationId, is(correlationId));
+    }
+
+    /**
+     * Sends a messages from a node to itself and awaits the response.
+     */
+    @Test
+    public void testInvokeMessageToSelf() throws Exception {
+        testCluster = new Cluster(1);
+        testCluster.startAwait();
+
+        ClusterService member = testCluster.members.get(0);
+
+        ClusterNode self = member.topologyService().localMember();
+
+        var requestMessage = new TestMessage("request");
+        var responseMessage = new TestMessage("response");
+
+        member.messagingService().addMessageHandler((message, sender, correlationId) -> {
+            if (message.equals(requestMessage))
+                member.messagingService().send(self, responseMessage, correlationId);
+        });
+
+        TestMessage actualResponseMessage = member.messagingService()
+            .invoke(self, requestMessage, 1000)
+            .thenApply(TestMessage.class::cast)
+            .get(3, TimeUnit.SECONDS);
+
+        assertThat(actualResponseMessage, is(responseMessage));
     }
 
     /**

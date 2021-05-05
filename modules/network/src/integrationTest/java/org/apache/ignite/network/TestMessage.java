@@ -19,6 +19,7 @@
 package org.apache.ignite.network;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.ignite.internal.tostring.IgniteToStringInclude;
@@ -41,6 +42,10 @@ public class TestMessage implements NetworkMessage, Serializable {
     public TestMessage(String msg, Map<Integer, String> map) {
         this.msg = msg;
         this.map = map;
+    }
+
+    public TestMessage(String msg) {
+        this(msg, Collections.emptyMap());
     }
 
     public String msg() {

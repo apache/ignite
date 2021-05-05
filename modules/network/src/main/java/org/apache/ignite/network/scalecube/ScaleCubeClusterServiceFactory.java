@@ -17,13 +17,13 @@
 
 package org.apache.ignite.network.scalecube;
 
+import java.util.List;
+import java.util.stream.Collectors;
 import io.scalecube.cluster.ClusterImpl;
 import io.scalecube.cluster.ClusterMessageHandler;
 import io.scalecube.cluster.membership.MembershipEvent;
 import io.scalecube.cluster.transport.api.Message;
 import io.scalecube.net.Address;
-import java.util.List;
-import java.util.stream.Collectors;
 import org.apache.ignite.network.AbstractClusterService;
 import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterService;
@@ -39,6 +39,7 @@ public class ScaleCubeClusterServiceFactory implements ClusterServiceFactory {
     @Override public ClusterService createClusterService(ClusterLocalConfiguration context) {
         var topologyService = new ScaleCubeTopologyService();
         var messagingService = new ScaleCubeMessagingService(topologyService);
+        var transportFactory = new DelegatingTransportFactory(messagingService);
 
         var cluster = new ClusterImpl()
             .handler(cl -> new ClusterMessageHandler() {
@@ -53,7 +54,7 @@ public class ScaleCubeClusterServiceFactory implements ClusterServiceFactory {
                 }
             })
             .config(opts -> opts.memberAlias(context.getName()))
-            .transport(opts -> opts.port(context.getPort()))
+            .transport(opts -> opts.port(context.getPort()).transportFactory(transportFactory))
             .membership(opts -> opts.seedMembers(parseAddresses(context.getMemberAddresses())).suspicionMult(1));
 
         // resolve cyclic dependencies
@@ -80,7 +81,7 @@ public class ScaleCubeClusterServiceFactory implements ClusterServiceFactory {
      * @param addresses "host:port" formatted strings.
      * @return List of addresses.
      */
-    private List<Address> parseAddresses(List<String> addresses) {
+    private static List<Address> parseAddresses(List<String> addresses) {
         try {
             return addresses.stream()
                 .map(Address::from)
