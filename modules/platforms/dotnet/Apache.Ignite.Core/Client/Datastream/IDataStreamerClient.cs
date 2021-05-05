@@ -34,7 +34,6 @@ namespace Apache.Ignite.Core.Client.Datastream
 
         DataStreamerClientOptions<TK, TV> Options { get; }
 
-        // TODO: Handle removals when val is null.
         /// <summary>
         /// Adds an entry to the streamer.
         /// <para />

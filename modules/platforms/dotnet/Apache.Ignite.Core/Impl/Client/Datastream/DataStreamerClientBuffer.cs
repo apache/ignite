@@ -55,7 +55,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         public bool Add(TK key, TV val)
         {
-            return Add(new DataStreamerClientEntry<TK, TV>(key, val));
+            return val == null
+                ? Remove(key)
+                : Add(new DataStreamerClientEntry<TK, TV>(key, val));
         }
 
         public bool Remove(TK key)
