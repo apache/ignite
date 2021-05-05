@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Datastream
 {
+    using System.Linq;
     using System.Threading;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Datastream;
@@ -62,6 +63,31 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
             Assert.AreEqual("1", cache[1]);
             Assert.AreEqual("2", cache[2]);
+        }
+
+        [Test]
+        public void TestRemove()
+        {
+            var cache = GetClientCache<int>();
+            cache.PutAll(Enumerable.Range(1, 10).ToDictionary(x => x, x => x + 1));
+
+            using (var streamer = Client.GetDataStreamer(
+                cache.Name,
+                new DataStreamerClientOptions<int, int> {AllowOverwrite = true}))
+            {
+                streamer.Add(20, 20);
+                streamer.Remove(2);
+                streamer.Remove(new[] {4, 6, 7, 8, 9, 10});
+            }
+
+            var resKeys = cache.GetAll(Enumerable.Range(1, 30))
+                .Select(x => x.Key)
+                .OrderBy(x => x)
+                .ToArray();
+
+            Assert.AreEqual(4, cache.GetSize());
+
+            Assert.AreEqual(new[] {1, 3, 5, 20}, resKeys);
         }
 
         [Test]
