@@ -56,30 +56,32 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             get { return _entries.Count; }
         }
 
-        public bool Add(DataStreamerClientEntry<TK, TV> entry)
+        public AddResult Add(DataStreamerClientEntry<TK, TV> entry)
         {
             // TODO: Auto flush when reached max size.
             var newSize = Interlocked.Increment(ref _size);
             if (newSize > _maxSize)
             {
-                return false;
+                return AddResult.Full;
             }
 
             if (!_flushLock.TryEnterReadLock(0))
             {
-                return false;
+                return AddResult.Full;
             }
 
             try
             {
                 if (_flushing)
                 {
-                    return false;
+                    return AddResult.Full;
                 }
 
                 _entries.Add(entry);
 
-                return true;
+                return newSize == _maxSize
+                    ? AddResult.OkFull
+                    : AddResult.Ok;
             }
             finally
             {

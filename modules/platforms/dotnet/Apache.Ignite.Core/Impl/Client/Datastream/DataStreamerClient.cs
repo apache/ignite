@@ -223,11 +223,14 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
             while (true)
             {
-                if (buffer.Add(entry))
+                var addResult = buffer.Add(entry);
+
+                if (addResult == AddResult.Ok)
                 {
                     break;
                 }
 
+                // TODO: Combine Add and MarkForFlush - this should reduce retry count and simplify the logic.
                 if (buffer.MarkForFlush())
                 {
                     var oldBuffer = buffer;
@@ -241,6 +244,11 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                     // Another thread started the flush process - retry.
                     // TODO: This can cause too many retries in highly concurrent scenarios - do we care?
                     buffer = GetOrAddBuffer(socket);
+                }
+
+                if (addResult == AddResult.OkFull)
+                {
+                    break;
                 }
             }
 
