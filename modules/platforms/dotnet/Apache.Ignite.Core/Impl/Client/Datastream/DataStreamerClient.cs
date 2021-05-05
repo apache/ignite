@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Datastream;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
@@ -102,45 +103,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         public void Add(TK key, TV val)
         {
-            // TODO: There is no backpressure - it is possible to have a lot of pending buffers
-            // See perNodeParallelOperations and timeout in thick streamer - this blocks Add methods!
             IgniteArgumentCheck.NotNull(key, "key");
 
-            // ClientFailoverSocket is responsible for maintaining connections and affinity logic.
-            // We simply get the socket for the key.
-            // TODO: Some buffers may become abandoned when a socket for them is disconnected
-            // or server node leaves the cluster.
-            // We should track such topology changes by subscribing to topology update events.
-            var socket = _socket.GetAffinitySocket(_cacheId, key) ?? _socket.GetSocket();
-            var buffer = GetOrAddBuffer(socket);
-
-            while (true)
-            {
-                if (buffer.Add(key, val))
-                {
-                    break;
-                }
-
-                if (buffer.MarkForFlush())
-                {
-                    var oldBuffer = buffer;
-                    buffer = new DataStreamerClientBuffer<TK, TV>(_options);
-                    _buffers[socket] = buffer;
-
-                    ThreadPool.QueueUserWorkItem(_ => FlushBufferAsync(oldBuffer, socket));
-                }
-                else
-                {
-                    // Another thread started the flush process - retry.
-                    // TODO: This can cause too many retries in highly concurrent scenarios - do we care?
-                    buffer = GetOrAddBuffer(socket);
-                }
-            }
-
-            // Check in the end: we guarantee that if Add completes without errors, then the data won't be lost.
-            // TODO: This provides unclear message - current entry may be loaded successfully.
-            // The only way to fix this properly is an RW lock - use benchmarks to check how this performs.
-            ThrowIfClosed();
+            Add(new DataStreamerClientEntry<TK, TV>(key, val));
         }
 
         public void Add(IEnumerable<KeyValuePair<TK, TV>> entries)
@@ -155,12 +120,24 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         public void Remove(TK key)
         {
-            throw new NotImplementedException();
+            IgniteArgumentCheck.NotNull(key, "key");
+
+            if (!_options.AllowOverwrite)
+            {
+                throw new IgniteClientException("DataStreamer can't remove data when AllowOverwrite is false.");
+            }
+
+            Add(new DataStreamerClientEntry<TK, TV>(key));
         }
 
         public void Remove(IEnumerable<TK> keys)
         {
-            throw new NotImplementedException();
+            IgniteArgumentCheck.NotNull(keys, "keys");
+
+            foreach (var key in keys)
+            {
+                Remove(key);
+            }
         }
 
         public void Flush()
@@ -218,6 +195,47 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
 
             return _closeTaskSource.Task;
+        }
+
+        private void Add(DataStreamerClientEntry<TK, TV> entry)
+        {
+            // TODO: There is no backpressure - it is possible to have a lot of pending buffers
+            // See perNodeParallelOperations and timeout in thick streamer - this blocks Add methods!
+            // ClientFailoverSocket is responsible for maintaining connections and affinity logic.
+            // We simply get the socket for the key.
+            // TODO: Some buffers may become abandoned when a socket for them is disconnected
+            // or server node leaves the cluster.
+            // We should track such topology changes by subscribing to topology update events.
+            var socket = _socket.GetAffinitySocket(_cacheId, entry.Key) ?? _socket.GetSocket();
+            var buffer = GetOrAddBuffer(socket);
+
+            while (true)
+            {
+                if (buffer.Add(entry))
+                {
+                    break;
+                }
+
+                if (buffer.MarkForFlush())
+                {
+                    var oldBuffer = buffer;
+                    buffer = new DataStreamerClientBuffer<TK, TV>(_options);
+                    _buffers[socket] = buffer;
+
+                    ThreadPool.QueueUserWorkItem(_ => FlushBufferAsync(oldBuffer, socket));
+                }
+                else
+                {
+                    // Another thread started the flush process - retry.
+                    // TODO: This can cause too many retries in highly concurrent scenarios - do we care?
+                    buffer = GetOrAddBuffer(socket);
+                }
+            }
+
+            // Check in the end: we guarantee that if Add completes without errors, then the data won't be lost.
+            // TODO: This provides unclear message - current entry may be loaded successfully.
+            // The only way to fix this properly is an RW lock - use benchmarks to check how this performs.
+            ThrowIfClosed();
         }
 
         private Task FlushBufferAsync(DataStreamerClientBuffer<TK, TV> buffer, ClientSocket socket)

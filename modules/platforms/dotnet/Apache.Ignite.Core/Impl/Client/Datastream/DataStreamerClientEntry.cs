@@ -20,11 +20,11 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     /// <summary>
     /// Streamer entry.
     /// </summary>
-    internal struct DataStreamerClientEntry<TK, TV>
+    internal struct DataStreamerClientEntry<TK, TV> // TODO: Benchmark class vs struct. This struct can be too big.
     {
         /** */
         private readonly TK _key;
-        
+
         /** */
         private readonly TV _val;
 
@@ -40,7 +40,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             _val = val;
             _remove = false;
         }
-        
+
         /// <summary>
         /// Initializes a new instance of <see cref="DataStreamerClientEntry{TK,TV}"/> struct.
         /// </summary>

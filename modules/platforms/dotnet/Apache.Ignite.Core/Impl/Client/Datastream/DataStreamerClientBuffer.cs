@@ -22,9 +22,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Threading;
-    using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Datastream;
-    using Apache.Ignite.Core.Common;
 
     /// <summary>
     /// Client data streamer buffer.
@@ -59,21 +57,33 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             get { return _entries.Count; }
         }
 
-        public bool Add(TK key, TV val)
+        public bool Add(DataStreamerClientEntry<TK, TV> entry)
         {
-            return val == null
-                ? Remove(key)
-                : Add(new DataStreamerClientEntry<TK, TV>(key, val));
-        }
-
-        public bool Remove(TK key)
-        {
-            if (!_options.AllowOverwrite)
+            if (Interlocked.Increment(ref _size) > _options.ClientPerNodeBufferSize)
             {
-                throw new IgniteClientException("DataStreamer can't remove data when AllowOverwrite is false.");
+                return false;
             }
 
-            return Add(new DataStreamerClientEntry<TK, TV>(key));
+            if (!_flushLock.TryEnterReadLock(0))
+            {
+                return false;
+            }
+
+            try
+            {
+                if (_flushing)
+                {
+                    return false;
+                }
+
+                _entries.Add(entry);
+
+                return true;
+            }
+            finally
+            {
+                _flushLock.ExitReadLock();
+            }
         }
 
         public bool MarkForFlush()
@@ -109,35 +119,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
-        }
-
-        private bool Add(DataStreamerClientEntry<TK, TV> entry)
-        {
-            if (Interlocked.Increment(ref _size) > _options.ClientPerNodeBufferSize)
-            {
-                return false;
-            }
-
-            if (!_flushLock.TryEnterReadLock(0))
-            {
-                return false;
-            }
-
-            try
-            {
-                if (_flushing)
-                {
-                    return false;
-                }
-
-                _entries.Add(entry);
-
-                return true;
-            }
-            finally
-            {
-                _flushLock.ExitReadLock();
-            }
         }
     }
 }
