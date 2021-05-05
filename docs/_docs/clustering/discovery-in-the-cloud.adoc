@@ -34,6 +34,7 @@ To mitigate the constantly changing IP addresses problem, Ignite supports a numb
 * Amazon S3 IP Finder
 * Amazon ELB IP Finder
 * Google Cloud Storage IP Finder
+* Azure Blob Storage IP Finder
 
 
 TIP: Cloud-based IP Finders allow you to create your configuration once and reuse it for all instances.
@@ -253,6 +254,47 @@ tab:XML[]
           <property name="bucketName" value="YOUR_BUCKET_NAME"/>
           <property name="serviceAccountId" value="YOUR_SERVICE_ACCOUNT_ID"/>
           <property name="serviceAccountP12FilePath" value="PATH_TO_YOUR_PKCS12_KEY"/>
+        </bean>
+      </property>
+    </bean>
+  </property>
+</bean>
+----
+
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=google,indent=0]
+----
+tab:C#/.NET[unsupported]
+tab:C++[unsupported]
+--
+
+== Azure Blob Storage
+
+Ignite supports automatic node discovery by utilizing Azure Blob Storage.
+This mechanism is implemented in `TcpDiscoveryAzureBlobStorageIpFinder`.
+On start-up, each node registers its IP address in the storage and discovers other nodes by reading the storage.
+
+IMPORTANT: To use `TcpDiscoveryAzureBlobStorageIpFinder`, enable the `ignite-azure` link:setup#enabling-modules[module] in your application.
+
+Here is an example of how to configure Azure Blob Storage based IP finder:
+
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+<bean class="org.apache.ignite.configuration.IgniteConfiguration">
+
+  <property name="discoverySpi">
+    <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+      <property name="ipFinder">
+        <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.azure.TcpDiscoveryAzureBlobStoreIpFinder">
+          <property name="accountName" value="YOUR_AZURE_BLOB_STORAGE_ACCOUNT_NAME"/>
+          <property name="accountKey" value="YOUR_AZURE_BLOB_STORAGE_ACCOUNT_KEY"/>
+          <property name="accountEndpoint" value="YOUR_END_POINT"/>
+          <property name="containerName" value="YOUR_CONTAINER_NAME"/>
         </bean>
       </property>
     </bean>

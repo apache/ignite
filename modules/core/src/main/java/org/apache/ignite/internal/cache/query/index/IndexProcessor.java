@@ -341,9 +341,13 @@ public class IndexProcessor extends GridProcessorAdapter {
 
     /**
      * Start rebuild of indexes for specified cache.
+     *
+     * @param cctx Cache context.
+     * @param force Force rebuild indexes.
+     * @return A future of rebuilding cache indexes.
      */
-    public IgniteInternalFuture<?> rebuildIndexesForCache(GridCacheContext<?, ?> cctx) {
-        return idxRebuild.rebuild(cctx);
+    @Nullable public IgniteInternalFuture<?> rebuildIndexesForCache(GridCacheContext<?, ?> cctx, boolean force) {
+        return idxRebuild.rebuild(cctx, force);
     }
 
     /** */
@@ -555,6 +559,7 @@ public class IndexProcessor extends GridProcessorAdapter {
     /**
      * Collect indexes for rebuild.
      *
+     * @param cctx Cache context.
      * @param createdOnly Get only created indexes (not restored from dick).
      */
     public List<InlineIndex> treeIndexes(GridCacheContext cctx, boolean createdOnly) {

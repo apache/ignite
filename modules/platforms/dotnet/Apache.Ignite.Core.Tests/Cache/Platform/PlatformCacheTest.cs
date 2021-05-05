@@ -1462,7 +1462,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
 
                 foreach (var entry in data)
                 {
-                    streamer.AddData(entry.Key, entry.Value + 1);
+                    streamer.Add(entry.Key, entry.Value + 1);
                 }
             }
 

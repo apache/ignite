@@ -342,7 +342,7 @@ public class CacheAsyncTest extends AbstractThinClientTest {
     @Test
     public void testGetAsyncThrowsExceptionOnFailedDeserialization() throws Exception {
         ClientCache<Integer, PersonBinarylizable> cache = client.createCache(TMP_CACHE_NAME);
-        cache.put(1, new PersonBinarylizable("1", false, true));
+        cache.put(1, new PersonBinarylizable("1", false, true, false));
 
         Throwable t = cache.getAsync(1).handle((res, err) -> err).toCompletableFuture().get();
 
@@ -358,7 +358,8 @@ public class CacheAsyncTest extends AbstractThinClientTest {
     public void testPutAsyncThrowsExceptionOnFailedSerialization() {
         ClientCache<Integer, PersonBinarylizable> cache = client.createCache(TMP_CACHE_NAME);
 
-        IgniteClientFuture<Void> fut = cache.putAsync(1, new PersonBinarylizable("1", true, false));
+        IgniteClientFuture<Void> fut = cache.putAsync(1,
+            new PersonBinarylizable("1", true, false, false));
 
         GridTestUtils.assertThrowsAnyCause(null, fut::get, BinaryObjectException.class,
             "Failed to serialize object [typeName=org.apache.ignite.client.PersonBinarylizable]");
