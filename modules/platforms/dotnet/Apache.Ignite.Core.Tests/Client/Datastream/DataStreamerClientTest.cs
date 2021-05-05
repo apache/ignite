@@ -116,7 +116,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         [Test]
         public void TestManualFlush()
         {
-            var cache = GetClientCache<string>();
+            var cache = GetClientCache<int>();
 
             using (var streamer = Client.GetDataStreamer<int, int>(cache.Name))
             {

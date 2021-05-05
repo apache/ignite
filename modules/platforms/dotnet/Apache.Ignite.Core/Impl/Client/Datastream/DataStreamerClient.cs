@@ -173,7 +173,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
                 if (buffer.MarkForFlush())
                 {
+                    // TODO: This duplicates part of the code from Add method.
                     var socket = pair.Key;
+                    _buffers[socket] = new DataStreamerClientBuffer<TK, TV>(_options.ClientPerNodeBufferSize);
 
                     // TODO: FlushBufferAsync is not true async, we want to write in a separate thread too?
                     tasks.Add(FlushBufferAsync(buffer, socket));
