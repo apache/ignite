@@ -66,7 +66,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         }
 
         [Test]
-        public void TestRemove()
+        public void TestAddRemoveOverwrite()
         {
             var cache = GetClientCache<int>();
             cache.PutAll(Enumerable.Range(1, 10).ToDictionary(x => x, x => x + 1));
@@ -75,6 +75,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 cache.Name,
                 new DataStreamerClientOptions<int, int> {AllowOverwrite = true}))
             {
+                streamer.Add(1, 11);
                 streamer.Add(20, 20);
                 streamer.Remove(2);
                 streamer.Remove(new[] {4, 6, 7, 8, 9, 10});
@@ -85,8 +86,9 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 .OrderBy(x => x)
                 .ToArray();
 
+            Assert.AreEqual(11, cache.Get(1));
+            Assert.AreEqual(20, cache.Get(20));
             Assert.AreEqual(4, cache.GetSize());
-
             Assert.AreEqual(new[] {1, 3, 5, 20}, resKeys);
         }
 
