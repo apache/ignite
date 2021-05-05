@@ -81,7 +81,7 @@ class CellularAffinity(IgniteTest):
 
     PREPARED_TX_CNT = 500  # possible amount at real cluster under load (per cell).
     PREPARED_MULTIKEY_TX_CNT = PREPARED_TX_CNT / 2  # should not cause full recovery waiting on alive nodes (per cell)
-    PREPARED_NONCOLOCATED_TX_CNT = PREPARED_TX_CNT * 2  # huge value, should not affect dramatically on switch speed
+    PREPARED_NONCOLOCATED_TX_CNT = PREPARED_TX_CNT * 2  # huge value, should not affect switch speed dramatically
 
     CONFIG_TEMPLATE = """
             <property name="cacheConfiguration">

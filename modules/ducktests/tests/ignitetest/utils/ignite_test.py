@@ -16,9 +16,10 @@
 """
 This module contains basic ignite test.
 """
+from time import monotonic
+
 from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.tests.test import Test
-from time import monotonic
 
 # pylint: disable=W0223
 from ignitetest.services.utils.ducktests_service import DucktestsService
