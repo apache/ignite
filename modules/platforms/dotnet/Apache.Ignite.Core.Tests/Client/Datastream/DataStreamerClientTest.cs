@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Client.Datastream
 {
     using System.Threading;
+    using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Datastream;
     using NUnit.Framework;
 
@@ -61,6 +62,19 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
             Assert.AreEqual("1", cache[1]);
             Assert.AreEqual("2", cache[2]);
+        }
+
+        [Test]
+        public void TestRemoveNoAllowOverwriteThrows()
+        {
+            var cache = GetClientCache<string>();
+
+            using (var streamer = Client.GetDataStreamer<int, string>(cache.Name))
+            {
+                var ex = Assert.Throws<IgniteClientException>(() => streamer.Remove(1));
+
+                Assert.AreEqual("DataStreamer can't remove data when AllowOverwrite is false.", ex.Message);
+            }
         }
 
         [Test]

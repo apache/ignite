@@ -40,6 +40,7 @@ namespace Apache.Ignite.Core.Client.Datastream
         /// This method adds an entry to the buffer - it does not block the thread and does not perform IO.
         /// When the buffer gets full, it is scheduled for asynchronous flush.
         /// TODO: Note about backpressure.
+        /// TODO: Async overloads for non-blocking backpressure behavior?
         /// </summary>
         /// <param name="key">Key.</param>
         /// <param name="val">Value.</param>
