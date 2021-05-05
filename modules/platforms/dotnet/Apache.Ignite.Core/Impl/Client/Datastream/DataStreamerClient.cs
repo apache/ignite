@@ -124,7 +124,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 if (buffer.MarkForFlush())
                 {
                     var oldBuffer = buffer;
-                    buffer = new DataStreamerClientBuffer<TK, TV>(_options.ClientPerNodeBufferSize);
+                    buffer = new DataStreamerClientBuffer<TK, TV>(_options);
                     _buffers[socket] = buffer;
 
                     ThreadPool.QueueUserWorkItem(_ => FlushBufferAsync(oldBuffer, socket));
@@ -280,8 +280,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         {
             return _buffers.GetOrAdd(
                 socket,
-                (_, sz) => new DataStreamerClientBuffer<TK, TV>(sz),
-                _options.ClientPerNodeBufferSize);
+                (_, opt) => new DataStreamerClientBuffer<TK, TV>(opt),
+                _options);
         }
 
         private void ThrowIfClosed()

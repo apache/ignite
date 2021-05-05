@@ -20,19 +20,23 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     using System.Collections;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Threading;
+    using Apache.Ignite.Core.Client;
+    using Apache.Ignite.Core.Client.Datastream;
+    using Apache.Ignite.Core.Common;
 
     /// <summary>
     /// Client data streamer buffer.
     /// </summary>
     internal sealed class DataStreamerClientBuffer<TK, TV> : IEnumerable<DataStreamerClientEntry<TK, TV>>
     {
+        /** */
+        private readonly DataStreamerClientOptions<TK, TV> _options;
+
         /** Concurrent bag already has per-thread buffers. */
         private readonly ConcurrentBag<DataStreamerClientEntry<TK, TV>> _entries =
             new ConcurrentBag<DataStreamerClientEntry<TK, TV>>();
-
-        /** */
-        private readonly int _maxSize;
 
         /** */
         private readonly ReaderWriterLockSlim _flushLock = new ReaderWriterLockSlim();
@@ -43,9 +47,11 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /** */
         private volatile bool _flushing;
 
-        public DataStreamerClientBuffer(int maxSize)
+        public DataStreamerClientBuffer(DataStreamerClientOptions<TK, TV> options)
         {
-            _maxSize = maxSize;
+            Debug.Assert(options != null);
+
+            _options = options;
         }
 
         public int Count
@@ -62,8 +68,11 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         public bool Remove(TK key)
         {
-            // TODO: Throw when AllowOverwrite is not enabled:
-            // removal won't work in this case.
+            if (!_options.AllowOverwrite)
+            {
+                throw new IgniteClientException("DataStreamer can't remove data when AllowOverwrite is false.");
+            }
+
             return Add(new DataStreamerClientEntry<TK, TV>(key));
         }
 
@@ -104,7 +113,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         private bool Add(DataStreamerClientEntry<TK, TV> entry)
         {
-            if (Interlocked.Increment(ref _size) > _maxSize)
+            if (Interlocked.Increment(ref _size) > _options.ClientPerNodeBufferSize)
             {
                 return false;
             }
