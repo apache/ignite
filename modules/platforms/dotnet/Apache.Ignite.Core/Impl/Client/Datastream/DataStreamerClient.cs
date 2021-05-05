@@ -33,6 +33,18 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     /// </summary>
     internal sealed class DataStreamerClient<TK, TV> : IDataStreamerClient<TK, TV>
     {
+        /** Streamer flags. */
+        [Flags]
+        private enum Flags : byte
+        {
+            None = 0,
+            AllowOverwrite = 0x01,
+            SkipStore = 0x02,
+            KeepBinary = 0x04,
+            Flush = 0x08,
+            Close = 0x10
+        }
+
         /** */
         private readonly ClientFailoverSocket _socket;
 
@@ -259,10 +271,10 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         private void WriteBuffer(DataStreamerClientBuffer<TK, TV> buffer, BinaryWriter w)
         {
             w.WriteInt(_cacheId);
-            w.WriteByte(0x10); // Close
-            w.WriteInt(_options.ServerPerNodeBufferSize); // PerNodeBufferSize
-            w.WriteInt(_options.ServerPerThreadBufferSize); // PerThreadBufferSize
-            w.WriteObject(_options.Receiver); // Receiver
+            w.WriteByte((byte) GetFlags());
+            w.WriteInt(_options.ServerPerNodeBufferSize);
+            w.WriteInt(_options.ServerPerThreadBufferSize);
+            w.WriteObject(_options.Receiver);
 
             w.WriteInt(buffer.Count);
 
@@ -279,6 +291,33 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                     w.WriteObjectDetached(entry.Val);
                 }
             }
+        }
+
+        private Flags GetFlags(bool flush = false, bool close = false)
+        {
+            var flags = Flags.None;
+
+            if (flush)
+            {
+                flags &= Flags.Flush;
+            }
+
+            if (close)
+            {
+                flags &= Flags.Close;
+            }
+
+            if (_options.AllowOverwrite)
+            {
+                flags &= Flags.AllowOverwrite;
+            }
+
+            if (_options.SkipStore)
+            {
+                flags &= Flags.SkipStore;
+            }
+
+            return flags;
         }
 
         /// <summary>
