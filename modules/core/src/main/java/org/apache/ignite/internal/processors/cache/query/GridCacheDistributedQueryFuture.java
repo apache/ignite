@@ -59,7 +59,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
 
         assert mgr != null;
 
-        reducer = new MergeSortDistributedReducer<>(this, reqId, fetcher, nodes);
+        reducer = new UnsortedDistributedReducer<>(this, reqId, fetcher, nodes);
     }
 
     /** {@inheritDoc} */
