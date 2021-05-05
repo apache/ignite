@@ -57,14 +57,14 @@ Row structure has the following format:
 
 Each chunk section has the following structure:
 
-                                                 ┌──────────────────────────────────────────────────┐
-                                                 │                                                  │
-    ┌─────────┬─────────────────────────┬────────┴────────┬─────────────────────────┬──────────┬────⌄─────┐
-    │ Full    │ Varsize Columns Offsets │ Varsize Columns │ Null-Defaults           │ Fixsize  │ Varsize  │
-    │ Size    │ Table Size              │ Offsets Table   │ Map                     │ Columns  │ Columns  │
-    ├─────────┼─────────────────────────┼─────────────────┼─────────────────────────┼──────────┼──────────┤
-    │ 4 Bytes │ 2 Bytes                 │ Variable        │ ⌈Number of columns / 8⌉ │ Variable │ Variable │
-    └─────────┴─────────────────────────┴─────────────────┴─────────────────────────┴──────────┴──────────┘
+                                                                           ┌────────────────────────┐
+                                                                           │                        │
+    ┌─────────┬─────────────────────────┬─────────────────────────┬────────┴────────┬──────────┬────⌄─────┐
+    │ Full    │ Null-Defaults           │ Varsize Columns Offsets │ Varsize Columns │ Fixsize  │ Varsize  │
+    │ Size    │ Map                     │ Table Size              │ Offsets Table   │ Columns  │ Columns  │
+    ├─────────┼─────────────────────────┼─────────────────────────┼─────────────────┼──────────┼──────────┤
+    │ 4 Bytes │ ⌈Number of columns / 8⌉ │ 2 Bytes                 │ Variable        │ Variable │ Variable │
+    └─────────┴─────────────────────────┴─────────────────────────┴─────────────────┴──────────┴──────────┘
 All columns within a group are split into groups of fixed-size columns and variable-size columns. Withing the group of 
 fixsize columns, the columns are sorted by size, then by column name. Within the group of varsize columns, the columns 
 are sorted by column name. Inside a row default values and nulls are omitted and encoded in the null-defaults map 

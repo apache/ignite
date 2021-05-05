@@ -235,7 +235,7 @@ public class RowTest {
             }
         }
 
-        int size = RowAssembler.rowChunkSize(
+        int size = RowAssembler.rowSize(
             schema.keyColumns(), nonNullVarLenKeyCols, nonNullVarLenKeySize,
             schema.valueColumns(), nonNullVarLenValCols, nonNullVarLenValSize);
 

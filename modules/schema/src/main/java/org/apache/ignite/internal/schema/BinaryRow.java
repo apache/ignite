@@ -29,13 +29,13 @@ public interface BinaryRow {
     /** */
     int SCHEMA_VERSION_OFFSET = 0;
     /** */
-    int FLAGS_FIELD_OFFSET = SCHEMA_VERSION_OFFSET + 2;
+    int FLAGS_FIELD_OFFSET = SCHEMA_VERSION_OFFSET + 2 /* version length */;
     /** */
-    int KEY_HASH_FIELD_OFFSET = FLAGS_FIELD_OFFSET + 2;
+    int KEY_HASH_FIELD_OFFSET = FLAGS_FIELD_OFFSET + 2 /* flags length */;
     /** */
-    int KEY_CHUNK_OFFSET = KEY_HASH_FIELD_OFFSET + 4;
+    int KEY_CHUNK_OFFSET = KEY_HASH_FIELD_OFFSET + 4 /* hash length */;
     /** */
-    int TOTAL_LEN_FIELD_SIZE = 4;
+    int CHUNK_LEN_FIELD_SIZE = 4;
     /** */
     int VARLEN_TABLE_SIZE_FIELD_SIZE = 2;
     /** */

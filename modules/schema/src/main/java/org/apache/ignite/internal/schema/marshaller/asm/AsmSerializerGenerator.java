@@ -301,7 +301,7 @@ public class AsmSerializerGenerator implements SerializerFactory {
 
         body.append(BytecodeExpressions.newInstance(RowAssembler.class,
             methodDef.getThis().getField("schema", SchemaDescriptor.class),
-            BytecodeExpressions.invokeStatic(RowAssembler.class, "rowChunkSize", int.class,
+            BytecodeExpressions.invokeStatic(RowAssembler.class, "rowSize", int.class,
                 keyCols, varlenKeyCols, varlenKeyColsSize,
                 valCols, varlenValueCols, varlenValueColsSize),
             varlenKeyCols,

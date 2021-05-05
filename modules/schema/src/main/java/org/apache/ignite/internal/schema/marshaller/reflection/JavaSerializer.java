@@ -85,7 +85,7 @@ public class JavaSerializer extends AbstractSerializer {
         ObjectStatistic keyStat = collectObjectStats(schema.keyColumns(), keyMarsh, key);
         ObjectStatistic valStat = collectObjectStats(schema.valueColumns(), valMarsh, val);
 
-        int size = RowAssembler.rowChunkSize(
+        int size = RowAssembler.rowSize(
             schema.keyColumns(), keyStat.nonNullFields, keyStat.nonNullFieldsSize,
             schema.valueColumns(), valStat.nonNullFields, valStat.nonNullFieldsSize);
 

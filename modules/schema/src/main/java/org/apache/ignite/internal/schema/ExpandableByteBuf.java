@@ -63,7 +63,7 @@ public class ExpandableByteBuf {
      */
     public ExpandableByteBuf(int size) {
         if (size <= 0)
-            size = 16;
+            size = 32;
 
         arr = new byte[size];
         buf = ByteBuffer.wrap(arr);
@@ -249,7 +249,7 @@ public class ExpandableByteBuf {
      *
      * @param cap Target capacity.
      */
-    private void ensureCapacity(int cap) {
+    void ensureCapacity(int cap) {
         if (arr.length < cap)
             expand(cap);
 

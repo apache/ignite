@@ -429,9 +429,9 @@ public class Row implements BinaryRow {
         }
 
         idx -= cols.numberOfFixsizeColumns() + numNullsBefore;
-        int vartableSize = readShort(baseOff + TOTAL_LEN_FIELD_SIZE);
+        int vartableSize = readShort(vartableChunkOffset(baseOff, cols));
 
-        int vartableOff = vartableOffset(baseOff);
+        int vartableOff = vartableChunkOffset(baseOff, cols) + VARLEN_TABLE_SIZE_FIELD_SIZE;
         // Offset of idx-th column is from base offset.
         int resOff = readShort(vartableOff + VARLEN_COLUMN_OFFSET_FIELD_SIZE * idx);
 
@@ -470,7 +470,11 @@ public class Row implements BinaryRow {
 
         off += cols.foldFixedLength(nullMapIdx, readByte(nullMapOff + nullMapIdx) | mask);
 
-        return nullMapOff + cols.nullMapSize() + off;
+        final int vartableChunkOffset = vartableChunkOffset(baseOff, cols);
+
+        return vartableChunkOffset + VARLEN_TABLE_SIZE_FIELD_SIZE +
+            readShort(vartableChunkOffset) * VARLEN_COLUMN_OFFSET_FIELD_SIZE /* table size */ +
+            off;
     }
 
     /**
@@ -478,17 +482,16 @@ public class Row implements BinaryRow {
      * @return Null map offset from the row start for the chunk with the given base.
      */
     private int nullMapOffset(int baseOff) {
-        int varlenTblSize = readShort(baseOff + TOTAL_LEN_FIELD_SIZE);
-
-        return vartableOffset(baseOff) + varlenTblSize * VARLEN_COLUMN_OFFSET_FIELD_SIZE;
+        return baseOff + CHUNK_LEN_FIELD_SIZE;
     }
 
     /**
      * @param baseOff Chunk base offset.
+     * @param cols Columns.
      * @return Offset of the varlen table from the row start for the chunk with the given base.
      */
-    private int vartableOffset(int baseOff) {
-        return baseOff + TOTAL_LEN_FIELD_SIZE + VARLEN_TABLE_SIZE_FIELD_SIZE;
+    private int vartableChunkOffset(int baseOff, Columns cols) {
+        return baseOff + CHUNK_LEN_FIELD_SIZE + cols.nullMapSize();
     }
 
     /** {@inheritDoc} */
