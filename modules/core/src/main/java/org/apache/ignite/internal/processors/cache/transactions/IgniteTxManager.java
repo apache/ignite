@@ -2451,7 +2451,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     public void finishTxOnRecovery(final IgniteInternalTx tx, boolean commit) {
         if (log.isInfoEnabled())
-            log.info("Finishing prepared transaction [commit=" + commit + ", tx=" + tx + ']');
+            log.info("Finishing prepared transaction [commit=" + commit + ", tx.xid=" + tx.xid() + ']');
 
         // Transactions participating in recovery can be finished only by recovery consensus.
         assert tx.finalizationStatus() == RECOVERY_FINISH : tx;
@@ -2505,8 +2505,15 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         cctx.mvcc().addFuture(fut, fut.futureId());
 
-        if (log.isInfoEnabled())
-            log.info("Checking optimistic transaction state on remote nodes [tx=" + tx + ", fut=" + fut + ']');
+        if (log.isInfoEnabled()) {
+            log.info("Checking optimistic transaction state on remote nodes [tx.xid=" + tx.xid() + ']');
+
+            cctx.kernalContext().closure().callLocalSafe(() -> { // Wait-free huge objects logging.
+                log.info("Checking transaction's info [tx=" + tx + ", fut=" + fut + ']');
+
+                return null;
+            });
+        }
 
         fut.prepare();
 
