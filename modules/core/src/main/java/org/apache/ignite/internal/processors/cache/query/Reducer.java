@@ -17,11 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
+import java.util.Collection;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * This class is responsible for iterating over cache query results. Custom reduce logic is applied within {@link #next()}
- * and {@link #hasNext()} methods.
+ * This class is responsible for iterating over cache query results. Query results are delivered with function
+ * {@link #addPage(UUID, Collection)}. Note that this reducer deeply interacts with corresponding query future
+ * {@link GridCacheQueryFutureAdapter}, so they used the same lock object. It guards reducer pages operations and
+ * the future status. Custom reduce logic is applied within {@link #next()} and {@link #hasNext()}.
  */
 public interface Reducer<T> {
     /**
@@ -35,16 +40,17 @@ public interface Reducer<T> {
     public boolean hasNext() throws IgniteCheckedException;
 
     /**
-     * Lock object that is shared between {@link GridCacheQueryFutureAdapter} and Reducer.
+     * Lock object shares between {@link GridCacheQueryFutureAdapter} and this reducer.
      */
     public Object sharedLock();
 
     /**
      * Offer query result page for reduce.
      *
-     * @param page Page.
+     * @param nodeId Node ID that sent this page. {@code null} means local node or error page.
+     * @param data Page data rows.
      */
-    public void addPage(CacheQueryResultPage<T> page);
+    public void addPage(@Nullable UUID nodeId, Collection<T> data);
 
     /**
      * Callback that invokes after reducer get last query result page.

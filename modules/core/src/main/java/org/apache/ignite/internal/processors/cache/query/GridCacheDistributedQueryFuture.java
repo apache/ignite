@@ -25,6 +25,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Distributed query future.
@@ -58,7 +59,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
 
         assert mgr != null;
 
-        reducer = new UnorderedDistributedReducer<>(this, reqId, fetcher, nodes);
+        reducer = new MergeSortDistributedReducer<>(this, reqId, fetcher, nodes);
     }
 
     /** {@inheritDoc} */
@@ -96,7 +97,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean onPage(UUID nodeId, boolean last) {
+    @Override protected boolean onPage(@Nullable UUID nodeId, boolean last) {
         return reducer.onPage(nodeId, last);
     }
 

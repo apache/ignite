@@ -193,17 +193,6 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     }
 
     /**
-     * Checks lock and handles a page.
-     *
-     * @param page Query result page from a remote node.
-     */
-    private void enqueue(CacheQueryResultPage<R> page) {
-        assert Thread.holdsLock(lock);
-
-        reducer().addPage(page);
-    }
-
-    /**
      * @param col Query data collection.
      * @return If dedup flag is {@code true} deduplicated collection (considering keys), otherwise passed in collection
      * without any modifications.
@@ -229,9 +218,9 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      * @param nodeId Sender node.
      * @param data Page data.
      * @param err Error (if was).
-     * @param finished Finished or not.
+     * @param finished Whether it is the last page for sender node.
      */
-    public void onPage(UUID nodeId, @Nullable Collection<?> data, @Nullable Throwable err, boolean finished) {
+    public void onPage(@Nullable UUID nodeId, @Nullable Collection<?> data, @Nullable Throwable err, boolean finished) {
         if (isCancelled())
             return;
 
@@ -245,7 +234,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
         try {
             if (err != null)
                 synchronized (lock) {
-                    enqueue(mapResultPage(nodeId, Collections.emptyList(), true));
+                    reducer().addPage(nodeId, Collections.emptyList());
 
                     if (err instanceof IgniteCheckedException)
                         onDone(err);
@@ -271,7 +260,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
                 data = cctx.unwrapBinariesIfNeeded((Collection<Object>)data, qry.query().keepBinary());
 
                 synchronized (lock) {
-                    enqueue(mapResultPage(nodeId, data, finished));
+                    reducer().addPage(nodeId, (Collection<R>) data);
 
                     if (onPage(nodeId, finished)) {
                         onDone(/* data */);
@@ -291,22 +280,13 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
         }
     }
 
-    /** TODO: do we need it? Depends on ordered reducer. */
-    protected <T> CacheQueryResultPage<T> mapResultPage(UUID nodeId, Collection<?> data, boolean finished) {
-        GridCacheQueryResponse resp = new GridCacheQueryResponse();
-        resp.data(data);
-        resp.finished(finished);
-
-        return new CacheQueryResultPage<>(cctx.kernalContext(), nodeId, resp);
-    }
-
     /**
      * @param nodeId Sender node id.
      * @param e Error.
      */
     private void onPageError(@Nullable UUID nodeId, Throwable e) {
         synchronized (lock) {
-            enqueue(mapResultPage(nodeId, Collections.emptyList(), true));
+            reducer().addPage(nodeId, Collections.emptyList());
 
             onPage(nodeId, true);
 
@@ -383,7 +363,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      * @param last Whether page is last for sender node.
      * @return Is query finished or not.
      */
-    protected abstract boolean onPage(UUID nodeId, boolean last);
+    protected abstract boolean onPage(@Nullable UUID nodeId, boolean last);
 
     /**
      * Loads all left pages.

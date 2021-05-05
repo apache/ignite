@@ -23,60 +23,58 @@ import java.util.HashSet;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
-/** Reducer of distributed query, fetch pages from remote nodes. */
-class UnorderedDistributedReducer<R> extends UnorderedReducer<R> implements DistributedReducer<R> {
+/**
+ * Reducer of distributed query, fetch pages from remote nodes. All pages go in single page stream so no ordering is provided.
+ */
+class UnsortedDistributedReducer<R> extends AbstractReducer<R> implements DistributedReducer<R> {
     /**
      * Whether it is allowed to send cache query result requests to nodes.
      * It is set to {@code false} if a query finished or failed.
      */
-    private volatile boolean loadAllowed;
+    protected volatile boolean loadAllowed;
 
     /** Query request ID. */
-    private final long reqId;
+    protected final long reqId;
 
     /**
-     * Dynamic collection of nodes that run this query. If a node finishes run this query then remove it from this colleciton.
+     * Dynamic collection of nodes that run this query. If a node finishes this query then remove it from this colleciton.
      */
-    private final Collection<UUID> subgrid = new HashSet<>();
+    protected final Collection<UUID> subgrid = new HashSet<>();
 
     /**
-     * List of nodes that send cache query result pages.
-     *
-     * The query node send a single request to every remote node. Fills this collection by receiving data.
-     * When all nodes responsed, clean this colleciton. And fill it again after next request.
+     * List of nodes that respons with cache query result pages. This collection should be cleaned before sending new
+     * cache query request.
      */
-    private final Collection<UUID> rcvd = new HashSet<>();
+    protected final Collection<UUID> rcvd = new HashSet<>();
 
-    /** */
-    private final CacheQueryResultFetcher fetcher;
+    /** Fetcher of cache query result pages. */
+    protected final CacheQueryResultFetcher fetcher;
 
-    /** */
-    private final GridCacheContext cctx;
-
-    /** */
-    private final IgniteLogger log;
+    /** Cache context. */
+    protected final GridCacheContext cctx;
 
     /** Count down this latch when every node responses on initial cache query request. */
     private final CountDownLatch firstPageLatch = new CountDownLatch(1);
 
-    /** Whether it is fields query or not. */
-    private final boolean fields;
+    /** Single page stream. */
+    private final PageStream pageStream;
+
+    /** Whether query is a fields query. */
+    private final boolean fieldsQry;
 
     /** */
-    UnorderedDistributedReducer(GridCacheQueryFutureAdapter fut, long reqId, CacheQueryResultFetcher fetcher,
+    UnsortedDistributedReducer(GridCacheQueryFutureAdapter fut, long reqId, CacheQueryResultFetcher fetcher,
         Collection<ClusterNode> nodes) {
         super(fut);
 
-        this.fields = fut.fields();
         this.reqId = reqId;
         this.fetcher = fetcher;
 
@@ -87,7 +85,24 @@ class UnorderedDistributedReducer<R> extends UnorderedReducer<R> implements Dist
 
         cctx = fut.cctx;
 
-        log = cctx.kernalContext().config().getGridLogger();
+        pageStream = new PageStream();
+
+        fieldsQry = fut.fields();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean hasNext() throws IgniteCheckedException {
+        return pageStream.hasNext();
+    }
+
+    /** {@inheritDoc} */
+    @Override public R next() throws IgniteCheckedException {
+        return pageStream.next();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void addPage(@Nullable UUID nodeId, Collection<R> data) {
+        pageStream.addPage(data);
     }
 
     /** {@inheritDoc} */
@@ -101,60 +116,23 @@ class UnorderedDistributedReducer<R> extends UnorderedReducer<R> implements Dist
 
     /** {@inheritDoc} */
     @Override public void cancel() {
-        final GridCacheQueryManager qryMgr = cctx.queries();
+        Collection<ClusterNode> allNodes = cctx.discovery().allNodes();
+        Collection<ClusterNode> nodes;
 
-        assert qryMgr != null;
-
-        try {
-            Collection<ClusterNode> allNodes = cctx.discovery().allNodes();
-            Collection<ClusterNode> nodes;
-
-            synchronized (sharedLock()) {
-                nodes = F.retain(allNodes, true,
-                    new P1<ClusterNode>() {
-                        @Override public boolean apply(ClusterNode node) {
-                            return !cctx.localNodeId().equals(node.id()) && subgrid.contains(node.id());
-                        }
-                    }
-                );
-
-                subgrid.clear();
-            }
-
-            final GridCacheQueryRequest req = new GridCacheQueryRequest(cctx.cacheId(),
-                reqId,
-                fields,
-                cctx.startTopologyVersion(),
-                cctx.deploymentEnabled());
-
-            // Process cancel query directly (without sending) for local node,
-            cctx.closures().callLocalSafe(new GridPlainCallable<Object>() {
-                @Override public Object call() {
-                    qryMgr.processQueryRequest(cctx.localNodeId(), req);
-
-                    return null;
-                }
-            });
-
-            if (!nodes.isEmpty()) {
-                for (ClusterNode node : nodes) {
-                    try {
-                        cctx.io().send(node, req, cctx.ioPolicy());
-                    }
-                    catch (IgniteCheckedException e) {
-                        if (cctx.io().checkNodeLeft(node.id(), e, false)) {
-                            if (log.isDebugEnabled())
-                                log.debug("Failed to send cancel request, node failed: " + node);
-                        }
-                        else
-                            U.error(log, "Failed to send cancel request [node=" + node + ']', e);
+        synchronized (sharedLock()) {
+            nodes = F.retain(allNodes, true,
+                new P1<ClusterNode>() {
+                    @Override public boolean apply(ClusterNode node) {
+                        return !cctx.localNodeId().equals(node.id()) && subgrid.contains(node.id());
                     }
                 }
-            }
+            );
+
+            rcvd.clear();
+            subgrid.clear();
         }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to send cancel request (will cancel query in any case).", e);
-        }
+
+        fetcher.cancelQueryRequest(reqId, nodes, fieldsQry);
     }
 
     /** {@inheritDoc} */
@@ -164,6 +142,10 @@ class UnorderedDistributedReducer<R> extends UnorderedReducer<R> implements Dist
         Collection<UUID> nodes = null;
 
         synchronized (sharedLock()) {
+            // Loads only queue is empty to avoid memory consumption on additional pages.
+            if (!pageStream.queue.isEmpty())
+                return;
+
             if (loadAllowed && rcvd.containsAll(subgrid)) {
                 rcvd.clear();
 
@@ -193,12 +175,15 @@ class UnorderedDistributedReducer<R> extends UnorderedReducer<R> implements Dist
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onPage(UUID nodeId, boolean last) {
+    @Override public boolean onPage(@Nullable UUID nodeId, boolean last) {
         assert Thread.holdsLock(sharedLock());
+
+        if (nodeId == null)
+            nodeId = cctx.localNodeId();
 
         rcvd.add(nodeId);
 
-        if (rcvd.containsAll(subgrid) && !loadAllowed) {
+        if (!loadAllowed && rcvd.containsAll(subgrid) ) {
             firstPageLatch.countDown();
             loadAllowed = true;
         }

@@ -19,19 +19,20 @@ package org.apache.ignite.internal.processors.cache.query;
 
 import java.util.UUID;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Reduce cache query results from remote nodes that executes distributed query.
+ * Reducer for distributed cache query.
  */
 public interface DistributedReducer<T> extends Reducer<T> {
     /**
-     * Callback that invoked after handling a page from remote node.
+     * Callback that invoked after getting a page from remote node. Checks whether it is the last page for query or not.
      *
      * @param nodeId Node ID of remote page.
      * @param last Whether page is last for specified node.
      * @return Whether page is last for a query.
      */
-    public boolean onPage(UUID nodeId, boolean last);
+    public boolean onPage(@Nullable UUID nodeId, boolean last);
 
     /**
      * Loads full cache query result pages from remote nodes. It can be done for speedup operation if user invokes
@@ -42,7 +43,7 @@ public interface DistributedReducer<T> extends Reducer<T> {
     public void loadAll() throws IgniteInterruptedCheckedException;
 
     /**
-     * Callback to handle node leaving.
+     * Callback to handle node left.
      *
      * @param nodeId Node ID that left a cluster.
      * @return {@code true} if specified node runs this query.

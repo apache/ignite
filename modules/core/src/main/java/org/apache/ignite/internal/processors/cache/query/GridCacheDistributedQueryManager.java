@@ -111,12 +111,12 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
         pageFetcher = new CacheQueryResultFetcher(cctx, futs) {
             /** {@inheritDoc} */
-            @Override protected void sendLocal(UUID locNodeId, GridCacheQueryRequest req) {
+            @Override protected void sendLocal(GridCacheQueryRequest req) {
                 cctx.closures().callLocalSafe(new GridPlainCallable<Object>() {
                     @Override public Object call() throws Exception {
                         req.beforeLocalExecution(cctx);
 
-                        processQueryRequest(locNodeId, req);
+                        processQueryRequest(cctx.localNodeId(), req);
 
                         return null;
                     }

@@ -17,11 +17,33 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
+import java.util.Collection;
+import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+
 /** Reducer for local queries. */
-public class UnorderedLocalReducer<R> extends UnorderedReducer<R> {
+public class LocalReducer<R> extends AbstractReducer<R> {
+    /** Stream of local pages. */
+    private final PageStream pageStream = new PageStream();
+
     /** */
-    UnorderedLocalReducer(GridCacheQueryFutureAdapter fut) {
+    LocalReducer(GridCacheQueryFutureAdapter fut) {
         super(fut);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean hasNext() throws IgniteCheckedException {
+        return pageStream.hasNext();
+    }
+
+    /** {@inheritDoc} */
+    @Override public R next() throws IgniteCheckedException {
+        return pageStream.next();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void addPage(UUID nodeId, Collection<R> data) {
+        pageStream.addPage(data);
     }
 
     /** {@inheritDoc} */

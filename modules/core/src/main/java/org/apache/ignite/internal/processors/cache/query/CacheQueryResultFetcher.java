@@ -22,10 +22,12 @@ import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * This class is responsible for sending request for query result pages to remote nodes.
@@ -40,6 +42,9 @@ public abstract class CacheQueryResultFetcher {
     /** Cache context. */
     private final GridCacheContext cctx;
 
+    /** Ignite logger. */
+    private final IgniteLogger log;
+
     /** */
     CacheQueryResultFetcher(
         final GridCacheContext cctx,
@@ -47,6 +52,7 @@ public abstract class CacheQueryResultFetcher {
 
         this.qryFuts = qryFuts;
         this.cctx = cctx;
+        this.log = cctx.kernalContext().config().getGridLogger();
     }
 
     /**
@@ -132,6 +138,50 @@ public abstract class CacheQueryResultFetcher {
     }
 
     /**
+     * Cancel query request, so no new pages will be sent.
+     *
+     * @param reqId Query request ID.
+     * @param nodes Collection of nodes to send the cancel request.
+     * @param fieldsQry Whether query is a fields query.
+     *
+     */
+    public void cancelQueryRequest(long reqId, Collection<ClusterNode> nodes, boolean fieldsQry) {
+        final GridCacheQueryManager qryMgr = cctx.queries();
+
+        assert qryMgr != null;
+
+        try {
+            final GridCacheQueryRequest req = new GridCacheQueryRequest(cctx.cacheId(),
+                reqId,
+                fieldsQry,
+                cctx.startTopologyVersion(),
+                cctx.deploymentEnabled());
+
+            // Process cancel query directly (without sending) for local node.
+            sendLocal(req);
+
+            if (!nodes.isEmpty()) {
+                for (ClusterNode node : nodes) {
+                    try {
+                        cctx.io().send(node, req, cctx.ioPolicy());
+                    }
+                    catch (IgniteCheckedException e) {
+                        if (cctx.io().checkNodeLeft(node.id(), e, false)) {
+                            if (log.isDebugEnabled())
+                                log.debug("Failed to send cancel request, node failed: " + node);
+                        }
+                        else
+                            U.error(log, "Failed to send cancel request [node=" + node + ']', e);
+                    }
+                }
+            }
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to send cancel request (will cancel query in any case).", e);
+        }
+    }
+
+    /**
      * Sends query request.
      *
      * @param req Request.
@@ -185,9 +235,9 @@ public abstract class CacheQueryResultFetcher {
         }
 
         if (locNode != null)
-            sendLocal(locNodeId, req);
+            sendLocal(req);
     }
 
     /** Send and handle request to local node. */
-    protected abstract void sendLocal(UUID locNodeId, GridCacheQueryRequest req);
+    protected abstract void sendLocal(GridCacheQueryRequest req);
 }
