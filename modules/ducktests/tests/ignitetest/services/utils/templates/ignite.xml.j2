@@ -105,13 +105,6 @@
                         <property name="useIgniteSslContextFactory" value="{{ config.client_connector_configuration.use_ignite_ssl_context_factory }}"/>
                         <property name="sslClientAuth" value="{{ config.client_connector_configuration.ssl_client_auth }}"/>
                     {% endif %}
-                    {% if config.ssl_params %}
-                        <property name="sslEnabled" value="true"/>
-                        <property name="sslContextFactory">
-                            {{ ssl_params_util.ssl_params(config.ssl_params) }}
-                        </property>
-                        <property name="useIgniteSslContextFactory" value="False"/>
-                    {% endif %}
                 </bean>
             </property>
         {% endif %}

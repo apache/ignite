@@ -82,7 +82,9 @@ class IgniteConfiguration(NamedTuple):
         if ssl_params:
             return self._replace(ssl_params=ssl_params,
                                  connector_configuration=ConnectorConfiguration(ssl_enabled=True,
-                                                                                ssl_params=ssl_params))
+                                                                                ssl_params=ssl_params),
+                                 client_connector_configuration=ClientConnectorConfiguration(ssl_enabled=True,
+                                                                                             ssl_params=ssl_params))
         return self
 
     def __prepare_discovery(self, cluster, node):
