@@ -16,9 +16,9 @@
 """
 This module contains Cellular Affinity tests.
 """
+import math
 from enum import IntEnum
 
-import math
 from ducktape.mark import matrix
 from jinja2 import Template
 
