@@ -271,7 +271,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         private void WriteBuffer(DataStreamerClientBuffer<TK, TV> buffer, BinaryWriter w)
         {
             w.WriteInt(_cacheId);
-            w.WriteByte((byte) GetFlags());
+            w.WriteByte((byte) GetFlags(flush: true, close: true));
             w.WriteInt(_options.ServerPerNodeBufferSize);
             w.WriteInt(_options.ServerPerThreadBufferSize);
             w.WriteObject(_options.Receiver);
@@ -293,7 +293,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
         }
 
-        private Flags GetFlags(bool flush = false, bool close = false)
+        private Flags GetFlags(bool flush, bool close)
         {
             var flags = Flags.None;
 
