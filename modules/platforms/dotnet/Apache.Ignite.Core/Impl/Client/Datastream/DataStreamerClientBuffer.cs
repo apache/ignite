@@ -62,6 +62,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         public bool Remove(TK key)
         {
+            // TODO: Throw when AllowOverwrite is not enabled:
+            // removal won't work in this case.
             return Add(new DataStreamerClientEntry<TK, TV>(key));
         }
 
