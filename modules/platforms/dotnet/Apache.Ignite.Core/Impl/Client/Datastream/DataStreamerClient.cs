@@ -299,22 +299,22 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
             if (flush)
             {
-                flags &= Flags.Flush;
+                flags |= Flags.Flush;
             }
 
             if (close)
             {
-                flags &= Flags.Close;
+                flags |= Flags.Close;
             }
 
             if (_options.AllowOverwrite)
             {
-                flags &= Flags.AllowOverwrite;
+                flags |= Flags.AllowOverwrite;
             }
 
             if (_options.SkipStore)
             {
-                flags &= Flags.SkipStore;
+                flags |= Flags.SkipStore;
             }
 
             return flags;
