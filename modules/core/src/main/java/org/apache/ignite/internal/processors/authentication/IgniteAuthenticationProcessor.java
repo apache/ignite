@@ -226,13 +226,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
             new LinkedBlockingQueue<>());
     }
 
-    /**
-     * On cache processor started.
-     */
-    public void cacheProcessorStarted() {
-        sharedCtx = ctx.cache().context();
-    }
-
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         if (ioLsnr != null)
