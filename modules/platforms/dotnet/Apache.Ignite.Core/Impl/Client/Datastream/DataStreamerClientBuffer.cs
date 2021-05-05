@@ -58,7 +58,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         public bool Add(DataStreamerClientEntry<TK, TV> entry)
         {
-            if (Interlocked.Increment(ref _size) > _maxSize)
+            // TODO: Auto flush when reached max size.
+            var newSize = Interlocked.Increment(ref _size);
+            if (newSize > _maxSize)
             {
                 return false;
             }
