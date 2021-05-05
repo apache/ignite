@@ -180,8 +180,6 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         :param node: Ignite service node.
         """
 
-        node.account.ssh("sudo chown -R ducker:ducker /mnt")
-
         local_shared_dir = self._init_local_shared()
 
         if not os.path.isdir(local_shared_dir):
@@ -203,8 +201,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         if not self.spec.prepare_shared_files(local_dir, pretend=True):
             return local_dir
 
-        lock = FileLock("init_shared.lock", timeout=120)
-        with lock:
+        with FileLock("init_shared.lock", timeout=120):
             self.spec.prepare_shared_files(local_dir)
 
         return local_dir
