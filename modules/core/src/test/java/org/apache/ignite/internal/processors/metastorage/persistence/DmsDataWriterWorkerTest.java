@@ -21,6 +21,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -54,6 +55,9 @@ public class DmsDataWriterWorkerTest extends GridCommonAbstractTest {
     private DmsDataWriterWorker worker;
 
     /** */
+    private final AtomicReference<Throwable> errHnd = new AtomicReference<>();
+
+    /** */
     @Before
     public void before() {
         testThread = Thread.currentThread();
@@ -66,7 +70,7 @@ public class DmsDataWriterWorkerTest extends GridCommonAbstractTest {
             DmsDataWriterWorkerTest.class.getSimpleName(),
             log,
             lock,
-            throwable -> {}
+            errHnd::set
         );
 
         worker.setMetaStorage(metastorage);
@@ -317,6 +321,8 @@ public class DmsDataWriterWorkerTest extends GridCommonAbstractTest {
         latch.await();
 
         worker.cancel(true);
+
+        assertNull(errHnd.get());
 
         // ver, val, hist.
         assertEquals(3, metastorage.cache.size());
