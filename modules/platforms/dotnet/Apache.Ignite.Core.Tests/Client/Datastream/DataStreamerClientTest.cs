@@ -93,6 +93,27 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         }
 
         [Test]
+        public void TestAutoFlushOnFullBuffer()
+        {
+            var cache = GetClientCache<string>();
+            var keys = TestUtils.GetPrimaryKeys(GetIgnite(), cache.Name).Take(10).ToArray();
+
+            using (var streamer = Client.GetDataStreamer(
+                cache.Name,
+                new DataStreamerClientOptions<int, int>{ClientPerNodeBufferSize = 3}))
+            {
+                streamer.Add(keys[1], 1);
+                Assert.AreEqual(0, cache.GetSize());
+
+                streamer.Add(keys[2], 2);
+                Assert.AreEqual(0, cache.GetSize());
+
+                streamer.Add(keys[3], 3);
+                TestUtils.WaitForTrueCondition(() => cache.GetSize() == 3);
+            }
+        }
+
+        [Test]
         public void TestRemoveNoAllowOverwriteThrows()
         {
             var cache = GetClientCache<string>();
