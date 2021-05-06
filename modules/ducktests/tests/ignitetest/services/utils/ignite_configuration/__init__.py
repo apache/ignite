@@ -30,9 +30,6 @@ from ignitetest.services.utils.ssl.ssl_params import SslParams, is_ssl_enabled, 
     IGNITE_SERVER_ALIAS
 from ignitetest.utils.version import IgniteVersion, DEV_BRANCH
 
-DEFAULT_USER = "client"
-DEFAULT_USER_PASSWORD = "123456"
-
 
 # pylint: disable=no-member
 class IgniteConfiguration(NamedTuple):
@@ -130,8 +127,6 @@ class IgniteThinClientConfiguration(NamedTuple):
     addresses: str = None
     version: IgniteVersion = DEV_BRANCH
     ssl_params: SslParams = None
-    user: str = DEFAULT_USER
-    password: str = DEFAULT_USER_PASSWORD
 
     def __prepare_ssl(self, test_globals, shared_root):
         """
