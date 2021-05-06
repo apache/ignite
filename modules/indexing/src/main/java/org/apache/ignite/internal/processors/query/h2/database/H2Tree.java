@@ -348,7 +348,7 @@ public class H2Tree extends BPlusTree<H2Row, H2Row> {
             row.initFromLink(
                     cctx.group(),
                     CacheDataRowAdapter.RowData.FULL,
-                    true
+                    false
             );
         }
 

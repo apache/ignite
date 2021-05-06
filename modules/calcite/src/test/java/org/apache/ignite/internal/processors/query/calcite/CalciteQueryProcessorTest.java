@@ -913,7 +913,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         employer.putAll(ImmutableMap.of(
             keysNode0.get(0), new Employer("Igor", 10d),
-            keysNode0.get(1), new Employer("Roman", 20d) ,
+            keysNode0.get(1), new Employer("Roman", 20d),
             keysNode1.get(0), new Employer("Nikolay", 30d)
         ));
 
@@ -1036,117 +1036,6 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         assertEqualsCollections(Arrays.asList("Igor", 1, "Calcite"), F.first(query.get(0).getAll()));
         assertEqualsCollections(Arrays.asList("Roman", 0, "Ignite"), F.first(query.get(1).getAll()));
-    }
-
-    /** */
-    @Test
-    public void testInsertPrimitiveKey() throws Exception {
-        grid(1).getOrCreateCache(new CacheConfiguration<Integer, Developer>()
-            .setName("developer")
-            .setSqlSchema("PUBLIC")
-            .setIndexedTypes(Integer.class, Developer.class)
-            .setBackups(2)
-        );
-
-        QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
-
-        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC",
-            "INSERT INTO DEVELOPER(_key, name, projectId) VALUES (?, ?, ?)", 0, "Igor", 1);
-
-        assertEquals(1, query.size());
-
-        List<List<?>> rows = query.get(0).getAll();
-
-        assertEquals(1, rows.size());
-
-        List<?> row = rows.get(0);
-
-        assertNotNull(row);
-
-        assertEqualsCollections(F.asList(1L), row);
-
-        query = engine.query(null, "PUBLIC", "select _key, * from DEVELOPER");
-
-        assertEquals(1, query.size());
-
-        row = F.first(query.get(0).getAll());
-
-        assertNotNull(row);
-
-        assertEqualsCollections(Arrays.asList(0, "Igor", 1), row);
-    }
-
-    /** */
-    @Test
-    public void testInsertUpdateDeleteNonPrimitiveKey() throws Exception {
-        client.getOrCreateCache(new CacheConfiguration<Key, Developer>()
-            .setName("developer")
-            .setSqlSchema("PUBLIC")
-            .setIndexedTypes(Key.class, Developer.class)
-            .setBackups(2)
-        );
-
-        awaitPartitionMapExchange(true, true, null);
-
-        QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
-
-        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC", "INSERT INTO DEVELOPER VALUES (?, ?, ?, ?)", 0, 0, "Igor", 1);
-
-        assertEquals(1, query.size());
-
-        List<?> row = F.first(query.get(0).getAll());
-
-        assertNotNull(row);
-
-        assertEqualsCollections(F.asList(1L), row);
-
-        query = engine.query(null, "PUBLIC", "select * from DEVELOPER");
-
-        assertEquals(1, query.size());
-
-        row = F.first(query.get(0).getAll());
-
-        assertNotNull(row);
-
-        assertEqualsCollections(F.asList(0, 0, "Igor", 1), row);
-
-        query = engine.query(null, "PUBLIC", "UPDATE DEVELOPER d SET name = 'Roman' WHERE id = ?", 0);
-
-        assertEquals(1, query.size());
-
-        row = F.first(query.get(0).getAll());
-
-        assertNotNull(row);
-
-        assertEqualsCollections(F.asList(1L), row);
-
-        query = engine.query(null, "PUBLIC", "select * from DEVELOPER");
-
-        assertEquals(1, query.size());
-
-        row = F.first(query.get(0).getAll());
-
-        assertNotNull(row);
-
-        assertEqualsCollections(F.asList(0, 0, "Roman", 1), row);
-
-        query = engine.query(null, "PUBLIC", "DELETE FROM DEVELOPER WHERE id = ?", 0);
-
-        assertEquals(1, query.size());
-
-        row = F.first(query.get(0).getAll());
-
-        assertNotNull(row);
-
-        assertEqualsCollections(F.asList(1L), row);
-
-        query = engine.query(null, "PUBLIC", "select * from DEVELOPER");
-
-        assertEquals(1, query.size());
-
-        row = F.first(query.get(0).getAll());
-
-        assertNull(row);
     }
 
     /**

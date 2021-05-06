@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -86,6 +85,12 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, H2Row> {
 
     /** */
     private final ImmutableBitSet requiredColumns;
+
+    /**
+     * Local order ID to distinguish entries which
+     * were put after iterator creation.
+     */
+    private long localOrder;
 
     /**
      * @param ectx Execution context.
@@ -248,6 +253,16 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, H2Row> {
             filterC = new H2TreeFilterClosure(f, mvccSnapshot, cctx, ectx.planningContext().logger());
 
         return filterC;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean skipRow(H2Row row) {
+        if (localOrder == 0)
+            localOrder = cctx.versions().localOrder();
+
+        // skips all rows that were put after the execution begins
+        return row instanceof CacheDataRow && ((CacheDataRow)row).version() != null
+            && ((CacheDataRow)row).version().order() > localOrder;
     }
 
     /** */

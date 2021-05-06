@@ -21,7 +21,7 @@ import org.apache.calcite.linq4j.function.Strict;
 /**
  * Ignite SQL functions.
  */
-public class IgniteSqlFunctions  {
+public class IgniteSqlFunctions {
     /**
      * Default constructor.
      */

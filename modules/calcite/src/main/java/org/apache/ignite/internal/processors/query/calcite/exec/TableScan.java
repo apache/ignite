@@ -203,6 +203,12 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
         /** */
         private final Queue<GridDhtLocalPartition> parts;
 
+        /**
+         * Local order ID to distinguish entries which
+         * were put after iterator creation.
+         */
+        private final long localOrder;
+
         /** */
         private GridCursor<? extends CacheDataRow> cur;
 
@@ -212,6 +218,8 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
         /** */
         private IteratorImpl() {
             assert reserved != null;
+
+            localOrder = cctx.versions().localOrder();
 
             parts = new ArrayDeque<>(reserved);
         }
@@ -261,7 +269,7 @@ public class TableScan<Row> implements Iterable<Row>, AutoCloseable {
                 if (cur.next()) {
                     CacheDataRow row = cur.get();
 
-                    if (!desc.match(row))
+                    if (!desc.match(row) || row.version().order() > localOrder)
                         continue;
 
                     Row r = desc.toRow(ectx, row, factory, requiredColunms);
