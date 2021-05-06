@@ -88,14 +88,23 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
         }
 
-        public void ScheduleFlush()
+        public bool ScheduleFlush()
         {
-            Interlocked.Add(ref _size, _maxSize);
+            var res = Interlocked.Add(ref _size, _maxSize);
+
+            if (res - _maxSize >= _maxSize)
+            {
+                // Already flushed.
+                return false;
+            }
 
             if (Interlocked.CompareExchange(ref _activeOps, -1, -1) == 0)
             {
                 _flushAction(this);
             }
+
+            return true;
+
         }
 
         public IEnumerator<DataStreamerClientEntry<TK, TV>> GetEnumerator()

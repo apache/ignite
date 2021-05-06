@@ -169,7 +169,10 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
             foreach (var pair in _buffers)
             {
-                pair.Value.ScheduleFlush();
+                if (pair.Value.ScheduleFlush())
+                {
+                    _buffers[pair.Key] = CreateBuffer(pair.Key);
+                }
             }
 
             return TaskRunner.WhenAll(tasks.ToArray());
