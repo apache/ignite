@@ -11,6 +11,10 @@ namespace Apache.Ignite.BenchmarkDotNet.ThinClient
     /// Results on Core i7-9700K, Ubuntu 20.04, .NET Core 5.0.5:
     /// Thin Client: new streamer for every batch.
     /// TODO
+    /// |            Method |       Mean |     Error |    StdDev | Ratio | RatioSD |      Gen 0 |      Gen 1 |     Gen 2 | Allocated |
+    /// |------------------ |-----------:|----------:|----------:|------:|--------:|-----------:|-----------:|----------:|----------:|
+    /// |  StreamThinClient | 3,092.8 ms | 197.78 ms | 583.17 ms |  9.41 |    1.87 | 83000.0000 | 17000.0000 | 3000.0000 | 457.62 MB |
+    /// | StreamThickClient |   328.3 ms |   6.54 ms |  11.80 ms |  1.00 |    0.00 | 10000.0000 |  2000.0000 |         - |  63.24 MB |
     /// </summary>
     [MemoryDiagnoser]
     public class ThinClientDataStreamerBenchmarkMultithreaded : ThinClientBenchmarkBase
