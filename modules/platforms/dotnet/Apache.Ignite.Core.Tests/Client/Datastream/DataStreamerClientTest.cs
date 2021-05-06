@@ -219,7 +219,15 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 Parallel.For(0, count, i => streamer.Add(i, i + 2));
             }
 
-            Assert.AreEqual(count, cache.GetSize());
+            var size = cache.GetSize();
+            if (size != count)
+            {
+                Thread.Sleep(3000);
+                var newSize = cache.GetSize();
+
+                Assert.AreEqual(size, count, "After 3 seconds: " + newSize);
+            }
+
             Assert.AreEqual(4, cache[2]);
             Assert.AreEqual(22, cache[20]);
         }
