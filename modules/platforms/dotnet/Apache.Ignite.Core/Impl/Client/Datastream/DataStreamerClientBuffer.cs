@@ -92,8 +92,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 if (ops == 0 &&
                     Interlocked.CompareExchange(ref _size, -1, -1) >= _maxSize)
                 {
-                    // TODO: Thread pool?
-                    // TODO: Error handling
                     RunFlushAction();
                 }
             }
@@ -129,9 +127,14 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         private void RunFlushAction()
         {
-            _flushAction(this).ContinueWith(
-                _ => _flushCompletionSource.TrySetResult(null),
-                TaskContinuationOptions.ExecuteSynchronously);
+            // TODO: Thread pool? - seems to reduce multithreaded performance.
+            // TODO: Error handling
+            // ThreadPool.QueueUserWorkItem(__ =>
+            // {
+                _flushAction(this).ContinueWith(
+                    _ => _flushCompletionSource.TrySetResult(null),
+                    TaskContinuationOptions.ExecuteSynchronously);
+            // });
         }
     }
 }
