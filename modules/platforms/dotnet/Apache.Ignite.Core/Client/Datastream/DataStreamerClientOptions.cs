@@ -84,7 +84,7 @@ namespace Apache.Ignite.Core.Client.Datastream
         public bool AllowOverwrite { get; set; }
 
         /// <summary>
-        /// Flag indicating that write-through behavior should be disabled for data loading.
+        /// Gets or sets a flag indicating that write-through behavior should be disabled for data loading.
         /// <para />
         /// <see cref="AllowOverwrite"/> must be true for write-through to work.
         /// <para />
@@ -98,28 +98,33 @@ namespace Apache.Ignite.Core.Client.Datastream
         public bool KeepBinary { get; set; }
 
         /// <summary>
-        /// Size of per node key-value pairs buffer.
+        /// Gets or sets the size of per node entry buffer.
         /// <para />
-        /// Default is <see cref="DataStreamerDefaults.DefaultPerNodeBufferSize"/>.
+        /// Default is <see cref="DataStreamerClientDefaults.ClientPerNodeBufferSize"/>.
         /// </summary>
         public int ClientPerNodeBufferSize { get; set; }
 
         /// <summary>
-        /// Size of per node key-value pairs buffer.
+        /// Gets or sets the size of per node entry buffer.
         /// <para />
-        /// Default is <see cref="DataStreamerDefaults.DefaultPerNodeBufferSize"/>.
+        /// Default is <see cref="DataStreamerClientDefaults.ServerPerNodeBufferSize"/>.
         /// </summary>
         [DefaultValue(DataStreamerClientDefaults.ServerPerNodeBufferSize)]
         public int ServerPerNodeBufferSize { get; set; }
 
         /// <summary>
-        /// Size of per thread key-value pairs buffer.
+        /// Gets or sets the size of per thread entry buffer.
         /// <para />
-        /// Default is <see cref="DataStreamerDefaults.DefaultPerThreadBufferSize"/>.
+        /// Default is <see cref="DataStreamerClientDefaults.ServerPerThreadBufferSize"/>.
         /// </summary>
         [DefaultValue(DataStreamerClientDefaults.ServerPerThreadBufferSize)]
         public int ServerPerThreadBufferSize { get; set; }
 
+        /// <summary>
+        /// Gets or sets the limit for parallel operations per server node.
+        /// <para />
+        /// Default is <see cref="DataStreamerClientDefaults.ClientPerNodeParallelOperations"/>.
+        /// </summary>
         public int ClientPerNodeParallelOperations { get; set; }
     }
 }
