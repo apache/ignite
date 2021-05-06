@@ -49,7 +49,10 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         private long _size;
 
         /** */
-        private int _activeOps;
+        private volatile bool _flushing;
+
+        /** */
+        private readonly ReaderWriterLockSlim _rwLock = new ReaderWriterLockSlim();
 
         /** */
         private readonly Task _flushTask;
@@ -80,34 +83,46 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         public AddResult Add(DataStreamerClientEntry<TK, TV> entry)
         {
-            Interlocked.Increment(ref _activeOps);
+            var res = AddResult.FailFull;
+
+            if (!_rwLock.TryEnterReadLock(0))
+                return res;
 
             try
             {
+                if (_flushing)
+                {
+                    return res;
+                }
+
                 var newSize = Interlocked.Increment(ref _size);
                 if (newSize > _maxSize)
                 {
-                    return AddResult.FailFull;
+                    return res;
                 }
 
                 _entries.Add(entry);
 
-                return newSize == _maxSize
+                res = newSize == _maxSize
                     ? AddResult.OkFull
                     : AddResult.Ok;
             }
             finally
             {
-                var ops = Interlocked.Decrement(ref _activeOps);
-
-                if (ops == 0 &&
-                    Interlocked.CompareExchange(ref _size, -1, -1) >= _maxSize)
-                {
-                    RunFlushAction();
-                }
+                _rwLock.ExitReadLock();
             }
+
+            if (res == AddResult.OkFull)
+            {
+                TryRunFlushAction();
+            }
+
+            return res;
         }
 
+        /// <summary>
+        /// Returns true if flushing has started as a result of this call or before that.
+        /// </summary>
         public bool ScheduleFlush()
         {
             if (Interlocked.CompareExchange(ref _size, -1, -1) == 0)
@@ -116,18 +131,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 return false;
             }
 
-            var res = Interlocked.Add(ref _size, _maxSize);
-
-            if (res - _maxSize >= _maxSize)
-            {
-                // Already flushed.
-                return false;
-            }
-
-            if (Interlocked.CompareExchange(ref _activeOps, -1, -1) == 0)
-            {
-                RunFlushAction();
-            }
+            TryRunFlushAction();
 
             return true;
         }
@@ -140,6 +144,28 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
+        }
+
+        private void TryRunFlushAction()
+        {
+            _rwLock.EnterWriteLock();
+
+            try
+            {
+                if (_flushing)
+                {
+                    return;
+                }
+
+                _flushing = true;
+            }
+            finally
+            {
+                _rwLock.ExitWriteLock();
+            }
+
+            // Run outside of the lock - reduce possible contention.
+            RunFlushAction();
         }
 
         private void RunFlushAction()
