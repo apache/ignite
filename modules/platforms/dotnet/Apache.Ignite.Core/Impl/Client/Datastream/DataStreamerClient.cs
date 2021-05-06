@@ -159,26 +159,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         public Task FlushAsync()
         {
-            if (_buffers.IsEmpty)
-            {
-                return TaskRunner.CompletedTask;
-            }
-
-            // TODO: Wait for ongoing flushes.
-            var tasks = new List<Task>(_buffers.Count);
-
-            foreach (var pair in _buffers)
-            {
-                var buffer = pair.Value;
-                var task = buffer.ScheduleFlush();
-
-                if (task != null)
-                {
-                    tasks.Add(task);
-                }
-            }
-
-            return TaskRunner.WhenAll(tasks.ToArray());
+            return FlushAsync(false);
         }
 
         public void Close(bool cancel)
@@ -225,6 +206,30 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             // TODO: This provides unclear message - current entry may be loaded successfully.
             // The only way to fix this properly is an RW lock - use benchmarks to check how this performs.
             ThrowIfClosed();
+        }
+
+        private Task FlushAsync(bool close)
+        {
+            if (_buffers.IsEmpty)
+            {
+                return TaskRunner.CompletedTask;
+            }
+
+            // TODO: Don't allocate new buffers when closing the streamer.
+            var tasks = new List<Task>(_buffers.Count);
+
+            foreach (var pair in _buffers)
+            {
+                var buffer = pair.Value;
+                var task = buffer.ScheduleFlush(close);
+
+                if (task != null && !task.IsCompleted)
+                {
+                    tasks.Add(task);
+                }
+            }
+
+            return TaskRunner.WhenAll(tasks.ToArray());
         }
 
         private Task FlushBufferAsync(DataStreamerClientBuffer<TK, TV> buffer, ClientSocket socket)

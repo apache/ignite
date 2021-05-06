@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /** */
         private readonly Func<DataStreamerClientBuffer<TK, TV>, Task> _flushAction;
 
-        /** */
+        /** Only the thread that completes the previous buffer can set a new one to this field. */
         private volatile DataStreamerClientBuffer<TK, TV> _buffer;
 
         public DataStreamerClientPerNodeBuffer(
@@ -50,10 +50,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         public void Add(DataStreamerClientEntry<TK,TV> entry)
         {
-            var buffer = _buffer;
-
             while (true)
             {
+                var buffer = GetBuffer();
                 var addResult = buffer.Add(entry);
 
                 if (addResult == AddResult.Ok)
@@ -69,18 +68,29 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 }
 
                 // Buffer was completed and replaced by another thread - retry.
-                buffer = _buffer;
             }
         }
 
-        public Task ScheduleFlush()
+        public Task ScheduleFlush(bool close)
         {
             var buffer = _buffer;
 
+            if (buffer == null)
+            {
+                throw new ObjectDisposedException("DataStreamerClient", "Data streamer has been disposed");
+            }
+
             if (buffer.ScheduleFlush())
             {
-                // Buffer was completed by the current thread - replace it with a new one.
-                ReplaceBuffer();
+                if (close)
+                {
+                    _buffer = null;
+                }
+                else
+                {
+                    // Buffer was completed by the current thread - replace it with a new one.
+                    ReplaceBuffer();
+                }
 
                 return buffer.FlushTask;
             }
@@ -91,6 +101,18 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         private void ReplaceBuffer()
         {
             _buffer = new DataStreamerClientBuffer<TK, TV>(_maxBufferSize, _flushAction, _buffer);
+        }
+
+        private DataStreamerClientBuffer<TK, TV> GetBuffer()
+        {
+            var buffer = _buffer;
+
+            if (buffer == null)
+            {
+                throw new ObjectDisposedException("DataStreamerClient", "Data streamer has been disposed");
+            }
+
+            return buffer;
         }
     }
 }
