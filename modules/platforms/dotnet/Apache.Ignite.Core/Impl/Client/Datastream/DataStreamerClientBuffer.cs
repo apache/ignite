@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Client.Datastream
 {
+    using System;
     using System.Collections;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
@@ -33,22 +34,23 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             new ConcurrentBag<DataStreamerClientEntry<TK, TV>>();
 
         /** */
-        private readonly ReaderWriterLockSlim _flushLock = new ReaderWriterLockSlim();
-
-        /** */
         private readonly int _maxSize;
 
         /** */
-        private int _size;
+        private readonly Action<DataStreamerClientBuffer<TK, TV>> _flushAction;
 
         /** */
-        private volatile bool _flushing;
+        private long _size;
 
-        public DataStreamerClientBuffer(int maxSize)
+        /** */
+        private int _activeOps;
+
+        public DataStreamerClientBuffer(int maxSize, Action<DataStreamerClientBuffer<TK, TV>> flushAction)
         {
             Debug.Assert(maxSize > 0);
 
             _maxSize = maxSize;
+            _flushAction = flushAction;
         }
 
         public int Count
@@ -58,23 +60,14 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         public AddResult Add(DataStreamerClientEntry<TK, TV> entry)
         {
-            // TODO: Auto flush when reached max size.
-            var newSize = Interlocked.Increment(ref _size);
-            if (newSize > _maxSize)
-            {
-                return AddResult.Full;
-            }
-
-            if (!_flushLock.TryEnterReadLock(0))
-            {
-                return AddResult.Full;
-            }
+            Interlocked.Increment(ref _activeOps);
 
             try
             {
-                if (_flushing)
+                var newSize = Interlocked.Increment(ref _size);
+                if (newSize > _maxSize)
                 {
-                    return AddResult.Full;
+                    return AddResult.FailFull;
                 }
 
                 _entries.Add(entry);
@@ -85,32 +78,23 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
             finally
             {
-                _flushLock.ExitReadLock();
+                var ops = Interlocked.Decrement(ref _activeOps);
+
+                if (ops == 0 &&
+                    Interlocked.CompareExchange(ref _size, -1, -1) >= _maxSize)
+                {
+                    _flushAction(this);
+                }
             }
         }
 
-        public bool MarkForFlush()
+        public void ScheduleFlush()
         {
-            if (_flushing)
-            {
-                return false;
-            }
+            Interlocked.Add(ref _size, _maxSize);
 
-            _flushLock.EnterWriteLock();
-
-            try
+            if (Interlocked.CompareExchange(ref _activeOps, -1, -1) == 0)
             {
-                if (_flushing)
-                {
-                    return false;
-                }
-
-                _flushing = true;
-                return true;
-            }
-            finally
-            {
-                _flushLock.ExitWriteLock();
+                _flushAction(this);
             }
         }
 

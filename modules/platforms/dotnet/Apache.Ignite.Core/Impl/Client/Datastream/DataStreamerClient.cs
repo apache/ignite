@@ -169,17 +169,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
             foreach (var pair in _buffers)
             {
-                var buffer = pair.Value;
-
-                if (buffer.MarkForFlush())
-                {
-                    // TODO: This duplicates part of the code from Add method.
-                    var socket = pair.Key;
-                    _buffers[socket] = new DataStreamerClientBuffer<TK, TV>(_options.ClientPerNodeBufferSize);
-
-                    // TODO: FlushBufferAsync is not true async, we want to write in a separate thread too?
-                    tasks.Add(FlushBufferAsync(buffer, socket));
-                }
+                pair.Value.ScheduleFlush();
             }
 
             return TaskRunner.WhenAll(tasks.ToArray());
@@ -227,32 +217,20 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             {
                 var addResult = buffer.Add(entry);
 
-                if (addResult == AddResult.Ok)
+                if (addResult == AddResult.Ok || addResult == AddResult.OkFull)
                 {
                     break;
                 }
 
-                // TODO: Combine Add and MarkForFlush - this should reduce retry count and simplify the logic.
-                // TODO: Somehow exchange the buffer in the map atomically so there are no retries at all?
-                if (buffer.MarkForFlush())
-                {
-                    var oldBuffer = buffer;
-                    buffer = new DataStreamerClientBuffer<TK, TV>(_options.ClientPerNodeBufferSize);
-                    _buffers[socket] = buffer;
-
-                    ThreadPool.QueueUserWorkItem(_ => FlushBufferAsync(oldBuffer, socket));
-                }
-                else
-                {
-                    // Another thread started the flush process - retry.
-                    // TODO: This can cause too many retries in highly concurrent scenarios - do we care?
-                    buffer = GetOrAddBuffer(socket);
-                }
-
-                if (addResult == AddResult.OkFull)
-                {
-                    break;
-                }
+                // Buffer is full - retry.
+                // TODO: This can cause too many allocations in highly concurrent scenarios - do we care?
+                var newBuffer = new DataStreamerClientBuffer<TK, TV>(
+                    _options.ClientPerNodeBufferSize,
+                    buf => FlushBufferAsync(buf, socket));
+                
+                buffer = _buffers.TryUpdate(socket, newBuffer, buffer)
+                    ? newBuffer
+                    : GetOrAddBuffer(socket);
             }
 
             // Check in the end: we guarantee that if Add completes without errors, then the data won't be lost.
@@ -348,7 +326,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         {
             return _buffers.GetOrAdd(
                 socket,
-                (_, maxSize) => new DataStreamerClientBuffer<TK, TV>(maxSize),
+                (sock, maxSize) => new DataStreamerClientBuffer<TK, TV>(maxSize, buf => FlushBufferAsync(buf, sock)),
                 _options.ClientPerNodeBufferSize);
         }
 

@@ -24,6 +24,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     {
         Ok,
         OkFull,
-        Full
+        FailFull
     }
 }
