@@ -252,7 +252,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             return socket.DoOutInOpAsync(
                     ClientOp.DataStreamerStart,
                     ctx => WriteBuffer(buffer, ctx.Writer),
-                    ctx => ctx.Stream.ReadLong())
+                    ctx => ctx.Stream.ReadLong(),
+                    syncCallback: true)
                 .ContinueWith(_ =>
                 {
                     var res = Interlocked.Decrement(ref _activeFlushes);
@@ -260,7 +261,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
                     if (_isClosed && res == 0)
                     {
-                        _closeTaskSource.TrySetResult(null);
+                        ThreadPool.QueueUserWorkItem(__ => _closeTaskSource.TrySetResult(null));
                     }
                 }, TaskContinuationOptions.ExecuteSynchronously);
         }
