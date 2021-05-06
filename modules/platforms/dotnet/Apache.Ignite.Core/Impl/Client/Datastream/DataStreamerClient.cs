@@ -233,8 +233,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         private Task FlushBufferAsync(
             DataStreamerClientBuffer<TK, TV> buffer,
-            ClientSocket socket,
-            SemaphoreSlim semaphore)
+            ClientSocket socket)
         {
             if (buffer.Count == 0)
             {
@@ -244,7 +243,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             // TODO: WaitAsync is not available on .NET 4, but is available on .NET 4.5 and later
             // Use reflection to get it.
             // semaphore.WaitAsync();
-            semaphore.Wait();
             Interlocked.Increment(ref _activeFlushes);
 
             // TODO: Flush in a loop until succeeded.
@@ -256,7 +254,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 .ContWith(_ =>
                 {
                     var res = Interlocked.Decrement(ref _activeFlushes);
-                    semaphore.Release();
 
                     if (_isClosed && res == 0)
                     {
@@ -322,19 +319,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             return flags;
         }
 
-        /// <summary>
-        /// Called when a flush operation completes.
-        /// </summary>
-        private void OnFlushCompleted()
-        {
-            var res = Interlocked.Decrement(ref _activeFlushes);
-
-            if (_isClosed && res == 0)
-            {
-                _closeTaskSource.TrySetResult(null);
-            }
-        }
-
         private DataStreamerClientPerNodeBuffer<TK, TV> GetOrAddBuffer(ClientSocket socket)
         {
 #if NETCOREAPP
@@ -366,11 +350,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         private DataStreamerClientPerNodeBuffer<TK, TV> CreateBuffer(ClientSocket socket)
         {
-            var semaphore = new SemaphoreSlim(_options.ClientPerNodeParallelOperations);
-
             return new DataStreamerClientPerNodeBuffer<TK, TV>(
                 _options.ClientPerNodeBufferSize,
-                buf => FlushBufferAsync(buf, socket, semaphore));
+                buf => FlushBufferAsync(buf, socket));
         }
     }
 }
