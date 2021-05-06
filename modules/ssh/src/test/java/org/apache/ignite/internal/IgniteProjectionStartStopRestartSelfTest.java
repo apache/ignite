@@ -146,7 +146,6 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         else
             pwd = SSH_PWD;
 
-
         log.info("Username: " + SSH_UNAME);
         log.info("Password: " + pwd);
         log.info("Key path: " + key);
