@@ -224,10 +224,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
                 // Buffer is full - retry.
                 // TODO: This can cause too many allocations in highly concurrent scenarios - do we care?
-                var newBuffer = new DataStreamerClientBuffer<TK, TV>(
-                    _options.ClientPerNodeBufferSize,
-                    buf => FlushBufferAsync(buf, socket));
-                
+                var newBuffer = CreateBuffer(socket);
+
                 buffer = _buffers.TryUpdate(socket, newBuffer, buffer)
                     ? newBuffer
                     : GetOrAddBuffer(socket);
@@ -324,10 +322,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         private DataStreamerClientBuffer<TK, TV> GetOrAddBuffer(ClientSocket socket)
         {
-            return _buffers.GetOrAdd(
-                socket,
-                (sock, maxSize) => new DataStreamerClientBuffer<TK, TV>(maxSize, buf => FlushBufferAsync(buf, sock)),
-                _options.ClientPerNodeBufferSize);
+            return _buffers.GetOrAdd(socket, (sock, streamer) => streamer.CreateBuffer(sock), this);
         }
 
         private void ThrowIfClosed()
@@ -344,6 +339,13 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             {
                 _closeTaskSource.TrySetResult(null);
             }
+        }
+
+        private DataStreamerClientBuffer<TK, TV> CreateBuffer(ClientSocket socket)
+        {
+            return new DataStreamerClientBuffer<TK, TV>(
+                _options.ClientPerNodeBufferSize,
+                buf => FlushBufferAsync(buf, socket));
         }
     }
 }
