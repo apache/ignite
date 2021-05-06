@@ -198,11 +198,12 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
             if (cancel)
             {
+                // Disregard current buffers, but wait for active flushes.
                 SetCloseResultIfNoActiveFlushes();
             }
             else
             {
-                FlushAsync().ContinueWith(_ => SetCloseResultIfNoActiveFlushes());
+                FlushAsync().ContWith(_ => SetCloseResultIfNoActiveFlushes());
             }
 
             return _closeTaskSource.Task;

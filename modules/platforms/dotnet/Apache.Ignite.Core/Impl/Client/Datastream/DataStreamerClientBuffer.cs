@@ -129,7 +129,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         private void RunFlushAction()
         {
-            _flushAction(this).ContinueWith(_ => _flushCompletionSource.TrySetResult(null));
+            _flushAction(this).ContinueWith(
+                _ => _flushCompletionSource.TrySetResult(null),
+                TaskContinuationOptions.ExecuteSynchronously);
         }
     }
 }
