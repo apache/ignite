@@ -58,8 +58,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         private readonly DataStreamerClientOptions<TK, TV> _options;
 
         /** */
-        private readonly ConcurrentDictionary<ClientSocket, DataStreamerClientBuffer<TK, TV>> _buffers =
-            new ConcurrentDictionary<ClientSocket, DataStreamerClientBuffer<TK, TV>>();
+        private readonly ConcurrentDictionary<ClientSocket, DataStreamerClientPerNodeBuffer<TK, TV>> _buffers =
+            new ConcurrentDictionary<ClientSocket, DataStreamerClientPerNodeBuffer<TK, TV>>();
 
         /** */
         private readonly TaskCompletionSource<object> _closeTaskSource = new TaskCompletionSource<object>();
@@ -333,12 +333,16 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
         }
 
-        private DataStreamerClientBuffer<TK, TV> GetOrAddBuffer(ClientSocket socket)
+        private DataStreamerClientPerNodeBuffer<TK, TV> GetOrAddBuffer(ClientSocket socket)
         {
 #if NETCOREAPP
             return _buffers.GetOrAdd(socket, (sock, streamer) => streamer.CreateBuffer(sock), this);
 #else
-            return _buffers.GetOrAdd(socket, sock => CreateBuffer(sock));
+            // Do not allocate closure on every call, only when the buffer does not exist (rare).
+            DataStreamerClientPerNodeBuffer<TK,TV> res;
+            return _buffers.TryGetValue(socket, out res)
+                ? res
+                : _buffers.GetOrAdd(socket, sock => CreateBuffer(sock));
 #endif
         }
 
@@ -358,9 +362,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
         }
 
-        private DataStreamerClientBuffer<TK, TV> CreateBuffer(ClientSocket socket)
+        private DataStreamerClientPerNodeBuffer<TK, TV> CreateBuffer(ClientSocket socket)
         {
-            return new DataStreamerClientBuffer<TK, TV>(
+            return new DataStreamerClientPerNodeBuffer<TK, TV>(
                 _options.ClientPerNodeBufferSize,
                 buf => FlushBufferAsync(buf, socket));
         }

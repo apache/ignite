@@ -144,6 +144,7 @@
     <Compile Include="Impl\Client\Datastream\DataStreamerClient.cs" />
     <Compile Include="Impl\Client\Datastream\DataStreamerClientBuffer.cs" />
     <Compile Include="Impl\Client\Datastream\DataStreamerClientEntry.cs" />
+    <Compile Include="Impl\Client\Datastream\DataStreamerClientPerNodeBuffer.cs" />
     <Compile Include="Impl\Client\Endpoint.cs" />
     <Compile Include="Impl\Client\Services\ServicesClient.cs" />
     <Compile Include="Impl\Client\SocketEndpoint.cs" />
