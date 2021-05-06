@@ -312,6 +312,11 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 flags |= Flags.SkipStore;
             }
 
+            if (_options.KeepBinary)
+            {
+                flags |= Flags.KeepBinary;
+            }
+
             return flags;
         }
 
@@ -330,7 +335,11 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         private DataStreamerClientBuffer<TK, TV> GetOrAddBuffer(ClientSocket socket)
         {
+#if NETCOREAPP
             return _buffers.GetOrAdd(socket, (sock, streamer) => streamer.CreateBuffer(sock), this);
+#else
+            return _buffers.GetOrAdd(socket, sock => CreateBuffer(sock));
+#endif
         }
 
         private void ThrowIfClosed()

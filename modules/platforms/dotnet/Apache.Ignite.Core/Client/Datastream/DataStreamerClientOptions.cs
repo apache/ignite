@@ -56,6 +56,7 @@ namespace Apache.Ignite.Core.Client.Datastream
             ClientPerNodeBufferSize = options.ClientPerNodeBufferSize;
             ServerPerNodeBufferSize = options.ServerPerNodeBufferSize;
             ServerPerThreadBufferSize = options.ServerPerThreadBufferSize;
+            KeepBinary = options.KeepBinary;
         }
 
         /// <summary>
@@ -88,6 +89,11 @@ namespace Apache.Ignite.Core.Client.Datastream
         /// Default is <c>false</c>.
         /// </summary>
         public bool SkipStore { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether stream receiver should operate on data in binary mode.
+        /// </summary>
+        public bool KeepBinary { get; set; }
 
         /// <summary>
         /// Size of per node key-value pairs buffer.
