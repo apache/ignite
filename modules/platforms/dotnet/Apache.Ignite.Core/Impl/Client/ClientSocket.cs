@@ -1010,7 +1010,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /** <inheritDoc /> */
         public override string ToString()
         {
-            return $"ClientSocket [RemoteEndPoint={RemoteEndPoint}]";
+            return string.Format("ClientSocket [RemoteEndPoint={0}]", RemoteEndPoint);
         }
 
         /// <summary>

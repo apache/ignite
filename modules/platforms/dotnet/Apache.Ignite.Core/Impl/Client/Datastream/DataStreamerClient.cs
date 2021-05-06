@@ -249,7 +249,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         {
             if (buffer.Count == 0)
             {
-                return Task.CompletedTask;
+                return TaskRunner.CompletedTask;
             }
 
             Interlocked.Increment(ref _activeFlushes);
