@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Threading;
+    using System.Threading.Tasks;
 
     /// <summary>
     /// Client data streamer buffer.
@@ -37,7 +38,10 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         private readonly int _maxSize;
 
         /** */
-        private readonly Action<DataStreamerClientBuffer<TK, TV>> _flushAction;
+        private readonly Func<DataStreamerClientBuffer<TK, TV>, Task> _flushAction;
+
+        /** */
+        private readonly TaskCompletionSource<object> _flushCompletionSource = new TaskCompletionSource<object>();
 
         /** */
         private long _size;
@@ -45,7 +49,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /** */
         private int _activeOps;
 
-        public DataStreamerClientBuffer(int maxSize, Action<DataStreamerClientBuffer<TK, TV>> flushAction)
+        public DataStreamerClientBuffer(int maxSize, Func<DataStreamerClientBuffer<TK, TV>, Task> flushAction)
         {
             Debug.Assert(maxSize > 0);
 
@@ -56,6 +60,11 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         public int Count
         {
             get { return _entries.Count; }
+        }
+
+        public Task FlushTask
+        {
+            get { return _flushCompletionSource.Task; }
         }
 
         public AddResult Add(DataStreamerClientEntry<TK, TV> entry)
@@ -83,7 +92,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 if (ops == 0 &&
                     Interlocked.CompareExchange(ref _size, -1, -1) >= _maxSize)
                 {
-                    _flushAction(this);
+                    // TODO: Thread pool?
+                    // TODO: Error handling
+                    RunFlushAction();
                 }
             }
         }
@@ -100,11 +111,10 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
             if (Interlocked.CompareExchange(ref _activeOps, -1, -1) == 0)
             {
-                _flushAction(this);
+                RunFlushAction();
             }
 
             return true;
-
         }
 
         public IEnumerator<DataStreamerClientEntry<TK, TV>> GetEnumerator()
@@ -115,6 +125,11 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
+        }
+
+        private void RunFlushAction()
+        {
+            _flushAction(this).ContinueWith(_ => _flushCompletionSource.TrySetResult(null));
         }
     }
 }

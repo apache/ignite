@@ -169,9 +169,13 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
             foreach (var pair in _buffers)
             {
-                if (pair.Value.ScheduleFlush())
+                var buffer = pair.Value;
+
+                if (buffer.ScheduleFlush())
                 {
-                    _buffers[pair.Key] = CreateBuffer(pair.Key);
+                    var socket = pair.Key;
+                    _buffers[socket] = CreateBuffer(socket);
+                    tasks.Add(buffer.FlushTask);
                 }
             }
 
@@ -348,7 +352,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         {
             return new DataStreamerClientBuffer<TK, TV>(
                 _options.ClientPerNodeBufferSize,
-                buf => ThreadPool.QueueUserWorkItem(_ => FlushBufferAsync(buf, socket)));
+                buf => FlushBufferAsync(buf, socket));
         }
     }
 }
