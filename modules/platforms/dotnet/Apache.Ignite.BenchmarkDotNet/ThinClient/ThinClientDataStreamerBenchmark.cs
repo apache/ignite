@@ -94,7 +94,7 @@ namespace Apache.Ignite.BenchmarkDotNet.ThinClient
         /// <summary>
         /// Benchmark: thick client streamer.
         /// </summary>
-        [Benchmark(Baseline = true)]
+        // [Benchmark(Baseline = true)]
         public void StreamThickClient()
         {
             using (var streamer = ThickClient.GetDataStreamer<int, int>(CacheName))

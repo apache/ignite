@@ -17,6 +17,8 @@
 
 namespace Apache.Ignite.Core.Client.Datastream
 {
+    using System;
+
     /// <summary>
     /// Data streamer configuration defaults.
     /// </summary>
@@ -39,5 +41,11 @@ namespace Apache.Ignite.Core.Client.Datastream
         /// see <see cref="DataStreamerClientOptions{TK,TV}.ServerPerThreadBufferSize"/>.
         /// </summary>
         public const int ServerPerThreadBufferSize = 4096;
+
+        /// <summary>
+        /// Default limit for parallel operations per server node,
+        /// see <see cref="DataStreamerClientOptions{TK,TV}.ClientPerNodeParallelOperations"/>.
+        /// </summary>
+        public static readonly int ClientPerNodeParallelOperations = Environment.ProcessorCount;
     }
 }

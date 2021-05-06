@@ -35,6 +35,7 @@ namespace Apache.Ignite.Core.Client.Datastream
             ServerPerNodeBufferSize = DataStreamerClientDefaults.ServerPerNodeBufferSize;
             ServerPerThreadBufferSize = DataStreamerClientDefaults.ServerPerThreadBufferSize;
             ClientPerNodeBufferSize = DataStreamerClientDefaults.ClientPerNodeBufferSize;
+            ClientPerNodeParallelOperations = DataStreamerClientDefaults.ClientPerNodeParallelOperations;
         }
 
         /// <summary>
@@ -57,6 +58,7 @@ namespace Apache.Ignite.Core.Client.Datastream
             ServerPerNodeBufferSize = options.ServerPerNodeBufferSize;
             ServerPerThreadBufferSize = options.ServerPerThreadBufferSize;
             KeepBinary = options.KeepBinary;
+            ClientPerNodeParallelOperations = options.ClientPerNodeParallelOperations;
         }
 
         /// <summary>
@@ -117,5 +119,7 @@ namespace Apache.Ignite.Core.Client.Datastream
         /// </summary>
         [DefaultValue(DataStreamerClientDefaults.ServerPerThreadBufferSize)]
         public int ServerPerThreadBufferSize { get; set; }
+
+        public int ClientPerNodeParallelOperations { get; set; }
     }
 }
