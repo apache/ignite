@@ -253,7 +253,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                     ClientOp.DataStreamerStart,
                     ctx => WriteBuffer(buffer, ctx.Writer),
                     ctx => ctx.Stream.ReadLong())
-                .ContWith(_ =>
+                .ContinueWith(_ =>
                 {
                     var res = Interlocked.Decrement(ref _activeFlushes);
                     semaphore.Release();
@@ -262,7 +262,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                     {
                         _closeTaskSource.TrySetResult(null);
                     }
-                });
+                }, TaskContinuationOptions.ExecuteSynchronously);
         }
 
         private void WriteBuffer(DataStreamerClientBuffer<TK, TV> buffer, BinaryWriter w)

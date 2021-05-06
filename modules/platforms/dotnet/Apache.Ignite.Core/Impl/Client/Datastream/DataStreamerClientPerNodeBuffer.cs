@@ -100,6 +100,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         private void ReplaceBuffer()
         {
+            // TODO: Use buffer pool - reuse buffers to reduce allocations.
             _buffer = new DataStreamerClientBuffer<TK, TV>(_maxBufferSize, _flushAction, _buffer);
         }
 

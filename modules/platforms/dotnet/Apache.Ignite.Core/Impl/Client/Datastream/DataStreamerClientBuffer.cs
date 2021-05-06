@@ -31,6 +31,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     /// </summary>
     internal sealed class DataStreamerClientBuffer<TK, TV> : IEnumerable<DataStreamerClientEntry<TK, TV>>
     {
+        // TODO: try other collections?
         /** Concurrent bag already has per-thread buffers. */
         private readonly ConcurrentBag<DataStreamerClientEntry<TK, TV>> _entries =
             new ConcurrentBag<DataStreamerClientEntry<TK, TV>>();
