@@ -268,6 +268,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         private void WriteBuffer(DataStreamerClientBuffer<TK, TV> buffer, BinaryWriter w)
         {
+            // TODO: Open streamer once and reuse.
             w.WriteInt(_cacheId);
             w.WriteByte((byte) GetFlags(flush: true, close: true));
             w.WriteInt(_options.ServerPerNodeBufferSize);
