@@ -16,9 +16,9 @@
 """
 This module contains Cellular Affinity tests.
 """
-import math
 from enum import IntEnum
 
+import math
 from ducktape.mark import matrix
 from jinja2 import Template
 
@@ -59,9 +59,9 @@ class TxPrepType(IntEnum):
     """
     Transaction preparation type.
     """
-    CELL_ONLY = 0
-    CELL_WITH_MULTIKEY = 1
-    CELL_WITH_NONCOLOCATED = 2
+    CELL_COLOCATED = 0
+    CELL_NONCOLOCATED = 1
+    MULTIKEY = 2
 
 
 # pylint: disable=W0223
@@ -80,8 +80,6 @@ class CellularAffinity(IgniteTest):
     CACHE_NAME = "test-cache"
 
     PREPARED_TX_CNT = 500  # possible amount at real cluster under load (per cell).
-    PREPARED_MULTIKEY_TX_CNT = PREPARED_TX_CNT / 2  # should not cause full recovery waiting on alive nodes (per cell)
-    PREPARED_NONCOLOCATED_TX_CNT = PREPARED_TX_CNT * 2  # huge value, should not affect switch speed dramatically
 
     CONFIG_TEMPLATE = """
             <property name="cacheConfiguration">
@@ -152,7 +150,7 @@ class CellularAffinity(IgniteTest):
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @matrix(stop_type=[StopType.DROP_NETWORK, StopType.SIGKILL, StopType.SIGTERM],
             discovery_type=[DiscoreryType.ZooKeeper, DiscoreryType.TCP],
-            prep_type=[TxPrepType.CELL_ONLY])
+            prep_type=[TxPrepType.CELL_COLOCATED])
     def test_latency(self, ignite_version, stop_type, discovery_type, prep_type):
         """
         Tests Cellular switch tx latency.
@@ -197,15 +195,22 @@ class CellularAffinity(IgniteTest):
         failed_cell_id = 1
 
         for cell_id in range(1, cells_amount):
-            multi_cnt = self.PREPARED_MULTIKEY_TX_CNT * cells_amount \
-                if cell_id == failed_cell_id and prep_type == TxPrepType.CELL_WITH_MULTIKEY else 0
+            # per cell
+            coll_cnt = self.PREPARED_TX_CNT if prep_type == TxPrepType.CELL_COLOCATED else 0
 
-            noncoll_cnt = self.PREPARED_NONCOLOCATED_TX_CNT * cells_amount \
-                if cell_id == failed_cell_id and prep_type == TxPrepType.CELL_WITH_NONCOLOCATED else 0
+            # should not affect switch speed dramatically, cause recovery but not waiting
+            # avoiding C0 (as no-affected) & C1
+            noncoll_cnt = self.PREPARED_TX_CNT * (cells_amount - 2) \
+                if cell_id == failed_cell_id and prep_type == TxPrepType.CELL_NONCOLOCATED else 0
+
+            # cause waiting for txs with failed primary (~ 3/(cells-1) of prepared tx amount)
+            # avoiding C0 (as no-affected)
+            multi_cnt = self.PREPARED_TX_CNT * (cells_amount - 1) \
+                if cell_id == failed_cell_id and prep_type == TxPrepType.MULTIKEY else 0
 
             node, prepared_tx_loader = \
-                self.start_cell_with_prepared_txs(ignite_version, f'C{cell_id}', discovery_spi, modules, multi_cnt,
-                                                  noncoll_cnt)
+                self.start_cell_with_prepared_txs(
+                    ignite_version, f'C{cell_id}', discovery_spi, modules, coll_cnt, noncoll_cnt, multi_cnt)
 
             loaders.append(prepared_tx_loader)
             nodes.append(node)
@@ -284,7 +289,8 @@ class CellularAffinity(IgniteTest):
             modules=modules, startup_timeout_sec=180)
 
     # pylint: disable=too-many-arguments
-    def start_cell_with_prepared_txs(self, version, cell_id, discovery_spi, modules, multi_cnt=0, noncol_cnt=0):
+    def start_cell_with_prepared_txs(
+            self, version, cell_id, discovery_spi, modules, col_cnt=0, noncol_cnt=0, multi_cnt=0):
         """
         Starts cell with prepared transactions.
         """
@@ -301,7 +307,7 @@ class CellularAffinity(IgniteTest):
             params={"cacheName": CellularAffinity.CACHE_NAME,
                     "attr": CellularAffinity.ATTRIBUTE,
                     "cell": cell_id,
-                    "txCnt": CellularAffinity.PREPARED_TX_CNT,
+                    "colocatedTxCnt": col_cnt,
                     "multiTxCnt": multi_cnt,
                     "noncolocatedTxCnt": noncol_cnt},
             jvm_opts=['-D' + CellularAffinity.ATTRIBUTE + '=' + cell_id], modules=modules, startup_timeout_sec=180)

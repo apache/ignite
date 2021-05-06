@@ -40,7 +40,7 @@ public class CellularPreparedTxStreamer extends IgniteAwareApplication {
         final String cacheName = jsonNode.get("cacheName").asText();
         final String attr = jsonNode.get("attr").asText();
         final String cell = jsonNode.get("cell").asText();
-        final int txCnt = jsonNode.get("txCnt").asInt();
+        final int txCnt = jsonNode.get("colocatedTxCnt").asInt();
         final int multiTxCnt = jsonNode.get("multiTxCnt").asInt();
         final int noncolocatedTxCnt = jsonNode.get("noncolocatedTxCnt").asInt();
 
