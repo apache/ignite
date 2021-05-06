@@ -148,9 +148,9 @@ class CellularAffinity(IgniteTest):
     # pylint: disable=too-many-statements
     @cluster(num_nodes=2 * (NODES_PER_CELL + 1) + 3)  # cell_cnt * (srv_per_cell + cell_streamer) + zookeper_cluster
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @matrix(stop_type=[StopType.DROP_NETWORK, StopType.SIGKILL, StopType.SIGTERM],
-            discovery_type=[DiscoreryType.ZooKeeper, DiscoreryType.TCP],
-            prep_type=[TxPrepType.CELL_COLOCATED])
+    @matrix(stop_type=[StopType.SIGTERM],
+            discovery_type=[DiscoreryType.ZooKeeper],
+            prep_type=[TxPrepType.CELL_COLOCATED, TxPrepType.CELL_NONCOLOCATED, TxPrepType.MULTIKEY])
     def test_latency(self, ignite_version, stop_type, discovery_type, prep_type):
         """
         Tests Cellular switch tx latency.
