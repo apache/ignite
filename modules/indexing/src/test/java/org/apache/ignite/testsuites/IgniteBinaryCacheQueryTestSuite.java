@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheQueryIndexingDisable
 import org.apache.ignite.internal.processors.cache.GridCacheQueryInternalKeysSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheQuerySerializationSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheQuerySqlFieldInlineSizeSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheTextQueryPagesTest;
 import org.apache.ignite.internal.processors.cache.IgniteBinaryObjectFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteBinaryObjectLocalQueryArgumentsTest;
 import org.apache.ignite.internal.processors.cache.IgniteBinaryObjectQueryArgumentsTest;
@@ -491,6 +492,7 @@ import org.junit.runners.Suite;
     GridCacheFullTextQuerySelfTest.class,
     GridCacheFullTextQueryMultithreadedSelfTest.class,
     IgniteCacheFullTextQueryNodeJoiningSelfTest.class,
+    GridCacheTextQueryPagesTest.class,
 
     // Ignite cache and H2 comparison.
     BaseH2CompareQueryTest.class,

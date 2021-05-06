@@ -197,7 +197,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
      * @param sndId Sender node id.
      * @param req Query request.
      */
-    @Override void processQueryRequest(UUID sndId, GridCacheQueryRequest req) {
+    @Override public void processQueryRequest(UUID sndId, GridCacheQueryRequest req) {
         assert req.mvccSnapshot() != null || !cctx.mvccEnabled() || req.cancel() ||
             (req.type() == null && !req.fields()) : req; // Last assertion means next page request.
 

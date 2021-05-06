@@ -2844,12 +2844,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      *
      * @param clsName Query class name.
      * @param search Search clause.
+     * @param pageSize Query result page size.
      * @param limit Limits response records count. If 0 or less, considered to be no limit.
      * @param keepBinary Keep binary flag.
      * @return Created query.
      */
     public CacheQuery<Map.Entry<K, V>> createFullTextQuery(String clsName,
-        String search, int limit, boolean keepBinary) {
+        String search, int pageSize, int limit, boolean keepBinary) {
         A.notNull("clsName", clsName);
         A.notNull("search", search);
 
@@ -2861,7 +2862,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             null,
             false,
             keepBinary,
-            null).limit(limit);
+            null).limit(limit).pageSize(pageSize);
     }
 
     /** @return Query iterators. */

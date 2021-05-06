@@ -28,7 +28,6 @@ import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -39,7 +38,6 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -81,7 +79,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     private final Queue<Collection<R>> queue = new LinkedList<>();
 
     /** */
-    private final AtomicInteger cnt = new AtomicInteger();
+    private int cnt;
 
     /** */
     private Iterator<R> iter;
@@ -160,9 +158,13 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     /** {@inheritDoc} */
     @Override public R next() {
         try {
+            if (!limitDisabled && cnt == capacity)
+                return null;
+
             R next = unmaskNull(internalIterator().next());
 
-            cnt.decrementAndGet();
+            if (!limitDisabled)
+                cnt++;
 
             return next;
         }
@@ -264,25 +266,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     protected void enqueue(Collection<?> col) {
         assert Thread.holdsLock(this);
 
-        if (limitDisabled) {
-            queue.add((Collection<R>)col);
-
-            cnt.addAndGet(col.size());
-        }
-        else {
-            if (capacity >= col.size()) {
-                queue.add((Collection<R>)col);
-                capacity -= col.size();
-
-                cnt.addAndGet(col.size());
-            }
-            else if (capacity > 0) {
-                queue.add(new ArrayList<>((Collection<R>)col).subList(0, capacity));
-                capacity = 0;
-
-                cnt.addAndGet(capacity);
-            }
-        }
+        queue.add((Collection<R>)col);
     }
 
     /**
@@ -519,15 +503,5 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheQueryFutureAdapter.class, this);
-    }
-
-    /**
-     *
-     */
-    public void printMemoryStats() {
-        X.println(">>> Query future memory statistics.");
-        X.println(">>>  queueSize: " + queue.size());
-        X.println(">>>  keysSize: " + keys.size());
-        X.println(">>>  cnt: " + cnt);
     }
 }

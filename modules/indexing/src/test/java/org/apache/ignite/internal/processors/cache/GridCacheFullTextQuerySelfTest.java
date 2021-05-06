@@ -277,7 +277,7 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
      *
      * @throws IgniteCheckedException if failed.
      */
-    private static Set<Integer> populateCache(IgniteEx ignite, boolean loc, int cnt,
+    static Set<Integer> populateCache(IgniteEx ignite, boolean loc, int cnt,
         IgnitePredicate<Integer> expectedEntryFilter) throws IgniteCheckedException {
         IgniteInternalCache<Integer, Person> cache = ignite.cachex(PERSON_CACHE);
 
