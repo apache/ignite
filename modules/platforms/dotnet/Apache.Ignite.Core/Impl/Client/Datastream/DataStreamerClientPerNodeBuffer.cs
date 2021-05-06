@@ -90,7 +90,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         private void ReplaceBuffer()
         {
-            _buffer = new DataStreamerClientBuffer<TK, TV>(_maxBufferSize, _flushAction);
+            _buffer = new DataStreamerClientBuffer<TK, TV>(_maxBufferSize, _flushAction, _buffer);
         }
     }
 }
