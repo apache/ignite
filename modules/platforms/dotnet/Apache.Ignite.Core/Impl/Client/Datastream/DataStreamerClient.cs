@@ -170,12 +170,11 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             foreach (var pair in _buffers)
             {
                 var buffer = pair.Value;
+                var task = buffer.ScheduleFlush();
 
-                if (buffer.ScheduleFlush())
+                if (task != null)
                 {
-                    var socket = pair.Key;
-                    _buffers[socket] = CreateBuffer(socket);
-                    tasks.Add(buffer.FlushTask);
+                    tasks.Add(task);
                 }
             }
 
@@ -220,24 +219,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             // We should track such topology changes by subscribing to topology update events.
             var socket = _socket.GetAffinitySocket(_cacheId, entry.Key) ?? _socket.GetSocket();
             var buffer = GetOrAddBuffer(socket);
-
-            while (true)
-            {
-                var addResult = buffer.Add(entry);
-
-                if (addResult == AddResult.Ok)
-                {
-                    break;
-                }
-
-                if (addResult == AddResult.OkFull)
-                {
-                    _buffers[socket] = CreateBuffer(socket);
-                    break;
-                }
-
-                buffer = _buffers[socket];
-            }
+            buffer.Add(entry);
 
             // Check in the end: we guarantee that if Add completes without errors, then the data won't be lost.
             // TODO: This provides unclear message - current entry may be loaded successfully.

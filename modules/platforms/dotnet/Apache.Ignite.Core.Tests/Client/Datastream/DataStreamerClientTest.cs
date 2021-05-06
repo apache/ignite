@@ -212,7 +212,6 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         {
             var cache = GetClientCache<int>();
             const int count = 250000;
-            int id = 0;
 
             using (var streamer = Client.GetDataStreamer<int, int>(cache.Name))
             {
