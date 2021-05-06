@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 {
     using System.Linq;
     using System.Threading;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Datastream;
     using NUnit.Framework;
@@ -198,6 +199,25 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                         streamer.Add(key, key + 2);
                     }
                 }, 8);
+            }
+
+            Assert.AreEqual(count, cache.GetSize());
+            Assert.AreEqual(4, cache[2]);
+            Assert.AreEqual(22, cache[20]);
+        }
+
+        [Test]
+        [Category(TestUtils.CategoryIntensive)]
+        public void TestStreamParallelFor()
+        {
+            var cache = GetClientCache<int>();
+            const int count = 350000;
+            int id = 0;
+
+            using (var streamer = Client.GetDataStreamer<int, int>(cache.Name))
+            {
+                // ReSharper disable once AccessToDisposedClosure
+                Parallel.For(0, count, i => streamer.Add(i, i + 2));
             }
 
             Assert.AreEqual(count, cache.GetSize());
