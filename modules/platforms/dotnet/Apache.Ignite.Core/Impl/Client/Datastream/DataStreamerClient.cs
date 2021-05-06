@@ -215,7 +215,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 return TaskRunner.CompletedTask;
             }
 
-            // TODO: Don't allocate new buffers when closing the streamer.
             var tasks = new List<Task>(_buffers.Count);
 
             foreach (var pair in _buffers)

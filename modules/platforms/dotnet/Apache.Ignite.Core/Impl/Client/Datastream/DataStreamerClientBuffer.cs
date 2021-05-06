@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Client data streamer buffer.
@@ -40,8 +41,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /** */
         private readonly Func<DataStreamerClientBuffer<TK, TV>, Task> _flushAction;
 
-        private readonly DataStreamerClientBuffer<TK, TV> _previous;
-
         /** */
         private readonly TaskCompletionSource<object> _flushCompletionSource = new TaskCompletionSource<object>();
 
@@ -50,6 +49,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         /** */
         private int _activeOps;
+
+        /** */
+        private readonly Task _flushTask;
 
         public DataStreamerClientBuffer(
             int maxSize,
@@ -60,7 +62,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
             _maxSize = maxSize;
             _flushAction = flushAction;
-            _previous = previous;
+            _flushTask = previous == null || previous.FlushTask.IsCompleted
+                ? _flushCompletionSource.Task
+                : TaskRunner.WhenAll(new[] {previous.FlushTask, _flushCompletionSource.Task});
         }
 
         public int Count
@@ -70,12 +74,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         public Task FlushTask
         {
-            get { return _flushCompletionSource.Task; }
-        }
-
-        public DataStreamerClientBuffer<TK, TV> Previous
-        {
-            get { return _previous; }
+            get { return _flushTask; }
         }
 
         public AddResult Add(DataStreamerClientEntry<TK, TV> entry)
