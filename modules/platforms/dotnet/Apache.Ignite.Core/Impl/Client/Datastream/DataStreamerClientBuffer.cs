@@ -175,7 +175,11 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             // ThreadPool.QueueUserWorkItem(__ =>
             // {
                 _flushAction(this).ContinueWith(
-                    _ => _flushCompletionSource.TrySetResult(null),
+                    _ =>
+                    {
+                        // TODO: This runs on socket thread - be careful with completions
+                        return ThreadPool.QueueUserWorkItem(__ => _flushCompletionSource.TrySetResult(null));
+                    },
                     TaskContinuationOptions.ExecuteSynchronously);
             // });
         }
