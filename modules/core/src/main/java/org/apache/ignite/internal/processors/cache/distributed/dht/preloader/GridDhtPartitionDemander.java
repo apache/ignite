@@ -555,7 +555,7 @@ public class GridDhtPartitionDemander {
 
                 U.error(log, "Rebalancing routine has failed, some partitions could be unavailable for reading" +
                     " [" + demandRoutineInfo(nodeId, supplyMsg) +
-                    ", unavailablePartitions=" + S.compact(unstableParts) + "]", msgExc);
+                    ", unavailablePartitions=" + S.compact(unstableParts) + ']', msgExc);
 
                 fut.error(nodeId);
 
