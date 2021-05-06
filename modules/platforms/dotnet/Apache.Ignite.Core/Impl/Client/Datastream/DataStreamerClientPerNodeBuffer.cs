@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     using System;
     using System.Diagnostics;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Manages per-node buffers and flush operations.
@@ -35,6 +36,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /** */
         private volatile DataStreamerClientBuffer<TK, TV> _buffer;
 
+        /** */
+        private volatile DataStreamerClientBuffer<TK, TV> _prevBuffer;
+
         public DataStreamerClientPerNodeBuffer(
             int maxBufferSize,
             Func<DataStreamerClientBuffer<TK, TV>, Task> flushAction)
@@ -44,7 +48,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             _maxBufferSize = maxBufferSize;
             _flushAction = flushAction;
 
-            _buffer = new DataStreamerClientBuffer<TK, TV>(_maxBufferSize, flushAction);
+            ReplaceBuffer(null);
         }
 
         public void Add(DataStreamerClientEntry<TK,TV> entry)
@@ -63,7 +67,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 if (addResult == AddResult.OkFull)
                 {
                     // Buffer was completed by the current thread - replace it with a new one.
-                    _buffer = new DataStreamerClientBuffer<TK, TV>(_maxBufferSize, _flushAction);
+                    ReplaceBuffer(buffer);
                     break;
                 }
 
@@ -79,12 +83,18 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             if (buffer.ScheduleFlush())
             {
                 // Buffer was completed by the current thread - replace it with a new one.
-                _buffer = new DataStreamerClientBuffer<TK, TV>(_maxBufferSize, _flushAction);
+                ReplaceBuffer(buffer);
 
                 return buffer.FlushTask;
             }
 
             return null;
+        }
+
+        private void ReplaceBuffer(DataStreamerClientBuffer<TK, TV> buffer)
+        {
+            _prevBuffer = buffer;
+            _buffer = new DataStreamerClientBuffer<TK, TV>(_maxBufferSize, _flushAction);
         }
     }
 }

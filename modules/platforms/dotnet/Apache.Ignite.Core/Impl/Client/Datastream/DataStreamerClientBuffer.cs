@@ -99,6 +99,12 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         public bool ScheduleFlush()
         {
+            if (Interlocked.CompareExchange(ref _size, -1, -1) == 0)
+            {
+                // Empty buffer.
+                return false;
+            }
+
             var res = Interlocked.Add(ref _size, _maxSize);
 
             if (res - _maxSize >= _maxSize)
