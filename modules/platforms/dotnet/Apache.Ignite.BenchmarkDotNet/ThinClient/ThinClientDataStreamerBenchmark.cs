@@ -35,6 +35,11 @@ namespace Apache.Ignite.BenchmarkDotNet.ThinClient
     /// |------------------ |---------:|--------:|--------:|------:|--------:|----------:|----------:|------:|----------:|
     /// |  StreamThinClient | 107.0 ms | 3.02 ms | 8.80 ms |  0.99 |    0.09 | 4000.0000 | 1000.0000 |     - |  24.98 MB |
     /// | StreamThickClient | 110.2 ms | 2.16 ms | 3.89 ms |  1.00 |    0.00 | 2000.0000 |         - |     - |  13.61 MB |
+    /// Wait for prev batch completion:
+    /// |            Method |     Mean |   Error |  StdDev | Ratio | RatioSD |     Gen 0 |     Gen 1 | Gen 2 | Allocated |
+    /// |------------------ |---------:|--------:|--------:|------:|--------:|----------:|----------:|------:|----------:|
+    /// |  StreamThinClient | 102.8 ms | 2.92 ms | 8.52 ms |  0.96 |    0.08 | 4000.0000 | 1000.0000 |     - |  25.11 MB |
+    /// | StreamThickClient | 109.2 ms | 2.17 ms | 4.07 ms |  1.00 |    0.00 | 2000.0000 |         - |     - |  13.61 MB |
     /// </summary>
     [MemoryDiagnoser]
     public class ThinClientDataStreamerBenchmark : ThinClientBenchmarkBase
