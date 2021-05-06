@@ -23,7 +23,7 @@ namespace Apache.Ignite.BenchmarkDotNet.ThinClient
         private const string CacheName = "c";
 
         /** */
-        private const int EntryCount = 650000;
+        private const int EntryCount = 150000;
 
         /** */
         public IIgnite ThickClient { get; set; }
