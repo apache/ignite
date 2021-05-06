@@ -217,18 +217,18 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             {
                 var addResult = buffer.Add(entry);
 
-                if (addResult == AddResult.Ok || addResult == AddResult.OkFull)
+                if (addResult == AddResult.Ok)
                 {
                     break;
                 }
 
-                // Buffer is full - retry.
-                // TODO: This can cause too many allocations in highly concurrent scenarios - do we care?
-                var newBuffer = CreateBuffer(socket);
+                if (addResult == AddResult.OkFull)
+                {
+                    _buffers[socket] = CreateBuffer(socket);
+                    break;
+                }
 
-                buffer = _buffers.TryUpdate(socket, newBuffer, buffer)
-                    ? newBuffer
-                    : GetOrAddBuffer(socket);
+                buffer = _buffers[socket];
             }
 
             // Check in the end: we guarantee that if Add completes without errors, then the data won't be lost.
@@ -345,7 +345,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         {
             return new DataStreamerClientBuffer<TK, TV>(
                 _options.ClientPerNodeBufferSize,
-                buf => FlushBufferAsync(buf, socket));
+                buf => ThreadPool.QueueUserWorkItem(_ => FlushBufferAsync(buf, socket)));
         }
     }
 }
