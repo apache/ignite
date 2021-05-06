@@ -263,5 +263,13 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         {
             Assert.Fail("TODO: Test that Add method blocks when too many parallel operations are active");
         }
+
+        protected override IgniteConfiguration GetIgniteConfiguration()
+        {
+            return new IgniteConfiguration(base.GetIgniteConfiguration())
+            {
+                Logger = new TestUtils.TestContextLogger()
+            };
+        }
     }
 }

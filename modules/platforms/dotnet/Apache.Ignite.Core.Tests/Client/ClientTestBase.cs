@@ -68,8 +68,8 @@ namespace Apache.Ignite.Core.Tests.Client
         /// Initializes a new instance of the <see cref="ClientTestBase"/> class.
         /// </summary>
         public ClientTestBase(
-            int gridCount, 
-            bool enableSsl = false, 
+            int gridCount,
+            bool enableSsl = false,
             bool enablePartitionAwareness = false)
         {
             _gridCount = gridCount;
@@ -321,7 +321,7 @@ namespace Apache.Ignite.Core.Tests.Client
             return Ignition.GetAll()
                 .OrderBy(i => i.Name)
                 .Select(i => i.Logger)
-                .Cast<ListLogger>();
+                .OfType<ListLogger>();
         }
 
         /// <summary>
