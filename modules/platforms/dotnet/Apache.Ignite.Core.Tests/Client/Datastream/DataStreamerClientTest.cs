@@ -179,7 +179,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         public void TestStreamMultithreaded()
         {
             var cache = GetClientCache<int>();
-            const int count = 150000;
+            const int count = 250000;
             int id = 0;
 
             using (var streamer = Client.GetDataStreamer<int, int>(cache.Name))
@@ -211,7 +211,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         public void TestStreamParallelFor()
         {
             var cache = GetClientCache<int>();
-            const int count = 350000;
+            const int count = 250000;
             int id = 0;
 
             using (var streamer = Client.GetDataStreamer<int, int>(cache.Name))
