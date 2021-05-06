@@ -193,7 +193,7 @@ public class GridCacheRebalancingUnmarshallingFailedSelfTest extends GridCommonA
         for (int i = 50; i < 100; i++)
             assertNull(grid(1).cache(CACHE).get(new TestKey(String.valueOf(i))));
 
-        assertTrue("Unmarshal log error messaage is not valid.", unmarshalErrorLogListener.check());
+        assertTrue("Unmarshal log error message is not valid.", unmarshalErrorLogListener.check());
     }
 
     /** {@inheritDoc} */
