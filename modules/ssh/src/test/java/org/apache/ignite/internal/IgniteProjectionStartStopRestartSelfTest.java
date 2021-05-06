@@ -146,15 +146,12 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         else
             pwd = SSH_PWD;
 
+
         log.info("Username: " + SSH_UNAME);
         log.info("Password: " + pwd);
         log.info("Key path: " + key);
 
-        G.setDaemon(true);
-
         ignite = G.start(CFG_NO_ATTR);
-
-        G.setDaemon(false);
 
         ignite.events().localListen((IgnitePredicate<Event>)evt -> {
             info("Received event: " + evt.shortDisplay());
