@@ -668,6 +668,20 @@ public class ZookeeperDiscoveryImpl {
     public void sendCustomMessage(DiscoverySpiCustomMessage msg) {
         assert msg != null;
 
+        List<ClusterNode> nodes = rtState.top.topologySnapshot();
+
+        boolean hasServerNode = false;
+
+        for (int i = 0, size = nodes.size(); i < size; i++) {
+            ClusterNode node = nodes.get(i);
+
+            if (!node.isClient())
+                hasServerNode = true;
+        }
+
+        if (!hasServerNode)
+            throw new IgniteException("Failed to send custom message: no server nodes in topology.");
+
         byte[] msgBytes;
 
         try {

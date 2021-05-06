@@ -16,120 +16,71 @@
  */
 package org.apache.ignite.internal.processors.localtask;
 
-import java.util.Map;
-import java.util.Set;
+import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.client.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
-import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageTree;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask.DurableBackgroundTask;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask.DurableBackgroundTaskResult;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
+import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.thread.IgniteThread;
 
-import static org.apache.ignite.internal.util.IgniteUtils.awaitForWorkersStop;
+import static org.apache.ignite.internal.processors.localtask.DurableBackgroundTaskState.State.COMPLETED;
+import static org.apache.ignite.internal.processors.localtask.DurableBackgroundTaskState.State.INIT;
+import static org.apache.ignite.internal.processors.localtask.DurableBackgroundTaskState.State.PREPARE;
+import static org.apache.ignite.internal.processors.localtask.DurableBackgroundTaskState.State.STARTED;
 
 /**
- * Processor that is responsible for durable background tasks that are executed on local node
- * and should be continued even after node restart.
+ * Processor that is responsible for durable background tasks that are executed on local node.
  */
 public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implements MetastorageLifecycleListener,
     CheckpointListener {
     /** Prefix for metastorage keys for durable background tasks. */
-    private static final String STORE_DURABLE_BACKGROUND_TASK_PREFIX = "durable-background-task-";
+    private static final String TASK_PREFIX = "durable-background-task-";
 
-    /** Metastorage. */
-    private volatile ReadWriteMetastorage metastorage;
-
-    /** Metastorage synchronization mutex. */
+    /** MetaStorage synchronization mutex. */
     private final Object metaStorageMux = new Object();
 
-    /** Set of workers that executing durable background tasks. */
-    private final Set<GridWorker> asyncDurableBackgroundTaskWorkers = new GridConcurrentHashSet<>();
+    /** Current tasks. Mapping: {@link DurableBackgroundTask#name task name} -> task state. */
+    private final ConcurrentMap<String, DurableBackgroundTaskState> tasks = new ConcurrentHashMap<>();
 
-    /** Count of workers that executing durable background tasks. */
-    private final AtomicInteger asyncDurableBackgroundTasksWorkersCntr = new AtomicInteger(0);
-
-    /** Durable background tasks map. */
-    private final ConcurrentHashMap<String, DurableBackgroundTask> durableBackgroundTasks = new ConcurrentHashMap<>();
+    /** Lock for canceling tasks. */
+    private final ReadWriteLock cancelLock = new ReentrantReadWriteLock(true);
 
     /**
+     * Tasks to be removed from the MetaStorage after the end of a checkpoint.
+     * Mapping: {@link DurableBackgroundTask#name task name} -> task.
+     */
+    private final ConcurrentMap<String, DurableBackgroundTask> toRmv = new ConcurrentHashMap<>();
+
+    /** Prohibiting the execution of tasks. */
+    private volatile boolean prohibitionExecTasks = true;
+
+    /**
+     * Constructor.
+     *
      * @param ctx Kernal context.
      */
     public DurableBackgroundTasksProcessor(GridKernalContext ctx) {
         super(ctx);
-    }
-
-    /**
-     * Starts the asynchronous operation of pending tasks execution. Is called on start.
-     */
-    private void asyncDurableBackgroundTasksExecution() {
-        assert durableBackgroundTasks != null;
-
-        for (DurableBackgroundTask task : durableBackgroundTasks.values()) {
-            if (!task.isCompleted())
-                asyncDurableBackgroundTaskExecute(task, false);
-        }
-    }
-
-    /**
-     * Creates a worker to execute single durable background task.
-     * @param task Task.
-     * @param dropTaskIfFailed Whether to delete task from metastorage, if it has failed.
-     */
-    private void asyncDurableBackgroundTaskExecute(DurableBackgroundTask task, boolean dropTaskIfFailed) {
-        String workerName = "async-durable-background-task-executor-" + asyncDurableBackgroundTasksWorkersCntr.getAndIncrement();
-
-        GridWorker worker = new GridWorker(ctx.igniteInstanceName(), workerName, log) {
-            @Override protected void body() {
-                try {
-                    log.info("Executing durable background task: " + task.shortName());
-
-                    task.execute(ctx);
-
-                    task.complete();
-
-                    log.info("Execution of durable background task completed: " + task.shortName());
-                }
-                catch (Throwable e) {
-                    log.error("Could not execute durable background task: " + task.shortName(), e);
-
-                    if (dropTaskIfFailed)
-                        removeDurableBackgroundTask(task);
-                }
-                finally {
-                    asyncDurableBackgroundTaskWorkers.remove(this);
-                }
-            }
-        };
-
-        asyncDurableBackgroundTaskWorkers.add(worker);
-
-        Thread asyncTask = new IgniteThread(worker);
-
-        asyncTask.start();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onKernalStart(boolean active) {
-        asyncDurableBackgroundTasksExecution();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onKernalStop(boolean cancel) {
-        // Waiting for workers, but not cancelling them, trying to complete running tasks.
-        awaitForWorkersStop(asyncDurableBackgroundTaskWorkers, false, log);
     }
 
     /** {@inheritDoc} */
@@ -137,144 +88,52 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
         ctx.internalSubscriptionProcessor().registerMetastorageListener(this);
     }
 
-    /**
-     * @param msg Message.
-     */
-    public void onStateChangeFinish(ChangeGlobalStateFinishMessage msg) {
-        if (!msg.clusterActive())
-            awaitForWorkersStop(asyncDurableBackgroundTaskWorkers, true, log);
+    /** {@inheritDoc} */
+    @Override public void onKernalStop(boolean cancel) {
+        cancelTasks();
     }
 
     /** {@inheritDoc} */
     @Override public void onReadyForRead(ReadOnlyMetastorage metastorage) {
-        synchronized (metaStorageMux) {
-            if (durableBackgroundTasks.isEmpty()) {
-                try {
-                    metastorage.iterate(
-                        STORE_DURABLE_BACKGROUND_TASK_PREFIX,
-                        (key, val) -> durableBackgroundTasks.put(key, (DurableBackgroundTask)val),
-                        true
-                    );
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException("Failed to iterate durable background tasks storage.", e);
-                }
-            }
-        }
+        metaStorageOperation(metaStorage -> {
+            assert metaStorage != null;
+
+            metaStorage.iterate(
+                TASK_PREFIX,
+                (k, v) -> {
+                    DurableBackgroundTask t = (DurableBackgroundTask)v;
+
+                    tasks.put(t.name(), new DurableBackgroundTaskState(t, null, true));
+                },
+                true
+            );
+        });
     }
 
     /** {@inheritDoc} */
     @Override public void onReadyForReadWrite(ReadWriteMetastorage metastorage) {
-        synchronized (metaStorageMux) {
-            try {
-                for (Map.Entry<String, DurableBackgroundTask> entry : durableBackgroundTasks.entrySet()) {
-                    if (metastorage.readRaw(entry.getKey()) == null)
-                        metastorage.write(entry.getKey(), entry.getValue());
-                }
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to read key from durable background tasks storage.", e);
-            }
-        }
-
         ((GridCacheDatabaseSharedManager)ctx.cache().context().database()).addCheckpointListener(this);
-
-        this.metastorage = metastorage;
     }
 
-    /**
-     * Builds a metastorage key for durable background task object.
-     *
-     * @param obj Object.
-     * @return Metastorage key.
-     */
-    private String durableBackgroundTaskMetastorageKey(DurableBackgroundTask obj) {
-        String k = STORE_DURABLE_BACKGROUND_TASK_PREFIX + obj.shortName();
-
-        if (k.length() > MetastorageTree.MAX_KEY_LEN) {
-            int hashLenLimit = 5;
-
-            String hash = String.valueOf(k.hashCode());
-
-            k = k.substring(0, MetastorageTree.MAX_KEY_LEN - hashLenLimit) +
-                (hash.length() > hashLenLimit ? hash.substring(0, hashLenLimit) : hash);
-        }
-
-        return k;
-    }
-
-    /**
-     * Adds durable background task object.
-     *
-     * @param obj Object.
-     */
-    private void addDurableBackgroundTask(DurableBackgroundTask obj) {
-        String objName = durableBackgroundTaskMetastorageKey(obj);
-
-        synchronized (metaStorageMux) {
-            durableBackgroundTasks.put(objName, obj);
-
-            if (metastorage != null) {
-                ctx.cache().context().database().checkpointReadLock();
-
-                try {
-                    metastorage.write(objName, obj);
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-                finally {
-                    ctx.cache().context().database().checkpointReadUnlock();
-                }
-            }
-        }
-    }
-
-    /**
-     * Removes durable background task object.
-     *
-     * @param obj Object.
-     */
-    private void removeDurableBackgroundTask(DurableBackgroundTask obj) {
-        String objName = durableBackgroundTaskMetastorageKey(obj);
-
-        synchronized (metaStorageMux) {
-            durableBackgroundTasks.remove(objName);
-
-            if (metastorage != null) {
-                ctx.cache().context().database().checkpointReadLock();
-
-                try {
-                    metastorage.remove(objName);
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-                finally {
-                    ctx.cache().context().database().checkpointReadUnlock();
-                }
-            }
-        }
-    }
-
-    /**
-     * Starts durable background task. If task is applied to persistent cache, saves it to metastorage.
-     *
-     * @param task Continuous task.
-     * @param ccfg Cache configuration.
-     */
-    public void startDurableBackgroundTask(DurableBackgroundTask task, CacheConfiguration ccfg) {
-        if (CU.isPersistentCache(ccfg, ctx.config().getDataStorageConfiguration()))
-            addDurableBackgroundTask(task);
-
-        asyncDurableBackgroundTaskExecute(task, false);
+    /** {@inheritDoc} */
+    @Override public void beforeCheckpointBegin(Context ctx) {
+        /* No op. */
     }
 
     /** {@inheritDoc} */
     @Override public void onMarkCheckpointBegin(Context ctx) {
-        for (DurableBackgroundTask task : durableBackgroundTasks.values()) {
-            if (task.isCompleted())
-                removeDurableBackgroundTask(task);
+        for (Iterator<DurableBackgroundTaskState> it = tasks.values().iterator(); it.hasNext(); ) {
+            DurableBackgroundTaskState taskState = it.next();
+
+            if (taskState.state() == COMPLETED) {
+                assert taskState.saved();
+
+                DurableBackgroundTask t = taskState.task();
+
+                toRmv.put(t.name(), t);
+
+                it.remove();
+            }
         }
     }
 
@@ -284,7 +143,214 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
     }
 
     /** {@inheritDoc} */
-    @Override public void beforeCheckpointBegin(Context ctx) {
-        /* No op. */
+    @Override public void afterCheckpointEnd(Context ctx) {
+        for (Iterator<DurableBackgroundTask> it = toRmv.values().iterator(); it.hasNext(); ) {
+            DurableBackgroundTask t = it.next();
+
+            metaStorageOperation(metaStorage -> {
+                if (metaStorage != null && toRmv.containsKey(t.name()))
+                    metaStorage.remove(metaStorageKey(t));
+            });
+
+            it.remove();
+        }
+    }
+
+    /**
+     * Callback at the start of a global state change.
+     *
+     * @param msg Message for change cluster global state.
+     */
+    public void onStateChangeStarted(ChangeGlobalStateMessage msg) {
+        if (msg.state() == ClusterState.INACTIVE)
+            cancelTasks();
+    }
+
+    /**
+     * Callback on finish of a global state change.
+     *
+     * @param msg Finish message for change cluster global state.
+     */
+    public void onStateChangeFinish(ChangeGlobalStateFinishMessage msg) {
+        if (msg.state() != ClusterState.INACTIVE) {
+            prohibitionExecTasks = false;
+
+            for (DurableBackgroundTaskState taskState : tasks.values()) {
+                if (!prohibitionExecTasks)
+                    executeAsync0(taskState.task());
+            }
+        }
+    }
+
+    /**
+     * Asynchronous execution of a durable background task.
+     *
+     * A new task will be added for execution either if there is no task with
+     * the same {@link DurableBackgroundTask#name name} or it (previous) will be completed.
+     *
+     * If the task is required to be completed after restarting the node,
+     * then it must be saved to the MetaStorage.
+     *
+     * If the task is saved to the Metastorage, then it will be deleted from it
+     * only after its completion and at the end of the checkpoint. Otherwise, it
+     * will be removed as soon as it is completed.
+     *
+     * @param task Durable background task.
+     * @param save Save task to MetaStorage.
+     * @return Futures that will complete when the task is completed.
+     */
+    public IgniteInternalFuture<Void> executeAsync(DurableBackgroundTask task, boolean save) {
+        DurableBackgroundTaskState taskState = tasks.compute(task.name(), (taskName, prev) -> {
+            if (prev != null && prev.state() != COMPLETED)
+                throw new IllegalArgumentException("Task is already present and has not been completed: " + taskName);
+
+            if (save)
+                toRmv.remove(taskName);
+
+            return new DurableBackgroundTaskState(task, new GridFutureAdapter<>(), save);
+        });
+
+        if (save) {
+            metaStorageOperation(metaStorage -> {
+                if (metaStorage != null)
+                    metaStorage.write(metaStorageKey(task), task);
+            });
+        }
+
+        if (!prohibitionExecTasks)
+            executeAsync0(task);
+
+        return taskState.outFuture();
+    }
+
+    /**
+     * Overloading the {@link #executeAsync(DurableBackgroundTask, boolean)}.
+     * If task is applied to persistent cache, saves it to MetaStorage.
+     *
+     * @param t Durable background task.
+     * @param cacheCfg Cache configuration.
+     * @return Futures that will complete when the task is completed.
+     */
+    public IgniteInternalFuture<Void> executeAsync(DurableBackgroundTask t, CacheConfiguration cacheCfg) {
+        return executeAsync(t, CU.isPersistentCache(cacheCfg, ctx.config().getDataStorageConfiguration()));
+    }
+
+    /**
+     * Asynchronous execution of a durable background task.
+     *
+     * @param t Durable background task.
+     */
+    private void executeAsync0(DurableBackgroundTask t) {
+        cancelLock.readLock().lock();
+
+        try {
+            DurableBackgroundTaskState taskState = tasks.get(t.name());
+
+            if (taskState != null && taskState.state(INIT, PREPARE)) {
+                if (log.isInfoEnabled())
+                    log.info("Executing durable background task: " + t.name());
+
+                t.executeAsync(ctx).listen(f -> {
+                    DurableBackgroundTaskResult res = null;
+
+                    try {
+                        res = f.get();
+                    }
+                    catch (Throwable e) {
+                        log.error("Task completed with an error: " + t.name(), e);
+                    }
+
+                    assert res != null;
+
+                    if (res.error() != null)
+                        log.error("Could not execute durable background task: " + t.name(), res.error());
+
+                    if (res.completed()) {
+                        if (res.error() == null && log.isInfoEnabled())
+                            log.info("Execution of durable background task completed: " + t.name());
+
+                        if (taskState.saved())
+                            taskState.state(COMPLETED);
+                        else
+                            tasks.remove(t.name());
+
+                        GridFutureAdapter<Void> outFut = taskState.outFuture();
+
+                        if (outFut != null)
+                            outFut.onDone(res.error());
+                    }
+                    else {
+                        assert res.restart();
+
+                        if (log.isInfoEnabled())
+                            log.info("Execution of durable background task will be restarted: " + t.name());
+
+                        taskState.state(INIT);
+                    }
+                });
+
+                taskState.state(PREPARE, STARTED);
+            }
+        }
+        finally {
+            cancelLock.readLock().unlock();
+        }
+    }
+
+    /**
+     * Canceling tasks that are currently being executed.
+     * Prohibiting the execution of tasks.
+     */
+    private void cancelTasks() {
+        prohibitionExecTasks = true;
+
+        cancelLock.writeLock().lock();
+
+        try {
+            for (DurableBackgroundTaskState taskState : tasks.values()) {
+                if (taskState.state() == STARTED)
+                    taskState.task().cancel();
+            }
+        }
+        finally {
+            cancelLock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * Performing an operation on a {@link MetaStorage}.
+     * Guarded by {@link #metaStorageMux}.
+     *
+     * @param consumer MetaStorage operation, argument can be {@code null}.
+     * @throws IgniteException If an exception is thrown from the {@code consumer}.
+     */
+    private void metaStorageOperation(IgniteThrowableConsumer<MetaStorage> consumer) throws IgniteException {
+        synchronized (metaStorageMux) {
+            IgniteCacheDatabaseSharedManager dbMgr = ctx.cache().context().database();
+
+            dbMgr.checkpointReadLock();
+
+            try {
+                MetaStorage metaStorage = dbMgr.metaStorage();
+
+                consumer.accept(metaStorage);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+            finally {
+                dbMgr.checkpointReadUnlock();
+            }
+        }
+    }
+
+    /**
+     * Getting the task key for the MetaStorage.
+     *
+     * @param t Durable background task.
+     * @return MetaStorage {@code t} key.
+     */
+    static String metaStorageKey(DurableBackgroundTask t) {
+        return TASK_PREFIX + t.name();
     }
 }

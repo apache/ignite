@@ -558,12 +558,12 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void finishPreloading(AffinityTopologyVersion topVer) {
+    @Override public void finishPreloading(AffinityTopologyVersion topVer, long rebalanceId) {
         if (!enterBusy())
             return;
 
         try {
-            demander.finishPreloading(topVer);
+            demander.finishPreloading(topVer, rebalanceId);
         }
         finally {
             leaveBusy();

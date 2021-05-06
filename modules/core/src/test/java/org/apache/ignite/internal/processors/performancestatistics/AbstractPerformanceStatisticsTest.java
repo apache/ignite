@@ -197,6 +197,33 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
             boolean timedOut) {
             // No-op.
         }
+
+        /** {@inheritDoc} */
+        @Override public void checkpoint(
+            UUID nodeId,
+            long beforeLockDuration,
+            long lockWaitDuration,
+            long listenersExecDuration,
+            long markDuration,
+            long lockHoldDuration,
+            long pagesWriteDuration,
+            long fsyncDuration,
+            long walCpRecordFsyncDuration,
+            long writeCpEntryDuration,
+            long splitAndSortCpPagesDuration,
+            long totalDuration,
+            long cpStartTime,
+            int pagesSize,
+            int dataPagesWritten,
+            int cowPagesWritten
+        ) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void pagesWriteThrottle(UUID nodeId, long endTime, long duration) {
+            // No-op.
+        }
     }
 
     /** Client type to run load from. */

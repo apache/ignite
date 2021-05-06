@@ -18,9 +18,7 @@ package org.apache.ignite.internal.processors.cache.persistence.wal;
 
 import java.util.LinkedList;
 import java.util.List;
-import javax.cache.configuration.CompleteConfiguration;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -52,10 +50,10 @@ public class WalEnableDisableWithNodeShutdownTest extends GridCommonAbstractTest
     private static final String CACHE_NAME_2 = "MY_CACHE_2";
 
     /** */
-    private static final int CYCLES = 2;
+    private static final int CYCLES = 5;
 
     /** */
-    public static final int NODES = 4;
+    public static final int NODES = 3;
 
     /** */
     public static final int WAIT_MILLIS = 150;
@@ -108,18 +106,14 @@ public class WalEnableDisableWithNodeShutdownTest extends GridCommonAbstractTest
             }
             catch (IgniteException ex) {
                 if (ex.getMessage().contains("Operation result is unknown because nodes reported different results")) {
-                    log.warning("Expected exception thrown", ex);
+                    log.error(ex.toString(), ex);
 
-                    recreateCacheCheckValid(client);
-
-                    return;
+                    fail("WAL is in inconsistent state");
                 }
                 else
                     throw ex;
             }
         }
-
-        fail("Expected exception not thrown");
     }
 
     /**
@@ -174,18 +168,14 @@ public class WalEnableDisableWithNodeShutdownTest extends GridCommonAbstractTest
             }
             catch (IgniteException ex) {
                 if (ex.getMessage().contains("Operation result is unknown because nodes reported different results")) {
-                    log.warning("Expected exception thrown", ex);
+                    log.error(ex.toString(), ex);
 
-                    recreateCacheCheckValid(client);
-
-                    return;
+                    fail("WAL is in inconsistent state");
                 }
                 else
                     throw ex;
             }
         }
-
-        fail("Expected exception not thrown");
     }
 
     /**
@@ -245,30 +235,6 @@ public class WalEnableDisableWithNodeShutdownTest extends GridCommonAbstractTest
                     throw ex;
             }
         }
-    }
-
-    /** */
-    private void recreateCacheCheckValid(Ignite client) {
-        IgniteCache c = client.cache(CACHE_NAME);
-
-        CacheConfiguration ccfg = new CacheConfiguration(
-            (CompleteConfiguration)c.getConfiguration(CacheConfiguration.class));
-
-        c.destroy();
-
-        c = client.createCache(ccfg);
-
-        assertTrue(client.cluster().isWalEnabled(CACHE_NAME));
-
-        c.put(1, "foo");
-
-        client.cluster().disableWal(CACHE_NAME);
-
-        c.put(2, "bar");
-
-        client.cluster().enableWal(CACHE_NAME);
-
-        c.put(1, "baz");
     }
 
     /** */

@@ -94,4 +94,48 @@ public interface PerformanceStatisticsHandler {
      * @param timedOut {@code True} if job is timed out.
      */
     void job(UUID nodeId, IgniteUuid sesId, long queuedTime, long startTime, long duration, boolean timedOut);
+
+    /**
+     * @param nodeId Node id.
+     * @param beforeLockDuration Before lock duration.
+     * @param lockWaitDuration Lock wait duration.
+     * @param listenersExecDuration Listeners execute duration.
+     * @param markDuration Mark duration.
+     * @param lockHoldDuration Lock hold duration.
+     * @param pagesWriteDuration Pages write duration.
+     * @param fsyncDuration Fsync duration.
+     * @param walCpRecordFsyncDuration Wal cp record fsync duration.
+     * @param writeCpEntryDuration Write checkpoint entry duration.
+     * @param splitAndSortCpPagesDuration Split and sort cp pages duration.
+     * @param totalDuration Total duration in milliseconds.
+     * @param cpStartTime Checkpoint start time in milliseconds.
+     * @param pagesSize Pages size.
+     * @param dataPagesWritten Data pages written.
+     * @param cowPagesWritten Cow pages written.
+     */
+    void checkpoint(
+        UUID nodeId,
+        long beforeLockDuration,
+        long lockWaitDuration,
+        long listenersExecDuration,
+        long markDuration,
+        long lockHoldDuration,
+        long pagesWriteDuration,
+        long fsyncDuration,
+        long walCpRecordFsyncDuration,
+        long writeCpEntryDuration,
+        long splitAndSortCpPagesDuration,
+        long totalDuration,
+        long cpStartTime,
+        int pagesSize,
+        int dataPagesWritten,
+        int cowPagesWritten
+    );
+
+    /**
+     * @param nodeId Node id.
+     * @param endTime End time in milliseconds.
+     * @param duration Duration in milliseconds.
+     */
+    void pagesWriteThrottle(UUID nodeId, long endTime, long duration);
 }

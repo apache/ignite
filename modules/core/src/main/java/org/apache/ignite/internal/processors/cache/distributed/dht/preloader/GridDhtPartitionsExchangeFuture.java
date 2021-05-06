@@ -72,6 +72,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.pagemem.wal.record.ExchangeRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
+import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
@@ -148,6 +149,7 @@ import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvent
 import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents.serverLeftEvent;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.PARTIAL_COUNTERS_MAP_SINCE;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.isSnapshotOperation;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.ifAuthenticationEnabled;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallelUninterruptibly;
 
@@ -2429,6 +2431,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             span.addTag(SpanTags.ERROR, errf::toString);
         }
 
+        boolean cleanIdxRebuildFutures = true;
+
         try {
             waitUntilNewCachesAreRegistered();
 
@@ -2512,7 +2516,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             // Create and destroy caches and cache proxies.
             cctx.cache().onExchangeDone(initialVersion(), exchActions, err);
 
-            cctx.kernalContext().authentication().onActivate();
+            ifAuthenticationEnabled(cctx.kernalContext(), IgniteAuthenticationProcessor::onActivate);
 
             Map<T2<Integer, Integer>, Long> localReserved = partHistSuppliers.getReservations(cctx.localNodeId());
 
@@ -2528,6 +2532,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             if (err == null) {
                 cctx.database().rebuildIndexesIfNeeded(this);
+
+                cleanIdxRebuildFutures = false;
 
                 for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                     if (!grp.isLocal())
@@ -2547,6 +2553,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         }
 
         final Throwable err0 = err;
+
+        if (err0 != null && cleanIdxRebuildFutures)
+            cctx.kernalContext().query().removeIndexRebuildFuturesOnExchange(this, null);
 
         // Should execute this listener first, before any external listeners.
         // Listeners use stack as data structure.

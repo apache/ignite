@@ -81,6 +81,7 @@
     <Compile Include="Cluster\IBaselineNode.cs" />
     <Compile Include="Common\IgniteIllegalStateException.cs" />
     <Compile Include="Common\IgniteProductVersion.cs" />
+    <Compile Include="Configuration\AsyncContinuationExecutor.cs" />
     <Compile Include="Configuration\CheckpointWriteOrder.cs" />
     <Compile Include="Configuration\DataPageEvictionMode.cs" />
     <Compile Include="Configuration\DiskPageCompression.cs" />
