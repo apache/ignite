@@ -46,12 +46,12 @@ public class IgniteSqlFunctions {
     }
 
     /** SQL SYSTEM_RANGE(start, end) table function. */
-    public static ScannableTable system_range(Long rangeStart, Long rangeEnd) {
-        return system_range(rangeStart, rangeEnd, 1);
+    public static ScannableTable system_range(Object rangeStart, Object rangeEnd) {
+        return new RangeTable(rangeStart, rangeEnd, 1L);
     }
 
     /** SQL SYSTEM_RANGE(start, end, increment) table function. */
-    public static ScannableTable system_range(Long rangeStart, Long rangeEnd, long increment) {
+    public static ScannableTable system_range(Object rangeStart, Object rangeEnd, Object increment) {
         return new RangeTable(rangeStart, rangeEnd, increment);
     }
 
@@ -64,16 +64,22 @@ public class IgniteSqlFunctions {
     /** */
     private static class RangeTable implements ScannableTable {
         /** Start of the range. */
-        private final Long rangeStart;
+        private final Object rangeStart;
 
         /** End of the range. */
-        private final Long rangeEnd;
+        private final Object rangeEnd;
 
         /** Increment. */
-        private final Long increment;
+        private final Object increment;
 
-        /** */
-        RangeTable(Long rangeStart, Long rangeEnd, Long increment) {
+        /**
+         * Note: {@code Object} arguments required here due to:
+         * 1. {@code NULL} arguments need to be supported, so we can't use {@code long} arguments type.
+         * 2. {@code Integer} and other numeric classes can be converted to {@code long} type by java, but can't be
+         *      converted to {@code Long} type, so we can't use {@code Long} arguments type either.
+         * Instead, we accept {@code Object} arguments type and try to convert valid types to {@code long}.
+         */
+        RangeTable(Object rangeStart, Object rangeEnd, Object increment) {
             this.rangeStart = rangeStart;
             this.rangeEnd = rangeEnd;
             this.increment = increment;
@@ -88,6 +94,10 @@ public class IgniteSqlFunctions {
         @Override public Enumerable<@Nullable Object[]> scan(DataContext root) {
             if (rangeStart == null || rangeEnd == null || increment == null)
                 return Linq4j.emptyEnumerable();
+
+            long rangeStart = convertToLongArg(this.rangeStart, "rangeStart");
+            long rangeEnd = convertToLongArg(this.rangeEnd, "rangeEnd");
+            long increment = convertToLongArg(this.increment, "increment");
 
             if (increment == 0L)
                 throw new IllegalArgumentException("Increment can't be 0");
@@ -117,6 +127,15 @@ public class IgniteSqlFunctions {
                     };
                 }
             };
+        }
+
+        /** */
+        private long convertToLongArg(Object val, String name) {
+            if (val instanceof Byte || val instanceof Short || val instanceof Integer || val instanceof Long)
+                return ((Number)val).longValue();
+
+            throw new IllegalArgumentException("Unsupported argument type [arg=" + name +
+                ", type=" + val.getClass().getSimpleName() + ']');
         }
 
         /** {@inheritDoc} */

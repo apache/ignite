@@ -43,7 +43,7 @@ public class CorrelationTraitDef extends RelTraitDef<CorrelationTrait> {
 
     /** {@inheritDoc} */
     @Override public boolean canConvert(RelOptPlanner planner, CorrelationTrait fromTrait, CorrelationTrait toTrait) {
-        return false;
+        return fromTrait == CorrelationTrait.UNCORRELATED;
     }
 
     /** {@inheritDoc} */

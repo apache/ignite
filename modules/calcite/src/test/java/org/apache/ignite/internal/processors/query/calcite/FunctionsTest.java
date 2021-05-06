@@ -124,6 +124,10 @@ public class FunctionsTest extends GridCommonAbstractTest {
             .returns(3)
             .check();
 
+        assertEquals(0, qryEngine.query(null, "PUBLIC",
+            "SELECT t._val FROM \"test\".Integer t WHERE " +
+                "EXISTS (SELECT x FROM table(system_range(t._val, null))) ").get(0).getAll().size());
+
         // Non-correlated join.
         checkQuery("SELECT t._val FROM \"test\".Integer t JOIN table(system_range(1, 50)) as r ON t._key = r.x " +
             "WHERE mod(r.x, 10) = 0")
