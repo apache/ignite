@@ -36,9 +36,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /** */
         private volatile DataStreamerClientBuffer<TK, TV> _buffer;
 
-        /** */
-        private volatile DataStreamerClientBuffer<TK, TV> _prevBuffer;
-
         public DataStreamerClientPerNodeBuffer(
             int maxBufferSize,
             Func<DataStreamerClientBuffer<TK, TV>, Task> flushAction)
@@ -48,7 +45,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             _maxBufferSize = maxBufferSize;
             _flushAction = flushAction;
 
-            ReplaceBuffer(null);
+            ReplaceBuffer();
         }
 
         public void Add(DataStreamerClientEntry<TK,TV> entry)
@@ -67,7 +64,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 if (addResult == AddResult.OkFull)
                 {
                     // Buffer was completed by the current thread - replace it with a new one.
-                    ReplaceBuffer(buffer);
+                    ReplaceBuffer();
                     break;
                 }
 
@@ -83,7 +80,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             if (buffer.ScheduleFlush())
             {
                 // Buffer was completed by the current thread - replace it with a new one.
-                ReplaceBuffer(buffer);
+                ReplaceBuffer();
 
                 return buffer.FlushTask;
             }
@@ -91,9 +88,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             return null;
         }
 
-        private void ReplaceBuffer(DataStreamerClientBuffer<TK, TV> buffer)
+        private void ReplaceBuffer()
         {
-            _prevBuffer = buffer;
             _buffer = new DataStreamerClientBuffer<TK, TV>(_maxBufferSize, _flushAction);
         }
     }
