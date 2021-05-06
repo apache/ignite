@@ -20,7 +20,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     using System;
     using System.Diagnostics;
     using System.Threading.Tasks;
-    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Manages per-node buffers and flush operations.
@@ -50,6 +49,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         public void Add(DataStreamerClientEntry<TK,TV> entry)
         {
+            // TODO: Block when too many parallel flush operations happen.
             while (true)
             {
                 var buffer = GetBuffer();
