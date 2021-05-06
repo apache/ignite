@@ -165,31 +165,28 @@ class IgniteSpec(metaclass=ABCMeta):
         """
         return self.service.config_file
 
-    def prepare_shared_files(self, local_dir, pretend: bool = False):
+    def prepare_shared_files_check(self, local_dir):
+        """
+        :return True if we have something to prepare
+        """
+        return (is_ssl_enabled(self.service.context.globals) or
+                (self.service.config.service_type == IgniteServiceType.NODE and self.service.config.ssl_params)) \
+            and not os.path.isdir(local_dir)
+
+    def prepare_shared_files(self, local_dir):
         """
         Prepare files that should be copied on all nodes
-        :return True if pretend = True and function have any work to do
         """
-        if not os.path.isdir(local_dir):
-            if pretend:
-                return True
+        if os.path.isdir(local_dir):
+            return
 
-            self.service.logger.debug("Local shared dir not exists. Creating. " + local_dir)
-            os.mkdir(local_dir)
+        self.service.logger.debug("Local shared dir not exists. Creating. " + local_dir)
+        os.mkdir(local_dir)
+        script_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "certs")
 
-        if os.path.exists(os.path.join(local_dir, ".ssl-generated")):
-            return False
-
-        if is_ssl_enabled(self.service.context.globals) or \
-                (self.service.config.service_type == IgniteServiceType.NODE and self.service.config.ssl_params):
-            script_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "certs")
-            if pretend:
-                return True
-
-            self._runcmd(f"cp {script_dir}/* {local_dir}")
-            self._runcmd(f"chmod a+x {local_dir}/*.sh")
-            self._runcmd(f"{local_dir}/mkcerts.sh")
-            self._runcmd(f"touch {local_dir}/.ssl-generated")
+        self._runcmd(f"cp {script_dir}/* {local_dir}")
+        self._runcmd(f"chmod a+x {local_dir}/*.sh")
+        self._runcmd(f"{local_dir}/mkcerts.sh")
 
     def _jvm_opts(self):
         """
