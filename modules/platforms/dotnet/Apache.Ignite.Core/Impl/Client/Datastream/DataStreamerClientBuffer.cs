@@ -85,18 +85,18 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         {
             var res = AddResult.FailFull;
 
+            var newSize = Interlocked.Increment(ref _size);
+            if (newSize > _maxSize)
+            {
+                return res;
+            }
+
             if (!_rwLock.TryEnterReadLock(0))
                 return res;
 
             try
             {
                 if (_flushing)
-                {
-                    return res;
-                }
-
-                var newSize = Interlocked.Increment(ref _size);
-                if (newSize > _maxSize)
                 {
                     return res;
                 }
