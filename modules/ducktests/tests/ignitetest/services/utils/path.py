@@ -51,7 +51,8 @@ class PathAware:
         Init persistent directory.
         :param node: Service node.
         """
-        node.account.mkdirs(f"{self.persistent_root} {self.temp_dir} {self.work_dir} {self.log_dir} {self.config_dir}")
+        node.account.mkdirs(
+            f"{self.persistent_root} {self.temp_dir} {self.work_dir} {self.log_dir} {self.config_dir} {self.jfr_dir}")
 
     def init_logs_attribute(self):
         """
@@ -69,6 +70,10 @@ class PathAware:
             },
             "shared": {
                 "path": self.shared_root,
+                "collect_default": True
+            },
+            "jfr": {
+                "path": self.jfr_dir,
                 "collect_default": True
             }
         })
@@ -100,6 +105,13 @@ class PathAware:
         :return: path to config directory
         """
         return os.path.join(self.persistent_root, "config")
+
+    @property
+    def jfr_dir(self):
+        """
+        :return: path to jfr directory
+        """
+        return os.path.join(self.persistent_root, "jfr")
 
     @property
     def log_dir(self):
