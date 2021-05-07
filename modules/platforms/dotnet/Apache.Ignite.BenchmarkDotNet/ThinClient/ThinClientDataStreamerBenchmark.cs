@@ -44,6 +44,10 @@ namespace Apache.Ignite.BenchmarkDotNet.ThinClient
     /// |           Method |     Mean |   Error |   StdDev |     Gen 0 |     Gen 1 | Gen 2 | Allocated |
     /// |----------------- |---------:|--------:|---------:|----------:|----------:|------:|----------:|
     /// | StreamThinClient | 104.1 ms | 3.46 ms | 10.04 ms | 4000.0000 | 1000.0000 |     - |  25.11 MB |
+    /// Semaphore with 4x CPUs, CAS buffers
+    /// |           Method |     Mean |   Error |   StdDev |     Gen 0 |     Gen 1 | Gen 2 | Allocated |
+    /// |----------------- |---------:|--------:|---------:|----------:|----------:|------:|----------:|
+    /// | StreamThinClient | 105.4 ms | 3.26 ms | 9.50 ms | 4000.0000 | 1000.0000 |     - |  25.17 MB |
     /// </summary>
     [MemoryDiagnoser]
     public class ThinClientDataStreamerBenchmark : ThinClientBenchmarkBase
