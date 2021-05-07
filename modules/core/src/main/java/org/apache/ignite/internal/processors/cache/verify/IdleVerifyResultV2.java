@@ -22,6 +22,7 @@ import java.io.ObjectOutput;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -282,6 +283,26 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
         }
 
         printer.accept("\n");
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        IdleVerifyResultV2 v2 = (IdleVerifyResultV2)o;
+
+        return Objects.equals(cntrConflicts, v2.cntrConflicts) && Objects.equals(hashConflicts, v2.hashConflicts) &&
+            Objects.equals(movingPartitions, v2.movingPartitions) && Objects.equals(lostPartitions, v2.lostPartitions) &&
+            Objects.equals(exceptions, v2.exceptions);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return Objects.hash(cntrConflicts, hashConflicts, movingPartitions, lostPartitions, exceptions);
     }
 
     /** {@inheritDoc} */
