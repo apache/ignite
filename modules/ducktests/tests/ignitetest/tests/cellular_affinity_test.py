@@ -16,9 +16,9 @@
 """
 This module contains Cellular Affinity tests.
 """
+import math
 from enum import IntEnum
 
-import math
 from ducktape.mark import matrix
 from jinja2 import Template
 
@@ -199,12 +199,12 @@ class CellularAffinity(IgniteTest):
             coll_cnt = self.PREPARED_TX_CNT if prep_type == TxPrepType.CELL_COLOCATED else 0
 
             # should not affect switch speed dramatically, cause recovery but not waiting
-            # avoiding C0 (as no-affected) & C1
+            # avoiding C0 (as not affected) & C1
             noncoll_cnt = self.PREPARED_TX_CNT * (cells_amount - 2) \
                 if cell_id == failed_cell_id and prep_type == TxPrepType.CELL_NONCOLOCATED else 0
 
             # cause waiting for txs with failed primary (~ 3/(cells-1) of prepared tx amount)
-            # avoiding C0 (as no-affected)
+            # avoiding C0 (as not affected)
             multi_cnt = self.PREPARED_TX_CNT * (cells_amount - 1) \
                 if cell_id == failed_cell_id and prep_type == TxPrepType.MULTIKEY else 0
 
