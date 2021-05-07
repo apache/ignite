@@ -98,6 +98,24 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
+        /// Tests Java service invocation.
+        /// Types should be resolved implicitly.
+        /// </summary>
+        [Test]
+        public void TestCallPlatformServiceLocal()
+        {
+            const string platformSvcName = "PlatformTestService";
+
+            _grid1.GetServices().DeployClusterSingleton(platformSvcName, new PlatformTestService());
+
+            var svc = _grid1.GetServices().GetServiceProxy<IJavaService>(platformSvcName);
+
+            DoTestService(svc);
+
+            _grid1.GetServices().Cancel(platformSvcName);
+        }
+
+        /// <summary>
         /// Tests Java service invocation with dynamic proxy.
         /// Types should be resolved implicitly.
         /// </summary>
