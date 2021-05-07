@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.index;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.BreakRebuildIndexConsumer;
 import org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.StopRebuildIndexConsumer;
 import org.apache.ignite.internal.util.function.ThrowableFunction;
@@ -37,13 +38,13 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
     /**
      * Checks that rebuilding indexes will be automatically started after
      * restarting the node due to the fact that the previous one did not
-     * complete successfully. One node cluster.
+     * complete successfully.
      *
      * @throws Exception If failed.
      */
     @Test
     public void testSingleNodeRestart() throws Exception {
-        checkSingleNode(n -> {
+        checkRestartRebuildIndexes(1, n -> {
             stopAllGrids();
 
             prepareBeforeNodeStart();
@@ -55,13 +56,13 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
     /**
      * Checks that rebuilding indexes will be automatically started after
      * reactivation the node due to the fact that the previous one did not
-     * complete successfully. One node cluster.
+     * complete successfully.
      *
      * @throws Exception If failed.
      */
     @Test
     public void testSingleNodeReactivation() throws Exception {
-        checkSingleNode(n -> {
+        checkRestartRebuildIndexes(1, n -> {
             n.cluster().state(INACTIVE);
 
             n.cluster().state(ACTIVE);
@@ -71,18 +72,68 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
     }
 
     /**
-     * Check that for one node the index rebuilding will be restarted
+     * Checks that rebuilding indexes will be automatically started after
+     * restarting the node due to the fact that the previous one did not
+     * complete successfully. Two-node cluster, only one node will be restarted.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testTwoNodeRestart() throws Exception {
+        checkRestartRebuildIndexes(2, n -> {
+            String nodeName = n.name();
+
+            stopGrid(nodeName);
+
+            prepareBeforeNodeStart();
+
+            return startGrid(nodeName);
+        });
+    }
+
+    /**
+     * Checks that rebuilding indexes will be automatically started after
+     * reactivation the node due to the fact that the previous one did not
+     * complete successfully. Two-node cluster.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testTwoNodeReactivation() throws Exception {
+        checkRestartRebuildIndexes(2, n -> {
+            n.cluster().state(INACTIVE);
+
+            n.cluster().state(ACTIVE);
+
+            return n;
+        });
+    }
+
+    /**
+     * Check that for node the index rebuilding will be restarted
      * automatically after executing the function on the node.
      *
+     * @param nodeCnt Node count.
      * @param function Function for node.
      * @throws Exception If failed.
      */
-    private void checkSingleNode(ThrowableFunction<IgniteEx, IgniteEx, Exception> function) throws Exception {
+    private void checkRestartRebuildIndexes(
+        int nodeCnt,
+        ThrowableFunction<IgniteEx, IgniteEx, Exception> function
+    ) throws Exception {
+        for (int i = 0; i < nodeCnt - 1; i++)
+            startGrid(getTestIgniteInstanceName(i + 1));
+
         prepareBeforeNodeStart();
 
         IgniteEx n = prepareCluster(10_000);
 
-        GridCacheContext<Object, Object> cacheCtx = n.cachex(DEFAULT_CACHE_NAME).context();
+        IgniteInternalCache<?, ?> cachex = n.cachex(DEFAULT_CACHE_NAME);
+
+        int cacheSize = cachex.size();
+        assertTrue(String.valueOf(cacheSize), cacheSize >= 1_000);
+
+        GridCacheContext<?, ?> cacheCtx = cachex.context();
 
         BreakRebuildIndexConsumer breakRebuildIdxConsumer =
             addBreakRebuildIndexConsumer(n, cacheCtx.name(), (c, row) -> c.visitCnt.get() >= 10);
@@ -95,7 +146,7 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
         breakRebuildIdxConsumer.finishRebuildIdxFut.onDone();
 
         assertThrows(log, () -> rebIdxFut0.get(getTestTimeout()), Throwable.class, null);
-        assertTrue(breakRebuildIdxConsumer.visitCnt.get() < 10_000);
+        assertTrue(breakRebuildIdxConsumer.visitCnt.get() < cacheSize);
 
         StopRebuildIndexConsumer stopRebuildIdxConsumer = addStopRebuildIndexConsumer(n, cacheCtx.name());
 
@@ -107,6 +158,6 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
         stopRebuildIdxConsumer.finishRebuildIdxFut.onDone();
 
         rebIdxFut1.get(getTestTimeout());
-        assertEquals(10_000, stopRebuildIdxConsumer.visitCnt.get());
+        assertEquals(cacheSize, stopRebuildIdxConsumer.visitCnt.get());
     }
 }
