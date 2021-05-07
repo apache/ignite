@@ -23,7 +23,9 @@ from ducktape.tests.test import Test
 
 # pylint: disable=W0223
 from ignitetest.services.utils.ducktests_service import DucktestsService
-from ignitetest.services.utils.jvm_utils import JFR_ENABLED
+
+# globals:
+JFR_ENABLED = "jfr_enabled"
 
 
 class IgniteTest(Test):

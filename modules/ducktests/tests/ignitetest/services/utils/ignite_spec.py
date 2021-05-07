@@ -28,9 +28,10 @@ from abc import ABCMeta, abstractmethod
 from ignitetest.services.utils import IgniteServiceType
 from ignitetest.services.utils.config_template import IgniteClientConfigTemplate, IgniteServerConfigTemplate, \
     IgniteLoggerConfigTemplate, IgniteThinClientConfigTemplate
-from ignitetest.services.utils.jvm_utils import create_jvm_settings, merge_jvm_settings, JFR_ENABLED
+from ignitetest.services.utils.jvm_utils import create_jvm_settings, merge_jvm_settings
 from ignitetest.services.utils.path import get_home_dir, get_module_path, IgnitePathAware
 from ignitetest.services.utils.ssl.ssl_params import is_ssl_enabled
+from ignitetest.utils.ignite_test import JFR_ENABLED
 from ignitetest.utils.version import DEV_BRANCH
 
 
