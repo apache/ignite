@@ -63,6 +63,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     public void testClusterSnapshotCheck() throws Exception {
         IgniteEx ignite = startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
 
+        startClientGrid();
+        
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME)
             .get();
 
