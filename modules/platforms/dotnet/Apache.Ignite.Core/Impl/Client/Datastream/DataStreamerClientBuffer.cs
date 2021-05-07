@@ -41,9 +41,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         /** */
         private readonly DataStreamerClientPerNodeBuffer<TK,TV> _parent;
-        
+
         /** */
-        private readonly DataStreamerClientBuffer<TK,TV> _previous;
+        private DataStreamerClientBuffer<TK,TV> _previous;
 
         /** */
         private long _size;
@@ -51,6 +51,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /** */
         private volatile bool _flushing;
 
+        /** */
+        private volatile bool _flushed;
 
         public DataStreamerClientBuffer(
             DataStreamerClientEntry<TK,TV>[] entries,
@@ -82,6 +84,29 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         public DataStreamerClientEntry<TK, TV>[] Entries
         {
             get { return _entries; }
+        }
+
+        /** */
+        public bool Flushed
+        {
+            get
+            {
+                var previous = _previous;
+
+                if (previous == null)
+                {
+                    return _flushed;
+                }
+
+                if (!previous.Flushed)
+                {
+                    return false;
+                }
+
+                previous._previous = null;
+
+                return _flushed;
+            }
         }
 
         public bool Add(DataStreamerClientEntry<TK, TV> entry)
@@ -163,14 +188,25 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         private void RunFlushAction()
         {
             // NOTE: Continuation runs on socket thread - set result on thread pool.
-            
+
             // TODO: This is not necessary during normal operation - can we get rid of this if no one listens
             // for completions?
-            
-            // TODO: Clear parent link.
+
             _parent.FlushAsync(this).ContinueWith(
-                _ => ThreadPool.QueueUserWorkItem(__ => _flushCompletionSource.TrySetResult(null)),
+                _ => ThreadPool.QueueUserWorkItem(buf => ((DataStreamerClientBuffer<TK, TV>)buf).OnFlushed(), this),
                 TaskContinuationOptions.ExecuteSynchronously);
+        }
+
+        private void OnFlushed()
+        {
+            _flushed = true;
+
+            _flushCompletionSource.TrySetResult(null);
+
+            if (Flushed)
+            {
+                _previous = null;
+            }
         }
     }
 }
