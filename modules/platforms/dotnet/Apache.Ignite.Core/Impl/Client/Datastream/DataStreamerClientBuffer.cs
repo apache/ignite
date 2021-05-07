@@ -40,16 +40,17 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         private readonly ReaderWriterLockSlim _rwLock = new ReaderWriterLockSlim();
 
         /** */
-        private readonly Task _flushTask;
-
-        /** */
         private readonly DataStreamerClientPerNodeBuffer<TK,TV> _parent;
+        
+        /** */
+        private readonly DataStreamerClientBuffer<TK,TV> _previous;
 
         /** */
         private long _size;
 
         /** */
         private volatile bool _flushing;
+
 
         public DataStreamerClientBuffer(
             DataStreamerClientEntry<TK,TV>[] entries,
@@ -60,11 +61,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
             _entries = entries;
             _parent = parent;
-
-            // TODO: Compute flush task lazily - it is not used under normal operation.
-            _flushTask = previous == null || previous.FlushTask.IsCompleted
-                ? _flushCompletionSource.Task
-                : TaskRunner.WhenAll(new[] {previous.FlushTask, _flushCompletionSource.Task});
+            _previous = previous;
         }
 
         public int Count
@@ -74,7 +71,12 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         public Task FlushTask
         {
-            get { return _flushTask; }
+            get
+            {
+                return _previous == null || _previous.FlushTask.IsCompleted
+                    ? _flushCompletionSource.Task
+                    : TaskRunner.WhenAll(new[] {_previous.FlushTask, _flushCompletionSource.Task});
+            }
         }
 
         public DataStreamerClientEntry<TK, TV>[] Entries
@@ -160,19 +162,15 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         private void RunFlushAction()
         {
-            // TODO: Thread pool? - seems to reduce multithreaded performance.
-            // TODO: Error handling
-            // ThreadPool.QueueUserWorkItem(__ =>
-            // {
-
+            // NOTE: Continuation runs on socket thread - set result on thread pool.
+            
+            // TODO: This is not necessary during normal operation - can we get rid of this if no one listens
+            // for completions?
+            
+            // TODO: Clear parent link.
             _parent.FlushAsync(this).ContinueWith(
-                    _ =>
-                    {
-                        // TODO: This runs on socket thread - be careful with completions
-                        return ThreadPool.QueueUserWorkItem(__ => _flushCompletionSource.TrySetResult(null));
-                    },
-                    TaskContinuationOptions.ExecuteSynchronously);
-            // });
+                _ => ThreadPool.QueueUserWorkItem(__ => _flushCompletionSource.TrySetResult(null)),
+                TaskContinuationOptions.ExecuteSynchronously);
         }
     }
 }
