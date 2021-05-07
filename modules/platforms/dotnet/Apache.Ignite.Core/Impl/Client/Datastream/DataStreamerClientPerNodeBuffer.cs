@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             _socket = socket;
             _semaphore = new SemaphoreSlim(client.Options.ClientPerNodeParallelOperations);
 
-            _buffer = new DataStreamerClientBuffer<TK, TV>(_maxBufferSize, this, null);
+            _buffer = new DataStreamerClientBuffer<TK, TV>(_client.GetArray(), this, null);
         }
 
         public void Add(DataStreamerClientEntry<TK,TV> entry)
@@ -66,8 +66,13 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                     break;
                 }
 
-                Interlocked.CompareExchange(ref _buffer,
-                    new DataStreamerClientBuffer<TK, TV>(_maxBufferSize, this, buffer), buffer);
+                var entryArray = _client.GetArray();
+
+                if (Interlocked.CompareExchange(ref _buffer,
+                    new DataStreamerClientBuffer<TK, TV>(entryArray, this, buffer), buffer) != buffer)
+                {
+                    _client.ReturnArray(entryArray);
+                }
             }
         }
 

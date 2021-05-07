@@ -65,6 +65,10 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         private readonly TaskCompletionSource<object> _closeTaskSource = new TaskCompletionSource<object>();
 
         /** */
+        private readonly ConcurrentStack<DataStreamerClientEntry<TK, TV>[]> _arrayPool
+            = new ConcurrentStack<DataStreamerClientEntry<TK, TV>[]>();
+
+        /** */
         private int _activeFlushes;
 
         /** */
@@ -265,6 +269,30 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 }, TaskContinuationOptions.ExecuteSynchronously);
         }
 
+        internal DataStreamerClientEntry<TK, TV>[] GetArray()
+        {
+            DataStreamerClientEntry<TK,TV>[] res;
+
+            if (_arrayPool.TryPop(out res))
+            {
+                // Reset buffer and return.
+                for (int i = 0; i < res.Length; i++)
+                {
+                    res[i] = new DataStreamerClientEntry<TK, TV>();
+                }
+
+                return res;
+            }
+
+            res = new DataStreamerClientEntry<TK, TV>[_options.ClientPerNodeBufferSize];
+            return res;
+        }
+
+        internal void ReturnArray(DataStreamerClientEntry<TK, TV>[] buffer)
+        {
+            _arrayPool.Push(buffer);
+        }
+
         private void WriteBuffer(DataStreamerClientBuffer<TK, TV> buffer, BinaryWriter w, bool flush, bool close)
         {
             // TODO: Open streamer once and reuse.
@@ -276,8 +304,17 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
             w.WriteInt(buffer.Count);
 
-            foreach (var entry in buffer.GetEntries())
+            var entries = buffer.Entries;
+
+            for (var i = 0; i < entries.Length; i++)
             {
+                var entry = entries[i];
+
+                if (entry.IsEmpty)
+                {
+                    continue;
+                }
+
                 w.WriteObjectDetached(entry.Key);
 
                 if (entry.Remove)
@@ -289,6 +326,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                     w.WriteObjectDetached(entry.Val);
                 }
             }
+
+            ReturnArray(entries);
         }
 
         private Flags GetFlags(bool flush, bool close)

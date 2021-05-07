@@ -34,9 +34,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         private readonly DataStreamerClientEntry<TK, TV>[] _entries;
 
         /** */
-        private readonly int _maxSize;
-
-        /** */
         private readonly TaskCompletionSource<object> _flushCompletionSource = new TaskCompletionSource<object>();
 
         /** */
@@ -55,16 +52,14 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         private volatile bool _flushing;
 
         public DataStreamerClientBuffer(
-            int maxSize,
+            DataStreamerClientEntry<TK,TV>[] entries,
             DataStreamerClientPerNodeBuffer<TK, TV> parent,
             DataStreamerClientBuffer<TK, TV> previous)
         {
-            Debug.Assert(maxSize > 0);
             Debug.Assert(parent != null);
 
-            _maxSize = maxSize;
+            _entries = entries;
             _parent = parent;
-            _entries = new DataStreamerClientEntry<TK, TV>[_maxSize];
 
             _flushTask = previous == null || previous.FlushTask.IsCompleted
                 ? _flushCompletionSource.Task
@@ -73,12 +68,17 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         public int Count
         {
-            get { return _size > _maxSize ? _maxSize : (int) _size; }
+            get { return _size > _entries.Length ? _entries.Length : (int) _size; }
         }
 
         public Task FlushTask
         {
             get { return _flushTask; }
+        }
+
+        public DataStreamerClientEntry<TK, TV>[] Entries
+        {
+            get { return _entries; }
         }
 
         public bool Add(DataStreamerClientEntry<TK, TV> entry)
@@ -97,7 +97,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
                 newSize = Interlocked.Increment(ref _size);
 
-                if (newSize > _maxSize)
+                if (newSize > _entries.Length)
                 {
                     return false;
                 }
@@ -109,7 +109,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 _rwLock.ExitReadLock();
             }
 
-            if (newSize == _maxSize)
+            if (newSize == _entries.Length)
             {
                 TryRunFlushAction();
             }
@@ -131,19 +131,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             TryRunFlushAction();
 
             return true;
-        }
-
-        public IEnumerable<DataStreamerClientEntry<TK, TV>> GetEntries()
-        {
-            for (int i = 0; i < _entries.Length; i++)
-            {
-                var entry = _entries[i];
-
-                if (!entry.IsEmpty)
-                {
-                    yield return entry;
-                }
-            }
         }
 
         private void TryRunFlushAction()
