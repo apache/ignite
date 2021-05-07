@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             get { return _size > _entries.Length ? _entries.Length : (int) _size; }
         }
 
-        public Task GetFlushTask()
+        public Task GetChainFlushTask()
         {
             lock (this)
             {
@@ -79,16 +79,12 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                     return TaskRunner.CompletedTask;
                 }
 
-                var previous = _previous;
-
                 if (_flushCompletionSource == null)
                 {
                     _flushCompletionSource = new TaskCompletionSource<object>();
                 }
 
-                return previous == null || previous.CheckChainFlushed()
-                    ? _flushCompletionSource.Task
-                    : TaskRunner.WhenAll(new[] {previous.GetFlushTask(), _flushCompletionSource.Task});
+                return _flushCompletionSource.Task;
             }
         }
 
@@ -200,7 +196,18 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
             if (tcs != null)
             {
-                tcs.TrySetResult(null);
+                var previous = _previous;
+
+                if (previous == null)
+                {
+                    tcs.TrySetResult(null);
+                }
+                else
+                {
+                    previous.GetChainFlushTask().ContinueWith(
+                        _ => tcs.TrySetResult(null),
+                        TaskContinuationOptions.ExecuteSynchronously);
+                }
             }
         }
 
