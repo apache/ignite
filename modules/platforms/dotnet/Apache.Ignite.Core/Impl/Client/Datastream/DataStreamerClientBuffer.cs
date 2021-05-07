@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Impl.Client.Datastream
 {
-    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;
@@ -34,7 +33,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         private readonly DataStreamerClientEntry<TK, TV>[] _entries;
 
         /** */
-        private readonly TaskCompletionSource<object> _flushCompletionSource = new TaskCompletionSource<object>();
+        private TaskCompletionSource<object> _flushCompletionSource;
 
         /** */
         private readonly ReaderWriterLockSlim _rwLock = new ReaderWriterLockSlim();
@@ -71,49 +70,31 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             get { return _size > _entries.Length ? _entries.Length : (int) _size; }
         }
 
-        public Task FlushTask
+        public Task GetFlushTask()
         {
-            get
+            lock (this)
             {
-                if (Flushed)
+                if (CheckChainFlushed())
                 {
                     return TaskRunner.CompletedTask;
                 }
 
                 var previous = _previous;
 
-                return previous == null || previous.Flushed
+                if (_flushCompletionSource == null)
+                {
+                    _flushCompletionSource = new TaskCompletionSource<object>();
+                }
+
+                return previous == null || previous.CheckChainFlushed()
                     ? _flushCompletionSource.Task
-                    : TaskRunner.WhenAll(new[] {previous.FlushTask, _flushCompletionSource.Task});
+                    : TaskRunner.WhenAll(new[] {previous.GetFlushTask(), _flushCompletionSource.Task});
             }
         }
 
         public DataStreamerClientEntry<TK, TV>[] Entries
         {
             get { return _entries; }
-        }
-
-        /** */
-        public bool Flushed
-        {
-            get
-            {
-                var previous = _previous;
-
-                if (previous == null)
-                {
-                    return _flushed;
-                }
-
-                if (!previous.Flushed)
-                {
-                    return false;
-                }
-
-                previous._previous = null;
-
-                return _flushed;
-            }
         }
 
         public bool Add(DataStreamerClientEntry<TK, TV> entry)
@@ -206,14 +187,42 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         private void OnFlushed()
         {
-            _flushed = true;
+            TaskCompletionSource<object> tcs;
 
-            _flushCompletionSource.TrySetResult(null);
-
-            if (Flushed)
+            lock (this)
             {
-                _previous = null;
+                _flushed = true;
+
+                tcs = _flushCompletionSource;
             }
+
+            CheckChainFlushed();
+
+            if (tcs != null)
+            {
+                tcs.TrySetResult(null);
+            }
+        }
+
+
+        /** */
+        private bool CheckChainFlushed()
+        {
+            var previous = _previous;
+
+            if (previous == null)
+            {
+                return _flushed;
+            }
+
+            if (!previous.CheckChainFlushed())
+            {
+                return false;
+            }
+
+            _previous = null;
+
+            return _flushed;
         }
     }
 }

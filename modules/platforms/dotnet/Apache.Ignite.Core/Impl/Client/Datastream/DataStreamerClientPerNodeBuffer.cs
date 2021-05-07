@@ -94,7 +94,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                     if (Interlocked.CompareExchange(ref _buffer, null, buffer) == buffer)
                     {
                         buffer.ScheduleFlush();
-                        return buffer.FlushTask;
+                        return buffer.GetFlushTask();
                     }
                 }
             }
@@ -102,7 +102,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             buffer = GetBuffer();
             buffer.ScheduleFlush();
 
-            return buffer.FlushTask;
+            return buffer.GetFlushTask();
         }
 
         internal Task FlushAsync(DataStreamerClientBuffer<TK,TV> buffer)
