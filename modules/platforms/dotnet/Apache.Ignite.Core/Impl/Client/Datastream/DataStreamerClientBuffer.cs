@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Client.Datastream
 {
+    using System;
     using System.Collections;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
@@ -28,13 +29,12 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     /// <summary>
     /// Client data streamer buffer.
     /// </summary>
-    internal sealed class DataStreamerClientBuffer<TK, TV> : IEnumerable<DataStreamerClientEntry<TK, TV>>
+    internal sealed class DataStreamerClientBuffer<TK, TV>
     {
         // TODO: try other collections?
         // TODO: Use an array - we can safely populate it at given index, and we know the size upfront!
         /** Concurrent bag already has per-thread buffers. */
-        private readonly ConcurrentBag<DataStreamerClientEntry<TK, TV>> _entries =
-            new ConcurrentBag<DataStreamerClientEntry<TK, TV>>();
+        private readonly DataStreamerClientEntry<TK, TV>[] _entries;
 
         /** */
         private readonly int _maxSize;
@@ -67,6 +67,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
             _maxSize = maxSize;
             _parent = parent;
+            _entries = new DataStreamerClientEntry<TK, TV>[_maxSize];
+
             _flushTask = previous == null || previous.FlushTask.IsCompleted
                 ? _flushCompletionSource.Task
                 : TaskRunner.WhenAll(new[] {previous.FlushTask, _flushCompletionSource.Task});
@@ -74,7 +76,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         public int Count
         {
-            get { return _entries.Count; }
+            get { return _size > _maxSize ? _maxSize : (int) _size; }
         }
 
         public Task FlushTask
@@ -100,7 +102,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                     return false;
                 }
 
-                _entries.Add(entry);
+                _entries[newSize - 1] = entry;
             }
             finally
             {
@@ -131,14 +133,17 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             return true;
         }
 
-        public IEnumerator<DataStreamerClientEntry<TK, TV>> GetEnumerator()
+        public IEnumerable<DataStreamerClientEntry<TK, TV>> GetEntries()
         {
-            return _entries.GetEnumerator();
-        }
+            for (int i = 0; i < _entries.Length; i++)
+            {
+                var entry = _entries[i];
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
+                if (!entry.IsEmpty)
+                {
+                    yield return entry;
+                }
+            }
         }
 
         private void TryRunFlushAction()

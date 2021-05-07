@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         private readonly TV _val;
 
         /** */
-        private readonly bool _remove;
+        private readonly byte _status;
 
         /// <summary>
         /// Initializes a new instance of <see cref="DataStreamerClientEntry{TK,TV}"/> struct.
@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         {
             _key = key;
             _val = val;
-            _remove = false;
+            _status = 1;
         }
 
         /// <summary>
@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         {
             _key = key;
             _val = default(TV);
-            _remove = true;
+            _status = 2;
         }
 
         /// <summary>
@@ -72,7 +72,15 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /// </summary>
         public bool Remove
         {
-            get { return _remove; }
+            get { return _status == 2; }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this entry is empty.
+        /// </summary>
+        public bool IsEmpty
+        {
+            get { return _status == 0; }
         }
     }
 }

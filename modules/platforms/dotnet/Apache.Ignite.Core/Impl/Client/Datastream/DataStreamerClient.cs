@@ -276,7 +276,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
             w.WriteInt(buffer.Count);
 
-            foreach (var entry in buffer)
+            foreach (var entry in buffer.GetEntries())
             {
                 w.WriteObjectDetached(entry.Key);
 
