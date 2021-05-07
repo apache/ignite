@@ -981,6 +981,9 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
                 .registerExchangeAwareComponent(new PartitionsExchangeAware() {
                     /** {@inheritDoc} */
                     @Override public void onInitBeforeTopologyLock(GridDhtPartitionsExchangeFuture fut) {
+                        if (!(fut.firstEvent() instanceof DiscoveryCustomEvent))
+                            return;
+
                         try {
                             exchFuts.add(new T2<>(fut.exchangeId(), fut.rebalanced()));
                             latch.countDown();

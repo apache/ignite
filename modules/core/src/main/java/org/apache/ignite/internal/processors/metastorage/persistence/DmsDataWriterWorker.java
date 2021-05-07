@@ -172,6 +172,8 @@ public class DmsDataWriterWorker extends GridWorker {
 
         updateQueue.offer(new FutureTask<>(() -> STOP));
 
+        latch.countDown();
+
         U.join(runner(), log);
     }
 
@@ -190,7 +192,7 @@ public class DmsDataWriterWorker extends GridWorker {
                     break;
 
                 if (res == AWAIT)
-                    U.awaitQuiet(latch);
+                    U.await(latch);
             }
             catch (InterruptedException ignore) {
             }
