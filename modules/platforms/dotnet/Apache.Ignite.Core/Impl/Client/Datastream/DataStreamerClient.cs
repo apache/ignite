@@ -327,7 +327,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         private DataStreamerClientPerNodeBuffer<TK, TV> GetOrAddBuffer(ClientSocket socket)
         {
 #if NETCOREAPP
-            return _buffers.GetOrAdd(socket, (sock, streamer) => streamer.CreateBuffer(sock), this);
+            return _buffers.GetOrAdd(socket, (sock, streamer) => streamer.CreatePerNodeBuffer(sock), this);
 #else
             // Do not allocate closure on every call, only when the buffer does not exist (rare).
             DataStreamerClientPerNodeBuffer<TK,TV> res;
@@ -353,7 +353,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
         }
 
-        private DataStreamerClientPerNodeBuffer<TK, TV> CreateBuffer(ClientSocket socket)
+        private DataStreamerClientPerNodeBuffer<TK, TV> CreatePerNodeBuffer(ClientSocket socket)
         {
             var semaphore = new SemaphoreSlim(_options.ClientPerNodeParallelOperations);
 

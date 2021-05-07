@@ -81,43 +81,37 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             get { return _flushTask; }
         }
 
-        public AddResult Add(DataStreamerClientEntry<TK, TV> entry)
+        public bool Add(DataStreamerClientEntry<TK, TV> entry)
         {
-            var res = AddResult.FailFull;
-
             var newSize = Interlocked.Increment(ref _size);
             if (newSize > _maxSize)
             {
-                return res;
+                return false;
             }
 
             if (!_rwLock.TryEnterReadLock(0))
-                return res;
+                return false;
 
             try
             {
                 if (_flushing)
                 {
-                    return res;
+                    return false;
                 }
 
                 _entries.Add(entry);
-
-                res = newSize == _maxSize
-                    ? AddResult.OkFull
-                    : AddResult.Ok;
             }
             finally
             {
                 _rwLock.ExitReadLock();
             }
 
-            if (res == AddResult.OkFull)
+            if (newSize == _maxSize)
             {
                 TryRunFlushAction();
             }
 
-            return res;
+            return true;
         }
 
         /// <summary>

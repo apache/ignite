@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             {
                 var buffer = GetBuffer();
 
-                if (buffer.Add(entry) == AddResult.Ok)
+                if (buffer.Add(entry))
                 {
                     break;
                 }
