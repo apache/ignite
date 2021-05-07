@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.table.impl;
+package org.apache.ignite.internal.table.impl;
 
 import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.table.TableSchemaView;

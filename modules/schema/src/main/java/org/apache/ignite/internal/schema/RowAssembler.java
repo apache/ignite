@@ -22,6 +22,10 @@ import java.nio.charset.CharsetEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.BitSet;
 import java.util.UUID;
+import org.apache.ignite.internal.schema.BinaryRow.RowFlags;
+
+import static org.apache.ignite.internal.schema.BinaryRow.VARLEN_COLUMN_OFFSET_FIELD_SIZE;
+import static org.apache.ignite.internal.schema.BinaryRow.VARLEN_TABLE_SIZE_FIELD_SIZE;
 
 /**
  * Utility class to build rows using column appending pattern. The external user of this class must consult
@@ -63,7 +67,7 @@ public class RowAssembler {
     private int nullMapOff;
 
     /** Offset of the varlen table for current chunk. */
-    private int varlenTblOff;
+    private int varlenTblChunkOff;
 
     /** Flags. */
     private short flags;
@@ -75,8 +79,9 @@ public class RowAssembler {
      * @param nonNullVarlenCols Number of non-null varlen columns.
      * @return Total size of the varlen table.
      */
-    public static int varlenTableSize(int nonNullVarlenCols) {
-        return nonNullVarlenCols * BinaryRow.VARLEN_COLUMN_OFFSET_FIELD_SIZE;
+    public static int varlenTableChunkSize(int nonNullVarlenCols) {
+        return nonNullVarlenCols == 0 ? 0 :
+            VARLEN_TABLE_SIZE_FIELD_SIZE + nonNullVarlenCols * VARLEN_COLUMN_OFFSET_FIELD_SIZE;
     }
 
     /**
@@ -137,7 +142,7 @@ public class RowAssembler {
      */
     static int rowChunkSize(Columns cols, int nonNullVarlenCols, int nonNullVarlenSize) {
         int size = BinaryRow.CHUNK_LEN_FIELD_SIZE + cols.nullMapSize() +
-            BinaryRow.VARLEN_TABLE_SIZE_FIELD_SIZE + varlenTableSize(nonNullVarlenCols);
+            varlenTableChunkSize(nonNullVarlenCols);
 
         for (int i = 0; i < cols.numberOfFixsizeColumns(); i++)
             size += cols.column(i).type().length();
@@ -167,10 +172,20 @@ public class RowAssembler {
 
         initOffsets(BinaryRow.KEY_CHUNK_OFFSET, nonNullVarlenKeyCols);
 
+        if (schema.keyColumns().nullMapSize() == 0)
+            flags |= RowFlags.OMIT_KEY_NULL_MAP_FLAG;
+
+        if (schema.valueColumns().nullMapSize() == 0)
+            flags |= RowFlags.OMIT_VAL_NULL_MAP_FLAG;
+
         buf = new ExpandableByteBuf(size);
 
         buf.putShort(0, (short)schema.version());
-        buf.putShort(nullMapOff + curCols.nullMapSize(), (short)nonNullVarlenKeyCols);
+
+        if (nonNullVarlenKeyCols == 0)
+            flags |= RowFlags.OMIT_KEY_VARTBL_FLAG;
+        else
+            buf.putShort(varlenTblChunkOff, (short)nonNullVarlenKeyCols);
     }
 
     /**
@@ -349,9 +364,9 @@ public class RowAssembler {
             throw new AssemblyException("Key column missed: colIdx=" + curCol);
         else {
             if (curCol == 0)
-                flags |= BinaryRow.RowFlags.NULL_VALUE;
+                flags |= RowFlags.NO_VALUE_FLAG;
             else if (schema.valueColumns().length() != curCol)
-            throw new AssemblyException("Value column missed: colIdx=" + curCol);
+                throw new AssemblyException("Value column missed: colIdx=" + curCol);
         }
 
         buf.putShort(BinaryRow.FLAGS_FIELD_OFFSET, flags);
@@ -376,7 +391,9 @@ public class RowAssembler {
      * @param off Offset to write.
      */
     private void writeOffset(int tblEntryIdx, int off) {
-        buf.putShort(varlenTblOff + BinaryRow.VARLEN_COLUMN_OFFSET_FIELD_SIZE * tblEntryIdx, (short)off);
+        assert (flags & (baseOff == BinaryRow.KEY_CHUNK_OFFSET ? RowFlags.OMIT_KEY_VARTBL_FLAG : RowFlags.OMIT_VAL_VARTBL_FLAG)) == 0;
+
+        buf.putShort(varlenTblChunkOff + Row.varlenItemOffset(tblEntryIdx), (short)off);
     }
 
     /**
@@ -407,6 +424,8 @@ public class RowAssembler {
      * @param colIdx Column index.
      */
     private void setNull(int colIdx) {
+        assert (flags & (baseOff == BinaryRow.KEY_CHUNK_OFFSET ? RowFlags.OMIT_KEY_NULL_MAP_FLAG : RowFlags.OMIT_VAL_NULL_MAP_FLAG)) == 0;
+
         int byteInMap = colIdx / 8;
         int bitInByte = colIdx % 8;
 
@@ -441,19 +460,21 @@ public class RowAssembler {
             curVarlenTblEntry++;
 
         if (curCol == curCols.length()) {
-            int keyLen = curOff - baseOff;
+            int chunkLen = curOff - baseOff;
 
-            buf.putShort(baseOff, (short)keyLen);
+            buf.putInt(baseOff, chunkLen);
 
-            if (schema.valueColumns() == curCols) {
-                buf.putShort(nullMapOff + curCols.nullMapSize(), (short)nonNullVarlenValCols);
-
+            if (schema.valueColumns() == curCols)
                 return; // No more columns.
-            }
 
             curCols = schema.valueColumns(); // Switch key->value columns.
 
-            initOffsets(baseOff + keyLen, nonNullVarlenValCols);
+            initOffsets(baseOff + chunkLen, nonNullVarlenValCols);
+
+            if (nonNullVarlenValCols == 0)
+                flags |= RowFlags.OMIT_VAL_VARTBL_FLAG;
+            else
+                buf.putShort(varlenTblChunkOff, (short)nonNullVarlenValCols);
         }
     }
 
@@ -468,8 +489,8 @@ public class RowAssembler {
         curVarlenTblEntry = 0;
 
         nullMapOff = baseOff + BinaryRow.CHUNK_LEN_FIELD_SIZE;
-        varlenTblOff = nullMapOff + curCols.nullMapSize() + BinaryRow.VARLEN_TABLE_SIZE_FIELD_SIZE;
+        varlenTblChunkOff = nullMapOff + curCols.nullMapSize();
 
-        curOff = varlenTblOff + varlenTableSize(nonNullVarlenCols);
+        curOff = varlenTblChunkOff + varlenTableChunkSize(nonNullVarlenCols);
     }
 }

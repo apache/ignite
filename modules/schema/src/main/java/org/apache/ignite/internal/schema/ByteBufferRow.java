@@ -59,7 +59,7 @@ public class ByteBufferRow implements BinaryRow {
     @Override public boolean hasValue() {
         short flags = readShort(FLAGS_FIELD_OFFSET);
 
-        return (flags & (RowFlags.NULL_VALUE | RowFlags.TOMBSTONE)) == 0;
+        return (flags & RowFlags.NO_VALUE_FLAG) == 0;
     }
 
     /** {@inheritDoc} */

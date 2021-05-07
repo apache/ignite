@@ -99,7 +99,7 @@ public class Columns {
 
         firstVarlenColIdx = findFirstVarlenColumn();
 
-        nullMapSize = (cols.length + 7) / 8;
+        nullMapSize = hasNullableColumn() ? (cols.length + 7) / 8 : 0;
 
         buildFoldingTable();
     }
@@ -176,6 +176,13 @@ public class Columns {
     }
 
     /**
+     * @return {@code True} if there is at least one varlength column.
+     */
+    public boolean hasVarlengthColumns() {
+        return firstVarlenColIdx != -1;
+    }
+
+    /**
      * @param schemaBaseIdx Base index of this columns object in its schema.
      * @param cols User columns.
      * @return A copy of user columns array sorted in column order.
@@ -204,6 +211,18 @@ public class Columns {
         }
 
         return -1;
+    }
+
+    /**
+     * @return {@code True} if there is one or more nullable columns, {@code false} otherwise.
+     */
+    private boolean hasNullableColumn() {
+        for (int i = 0; i < cols.length; i++) {
+            if (cols[i].nullable())
+                return true;
+        }
+
+        return false;
     }
 
     /**

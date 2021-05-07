@@ -45,7 +45,7 @@ public class ColumnsTest {
         for (int c = 0; c < cols.length(); c++)
             assertTrue(cols.isFixedSize(c));
 
-        assertEquals(1, cols.nullMapSize());
+        assertEquals(0, cols.nullMapSize());
         assertEquals(3, cols.numberOfFixsizeColumns());
     }
 
@@ -67,7 +67,7 @@ public class ColumnsTest {
         for (int c = 0; c < cols.length(); c++)
             assertFalse(cols.isFixedSize(c));
 
-        assertEquals(1, cols.nullMapSize());
+        assertEquals(0, cols.nullMapSize());
         assertEquals(0, cols.numberOfFixsizeColumns());
     }
 
@@ -94,7 +94,7 @@ public class ColumnsTest {
                 assertFalse(cols.isFixedSize(c));
         }
 
-        assertEquals(1, cols.nullMapSize());
+        assertEquals(0, cols.nullMapSize());
         assertEquals(3, cols.numberOfFixsizeColumns());
     }
 
@@ -435,8 +435,12 @@ public class ColumnsTest {
     private static Column[] columns(int size) {
         Column[] ret = new Column[size];
 
-        for (int i = 0; i < ret.length; i++)
-            ret[i] = new Column("column-" + i, NativeType.STRING, true);
+        for (int i = 0; i < ret.length; i++) {
+            if (i % 3 == 0)
+                ret[i] = new Column("column-" + i, NativeType.LONG, true);
+            else
+                ret[i] = new Column("column-" + i, NativeType.STRING, true);
+        }
 
         return ret;
     }

@@ -86,10 +86,10 @@ public class JavaSerializer extends AbstractSerializer {
         ObjectStatistic valStat = collectObjectStats(schema.valueColumns(), valMarsh, val);
 
         int size = RowAssembler.rowSize(
-            schema.keyColumns(), keyStat.nonNullFields, keyStat.nonNullFieldsSize,
-            schema.valueColumns(), valStat.nonNullFields, valStat.nonNullFieldsSize);
+            schema.keyColumns(), keyStat.nonNullCols, keyStat.nonNullColsSize,
+            schema.valueColumns(), valStat.nonNullCols, valStat.nonNullColsSize);
 
-        return new RowAssembler(schema, size, keyStat.nonNullFields, valStat.nonNullFields);
+        return new RowAssembler(schema, size, keyStat.nonNullCols, valStat.nonNullCols);
     }
 
     /**
@@ -101,7 +101,7 @@ public class JavaSerializer extends AbstractSerializer {
      * @return Object statistic.
      */
     private ObjectStatistic collectObjectStats(Columns cols, Marshaller marsh, Object obj) {
-        if (obj == null || cols.firstVarlengthColumn() < 0 /* No varlen columns */)
+        if (obj == null || !cols.hasVarlengthColumns())
             return new ObjectStatistic(0, 0);
 
         int cnt = 0;
@@ -142,16 +142,16 @@ public class JavaSerializer extends AbstractSerializer {
      * Object statistic.
      */
     private static class ObjectStatistic {
-        /** Non-null fields of varlen type. */
-        int nonNullFields;
+        /** Non-null columns of varlen type. */
+        int nonNullCols;
 
-        /** Length of all non-null fields of varlen types. */
-        int nonNullFieldsSize;
+        /** Length of all non-null columns of varlen types. */
+        int nonNullColsSize;
 
         /** Constructor. */
-        ObjectStatistic(int nonNullFields, int nonNullFieldsSize) {
-            this.nonNullFields = nonNullFields;
-            this.nonNullFieldsSize = nonNullFieldsSize;
+        ObjectStatistic(int nonNullCols, int nonNullColsSize) {
+            this.nonNullCols = nonNullCols;
+            this.nonNullColsSize = nonNullColsSize;
         }
     }
 }
