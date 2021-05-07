@@ -1216,6 +1216,16 @@ public class GridFunc {
     }
 
     /**
+     * Tests if the given array is either {@code null} or empty.
+     *
+     * @param c Array to test.
+     * @return Whether or not the given array is {@code null} or empty.
+     */
+    public static boolean isEmpty(@Nullable char[] c) {
+        return c == null || c.length == 0;
+    }
+
+    /**
      * Tests if the given collection is either {@code null} or empty.
      *
      * @param c Collection to test.

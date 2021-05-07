@@ -406,6 +406,11 @@ public abstract class AbstractBinaryStreamByteOrderSelfTest extends GridCommonAb
         Assert.assertArrayEquals(arr, in.readDoubleArray(ARR_LEN), 0);
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void testEnsureCapacityNegative() {
+        out.ensureCapacity(Integer.MIN_VALUE);
+    }
+
     /**
      *
      */

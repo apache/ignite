@@ -59,7 +59,8 @@ public final class BinaryHeapOutputStream extends BinaryAbstractOutputStream {
 
     /** {@inheritDoc} */
     @Override public void ensureCapacity(int cnt) {
-        if (cnt > data.length) {
+        // overflow-conscious code
+        if (cnt - data.length > 0) {
             int newCap = capacity(data.length, cnt);
 
             data = chunk.reallocate(data, newCap);

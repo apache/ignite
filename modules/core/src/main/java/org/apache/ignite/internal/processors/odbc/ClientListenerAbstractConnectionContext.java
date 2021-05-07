@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.authentication.IgniteAccessControlException;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.nio.GridNioSession;
@@ -48,9 +47,6 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
 
     /** Connection ID. */
     private long connId;
-
-    /** Authorization context. */
-    private AuthorizationContext authCtx;
 
     /** User attributes. */
     protected Map<String, String> userAttrs;
@@ -92,11 +88,6 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public AuthorizationContext authorizationContext() {
-        return authCtx;
-    }
-
-    /** {@inheritDoc} */
     @Override public long connectionId() {
         return connId;
     }
@@ -104,33 +95,12 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
     /**
      * Perform authentication.
      *
-     * @return Auth context.
      * @throws IgniteCheckedException If failed.
      */
-    protected AuthorizationContext authenticate(GridNioSession ses, String user, String pwd)
-        throws IgniteCheckedException {
-        if (ctx.security().enabled())
-            authCtx = authenticateExternal(ses, user, pwd).authorizationContext();
-        else if (ctx.authentication().enabled()) {
-            if (F.isEmpty(user))
-                throw new IgniteAccessControlException("Unauthenticated sessions are prohibited.");
+    protected void authenticate(GridNioSession ses, String user, String pwd) throws IgniteCheckedException {
+        if (!ctx.security().enabled())
+            return;
 
-            authCtx = ctx.authentication().authenticate(user, pwd);
-
-            if (authCtx == null)
-                throw new IgniteAccessControlException("Unknown authentication error.");
-        }
-        else
-            authCtx = null;
-
-        return authCtx;
-    }
-
-    /**
-     * Do 3-rd party authentication.
-     */
-    private AuthenticationContext authenticateExternal(GridNioSession ses, String user, String pwd)
-        throws IgniteCheckedException {
         SecurityCredentials cred = new SecurityCredentials(user, pwd);
 
         AuthenticationContext authCtx = new AuthenticationContext();
@@ -149,8 +119,6 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
                 String.format("The user name or password is incorrect [userName=%s]", user)
             );
         }
-
-        return authCtx;
     }
 
     /** {@inheritDoc} */
@@ -163,8 +131,8 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
     protected void initClientDescriptor(String prefix) {
         clientDesc = prefix + ":" + ses.remoteAddress().getHostString() + ":" + ses.remoteAddress().getPort();
 
-        if (authCtx != null)
-            clientDesc += "@" + authCtx.userName();
+        if (secCtx != null)
+            clientDesc += "@" + secCtx.subject().login();
     }
 
     /**
