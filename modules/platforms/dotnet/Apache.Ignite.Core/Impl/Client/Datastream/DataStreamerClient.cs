@@ -324,19 +324,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             return flags;
         }
 
-        /// <summary>
-        /// Called when a flush operation completes.
-        /// </summary>
-        private void OnFlushCompleted()
-        {
-            var res = Interlocked.Decrement(ref _activeFlushes);
-
-            if (_isClosed && res == 0)
-            {
-                _closeTaskSource.TrySetResult(null);
-            }
-        }
-
         private DataStreamerClientPerNodeBuffer<TK, TV> GetOrAddBuffer(ClientSocket socket)
         {
 #if NETCOREAPP

@@ -50,7 +50,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         public void Add(DataStreamerClientEntry<TK,TV> entry)
         {
-            // TODO: Block when too many parallel flush operations happen.
             while (true)
             {
                 var buffer = GetBuffer();
