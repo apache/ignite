@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 {
     using System;
     using System.Diagnostics;
+    using System.Threading;
     using System.Threading.Tasks;
 
     /// <summary>
@@ -44,7 +45,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             _maxBufferSize = maxBufferSize;
             _flushAction = flushAction;
 
-            ReplaceBuffer();
+            _buffer = new DataStreamerClientBuffer<TK, TV>(_maxBufferSize, _flushAction, null);
         }
 
         public void Add(DataStreamerClientEntry<TK,TV> entry)
@@ -60,48 +61,38 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                     break;
                 }
 
-                if (addResult == AddResult.OkFull)
-                {
-                    // Buffer was completed by the current thread - replace it with a new one.
-                    ReplaceBuffer();
-                    break;
-                }
-
-                // Buffer was completed and replaced by another thread - retry.
+                Interlocked.CompareExchange(ref _buffer,
+                    new DataStreamerClientBuffer<TK, TV>(_maxBufferSize, _flushAction, buffer), buffer);
             }
         }
 
         public Task ScheduleFlush(bool close)
         {
-            var buffer = _buffer;
+            DataStreamerClientBuffer<TK, TV> buffer;
 
-            if (buffer == null)
+            if (close)
             {
-                throw new ObjectDisposedException("DataStreamerClient", "Data streamer has been disposed");
+                while (true)
+                {
+                    buffer = _buffer;
+
+                    if (buffer == null)
+                    {
+                        return null;
+                    }
+
+                    if (Interlocked.CompareExchange(ref _buffer, null, buffer) == buffer)
+                    {
+                        buffer.ScheduleFlush();
+                        return buffer.FlushTask;
+                    }
+                }
             }
 
-            if (buffer.ScheduleFlush())
-            {
-                if (close)
-                {
-                    _buffer = null;
-                }
-                else
-                {
-                    // Buffer was completed by the current thread - replace it with a new one.
-                    ReplaceBuffer();
-                }
+            buffer = GetBuffer();
+            buffer.ScheduleFlush();
 
-                return buffer.FlushTask;
-            }
-
-            return null;
-        }
-
-        private void ReplaceBuffer()
-        {
-            // TODO: Use buffer pool - reuse buffers to reduce allocations.
-            _buffer = new DataStreamerClientBuffer<TK, TV>(_maxBufferSize, _flushAction, _buffer);
+            return buffer.FlushTask;
         }
 
         private DataStreamerClientBuffer<TK, TV> GetBuffer()
