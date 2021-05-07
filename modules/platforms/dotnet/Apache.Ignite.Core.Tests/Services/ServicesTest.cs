@@ -877,9 +877,11 @@ namespace Apache.Ignite.Core.Tests.Services
             var binSvc = _client.GetServices().WithKeepBinary().WithServerKeepBinary()
                 .GetServiceProxy<IJavaService>(javaSvcName, false);
 
-            DoTestService(svc, binSvc, true);
+            DoTestService(svc);
 
             DoTestBinary(svc, binSvc);
+
+            DoTestJavaExceptions(svc, true);
 
             Services.Cancel(javaSvcName);
         }
@@ -901,17 +903,69 @@ namespace Apache.Ignite.Core.Tests.Services
             var binSvc = Services.WithKeepBinary().WithServerKeepBinary()
                 .GetServiceProxy<IJavaService>(javaSvcName, false);
 
-            DoTestService(svc, binSvc);
+            DoTestService(svc);
 
             DoTestBinary(svc, binSvc);
+
+            DoTestJavaExceptions(svc);
 
             Services.Cancel(javaSvcName);
         }
 
         /// <summary>
+        /// Tests Java service invocation with dynamic proxy.
+        /// </summary>
+        [Test]
+        public void TestCallJavaServiceDynamicProxy()
+        {
+            // Deploy Java service
+            var javaSvcName = TestUtils.DeployJavaService(Grid1);
+
+            var svc = new JavaServiceDynamicProxy(Grid1.GetServices().GetDynamicServiceProxy(javaSvcName, true));
+
+            DoTestService(svc);
+
+            DoTestJavaExceptions(svc);
+        }
+
+        /// <summary>
+        /// Test remote .Net service invocation.
+        /// </summary>
+        [Test]
+        public void TestCallPlatformServiceRemote()
+        {
+            DoTestPlatformService(_client.GetServices());
+        }
+
+        /// <summary>
+        /// Test local .Net service invocation.
+        /// </summary>
+        [Test]
+        public void TestCallPlatformServiceLocal()
+        {
+            DoTestPlatformService(Services);
+        }
+
+        /// <summary>
+        /// Tests .Net service invocation.
+        /// </summary>
+        public void DoTestPlatformService(IServices svcsForProxy)
+        {
+            const string platformSvcName = "PlatformTestService";
+
+            Services.DeployClusterSingleton(platformSvcName, new PlatformTestService());
+
+            var svc = svcsForProxy.GetServiceProxy<IJavaService>(platformSvcName);
+
+            DoTestService(svc);
+
+            Services.Cancel(platformSvcName);
+        }
+
+        /// <summary>
         /// Tests service methods.
         /// </summary>
-        private void DoTestService(IJavaService svc, IJavaService binSvc, bool isClient = false)
+        private void DoTestService(IJavaService svc)
         {
             // Basics
             Assert.IsTrue(svc.isInitialized());
@@ -1000,12 +1054,6 @@ namespace Apache.Ignite.Core.Tests.Services
             // Binary
             Assert.AreEqual(7, svc.testBinarizable(new PlatformComputeBinarizable {Field = 6}).Field);
 
-            // Binary object
-            Assert.AreEqual(15,
-                binSvc.testBinaryObject(
-                    Grid1.GetBinary().ToBinary<IBinaryObject>(new PlatformComputeBinarizable {Field = 6}))
-                    .GetField<int>("Field"));
-
             DateTime dt = new DateTime(1992, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
 
             Assert.AreEqual(dt, svc.test(dt));
@@ -1045,6 +1093,35 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(dt1, cache.Get(3));
             Assert.AreEqual(dt2, cache.Get(4));
 
+
+#if NETCOREAPP
+            //This Date in Europe/Moscow have offset +4.
+            DateTime dt3 = new DateTime(1982, 4, 1, 1, 0, 0, 0, DateTimeKind.Local);
+            //This Date in Europe/Moscow have offset +3.
+            DateTime dt4 = new DateTime(1982, 3, 31, 22, 0, 0, 0, DateTimeKind.Local);
+
+            cache.Put(5, dt3);
+            cache.Put(6, dt4);
+
+            Assert.AreEqual(dt3.ToUniversalTime(), cache.Get(5).ToUniversalTime());
+            Assert.AreEqual(dt4.ToUniversalTime(), cache.Get(6).ToUniversalTime());
+
+            svc.testLocalDateFromCache();
+
+            Assert.AreEqual(dt3, cache.Get(7).ToLocalTime());
+            Assert.AreEqual(dt4, cache.Get(8).ToLocalTime());
+
+            var now = DateTime.Now;
+            cache.Put(9, now);
+            Assert.AreEqual(now.ToUniversalTime(), cache.Get(9).ToUniversalTime());
+#endif
+        }
+
+        /// <summary>
+        /// Tests handling of the Java exception in the .Net.
+        /// </summary>
+        public void DoTestJavaExceptions(IJavaService svc, bool isClient = false)
+        {
             // Test standard java checked exception.
             Exception ex = Assert.Throws<ServiceInvocationException>(() => svc.testException("InterruptedException"));
             ex = ex.InnerException;
@@ -1086,46 +1163,6 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.IsNotNull(javaEx);
             Assert.AreEqual("Test", javaEx.JavaMessage);
             Assert.AreEqual("org.apache.ignite.platform.PlatformDeployServiceTask$TestUnmappedException", javaEx.JavaClassName);
-
-#if NETCOREAPP
-            //This Date in Europe/Moscow have offset +4.
-            DateTime dt3 = new DateTime(1982, 4, 1, 1, 0, 0, 0, DateTimeKind.Local);
-            //This Date in Europe/Moscow have offset +3.
-            DateTime dt4 = new DateTime(1982, 3, 31, 22, 0, 0, 0, DateTimeKind.Local);
-
-            cache.Put(5, dt3);
-            cache.Put(6, dt4);
-
-            Assert.AreEqual(dt3.ToUniversalTime(), cache.Get(5).ToUniversalTime());
-            Assert.AreEqual(dt4.ToUniversalTime(), cache.Get(6).ToUniversalTime());
-
-            svc.testLocalDateFromCache();
-
-            Assert.AreEqual(dt3, cache.Get(7).ToLocalTime());
-            Assert.AreEqual(dt4, cache.Get(8).ToLocalTime());
-
-            var now = DateTime.Now;
-            cache.Put(9, now);
-            Assert.AreEqual(now.ToUniversalTime(), cache.Get(9).ToUniversalTime());
-#endif
-        }
-
-        /// <summary>
-        /// Tests Java service invocation with dynamic proxy.
-        /// </summary>
-        [Test]
-        public void TestCallJavaServiceDynamicProxy()
-        {
-            // Deploy Java service
-            var javaSvcName = TestUtils.DeployJavaService(Grid1);
-
-            var svc = new JavaServiceDynamicProxy(Grid1.GetServices().GetDynamicServiceProxy(javaSvcName, true));
-
-            DoTestService(
-                svc,
-                new JavaServiceDynamicProxy(Services.WithKeepBinary().WithServerKeepBinary()
-                    .GetDynamicServiceProxy(javaSvcName))
-            );
         }
 
         /// <summary>
@@ -1162,6 +1199,12 @@ namespace Apache.Ignite.Core.Tests.Services
             var binObjs = binSvc.testBinaryObjectArray(binArr);
 
             Assert.AreEqual(new[] {11, 12, 13}, binObjs.Select(x => x.GetField<int>("Field")));
+
+            // Binary object
+            Assert.AreEqual(15,
+                binSvc.testBinaryObject(
+                    Grid1.GetBinary().ToBinary<IBinaryObject>(new PlatformComputeBinarizable {Field = 6}))
+                    .GetField<int>("Field"));
         }
 
         /// <summary>
