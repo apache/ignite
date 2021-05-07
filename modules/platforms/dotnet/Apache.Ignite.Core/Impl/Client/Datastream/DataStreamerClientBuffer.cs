@@ -17,9 +17,6 @@
 
 namespace Apache.Ignite.Core.Impl.Client.Datastream
 {
-    using System;
-    using System.Collections;
-    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Threading;
@@ -86,18 +83,21 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         public bool Add(DataStreamerClientEntry<TK, TV> entry)
         {
-            var newSize = Interlocked.Increment(ref _size);
-            if (newSize > _maxSize)
-            {
-                return false;
-            }
-
             if (!_rwLock.TryEnterReadLock(0))
                 return false;
+
+            long newSize;
 
             try
             {
                 if (_flushing)
+                {
+                    return false;
+                }
+
+                newSize = Interlocked.Increment(ref _size);
+
+                if (newSize > _maxSize)
                 {
                     return false;
                 }
@@ -158,14 +158,16 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 }
 
                 _flushing = true;
+
+                // Run outside of the lock - reduce possible contention.
+                RunFlushAction();
+
             }
             finally
             {
                 _rwLock.ExitWriteLock();
             }
 
-            // Run outside of the lock - reduce possible contention.
-            RunFlushAction();
         }
 
         private void RunFlushAction()
