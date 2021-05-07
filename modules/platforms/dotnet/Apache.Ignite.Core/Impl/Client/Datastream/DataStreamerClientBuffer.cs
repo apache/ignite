@@ -158,15 +158,19 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
                 _flushing = true;
 
-                // Run outside of the lock - reduce possible contention.
-                RunFlushAction();
-
+                if (Count > 0)
+                {
+                    RunFlushAction();
+                }
+                else
+                {
+                    OnFlushed();
+                }
             }
             finally
             {
                 _rwLock.ExitWriteLock();
             }
-
         }
 
         private void RunFlushAction()

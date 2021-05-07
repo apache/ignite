@@ -187,7 +187,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
             else
             {
-                FlushAsync().ContWith(_ => SetCloseResultIfNoActiveFlushes());
+                FlushAsync(close: true).ContWith(_ => SetCloseResultIfNoActiveFlushes());
             }
 
             return _closeTaskSource.Task;
