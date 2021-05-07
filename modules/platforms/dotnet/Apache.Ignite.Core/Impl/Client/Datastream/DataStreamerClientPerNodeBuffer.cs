@@ -102,7 +102,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         internal Task FlushAsync(DataStreamerClientBuffer<TK,TV> buffer)
         {
-            return _client.FlushBufferAsync(buffer, _socket, _semaphore);
+            // TODO: Create streamer and preserve ID.
+            return _client.FlushBufferAsync(buffer, _socket, _semaphore, flush: true, close: true);
         }
 
         private DataStreamerClientBuffer<TK, TV> GetBuffer()

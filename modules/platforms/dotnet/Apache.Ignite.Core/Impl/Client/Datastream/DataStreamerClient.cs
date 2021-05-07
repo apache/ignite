@@ -231,16 +231,13 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             return TaskRunner.WhenAll(tasks.ToArray());
         }
 
-        internal Task FlushBufferAsync(
+        internal Task<long> FlushBufferAsync(
             DataStreamerClientBuffer<TK, TV> buffer,
             ClientSocket socket,
-            SemaphoreSlim semaphore)
+            SemaphoreSlim semaphore,
+            bool flush,
+            bool close)
         {
-            if (buffer.Count == 0)
-            {
-                return TaskRunner.CompletedTask;
-            }
-
             // TODO: WaitAsync is not available on .NET 4, but is available on .NET 4.5 and later
             // Use reflection to get it.
             // semaphore.WaitAsync();
@@ -251,10 +248,10 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             // TODO: Make sure to call OnFlushCompleted in any case.
             return socket.DoOutInOpAsync(
                     ClientOp.DataStreamerStart,
-                    ctx => WriteBuffer(buffer, ctx.Writer),
+                    ctx => WriteBuffer(buffer, ctx.Writer, flush, close),
                     ctx => ctx.Stream.ReadLong(),
                     syncCallback: true)
-                .ContinueWith(_ =>
+                .ContinueWith(t =>
                 {
                     var res = Interlocked.Decrement(ref _activeFlushes);
                     semaphore.Release();
@@ -263,14 +260,16 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                     {
                         ThreadPool.QueueUserWorkItem(__ => _closeTaskSource.TrySetResult(null));
                     }
+
+                    return t.Result;
                 }, TaskContinuationOptions.ExecuteSynchronously);
         }
 
-        private void WriteBuffer(DataStreamerClientBuffer<TK, TV> buffer, BinaryWriter w)
+        private void WriteBuffer(DataStreamerClientBuffer<TK, TV> buffer, BinaryWriter w, bool flush, bool close)
         {
             // TODO: Open streamer once and reuse.
             w.WriteInt(_cacheId);
-            w.WriteByte((byte) GetFlags(flush: true, close: true));
+            w.WriteByte((byte) GetFlags(flush, close));
             w.WriteInt(_options.ServerPerNodeBufferSize);
             w.WriteInt(_options.ServerPerThreadBufferSize);
             w.WriteObject(_options.Receiver);
