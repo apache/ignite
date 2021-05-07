@@ -61,6 +61,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             _entries = entries;
             _parent = parent;
 
+            // TODO: Compute flush task lazily - it is not used under normal operation.
             _flushTask = previous == null || previous.FlushTask.IsCompleted
                 ? _flushCompletionSource.Task
                 : TaskRunner.WhenAll(new[] {previous.FlushTask, _flushCompletionSource.Task});
