@@ -45,6 +45,8 @@ namespace Apache.Ignite.Core.Client.Datastream
         /// <summary>
         /// Default limit for parallel operations per server node,
         /// see <see cref="DataStreamerClientOptions{TK,TV}.ClientPerNodeParallelOperations"/>.
+        /// <para />
+        /// Calculated as <see cref="Environment.ProcessorCount"/> times 4.
         /// </summary>
         public static readonly int ClientPerNodeParallelOperations = Environment.ProcessorCount * 4;
     }
