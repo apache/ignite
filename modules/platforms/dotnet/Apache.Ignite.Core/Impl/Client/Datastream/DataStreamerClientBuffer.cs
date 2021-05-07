@@ -75,9 +75,16 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         {
             get
             {
-                return _previous == null || _previous.FlushTask.IsCompleted
+                if (Flushed)
+                {
+                    return TaskRunner.CompletedTask;
+                }
+
+                var previous = _previous;
+
+                return previous == null || previous.Flushed
                     ? _flushCompletionSource.Task
-                    : TaskRunner.WhenAll(new[] {_previous.FlushTask, _flushCompletionSource.Task});
+                    : TaskRunner.WhenAll(new[] {previous.FlushTask, _flushCompletionSource.Task});
             }
         }
 
