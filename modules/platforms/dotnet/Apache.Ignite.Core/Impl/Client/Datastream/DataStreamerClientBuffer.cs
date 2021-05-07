@@ -27,9 +27,11 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     /// </summary>
     internal sealed class DataStreamerClientBuffer<TK, TV>
     {
-        // TODO: try other collections?
-        // TODO: Use an array - we can safely populate it at given index, and we know the size upfront!
-        /** Concurrent bag already has per-thread buffers. */
+        /** Array vs concurrent data structures:
+         * - Can be written in parallel, since index is from Interlocked.Increment, no additional synchronization needed
+         * - Compact storage
+         * - Easy pooling
+         */
         private readonly DataStreamerClientEntry<TK, TV>[] _entries;
 
         /** */
