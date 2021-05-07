@@ -76,7 +76,7 @@ public class TableSpoolExecutionTest extends AbstractExecutionTest {
                 }
             });
 
-            TableSpoolNode<Object[]> spool = new TableSpoolNode<>(ctx, rowType);
+            TableSpoolNode<Object[]> spool = new TableSpoolNode<>(ctx, rowType, true);
 
             spool.register(Arrays.asList(right));
 

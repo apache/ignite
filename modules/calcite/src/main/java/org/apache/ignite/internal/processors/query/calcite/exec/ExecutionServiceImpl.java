@@ -39,6 +39,8 @@ import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.rel.core.Spool;
+import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.hint.Hintable;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexBuilder;
@@ -95,6 +97,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.FieldsMetadat
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FragmentPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteRelShuttle;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepDmlPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepQueryPlan;
@@ -107,8 +110,13 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ValidationResult;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.DdlSqlToCommandConverter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
@@ -613,6 +621,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         // Convert to Relational operators graph
         IgniteRel igniteRel = optimize(sqlNode, planner);
+
+        igniteRel = new FixDependentInsertNodeShuttle().visit(igniteRel);
 
         // Split query plan to query fragments.
         List<Fragment> fragments = new Splitter().go(igniteRel);
@@ -1147,6 +1157,81 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             root.onError(error);
 
             tryClose();
+        }
+    }
+
+    static class FixDependentInsertNodeShuttle extends IgniteRelShuttle {
+        /**
+         * Flags indicate whether a {@link IgniteTableModify insert node}
+         * modifies the same table used for querying a data set to isnert.
+         */
+        private boolean dependent;
+
+        /** A target table to insert values. */
+        private IgniteTable tbl;
+
+        /** {@inheritDoc} */
+        @Override public IgniteRel visit(IgniteTableModify rel) {
+            assert tbl == null;
+
+            if (!rel.isInsert())
+                return rel;
+
+            tbl = rel.getTable().unwrap(IgniteTable.class);
+
+            processNode(rel);
+
+            if (dependent) {
+                IgniteTableSpool spool = new IgniteTableSpool(
+                    rel.getCluster(),
+                    rel.getInput().getTraitSet(),
+                    Spool.Type.EAGER,
+                    rel.getInput()
+                );
+
+                rel.replaceInput(0, spool);
+            }
+
+            return rel;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteRel visit(IgniteTableScan rel) {
+            return processScan(rel);
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteRel visit(IgniteIndexScan rel) {
+            return processScan(rel);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected IgniteRel processNode(IgniteRel rel) {
+            List<IgniteRel> inputs = Commons.cast(rel.getInputs());
+
+            for (int i = 0; i < inputs.size(); i++) {
+                if (dependent)
+                    break;
+
+                visitChild(rel, i, inputs.get(i));
+            }
+
+            return rel;
+        }
+
+        /**
+         * Check if the given TableScan scans the same table the insert node
+         * is going to modify. Set {@link #dependent} to {@code true} if both
+         * tables actually the same.
+         *
+         * @param scan TableScan to analize.
+         * @return The input rel.
+         */
+        private IgniteRel processScan(TableScan scan) {
+            if (tbl != null && scan.getTable().unwrap(IgniteTable.class) == tbl)
+                dependent = true;
+
+            return (IgniteRel)scan;
         }
     }
 }

@@ -17,19 +17,19 @@
 
 package org.apache.ignite.testsuites;
 
-import org.apache.ignite.internal.processors.query.calcite.AggregatesIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.AggregatesIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.CalciteBasicSecondaryIndexIntegrationTest;
-import org.apache.ignite.internal.processors.query.calcite.CalciteErrorHandlilngIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.CalciteErrorHandlilngIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessorTest;
 import org.apache.ignite.internal.processors.query.calcite.CancelTest;
 import org.apache.ignite.internal.processors.query.calcite.DateTimeTest;
 import org.apache.ignite.internal.processors.query.calcite.FunctionsTest;
 import org.apache.ignite.internal.processors.query.calcite.LimitOffsetTest;
-import org.apache.ignite.internal.processors.query.calcite.MetadataIntegrationTest;
-import org.apache.ignite.internal.processors.query.calcite.SortAggregateIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.MetadataIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.SortAggregateIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.SqlFieldsQueryUsageTest;
-import org.apache.ignite.internal.processors.query.calcite.TableDdlIntegrationTest;
-import org.apache.ignite.internal.processors.query.calcite.TableDmlIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.TableDdlIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.TableDmlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcQueryTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.OrToUnionRuleTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.ProjectScanMergeRuleTest;

@@ -14,10 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.query.calcite;
+package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -26,17 +32,17 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.query.QueryEngine;
+import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
+import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessorTest;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertThat;
 
 /** */
 public class TableDmlIntegrationTest extends GridCommonAbstractTest {
@@ -86,20 +92,10 @@ public class TableDmlIntegrationTest extends GridCommonAbstractTest {
      */
     @Test
     public void testInsertAsSelect() {
-        // current implementation of DISABLE_RULE hint is not working
-        // for SELECT that is not a query root, but let's write this
-        // test in the way it would be splitted later to verify both
-        // Index and Table scan after aforemention limitation will be fixed
-        final String insertAsSelectSql = "INSERT INTO test SELECT ?, epoch_cur FROM test";
-        final String notExpScan = "IgniteTableScan";
-
         executeSql("CREATE TABLE test (epoch_cur int, epoch_copied int)");
         executeSql("INSERT INTO test VALUES (0, 0)");
 
-        assertThat(
-            (String)executeSql("explain plan for " + insertAsSelectSql, 1).get(0).get(0),
-            not(containsString(notExpScan))
-        );
+        final String insertAsSelectSql = "INSERT INTO test SELECT ?, epoch_cur FROM test";
 
         for (int i = 1; i < 16; i++) {
             executeSql(insertAsSelectSql, i);
@@ -110,9 +106,44 @@ public class TableDmlIntegrationTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * Test verifies that cuncurrent updates does not affect (in terms of its size)
+     * a result set provided for insertion.
+     */
+    @Test
+    public void testInsertAsSelectWithConcurrentDataModification() throws IgniteCheckedException {
+        executeSql("CREATE TABLE test (id int primary key, val int) with cache_name=\"test\", value_type=\"my_type\"");
+        IgniteCache<Integer, Object> cache = grid(0).cache("test").withKeepBinary();
+
+        BinaryObjectBuilder builder = grid(0).binary().builder("my_type");
+
+        for (int i = 0; i < 128; i++)
+            cache.put(i, builder.setField("val", i).build());
+
+        AtomicBoolean stop = new AtomicBoolean();
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
+            while (!stop.get())
+                cache.put(ThreadLocalRandom.current().nextInt(128), builder.setField("val", 0).build());
+        });
+
+        for (int i = 8; i < 18; i++) {
+            int off = (int)Math.pow(2, i - 1);
+
+            executeSql("INSERT INTO test SELECT id + ?::INT, val FROM test", off);
+
+            long cnt = (Long)executeSql("SELECT count(*) FROM test").get(0).get(0);
+
+            assertEquals("Unexpected rows count", Math.pow(2, i), cnt);
+        }
+
+        stop.set(true);
+        fut.get(getTestTimeout());
+    }
+
     /** */
     @Test
-    public void testInsertPrimitiveKey() throws Exception {
+    public void testInsertPrimitiveKey() {
         grid(1).getOrCreateCache(new CacheConfiguration<Integer, CalciteQueryProcessorTest.Developer>()
             .setName("developer")
             .setSqlSchema("PUBLIC")

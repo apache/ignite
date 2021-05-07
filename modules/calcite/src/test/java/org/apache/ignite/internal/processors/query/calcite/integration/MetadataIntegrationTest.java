@@ -16,7 +16,7 @@
  *
  */
 
-package org.apache.ignite.internal.processors.query.calcite;
+package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import org.junit.Test;
 

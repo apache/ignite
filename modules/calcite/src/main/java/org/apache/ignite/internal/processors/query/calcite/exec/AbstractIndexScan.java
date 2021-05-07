@@ -95,22 +95,7 @@ public abstract class AbstractIndexScan<Row, IdxRow> implements Iterable<Row>, A
     protected abstract Row indexRow2Row(IdxRow idxRow) throws IgniteCheckedException;
 
     /** */
-    protected BPlusTree.TreeRowClosure<IdxRow, IdxRow> filterClosure() {
-        return null;
-    }
-
-    /**
-     * Whether to skip current row.
-     * <p>
-     * Descend classes could define here internal filters not related to
-     * the provided by the user the {@link #filters} predicate.
-     *
-     * @param row The row to decide.
-     * @return {@code true} in case current row should be skipped.
-     */
-    protected boolean skipRow(IdxRow row) {
-        return false;
-    }
+    protected abstract BPlusTree.TreeRowClosure<IdxRow, IdxRow> filterClosure();
 
     /** {@inheritDoc} */
     @Override public void close() {
@@ -165,9 +150,6 @@ public abstract class AbstractIndexScan<Row, IdxRow> implements Iterable<Row>, A
 
             while (next == null && cursor.next()) {
                 IdxRow idxRow = cursor.get();
-
-                if (skipRow(idxRow))
-                    continue;
 
                 Row r = indexRow2Row(idxRow);
 

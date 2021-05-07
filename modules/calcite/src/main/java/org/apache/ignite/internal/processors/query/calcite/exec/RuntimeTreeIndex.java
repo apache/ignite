@@ -191,5 +191,10 @@ public class RuntimeTreeIndex<Row> implements RuntimeIndex<Row>, GridIndex<Row> 
         @Override protected Row indexRow2Row(Row row) {
             return row;
         }
+
+        /** */
+        @Override protected BPlusTree.TreeRowClosure<Row, Row> filterClosure() {
+            return null;
+        }
     }
 }
