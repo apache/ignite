@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Impl.Client.Datastream
 {
-    using System;
     using System.Collections;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
@@ -32,6 +31,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     internal sealed class DataStreamerClientBuffer<TK, TV> : IEnumerable<DataStreamerClientEntry<TK, TV>>
     {
         // TODO: try other collections?
+        // TODO: Use an array - we can safely populate it at given index, and we know the size upfront!
         /** Concurrent bag already has per-thread buffers. */
         private readonly ConcurrentBag<DataStreamerClientEntry<TK, TV>> _entries =
             new ConcurrentBag<DataStreamerClientEntry<TK, TV>>();
@@ -40,16 +40,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         private readonly int _maxSize;
 
         /** */
-        private readonly Func<DataStreamerClientBuffer<TK, TV>, Task> _flushAction;
-
-        /** */
         private readonly TaskCompletionSource<object> _flushCompletionSource = new TaskCompletionSource<object>();
-
-        /** */
-        private long _size;
-
-        /** */
-        private volatile bool _flushing;
 
         /** */
         private readonly ReaderWriterLockSlim _rwLock = new ReaderWriterLockSlim();
@@ -57,15 +48,25 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /** */
         private readonly Task _flushTask;
 
+        /** */
+        private readonly DataStreamerClientPerNodeBuffer<TK,TV> _parent;
+
+        /** */
+        private long _size;
+
+        /** */
+        private volatile bool _flushing;
+
         public DataStreamerClientBuffer(
             int maxSize,
-            Func<DataStreamerClientBuffer<TK, TV>, Task> flushAction,
+            DataStreamerClientPerNodeBuffer<TK, TV> parent,
             DataStreamerClientBuffer<TK, TV> previous)
         {
             Debug.Assert(maxSize > 0);
+            Debug.Assert(parent != null);
 
             _maxSize = maxSize;
-            _flushAction = flushAction;
+            _parent = parent;
             _flushTask = previous == null || previous.FlushTask.IsCompleted
                 ? _flushCompletionSource.Task
                 : TaskRunner.WhenAll(new[] {previous.FlushTask, _flushCompletionSource.Task});
@@ -168,7 +169,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             // TODO: Error handling
             // ThreadPool.QueueUserWorkItem(__ =>
             // {
-                _flushAction(this).ContinueWith(
+
+            _parent.FlushAsync(this).ContinueWith(
                     _ =>
                     {
                         // TODO: This runs on socket thread - be careful with completions

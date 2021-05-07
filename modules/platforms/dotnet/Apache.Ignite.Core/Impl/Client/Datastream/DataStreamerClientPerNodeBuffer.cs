@@ -28,24 +28,31 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     internal sealed class DataStreamerClientPerNodeBuffer<TK, TV>
     {
         /** */
-        private readonly int _maxBufferSize;
+        private readonly DataStreamerClient<TK, TV> _client;
 
         /** */
-        private readonly Func<DataStreamerClientBuffer<TK, TV>, Task> _flushAction;
+        private readonly ClientSocket _socket;
+
+        /** */
+        private readonly SemaphoreSlim _semaphore;
+
+        /** */
+        private readonly int _maxBufferSize;
 
         /** Only the thread that completes the previous buffer can set a new one to this field. */
         private volatile DataStreamerClientBuffer<TK, TV> _buffer;
 
-        public DataStreamerClientPerNodeBuffer(
-            int maxBufferSize,
-            Func<DataStreamerClientBuffer<TK, TV>, Task> flushAction)
+
+        public DataStreamerClientPerNodeBuffer(DataStreamerClient<TK, TV> client, ClientSocket socket)
         {
-            Debug.Assert(flushAction != null);
+            Debug.Assert(client != null);
 
-            _maxBufferSize = maxBufferSize;
-            _flushAction = flushAction;
+            _maxBufferSize = client.Options.ClientPerNodeBufferSize;
+            _client = client;
+            _socket = socket;
+            _semaphore = new SemaphoreSlim(client.Options.ClientPerNodeParallelOperations);
 
-            _buffer = new DataStreamerClientBuffer<TK, TV>(_maxBufferSize, _flushAction, null);
+            _buffer = new DataStreamerClientBuffer<TK, TV>(_maxBufferSize, this, null);
         }
 
         public void Add(DataStreamerClientEntry<TK,TV> entry)
@@ -60,7 +67,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 }
 
                 Interlocked.CompareExchange(ref _buffer,
-                    new DataStreamerClientBuffer<TK, TV>(_maxBufferSize, _flushAction, buffer), buffer);
+                    new DataStreamerClientBuffer<TK, TV>(_maxBufferSize, this, buffer), buffer);
             }
         }
 
@@ -91,6 +98,11 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             buffer.ScheduleFlush();
 
             return buffer.FlushTask;
+        }
+
+        internal Task FlushAsync(DataStreamerClientBuffer<TK,TV> buffer)
+        {
+            return _client.FlushBufferAsync(buffer, _socket, _semaphore);
         }
 
         private DataStreamerClientBuffer<TK, TV> GetBuffer()

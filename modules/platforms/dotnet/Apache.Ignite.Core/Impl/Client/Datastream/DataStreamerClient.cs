@@ -231,7 +231,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             return TaskRunner.WhenAll(tasks.ToArray());
         }
 
-        private Task FlushBufferAsync(
+        internal Task FlushBufferAsync(
             DataStreamerClientBuffer<TK, TV> buffer,
             ClientSocket socket,
             SemaphoreSlim semaphore)
@@ -355,11 +355,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         private DataStreamerClientPerNodeBuffer<TK, TV> CreatePerNodeBuffer(ClientSocket socket)
         {
-            var semaphore = new SemaphoreSlim(_options.ClientPerNodeParallelOperations);
-
-            return new DataStreamerClientPerNodeBuffer<TK, TV>(
-                _options.ClientPerNodeBufferSize,
-                buf => FlushBufferAsync(buf, socket, semaphore));
+            return new DataStreamerClientPerNodeBuffer<TK, TV>(this, socket);
         }
     }
 }
