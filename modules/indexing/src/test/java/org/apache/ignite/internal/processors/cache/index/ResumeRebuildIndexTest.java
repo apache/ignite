@@ -17,14 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
-import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.BreakRebuildIndexConsumer;
 import org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.StopRebuildIndexConsumer;
+import org.apache.ignite.internal.util.function.ThrowableFunction;
 import org.junit.Test;
 
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.prepareBeforeNodeStart;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
@@ -32,8 +34,50 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
  * Class for testing rebuilding index resumes.
  */
 public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
+    /**
+     * Checks that rebuilding indexes will be automatically started after
+     * restarting the node due to the fact that the previous one did not
+     * complete successfully. One node cluster.
+     *
+     * @throws Exception If failed.
+     */
     @Test
-    public void test1() throws Exception {
+    public void testSingleNodeRestart() throws Exception {
+        checkSingleNode(n -> {
+            stopAllGrids();
+
+            prepareBeforeNodeStart();
+
+            return startGrid(0);
+        });
+    }
+
+    /**
+     * Checks that rebuilding indexes will be automatically started after
+     * reactivation the node due to the fact that the previous one did not
+     * complete successfully. One node cluster.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testSingleNodeReactivation() throws Exception {
+        checkSingleNode(n -> {
+            n.cluster().state(INACTIVE);
+
+            n.cluster().state(ACTIVE);
+
+            return n;
+        });
+    }
+
+    /**
+     * Check that for one node the index rebuilding will be restarted
+     * automatically after executing the function on the node.
+     *
+     * @param function Function for node.
+     * @throws Exception If failed.
+     */
+    private void checkSingleNode(ThrowableFunction<IgniteEx, IgniteEx, Exception> function) throws Exception {
         prepareBeforeNodeStart();
 
         IgniteEx n = prepareCluster(10_000);
@@ -55,18 +99,7 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
 
         StopRebuildIndexConsumer stopRebuildIdxConsumer = addStopRebuildIndexConsumer(n, cacheCtx.name());
 
-        boolean restart = false;
-
-        if (restart) {
-            stopAllGrids();
-
-            prepareBeforeNodeStart();
-            n = startGrid(0);
-        }
-        else {
-            n.cluster().state(ClusterState.INACTIVE);
-            n.cluster().state(ClusterState.ACTIVE);
-        }
+        n = function.apply(n);
 
         IgniteInternalFuture<?> rebIdxFut1 = indexRebuildFuture(n, cacheCtx.cacheId());
 
