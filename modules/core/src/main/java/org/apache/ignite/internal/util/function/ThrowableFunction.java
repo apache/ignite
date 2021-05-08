@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.util.function;
 
-import org.apache.ignite.IgniteCheckedException;
-
 /**
  * Specific interface for transmitting exceptions from lambda to external method without a catch.
  *
