@@ -54,7 +54,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
  */
 public class IndexRebuildStateStorage implements MetastorageLifecycleListener, CheckpointListener {
     /** Key prefix for the MetaStorage. */
-    private static final String KEY_PREFIX = "rebuild-sql-indexes-";
+    public static final String KEY_PREFIX = "rebuild-sql-indexes-";
 
     /** Kernal context. */
     private final GridKernalContext ctx;

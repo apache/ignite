@@ -374,28 +374,4 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
     private DurableBackgroundTasksProcessor durableBackgroundTasksProcessor(IgniteEx n) {
         return n.context().durableBackgroundTasksProcessor();
     }
-
-    /**
-     * Performing an operation on a MetaStorage.
-     *
-     * @param n Node.
-     * @param fun Function for working with MetaStorage, the argument can be {@code null}.
-     * @return The function result.
-     * @throws IgniteCheckedException If failed.
-     */
-    private <R> R metaStorageOperation(
-        IgniteEx n,
-        IgniteThrowableFunction<MetaStorage, R> fun
-    ) throws IgniteCheckedException {
-        GridCacheDatabaseSharedManager dbMgr = dbMgr(n);
-
-        dbMgr.checkpointReadLock();
-
-        try {
-            return fun.apply(dbMgr.metaStorage());
-        }
-        finally {
-            dbMgr.checkpointReadUnlock();
-        }
-    }
 }

@@ -30,6 +30,7 @@ import org.junit.Test;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.prepareBeforeNodeStart;
+import static org.apache.ignite.internal.processors.query.aware.IndexRebuildStateStorage.KEY_PREFIX;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.deleteCacheGrpDir;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
@@ -38,6 +39,97 @@ import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
  * Class for testing rebuilding index resumes.
  */
 public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
+    /**
+     * Checking normal flow for {@link IndexRebuildStateStorage}.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testNormalFlowIndexRebuildStateStorage() throws Exception {
+        prepareBeforeNodeStart();
+        IgniteEx n = prepareCluster(1_000);
+
+        GridCacheContext<?, ?> cacheCtx = n.cachex(DEFAULT_CACHE_NAME).context();
+
+        StopRebuildIndexConsumer stopRebuildIdxConsumer = addStopRebuildIndexConsumer(n, cacheCtx.name());
+
+        dbMgr(n).enableCheckpoints(false).get(getTestTimeout());
+
+        assertTrue(forceRebuildIndexes(n, cacheCtx).isEmpty());
+        IgniteInternalFuture<?> idxRebFut = indexRebuildFuture(n, cacheCtx.cacheId());
+
+        assertFalse(indexRebuildStateStorage(n).completed(cacheCtx.name()));
+        assertNotNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheCtx.name())));
+
+        stopRebuildIdxConsumer.startRebuildIdxFut.get(getTestTimeout());
+        stopRebuildIdxConsumer.finishRebuildIdxFut.onDone();
+
+        idxRebFut.get(getTestTimeout());
+
+        assertEquals(1_000, stopRebuildIdxConsumer.visitCnt.get());
+        assertTrue(indexRebuildStateStorage(n).completed(cacheCtx.name()));
+
+        dbMgr(n).enableCheckpoints(true).get(getTestTimeout());
+        forceCheckpoint();
+
+        assertNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheCtx.name())));
+    }
+
+    /**
+     * Checking the flow in case of an error for {@link IndexRebuildStateStorage}.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testErrorFlowIndexRebuildStateStorage() throws Exception {
+        prepareBeforeNodeStart();
+        IgniteEx n = prepareCluster(1_000);
+
+        GridCacheContext<?, ?> cacheCtx = n.cachex(DEFAULT_CACHE_NAME).context();
+
+        BreakRebuildIndexConsumer breakRebuildIdxConsumer =
+            addBreakRebuildIndexConsumer(n, cacheCtx.name(), (c, row) -> c.visitCnt.get() > 10);
+
+        assertTrue(forceRebuildIndexes(n, cacheCtx).isEmpty());
+        IgniteInternalFuture<?> idxRebFut0 = indexRebuildFuture(n, cacheCtx.cacheId());
+
+        assertFalse(indexRebuildStateStorage(n).completed(cacheCtx.name()));
+        assertNotNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheCtx.name())));
+
+        breakRebuildIdxConsumer.startRebuildIdxFut.get(getTestTimeout());
+        breakRebuildIdxConsumer.finishRebuildIdxFut.onDone();
+
+        assertThrows(log, () -> idxRebFut0.get(getTestTimeout()), Throwable.class, null);
+        assertTrue(breakRebuildIdxConsumer.visitCnt.get() < 1_000);
+
+        forceCheckpoint();
+
+        assertFalse(indexRebuildStateStorage(n).completed(cacheCtx.name()));
+        assertNotNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheCtx.name())));
+
+        StopRebuildIndexConsumer stopRebuildIdxConsumer = addStopRebuildIndexConsumer(n, cacheCtx.name());
+        dbMgr(n).enableCheckpoints(false).get(getTestTimeout());
+
+        assertTrue(forceRebuildIndexes(n, cacheCtx).isEmpty());
+        IgniteInternalFuture<?> idxRebFut1 = indexRebuildFuture(n, cacheCtx.cacheId());
+
+        assertFalse(indexRebuildStateStorage(n).completed(cacheCtx.name()));
+        assertNotNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheCtx.name())));
+
+        stopRebuildIdxConsumer.startRebuildIdxFut.get(getTestTimeout());
+        stopRebuildIdxConsumer.finishRebuildIdxFut.onDone();
+
+        idxRebFut1.get(getTestTimeout());
+
+        assertEquals(1_000, stopRebuildIdxConsumer.visitCnt.get());
+        assertTrue(indexRebuildStateStorage(n).completed(cacheCtx.name()));
+
+        dbMgr(n).enableCheckpoints(true).get(getTestTimeout());
+        forceCheckpoint();
+
+        assertNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheCtx.name())));
+    }
+
     /**
      * Checks that rebuilding indexes will be automatically started after
      * restarting the node due to the fact that the previous one did not
@@ -234,12 +326,12 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
     }
 
     /**
-     * Getting {@code GridQueryProcessor#idxRebuildProgress}.
+     * Getting {@code GridQueryProcessor#idxRebuildStateStorage}.
      *
      * @param n Node.
      * @return Index rebuild state storage.
      */
     private IndexRebuildStateStorage indexRebuildStateStorage(IgniteEx n) {
-        return getFieldValue(n.context().query(), "idxRebuildProgress");
+        return getFieldValue(n.context().query(), "idxRebuildStateStorage");
     }
 }
