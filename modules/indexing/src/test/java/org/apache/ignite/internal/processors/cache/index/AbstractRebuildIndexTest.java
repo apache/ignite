@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.index;
 
 import java.util.List;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.client.Person;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -76,9 +77,7 @@ public abstract class AbstractRebuildIndexTest extends GridCommonAbstractTest {
             .setDataStorageConfiguration(
                 new DataStorageConfiguration()
                     .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true))
-            ).setCacheConfiguration(
-                new CacheConfiguration<>(DEFAULT_CACHE_NAME).setIndexedTypes(Integer.class, Person.class)
-            );
+            ).setCacheConfiguration(cacheCfg(DEFAULT_CACHE_NAME, null));
     }
 
     /** {@inheritDoc} */
@@ -103,8 +102,7 @@ public abstract class AbstractRebuildIndexTest extends GridCommonAbstractTest {
         if (n.cluster().state() != ACTIVE)
             n.cluster().state(ACTIVE);
 
-        for (int i = 0; i < keys; i++)
-            n.cache(DEFAULT_CACHE_NAME).put(i, new Person(i, "name_" + i));
+        populate(n.cache(DEFAULT_CACHE_NAME), keys);
 
         return n;
     }
@@ -210,5 +208,29 @@ public abstract class AbstractRebuildIndexTest extends GridCommonAbstractTest {
 
         for (String n : igniteInstanceNames)
             deleteIndexBin(n);
+    }
+
+    /**
+     * Create cache configuration with index: {@link Integer} -> {@link Person}.
+     *
+     * @param cacheName Cache name.
+     * @param grpName Group name.
+     * @return New instance of the cache configuration.
+     */
+    protected <K, V> CacheConfiguration<K, V> cacheCfg(String cacheName, @Nullable String grpName) {
+        CacheConfiguration<K, V> cacheCfg = new CacheConfiguration<>(cacheName);
+
+        return cacheCfg.setGroupName(grpName).setIndexedTypes(Integer.class, Person.class);
+    }
+
+    /**
+     * Populate cache with {@link Person} sequentially.
+     *
+     * @param cache Cache.
+     * @param cnt Entry count.
+     */
+    protected void populate(IgniteCache<Integer, Person> cache, int cnt) {
+        for (int i = 0; i < cnt; i++)
+            cache.put(i, new Person(i, "name_" + i));
     }
 }

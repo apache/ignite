@@ -22,7 +22,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.StopRebuildIndexConsumer;
-import org.apache.ignite.internal.processors.query.IndexRebuildAware;
+import org.apache.ignite.internal.processors.query.aware.IndexRebuildFutureStorage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 
@@ -186,7 +186,7 @@ public class ForceRebuildIndexTest extends AbstractRebuildIndexTest {
      * @param expContains Whether a cache is expected.
      */
     private void checkRebuildAfterExchange(IgniteEx n, int cacheId, boolean expContains) {
-        IndexRebuildAware idxRebuildAware = getFieldValue(n.context().query(), "idxRebuildAware");
+        IndexRebuildFutureStorage idxRebuildAware = getFieldValue(n.context().query(), "idxRebuildAware");
 
         GridDhtPartitionsExchangeFuture exhFut = n.context().cache().context().exchange().lastTopologyFuture();
 

@@ -18,15 +18,17 @@
 package org.apache.ignite.internal.processors.query.aware;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
@@ -39,7 +41,16 @@ import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
 /**
- * // TODO: 06.05.2021  
+ * Holder of up-to-date information about rebuilding cache indexes.
+ * Helps to avoid the situation when the index rebuilding process is interrupted
+ * and after a node restart/reactivation the indexes will become inconsistent.
+ * <p/>
+ * To do this, before rebuilding the indexes, call {@link #onStartRebuildIndexes}
+ * and after it {@link #onFinishRebuildIndexes}. Use {@link #completed} to check
+ * if the index rebuild has completed.
+ * <p/>
+ * To prevent leaks, it is necessary to use {@link #completeRebuildIndexes}
+ * when detecting the fact of destroying the cache.
  */
 public class IndexRebuildStateStorage implements MetastorageLifecycleListener, CheckpointListener {
     /** Key prefix for the MetaStorage. */
@@ -48,16 +59,16 @@ public class IndexRebuildStateStorage implements MetastorageLifecycleListener, C
     /** Kernal context. */
     private final GridKernalContext ctx;
 
-    /** Logger. */
-    private final IgniteLogger log;
-
     /** MetaStorage synchronization mutex. */
     private final Object metaStorageMux = new Object();
 
-    /** Read write lock. */
+    /** Lock. */
     private final Lock lock = new ReentrantLock(true);
 
-    /** Stopping the grid. Guarded by {@link #lock}. */
+    /**
+     * Stopping the grid.
+     * Guarded by {@link #lock}.
+     */
     private boolean stopGrid;
 
     /**
@@ -81,24 +92,39 @@ public class IndexRebuildStateStorage implements MetastorageLifecycleListener, C
      */
     public IndexRebuildStateStorage(GridKernalContext ctx) {
         this.ctx = ctx;
-
-        log = ctx.log(this.getClass());
     }
 
     /**
      * Callback on start of {@link GridQueryProcessor}.
      */
-    public void onStart() {
+    public void onQueryStart() {
         ctx.internalSubscriptionProcessor().registerMetastorageListener(this);
+    }
+
+    /**
+     * Callback on start of {@link GridCacheProcessor}.
+     */
+    public void onCacheKernalStart() {
+        lock.lock();
+
+        try {
+            if (!states.isEmpty()) {
+                Set<String> toComplete = new HashSet<>(states.keySet());
+                toComplete.removeAll(ctx.cache().cacheDescriptors().keySet());
+
+                for (String cacheName : toComplete)
+                    completeRebuildIndexes(cacheName);
+            }
+        }
+        finally {
+            lock.unlock();
+        }
     }
 
     /**
      * Callback on kernel stop.
      */
     public void onKernalStop() {
-        if (log.isDebugEnabled())
-            log.debug("Stopping the index rebuild state store (grid stopping).");
-
         lock.lock();
 
         try {
@@ -111,8 +137,12 @@ public class IndexRebuildStateStorage implements MetastorageLifecycleListener, C
 
     /**
      * Callback on start of rebuild cache indexes.
+     * <p/>
+     * Adding an entry that rebuilding the cache indexes in progress.
+     * If the cache is persistent, then add this entry to the MetaStorage.
      *
      * @param cacheCtx Cache context.
+     * @see #onFinishRebuildIndexes
      */
     public void onStartRebuildIndexes(GridCacheContext cacheCtx) {
         lock.lock();
@@ -148,8 +178,14 @@ public class IndexRebuildStateStorage implements MetastorageLifecycleListener, C
 
     /**
      * Callback on finish of rebuild cache indexes.
+     * {@link #onStartRebuildIndexes} is expected to have been called before.
+     * <p/>
+     * If the cache is persistent, then we mark that the rebuilding of the
+     * indexes is completed and the entry will be deleted from the MetaStorage
+     * at the end of the checkpoint. Otherwise, delete the index rebuild entry.
      *
      * @param cacheCtx Cache context.
+     * @see #onStartRebuildIndexes
      */
     public void onFinishRebuildIndexes(GridCacheContext cacheCtx) {
         lock.lock();
@@ -172,16 +208,44 @@ public class IndexRebuildStateStorage implements MetastorageLifecycleListener, C
     }
 
     /**
-     * Check if rebuilding of indexes for the cache has been completed.
+     * Force a mark that the index rebuild for the cache has completed.
+     * {@link #onStartRebuildIndexes} is not expected to have been called before.
+     * <p/>
+     * If the cache is persistent, then we mark that the rebuilding of the
+     * indexes is completed and the entry will be deleted from the MetaStorage
+     * at the end of the checkpoint. Otherwise, delete the index rebuild entry.
      *
-     * @param cacheCtx Cache context.
-     * @return {@code True} if completed.
+     * @param cacheName Cache name.
      */
-    public boolean completed(GridCacheContext cacheCtx) {
+    public void completeRebuildIndexes(String cacheName) {
         lock.lock();
 
         try {
-            IndexRebuildState state = states.get(cacheCtx.name());
+            IndexRebuildState state = states.get(cacheName);
+
+            if (state != null) {
+                if (state.saved())
+                    state.completed(true);
+                else
+                    states.remove(cacheName);
+            }
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * Check if rebuilding of indexes for the cache has been completed.
+     *
+     * @param cacheName Cache name.
+     * @return {@code True} if completed.
+     */
+    public boolean completed(String cacheName) {
+        lock.lock();
+
+        try {
+            IndexRebuildState state = states.get(cacheName);
 
             return state == null || state.completed();
         }

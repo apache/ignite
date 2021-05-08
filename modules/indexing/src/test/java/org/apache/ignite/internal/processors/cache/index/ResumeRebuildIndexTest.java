@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.BreakRebuildIndexConsumer;
 import org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.StopRebuildIndexConsumer;
+import org.apache.ignite.internal.processors.query.aware.IndexRebuildStateStorage;
 import org.apache.ignite.internal.util.function.ThrowableFunction;
 import org.junit.Test;
 
@@ -30,6 +31,8 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.prepareBeforeNodeStart;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.apache.ignite.testframework.GridTestUtils.deleteCacheGrpDir;
+import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 
 /**
  * Class for testing rebuilding index resumes.
@@ -110,6 +113,70 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
     }
 
     /**
+     * Checks that when the caches are destroyed,
+     * the index rebuild states will also be deleted.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDeleteIndexRebuildStateOnDestroyCache() throws Exception {
+        IgniteEx n0 = startGrid(getTestIgniteInstanceName(0));
+
+        prepareBeforeNodeStart();
+        IgniteEx n1 = startGrid(getTestIgniteInstanceName(1));
+
+        n0.cluster().state(ACTIVE);
+        awaitPartitionMapExchange();
+
+        for (int i = 0; i < 4; i++) {
+            String cacheName = DEFAULT_CACHE_NAME + i;
+
+            String grpName = i == 1 || i == 2 ? DEFAULT_CACHE_NAME + "_G" : null;
+
+            populate(n1.getOrCreateCache(cacheCfg(cacheName, grpName)), 10_000);
+
+            BreakRebuildIndexConsumer breakRebuildIdxConsumer =
+                addBreakRebuildIndexConsumer(n1, cacheName, (c, r) -> c.visitCnt.get() > 10);
+
+            IgniteInternalCache<?, ?> cachex = n1.cachex(cacheName);
+
+            int cacheSize = cachex.size();
+
+            assertTrue(forceRebuildIndexes(n1, cachex.context()).isEmpty());
+
+            IgniteInternalFuture<?> rebIdxFut = indexRebuildFuture(n1, cachex.context().cacheId());
+
+            breakRebuildIdxConsumer.startRebuildIdxFut.get(getTestTimeout());
+            breakRebuildIdxConsumer.finishRebuildIdxFut.onDone();
+
+            assertThrows(log, () -> rebIdxFut.get(getTestTimeout()), Throwable.class, null);
+            assertTrue(breakRebuildIdxConsumer.visitCnt.get() < cacheSize);
+        }
+
+        n1.destroyCache(DEFAULT_CACHE_NAME + 0);
+        assertTrue(indexRebuildStateStorage(n1).completed(DEFAULT_CACHE_NAME + 0));
+
+        n1.destroyCache(DEFAULT_CACHE_NAME + 1);
+        assertTrue(indexRebuildStateStorage(n1).completed(DEFAULT_CACHE_NAME + 1));
+
+        stopGrid(1);
+        awaitPartitionMapExchange();
+
+        n0.destroyCache(DEFAULT_CACHE_NAME + 2);
+        n0.destroyCache(DEFAULT_CACHE_NAME + 3);
+
+        deleteCacheGrpDir(
+            n1.name(),
+            (dir, name) -> name.contains(DEFAULT_CACHE_NAME + 3) || name.contains(DEFAULT_CACHE_NAME + "_G")
+        );
+
+        n1 = startGrid(getTestIgniteInstanceName(1));
+
+        assertTrue(indexRebuildStateStorage(n1).completed(DEFAULT_CACHE_NAME + 2));
+        assertTrue(indexRebuildStateStorage(n1).completed(DEFAULT_CACHE_NAME + 3));
+    }
+
+    /**
      * Check that for node the index rebuilding will be restarted
      * automatically after executing the function on the node.
      *
@@ -121,12 +188,17 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
         int nodeCnt,
         ThrowableFunction<IgniteEx, IgniteEx, Exception> function
     ) throws Exception {
+        assertTrue(nodeCnt > 0);
+
         for (int i = 0; i < nodeCnt - 1; i++)
             startGrid(getTestIgniteInstanceName(i + 1));
 
         prepareBeforeNodeStart();
 
         IgniteEx n = prepareCluster(10_000);
+
+        if (nodeCnt > 1)
+            awaitPartitionMapExchange();
 
         IgniteInternalCache<?, ?> cachex = n.cachex(DEFAULT_CACHE_NAME);
 
@@ -159,5 +231,15 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
 
         rebIdxFut1.get(getTestTimeout());
         assertEquals(cacheSize, stopRebuildIdxConsumer.visitCnt.get());
+    }
+
+    /**
+     * Getting {@code GridQueryProcessor#idxRebuildProgress}.
+     *
+     * @param n Node.
+     * @return Index rebuild state storage.
+     */
+    private IndexRebuildStateStorage indexRebuildStateStorage(IgniteEx n) {
+        return getFieldValue(n.context().query(), "idxRebuildProgress");
     }
 }
