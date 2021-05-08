@@ -119,16 +119,6 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         return new String(chs);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        startGrids(2);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      *
      */
