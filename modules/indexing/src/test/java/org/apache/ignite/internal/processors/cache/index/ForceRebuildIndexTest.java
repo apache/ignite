@@ -186,7 +186,7 @@ public class ForceRebuildIndexTest extends AbstractRebuildIndexTest {
      * @param expContains Whether a cache is expected.
      */
     private void checkRebuildAfterExchange(IgniteEx n, int cacheId, boolean expContains) {
-        IndexRebuildFutureStorage idxRebuildAware = getFieldValue(n.context().query(), "idxRebuildAware");
+        IndexRebuildFutureStorage idxRebuildAware = getFieldValue(n.context().query(), "idxRebuildFutStorage");
 
         GridDhtPartitionsExchangeFuture exhFut = n.context().cache().context().exchange().lastTopologyFuture();
 
