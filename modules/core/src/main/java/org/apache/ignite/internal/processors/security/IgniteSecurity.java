@@ -126,4 +126,30 @@ public interface IgniteSecurity {
      * false if it's used a default NoOp implementation.
      */
     public boolean enabled();
+
+    /**
+     * Creates user with the specified login and password.
+     *
+     * @param login Login of the user to be created.
+     * @param pwd User password.
+     * @throws IgniteCheckedException If error occurred.
+     */
+    public void createUser(String login, char[] pwd) throws IgniteCheckedException;
+
+    /**
+     * Alters password of user with the specified login.
+     *
+     * @param login Login of the user which password should be altered.
+     * @param pwd User password to alter.
+     * @throws IgniteCheckedException If error occurred.
+     */
+    public void alterUser(String login, char[] pwd) throws IgniteCheckedException;
+
+    /**
+     * Drops user with the specified login.
+     *
+     * @param login Login of the user to be dropped.
+     * @throws IgniteCheckedException If error occurred.
+     */
+    public void dropUser(String login) throws IgniteCheckedException;
 }
