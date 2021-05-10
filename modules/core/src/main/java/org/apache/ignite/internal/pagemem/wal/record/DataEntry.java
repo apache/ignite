@@ -44,6 +44,7 @@ public class DataEntry {
     protected GridCacheOperation op;
 
     /** Near transaction version. */
+    @GridToStringInclude
     protected GridCacheVersion nearXidVer;
 
     /** Write version. */

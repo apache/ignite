@@ -68,6 +68,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 .Aggregate(0, (a, b) => a | (1 << b));
 
             var actual = ClientFeatures.AllFeatures
+                // ReSharper disable once RedundantCast
                 .Select((x, i) => (int) x << i * 8)
                 .Aggregate(0, (a, b) => a | b);
 

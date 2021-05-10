@@ -218,9 +218,13 @@ The asynchronous operations return an object that represents the result of the o
 *ALSO, do we need to explain what a "closure" is?*
 
 Blocking and closure are basic notions a java developer should know. We also expect that users know/can learn themselves how to use the Feature class. We can elaborate on this if we get relevant feedback.
+
+NOTE: Closure is not a technically correct term here. Closure is something that captures (encloses) context: https://en.wikipedia.org/wiki/Closure_(computer_programming).
+We don't know if the user code which is passed as a listener is a closure or not.
+Callback seems to be a better fit.
 ////
 
-To wait for the results in a non-blocking fashion, register a closure using the `IgniteFuture.listen()` or `IgniteFuture.chain()` method. The closure is called when the operation is completed.
+To wait for the results in a non-blocking fashion, register a callback using the `IgniteFuture.listen()` or `IgniteFuture.chain()` method. The callback is called when the operation is completed.
 
 [tabs]
 --
@@ -245,18 +249,29 @@ include::code-snippets/cpp/src/cache_asynchronous_execution.cpp[tag=cache-asynch
 [NOTE]
 ====
 [discrete]
-=== Closures Execution and Thread Pools
+=== Callbacks Execution and Thread Pools
 
 ////////////////////////////////////////////////////////////////////////////////
 This is java specific
 ////////////////////////////////////////////////////////////////////////////////
 
 
-If an asynchronous operation is completed by the time the closure is passed to either the `IgniteFuture.listen()` or `IgniteFuture.chain()` method, then the closure is executed synchronously by the calling thread. Otherwise, the closure is executed asynchronously when the operation is completed.
+If an asynchronous operation is completed by the time the callback is passed to either the `IgniteFuture.listen()` or `IgniteFuture.chain()` method, then the callback is executed synchronously by the calling thread.
+Otherwise, the callback is executed asynchronously when the operation is completed.
 
-Depending on the type of operation, the closure might be called by a thread from the system pool (asynchronous cache operations) or by a thread from the public pool (asynchronous compute operations). Therefore, you should avoid calling synchronous cache and compute operations from inside the closure, because it may lead to a deadlock due to pools starvation.
+Callbacks for asynchronous compute operations are invoked by threads from the link:perf-and-troubleshooting/thread-pools-tuning[Ignite public pool].
+Calling synchronous cache and compute operations from inside the callback may lead to a deadlock due to pools starvation.
+To achieve nested execution of asynchronous compute operations, you can take advantage of link:perf-and-troubleshooting/thread-pools-tuning#creating-custom-thread-pool[custom thread pools].
 
-To achieve nested execution of asynchronous compute operations, you can take advantage of link:perf-troubleshooting-guide/thread-pools-tuning#creating-custom-thread-pool[custom thread pools].
+Callbacks for asynchronous cache operations are invoked by using `ForkJoinPool#commonPool`, unless a different executor is configured with `IgniteConfiguration#asyncContinuationExecutor`.
+
+* This default executor is safe for any operations inside the callback.
+* Default behavior was changed in Ignite 2.11. Before that, async cache operation callbacks were called from an Ignite system pool (so-called "striped pool").
+* To restore previous behavior, use `IgniteConfiguration.setAsyncContinuationExecutor(Runnable::run)`.
+** Previous behavior can provide a small performance improvement, because callbacks are executed without any indirection or scheduling.
+** UNSAFE: cache operations cannot proceed while system threads execute callbacks, and deadlocks are possible if other cache operations are invoked from the callback.
+
+
 ====
 
 
@@ -268,7 +283,7 @@ To achieve nested execution of asynchronous compute operations, you can take adv
 
 == Resource Injection
 
-Ignite allows dependency injection of pre-defined Ignite resources, and supports field-based as well as method-based injection. Resources with proper annotations will be injected into the corresponding task, job, closure, or SPI before it is initialized.
+Ignite allows dependency injection of pre-defined Ignite resources, and supports field-based as well as method-based injection. Resources with proper annotations will be injected into the corresponding task, job, callback, or SPI before it is initialized.
 
 
 You can inject resources by annotating either a field or a method. When you annotate a field, Ignite simply sets the value of the field at injection time (disregarding an access modifier of the field). If you annotate a method with a resource annotation, it should accept an input parameter of the type corresponding to the injected resource. If it does, then the method is invoked at injection time with the appropriate resource passed as an input argument.
