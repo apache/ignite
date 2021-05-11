@@ -194,10 +194,12 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
 
             Class<?> cls = U.forName(clsName != null ? clsName : alias, ldr);
 
-            if (spi.register(ldr, cls) && log.isDebugEnabled()) {
-                log.debug("Resource registered automatically: [name=" + U.getResourceName(cls)
-                    + ", class=" + cls.getName()
-                    + ", ldr=" + ldr + ']');
+            if (spi.register(ldr, cls)) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Resource registered automatically: [name=" + U.getResourceName(cls)
+                        + ", class=" + cls.getName()
+                        + ", ldr=" + ldr + ']');
+                }
             }
 
             dep = deploy(ctx.config().getDeploymentMode(), ldr, cls, alias, meta.record());
@@ -355,10 +357,11 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
             if (clsLdr.getClass().equals(GridDeploymentClassLoader.class))
                 clsLdr = clsLdr.getParent();
 
-            if (spi.register(clsLdr, cls) && log.isDebugEnabled()) {
-                log.debug("Resource registered automatically: [name=" + U.getResourceName(cls)
-                    + ", class=" + cls.getName()
-                    + ", ldr=" + clsLdr + ']');
+            if (spi.register(clsLdr, cls)) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Resource registered automatically: [name=" + U.getResourceName(cls)
+                        + ", class=" + cls.getName() + ", ldr=" + clsLdr + ']');
+                }
             }
 
             GridDeploymentMetadata meta = new GridDeploymentMetadata();
