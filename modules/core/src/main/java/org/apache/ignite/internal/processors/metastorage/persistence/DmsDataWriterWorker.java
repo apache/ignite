@@ -108,15 +108,22 @@ public class DmsDataWriterWorker extends GridWorker {
      * @param compFut Future which should be completed when worker may proceed with updates.
      */
     public void suspend(IgniteInternalFuture<?> compFut) {
-        latch = new CountDownLatch(1);
+        if (isCancelled())
+            suspendFut = CompletableFuture.completedFuture(AWAIT);
+        else {
+            latch = new CountDownLatch(1);
 
-        updateQueue.offer((RunnableFuture<?>)(suspendFut = new FutureTask<>(() -> AWAIT)));
+            updateQueue.offer((RunnableFuture<?>)(suspendFut = new FutureTask<>(() -> AWAIT)));
 
-        compFut.listen(f -> latch.countDown());
+            compFut.listen(f -> latch.countDown());
+        }
     }
 
     /** */
     public void update(DistributedMetaStorageHistoryItem histItem) {
+        if (isCancelled())
+            return;
+
         updateQueue.offer(newDmsTask(() -> {
             metastorage.write(historyItemKey(workerDmsVer.id() + 1), histItem);
 
@@ -133,6 +140,9 @@ public class DmsDataWriterWorker extends GridWorker {
     public void update(DistributedMetaStorageClusterNodeData fullNodeData) {
         assert fullNodeData.fullData != null;
         assert fullNodeData.hist != null;
+
+        if (isCancelled())
+            return;
 
         updateQueue.clear();
 
@@ -167,12 +177,12 @@ public class DmsDataWriterWorker extends GridWorker {
 
     /** */
     public void cancel(boolean halt) {
+        U.cancel(this);
+
         if (halt)
             updateQueue.clear();
 
         updateQueue.offer(new FutureTask<>(() -> STOP));
-
-        latch.countDown();
 
         U.join(runner(), log);
     }
@@ -192,7 +202,7 @@ public class DmsDataWriterWorker extends GridWorker {
                     break;
 
                 if (res == AWAIT)
-                    U.await(latch);
+                    latch.await();
             }
             catch (InterruptedException ignore) {
             }

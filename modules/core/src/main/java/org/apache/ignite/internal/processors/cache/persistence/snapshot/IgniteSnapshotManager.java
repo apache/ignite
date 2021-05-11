@@ -460,7 +460,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (!snpDir.exists())
             return;
 
-        assert snpDir.isDirectory() : snpDir;
+        if (!snpDir.isDirectory())
+            return;
 
         try {
             File binDir = binaryWorkDir(snpDir.getAbsolutePath(), folderName);
