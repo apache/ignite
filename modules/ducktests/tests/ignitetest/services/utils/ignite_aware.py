@@ -210,7 +210,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
             .prepare_for_env(self, node)
 
         for name, template in self.spec.config_templates():
-            config_txt = template.render(config_dir=self.config_dir, work_dir=self.work_dir, config=config)
+            config_txt = template.render(service=self, config=config)
 
             node.account.create_file(os.path.join(self.config_dir, name), config_txt)
 
@@ -475,13 +475,13 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         Update the node log file.
         """
         if not hasattr(node, 'log_file'):
-            node.log_file = os.path.join(self.log_dir, "console.log")
+            node.log_file = os.path.join(self.log_dir, "ignite.log")
 
         cnt = list(node.account.ssh_capture(f'ls {self.log_dir} | '
-                                            f'grep -E "^console.log(.[0-9]+)?$" | '
+                                            f'grep -E "^ignite.log(.[0-9]+)?$" | '
                                             f'wc -l', callback=int))[0]
         if cnt > 0:
-            rotated_log = os.path.join(self.log_dir, f"console.log.{cnt}")
+            rotated_log = os.path.join(self.log_dir, f"ignite.log.{cnt}")
             self.logger.debug(f"rotating {node.log_file} to {rotated_log} on {node.name}")
             node.account.ssh(f"mv {node.log_file} {rotated_log}")
 

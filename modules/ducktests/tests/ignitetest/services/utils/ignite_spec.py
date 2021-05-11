@@ -30,6 +30,7 @@ from ignitetest.services.utils.config_template import IgniteClientConfigTemplate
 from ignitetest.services.utils.jvm_utils import create_jvm_settings, merge_jvm_settings
 from ignitetest.services.utils.path import get_home_dir, get_module_path, IgnitePathAware
 from ignitetest.services.utils.ssl.ssl_params import is_ssl_enabled
+from ignitetest.utils.ignite_test import JFR_ENABLED
 from ignitetest.utils.version import DEV_BRANCH
 
 
@@ -90,6 +91,12 @@ class IgniteSpec(metaclass=ABCMeta):
         self._add_jvm_opts(["-DIGNITE_SUCCESS_FILE=" + os.path.join(self.service.persistent_root, "success_file"),
                             "-Dlog4j.configuration=file:" + self.service.log_config_file,
                             "-Dlog4j.configDebug=true"])
+
+        if service.context.globals.get(JFR_ENABLED, False):
+            self._add_jvm_opts(["-XX:+UnlockCommercialFeatures",
+                                "-XX:+FlightRecorder",
+                                "-XX:StartFlightRecording=dumponexit=true," +
+                                f"filename={self.service.jfr_dir}/recording.jfr"])
 
     def config_templates(self):
         """
@@ -219,7 +226,7 @@ class IgniteNodeSpec(IgniteSpec):
                self.service.script("ignite.sh"),
                self._jvm_opts(),
                self.config_file_path(),
-               node.log_file)
+               os.path.join(self.service.log_dir, "console.log"))
 
         return cmd
 
@@ -249,7 +256,7 @@ class IgniteApplicationSpec(IgniteSpec):
                self.service.script("ignite.sh"),
                self._jvm_opts(),
                ",".join(args),
-               node.log_file)
+               os.path.join(self.service.log_dir, "console.log"))
 
         return cmd
 

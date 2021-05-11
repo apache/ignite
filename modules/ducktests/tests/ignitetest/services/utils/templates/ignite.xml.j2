@@ -31,10 +31,10 @@
         http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
         http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
     <bean class="org.apache.ignite.configuration.IgniteConfiguration">
-        <property name="workDirectory" value="{{ work_dir }}" />
+        <property name="workDirectory" value="{{ service.work_dir }}" />
         <property name="gridLogger">
             <bean class="org.apache.ignite.logger.log4j.Log4JLogger">
-                <constructor-arg type="java.lang.String" value="{{ config_dir }}/ignite-log4j.xml"/>
+                <constructor-arg type="java.lang.String" value="{{ service.config_dir }}/ignite-log4j.xml"/>
             </bean>
         </property>
 

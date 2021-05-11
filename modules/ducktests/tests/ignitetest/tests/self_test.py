@@ -111,7 +111,7 @@ class SelfTest(IgniteTest):
 
         def get_logs_count(service):
             node = service.nodes[0]
-            return list(node.account.ssh_capture(f'ls {service.log_dir}/console.log* | wc -l', callback=int))[0]
+            return list(node.account.ssh_capture(f'ls {service.log_dir}/ignite.log* | wc -l', callback=int))[0]
 
         ignites = IgniteService(self.test_context, IgniteConfiguration(version=IgniteVersion(ignite_version)),
                                 num_nodes=1)
@@ -122,16 +122,16 @@ class SelfTest(IgniteTest):
         for i in range(num_restarts - 1):
             ignites.stop()
 
-            old_cnt = get_log_lines_count(ignites, "console.log")
+            old_cnt = get_log_lines_count(ignites, "ignite.log")
             assert old_cnt > 0
 
             ignites.start(clean=False)
 
-            new_cnt = get_log_lines_count(ignites, "console.log")
+            new_cnt = get_log_lines_count(ignites, "ignite.log")
             assert new_cnt > 0
 
             # check that there is no new entry in rotated file
-            assert old_cnt == get_log_lines_count(ignites, f"console.log.{i + 1}")
+            assert old_cnt == get_log_lines_count(ignites, f"ignite.log.{i + 1}")
 
         assert get_logs_count(ignites) == num_restarts
 
