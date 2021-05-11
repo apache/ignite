@@ -49,6 +49,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.cache.CacheException;
 import javax.cache.expiry.Duration;
+import javax.cache.expiry.ExpiryPolicy;
 import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -169,10 +170,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
@@ -2307,7 +2305,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 ", atomicity=" + cfg.getAtomicityMode() +
                 ", backups=" + cfg.getBackups() +
                 ", mvcc=" + cacheCtx.mvccEnabled() +
-                (cacheCtx.expiry() != null ? ", " + getExpirePolicyInfo(cacheCtx) : "") + ']');
+                (cacheCtx.expiry() != null ? ", " + buildExpirePolicyInfo(cacheCtx) : "") + ']');
         }
 
         grp.onCacheStarted(cacheCtx);
@@ -2388,7 +2386,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 ", atomicity=" + cfg.getAtomicityMode() +
                 ", backups=" + cfg.getBackups() +
                 ", mvcc=" + cacheCtx.mvccEnabled() +
-                (cacheCtx.expiry() != null ? ", " + getExpirePolicyInfo(cacheCtx) : "") + ']');
+                (cacheCtx.expiry() != null ? ", " + buildExpirePolicyInfo(cacheCtx) : "") + ']');
         }
 
         return cacheCtx;
@@ -2397,15 +2395,18 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * Get formatted string with expire policy info.
      *
-     * @param ctx - cache context.
+     * @param cacheCtx - grid cache context.
      * @return formatted expire policy info.
      */
-    private String getExpirePolicyInfo(GridCacheContext ctx) {
-        Duration expiry = ctx.expiry().getExpiryForCreation();
+    private String buildExpirePolicyInfo(GridCacheContext cacheCtx) {
+        ExpiryPolicy expPlc = cacheCtx.expiry();
 
-        return "expirePolicy=[durationAmount=" + expiry.getDurationAmount() +
-                ", timeUnit=" + expiry.getTimeUnit() +
-                ", isEagerTtl=" + ctx.config().isEagerTtl() + ']';
+        Duration dur = expPlc.getExpiryForCreation() != null ? expPlc.getExpiryForCreation() :
+                expPlc.getExpiryForUpdate() != null ? expPlc.getExpiryForUpdate() : expPlc.getExpiryForAccess();
+
+        return "expirePolicy=[durationAmount=" + dur.getDurationAmount() +
+                ", timeUnit=" + dur.getTimeUnit() +
+                ", isEagerTtl=" + cacheCtx.config().isEagerTtl() + ']';
     }
 
     /**
