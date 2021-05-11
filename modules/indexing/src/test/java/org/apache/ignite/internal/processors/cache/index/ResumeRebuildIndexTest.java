@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.index;
 
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
@@ -123,6 +124,62 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
 
         assertEquals(1_000, stopRebuildIdxConsumer.visitCnt.get());
         assertTrue(indexRebuildStateStorage(n).completed(cacheCtx.name()));
+
+        dbMgr(n).enableCheckpoints(true).get(getTestTimeout());
+        forceCheckpoint();
+
+        assertNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheCtx.name())));
+    }
+
+    /**
+     * Checking the flow in case of an restart node for {@link IndexRebuildStateStorage}.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testRestartNodeFlowIndexRebuildStateStorage() throws Exception {
+        prepareBeforeNodeStart();
+        IgniteEx n = prepareCluster(1_000);
+
+        GridCacheContext<?, ?> cacheCtx = n.cachex(DEFAULT_CACHE_NAME).context();
+
+        BreakRebuildIndexConsumer breakRebuildIdxConsumer =
+            addBreakRebuildIndexConsumer(n, cacheCtx.name(), (c, row) -> c.visitCnt.get() > 10);
+
+        assertTrue(forceRebuildIndexes(n, cacheCtx).isEmpty());
+        IgniteInternalFuture<?> idxRebFut0 = indexRebuildFuture(n, cacheCtx.cacheId());
+
+        breakRebuildIdxConsumer.startRebuildIdxFut.get(getTestTimeout());
+        breakRebuildIdxConsumer.finishRebuildIdxFut.onDone();
+
+        assertThrows(log, () -> idxRebFut0.get(getTestTimeout()), Throwable.class, null);
+
+        forceCheckpoint();
+
+        assertFalse(indexRebuildStateStorage(n).completed(cacheCtx.name()));
+        assertNotNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheCtx.name())));
+
+        stopAllGrids();
+
+        StopRebuildIndexConsumer stopRebuildIdxConsumer = addStopRebuildIndexConsumer(n, cacheCtx.name());
+
+        prepareBeforeNodeStart();
+        n = startGrid(0);
+
+        assertFalse(indexRebuildStateStorage(n).completed(cacheCtx.name()));
+        assertNotNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheCtx.name())));
+
+        stopRebuildIdxConsumer.startRebuildIdxFut.get(getTestTimeout());
+        IgniteInternalFuture<?> idxRebFut1 = indexRebuildFuture(n, cacheCtx.cacheId());
+
+        dbMgr(n).enableCheckpoints(false).get(getTestTimeout());
+
+        stopRebuildIdxConsumer.finishRebuildIdxFut.onDone();
+        idxRebFut1.get(getTestTimeout());
+
+        assertEquals(1_000, stopRebuildIdxConsumer.visitCnt.get());
+        assertTrue(indexRebuildStateStorage(n).completed(cacheCtx.name()));
+        assertNotNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheCtx.name())));
 
         dbMgr(n).enableCheckpoints(true).get(getTestTimeout());
         forceCheckpoint();
@@ -289,40 +346,70 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
 
         IgniteEx n = prepareCluster(10_000);
 
+        populate(n.getOrCreateCache(cacheCfg(DEFAULT_CACHE_NAME + 0, null)), 10_000);
+
         if (nodeCnt > 1)
             awaitPartitionMapExchange();
 
-        IgniteInternalCache<?, ?> cachex = n.cachex(DEFAULT_CACHE_NAME);
+        IgniteInternalCache<?, ?> cachex0 = n.cachex(DEFAULT_CACHE_NAME);
+        IgniteInternalCache<?, ?> cachex1 = n.cachex(DEFAULT_CACHE_NAME + 0);
 
-        int cacheSize = cachex.size();
-        assertTrue(String.valueOf(cacheSize), cacheSize >= 1_000);
+        int cacheSize0 = cachex0.size();
+        int cacheSize1 = cachex1.size();
+        assertTrue(String.valueOf(cacheSize0), cacheSize0 >= 1_000);
+        assertTrue(String.valueOf(cacheSize1), cacheSize1 >= 1_000);
 
-        GridCacheContext<?, ?> cacheCtx = cachex.context();
+        GridCacheContext<?, ?> cacheCtx0 = cachex0.context();
+        GridCacheContext<?, ?> cacheCtx1 = cachex1.context();
 
         BreakRebuildIndexConsumer breakRebuildIdxConsumer =
-            addBreakRebuildIndexConsumer(n, cacheCtx.name(), (c, row) -> c.visitCnt.get() >= 10);
+            addBreakRebuildIndexConsumer(n, cacheCtx0.name(), (c, row) -> c.visitCnt.get() >= 10);
 
-        assertTrue(forceRebuildIndexes(n, cacheCtx).isEmpty());
+        StopRebuildIndexConsumer stopRebuildIdxConsumer0 = addStopRebuildIndexConsumer(n, cacheCtx1.name());
 
-        IgniteInternalFuture<?> rebIdxFut0 = indexRebuildFuture(n, cacheCtx.cacheId());
+        assertTrue(forceRebuildIndexes(n, cacheCtx0, cacheCtx1).isEmpty());
+
+        IgniteInternalFuture<?> rebIdxFut0 = indexRebuildFuture(n, cacheCtx0.cacheId());
+        IgniteInternalFuture<?> rebIdxFut1 = indexRebuildFuture(n, cacheCtx1.cacheId());
 
         breakRebuildIdxConsumer.startRebuildIdxFut.get(getTestTimeout());
         breakRebuildIdxConsumer.finishRebuildIdxFut.onDone();
 
-        assertThrows(log, () -> rebIdxFut0.get(getTestTimeout()), Throwable.class, null);
-        assertTrue(breakRebuildIdxConsumer.visitCnt.get() < cacheSize);
+        stopRebuildIdxConsumer0.startRebuildIdxFut.get(getTestTimeout());
+        stopRebuildIdxConsumer0.finishRebuildIdxFut.onDone();
 
-        StopRebuildIndexConsumer stopRebuildIdxConsumer = addStopRebuildIndexConsumer(n, cacheCtx.name());
+        assertThrows(log, () -> rebIdxFut0.get(getTestTimeout()), Throwable.class, null);
+        assertTrue(breakRebuildIdxConsumer.visitCnt.get() < cacheSize0);
+
+        rebIdxFut1.get(getTestTimeout());
+        assertEquals(cacheSize1, stopRebuildIdxConsumer0.visitCnt.get());
+
+        StopRebuildIndexConsumer stopRebuildIdxConsumer1 = addStopRebuildIndexConsumer(n, cacheCtx0.name());
+        stopRebuildIdxConsumer0.resetFutures();
+
+        forceCheckpoint();
 
         n = function.apply(n);
 
-        IgniteInternalFuture<?> rebIdxFut1 = indexRebuildFuture(n, cacheCtx.cacheId());
+        IgniteInternalFuture<?> rebIdxFut01 = indexRebuildFuture(n, cacheCtx0.cacheId());
+        IgniteInternalFuture<?> rebIdxFut11 = indexRebuildFuture(n, cacheCtx1.cacheId());
 
-        stopRebuildIdxConsumer.startRebuildIdxFut.get(getTestTimeout());
-        stopRebuildIdxConsumer.finishRebuildIdxFut.onDone();
+        stopRebuildIdxConsumer1.startRebuildIdxFut.get(getTestTimeout());
+        stopRebuildIdxConsumer1.finishRebuildIdxFut.onDone();
 
-        rebIdxFut1.get(getTestTimeout());
-        assertEquals(cacheSize, stopRebuildIdxConsumer.visitCnt.get());
+        assertThrows(
+            log,
+            () -> stopRebuildIdxConsumer0.startRebuildIdxFut.get(1_000),
+            IgniteFutureTimeoutCheckedException.class,
+            null
+        );
+        stopRebuildIdxConsumer0.finishRebuildIdxFut.onDone();
+
+        rebIdxFut01.get(getTestTimeout());
+        assertEquals(cacheSize0, stopRebuildIdxConsumer1.visitCnt.get());
+
+        assertNull(rebIdxFut11);
+        assertEquals(cacheSize1, stopRebuildIdxConsumer0.visitCnt.get());
     }
 
     /**
