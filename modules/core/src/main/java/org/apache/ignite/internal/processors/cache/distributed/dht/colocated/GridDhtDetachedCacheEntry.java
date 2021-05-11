@@ -75,7 +75,7 @@ public class GridDhtDetachedCacheEntry extends GridDistributedCacheEntry {
 
     /** {@inheritDoc} */
     @Override protected void logUpdate(GridCacheOperation op, CacheObject val, GridCacheVersion writeVer,
-        long expireTime, long updCntr, AffinityTopologyVersion topVer) {
+        long expireTime, long updCntr, AffinityTopologyVersion topVer, boolean primary) {
         // No-op for detached entries, index is updated on primary or backup nodes.
     }
 
