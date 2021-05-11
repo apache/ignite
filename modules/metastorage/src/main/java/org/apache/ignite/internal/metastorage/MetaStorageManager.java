@@ -17,19 +17,12 @@
 
 package org.apache.ignite.internal.metastorage;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import org.apache.ignite.configuration.internal.ConfigurationManager;
-import org.apache.ignite.configuration.schemas.runner.NodeConfiguration;
-import org.apache.ignite.internal.metastorage.client.MetaStorageServiceImpl;
 import org.apache.ignite.internal.metastorage.watch.WatchAggregator;
 import org.apache.ignite.internal.raft.Loza;
 import org.apache.ignite.internal.vault.VaultManager;
@@ -44,12 +37,9 @@ import org.apache.ignite.metastorage.common.Condition;
 import org.apache.ignite.metastorage.common.Cursor;
 import org.apache.ignite.metastorage.common.Entry;
 import org.apache.ignite.metastorage.common.Key;
-import org.apache.ignite.metastorage.common.KeyValueStorageImpl;
 import org.apache.ignite.metastorage.common.Operation;
 import org.apache.ignite.metastorage.common.OperationTimeoutException;
 import org.apache.ignite.metastorage.common.WatchListener;
-import org.apache.ignite.metastorage.common.raft.MetaStorageCommandListener;
-import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -63,10 +53,7 @@ import org.jetbrains.annotations.Nullable;
  * </ul>
  */
 // TODO: IGNITE-14586 Remove @SuppressWarnings when implementation provided.
-@SuppressWarnings("unused") public class MetaStorageManager {
-    /** MetaStorage raft group name. */
-    private static final String METASTORAGE_RAFT_GROUP_NAME = "metastorage_raft_group";
-
+@SuppressWarnings({"FieldCanBeLocal", "unused", "WeakerAccess"}) public class MetaStorageManager {
     /** Vault manager in order to commit processed watches with corresponding applied revision. */
     private final VaultManager vaultMgr;
 
@@ -77,7 +64,7 @@ import org.jetbrains.annotations.Nullable;
     private final Loza raftMgr;
 
     /** Meta storage service. */
-    private CompletableFuture<MetaStorageService> metaStorageSvcFut;
+    private MetaStorageService metaStorageSvc;
 
     /**
      * Aggregator of multiple watches to deploy them as one batch.
@@ -110,50 +97,16 @@ import org.jetbrains.annotations.Nullable;
      */
     public MetaStorageManager(
         VaultManager vaultMgr,
-        ConfigurationManager locCfgMgr,
         ClusterService clusterNetSvc,
-        Loza raftMgr
+        Loza raftMgr,
+        MetaStorageService metaStorageSvc
     ) {
         this.vaultMgr = vaultMgr;
         this.clusterNetSvc = clusterNetSvc;
         this.raftMgr = raftMgr;
+        this.metaStorageSvc = metaStorageSvc;
         watchAggregator = new WatchAggregator();
         deployFut = new CompletableFuture<>();
-
-        String locNodeName = locCfgMgr.configurationRegistry().getConfiguration(NodeConfiguration.KEY)
-            .name().value();
-
-        String[] metastorageNodes = locCfgMgr.configurationRegistry().getConfiguration(NodeConfiguration.KEY)
-            .metastorageNodes().value();
-
-        Predicate<ClusterNode> metaStorageNodesContainsLocPred =
-            clusterNode -> Arrays.asList(metastorageNodes).contains(clusterNode.name());
-
-        if (hasMetastorageLocally(locNodeName, metastorageNodes)) {
-            this.metaStorageSvcFut = CompletableFuture.completedFuture(new MetaStorageServiceImpl(
-                    raftMgr.startRaftGroup(
-                        METASTORAGE_RAFT_GROUP_NAME,
-                        clusterNetSvc.topologyService().allMembers().stream().filter(
-                            metaStorageNodesContainsLocPred).
-                            collect(Collectors.toList()),
-                        new MetaStorageCommandListener(new KeyValueStorageImpl())
-                    )
-                )
-            );
-        }
-        else if (metastorageNodes.length > 0) {
-            this.metaStorageSvcFut = CompletableFuture.completedFuture(new MetaStorageServiceImpl(
-                    raftMgr.startRaftService(
-                        METASTORAGE_RAFT_GROUP_NAME,
-                        clusterNetSvc.topologyService().allMembers().stream().filter(
-                            metaStorageNodesContainsLocPred).
-                            collect(Collectors.toList())
-                    )
-                )
-            );
-        }
-        else
-            this.metaStorageSvcFut = new CompletableFuture<>();
 
         // TODO: IGNITE-14088: Uncomment and use real serializer factory
 //        Arrays.stream(MetaStorageMessageTypes.values()).forEach(
@@ -163,8 +116,9 @@ import org.jetbrains.annotations.Nullable;
 //            )
 //        );
 
-        // TODO: IGNITE-14414 Cluster initialization flow. Here we should complete metaStorageServiceFuture.
-        clusterNetSvc.messagingService().addMessageHandler((message, sender, correlationId) -> {});
+        clusterNetSvc.messagingService().addMessageHandler((message, sender, correlationId) -> {
+            // TODO: IGNITE-14414 Cluster initialization flow.
+        });
     }
 
     /**
@@ -179,11 +133,11 @@ import org.jetbrains.annotations.Nullable;
         if (watch.isEmpty())
             deployFut.complete(Optional.empty());
         else
-            metaStorageSvcFut.thenApply(svc -> svc.watch(
+            metaStorageSvc.watch(
                 watch.get().keyCriterion().toRange().getKey(),
                 watch.get().keyCriterion().toRange().getValue(),
                 watch.get().revision(),
-                watch.get().listener()).thenAccept(id -> deployFut.complete(Optional.of(id))).join());
+                watch.get().listener()).thenAccept(id -> deployFut.complete(Optional.of(id))).join();
         }
         catch (IgniteInternalCheckedException e) {
             throw new IgniteInternalException("Couldn't receive applied revision during deploy watches", e);
@@ -271,84 +225,84 @@ import org.jetbrains.annotations.Nullable;
      * @see MetaStorageService#get(Key)
      */
     public @NotNull CompletableFuture<Entry> get(@NotNull Key key) {
-        return metaStorageSvcFut.thenCompose(svc -> svc.get(key));
+        return metaStorageSvc.get(key);
     }
 
     /**
      * @see MetaStorageService#get(Key, long)
      */
     public @NotNull CompletableFuture<Entry> get(@NotNull Key key, long revUpperBound) {
-        return metaStorageSvcFut.thenCompose(svc -> svc.get(key, revUpperBound));
+        return metaStorageSvc.get(key, revUpperBound);
     }
 
     /**
      * @see MetaStorageService#getAll(Collection)
      */
     public @NotNull CompletableFuture<Map<Key, Entry>> getAll(Collection<Key> keys) {
-        return metaStorageSvcFut.thenCompose(svc -> svc.getAll(keys));
+        return metaStorageSvc.getAll(keys);
     }
 
     /**
      * @see MetaStorageService#getAll(Collection, long)
      */
     public @NotNull CompletableFuture<Map<Key, Entry>> getAll(Collection<Key> keys, long revUpperBound) {
-        return metaStorageSvcFut.thenCompose(svc -> svc.getAll(keys, revUpperBound));
+        return metaStorageSvc.getAll(keys, revUpperBound);
     }
 
     /**
      * @see MetaStorageService#put(Key, byte[])
      */
     public @NotNull CompletableFuture<Void> put(@NotNull Key key, byte[] val) {
-        return metaStorageSvcFut.thenCompose(svc -> svc.put(key, val));
+        return metaStorageSvc.put(key, val);
     }
 
     /**
      * @see MetaStorageService#getAndPut(Key, byte[])
      */
     public @NotNull CompletableFuture<Entry> getAndPut(@NotNull Key key, byte[] val) {
-        return metaStorageSvcFut.thenCompose(svc -> svc.getAndPut(key, val));
+        return metaStorageSvc.getAndPut(key, val);
     }
 
     /**
      * @see MetaStorageService#putAll(Map)
      */
     public @NotNull CompletableFuture<Void> putAll(@NotNull Map<Key, byte[]> vals) {
-        return metaStorageSvcFut.thenCompose(svc -> svc.putAll(vals));
+        return metaStorageSvc.putAll(vals);
     }
 
     /**
      * @see MetaStorageService#getAndPutAll(Map)
      */
     public @NotNull CompletableFuture<Map<Key, Entry>> getAndPutAll(@NotNull Map<Key, byte[]> vals) {
-        return metaStorageSvcFut.thenCompose(svc -> svc.getAndPutAll(vals));
+        return metaStorageSvc.getAndPutAll(vals);
     }
 
     /**
      * @see MetaStorageService#remove(Key)
      */
     public @NotNull CompletableFuture<Void> remove(@NotNull Key key) {
-        return metaStorageSvcFut.thenCompose(svc -> svc.remove(key));
+        return metaStorageSvc.remove(key);
     }
 
     /**
      * @see MetaStorageService#getAndRemove(Key)
      */
     public @NotNull CompletableFuture<Entry> getAndRemove(@NotNull Key key) {
-        return metaStorageSvcFut.thenCompose(svc -> svc.getAndRemove(key));
+        return metaStorageSvc.getAndRemove(key);
     }
 
     /**
      * @see MetaStorageService#removeAll(Collection)
      */
     public @NotNull CompletableFuture<Void> removeAll(@NotNull Collection<Key> keys) {
-        return metaStorageSvcFut.thenCompose(svc -> svc.removeAll(keys));
+        return metaStorageSvc.removeAll(keys);
     }
 
     /**
      * @see MetaStorageService#getAndRemoveAll(Collection)
      */
     public @NotNull CompletableFuture<Map<Key, Entry>> getAndRemoveAll(@NotNull Collection<Key> keys) {
-        return metaStorageSvcFut.thenCompose(svc -> svc.getAndRemoveAll(keys));
+        return metaStorageSvc.getAndRemoveAll(keys);
     }
 
     /**
@@ -361,7 +315,7 @@ import org.jetbrains.annotations.Nullable;
         @NotNull Operation success,
         @NotNull Operation failure
     ) {
-        return metaStorageSvcFut.thenCompose(svc -> svc.invoke(cond, Collections.singletonList(success), Collections.singletonList(failure)));
+        return metaStorageSvc.invoke(cond, Collections.singletonList(success), Collections.singletonList(failure));
     }
 
     /**
@@ -372,7 +326,7 @@ import org.jetbrains.annotations.Nullable;
         @NotNull Collection<Operation> success,
         @NotNull Collection<Operation> failure
     ) {
-        return metaStorageSvcFut.thenCompose(svc -> svc.invoke(cond, success, failure));
+        return metaStorageSvc.invoke(cond, success, failure);
     }
 
     /**
@@ -384,17 +338,14 @@ import org.jetbrains.annotations.Nullable;
         @NotNull Operation success,
         @NotNull Operation failure
     ) {
-        return metaStorageSvcFut.thenCompose(svc -> svc.getAndInvoke(key, cond, success, failure));
+        return metaStorageSvc.getAndInvoke(key, cond, success, failure);
     }
 
     /**
      * @see MetaStorageService#range(Key, Key, long)
      */
     public @NotNull Cursor<Entry> range(@NotNull Key keyFrom, @Nullable Key keyTo, long revUpperBound) {
-        return new CursorWrapper<>(
-            metaStorageSvcFut,
-            metaStorageSvcFut.thenApply(svc -> svc.range(keyFrom, keyTo, revUpperBound))
-        );
+        return metaStorageSvc.range(keyFrom, keyTo, revUpperBound);
     }
 
     /**
@@ -411,34 +362,26 @@ import org.jetbrains.annotations.Nullable;
      * @see Entry
      */
     public @NotNull Cursor<Entry> rangeWithAppliedRevision(@NotNull Key keyFrom, @Nullable Key keyTo) {
-        return new CursorWrapper<>(
-            metaStorageSvcFut,
-            metaStorageSvcFut.thenApply(svc -> {
-                try {
-                    return svc.range(keyFrom, keyTo, vaultMgr.appliedRevision());
-                }
-                catch (IgniteInternalCheckedException e) {
-                    throw new IgniteInternalException(e);
-                }
-            })
-        );
+        try {
+            return metaStorageSvc.range(keyFrom, keyTo, vaultMgr.appliedRevision());
+        }
+        catch (IgniteInternalCheckedException e) {
+            throw new IgniteInternalException(e);
+        }
     }
 
     /**
      * @see MetaStorageService#range(Key, Key)
      */
     public @NotNull Cursor<Entry> range(@NotNull Key keyFrom, @Nullable Key keyTo) {
-        return new CursorWrapper<>(
-            metaStorageSvcFut,
-            metaStorageSvcFut.thenApply(svc -> svc.range(keyFrom, keyTo))
-        );
+        return metaStorageSvc.range(keyFrom, keyTo);
     }
 
     /**
      * @see MetaStorageService#compact()
      */
     public @NotNull CompletableFuture<Void> compact() {
-        return metaStorageSvcFut.thenCompose(MetaStorageService::compact);
+        return metaStorageSvc.compact();
     }
 
     /**
@@ -458,20 +401,19 @@ import org.jetbrains.annotations.Nullable;
         final var finalRevision = revision;
 
         deployFut = deployFut
-            .thenCompose(idOpt -> idOpt.map(id -> metaStorageSvcFut.thenCompose(svc -> svc.stopWatch(id))).
-                orElse(CompletableFuture.completedFuture(null))
+            .thenCompose(idOpt -> idOpt.map(metaStorageSvc::stopWatch).orElse(CompletableFuture.completedFuture(null)))
             .thenCompose(r -> {
                 var watch = watchAggregator.watch(finalRevision, this::storeEntries);
 
                 if (watch.isEmpty())
                     return CompletableFuture.completedFuture(Optional.empty());
                 else
-                    return metaStorageSvcFut.thenCompose(svc -> svc.watch(
+                    return metaStorageSvc.watch(
                         watch.get().keyCriterion().toRange().get1(),
                         watch.get().keyCriterion().toRange().get2(),
                         watch.get().revision(),
-                        watch.get().listener()).thenApply(Optional::of));
-            }));
+                        watch.get().listener()).thenApply(Optional::of);
+            });
 
         return deployFut;
     }
@@ -505,90 +447,5 @@ import org.jetbrains.annotations.Nullable;
             return updateWatches().thenApply(uid -> id);
         else
             return deployFut.thenApply(uid -> id);
-    }
-
-    /**
-     * Checks whether the local node hosts Metastorage.
-     *
-     * @param locNodeName Local node uniq name.
-     * @param metastorageMembers Metastorage members names.
-     * @return True if the node has Metastorage, false otherwise.
-     */
-    public static boolean hasMetastorageLocally(String locNodeName, String[] metastorageMembers) {
-        boolean isLocNodeHasMetasorage = false;
-
-        for (String name : metastorageMembers) {
-            if (name.equals(locNodeName)) {
-                isLocNodeHasMetasorage = true;
-
-                break;
-            }
-        }
-        return isLocNodeHasMetasorage;
-    }
-
-    // TODO: IGNITE-14691 Temporally solution that should be removed after implementing reactive watches.
-    /** Cursor wrapper. */
-    private final class CursorWrapper<T> implements Cursor<T> {
-        /** MetaStorage service future. */
-        private final CompletableFuture<MetaStorageService> metaStorageSvcFut;
-
-        /** Inner cursor future. */
-        private final CompletableFuture<Cursor<T>> innerCursorFut;
-
-        /** Inner iterator future. */
-        private final CompletableFuture<Iterator<T>> innerIterFut;
-
-        /**
-         * @param metaStorageSvcFut MetaStorage service future.
-         * @param innerCursorFut Inner cursor future.
-         */
-        CursorWrapper(
-            CompletableFuture<MetaStorageService> metaStorageSvcFut,
-            CompletableFuture<Cursor<T>> innerCursorFut
-        ) {
-            this.metaStorageSvcFut = metaStorageSvcFut;
-            this.innerCursorFut = innerCursorFut;
-            this.innerIterFut = innerCursorFut.thenApply(Iterable::iterator);
-        }
-
-            /** {@inheritDoc} */
-            @Override public void close() throws Exception {
-            innerCursorFut.thenCompose(cursor -> {
-                try {
-                    cursor.close();
-
-                    return null;
-                }
-                catch (Exception e) {
-                    throw new IgniteInternalException(e);
-                }
-            }).get();
-        }
-
-        /** {@inheritDoc} */
-        @NotNull @Override public Iterator<T> iterator() {
-            return new Iterator<>() {
-                /** {@inheritDoc} */
-                @Override public boolean hasNext() {
-                    try {
-                        return innerIterFut.thenApply(Iterator::hasNext).get();
-                    }
-                    catch (InterruptedException | ExecutionException e) {
-                        throw new IgniteInternalException(e);
-                    }
-                }
-
-                /** {@inheritDoc} */
-                @Override public T next() {
-                    try {
-                        return innerIterFut.thenApply(Iterator::next).get();
-                    }
-                    catch (InterruptedException | ExecutionException e) {
-                        throw new IgniteInternalException(e);
-                    }
-                }
-            };
-        }
     }
 }

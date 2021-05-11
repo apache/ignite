@@ -17,18 +17,15 @@
 
 package org.apache.ignite.metastorage.common;
 
-import java.io.Serializable;
-import org.jetbrains.annotations.NotNull;
-
 /**
  * Watch event which can be processed by {@link WatchListener}.
  */
-public final class WatchEvent implements Serializable {
+public final class WatchEvent {
     /** Old (previous) entry */
-    @NotNull private final Entry oldEntry;
+    private final Entry oldEntry;
 
     /** New (updated) entry. */
-    @NotNull private final Entry newEntry;
+    private final Entry newEntry;
 
     /**
      * Constructs an event with given old and new entries.
@@ -36,7 +33,7 @@ public final class WatchEvent implements Serializable {
      * @param oldEntry Old entry.
      * @param newEntry New entry/
      */
-    public WatchEvent(@NotNull Entry oldEntry, @NotNull Entry newEntry) {
+    public WatchEvent(Entry oldEntry, Entry newEntry) {
         this.oldEntry = oldEntry;
         this.newEntry = newEntry;
     }
@@ -46,7 +43,7 @@ public final class WatchEvent implements Serializable {
      *
      * @return Old entry.
      */
-    public @NotNull Entry oldEntry() {
+    public Entry oldEntry() {
         return oldEntry;
     }
 
@@ -55,28 +52,7 @@ public final class WatchEvent implements Serializable {
      *
      * @return New entry.
      */
-    public @NotNull Entry newEntry() {
+    public Entry newEntry() {
         return newEntry;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        WatchEvent that = (WatchEvent)o;
-
-        if (!oldEntry.equals(that.oldEntry))
-            return false;
-        return newEntry.equals(that.newEntry);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        int res = oldEntry.hashCode();
-        res = 31 * res + newEntry.hashCode();
-        return res;
     }
 }

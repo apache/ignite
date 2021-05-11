@@ -87,7 +87,7 @@ public class AffinityManager {
         configurationMgr.configurationRegistry().getConfiguration(ClusterConfiguration.KEY)
             .metastorageNodes().listen(ctx -> {
                 if (ctx.newValue() != null) {
-                    if (MetaStorageManager.hasMetastorageLocally(localNodeName, ctx.newValue()))
+                    if (hasMetastorageLocally(localNodeName, ctx.newValue()))
                         subscribeToAssignmentCalculation();
                     else
                         unsubscribeFromAssignmentCalculation();
@@ -98,8 +98,28 @@ public class AffinityManager {
         String[] metastorageMembers = configurationMgr.configurationRegistry().getConfiguration(NodeConfiguration.KEY)
             .metastorageNodes().value();
 
-        if (MetaStorageManager.hasMetastorageLocally(localNodeName, metastorageMembers))
+        if (hasMetastorageLocally(localNodeName, metastorageMembers))
             subscribeToAssignmentCalculation();
+    }
+
+    /**
+     * Checks whether the local node hosts Metastorage.
+     *
+     * @param localNodeName Local node uniq name.
+     * @param metastorageMembers Metastorage members names.
+     * @return True if the node has Metastorage, false otherwise.
+     */
+    private boolean hasMetastorageLocally(String localNodeName, String[] metastorageMembers) {
+        boolean isLocalNodeHasMetasorage = false;
+
+        for (String name : metastorageMembers) {
+            if (name.equals(localNodeName)) {
+                isLocalNodeHasMetasorage = true;
+
+                break;
+            }
+        }
+        return isLocalNodeHasMetasorage;
     }
 
     /**
