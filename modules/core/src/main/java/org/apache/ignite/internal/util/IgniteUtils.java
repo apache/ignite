@@ -6024,6 +6024,20 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Gets resource name.
+     * Returns a task name if it is a Compute task or a class name otherwise.
+     *
+     * @param rscCls Class of resource.
+     * @return Name of resource.
+     */
+    public static String getResourceName(Class rscCls) {
+        if (ComputeTask.class.isAssignableFrom(rscCls))
+            return getTaskName(rscCls);
+
+        return rscCls.getName();
+    }
+
+    /**
      * Creates SPI attribute name by adding prefix to the attribute name.
      * Prefix is an SPI name + '.'.
      *
