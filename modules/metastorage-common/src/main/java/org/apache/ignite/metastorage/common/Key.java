@@ -17,6 +17,7 @@
 
 package org.apache.ignite.metastorage.common;
 
+import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import org.jetbrains.annotations.NotNull;
@@ -24,7 +25,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * A wrapper for meta storage key represented by byte array.
  */
-public final class Key implements Comparable<Key> {
+public final class Key implements Comparable<Key>, Serializable {
     /** Byte-wise representation of the key. */
     @NotNull
     private final byte[] arr;

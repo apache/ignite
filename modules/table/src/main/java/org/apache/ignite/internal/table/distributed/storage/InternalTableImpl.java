@@ -72,7 +72,7 @@ public class InternalTableImpl implements InternalTable {
     /** {@inheritDoc} */
     @Override public @NotNull CompletableFuture<BinaryRow> get(BinaryRow keyRow) {
         return partitionMap.get(keyRow.hash() % partitions).<KVGetResponse>run(new GetCommand(keyRow))
-            .thenApply(response -> response.getValue());
+            .thenApply(KVGetResponse::getValue);
     }
 
     /** {@inheritDoc} */
@@ -82,8 +82,7 @@ public class InternalTableImpl implements InternalTable {
 
     /** {@inheritDoc} */
     @Override public @NotNull CompletableFuture<Void> upsert(BinaryRow row) {
-        return partitionMap.get(row.hash() % partitions).<Void>run(new UpsertCommand(row))
-            .thenApply(response -> response);
+        return partitionMap.get(row.hash() % partitions).run(new UpsertCommand(row));
     }
 
     /** {@inheritDoc} */
@@ -98,8 +97,7 @@ public class InternalTableImpl implements InternalTable {
 
     /** {@inheritDoc} */
     @Override public @NotNull CompletableFuture<Boolean> insert(BinaryRow row) {
-        return partitionMap.get(row.hash() % partitions).<Boolean>run(new InsertCommand(row))
-            .thenApply(response -> response);
+        return partitionMap.get(row.hash() % partitions).run(new InsertCommand(row));
     }
 
     /** {@inheritDoc} */
@@ -114,8 +112,7 @@ public class InternalTableImpl implements InternalTable {
 
     /** {@inheritDoc} */
     @Override public @NotNull CompletableFuture<Boolean> replace(BinaryRow oldRow, BinaryRow newRow) {
-        return partitionMap.get(oldRow.hash() % partitions).<Boolean>run(new ReplaceCommand(oldRow, newRow))
-            .thenApply(response -> response);
+        return partitionMap.get(oldRow.hash() % partitions).run(new ReplaceCommand(oldRow, newRow));
     }
 
     /** {@inheritDoc} */
@@ -125,8 +122,7 @@ public class InternalTableImpl implements InternalTable {
 
     /** {@inheritDoc} */
     @Override public @NotNull CompletableFuture<Boolean> delete(BinaryRow keyRow) {
-        return partitionMap.get(keyRow.hash() % partitions).<Boolean>run(new DeleteCommand(keyRow))
-            .thenApply(response -> response);
+        return partitionMap.get(keyRow.hash() % partitions).run(new DeleteCommand(keyRow));
     }
 
     /** {@inheritDoc} */

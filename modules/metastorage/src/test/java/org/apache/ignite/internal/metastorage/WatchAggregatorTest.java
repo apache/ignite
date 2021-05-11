@@ -46,11 +46,11 @@ public class WatchAggregatorTest {
         watchAggregator.add(new Key("2"), lsnr2);
 
         var watchEvent1 = new WatchEvent(
-            entry("1", "value1", 1),
-            entry("1", "value1n", 1));
+            entry("1", "value1", 1, 1),
+            entry("1", "value1n", 1, 1));
         var watchEvent2 = new WatchEvent(
-            entry("2", "value2", 1),
-            entry("2", "value2n", 1));
+            entry("2", "value2", 1, 1),
+            entry("2", "value2n", 1, 1));
         watchAggregator.watch(1, (v1, v2) -> {}).get().listener().onUpdate(Arrays.asList(watchEvent1, watchEvent2));
 
         verify(lsnr1).onUpdate(Collections.singletonList(watchEvent1));
@@ -68,11 +68,11 @@ public class WatchAggregatorTest {
         var id2 = watchAggregator.add(new Key("2"), lsnr2);
 
         var watchEvent1 = new WatchEvent(
-            entry("1", "value1", 1),
-            entry("1", "value1n", 1));
+            entry("1", "value1", 1, 1),
+            entry("1", "value1n", 1, 1));
         var watchEvent2 = new WatchEvent(
-            entry("2", "value2", 1),
-            entry("2", "value2n", 1));
+            entry("2", "value2", 1, 1),
+            entry("2", "value2n", 1, 1));
         watchAggregator.watch(1, (v1, v2) -> {}).get().listener().onUpdate(Arrays.asList(watchEvent1, watchEvent2));
 
         verify(lsnr1, times(1)).onUpdate(any());
@@ -96,11 +96,11 @@ public class WatchAggregatorTest {
         var id2 = watchAggregator.add(new Key("2"), lsnr2);
 
         var watchEvent1 = new WatchEvent(
-            entry("1", "value1", 1),
-            entry("1", "value1n", 1));
+            entry("1", "value1", 1, 1),
+            entry("1", "value1n", 1, 1));
         var watchEvent2 = new WatchEvent(
-            entry("2", "value2", 1),
-            entry("2", "value2n", 1));
+            entry("2", "value2", 1, 1),
+            entry("2", "value2n", 1, 1));
         watchAggregator.watch(1, (v1, v2) -> {}).get().listener().onUpdate(Arrays.asList(watchEvent1, watchEvent2));
 
         verify(lsnr1, times(1)).onUpdate(any());
@@ -113,7 +113,7 @@ public class WatchAggregatorTest {
 
     }
 
-    private Entry entry(String key, String value, long revision) {
+    private Entry entry(String key, String value, long revision, long updateCntr) {
         return new Entry() {
             @Override public @NotNull Key key() {
                 return new Key(key);
@@ -125,6 +125,10 @@ public class WatchAggregatorTest {
 
             @Override public long revision() {
                 return revision;
+            }
+
+            @Override public long updateCounter() {
+                return updateCntr;
             }
         };
     }

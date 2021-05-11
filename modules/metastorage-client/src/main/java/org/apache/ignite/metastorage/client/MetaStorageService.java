@@ -98,7 +98,7 @@ public interface MetaStorageService {
      * Inserts or updates an entry with the given key and the given value.
      *
      * @param key The key. Couldn't be {@code null}.
-     * @param value The value.Couldn't be {@code null}.
+     * @param value The value. Couldn't be {@code null}.
      * @return Completed future.
      * @throws OperationTimeoutException If the operation is timed out. Will be thrown on getting future result.
      * @see Key
@@ -112,7 +112,7 @@ public interface MetaStorageService {
      * retrieves a previous entry for the given key.
      *
      * @param key The key. Couldn't be {@code null}.
-     * @param value The value.Couldn't be {@code null}.
+     * @param value The value. Couldn't be {@code null}.
      * @return A previous entry for the given key. Couldn't be {@code null}.
      * @throws OperationTimeoutException If the operation is timed out. Will be thrown on getting future result.
      * @see Key
