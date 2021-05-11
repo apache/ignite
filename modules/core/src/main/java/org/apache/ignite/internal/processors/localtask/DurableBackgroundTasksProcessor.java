@@ -166,11 +166,13 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
                 DurableBackgroundTask t = it.next();
 
                 metaStorageOperation(metaStorage -> {
-                    if (metaStorage != null && toRmv.containsKey(t.name()))
-                        metaStorage.remove(metaStorageKey(t));
-                });
+                    if (metaStorage != null) {
+                        if (!tasks.containsKey(t.name()))
+                            metaStorage.remove(metaStorageKey(t));
 
-                it.remove();
+                        it.remove();
+                    }
+                });
             }
         }
         finally {

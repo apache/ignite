@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.localtask;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -190,7 +191,7 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
 
         n.cluster().state(ACTIVE);
 
-        CheckpointWorkflow cpWorkflow = getFieldValue(dbMgr(n), "checkpointManager", "checkpointWorkflow");
+        CheckpointWorkflow cpWorkflow = checkpointWorkflow(n);
         List<CheckpointListener> cpLs = cpWorkflow.getRelevantCheckpointListeners(dbMgr(n).checkpointedDataRegions());
 
         assertTrue(cpLs.contains(observingCpLsnr));
@@ -229,6 +230,56 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
         assertNull(n.context().failure().failureContext());
 
         assertThrows(log, () -> durableBackgroundTask(n).executeAsync(simpleTask, true), IgniteException.class, null);
+    }
+
+    /**
+     * Check that the task will not be deleted from the MetaStorage if it was restarted.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDontDeleteTaskIfItsRestart() throws Exception {
+        IgniteEx n = startGrid(0);
+
+        ObservingCheckpointListener observingCpLsnr = new ObservingCheckpointListener();
+        dbMgr(n).addCheckpointListener(observingCpLsnr);
+
+        n.cluster().state(ACTIVE);
+
+        CheckpointWorkflow cpWorkflow = checkpointWorkflow(n);
+        List<CheckpointListener> cpLs = cpWorkflow.getRelevantCheckpointListeners(dbMgr(n).checkpointedDataRegions());
+
+        assertTrue(cpLs.contains(observingCpLsnr));
+        assertTrue(cpLs.contains(durableBackgroundTask(n)));
+        assertTrue(cpLs.indexOf(observingCpLsnr) < cpLs.indexOf(durableBackgroundTask(n)));
+
+        SimpleTask simpleTask0 = new SimpleTask("t");
+        IgniteInternalFuture<Void> taskFut = durableBackgroundTask(n).executeAsync(simpleTask0, true);
+
+        simpleTask0.onExecFut.get(getTestTimeout());
+
+        dbMgr(n).enableCheckpoints(false).get(getTestTimeout());
+
+        simpleTask0.taskFut.onDone(DurableBackgroundTaskResult.complete(null));
+        taskFut.get(getTestTimeout());
+
+        SimpleTask simpleTask1 = new SimpleTask("t");
+        AtomicReference<IgniteInternalFuture<Void>> taskFutRef = new AtomicReference<>();
+
+        observingCpLsnr.afterCheckpointEndConsumer =
+            ctx -> taskFutRef.set(durableBackgroundTask(n).executeAsync(simpleTask1, true));
+
+        dbMgr(n).enableCheckpoints(true).get(getTestTimeout());
+        forceCheckpoint();
+
+        assertNotNull(metaStorageOperation(n, ms -> ms.read(metaStorageKey(simpleTask0))));
+
+        simpleTask1.onExecFut.get(getTestTimeout());
+        simpleTask1.taskFut.onDone(DurableBackgroundTaskResult.complete(null));
+        taskFutRef.get().get(getTestTimeout());
+
+        forceCheckpoint();
+        assertNull(metaStorageOperation(n, ms -> ms.read(metaStorageKey(simpleTask1))));
     }
 
     /**
@@ -458,5 +509,15 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
         finally {
             dbMgr.checkpointReadUnlock();
         }
+    }
+
+    /**
+     * Getting {@code CheckpointManager#checkpointWorkflow}.
+     *
+     * @param n Node.
+     * @return Checkpoint workflow.
+     */
+    private CheckpointWorkflow checkpointWorkflow(IgniteEx n) {
+        return getFieldValue(dbMgr(n), "checkpointManager", "checkpointWorkflow");
     }
 }
