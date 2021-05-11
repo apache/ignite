@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.localtask;
 
+import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -26,8 +28,11 @@ import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointWorkflow;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask.DurableBackgroundTask;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask.DurableBackgroundTaskResult;
 import org.apache.ignite.internal.processors.localtask.DurableBackgroundTaskState.State;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
@@ -45,6 +50,7 @@ import static org.apache.ignite.internal.processors.localtask.DurableBackgroundT
 import static org.apache.ignite.internal.processors.localtask.DurableBackgroundTasksProcessor.metaStorageKey;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
+import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /**
  * Class for testing the {@link DurableBackgroundTasksProcessor}.
@@ -168,6 +174,61 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
         t.onExecFut.get(getTestTimeout());
         checkStateAndMetaStorage(n, t, STARTED, true);
         t.taskFut.onDone(complete(null));
+    }
+
+    /**
+     * Checks that stopping the node does not fail the node when deleting tasks.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testNotFailNodeWhenNodeStoppindAndDeleteTasks() throws Exception {
+        IgniteEx n = startGrid(0);
+
+        ObservingCheckpointListener observingCpLsnr = new ObservingCheckpointListener();
+        dbMgr(n).addCheckpointListener(observingCpLsnr);
+
+        n.cluster().state(ACTIVE);
+
+        CheckpointWorkflow cpWorkflow = getFieldValue(dbMgr(n), "checkpointManager", "checkpointWorkflow");
+        List<CheckpointListener> cpLs = cpWorkflow.getRelevantCheckpointListeners(dbMgr(n).checkpointedDataRegions());
+
+        assertTrue(cpLs.contains(observingCpLsnr));
+        assertTrue(cpLs.contains(durableBackgroundTask(n)));
+        assertTrue(cpLs.indexOf(observingCpLsnr) < cpLs.indexOf(durableBackgroundTask(n)));
+
+        SimpleTask simpleTask = new SimpleTask("t");
+        IgniteInternalFuture<Void> taskFut = durableBackgroundTask(n).executeAsync(simpleTask, true);
+
+        simpleTask.onExecFut.get(getTestTimeout());
+
+        GridFutureAdapter<Void> startStopFut = new GridFutureAdapter<>();
+        GridFutureAdapter<Void> finishStopFut = new GridFutureAdapter<>();
+
+        observingCpLsnr.repeatOnMarkCheckpointBeginConsumer = true;
+        observingCpLsnr.onMarkCheckpointBeginConsumer = ctx -> {
+            if (n.context().isStopping()) {
+                startStopFut.onDone();
+
+                finishStopFut.get(getTestTimeout());
+
+                observingCpLsnr.repeatOnMarkCheckpointBeginConsumer = false;
+            }
+        };
+
+        IgniteInternalFuture<Void> stopFut = runAsync(() -> stopAllGrids(false));
+
+        startStopFut.get(getTestTimeout());
+
+        simpleTask.taskFut.onDone(DurableBackgroundTaskResult.complete(null));
+        taskFut.get(getTestTimeout());
+
+        finishStopFut.onDone();
+
+        stopFut.get(getTestTimeout());
+        assertNull(n.context().failure().failureContext());
+
+        assertThrows(log, () -> durableBackgroundTask(n).executeAsync(simpleTask, true), IgniteException.class, null);
     }
 
     /**
@@ -342,7 +403,7 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
      * @return Task future.
      */
     private IgniteInternalFuture<Void> execAsync(IgniteEx n, DurableBackgroundTask t, boolean save) {
-        return durableBackgroundTasksProcessor(n).executeAsync(t, save);
+        return durableBackgroundTask(n).executeAsync(t, save);
     }
 
     /**
@@ -352,7 +413,7 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
      * @return Map of tasks that will be removed from the MetaStorage.
      */
     private Map<String, DurableBackgroundTask> toRmv(IgniteEx n) {
-        return getFieldValue(durableBackgroundTasksProcessor(n), "toRmv");
+        return getFieldValue(durableBackgroundTask(n), "toRmv");
     }
 
     /**
@@ -362,7 +423,7 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
      * @return Task states map.
      */
     private Map<String, DurableBackgroundTaskState> tasks(IgniteEx n) {
-        return getFieldValue(durableBackgroundTasksProcessor(n), "tasks");
+        return getFieldValue(durableBackgroundTask(n), "tasks");
     }
 
     /**
@@ -371,8 +432,8 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
      * @param n Node.
      * @return Durable background task processor.
      */
-    private DurableBackgroundTasksProcessor durableBackgroundTasksProcessor(IgniteEx n) {
-        return n.context().durableBackgroundTasksProcessor();
+    private DurableBackgroundTasksProcessor durableBackgroundTask(IgniteEx n) {
+        return n.context().durableBackgroundTask();
     }
 
     /**
