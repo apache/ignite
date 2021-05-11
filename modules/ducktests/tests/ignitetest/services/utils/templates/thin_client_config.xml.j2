@@ -15,6 +15,8 @@
  limitations under the License.
 #}
 
+{% import 'ssl_params_macro.j2' as ssl_params_util %}
+
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -25,5 +27,13 @@
                 <value>{{ config.addresses }}</value>
             </list>
         </property>
+
+        {% if config.ssl_params %}
+        <property name="sslMode" value="REQUIRED"/>
+        <property name="sslClientCertificateKeyStorePath" value="{{ config.ssl_params.key_store_path }}"/>
+        <property name="sslClientCertificateKeyStorePassword" value="{{ config.ssl_params.key_store_password }}"/>
+        <property name="sslTrustCertificateKeyStorePath" value="{{ config.ssl_params.trust_store_path }}"/>
+        <property name="sslTrustCertificateKeyStorePassword" value="{{ config.ssl_params.trust_store_password }}"/>
+        {% endif %}
     </bean>
 </beans>
