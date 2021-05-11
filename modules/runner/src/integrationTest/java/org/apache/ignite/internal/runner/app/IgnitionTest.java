@@ -35,7 +35,7 @@ class IgnitionTest {
             "{\n" +
                 "  \"node\": {\n" +
                 "    \"name\":node0,\n" +
-                "    \"metastorageNodes\":[ \"node0\", \"node1\" ]\n" +
+                "    \"metastorageNodes\":[ \"node0\" ]\n" +
                 "  },\n" +
                 "  \"network\": {\n" +
                 "    \"port\":3344,\n" +
@@ -46,7 +46,7 @@ class IgnitionTest {
             "{\n" +
                 "  \"node\": {\n" +
                 "    \"name\":node1,\n" +
-                "    \"metastorageNodes\":[ \"node0\", \"node1\" ]\n" +
+                "    \"metastorageNodes\":[ \"node0\" ]\n" +
                 "  },\n" +
                 "  \"network\": {\n" +
                 "    \"port\":3345,\n" +
@@ -57,7 +57,7 @@ class IgnitionTest {
             "{\n" +
                 "  \"node\": {\n" +
                 "    \"name\":node2,\n" +
-                "    \"metastorageNodes\":[ \"node0\", \"node1\" ]\n" +
+                "    \"metastorageNodes\":[ \"node0\" ]\n" +
                 "  },\n" +
                 "  \"network\": {\n" +
                 "    \"port\":3346,\n" +

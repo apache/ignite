@@ -49,4 +49,11 @@ public interface Entry {
      * @return Revision.
      */
     long revision();
+
+    /**
+     * Returns an update counter.
+     *
+     * @return Update counter.
+     */
+    long updateCounter();
 }
