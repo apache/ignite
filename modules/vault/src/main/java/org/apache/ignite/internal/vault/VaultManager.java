@@ -66,7 +66,8 @@ public class VaultManager {
      * See {@link VaultService#get(ByteArray)}
      *
      * @param key Key. Couldn't be {@code null}.
-     * @return An entry for the given key. Couldn't be {@code null}.
+     * @return An entry for the given key. Couldn't be {@code null}. If there is no mapping for the provided {@code key},
+     * then {@code Entry} with value that equals to {@code null} will be returned.
      */
     @NotNull public CompletableFuture<Entry> get(@NotNull ByteArray key) {
         return vaultService.get(key);
@@ -76,8 +77,8 @@ public class VaultManager {
      * See {@link VaultService#put(ByteArray, byte[])}
      *
      * @param key Vault key. Couldn't be {@code null}.
-     * @param val Value. Couldn't be {@code null}.
-     * @return Future representing pending completion of the operation.
+     * @param val Value. If value is equal to {@code null}, then previous value with key will be deleted if there was any mapping.
+     * @return Future representing pending completion of the operation. Couldn't be {@code null}.
      */
     @NotNull public CompletableFuture<Void> put(@NotNull ByteArray key, @NotNull byte[] val) {
         return vaultService.put(key, val);
@@ -87,7 +88,7 @@ public class VaultManager {
      * See {@link VaultService#remove(ByteArray)}
      *
      * @param key Vault key. Couldn't be {@code null}.
-     * @return Future representing pending completion of the operation.
+     * @return Future representing pending completion of the operation. Couldn't be {@code null}.
      */
     @NotNull public CompletableFuture<Void> remove(@NotNull ByteArray key) {
         return vaultService.remove(key);
@@ -105,13 +106,27 @@ public class VaultManager {
     }
 
     /**
-     * Inserts or updates entries with given keys and given values and non-negative revision.
+     * Inserts or updates entries with given keys and given values. If the given value in {@code vals} is {@code null},
+     * then corresponding value with key will be deleted if there was any mapping.
+     *
+     * @param vals The map of keys and corresponding values. Couldn't be {@code null} or empty.
+     * @return Future representing pending completion of the operation. Couldn't be {@code null}.
+     */
+    @NotNull public CompletableFuture<Void> putAll(@NotNull Map<ByteArray, byte[]> vals) {
+        synchronized (mux) {
+            return vaultService.putAll(vals);
+        }
+    }
+
+    /**
+     * Inserts or updates entries with given keys and given values and non-negative revision. If the given value in
+     * {@code vals} is {@code null}, then corresponding value with key will be deleted if there was any mapping.
      *
      * @param vals The map of keys and corresponding values. Couldn't be {@code null} or empty.
      * @param revision Revision for entries. Must be positive.
-     * @return Future representing pending completion of the operation.
-     * @throws IgniteInternalCheckedException If revision is inconsistent with applied revision from vault or
-     * if couldn't get applied revision from vault.
+     * @return Future representing pending completion of the operation. Couldn't be {@code null}.
+     * @throws IgniteInternalCheckedException If revision is inconsistent with applied revision from vault or if
+     * couldn't get applied revision from vault.
      */
     public CompletableFuture<Void> putAll(@NotNull Map<ByteArray, byte[]> vals, long revision) throws IgniteInternalCheckedException {
         synchronized (mux) {
@@ -135,11 +150,10 @@ public class VaultManager {
 
             return vaultService.putAll(mergedMap);
         }
-
     }
 
     /**
-     * @return Applied revision for {@link VaultManager#putAll} operation.
+     * @return Applied revision for {@link VaultManager#putAll(Map, long)} operation.
      * @throws IgniteInternalCheckedException If couldn't get applied revision from vault.
      */
     @NotNull public Long appliedRevision() throws IgniteInternalCheckedException {

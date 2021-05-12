@@ -54,7 +54,7 @@ public class TestConfigurationStorage implements ConfigurationStorage {
         if (fail)
             throw new StorageException("Failed to read data");
 
-        return new Data(new HashMap<>(map), version.get(), 0);
+        return new Data(new HashMap<>(map), version.get());
     }
 
     /** {@inheritDoc} */
@@ -74,7 +74,7 @@ public class TestConfigurationStorage implements ConfigurationStorage {
 
         version.incrementAndGet();
 
-        listeners.forEach(listener -> listener.onEntriesChanged(new Data(newValues, version.get(), 0)));
+        listeners.forEach(listener -> listener.onEntriesChanged(new Data(newValues, version.get())));
 
         return CompletableFuture.completedFuture(true);
     }

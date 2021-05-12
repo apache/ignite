@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.ignite.app.Ignite;
 import org.apache.ignite.app.IgnitionManager;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -84,7 +85,8 @@ class IgnitionTest {
      * Check that Ignition.start() with bootstrap configuration returns Ignite instance.
      */
     @Test
-    void testNodeStartWithoutBootstrapConfiguartion() {
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-14709")
+    void testNodeStartWithoutBootstrapConfiguration() {
         Ignite ignite = IgnitionManager.start(null);
 
         Assertions.assertNotNull(ignite);

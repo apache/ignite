@@ -34,24 +34,26 @@ public interface VaultService {
      * Retrieves an entry for the given key.
      *
      * @param key Key. Couldn't be {@code null}.
-     * @return An entry for the given key. Couldn't be {@code null}.
+     * @return An entry for the given key. Couldn't be {@code null}. If there is no mapping for the provided {@code key},
+     * then {@code Entry} with value that equals to null will be returned.
      */
     @NotNull CompletableFuture<Entry> get(@NotNull ByteArray key);
 
     /**
-     * Write value with key to vault.
+     * Write value with key to vault. If value is equal to null, then previous value with key will be deleted if there
+     * was any mapping.
      *
      * @param key Vault key. Couldn't be {@code null}.
-     * @param val Value. Couldn't be {@code null}.
-     * @return Future representing pending completion of the operation.
+     * @param val Value. If value is equal to null, then previous value with key will be deleted if there was any mapping.
+     * @return Future representing pending completion of the operation. Couldn't be {@code null}.
      */
-    @NotNull CompletableFuture<Void> put(@NotNull ByteArray key, @NotNull byte[] val);
+    @NotNull CompletableFuture<Void> put(@NotNull ByteArray key, byte[] val);
 
     /**
      * Remove value with key from vault.
      *
      * @param key Vault key. Couldn't be {@code null}.
-     * @return Future representing pending completion of the operation.
+     * @return Future representing pending completion of the operation. Couldn't be {@code null}.
      */
     @NotNull CompletableFuture<Void> remove(@NotNull ByteArray key);
 
@@ -76,15 +78,16 @@ public interface VaultService {
      * Cancels subscription for the given identifier.
      *
      * @param id Subscription identifier.
-     * @return Completed future in case of operation success. Couldn't be {@code null}.
+     * @return Future representing pending completion of the operation. Couldn't be {@code null}.
      */
     @NotNull CompletableFuture<Void> stopWatch(@NotNull Long id);
 
     /**
-     * Inserts or updates entries with given keys and given values.
+     * Inserts or updates entries with given keys and given values. If the given value in {@code vals} is null,
+     * then corresponding value with key will be deleted if there was any mapping.
      *
      * @param vals The map of keys and corresponding values. Couldn't be {@code null} or empty.
-     * @return Completed future.
+     * @return Future representing pending completion of the operation. Couldn't be {@code null}.
      */
     @NotNull CompletableFuture<Void> putAll(@NotNull Map<ByteArray, byte[]> vals);
 }

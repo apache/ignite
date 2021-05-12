@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.vault.common.Entry;
 import org.apache.ignite.internal.vault.common.VaultWatch;
 import org.apache.ignite.internal.vault.common.WatcherImpl;
@@ -42,6 +43,9 @@ public class VaultServiceImpl implements VaultService {
 
     private final WatcherImpl watcher;
 
+    /**
+     * Default constructor.
+     */
     public VaultServiceImpl() {
         this.watcher = new WatcherImpl();
         this.storage = new TreeMap<>();
@@ -69,6 +73,8 @@ public class VaultServiceImpl implements VaultService {
     @Override @NotNull public CompletableFuture<Void> remove(@NotNull ByteArray key) {
         synchronized (mux) {
             storage.remove(key);
+
+            watcher.notify(new Entry(key, null));
 
             return CompletableFuture.allOf();
         }
@@ -106,7 +112,15 @@ public class VaultServiceImpl implements VaultService {
     /** {@inheritDoc} */
     @Override public @NotNull CompletableFuture<Void> putAll(@NotNull Map<ByteArray, byte[]> vals) {
         synchronized (mux) {
-            storage.putAll(vals);
+            vals.forEach((k, v) -> {
+                if (v == null)
+                    storage.remove(k);
+            });
+
+            storage.putAll(vals.entrySet()
+                .stream()
+                .filter(e -> e.getValue() != null)
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
 
             return CompletableFuture.allOf();
         }

@@ -189,7 +189,7 @@ public final class ConfigurationChanger {
             superRoot.addRoot(rootKey, rootNode);
         }
 
-        StorageRoots storageRoots = new StorageRoots(superRoot, data.cfgVersion());
+        StorageRoots storageRoots = new StorageRoots(superRoot, data.changeId());
 
         storagesRootsMap.put(configurationStorage.type(), storageRoots);
 
@@ -422,13 +422,13 @@ public final class ConfigurationChanger {
 
         fillFromPrefixMap(newSuperRoot, dataValuesPrefixMap);
 
-        StorageRoots newStorageRoots = new StorageRoots(newSuperRoot, changedEntries.cfgVersion());
+        StorageRoots newStorageRoots = new StorageRoots(newSuperRoot, changedEntries.changeId());
 
         storagesRootsMap.put(storageType, newStorageRoots);
 
         ConfigurationStorage storage = storageInstances.get(storageType);
 
-        long storageRevision = changedEntries.storageRevision();
+        long storageRevision = changedEntries.changeId();
 
         // This will also be updated during the metastorage integration.
         notificator.notify(

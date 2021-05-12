@@ -34,23 +34,27 @@ public interface ConfigurationStorage {
     /**
      * Write key-value pairs into the storage with last known version.
      * @param newValues Key-value pairs.
-     * @param version Last known version.
+     * @param ver Last known version.
      * @return Future that gives you {@code true} if successfully written, {@code false} if version of the storage is
      *      different from the passed argument and {@link StorageException} if failed to write data.
      */
-    CompletableFuture<Boolean> write(Map<String, Serializable> newValues, long version);
+    CompletableFuture<Boolean> write(Map<String, Serializable> newValues, long ver);
 
     /**
      * Add listener to the storage that notifies of data changes.
-     * @param listener Listener.
+     * @param lsnr Listener.
      */
-    void addListener(ConfigurationStorageListener listener);
+    // TODO: seems that it's not needed to have an ability to set several listeners to storage, as far as only one is responsible
+    // TODO: for updating configuration and others are not needed. https://issues.apache.org/jira/browse/IGNITE-14689
+    void addListener(ConfigurationStorageListener lsnr);
 
     /**
      * Remove storage listener.
-     * @param listener Listener.
+     * @param lsnr Listener.
      */
-    void removeListener(ConfigurationStorageListener listener);
+    // TODO: seems that it's not needed to have an ability to set several listeners to storage, as far as only one is responsible
+    // TODO: for updating configuration and others are not needed. https://issues.apache.org/jira/browse/IGNITE-14689
+    void removeListener(ConfigurationStorageListener lsnr);
 
     /**
      * Notify storage that this specific revision was successfully handled and it is not necessary to repeat the same

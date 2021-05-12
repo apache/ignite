@@ -111,7 +111,23 @@ public class KeyValueStorageImpl implements KeyValueStorage {
 
     /** {@inheritDoc} */
     @Override public Cursor<Entry> range(byte[] keyFrom, byte[] keyTo, long revUpperBound) {
-        return null;
+        return new Cursor<Entry>() {
+            @NotNull @Override public Iterator<Entry> iterator() {
+                return new Iterator<Entry>() {
+                    @Override public boolean hasNext() {
+                        return false;
+                    }
+
+                    @Override public Entry next() {
+                        return null;
+                    }
+                };
+            }
+
+            @Override public void close() throws Exception {
+
+            }
+        };
     }
 
     /** {@inheritDoc} */
