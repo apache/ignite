@@ -4398,7 +4398,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 expireTime,
                 key.partition(),
                 updCntr,
-                tx.dht() && tx.local())));
+                CU.txOnPrimary(tx))));
         }
         else
             return null;
