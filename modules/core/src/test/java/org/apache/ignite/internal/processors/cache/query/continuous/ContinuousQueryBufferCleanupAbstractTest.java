@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,18 +33,19 @@ import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryHandler.DFLT_CONTINUOUS_QUERY_BACKUP_ACK_THRESHOLD;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.DFLT_ACK_SND_THRESHOLD;
 
 /**
  * Test for continuous query buffer cleanup.
  */
+@RunWith(Parameterized.class)
 public abstract class ContinuousQueryBufferCleanupAbstractTest extends GridCommonAbstractTest {
     /** */
     private static final int RECORDS_CNT = 10000;
-
-    /** */
-    private static final int ACK_THRESHOLD = 100;
 
     /** */
     private static final String REMOTE_ROUTINE_INFO_CLASS_NAME = "org.apache.ignite.internal.processors.continuous.GridContinuousProcessor$RemoteRoutineInfo";
@@ -56,58 +59,46 @@ public abstract class ContinuousQueryBufferCleanupAbstractTest extends GridCommo
     /** Continuous query updates counter */
     protected final AtomicInteger updCntr = new AtomicInteger();
 
+    /** */
+    @Parameterized.Parameter(value = 0)
+    public int srvCnt;
+
+    /** */
+    @Parameterized.Parameter(value = 1)
+    public int backupsCnt;
+
+    /** */
+    @Parameterized.Parameter(value = 2)
+    public boolean useClient;
+
+    /** */
+    @Parameterized.Parameters(name = "{0} {1} {2}")
+    public static List<Object[]> parameters() {
+        ArrayList<Object[]> params = new ArrayList<>();
+
+        params.add(new Object[]{1, 0, true});
+        params.add(new Object[]{2, 0, true});
+        params.add(new Object[]{2, 1, true});
+        params.add(new Object[]{2, 1, false});
+
+        return params;
+    }
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
     }
 
-    /**
-     * @throws Exception If fail.
-     */
-    @Test
-    public void checkCacheWithSingleNode() throws Exception {
-        checkBuffer(1, 0, true);
-    }
-
-    /**
-     * @throws Exception If fail.
-     */
-    @Test
-    public void checkCacheWithMultipleNodes() throws Exception {
-        checkBuffer(2, 0, true);
-    }
-
-    /**
-     * @throws Exception If fail.
-     */
-    @Test
-    public void checkCacheWithMultipleNodesWithBackups() throws Exception {
-        checkBuffer(2, 1, true);
-    }
-
-    /**
-     * @throws Exception If fail.
-     */
-    @Test
-    public void checkCacheWithMultipleNodesWithBackupsWithoutClient() throws Exception {
-        checkBuffer(2, 1, false);
-    }
-
     /** Provides continuous query for the test. */
     protected abstract AbstractContinuousQuery<Integer, String> getContinuousQuery();
 
-    /** */
-    private void checkBuffer(int srvCnt, int backupsCnt, boolean useClient) throws Exception {
-        System.setProperty("IGNITE_CONTINUOUS_QUERY_ACK_THRESHOLD", Integer.toString(ACK_THRESHOLD));
-
-        IgniteEx[] srvs = new IgniteEx[srvCnt];
-
+    /** Test starts the cluster with specified count of nodes and checks if CQ buffers were cleaned up. */
+    @Test
+    public void testBufferCleanup() throws Exception {
         for (int i = 0; i < srvCnt; i++)
-            srvs[i] = startGrid("srv" + i);
+            startGrid(i);
 
-        Ignite qryNode = useClient
-            ? startGrid(optimize(getConfiguration("client").setClientMode(true)))
-            : srvs[0];
+        Ignite qryNode = useClient ? startClientGrid() : grid(0);
 
         CacheConfiguration<Integer, String> cacheCfg = new CacheConfiguration<Integer, String>("testCache")
             .setBackups(backupsCnt)
@@ -122,12 +113,10 @@ public abstract class ContinuousQueryBufferCleanupAbstractTest extends GridCommo
         for (int i = 0; i < RECORDS_CNT; i++)
             cache.put(i, Integer.toString(i));
 
-        Thread.sleep(2000);
-
-        assertEquals(RECORDS_CNT, updCntr.get());
+        GridTestUtils.waitForCondition(() -> updCntr.get() == RECORDS_CNT, 2000);
 
         for (int i = 0; i < srvCnt; i++)
-            validateBuffer(srvs[i], backupsCnt);
+            validateBuffer(grid(i), backupsCnt);
     }
 
     /** */
@@ -167,6 +156,6 @@ public abstract class ContinuousQueryBufferCleanupAbstractTest extends GridCommo
             }
         }
 
-        assertTrue(notNullCnt < ACK_THRESHOLD + (1 + backupsCnt) * DFLT_ACK_SND_THRESHOLD);
+        assertTrue(notNullCnt < DFLT_CONTINUOUS_QUERY_BACKUP_ACK_THRESHOLD + (1 + backupsCnt) * DFLT_ACK_SND_THRESHOLD);
     }
 }

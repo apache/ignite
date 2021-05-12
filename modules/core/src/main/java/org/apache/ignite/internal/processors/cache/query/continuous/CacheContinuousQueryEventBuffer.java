@@ -118,12 +118,14 @@ public class CacheContinuousQueryEventBuffer {
         backupQ.removeIf(backupEntry -> backupEntry.updateCounter() <= updateCntr);
 
         ackedUpdCntr.setIfGreater(updateCntr);
+
+        cleanupEntries(updateCntr);
     }
 
     /**
      * @param updateCntr Acknowledged counter.
      */
-    void cleanupEntries(Long updateCntr) {
+    void cleanupEntries(long updateCntr) {
         Batch batch = curBatch.get();
 
         if (batch != null)
@@ -365,9 +367,6 @@ public class CacheContinuousQueryEventBuffer {
         private int lastProc = -1;
 
         /** */
-        private int lastCleaned = -1;
-
-        /** */
         private CacheContinuousQueryEntry[] entries;
 
         /**
@@ -389,21 +388,15 @@ public class CacheContinuousQueryEventBuffer {
         /**
          * @param updateCntr Acknowledged counter.
          */
-        synchronized void cleanupEntries(Long updateCntr) {
+        synchronized void cleanupEntries(long updateCntr) {
             if (entries == null)
                 return;
 
-            int next = lastCleaned + 1;
-
-            for (int i = next; i < entries.length; i++) {
+            for (int i = 0; i < entries.length; i++) {
                 CacheContinuousQueryEntry e = entries[i];
 
-                if (e != null && e.updateCounter() <= updateCntr) {
+                if (e != null && e.updateCounter() <= updateCntr)
                     entries[i] = null;
-
-                    lastCleaned = i;
-                } else
-                    break;
             }
         }
 
