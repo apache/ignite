@@ -84,7 +84,7 @@ public class TestMessageSerializationFactory implements MessageSerializationFact
     @Override public MessageSerializer<TestMessage> createSerializer() {
         return (message, writer) -> {
             if (!writer.isHeaderWritten()) {
-                if (!writer.writeHeader(message.directType(), (byte) 2))
+                if (!writer.writeHeader(message.directType(), (byte) 1))
                     return false;
 
                 writer.onHeaderWritten();

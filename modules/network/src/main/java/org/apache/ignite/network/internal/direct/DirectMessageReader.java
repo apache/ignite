@@ -382,7 +382,7 @@ public class DirectMessageReader implements MessageReader {
         private int state;
 
         /**
-         * @param serializationRegistry Serialization registry.
+         * @param serializationRegistry Message serializers.
          * @param protoVer Protocol version.
          */
         StateItem(MessageSerializationRegistry serializationRegistry, byte protoVer) {

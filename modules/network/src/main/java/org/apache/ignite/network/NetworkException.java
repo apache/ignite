@@ -15,35 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.network.internal.direct;
+package org.apache.ignite.network;
 
-import java.nio.ByteBuffer;
+import org.apache.ignite.network.message.NetworkMessage;
 
-/**
- * Direct marshalling utils.
- */
-public class DirectMarshallingUtils {
-    /**
-     * Reads a direct message type from a byte buffer.
-     *
-     * @param buffer Byte buffer.
-     * @return Direct message type.
-     */
-    public static short getMessageType(ByteBuffer buffer) {
-        byte b0 = buffer.get();
-        byte b1 = buffer.get();
+public class NetworkException extends RuntimeException {
 
-        return makeMessageType(b0, b1);
+    private final NetworkMessage errorResponse;
+
+    public NetworkException(NetworkMessage response) {
+        errorResponse = response;
     }
 
-    /**
-     * Concatenates the two parameter bytes to form a message type value.
-     *
-     * @param b0 The first byte.
-     * @param b1 The second byte.
-     */
-    private static short makeMessageType(byte b0, byte b1) {
-        return (short)((b1 & 0xFF) << 8 | b0 & 0xFF);
+    public NetworkMessage getErrorResponse() {
+        return errorResponse;
     }
-
 }

@@ -29,8 +29,6 @@ import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.ClusterServiceFactory;
 import org.apache.ignite.network.NetworkConfigurationException;
-import org.apache.ignite.network.internal.netty.ConnectionManager;
-import org.apache.ignite.network.message.MessageSerializationRegistry;
 
 /**
  * {@link ClusterServiceFactory} implementation that uses ScaleCube for messaging and topology services.
@@ -40,14 +38,8 @@ public class ScaleCubeClusterServiceFactory implements ClusterServiceFactory {
     /** {@inheritDoc} */
     @Override public ClusterService createClusterService(ClusterLocalConfiguration context) {
         var topologyService = new ScaleCubeTopologyService();
-
         var messagingService = new ScaleCubeMessagingService(topologyService);
-
-        MessageSerializationRegistry registry = context.getSerializationRegistry();
-
-        var connectionManager = new ConnectionManager(context.getPort(), registry);
-
-        ScaleCubeDirectMarshallerTransport transport = new ScaleCubeDirectMarshallerTransport(connectionManager);
+        var transportFactory = new DelegatingTransportFactory(messagingService);
 
         var cluster = new ClusterImpl()
             .handler(cl -> new ClusterMessageHandler() {
@@ -62,7 +54,7 @@ public class ScaleCubeClusterServiceFactory implements ClusterServiceFactory {
                 }
             })
             .config(opts -> opts.memberAlias(context.getName()))
-            .transport(opts -> opts.transportFactory(new DelegatingTransportFactory(messagingService, config -> transport)))
+            .transport(opts -> opts.port(context.getPort()).transportFactory(transportFactory))
             .membership(opts -> opts.seedMembers(parseAddresses(context.getMemberAddresses())).suspicionMult(1));
 
         // resolve cyclic dependencies
@@ -71,8 +63,6 @@ public class ScaleCubeClusterServiceFactory implements ClusterServiceFactory {
         return new AbstractClusterService(context, topologyService, messagingService) {
             /** {@inheritDoc} */
             @Override public void start() {
-                connectionManager.start();
-
                 cluster.startAwait();
 
                 topologyService.setLocalMember(cluster.member());
@@ -82,7 +72,6 @@ public class ScaleCubeClusterServiceFactory implements ClusterServiceFactory {
             @Override public void shutdown() {
                 cluster.shutdown();
                 cluster.onShutdown().block();
-                connectionManager.stop();
             }
         };
     }

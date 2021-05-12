@@ -34,12 +34,9 @@ import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.ClusterServiceFactory;
 import org.apache.ignite.network.TestMessage;
-import org.apache.ignite.network.TestMessageSerializationFactory;
 import org.apache.ignite.network.TopologyEventHandler;
 import org.apache.ignite.network.message.MessageSerializationRegistry;
 import org.apache.ignite.network.message.NetworkMessage;
-import org.apache.ignite.network.scalecube.message.ScaleCubeMessage;
-import org.apache.ignite.network.scalecube.message.ScaleCubeMessageSerializationFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
@@ -65,13 +62,13 @@ class ITScaleCubeNetworkMessagingTest {
     }
 
     /**
-     * Tests sending and receiving messages.
+     * Test sending and receiving messages.
      */
     @Test
     public void messageWasSentToAllMembersSuccessfully() throws Exception {
         Map<String, NetworkMessage> messageStorage = new ConcurrentHashMap<>();
 
-        var messageReceivedLatch = new CountDownLatch(3);
+        CountDownLatch messageReceivedLatch = new CountDownLatch(3);
 
         testCluster = new Cluster(3);
 
@@ -86,7 +83,7 @@ class ITScaleCubeNetworkMessagingTest {
 
         testCluster.startAwait();
 
-        var testMessage = new TestMessage("Message from Alice");
+        TestMessage testMessage = new TestMessage("Message from Alice");
 
         ClusterService alice = testCluster.members.get(0);
 
@@ -104,7 +101,7 @@ class ITScaleCubeNetworkMessagingTest {
     }
 
     /**
-     * Tests graceful shutdown.
+     * Test graceful shutdown.
      * @throws Exception If failed.
      */
     @Test
@@ -113,7 +110,7 @@ class ITScaleCubeNetworkMessagingTest {
     }
 
     /**
-     * Tests forceful shutdown.
+     * Test forceful shutdown.
      * @throws Exception If failed.
      */
     @Test
@@ -192,7 +189,7 @@ class ITScaleCubeNetworkMessagingTest {
     }
 
     /**
-     * Tests shutdown.
+     * Test shutdown.
      * @param forceful Whether shutdown should be forceful.
      * @throws Exception If failed.
      */
@@ -204,7 +201,7 @@ class ITScaleCubeNetworkMessagingTest {
         ClusterService bob = testCluster.members.get(1);
         String aliceName = alice.localConfiguration().getName();
 
-        var aliceShutdownLatch = new CountDownLatch(1);
+        CountDownLatch aliceShutdownLatch = new CountDownLatch(1);
 
         bob.topologyService().addEventHandler(new TopologyEventHandler() {
             /** {@inheritDoc} */
@@ -233,7 +230,7 @@ class ITScaleCubeNetworkMessagingTest {
     }
 
     /**
-     * Find the cluster's transport and force it to stop.
+     * Find cluster's transport and force it to stop.
      * @param cluster Cluster to be shutdown.
      * @throws Exception If failed to stop.
      */
@@ -254,16 +251,13 @@ class ITScaleCubeNetworkMessagingTest {
     }
 
     /**
-     * Wrapper for a cluster.
+     * Wrapper for cluster.
      */
     private static final class Cluster {
         /** */
-        private final ClusterServiceFactory networkFactory = new ScaleCubeClusterServiceFactory();
-
+        private static final MessageSerializationRegistry SERIALIZATION_REGISTRY = new MessageSerializationRegistry();
         /** */
-        private final MessageSerializationRegistry serializationRegistry = new MessageSerializationRegistry()
-            .registerFactory(ScaleCubeMessage.TYPE, new ScaleCubeMessageSerializationFactory())
-            .registerFactory(TestMessage.TYPE, new TestMessageSerializationFactory());
+        private static final ClusterServiceFactory NETWORK_FACTORY = new ScaleCubeClusterServiceFactory();
 
         /** */
         final List<ClusterService> members;
@@ -296,9 +290,9 @@ class ITScaleCubeNetworkMessagingTest {
          * @return Started cluster node.
          */
         private ClusterService startNode(String name, int port, List<String> addresses, boolean initial) {
-            var context = new ClusterLocalConfiguration(name, port, addresses, serializationRegistry);
+            var context = new ClusterLocalConfiguration(name, port, addresses, SERIALIZATION_REGISTRY);
 
-            ClusterService clusterService = networkFactory.createClusterService(context);
+            ClusterService clusterService = NETWORK_FACTORY.createClusterService(context);
 
             if (initial)
                 clusterService.topologyService().addEventHandler(new TopologyEventHandler() {

@@ -28,7 +28,6 @@ import org.apache.ignite.network.internal.direct.state.DirectMessageState;
 import org.apache.ignite.network.internal.direct.state.DirectMessageStateItem;
 import org.apache.ignite.network.internal.direct.stream.DirectByteBufferStream;
 import org.apache.ignite.network.internal.direct.stream.DirectByteBufferStreamImplV1;
-import org.apache.ignite.network.message.MessageSerializationRegistry;
 import org.apache.ignite.network.message.NetworkMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.jetbrains.annotations.Nullable;
@@ -38,11 +37,10 @@ public class DirectMessageWriter implements MessageWriter {
     private final DirectMessageState<StateItem> state;
 
     /**
-     * @param serializationRegistry Serialization registry.
      * @param protoVer Protocol version.
      */
-    public DirectMessageWriter(MessageSerializationRegistry serializationRegistry, byte protoVer) {
-        state = new DirectMessageState<>(StateItem.class, () -> new StateItem(serializationRegistry, protoVer));
+    public DirectMessageWriter(byte protoVer) {
+        state = new DirectMessageState<>(StateItem.class, () -> new StateItem(protoVer));
     }
 
     /** {@inheritDoc} */
@@ -346,17 +344,13 @@ public class DirectMessageWriter implements MessageWriter {
         /** */
         private boolean hdrWritten;
 
-        /** */
-        private MessageSerializationRegistry registry;
-
         /**
-         * @param registry Serialization registry.
          * @param protoVer Protocol version.
          */
-        StateItem(MessageSerializationRegistry registry, byte protoVer) {
+        StateItem(byte protoVer) {
             switch (protoVer) {
                 case 1:
-                    stream = new DirectByteBufferStreamImplV1(registry);
+                    stream = new DirectByteBufferStreamImplV1(null);
 
                     break;
 
