@@ -193,10 +193,6 @@ class IgniteSpec(metaclass=ABCMeta):
         """
         Prepare files that should be copied on all nodes
         """
-        if os.path.isfile(os.path.join(local_dir, SHARED_PREPARED_FILE)):
-            self.service.logger.debug("Local shared dir already prepared. Exiting. " + local_dir)
-            return
-
         self.service.logger.debug("Local shared dir not exists. Creating. " + local_dir)
         os.mkdir(local_dir)
 

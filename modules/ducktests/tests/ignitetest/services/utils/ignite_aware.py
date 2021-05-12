@@ -197,8 +197,11 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
         local_dir = os.path.join(tempfile.gettempdir(), str(self.context.session_context.session_id))
 
-        if self.spec.is_prepare_shared_files(local_dir):
-            with FileLock("init_shared.lock", timeout=120):
+        if not self.spec.is_prepare_shared_files(local_dir):
+            return local_dir
+
+        with FileLock("init_shared.lock", timeout=120):
+            if self.spec.is_prepare_shared_files(local_dir):
                 self.spec.prepare_shared_files(local_dir)
 
         return local_dir
