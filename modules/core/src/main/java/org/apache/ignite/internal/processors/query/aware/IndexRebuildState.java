@@ -23,14 +23,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * State of rebuilding indexes for the cache.
  */
 public class IndexRebuildState {
-    /** Cache id. */
-    private final int cacheId;
-
-    /** Cache name. */
-    private final String cacheName;
-
-    /** Saved in MetaStorage. */
-    private final boolean saved;
+    /** Persistent cache. */
+    private final boolean persistent;
 
     /** Index rebuild is complete. */
     private boolean completed;
@@ -38,41 +32,19 @@ public class IndexRebuildState {
     /**
      * Constructor.
      *
-     * @param cacheId Cache id.
-     * @param cacheName Cache name.
-     * @param saved Saved in MetaStorage.
+     * @param persistent Persistent cache.
      */
-    public IndexRebuildState(int cacheId, String cacheName, boolean saved) {
-        this.cacheId = cacheId;
-        this.cacheName = cacheName;
-        this.saved = saved;
+    public IndexRebuildState(boolean persistent) {
+        this.persistent = persistent;
     }
 
     /**
-     * Getting cache id.
+     * Checking if the cache is persistent.
      *
-     * @return Cache id.
+     * @return {@code True} if persistent.
      */
-    public int cacheId() {
-        return cacheId;
-    }
-
-    /**
-     * Getting cache name.
-     *
-     * @return Cache name.
-     */
-    public String cacheName() {
-        return cacheName;
-    }
-
-    /**
-     * Checking whether it is stored in the MetaStorage.
-     *
-     * @return {@code True} if stored in the MetaStorage.
-     */
-    public boolean saved() {
-        return saved;
+    public boolean persistent() {
+        return persistent;
     }
 
     /**

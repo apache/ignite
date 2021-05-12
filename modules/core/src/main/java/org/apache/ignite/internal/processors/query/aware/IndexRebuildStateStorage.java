@@ -21,8 +21,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -63,7 +63,7 @@ public class IndexRebuildStateStorage implements MetastorageLifecycleListener, C
     private final Object metaStorageMux = new Object();
 
     /** Lock. */
-    private final Lock lock = new ReentrantLock(true);
+    private final ReentrantLock lock = new ReentrantLock();
 
     /**
      * Stopping the grid.
@@ -79,11 +79,11 @@ public class IndexRebuildStateStorage implements MetastorageLifecycleListener, C
     private final Map<String, IndexRebuildState> states = new HashMap<>();
 
     /**
-     * Completed states to be removed from the MetaStorage.
-     * Mapping: cache name -> index rebuild state.
+     * Persistent caches for which the indexes have been rebuilt,
+     * and need to delete an entry about this from the MetaStorage.
      * Guarded by {@link #lock}.
      */
-    private final Map<String, IndexRebuildState> toRmv = new HashMap<>();
+    private final Set<String> toRmv = new HashSet<>();
 
     /**
      * Constructor.
@@ -150,24 +150,18 @@ public class IndexRebuildStateStorage implements MetastorageLifecycleListener, C
         try {
             assert !stopGrid;
 
-            IndexRebuildState newState = of(cacheCtx);
+            String cacheName = cacheCtx.name();
+            boolean persistent = CU.isPersistentCache(cacheCtx.config(), ctx.config().getDataStorageConfiguration());
 
-            if (!newState.saved())
-                states.putIfAbsent(newState.cacheName(), newState);
-            else {
-                toRmv.remove(newState.cacheName());
+            states.put(cacheName, new IndexRebuildState(persistent));
 
-                states.compute(newState.cacheName(), (k, preState) -> {
-                    if (preState == null)
-                        return newState;
-                    else
-                        return preState.completed(false);
-                });
+            if (persistent) {
+                toRmv.remove(cacheName);
 
                 metaStorageOperation(metaStorage -> {
                     assert metaStorage != null;
 
-                    metaStorage.write(metaStorageKey(newState), of(newState));
+                    metaStorage.write(metaStorageKey(cacheName), new IndexRebuildCacheInfo(cacheName));
                 });
             }
         }
@@ -197,10 +191,7 @@ public class IndexRebuildStateStorage implements MetastorageLifecycleListener, C
 
             assert state != null : cacheName;
 
-            if (state.saved())
-                state.completed(true);
-            else
-                states.remove(cacheName);
+            complete(cacheName, state);
         }
         finally {
             lock.unlock();
@@ -223,12 +214,8 @@ public class IndexRebuildStateStorage implements MetastorageLifecycleListener, C
         try {
             IndexRebuildState state = states.get(cacheName);
 
-            if (state != null) {
-                if (state.saved())
-                    state.completed(true);
-                else
-                    states.remove(cacheName);
-            }
+            if (state != null)
+                complete(cacheName, state);
         }
         finally {
             lock.unlock();
@@ -255,12 +242,12 @@ public class IndexRebuildStateStorage implements MetastorageLifecycleListener, C
     }
 
     /** {@inheritDoc} */
-    @Override public void onReadyForReadWrite(ReadWriteMetastorage metastorage) throws IgniteCheckedException {
+    @Override public void onReadyForReadWrite(ReadWriteMetastorage metastorage) {
         ((GridCacheDatabaseSharedManager)ctx.cache().context().database()).addCheckpointListener(this);
     }
 
     /** {@inheritDoc} */
-    @Override public void onReadyForRead(ReadOnlyMetastorage metastorage) throws IgniteCheckedException {
+    @Override public void onReadyForRead(ReadOnlyMetastorage metastorage) {
         lock.lock();
 
         try {
@@ -274,7 +261,7 @@ public class IndexRebuildStateStorage implements MetastorageLifecycleListener, C
                     (k, v) -> {
                         IndexRebuildCacheInfo cacheInfo = (IndexRebuildCacheInfo)v;
 
-                        states.put(cacheInfo.cacheName(), of(cacheInfo));
+                        states.put(cacheInfo.cacheName(), new IndexRebuildState(true));
                     },
                     true
                 );
@@ -286,18 +273,20 @@ public class IndexRebuildStateStorage implements MetastorageLifecycleListener, C
     }
 
     /** {@inheritDoc} */
-    @Override public void onMarkCheckpointBegin(Context ctx) throws IgniteCheckedException {
+    @Override public void onMarkCheckpointBegin(Context ctx) {
         lock.lock();
 
         try {
             if (!stopGrid) {
-                for (Iterator<IndexRebuildState> it = states.values().iterator(); it.hasNext(); ) {
-                    IndexRebuildState state = it.next();
+                for (Iterator<Entry<String, IndexRebuildState>> it = states.entrySet().iterator(); it.hasNext(); ) {
+                    Entry<String, IndexRebuildState> e = it.next();
+
+                    IndexRebuildState state = e.getValue();
 
                     if (state.completed()) {
-                        assert state.saved();
+                        assert state.persistent();
 
-                        toRmv.put(state.cacheName(), state);
+                        toRmv.add(e.getKey());
 
                         it.remove();
                     }
@@ -310,28 +299,28 @@ public class IndexRebuildStateStorage implements MetastorageLifecycleListener, C
     }
 
     /** {@inheritDoc} */
-    @Override public void onCheckpointBegin(Context ctx) throws IgniteCheckedException {
+    @Override public void onCheckpointBegin(Context ctx) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
+    @Override public void beforeCheckpointBegin(Context ctx) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void afterCheckpointEnd(Context ctx) throws IgniteCheckedException {
+    @Override public void afterCheckpointEnd(Context ctx) {
         lock.lock();
 
         try {
             if (!stopGrid) {
-                for (Iterator<IndexRebuildState> it = toRmv.values().iterator(); it.hasNext(); ) {
-                    IndexRebuildState state = it.next();
+                for (Iterator<String> it = toRmv.iterator(); it.hasNext(); ) {
+                    String cacheName = it.next();
 
                     metaStorageOperation(metaStorage -> {
                         assert metaStorage != null;
 
-                        metaStorage.remove(metaStorageKey(state));
+                        metaStorage.remove(metaStorageKey(cacheName));
 
                         it.remove();
                     });
@@ -371,42 +360,27 @@ public class IndexRebuildStateStorage implements MetastorageLifecycleListener, C
     /**
      * Getting MetaStorage key for index rebuild state.
      *
-     * @param state Index rebuild state.
+     * @param cacheName Cache name.
      * @return MetaStorage key.
      */
-    private static String metaStorageKey(IndexRebuildState state) {
-        return KEY_PREFIX + state.cacheName();
+    private static String metaStorageKey(String cacheName) {
+        return KEY_PREFIX + cacheName;
     }
 
     /**
-     * Creation of a new instance based on the {@link IndexRebuildState}.
+     * If the cache is persist, then it sets the status to completed in order
+     * to then delete the entry from the MetaStorage at the end of the checkpoint,
+     * otherwise it deletes it from the {@link #states}.
      *
-     * @param state Rebuild indexes state.
-     * @return New instance.
+     * @param cacheName Cache name.
+     * @param state State rebuild indexes of cache.
      */
-    private static IndexRebuildCacheInfo of(IndexRebuildState state) {
-        return new IndexRebuildCacheInfo(state.cacheId(), state.cacheName());
-    }
+    private void complete(String cacheName, IndexRebuildState state) {
+        assert lock.isHeldByCurrentThread();
 
-    /**
-     * Creation of a new instance based on the {@link IndexRebuildCacheInfo}.
-     *
-     * @param cacheInfo Cache info from MetaStorage.
-     * @return New instance.
-     */
-    private static IndexRebuildState of(IndexRebuildCacheInfo cacheInfo) {
-        return new IndexRebuildState(cacheInfo.cacheId(), cacheInfo.cacheName(), true);
-    }
-
-    /**
-     * Creation of a new instance based on the {@link GridCacheContext}.
-     *
-     * @param cacheCtx Cache context.
-     * @return New instance.
-     */
-    private IndexRebuildState of(GridCacheContext cacheCtx) {
-        boolean persistent = CU.isPersistentCache(cacheCtx.config(), ctx.config().getDataStorageConfiguration());
-
-        return new IndexRebuildState(cacheCtx.cacheId(), cacheCtx.name(), persistent);
+        if (state.persistent())
+            state.completed(true);
+        else
+            states.remove(cacheName);
     }
 }

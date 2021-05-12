@@ -33,9 +33,6 @@ public class IndexRebuildCacheInfo extends IgniteDataTransferObject {
     /** Serial version UUID. */
     private static final long serialVersionUID = 0L;
 
-    /** Cache id. */
-    private int cacheId;
-
     /** Cache name. */
     private String cacheName;
 
@@ -48,17 +45,14 @@ public class IndexRebuildCacheInfo extends IgniteDataTransferObject {
     /**
      * Constructor.
      *
-     * @param cacheId Cache id.
      * @param cacheName Cache name.
      */
-    public IndexRebuildCacheInfo(int cacheId, String cacheName) {
-        this.cacheId = cacheId;
+    public IndexRebuildCacheInfo(String cacheName) {
         this.cacheName = cacheName;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeInt(cacheId);
         U.writeLongString(out, cacheName);
     }
 
@@ -67,17 +61,7 @@ public class IndexRebuildCacheInfo extends IgniteDataTransferObject {
         byte protoVer,
         ObjectInput in
     ) throws IOException, ClassNotFoundException {
-        cacheId = in.readInt();
         cacheName = U.readLongString(in);
-    }
-
-    /**
-     * Getting cache id.
-     *
-     * @return Cache id.
-     */
-    public int cacheId() {
-        return cacheId;
     }
 
     /**

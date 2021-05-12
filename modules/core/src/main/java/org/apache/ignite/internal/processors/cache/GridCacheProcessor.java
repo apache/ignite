@@ -2615,23 +2615,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @param cacheName Cache name.
      * @param destroy Cache data destroy flag. Setting to <code>true</code> will remove all cache data.
-     * @return Stopped cache context.
      */
-    @Nullable public GridCacheContext<?, ?> prepareCacheStop(String cacheName, boolean destroy) {
-        return prepareCacheStop(cacheName, destroy, true);
+    public void prepareCacheStop(String cacheName, boolean destroy) {
+        prepareCacheStop(cacheName, destroy, true);
     }
 
     /**
      * @param cacheName Cache name.
      * @param destroy Cache data destroy flag. Setting to <code>true</code> will remove all cache data.
      * @param clearDbObjects If {@code false} DB objects don't removed (used for cache.close() on client node).
-     * @return Stopped cache context.
      */
-    @Nullable public GridCacheContext<?, ?> prepareCacheStop(
-        String cacheName,
-        boolean destroy,
-        boolean clearDbObjects
-    ) {
+    public void prepareCacheStop(String cacheName, boolean destroy, boolean clearDbObjects) {
         assert sharedCtx.database().checkpointLockIsHeldByThread();
 
         GridCacheAdapter<?, ?> cache = caches.remove(cacheName);
@@ -2644,14 +2638,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             onKernalStop(cache, true);
 
             stopCache(cache, true, destroy, clearDbObjects);
-
-            return ctx;
         }
         else
             // Try to unregister query structures for not started caches.
             ctx.query().onCacheStop(cacheName);
-
-        return null;
     }
 
     /**
