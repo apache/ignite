@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadW
 import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.COMMON_KEY_PREFIX;
@@ -97,6 +98,13 @@ public class DmsDataWriterWorker extends GridWorker {
         this.metastorage = metastorage;
     }
 
+    /** Start new distributed metastorage worker thread. */
+    public void start() {
+        isCancelled = false;
+
+        new IgniteThread(igniteInstanceName(), "dms-writer-thread", this).start();
+    }
+
     /**
      * @return Future which will be completed when all tasks prior to the pause task are finished.
      */
@@ -137,6 +145,9 @@ public class DmsDataWriterWorker extends GridWorker {
     public void update(DistributedMetaStorageClusterNodeData fullNodeData) {
         assert fullNodeData.fullData != null;
         assert fullNodeData.hist != null;
+
+        if (!isCancelled())
+            updateQueue.clear();
 
         updateQueue.offer(newDmsTask(() -> {
             metastorage.writeRaw(cleanupGuardKey(), DUMMY_VALUE);

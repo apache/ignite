@@ -75,7 +75,6 @@ import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
 import org.apache.ignite.spi.systemview.view.MetastorageView;
-import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
@@ -436,11 +435,16 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     private void onMetaStorageReadyForWrite(ReadWriteMetastorage metastorage) {
         assert isPersistenceEnabled;
 
-        worker.setMetaStorage(metastorage);
+        lock.writeLock().lock();
 
-        IgniteThread workerThread = new IgniteThread(ctx.igniteInstanceName(), "dms-writer-thread", worker);
+        try {
+            worker.setMetaStorage(metastorage);
 
-        workerThread.start();
+            worker.start();
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
     }
 
     /** {@inheritDoc} */
