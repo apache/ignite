@@ -138,9 +138,6 @@ public class DmsDataWriterWorker extends GridWorker {
         assert fullNodeData.fullData != null;
         assert fullNodeData.hist != null;
 
-        if (isCancelled())
-            return;
-
         updateQueue.clear();
 
         updateQueue.offer(newDmsTask(() -> {
