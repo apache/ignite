@@ -56,7 +56,7 @@ public class GridCacheRebalancingUnmarshallingFailedSelfTest extends GridCommonA
     private ListeningTestLogger customLog;
 
     /** */
-    private static final Pattern unmarshalingErrorPattern = Pattern.compile(".*Rebalancing routine has failed" +
+    private static final Pattern UNMARSHALING_ERROR_PATTERN = Pattern.compile(".*Rebalancing routine has failed" +
         ".*unavailablePartitions=\\[.*].*");
 
     /** Test key 1. */
@@ -166,7 +166,7 @@ public class GridCacheRebalancingUnmarshallingFailedSelfTest extends GridCommonA
     private void runTest() throws Exception {
         customLog = new ListeningTestLogger(log);
 
-        LogListener unmarshalErrorLogListener = LogListener.matches(unmarshalingErrorPattern).atLeast(1).build();
+        LogListener unmarshalErrorLogListener = LogListener.matches(UNMARSHALING_ERROR_PATTERN).atLeast(1).build();
 
         customLog.registerListener(unmarshalErrorLogListener);
 
