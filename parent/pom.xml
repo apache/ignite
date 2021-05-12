@@ -255,6 +255,11 @@
                             <artifactId>checkstyle</artifactId>
                             <version>${checkstyle.puppycrawl.version}</version>
                         </dependency>
+                        <dependency>
+                            <groupId>org.apache.ignite</groupId>
+                            <artifactId>ignite-tools</artifactId>
+                            <version>${project.version}</version>
+                        </dependency>
                     </dependencies>
                 </plugin>
 

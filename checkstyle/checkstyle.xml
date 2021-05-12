@@ -134,5 +134,8 @@
             See: https://checkstyle.sourceforge.io/config_whitespace.html#GenericWhitespace
         -->
         <module name="GenericWhitespace"/>
+
+        <!-- Usage of the IgniteInternalFuture#get prohibited. -->
+        <module name="org.apache.ignite.tools.checkstyle.FindGetCallCheck"/>
     </module>
 </module>
