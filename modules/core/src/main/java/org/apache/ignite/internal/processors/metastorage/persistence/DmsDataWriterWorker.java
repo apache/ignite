@@ -138,8 +138,6 @@ public class DmsDataWriterWorker extends GridWorker {
         assert fullNodeData.fullData != null;
         assert fullNodeData.hist != null;
 
-        updateQueue.clear();
-
         updateQueue.offer(newDmsTask(() -> {
             metastorage.writeRaw(cleanupGuardKey(), DUMMY_VALUE);
 
