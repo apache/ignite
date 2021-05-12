@@ -826,6 +826,7 @@ public interface GridCacheEntryEx {
      * @param topVer Topology version.
      * @param drType DR type.
      * @param fromStore {@code True} if value was loaded from store.
+     * @param primary {@code True} if current node is primary for partition.
      * @param row Pre-created data row, associated with this cache entry.
      * @return {@code True} if initial value was set.
      * @throws IgniteCheckedException In case of error.
