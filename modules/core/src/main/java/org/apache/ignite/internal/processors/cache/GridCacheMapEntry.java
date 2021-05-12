@@ -1569,7 +1569,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             updateCntr0 = nextPartitionCounter(tx, updateCntr);
 
             if (tx != null && cctx.group().persistenceEnabled() && cctx.group().walEnabled())
-                logPtr = logTxUpdate(tx, val, expireTime, updateCntr0, topVer);
+                logPtr = logTxUpdate(tx, val, expireTime, updateCntr0);
 
             update(val, expireTime, ttl, newVer, true);
 
@@ -1795,7 +1795,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             updateCntr0 = nextPartitionCounter(tx, updateCntr);
 
             if (tx != null && cctx.group().persistenceEnabled() && cctx.group().walEnabled())
-                logPtr = logTxUpdate(tx, null, 0, updateCntr0, topVer);
+                logPtr = logTxUpdate(tx, null, 0, updateCntr0);
 
             drReplicate(drType, null, newVer, topVer);
 
@@ -2152,7 +2152,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 update(updated, expireTime, ttl, ver, true);
 
-                logUpdate(op, updated, ver, expireTime, 0, cctx.affinity().affinityTopologyVersion(), true);
+                logUpdate(op, updated, ver, expireTime, 0, true);
 
                 if (evt) {
                     CacheObject evtOld = null;
@@ -2184,7 +2184,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 update(null, CU.TTL_ETERNAL, CU.EXPIRE_TIME_ETERNAL, ver, true);
 
-                logUpdate(op, null, ver, CU.EXPIRE_TIME_ETERNAL, 0, cctx.affinity().affinityTopologyVersion(), true);
+                logUpdate(op, null, ver, CU.EXPIRE_TIME_ETERNAL, 0, true);
 
                 if (evt) {
                     CacheObject evtOld = null;
@@ -4329,7 +4329,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @param writeVer Write version.
      * @param expireTime Expire time.
      * @param updCntr Update counter.
-     * @param topVer Topology version.
      * @param primary {@code True} if node is primary for entry in the moment of logging.
      */
     protected void logUpdate(
@@ -4338,7 +4337,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         GridCacheVersion writeVer,
         long expireTime,
         long updCntr,
-        AffinityTopologyVersion topVer,
         boolean primary
     ) throws IgniteCheckedException {
         // We log individual updates only in ATOMIC cache.
@@ -4369,15 +4367,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @param val Value.
      * @param expireTime Expire time (or 0 if not applicable).
      * @param updCntr Update counter.
-     * @param topVer Topology version.
      * @throws IgniteCheckedException In case of log failure.
      */
     protected WALPointer logTxUpdate(
         IgniteInternalTx tx,
         CacheObject val,
         long expireTime,
-        long updCntr,
-        AffinityTopologyVersion topVer
+        long updCntr
     ) throws IgniteCheckedException {
         assert cctx.transactional() && !cctx.transactionalSnapshot();
 
@@ -6507,7 +6503,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             long updateCntr0 = entry.nextPartitionCounter(topVer, primary, false, updateCntr);
 
-            entry.logUpdate(op, updated, newVer, newExpireTime, updateCntr0, topVer, primary);
+            entry.logUpdate(op, updated, newVer, newExpireTime, updateCntr0, primary);
 
             if (!entry.isNear()) {
                 newRow = entry.localPartition().dataStore().createRow(
@@ -6594,7 +6590,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             long updateCntr0 = entry.nextPartitionCounter(topVer, primary, false, updateCntr);
 
-            entry.logUpdate(op, null, newVer, 0, updateCntr0, topVer, primary);
+            entry.logUpdate(op, null, newVer, 0, updateCntr0, primary);
 
             if (oldVal != null) {
                 assert !entry.deletedUnlocked();
