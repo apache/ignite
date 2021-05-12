@@ -17,13 +17,12 @@
 
 package org.apache.ignite.network.scalecube;
 
-import java.util.Objects;
 import io.scalecube.cluster.transport.api.Message;
 import io.scalecube.cluster.transport.api.Transport;
 import io.scalecube.cluster.transport.api.TransportConfig;
 import io.scalecube.cluster.transport.api.TransportFactory;
 import io.scalecube.net.Address;
-import io.scalecube.transport.netty.tcp.TcpTransportFactory;
+import java.util.Objects;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -35,50 +34,66 @@ class DelegatingTransportFactory implements TransportFactory {
     /** */
     private final ScaleCubeMessagingService messagingService;
 
+    /** Delegate transport factory. */
+    private final TransportFactory factory;
+
     /**
      * @param messagingService Messaging service.
+     * @param factory Delegate transport factory.
      */
-    DelegatingTransportFactory(ScaleCubeMessagingService messagingService) {
+    DelegatingTransportFactory(ScaleCubeMessagingService messagingService, TransportFactory factory) {
         this.messagingService = messagingService;
+        this.factory = factory;
     }
 
     /** {@inheritDoc} */
     @Override public Transport createTransport(TransportConfig config) {
-        var delegateFactory = TransportFactory.INSTANCE == null ? new TcpTransportFactory() : TransportFactory.INSTANCE;
-
-        Transport delegate = delegateFactory.createTransport(config);
+        Transport delegate = factory.createTransport(config);
 
         return new Transport() {
+            /** {@inheritDoc} */
             @Override public Address address() {
                 return delegate.address();
             }
 
+            /** {@inheritDoc} */
             @Override public Mono<Transport> start() {
                 return delegate.start().thenReturn(this);
             }
 
+            /** {@inheritDoc} */
             @Override public Mono<Void> stop() {
                 return delegate.stop();
             }
 
+            /** {@inheritDoc} */
             @Override public boolean isStopped() {
                 return delegate.isStopped();
             }
 
+            /** {@inheritDoc} */
             @Override public Mono<Void> send(Address address, Message message) {
                 return delegate.send(address, message);
             }
 
+            /** {@inheritDoc} */
             @Override public Flux<Message> listen() {
                 return delegate.listen();
             }
 
+            /** {@inheritDoc} */
             @Override public Mono<Message> requestResponse(Address address, Message request) {
                 return address.equals(address()) ?
                     requestResponseToSelf(request) :
                     delegate.requestResponse(address, request);
             }
 
+            /**
+             * Send a request from this node to this node.
+             *
+             * @param request Message.
+             * @return {@link Mono} with a response.
+             */
             private Mono<Message> requestResponseToSelf(Message request) {
                 Objects.requireNonNull(request, "request must be not null");
                 Objects.requireNonNull(request.correlationId(), "correlationId must be not null");

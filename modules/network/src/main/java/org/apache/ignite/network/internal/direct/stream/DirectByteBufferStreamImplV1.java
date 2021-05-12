@@ -1059,7 +1059,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
             lastFinished = true;
 
         if (lastFinished) {
-            NetworkMessage msg0 = msgDeserializer.getMessage();
+            NetworkMessage msg0 = msgDeserializer != null ? msgDeserializer.getMessage() : null;
 
             msgTypeDone = false;
             msgDeserializer = null;

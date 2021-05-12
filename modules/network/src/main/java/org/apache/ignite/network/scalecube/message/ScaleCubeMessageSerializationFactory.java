@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.network;
+package org.apache.ignite.network.scalecube.message;
 
 import java.util.Map;
 import org.apache.ignite.network.internal.MessageReader;
@@ -26,35 +26,39 @@ import org.apache.ignite.network.message.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 
 /**
- * Mapper for {@link TestMessage}.
+ * Serialization factory for {@link ScaleCubeMessage}.
+ * TODO: IGNITE-14649 This class should be generated.
  */
-public class TestMessageSerializationFactory implements MessageSerializationFactory<TestMessage> {
+public class ScaleCubeMessageSerializationFactory implements MessageSerializationFactory<ScaleCubeMessage> {
     /** {@inheritDoc} */
-    @Override public MessageDeserializer<TestMessage> createDeserializer() {
+    @Override public MessageDeserializer<ScaleCubeMessage> createDeserializer() {
         return new MessageDeserializer<>() {
+            /** */
+            ScaleCubeMessage obj;
 
-            private TestMessage obj;
+            /** */
+            byte[] array;
 
-            private String msg;
-            private Map<Integer, String> map;
+            /** */
+            Map<String, String> headers;
 
-            @Override
-            public boolean readMessage(MessageReader reader) throws MessageMappingException {
+            /** {@inheritDoc} */
+            @Override public boolean readMessage(MessageReader reader) throws MessageMappingException {
                 if (!reader.beforeMessageRead())
                     return false;
 
                 switch (reader.state()) {
                     case 0:
-                        map = reader.readMap("map", MessageCollectionItemType.INT, MessageCollectionItemType.STRING, false);
+                        array = reader.readByteArray("array");
 
                         if (!reader.isLastRead())
                             return false;
 
                         reader.incrementState();
 
-                        //noinspection fallthrough
+                    //noinspection fallthrough
                     case 1:
-                        msg = reader.readString("msg");
+                        headers = reader.readMap("headers", MessageCollectionItemType.STRING, MessageCollectionItemType.STRING, false);
 
                         if (!reader.isLastRead())
                             return false;
@@ -63,25 +67,25 @@ public class TestMessageSerializationFactory implements MessageSerializationFact
 
                 }
 
-                obj = new TestMessage(msg, map);
+                obj = new ScaleCubeMessage(array, headers);
 
-                return reader.afterMessageRead(TestMessage.class);
+                return reader.afterMessageRead(ScaleCubeMessage.class);
             }
 
-            @Override
-            public Class<TestMessage> klass() {
-                return TestMessage.class;
+            /** {@inheritDoc} */
+            @Override public Class<ScaleCubeMessage> klass() {
+                return ScaleCubeMessage.class;
             }
 
-            @Override
-            public TestMessage getMessage() {
+            /** {@inheritDoc} */
+            @Override public ScaleCubeMessage getMessage() {
                 return obj;
             }
         };
     }
 
     /** {@inheritDoc} */
-    @Override public MessageSerializer<TestMessage> createSerializer() {
+    @Override public MessageSerializer<ScaleCubeMessage> createSerializer() {
         return (message, writer) -> {
             if (!writer.isHeaderWritten()) {
                 if (!writer.writeHeader(message.directType(), (byte) 2))
@@ -92,14 +96,14 @@ public class TestMessageSerializationFactory implements MessageSerializationFact
 
             switch (writer.state()) {
                 case 0:
-                    if (!writer.writeMap("map", message.getMap(), MessageCollectionItemType.INT, MessageCollectionItemType.STRING))
+                    if (!writer.writeByteArray("array", message.getArray()))
                         return false;
 
                     writer.incrementState();
 
                 //noinspection fallthrough
                 case 1:
-                    if (!writer.writeString("msg", message.msg()))
+                    if (!writer.writeMap("headers", message.getHeaders(), MessageCollectionItemType.STRING, MessageCollectionItemType.STRING))
                         return false;
 
                     writer.incrementState();
