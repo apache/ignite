@@ -121,9 +121,6 @@ public class DmsDataWriterWorker extends GridWorker {
 
     /** */
     public void update(DistributedMetaStorageHistoryItem histItem) {
-        if (isCancelled())
-            return;
-
         updateQueue.offer(newDmsTask(() -> {
             metastorage.write(historyItemKey(workerDmsVer.id() + 1), histItem);
 
