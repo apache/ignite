@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -82,8 +81,7 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSp
     private IgniteLogger log;
 
     /** Map of all resources. */
-    private ConcurrentLinkedHashMap<ClassLoader, ConcurrentMap<String, String>> ldrRsrcs =
-        new ConcurrentLinkedHashMap<>(16, 0.75f, 64);
+    private volatile ConcurrentLinkedHashMap<ClassLoader, ConcurrentMap<String, String>> ldrRsrcs = new ConcurrentLinkedHashMap<>();
 
     /** Deployment SPI listener. */
     private volatile DeploymentListener lsnr;
@@ -110,36 +108,55 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSp
             log.debug(stopInfo());
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Finds class loader for the given class.
+     *
+     * @param rsrcName Class name or class alias to find class loader for.
+     * @return Deployed class loader, or {@code null} if not deployed.
+     */
     @Nullable @Override public DeploymentResource findResource(String rsrcName) {
-        assert rsrcName != null;
-
-        // Last updated class loader has highest priority in search.
         for (Entry<ClassLoader, ConcurrentMap<String, String>> e : ldrRsrcs.descendingEntrySet()) {
             ClassLoader ldr = e.getKey();
             ConcurrentMap<String, String> rsrcs = e.getValue();
 
-            String clsName = rsrcs.get(rsrcName);
+            DeploymentResourceAdapter res = findResource0(rsrcs, rsrcName, ldr);
 
-            // Return class if it was found in resources map.
-            if (clsName != null) {
-                // Recalculate resource name in case if access is performed by
-                // class name and not the resource name.
-                rsrcName = getResourceName(clsName, rsrcs);
+            if (res != null)
+                return res;
+        }
 
-                assert clsName != null;
+        return null;
+    }
 
-                try {
-                    Class<?> cls = Class.forName(clsName, true, ldr);
+    /**
+     * Finds appropriate resource.
+     *
+     * @param rsrcs Resources.
+     * @param rsrcName Class name or class alias to find class loader for.
+     * @param clsLdr desired class loader.
+     * @return Deployed class loader, or {@code null} if not deployed.
+     */
+    @Nullable private DeploymentResourceAdapter findResource0(Map<String, String> rsrcs, String rsrcName, ClassLoader clsLdr) {
+        String clsName = rsrcs.get(rsrcName);
 
-                    assert cls != null;
+        // Return class if it was found in resources map.
+        if (clsName != null) {
+            // Recalculate resource name in case if access is performed by
+            // class name and not the resource name.
+            rsrcName = getResourceName(clsName, rsrcs);
 
-                    // Return resource.
-                    return new DeploymentResourceAdapter(rsrcName, cls, ldr);
-                }
-                catch (ClassNotFoundException ignored) {
-                    // No-op.
-                }
+            assert clsName != null;
+
+            try {
+                Class<?> cls = U.forName(clsName, clsLdr);
+
+                assert cls != null;
+
+                // Return resource.
+                return new DeploymentResourceAdapter(rsrcName, cls, clsLdr);
+            }
+            catch (ClassNotFoundException e) {
+                log.warning("Can`t find appropriate class. ", e);
             }
         }
 
@@ -175,30 +192,30 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSp
         if (log.isDebugEnabled())
             log.debug("Registering [ldrRsrcs=" + ldrRsrcs + ", ldr=" + ldr + ", rsrc=" + rsrc + ']');
 
-        ConcurrentMap<String, String> clsLdrRsrcs = ldrRsrcs.getSafe(ldr);
+        Map<String, String> newRsrcs;
 
-        if (clsLdrRsrcs == null) {
+        ConcurrentLinkedHashMap<ClassLoader, ConcurrentMap<String, String>> ldrRsrcs0 =
+            new ConcurrentLinkedHashMap<>(ldrRsrcs);
+
+        ConcurrentMap<String, String> clsLdrRsrcs = ldrRsrcs0.getSafe(ldr);
+
+        // move forward, localDeployTask compatibility issue.
+        if (clsLdrRsrcs != null) {
+            if (ldrRsrcs0.remove(ldr) != null) {
+                ldrRsrcs0.put(ldr, clsLdrRsrcs);
+
+                ldrRsrcs = ldrRsrcs0;
+            }
+        }
+        else {
             ConcurrentMap<String, String> old = ldrRsrcs.putIfAbsent(ldr,
-                clsLdrRsrcs = new ConcurrentHashMap<>());
+                clsLdrRsrcs == null ? clsLdrRsrcs = new ConcurrentLinkedHashMap<>() : clsLdrRsrcs);
 
             if (old != null)
                 clsLdrRsrcs = old;
         }
 
-        Map<String, String> newRsrcs = addResource(ldr, clsLdrRsrcs, rsrc);
-
-        Collection<ClassLoader> rmvClsLdrs = null;
-
-        if (!F.isEmpty(newRsrcs)) {
-            rmvClsLdrs = new LinkedList<>();
-
-            removeResources(ldr, newRsrcs, rmvClsLdrs);
-        }
-
-        if (rmvClsLdrs != null) {
-            for (ClassLoader cldLdr : rmvClsLdrs)
-                onClassLoaderReleased(cldLdr);
-        }
+        newRsrcs = addResource(ldr, clsLdrRsrcs, rsrc);
 
         return !F.isEmpty(newRsrcs);
     }
@@ -267,11 +284,12 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSp
             String oldCls = ldrRsrcs.putIfAbsent(entry.getKey(), entry.getValue());
 
             if (oldCls != null) {
-                if (!oldCls.equals(entry.getValue()))
+                if (!oldCls.equals(entry.getValue())) {
                     throw new IgniteSpiException("Failed to register resources with given task name " +
                         "(found another class with same task name in the same class loader) " +
                         "[taskName=" + entry.getKey() + ", existingCls=" + oldCls +
                         ", newCls=" + entry.getValue() + ", ldr=" + ldr + ']');
+                }
             }
             else {
                 // New resource was added.
