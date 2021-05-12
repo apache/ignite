@@ -198,6 +198,7 @@ class IgniteSpec(metaclass=ABCMeta):
 
         self.service.logger.debug("Local shared dir not exists. Creating. " + local_dir)
         os.mkdir(local_dir)
+
         script_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "certs")
 
         self._runcmd(f"cp {script_dir}/* {local_dir}")
