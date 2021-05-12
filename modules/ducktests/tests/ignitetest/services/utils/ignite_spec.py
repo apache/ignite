@@ -35,6 +35,7 @@ from ignitetest.utils.version import DEV_BRANCH
 
 SHARED_PREPARED_FILE = ".ignite_prepared"
 
+
 def resolve_spec(service, **kwargs):
     """
     Resolve Spec classes for IgniteService and IgniteApplicationService
