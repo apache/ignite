@@ -33,6 +33,7 @@ from ignitetest.services.utils.ssl.ssl_params import is_ssl_enabled
 from ignitetest.utils.ignite_test import JFR_ENABLED
 from ignitetest.utils.version import DEV_BRANCH
 
+SHARED_PREPARED_FILE = ".ignite_prepared"
 
 def resolve_spec(service, **kwargs):
     """
@@ -172,19 +173,27 @@ class IgniteSpec(metaclass=ABCMeta):
         """
         return self.service.config_file
 
-    def prepare_shared_files_check(self, local_dir):
+    def is_prepare_shared_files(self, local_dir):
         """
         :return True if we have something to prepare
         """
-        return (is_ssl_enabled(self.service.context.globals) or
-                (self.service.config.service_type == IgniteServiceType.NODE and self.service.config.ssl_params)) \
-            and not os.path.isdir(local_dir)
+        if not is_ssl_enabled(self.service.context.globals) and \
+                not (self.service.config.service_type == IgniteServiceType.NODE and self.service.config.ssl_params):
+            self.service.logger.debug("Ssl disabled. Nothing to generate.")
+            return False
+
+        if os.path.isfile(os.path.join(local_dir, SHARED_PREPARED_FILE)):
+            self.service.logger.debug("Local shared dir already prepared. Exiting. " + local_dir)
+            return False
+
+        return True
 
     def prepare_shared_files(self, local_dir):
         """
         Prepare files that should be copied on all nodes
         """
-        if os.path.isdir(local_dir):
+        if os.path.isfile(os.path.join(local_dir, SHARED_PREPARED_FILE)):
+            self.service.logger.debug("Local shared dir already prepared. Exiting. " + local_dir)
             return
 
         self.service.logger.debug("Local shared dir not exists. Creating. " + local_dir)
@@ -194,6 +203,7 @@ class IgniteSpec(metaclass=ABCMeta):
         self._runcmd(f"cp {script_dir}/* {local_dir}")
         self._runcmd(f"chmod a+x {local_dir}/*.sh")
         self._runcmd(f"{local_dir}/mkcerts.sh")
+        self._runcmd(f"touch {os.path.join(local_dir, SHARED_PREPARED_FILE)}")
 
     def _jvm_opts(self):
         """

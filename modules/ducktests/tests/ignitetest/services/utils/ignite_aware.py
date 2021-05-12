@@ -179,7 +179,6 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         Init shared directory. Content of shared directory must be equal on all test nodes.
         :param node: Ignite service node.
         """
-
         local_shared_dir = self._init_local_shared()
 
         if not os.path.isdir(local_shared_dir):
@@ -198,7 +197,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
         local_dir = os.path.join(tempfile.gettempdir(), str(self.context.session_context.session_id))
 
-        if self.spec.prepare_shared_files_check(local_dir):
+        if self.spec.is_prepare_shared_files(local_dir):
             with FileLock("init_shared.lock", timeout=120):
                 self.spec.prepare_shared_files(local_dir)
 
