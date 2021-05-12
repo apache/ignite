@@ -176,7 +176,7 @@ class IgniteSpec(metaclass=ABCMeta):
 
     def is_prepare_shared_files(self, local_dir):
         """
-        :return True if we have something to prepare
+        :return True if we have something to prepare.
         """
         if not is_ssl_enabled(self.service.context.globals) and \
                 not (self.service.config.service_type == IgniteServiceType.NODE and self.service.config.ssl_params):
