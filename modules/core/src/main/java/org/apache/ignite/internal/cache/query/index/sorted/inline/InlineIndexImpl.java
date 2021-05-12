@@ -449,7 +449,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
                     treeName
                 );
 
-                cctx.kernalContext().durableBackgroundTasksProcessor().executeAsync(task, cctx.config());
+                cctx.kernalContext().durableBackgroundTask().executeAsync(task, cctx.config());
             }
         }
         catch (IgniteCheckedException e) {
