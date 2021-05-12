@@ -146,9 +146,6 @@ public class DmsDataWriterWorker extends GridWorker {
         assert fullNodeData.fullData != null;
         assert fullNodeData.hist != null;
 
-        if (!isCancelled())
-            updateQueue.clear();
-
         updateQueue.offer(newDmsTask(() -> {
             metastorage.writeRaw(cleanupGuardKey(), DUMMY_VALUE);
 
@@ -180,13 +177,12 @@ public class DmsDataWriterWorker extends GridWorker {
 
     /** */
     public void cancel(boolean halt) {
-        U.cancel(this);
-
         if (halt)
             updateQueue.clear();
 
         updateQueue.offer(new FutureTask<>(() -> STOP));
 
+        U.cancel(this);
         U.join(runner(), log);
     }
 
