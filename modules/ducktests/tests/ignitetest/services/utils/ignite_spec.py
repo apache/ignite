@@ -191,7 +191,7 @@ class IgniteSpec(metaclass=ABCMeta):
 
     def prepare_shared_files(self, local_dir):
         """
-        Prepare files that should be copied on all nodes
+        Prepare files that should be copied on all nodes.
         """
         self.service.logger.debug("Local shared dir not exists. Creating. " + local_dir)
         os.mkdir(local_dir)
