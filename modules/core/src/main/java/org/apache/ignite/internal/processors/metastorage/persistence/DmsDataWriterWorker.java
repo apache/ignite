@@ -182,7 +182,8 @@ public class DmsDataWriterWorker extends GridWorker {
 
         updateQueue.offer(new FutureTask<>(() -> STOP));
 
-        latch.countDown();
+        if (suspendFut instanceof RunnableFuture)
+            ((Runnable)suspendFut).run();
 
         U.cancel(this);
         U.join(runner(), log);
