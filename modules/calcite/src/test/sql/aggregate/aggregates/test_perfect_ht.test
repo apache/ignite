@@ -22,3 +22,31 @@ SELECT year, SUM(val), COUNT(val), COUNT(*) FROM timeseries GROUP BY year ORDER 
 2001	30	1	1
 NULL	1	1	1
 
+# many small columns each having only the values 0 and 1
+# total possible combinations is 2^10, but there are only 2 groups
+statement ok
+create table manycolumns(a INTEGER, b INTEGER, c INTEGER, d INTEGER, e INTEGER);
+
+statement ok
+insert into manycolumns select x a, x b, x c, x d, x e from table(system_range(0,1));
+
+query IIIII
+select a, b, c, d, e FROM manycolumns GROUP BY a, b, c, d, e ORDER BY 1
+----
+0	0	0	0	0
+1	1	1	1	1
+
+# test edge cases: multiple tinyints without statistics
+# create a table of tinyints [-127, 127] stored as varchar
+# by forcing a varchar to tinyint cast we lose statistics
+statement ok
+CREATE TABLE tinyints (t TINYINT);
+
+statement ok
+INSERT INTO tinyints SELECT x::TINYINT::VARCHAR AS t FROM table(system_range(-127, 127));
+
+query IIII
+SELECT COUNT(DISTINCT i), MIN(i), MAX(i), SUM(i) / COUNT(i) FROM (SELECT t::TINYINT i FROM tinyints GROUP BY t)
+----
+255	-127	127	0
+

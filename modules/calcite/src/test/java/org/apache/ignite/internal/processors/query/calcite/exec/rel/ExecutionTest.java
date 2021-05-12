@@ -21,9 +21,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.rel.core.CorrelationId;
+import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -461,44 +461,50 @@ public class ExecutionTest extends AbstractExecutionTest {
         int[] leftSizes = {1, 99, 100, 101, 512, 513, 2000};
         int[] rightSizes = {1, 99, 100, 101, 512, 513, 2000};
         int[] rightBufSizes = {1, 100, 512};
+        JoinRelType[] joinTypes = {INNER, LEFT};
 
-        for (int rightBufSize : rightBufSizes) {
-            for (int leftSize : leftSizes) {
-                for (int rightSize : rightSizes) {
-                    log.info("Check: rightBufSize=" + rightBufSize + ", leftSize=" + leftSize + ", rightSize=" + rightSize);
+        for (JoinRelType joinType : joinTypes) {
+            for (int rightBufSize : rightBufSizes) {
+                for (int leftSize : leftSizes) {
+                    for (int rightSize : rightSizes) {
+                        log.info("Check: joinType=" + joinType + ", rightBufSize=" + rightBufSize +
+                            ", leftSize=" + leftSize + ", rightSize=" + rightSize);
 
-                    ScanNode<Object[]> left = new ScanNode<>(ctx, rowType, new TestTable(leftSize, rowType));
-                    ScanNode<Object[]> right = new ScanNode<>(ctx, rowType, new TestTable(rightSize, rowType));
+                        ScanNode<Object[]> left = new ScanNode<>(ctx, rowType, new TestTable(leftSize, rowType));
+                        ScanNode<Object[]> right = new ScanNode<>(ctx, rowType, new TestTable(rightSize, rowType));
 
-                    RelDataType joinRowType = TypeUtils.createRowType(
-                        tf,
-                        int.class, String.class, int.class,
-                        int.class, String.class, int.class);
+                        RelDataType joinRowType = TypeUtils.createRowType(
+                            tf,
+                            int.class, String.class, int.class,
+                            int.class, String.class, int.class);
 
-                    CorrelatedNestedLoopJoinNode<Object[]> join = new CorrelatedNestedLoopJoinNode<>(
-                        ctx,
-                        joinRowType,
-                        r -> r[0].equals(r[3]),
-                        ImmutableSet.of(new CorrelationId(0)));
+                        CorrelatedNestedLoopJoinNode<Object[]> join = new CorrelatedNestedLoopJoinNode<>(
+                            ctx,
+                            joinRowType,
+                            r -> r[0].equals(r[3]),
+                            ImmutableSet.of(new CorrelationId(0)),
+                            joinType
+                        );
 
-                    GridTestUtils.setFieldValue(join, "rightInBufferSize", rightBufSize);
+                        GridTestUtils.setFieldValue(join, "rightInBufferSize", rightBufSize);
 
-                    join.register(Arrays.asList(left, right));
+                        join.register(Arrays.asList(left, right));
 
-                    RootNode<Object[]> root = new RootNode<>(ctx, joinRowType);
-                    root.register(join);
+                        RootNode<Object[]> root = new RootNode<>(ctx, joinRowType);
+                        root.register(join);
 
-                    int cnt = 0;
-                    while (root.hasNext()) {
-                        root.next();
+                        int cnt = 0;
+                        while (root.hasNext()) {
+                            root.next();
 
-                        cnt++;
+                            cnt++;
+                        }
+
+                        assertEquals(
+                            "Invalid result size. [left=" + leftSize + ", right=" + rightSize + ", results=" + cnt,
+                            joinType == INNER ? min(leftSize, rightSize) : leftSize,
+                            cnt);
                     }
-
-                    assertEquals(
-                        "Invalid result size. [left=" + leftSize + ", right=" + rightSize + ", results=" + cnt,
-                        min(leftSize, rightSize),
-                        cnt);
                 }
             }
         }
@@ -604,10 +610,8 @@ public class ExecutionTest extends AbstractExecutionTest {
         watchDog.interrupt();
     }
 
-    /**
-     *
-     */
-    protected Object[] row(Object... fields) {
+    /** {@inheritDoc} */
+    @Override protected Object[] row(Object... fields) {
         return fields;
     }
 

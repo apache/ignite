@@ -913,7 +913,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         employer.putAll(ImmutableMap.of(
             keysNode0.get(0), new Employer("Igor", 10d),
-            keysNode0.get(1), new Employer("Roman", 20d) ,
+            keysNode0.get(1), new Employer("Roman", 20d),
             keysNode1.get(0), new Employer("Nikolay", 30d)
         ));
 

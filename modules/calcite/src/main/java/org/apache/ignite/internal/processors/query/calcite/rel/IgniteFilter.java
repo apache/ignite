@@ -109,7 +109,7 @@ public class IgniteFilter extends Filter implements TraitsAwareIgniteRel {
         CorrelationTrait correlation = TraitUtils.correlation(nodeTraits);
 
         if (corrSet.isEmpty() || correlation.correlationIds().containsAll(corrSet))
-            return Pair.of(nodeTraits, ImmutableList.of(inTraits.get(0)));
+            return Pair.of(nodeTraits, ImmutableList.of(inTraits.get(0).replace(correlation)));
 
         return null;
     }

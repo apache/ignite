@@ -24,7 +24,6 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.JoinRelType;
@@ -72,6 +71,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableFunctionScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
@@ -107,7 +107,7 @@ import static org.apache.ignite.internal.processors.query.calcite.util.TypeUtils
 @SuppressWarnings("TypeMayBeWeakened")
 public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     /** */
-    public static final String CNLJ_SUPPORTS_ONLY_INNER_ASSERTION_MSG = "only INNER join supported by IgniteCorrelatedNestedLoop";
+    public static final String CNLJ_NOT_SUPPORTED_JOIN_ASSERTION_MSG = "only INNER and LEFT join supported by IgniteCorrelatedNestedLoop";
 
     /** */
     private final ExecutionContext<Row> ctx;
@@ -237,9 +237,11 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         RelDataType rowType = combinedRowType(ctx.getTypeFactory(), leftType, rightType);
         Predicate<Row> cond = expressionFactory.predicate(rel.getCondition(), rowType);
 
-        assert rel.getJoinType() == JoinRelType.INNER : CNLJ_SUPPORTS_ONLY_INNER_ASSERTION_MSG;
+        assert rel.getJoinType() == JoinRelType.INNER || rel.getJoinType() == JoinRelType.LEFT
+            : CNLJ_NOT_SUPPORTED_JOIN_ASSERTION_MSG;
 
-        Node<Row> node = new CorrelatedNestedLoopJoinNode<>(ctx, outType, cond, rel.getVariablesSet());
+        Node<Row> node = new CorrelatedNestedLoopJoinNode<>(ctx, outType, cond, rel.getVariablesSet(),
+            rel.getJoinType());
 
         Node<Row> leftInput = visit(rel.getLeft());
         Node<Row> rightInput = visit(rel.getRight());
@@ -456,6 +458,17 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         node.register(inputs);
 
         return node;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Node<Row> visit(IgniteTableFunctionScan rel) {
+        Supplier<Iterable<Object[]>> dataSupplier = expressionFactory.execute(rel.getCall());
+
+        RelDataType rowType = rel.getRowType();
+
+        RowFactory<Row> rowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rowType);
+
+        return new ScanNode<>(ctx, rowType, new TableFunctionScan<>(dataSupplier, rowFactory));
     }
 
     /** {@inheritDoc} */
