@@ -21,6 +21,8 @@ import java.io.Serializable;
 import java.lang.management.ManagementFactory;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ForkJoinPool;
 import java.util.zip.Deflater;
 import javax.cache.configuration.Factory;
 import javax.cache.event.CacheEntryListener;
@@ -33,6 +35,7 @@ import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityFunction;
@@ -83,6 +86,7 @@ import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
 import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.systemview.SystemViewExporterSpi;
+import org.apache.ignite.spi.tracing.TracingSpi;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
@@ -162,7 +166,7 @@ public class IgniteConfiguration {
     public static final int DFLT_DATA_STREAMER_POOL_SIZE = DFLT_PUBLIC_THREAD_CNT;
 
     /** Default limit of threads used for rebalance. */
-    public static final int DFLT_REBALANCE_THREAD_POOL_SIZE = 4;
+    public static final int DFLT_REBALANCE_THREAD_POOL_SIZE = min(4, max(1, AVAILABLE_PROC_CNT / 4));
 
     /** Default rebalance message timeout in milliseconds (value is {@code 10000}). */
     public static final long DFLT_REBALANCE_TIMEOUT = 10000;
@@ -247,6 +251,9 @@ public class IgniteConfiguration {
     @SuppressWarnings("UnnecessaryBoxing")
     public static final Long DFLT_CLIENT_FAILURE_DETECTION_TIMEOUT = new Long(30_000);
 
+    /** Default policy for node shutdown. */
+    public static final ShutdownPolicy DFLT_SHUTDOWN_POLICY = ShutdownPolicy.IMMEDIATE;
+
     /**
      *  Default timeout after which long query warning will be printed.
      *
@@ -298,9 +305,6 @@ public class IgniteConfiguration {
 
     /** Management pool size. */
     private int mgmtPoolSize = DFLT_MGMT_THREAD_CNT;
-
-    /** IGFS pool size. */
-    private int igfsPoolSize = AVAILABLE_PROC_CNT;
 
     /** Data stream pool size. */
     private int dataStreamerPoolSize = DFLT_DATA_STREAMER_POOL_SIZE;
@@ -431,6 +435,9 @@ public class IgniteConfiguration {
     /** System view exporter SPI. */
     private SystemViewExporterSpi[] sysViewExporterSpi;
 
+    /** Tracing SPI. */
+    private TracingSpi tracingSpi;
+
     /** Cache configurations. */
     private CacheConfiguration[] cacheCfg;
 
@@ -499,14 +506,8 @@ public class IgniteConfiguration {
     /** Local event listeners. */
     private Map<IgnitePredicate<? extends Event>, int[]> lsnrs;
 
-    /** IGFS configuration. */
-    private FileSystemConfiguration[] igfsCfg;
-
     /** Service configuration. */
     private ServiceConfiguration[] svcCfgs;
-
-    /** Hadoop configuration. */
-    private HadoopConfiguration hadoopCfg;
 
     /** Client access configuration. */
     private ConnectorConfiguration connectorCfg = new ConnectorConfiguration();
@@ -608,6 +609,12 @@ public class IgniteConfiguration {
     /** SQL configuration. */
     private SqlConfiguration sqlCfg = new SqlConfiguration();
 
+    /** Executor for async operations continuations. */
+    private Executor asyncContinuationExecutor;
+
+    /** Shutdown policy for cluster. */
+    public ShutdownPolicy shutdown = DFLT_SHUTDOWN_POLICY;
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -637,6 +644,7 @@ public class IgniteConfiguration {
         encryptionSpi = cfg.getEncryptionSpi();
         metricExporterSpi = cfg.getMetricExporterSpi();
         sysViewExporterSpi = cfg.getSystemViewExporterSpi();
+        tracingSpi = cfg.getTracingSpi();
 
         commFailureRslvr = cfg.getCommunicationFailureResolver();
 
@@ -672,9 +680,6 @@ public class IgniteConfiguration {
         discoStartupDelay = cfg.getDiscoveryStartupDelay();
         execCfgs = cfg.getExecutorConfiguration();
         failureDetectionTimeout = cfg.getFailureDetectionTimeout();
-        hadoopCfg = cfg.getHadoopConfiguration();
-        igfsCfg = cfg.getFileSystemConfiguration();
-        igfsPoolSize = cfg.getIgfsThreadPoolSize();
         failureHnd = cfg.getFailureHandler();
         igniteHome = cfg.getIgniteHome();
         igniteInstanceName = cfg.getIgniteInstanceName();
@@ -737,6 +742,8 @@ public class IgniteConfiguration {
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
         sqlCfg = cfg.getSqlConfiguration();
+        shutdown = cfg.getShutdownPolicy();
+        asyncContinuationExecutor = cfg.getAsyncContinuationExecutor();
     }
 
     /**
@@ -1042,17 +1049,6 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Size of thread pool that is in charge of processing outgoing IGFS messages.
-     * <p>
-     * If not provided, executor service will have size equals number of processors available in system.
-     *
-     * @return Thread pool size to be used for IGFS outgoing message sending.
-     */
-    public int getIgfsThreadPoolSize() {
-        return igfsPoolSize;
-    }
-
-    /**
      * Size of thread pool that is in charge of processing data stream messages.
      * <p>
      * If not provided, executor service will have size {@link #DFLT_DATA_STREAMER_POOL_SIZE}.
@@ -1147,6 +1143,29 @@ public class IgniteConfiguration {
     @Deprecated
     public IgniteConfiguration setSqlQueryHistorySize(int size) {
         sqlCfg.setSqlQueryHistorySize(size);
+
+        return this;
+    }
+
+    /**
+     * Gets shutdown policy.
+     * If policy was not set default policy will be return {@code IgniteCluster.DEFAULT_SHUTDOWN_POLICY}.
+     *
+     * @return Shutdown policy.
+     */
+    public ShutdownPolicy getShutdownPolicy() {
+        return shutdown;
+    }
+
+    /**
+     * Sets shutdown policy.
+     * If {@code null} is passed as a parameter, policy will be set as default.
+     *
+     * @param shutdownPolicy Shutdown policy.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setShutdownPolicy(ShutdownPolicy shutdownPolicy) {
+        this.shutdown = shutdownPolicy != null ? shutdownPolicy : DFLT_SHUTDOWN_POLICY;
 
         return this;
     }
@@ -1259,19 +1278,6 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setPeerClassLoadingThreadPoolSize(int poolSize) {
         p2pPoolSize = poolSize;
-
-        return this;
-    }
-
-    /**
-     * Set thread pool size that will be used to process outgoing IGFS messages.
-     *
-     * @param poolSize Executor service to use for outgoing IGFS messages.
-     * @see IgniteConfiguration#getIgfsThreadPoolSize()
-     * @return {@code this} for chaining.
-     */
-    public IgniteConfiguration setIgfsThreadPoolSize(int poolSize) {
-        igfsPoolSize = poolSize;
 
         return this;
     }
@@ -2492,6 +2498,27 @@ public class IgniteConfiguration {
     }
 
     /**
+     * Set fully configured instance of {@link TracingSpi}.
+     *
+     * @param tracingSpi Fully configured instance of {@link TracingSpi}.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setTracingSpi(TracingSpi tracingSpi) {
+        this.tracingSpi = tracingSpi;
+
+        return this;
+    }
+
+    /**
+     * Gets fully configured tracing SPI implementation.
+     *
+     * @return Tracing SPI implementation.
+     */
+    public TracingSpi getTracingSpi() {
+        return tracingSpi;
+    }
+
+    /**
      * Gets address resolver for addresses mapping determination.
      *
      * @return Address resolver.
@@ -2833,7 +2860,7 @@ public class IgniteConfiguration {
      *
      * @param state New cluster state on start.
      * @return {@code this} for chaining.
-     * @see #getClusterStateOnStart() 
+     * @see #getClusterStateOnStart()
      */
     public IgniteConfiguration setClusterStateOnStart(ClusterState state) {
         this.clusterStateOnStart = state;
@@ -3036,48 +3063,6 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setMetricsLogFrequency(long metricsLogFreq) {
         this.metricsLogFreq = metricsLogFreq;
-
-        return this;
-    }
-
-    /**
-     * Gets IGFS (Ignite In-Memory File System) configurations.
-     *
-     * @return IGFS configurations.
-     */
-    public FileSystemConfiguration[] getFileSystemConfiguration() {
-        return igfsCfg;
-    }
-
-    /**
-     * Sets IGFS (Ignite In-Memory File System) configurations.
-     *
-     * @param igfsCfg IGFS configurations.
-     * @return {@code this} for chaining.
-     */
-    public IgniteConfiguration setFileSystemConfiguration(FileSystemConfiguration... igfsCfg) {
-        this.igfsCfg = igfsCfg;
-
-        return this;
-    }
-
-    /**
-     * Gets hadoop configuration.
-     *
-     * @return Hadoop configuration.
-     */
-    public HadoopConfiguration getHadoopConfiguration() {
-        return hadoopCfg;
-    }
-
-    /**
-     * Sets hadoop configuration.
-     *
-     * @param hadoopCfg Hadoop configuration.
-     * @return {@code this} for chaining.
-     */
-    public IgniteConfiguration setHadoopConfiguration(HadoopConfiguration hadoopCfg) {
-        this.hadoopCfg = hadoopCfg;
 
         return this;
     }
@@ -3658,6 +3643,37 @@ public class IgniteConfiguration {
         A.ensure(sqlCfg != null, "SQL configuration cannot be null");
 
         this.sqlCfg = sqlCfg;
+
+        return this;
+    }
+
+    /**
+     * Gets the continuation executor for cache async APIs.
+     * <p />
+     * When <code>null</code> (default), {@link ForkJoinPool#commonPool()} is used.
+     * <p />
+     * When async operation completes, corresponding {@link org.apache.ignite.lang.IgniteFuture} listeners
+     * will be invoked using this executor.
+     *
+     * @return Executor for async continuations.
+     */
+    public Executor getAsyncContinuationExecutor() {
+        return asyncContinuationExecutor;
+    }
+
+    /**
+     * Sets the continuation executor for cache async APIs.
+     * <p />
+     * When <code>null</code> (default), {@link ForkJoinPool#commonPool()} is used.
+     * <p />
+     * When async operation completes, corresponding {@link org.apache.ignite.lang.IgniteFuture} listeners
+     * will be invoked using this executor.
+     *
+     * @param asyncContinuationExecutor Executor for async continuations.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setAsyncContinuationExecutor(Executor asyncContinuationExecutor) {
+        this.asyncContinuationExecutor = asyncContinuationExecutor;
 
         return this;
     }

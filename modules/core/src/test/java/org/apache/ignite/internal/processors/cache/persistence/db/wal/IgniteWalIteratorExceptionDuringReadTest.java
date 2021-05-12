@@ -26,9 +26,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
 import org.apache.ignite.internal.util.typedef.X;
@@ -89,23 +88,21 @@ public class IgniteWalIteratorExceptionDuringReadTest extends GridCommonAbstract
 
         IgniteWalIteratorFactory iteratorFactory = new IgniteWalIteratorFactory(log);
 
-        FileWALPointer failOnPtr = new FileWALPointer(3, 1024 * 1024 * 5, 0);
+        WALPointer failOnPtr = new WALPointer(3, 1024 * 1024 * 5, 0);
 
         String failMessage = "test fail message";
 
         IteratorParametersBuilder builder = new IteratorParametersBuilder()
             .filesOrDirs(U.defaultWorkDirectory())
             .filter((r, ptr) -> {
-                FileWALPointer ptr0 = (FileWALPointer)ptr;
-
-                if (ptr0.compareTo(failOnPtr) >= 0)
+                if (ptr.compareTo(failOnPtr) >= 0)
                     throw new TestRuntimeException(failMessage);
 
                 return true;
             });
 
         try (WALIterator it = iteratorFactory.iterator(builder)) {
-            FileWALPointer ptr = null;
+            WALPointer ptr = null;
 
             boolean failed = false;
 
@@ -113,7 +110,7 @@ public class IgniteWalIteratorExceptionDuringReadTest extends GridCommonAbstract
                 try {
                     IgniteBiTuple<WALPointer, WALRecord> tup = it.next();
 
-                    ptr = (FileWALPointer)tup.get1();
+                    ptr = tup.get1();
                 }
                 catch (IgniteException e) {
                     Assert.assertNotNull(ptr);

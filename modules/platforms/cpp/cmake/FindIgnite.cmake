@@ -19,26 +19,37 @@ find_path(IGNITE_INCLUDE_DIR ignite/ignite.h
         HINTS ${IGNITE_CPP_DIR}/include
         PATH_SUFFIXES ignite)
 
-find_library(IGNITE_LIB ignite HINTS ${IGNITE_CPP_DIR}/lib)
+if (WIN32)
+	find_library(IGNITE_LIB ignite.core HINTS ${IGNITE_CPP_DIR}/lib)
 
-find_library(IGNITE_COMMON_LIB ignite-common HINTS ${IGNITE_CPP_DIR}/lib)
+	find_library(IGNITE_COMMON_LIB ignite.common HINTS ${IGNITE_CPP_DIR}/lib)
 
-find_library(IGNITE_NETWORK_LIB ignite-network HINTS ${IGNITE_CPP_DIR}/lib)
+	find_library(IGNITE_NETWORK_LIB ignite.network HINTS ${IGNITE_CPP_DIR}/lib)
 
-find_library(IGNITE_JNI_LIB ignite-jni HINTS ${IGNITE_CPP_DIR}/lib)
+	find_library(IGNITE_JNI_LIB ignite.jni HINTS ${IGNITE_CPP_DIR}/lib)
 
-find_library(IGNITE_THIN_CLIENT_LIB ignite-thin-client HINTS ${IGNITE_CPP_DIR}/lib)
+	find_library(IGNITE_THIN_CLIENT_LIB ignite.thin-client HINTS ${IGNITE_CPP_DIR}/lib)
 
-find_library(IGNITE_ODBC_LIB ignite-odbc HINTS ${IGNITE_CPP_DIR}/lib)
+	find_library(IGNITE_BINARY_LIB ignite.binary HINTS ${IGNITE_CPP_DIR}/lib)
+else()
+	find_library(IGNITE_LIB ignite HINTS ${IGNITE_CPP_DIR}/lib)
 
-find_library(IGNITE_BINARY_LIB ignite-binary HINTS ${IGNITE_CPP_DIR}/lib)
+	find_library(IGNITE_COMMON_LIB ignite-common HINTS ${IGNITE_CPP_DIR}/lib)
+
+	find_library(IGNITE_NETWORK_LIB ignite-network HINTS ${IGNITE_CPP_DIR}/lib)
+
+	find_library(IGNITE_JNI_LIB ignite-jni HINTS ${IGNITE_CPP_DIR}/lib)
+
+	find_library(IGNITE_THIN_CLIENT_LIB ignite-thin-client HINTS ${IGNITE_CPP_DIR}/lib)
+
+	find_library(IGNITE_BINARY_LIB ignite-binary HINTS ${IGNITE_CPP_DIR}/lib)	
+endif()
 
 include(FindPackageHandleStandardArgs)
 
 find_package_handle_standard_args(Ignite DEFAULT_MSG
         IGNITE_LIB
         IGNITE_THIN_CLIENT_LIB
-        IGNITE_ODBC_LIB
         IGNITE_BINARY_LIB
         IGNITE_NETWORK_LIB
         IGNITE_COMMON_LIB

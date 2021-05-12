@@ -34,26 +34,29 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
-import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
+import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
+import org.apache.ignite.internal.managers.systemview.JmxSystemViewExporterSpi;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
+import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
-import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
-import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DummyPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.PageStoreWriter;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
@@ -64,9 +67,8 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
-import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
-import org.apache.ignite.spi.systemview.jmx.JmxSystemViewExporterSpi;
 import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
+import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -327,7 +329,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
         PageStoreWriter pageStoreWriter = (fullPageId, buf, tag) -> {
             assertNotNull(tag);
 
-            pageStoreMgr.write(fullPageId.groupId(), fullPageId.pageId(), buf, 1);
+            pageStoreMgr.write(fullPageId.groupId(), fullPageId.pageId(), buf, 1, false);
         };
 
         for (FullPageId cpPage : cpPages) {
@@ -507,7 +509,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
                 }
             }).get(5_000);
         }
-        catch (IgniteFutureTimeoutCheckedException ex) {
+        catch (IgniteFutureTimeoutCheckedException ignore) {
             // Expected.
         }
         finally {
@@ -593,6 +595,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
 
         kernalCtx.add(new IgnitePluginProcessor(kernalCtx, igniteCfg, Collections.<PluginProvider>emptyList()));
         kernalCtx.add(new GridInternalSubscriptionProcessor(kernalCtx));
+        kernalCtx.add(new PerformanceStatisticsProcessor(kernalCtx));
         kernalCtx.add(new GridEncryptionManager(kernalCtx));
         kernalCtx.add(new GridMetricManager(kernalCtx));
         kernalCtx.add(new GridSystemViewManager(kernalCtx));
@@ -642,6 +645,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             provider,
             sizes,
             sharedCtx,
+            sharedCtx.pageStore(),
             PAGE_SIZE,
             replaceWriter,
             new GridInClosure3X<Long, FullPageId, PageMemoryEx>() {
@@ -654,6 +658,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             },
             new DataRegionMetricsImpl(igniteCfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration(),
                 kernalCtx.metric(),
+                kernalCtx.performanceStatistics(),
                 NO_OP_METRICS),
             throttlingPlc,
             noThrottle
@@ -661,6 +666,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             provider,
             sizes,
             sharedCtx,
+            sharedCtx.pageStore(),
             PAGE_SIZE,
             replaceWriter,
             new GridInClosure3X<Long, FullPageId, PageMemoryEx>() {
@@ -673,6 +679,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
         },
             new DataRegionMetricsImpl(igniteCfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration(),
                 kernalCtx.metric(),
+                kernalCtx.performanceStatistics(),
                 NO_OP_METRICS),
             throttlingPlc,
             noThrottle
@@ -701,7 +708,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
         private Map<FullPageId, byte[]> storedPages = new HashMap<>();
 
         /** {@inheritDoc} */
-        @Override public void read(int grpId, long pageId, ByteBuffer pageBuf) throws IgniteCheckedException {
+        @Override public void read(int grpId, long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException {
             FullPageId fullPageId = new FullPageId(pageId, grpId);
 
             byte[] bytes = storedPages.get(fullPageId);
@@ -713,12 +720,14 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void write(int grpId, long pageId, ByteBuffer pageBuf, int tag) throws IgniteCheckedException {
+        @Override public PageStore write(int grpId, long pageId, ByteBuffer pageBuf, int tag, boolean calculateCrc) throws IgniteCheckedException {
             byte[] data = new byte[PAGE_SIZE];
 
             pageBuf.get(data);
 
             storedPages.put(new FullPageId(pageId, grpId), data);
+
+            return null;
         }
 
         /** {@inheritDoc} */

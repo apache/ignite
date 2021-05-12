@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
@@ -42,6 +43,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.DeploymentMode;
@@ -348,7 +350,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
         ServiceProcessorCommonDiscoveryData clusterData = (ServiceProcessorCommonDiscoveryData)data.commonData();
 
         for (ServiceInfo desc : clusterData.registeredServices())
-            registeredServices.put(desc.serviceId(), desc);
+            registerService(desc);
     }
 
     /** {@inheritDoc} */
@@ -381,7 +383,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             oldDesc = lookupInRegisteredServices(desc.name());
 
             if (oldDesc == null) {
-                registeredServices.put(desc.serviceId(), desc);
+                registerService(desc);
 
                 continue;
             }
@@ -417,7 +419,14 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
      * {@inheritDoc}
      */
     @Override public void onDeActivate(GridKernalContext kctx) {
-        opsLock.writeLock().lock();
+        try {
+            opsLock.writeLock().lockInterruptibly();
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
+            throw new IgniteInterruptedException(e);
+        }
 
         try {
             if (log.isDebugEnabled()) {
@@ -1504,7 +1513,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             // First node start, method onGridDataReceived(DiscoveryDataBag.GridDiscoveryData) has not been called.
             ArrayList<ServiceInfo> staticServicesInfo = staticallyConfiguredServices(false);
 
-            staticServicesInfo.forEach(desc -> registeredServices.put(desc.serviceId(), desc));
+            staticServicesInfo.forEach(this::registerService);
         }
 
         ServiceDeploymentActions depActions = null;
@@ -1547,8 +1556,13 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 }
             }
 
-            for (ServiceConfiguration srvcCfg : prepCfgs.cfgs)
-                staticServicesInfo.add(new ServiceInfo(ctx.localNodeId(), IgniteUuid.randomUuid(), srvcCfg, true));
+            for (ServiceConfiguration srvcCfg : prepCfgs.cfgs) {
+                ServiceInfo serviceInfo = new ServiceInfo(ctx.localNodeId(), IgniteUuid.randomUuid(), srvcCfg, true);
+
+                serviceInfo.context(ctx);
+
+                staticServicesInfo.add(serviceInfo);
+            }
         }
 
         return staticServicesInfo;
@@ -1606,7 +1620,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                         else {
                             ServiceInfo desc = new ServiceInfo(snd.id(), reqSrvcId, cfg);
 
-                            registeredServices.put(reqSrvcId, desc);
+                            registerService(desc);
 
                             toDeploy.put(reqSrvcId, desc);
                         }
@@ -1661,6 +1675,15 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
     }
 
     /**
+     * @param desc Service descriptor.
+     */
+    private void registerService(ServiceInfo desc) {
+        desc.context(ctx);
+
+        registeredServices.put(desc.serviceId(), desc);
+    }
+
+    /**
      * @param msg Message.
      */
     private void processChangeGlobalStateRequest(ChangeGlobalStateMessage msg) {
@@ -1688,7 +1711,7 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
                 registeredServices.entrySet().removeIf(e -> {
                     ServiceInfo desc = e.getValue();
 
-                    if (desc.cacheName().equals(chReq.cacheName())) {
+                    if (Objects.equals(desc.cacheName(), chReq.cacheName())) {
                         toUndeploy.put(desc.serviceId(), desc);
 
                         return true;

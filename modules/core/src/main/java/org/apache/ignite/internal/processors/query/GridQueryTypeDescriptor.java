@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query;
 
 import java.util.Map;
+import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.jetbrains.annotations.Nullable;
@@ -198,4 +199,16 @@ public interface GridQueryTypeDescriptor {
      * @throws IgniteCheckedException If failed.
      */
     public void setDefaults(Object key, Object val) throws IgniteCheckedException;
+
+    /**
+     * Gets primary key fields if defined, or empty collection otherwise.
+     */
+    public Set<String> primaryKeyFields();
+
+    /**
+     * Sets primary key fields.
+     *
+     * @param keys Primary keys.
+     */
+    public void primaryKeyFields(Set<String> keys);
 }

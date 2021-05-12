@@ -57,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -69,6 +70,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NEAR_GET_MAX_REMAPS;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.CacheDistributedGetFutureAdapter.DFLT_MAX_REMAP_CNT;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 
 /**
@@ -76,9 +78,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
  */
 public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Object>
     implements CacheGetFuture, IgniteDiagnosticAware {
-    /** Default max remap count value. */
-    public static final int DFLT_MAX_REMAP_CNT = 3;
-
     /** Maximum number of attempts to remap key to the same primary node. */
     protected static final int MAX_REMAP_CNT = getInteger(IGNITE_NEAR_GET_MAX_REMAPS, DFLT_MAX_REMAP_CNT);
 
@@ -146,6 +145,10 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
 
     /** */
     protected final MvccSnapshot mvccSnapshot;
+
+    /** Deployment class loader id which will be used for deserialization of entries on a distributed task. */
+    @GridToStringExclude
+    protected final IgniteUuid deploymentLdrId;
 
     /** Post processing closure. */
     private volatile BackupPostProcessingClosure postProcessingClos;
@@ -218,6 +221,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         this.recovery = recovery;
         this.topVer = topVer;
         this.mvccSnapshot = mvccSnapshot;
+        this.deploymentLdrId = U.contextDeploymentClassLoaderId(cctx.kernalContext());
 
         this.txLbl = txLbl;
 
@@ -773,7 +777,12 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                     postProcessingClos.apply(val, ver);
 
                 if (!keepCacheObjects) {
-                    Object res = cctx.unwrapBinaryIfNeeded(val, !deserializeBinary);
+                    Object res = cctx.unwrapBinaryIfNeeded(
+                        val,
+                        !deserializeBinary,
+                        true,
+                        U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId)
+                    );
 
                     onDone(needVer ? new EntryGetResult(res, ver) : res);
                 }
@@ -909,7 +918,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
      * @param topVer Topology version.
      */
     private void remap(final AffinityTopologyVersion topVer) {
-        cctx.closures().runLocalSafe(new Runnable() {
+        cctx.closures().runLocalSafe(new GridPlainRunnable() {
             @Override public void run() {
                 // If topology changed reset collection of invalid nodes.
                 synchronized (this) {

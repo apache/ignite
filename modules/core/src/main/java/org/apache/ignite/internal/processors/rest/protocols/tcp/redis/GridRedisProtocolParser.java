@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.rest.protocols.tcp.redis;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 
@@ -286,6 +288,44 @@ public class GridRedisProtocolParser {
      */
     public static ByteBuffer toArray(Map<Object, Object> vals) {
         return toArray(vals.values());
+    }
+
+    /**
+     * Converts a resultant map response to an array,
+     * the order of elements in the resulting array is defined by the order of elements in the {@code origin} collection.
+     *
+     * @param vals Map.
+     * @param origin List that defines the order of the resulting array.
+     * @return Array response.
+     */
+    public static ByteBuffer toOrderedArray(Map<Object, Object> vals, List<?> origin) {
+        assert vals != null : "The resulting map is null.";
+        assert origin != null : "The origin list is null.";
+
+        int capacity = 0;
+
+        ArrayList<ByteBuffer> res = new ArrayList<>();
+        for (Object o : origin) {
+            Object val = vals.get(o);
+
+            if (val != null) {
+                ByteBuffer b = toBulkString(val);
+                res.add(b);
+                capacity += b.limit();
+            }
+        }
+
+        byte[] arrSize = String.valueOf(res.size()).getBytes();
+
+        ByteBuffer buf = ByteBuffer.allocateDirect(capacity + arrSize.length + 1 + CRLF.length);
+        buf.put(ARRAY);
+        buf.put(arrSize);
+        buf.put(CRLF);
+        res.forEach(o -> buf.put(o));
+
+        buf.flip();
+
+        return buf;
     }
 
     /**

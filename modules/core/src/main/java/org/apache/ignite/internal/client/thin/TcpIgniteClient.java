@@ -24,8 +24,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -41,6 +41,7 @@ import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientServices;
 import org.apache.ignite.client.ClientTransactions;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.client.IgniteClientFuture;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientTransactionConfiguration;
 import org.apache.ignite.internal.MarshallerPlatformIds;
@@ -54,6 +55,7 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.client.thin.io.ClientConnectionMultiplexer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.MarshallerContext;
@@ -82,6 +84,9 @@ public class TcpIgniteClient implements IgniteClient {
     /** Services facade. */
     private final ClientServicesImpl services;
 
+    /** Registered entry listeners for all caches. */
+    private final ClientCacheEntryListenersRegistry lsnrsRegistry;
+
     /** Marshaller. */
     private final ClientBinaryMarshaller marsh;
 
@@ -100,10 +105,12 @@ public class TcpIgniteClient implements IgniteClient {
      * Constructor with custom channel factory.
      */
     TcpIgniteClient(
-        Function<ClientChannelConfiguration, ClientChannel> chFactory,
-        ClientConfiguration cfg
+            BiFunction<ClientChannelConfiguration, ClientConnectionMultiplexer, ClientChannel> chFactory,
+            ClientConfiguration cfg
     ) throws ClientException {
-        marsh = new ClientBinaryMarshaller(new ClientBinaryMetadataHandler(), new ClientMarshallerContext());
+        final ClientBinaryMetadataHandler metadataHandler = new ClientBinaryMetadataHandler();
+
+        marsh = new ClientBinaryMarshaller(metadataHandler, new ClientMarshallerContext());
 
         marsh.setBinaryConfiguration(cfg.getBinaryConfiguration());
 
@@ -113,14 +120,26 @@ public class TcpIgniteClient implements IgniteClient {
 
         ch = new ReliableChannel(chFactory, cfg, binary);
 
-        transactions = new TcpClientTransactions(ch, marsh,
-            new ClientTransactionConfiguration(cfg.getTransactionConfiguration()));
+        try {
+            ch.channelsInit();
 
-        cluster = new ClientClusterImpl(ch, marsh);
+            ch.addChannelFailListener(() -> metadataHandler.onReconnect());
 
-        compute = new ClientComputeImpl(ch, marsh, cluster.defaultClusterGroup());
+            transactions = new TcpClientTransactions(ch, marsh,
+                    new ClientTransactionConfiguration(cfg.getTransactionConfiguration()));
 
-        services = new ClientServicesImpl(ch, marsh, cluster.defaultClusterGroup());
+            cluster = new ClientClusterImpl(ch, marsh);
+
+            compute = new ClientComputeImpl(ch, marsh, cluster.defaultClusterGroup());
+
+            services = new ClientServicesImpl(ch, marsh, cluster.defaultClusterGroup());
+
+            lsnrsRegistry = new ClientCacheEntryListenersRegistry();
+        }
+        catch (Exception e) {
+            ch.close();
+            throw e;
+        }
     }
 
     /** {@inheritDoc} */
@@ -134,7 +153,16 @@ public class TcpIgniteClient implements IgniteClient {
 
         ch.request(ClientOperation.CACHE_GET_OR_CREATE_WITH_NAME, req -> writeString(name, req.out()));
 
-        return new TcpClientCache<>(name, ch, marsh, transactions);
+        return new TcpClientCache<>(name, ch, marsh, transactions, lsnrsRegistry);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteClientFuture<ClientCache<K, V>> getOrCreateCacheAsync(String name) throws ClientException {
+        ensureCacheName(name);
+
+        return new IgniteClientFutureImpl<>(
+                ch.requestAsync(ClientOperation.CACHE_GET_OR_CREATE_WITH_NAME, req -> writeString(name, req.out()))
+                        .thenApply(x -> new TcpClientCache<>(name, ch, marsh, transactions, lsnrsRegistry)));
     }
 
     /** {@inheritDoc} */
@@ -145,19 +173,37 @@ public class TcpIgniteClient implements IgniteClient {
         ch.request(ClientOperation.CACHE_GET_OR_CREATE_WITH_CONFIGURATION,
             req -> serDes.cacheConfiguration(cfg, req.out(), req.clientChannel().protocolCtx()));
 
-        return new TcpClientCache<>(cfg.getName(), ch, marsh, transactions);
+        return new TcpClientCache<>(cfg.getName(), ch, marsh, transactions, lsnrsRegistry);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteClientFuture<ClientCache<K, V>> getOrCreateCacheAsync(
+            ClientCacheConfiguration cfg) throws ClientException {
+        ensureCacheConfiguration(cfg);
+
+        return new IgniteClientFutureImpl<>(
+                ch.requestAsync(ClientOperation.CACHE_GET_OR_CREATE_WITH_CONFIGURATION,
+                        req -> serDes.cacheConfiguration(cfg, req.out(), req.clientChannel().protocolCtx()))
+                        .thenApply(x -> new TcpClientCache<>(cfg.getName(), ch, marsh, transactions, lsnrsRegistry)));
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> ClientCache<K, V> cache(String name) {
         ensureCacheName(name);
 
-        return new TcpClientCache<>(name, ch, marsh, transactions);
+        return new TcpClientCache<>(name, ch, marsh, transactions, lsnrsRegistry);
     }
 
     /** {@inheritDoc} */
     @Override public Collection<String> cacheNames() throws ClientException {
-        return ch.service(ClientOperation.CACHE_GET_NAMES, res -> Arrays.asList(BinaryUtils.doReadStringArray(res.in())));
+        return ch.service(ClientOperation.CACHE_GET_NAMES,
+                res -> Arrays.asList(BinaryUtils.doReadStringArray(res.in())));
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteClientFuture<Collection<String>> cacheNamesAsync() throws ClientException {
+        return ch.serviceAsync(ClientOperation.CACHE_GET_NAMES,
+                res -> Arrays.asList(BinaryUtils.doReadStringArray(res.in())));
     }
 
     /** {@inheritDoc} */
@@ -168,12 +214,28 @@ public class TcpIgniteClient implements IgniteClient {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteClientFuture<Void> destroyCacheAsync(String name) throws ClientException {
+        ensureCacheName(name);
+
+        return ch.requestAsync(ClientOperation.CACHE_DESTROY, req -> req.out().writeInt(ClientUtils.cacheId(name)));
+    }
+
+    /** {@inheritDoc} */
     @Override public <K, V> ClientCache<K, V> createCache(String name) throws ClientException {
         ensureCacheName(name);
 
         ch.request(ClientOperation.CACHE_CREATE_WITH_NAME, req -> writeString(name, req.out()));
 
-        return new TcpClientCache<>(name, ch, marsh, transactions);
+        return new TcpClientCache<>(name, ch, marsh, transactions, lsnrsRegistry);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteClientFuture<ClientCache<K, V>> createCacheAsync(String name) throws ClientException {
+        ensureCacheName(name);
+
+        return new IgniteClientFutureImpl<>(
+                ch.requestAsync(ClientOperation.CACHE_CREATE_WITH_NAME, req -> writeString(name, req.out()))
+                        .thenApply(x -> new TcpClientCache<>(name, ch, marsh, transactions, lsnrsRegistry)));
     }
 
     /** {@inheritDoc} */
@@ -183,7 +245,18 @@ public class TcpIgniteClient implements IgniteClient {
         ch.request(ClientOperation.CACHE_CREATE_WITH_CONFIGURATION,
             req -> serDes.cacheConfiguration(cfg, req.out(), req.clientChannel().protocolCtx()));
 
-        return new TcpClientCache<>(cfg.getName(), ch, marsh, transactions);
+        return new TcpClientCache<>(cfg.getName(), ch, marsh, transactions, lsnrsRegistry);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> IgniteClientFuture<ClientCache<K, V>> createCacheAsync(ClientCacheConfiguration cfg)
+            throws ClientException {
+        ensureCacheConfiguration(cfg);
+
+        return new IgniteClientFutureImpl<>(
+                ch.requestAsync(ClientOperation.CACHE_CREATE_WITH_CONFIGURATION,
+                        req -> serDes.cacheConfiguration(cfg, req.out(), req.clientChannel().protocolCtx()))
+                        .thenApply(x -> new TcpClientCache<>(cfg.getName(), ch, marsh, transactions, lsnrsRegistry)));
     }
 
     /** {@inheritDoc} */
@@ -278,7 +351,7 @@ public class TcpIgniteClient implements IgniteClient {
     /** Deserialize string. */
     private String readString(BinaryInputStream in) throws BinaryObjectException {
         try {
-            try (BinaryReaderExImpl r = new BinaryReaderExImpl(marsh.context(), in, null, true)) {
+            try (BinaryReaderExImpl r = serDes.createBinaryReader(in)) {
                 return r.readString();
             }
         }
@@ -292,15 +365,21 @@ public class TcpIgniteClient implements IgniteClient {
      */
     private class ClientBinaryMetadataHandler implements BinaryMetadataHandler {
         /** In-memory metadata cache. */
-        private final BinaryMetadataHandler cache = BinaryCachingMetadataHandler.create();
+        private volatile BinaryMetadataHandler cache = BinaryCachingMetadataHandler.create();
 
         /** {@inheritDoc} */
-        @Override public void addMeta(int typeId, BinaryType meta, boolean failIfUnregistered) throws BinaryObjectException {
-            if (cache.metadata(typeId) == null) {
+        @Override public void addMeta(int typeId, BinaryType meta, boolean failIfUnregistered)
+            throws BinaryObjectException {
+            BinaryType oldType = cache.metadata(typeId);
+            BinaryMetadata oldMeta = oldType == null ? null : ((BinaryTypeImpl)oldType).metadata();
+            BinaryMetadata newMeta = ((BinaryTypeImpl)meta).metadata();
+
+            // If type wasn't registered before or metadata changed, send registration request.
+            if (oldType == null || BinaryUtils.mergeMetadata(oldMeta, newMeta) != oldMeta) {
                 try {
                     ch.request(
                         ClientOperation.PUT_BINARY_TYPE,
-                        req -> serDes.binaryMetadata(((BinaryTypeImpl)meta).metadata(), req.out())
+                        req -> serDes.binaryMetadata(newMeta, req.out())
                     );
                 }
                 catch (ClientException e) {
@@ -321,15 +400,8 @@ public class TcpIgniteClient implements IgniteClient {
         @Override public BinaryType metadata(int typeId) throws BinaryObjectException {
             BinaryType meta = cache.metadata(typeId);
 
-            if (meta == null) {
-                BinaryMetadata meta0 = metadata0(typeId);
-
-                if (meta0 != null) {
-                    meta = new BinaryTypeImpl(marsh.context(), meta0);
-
-                    cache.addMeta(typeId, meta, false);
-                }
-            }
+            if (meta == null)
+                meta = requestAndCacheBinaryType(typeId);
 
             return meta;
         }
@@ -338,39 +410,85 @@ public class TcpIgniteClient implements IgniteClient {
         @Override public BinaryMetadata metadata0(int typeId) throws BinaryObjectException {
             BinaryMetadata meta = cache.metadata0(typeId);
 
-            if (meta == null) {
-                try {
-                    meta = ch.service(
-                        ClientOperation.GET_BINARY_TYPE,
-                        req -> req.out().writeInt(typeId),
-                        res -> {
-                            try {
-                                return res.in().readBoolean() ? serDes.binaryMetadata(res.in()) : null;
-                            }
-                            catch (IOException e) {
-                                throw new BinaryObjectException(e);
-                            }
-                        }
-                    );
-                }
-                catch (ClientException e) {
-                    throw new BinaryObjectException(e);
-                }
-            }
+            if (meta == null)
+                meta = requestBinaryMetadata(typeId);
 
             return meta;
         }
 
         /** {@inheritDoc} */
         @Override public BinaryType metadata(int typeId, int schemaId) throws BinaryObjectException {
-            BinaryType meta = metadata(typeId);
+            BinaryType meta = cache.metadata(typeId);
 
-            return meta != null && ((BinaryTypeImpl)meta).metadata().hasSchema(schemaId) ? meta : null;
+            if (hasSchema(meta, schemaId))
+                return meta;
+
+            meta = requestAndCacheBinaryType(typeId);
+
+            return hasSchema(meta, schemaId) ? meta : null;
         }
 
         /** {@inheritDoc} */
         @Override public Collection<BinaryType> metadata() throws BinaryObjectException {
             return cache.metadata();
+        }
+
+        /**
+         * @param type Binary type.
+         * @param schemaId Schema id.
+         */
+        private boolean hasSchema(BinaryType type, int schemaId) {
+            return type != null && ((BinaryTypeImpl)type).metadata().hasSchema(schemaId);
+        }
+
+        /**
+         * Request binary metadata from server and add binary type to cache.
+         *
+         * @param typeId Type id.
+         */
+        private BinaryType requestAndCacheBinaryType(int typeId) throws BinaryObjectException {
+            BinaryMetadata meta0 = requestBinaryMetadata(typeId);
+
+            if (meta0 == null)
+                return null;
+
+            BinaryType meta = new BinaryTypeImpl(marsh.context(), meta0);
+
+            cache.addMeta(typeId, meta, false);
+
+            return meta;
+        }
+
+        /**
+         * Request binary metadata for type id from the server.
+         *
+         * @param typeId Type id.
+         */
+        private BinaryMetadata requestBinaryMetadata(int typeId) throws BinaryObjectException {
+            try {
+                return ch.service(
+                    ClientOperation.GET_BINARY_TYPE,
+                    req -> req.out().writeInt(typeId),
+                    res -> {
+                        try {
+                            return res.in().readBoolean() ? serDes.binaryMetadata(res.in()) : null;
+                        }
+                        catch (IOException e) {
+                            throw new BinaryObjectException(e);
+                        }
+                    }
+                );
+            }
+            catch (ClientException e) {
+                throw new BinaryObjectException(e);
+            }
+        }
+
+        /**
+         * Clear local cache on reconnect.
+         */
+        void onReconnect() {
+            cache = BinaryCachingMetadataHandler.create();
         }
     }
 

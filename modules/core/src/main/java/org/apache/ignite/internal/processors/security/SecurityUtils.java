@@ -24,16 +24,21 @@ import java.lang.reflect.Proxy;
 import java.security.AccessControlContext;
 import java.security.AccessController;
 import java.security.AllPermission;
+import java.security.CodeSource;
 import java.security.Permissions;
 import java.security.PrivilegedAction;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
+import java.security.ProtectionDomain;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -41,8 +46,10 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridInternalWrapper;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteDomainCombiner;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -73,6 +80,12 @@ public class SecurityUtils {
 
     /** Permissions that contain {@code AllPermission}. */
     public static final Permissions ALL_PERMISSIONS;
+
+    /** Code source for ignite-core module. */
+    private static final CodeSource CORE_CODE_SOURCE = SecurityUtils.class.getProtectionDomain().getCodeSource();
+
+    /** System types cache. */
+    private static final ConcurrentMap<Class<?>, Boolean> SYSTEM_TYPES = new ConcurrentHashMap<>();
 
     static {
         ALL_PERMISSIONS = new Permissions();
@@ -181,13 +194,20 @@ public class SecurityUtils {
     /**
      * @return True if class of {@code target} is a system type.
      */
-    public static boolean isSystemType(GridKernalContext ctx, Object target) {
-        Class cls = target instanceof GridInternalWrapper
-            ? ((GridInternalWrapper)target).userObject().getClass()
+    public static boolean isSystemType(GridKernalContext ctx, Object target, boolean considerWrapperCls) {
+        Class<?> cls = considerWrapperCls && target instanceof GridInternalWrapper
+            ? ((GridInternalWrapper<?>)target).userObject().getClass()
             : target.getClass();
 
-        return ctx.getClass().getClassLoader() == cls.getClassLoader()
-            && ctx.marshallerContext().isSystemType(cls.getName());
+        Boolean isSysType = SYSTEM_TYPES.get(cls);
+
+        if (isSysType == null) {
+            ProtectionDomain pd = doPrivileged(cls::getProtectionDomain);
+
+            SYSTEM_TYPES.put(cls, isSysType = (pd == null) || F.eq(CORE_CODE_SOURCE, pd.getCodeSource()));
+        }
+
+        return isSysType;
     }
 
     /**
@@ -217,7 +237,7 @@ public class SecurityUtils {
 
         final IgniteSandbox sandbox = ctx.security().sandbox();
 
-        if (sandbox.enabled() && !isSystemType(ctx, instance)) {
+        if (sandbox.enabled() && !isSystemType(ctx, instance, true)) {
             return (T)Proxy.newProxyInstance(sandbox.getClass().getClassLoader(),
                 proxyClasses(cls, instance), new SandboxInvocationHandler(sandbox, instance));
         }
@@ -253,7 +273,7 @@ public class SecurityUtils {
                     GridInternalWrapper.class.getMethod(mtd.getName(), mtd.getParameterTypes()) != null)
                     return mtd.invoke(original, args);
             }
-            catch (NoSuchMethodException e) {
+            catch (NoSuchMethodException ignore) {
                 // Ignore.
             }
 
@@ -266,5 +286,15 @@ public class SecurityUtils {
                 }
             });
         }
+    }
+
+    /** Executes specified operation if authentication is enabled. */
+    public static void ifAuthenticationEnabled(GridKernalContext ctx, Consumer<IgniteAuthenticationProcessor> op) {
+        if (!ctx.config().isAuthenticationEnabled())
+            return;
+
+        IgniteSecurityProcessor sec = (IgniteSecurityProcessor)ctx.security();
+
+        op.accept((IgniteAuthenticationProcessor)sec.securityProcessor());
     }
 }

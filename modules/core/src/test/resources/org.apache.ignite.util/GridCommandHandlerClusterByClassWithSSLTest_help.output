@@ -1,10 +1,10 @@
 Control utility [ver. <!any!>
-2020 Copyright(C) Apache Software Foundation
+2021 Copyright(C) Apache Software Foundation
 User: <!any!>
 Time: <!any!>
 Control utility script is used to execute admin commands on cluster or get common cluster info. The command has the following syntax:
 
-  control.(sh|bat) [--host HOST_OR_IP] [--port PORT] [--user USER] [--password PASSWORD] [--ping-interval PING_INTERVAL] [--ping-timeout PING_TIMEOUT] [--verbose] [--ssl-protocol SSL_PROTOCOL[, SSL_PROTOCOL_2, ..., SSL_PROTOCOL_N]] [--ssl-cipher-suites SSL_CIPHER_1[, SSL_CIPHER_2, ..., SSL_CIPHER_N]] [--ssl-key-algorithm SSL_KEY_ALGORITHM] [--keystore-type KEYSTORE_TYPE] [--keystore KEYSTORE_PATH] [--keystore-password KEYSTORE_PASSWORD] [--truststore-type TRUSTSTORE_TYPE] [--truststore TRUSTSTORE_PATH] [--truststore-password TRUSTSTORE_PASSWORD] [command] <command_parameters>
+  control.(sh|bat) [--host HOST_OR_IP] [--port PORT] [--user USER] [--password PASSWORD] [--ping-interval PING_INTERVAL] [--ping-timeout PING_TIMEOUT] [--verbose] [--ssl-protocol SSL_PROTOCOL[, SSL_PROTOCOL_2, ..., SSL_PROTOCOL_N]] [--ssl-cipher-suites SSL_CIPHER_1[, SSL_CIPHER_2, ..., SSL_CIPHER_N]] [--ssl-key-algorithm SSL_KEY_ALGORITHM] [--keystore-type KEYSTORE_TYPE] [--keystore KEYSTORE_PATH] [--keystore-password KEYSTORE_PASSWORD] [--truststore-type TRUSTSTORE_TYPE] [--truststore TRUSTSTORE_PATH] [--truststore-password TRUSTSTORE_PASSWORD] [--enable-experimental] [command] <command_parameters>
 
 
 This utility can do the following commands:
@@ -27,7 +27,10 @@ This utility can do the following commands:
       ACTIVE_READ_ONLY  - Activate cluster. Cache updates are denied.
 
   Print cluster baseline topology:
-    control.(sh|bat) --baseline
+    control.(sh|bat) --baseline [--verbose]
+
+    Parameters:
+      verbose  - Show the full list of node ips.
 
   Add nodes into baseline topology:
     control.(sh|bat) --baseline add consistentId1[,consistentId2,....,consistentIdN] [--yes]
@@ -67,6 +70,27 @@ This utility can do the following commands:
 
   Change the master key:
     control.(sh|bat) --encryption change_master_key newMasterKeyName
+
+  Change the encryption key of the cache group:
+    control.(sh|bat) --encryption change_cache_key cacheGroupName
+
+  View encryption key identifiers of the cache group:
+    control.(sh|bat) --encryption cache_key_ids cacheGroupName
+
+  Display re-encryption status of the cache group:
+    control.(sh|bat) --encryption reencryption_status cacheGroupName
+
+  Suspend re-encryption of the cache group:
+    control.(sh|bat) --encryption suspend_reencryption cacheGroupName
+
+  Resume re-encryption of the cache group:
+    control.(sh|bat) --encryption resume_reencryption cacheGroupName
+
+  View/change re-encryption rate limit:
+    control.(sh|bat) --encryption reencryption_rate_limit [new_limit]
+
+    Parameters:
+      new_limit  - Decimal value to change re-encryption rate limit (MB/s).
 
   Kill compute task by session id:
     control.(sh|bat) --kill COMPUTE session_id
@@ -124,6 +148,126 @@ This utility can do the following commands:
 
     Parameters:
       snapshot_name  - Snapshot name.
+
+  Check snapshot:
+    control.(sh|bat) --snapshot check snapshot_name
+
+    Parameters:
+      snapshot_name  - Snapshot name.
+
+  Change cluster tag to new value:
+    control.(sh|bat) --change-tag newTagValue [--yes]
+
+  Print metadata command help:
+    control.(sh|bat) --meta help
+
+  Print list of binary metadata types:
+    control.(sh|bat) --meta list
+
+  Print detailed info about specified binary type (the type must be specified by type name or by type identifier):
+    control.(sh|bat) --meta details [--typeId <typeId>] [--typeName <typeName>]
+
+  Remove the metadata of the specified type (the type must be specified by type name or by type identifier) from cluster and saves the removed metadata to the specified file.
+If the file name isn't specified the output file name is: '<typeId>.bin'
+    control.(sh|bat) --meta remove [--typeId <typeId>] [--typeName <typeName>] [--out <fileName>]
+
+  Update cluster metadata from specified file (file name is required)
+    control.(sh|bat) --meta update --in <fileName>
+
+  Set or display shutdown policy:
+    control.(sh|bat) --shutdown-policy [IMMEDIATE|GRACEFUL]
+
+  Print tracing configuration:
+    control.(sh|bat) --tracing-configuration
+
+  Print tracing configuration:
+    control.(sh|bat) --tracing-configuration get_all [--scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL]
+
+  Print specific tracing configuration based on specified --scope and --label:
+    control.(sh|bat) --tracing-configuration get (--scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL) [--label]
+
+  Reset all specific tracing configuration the to default. If --scope is specified, then remove all label specific configuration for the given scope and reset given scope specific configuration to the default, if --scope is skipped then reset all tracing configurations to the default. Print tracing configuration.
+    control.(sh|bat) --tracing-configuration reset_all [--scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL]
+
+  Reset specific tracing configuration to the default. If both --scope and --label are specified then remove given configuration, if only --scope is specified then reset given configuration to the default. Print reseted configuration.
+    control.(sh|bat) --tracing-configuration reset (--scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL) [--label]
+
+  Set new tracing configuration. If both --scope and --label are specified then add or override label specific configuration, if only --scope is specified, then override scope specific configuration. Print applied configuration.
+    control.(sh|bat) --tracing-configuration set (--scope DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL [--label] [--sampling-rate Decimal value between 0 and 1, where 0 means never and 1 means always. More or less reflects the probability of sampling specific trace.] [--included-scopes Set of scopes with comma as separator  DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL])
+
+  Stop warm-up:
+    control.(sh|bat) --warm-up --stop
+
+  Print property command help:
+    control.(sh|bat) --property help
+
+  Print list of available properties:
+    control.(sh|bat) --property list
+
+  Get the property value:
+    control.(sh|bat) --property get --name <property_name>
+
+  Set the property value:
+    control.(sh|bat) --property set --name <property_name> --val <property_value>
+
+  Print system view content:
+    control.(sh|bat) --system-view [--node-id node_id] system_view_name
+
+    Parameters:
+      system_view_name  - Name of the system view which content should be printed. Both "SQL" and "Java" styles of system view name are supported (e.g. SQL_TABLES and sql.tables will be handled similarly).
+      node_id           - ID of the node to get the system view from. If not set, random node will be chosen.
+
+  Print metric value:
+    control.(sh|bat) --metric [--node-id node_id] name
+
+    Parameters:
+      name     - Name of the metric which value should be printed. If name of the metric registry is specified, value of all its metrics will be printed.
+      node_id  - ID of the node to get the metric values from. If not set, random node will be chosen.
+
+  Print information about potentially corrupted caches on local node:
+    control.(sh|bat) --persistence
+
+  The same information is printed when info subcommand is passed:
+    control.(sh|bat) --persistence info
+
+  Clean directories of caches with corrupted data files:
+    control.(sh|bat) --persistence clean corrupted
+
+  Clean directories of all caches:
+    control.(sh|bat) --persistence clean all
+
+  Clean directories of only given caches:
+    control.(sh|bat) --persistence clean caches cache1,cache2,cache3
+
+  Backup data files of corrupted caches only:
+    control.(sh|bat) --persistence backup corrupted
+
+  Backup data files of all caches:
+    control.(sh|bat) --persistence backup all
+
+  Backup data files of only given caches:
+    control.(sh|bat) --persistence backup caches cache1,cache2,cache3
+
+  Schedule PDS defragmentation on given nodes for all caches:
+    control.(sh|bat) --defragmentation schedule --nodes consistentId0,consistentId1
+
+  Schedule PDS defragmentation on given nodes but only for given caches:
+    control.(sh|bat) --defragmentation schedule --nodes consistentId0,consistentId1 --caches cache1,cache2,cache3
+
+  Cancel scheduled or active PDS defragmentation on underlying node:
+    control.(sh|bat) --defragmentation cancel
+
+  Start collecting performance statistics in the cluster:
+    control.(sh|bat) --performance-statistics start
+
+  Stop collecting performance statistics in the cluster:
+    control.(sh|bat) --performance-statistics stop
+
+  Rotate collecting performance statistics in the cluster:
+    control.(sh|bat) --performance-statistics rotate
+
+  Get status of collecting performance statistics in the cluster:
+    control.(sh|bat) --performance-statistics status
 
 By default commands affecting the cluster require interactive confirmation.
 Use --yes option to disable it.

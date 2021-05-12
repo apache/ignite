@@ -26,6 +26,8 @@ if (WIN32)
     add_definitions(-DUNICODE=1)
 
     add_compile_options(/source-charset:utf-8)
+
+    set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 endif()
 
 add_subdirectory(compute-example)

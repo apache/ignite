@@ -20,16 +20,24 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.Collections;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
+import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 
 /**
  * Management bean that provides access to {@link IgniteCache IgniteCache}.
  *
- * @deprecated Use {@link GridMetricManager} instead.
+ * @deprecated Check the {@link JmxMetricExporterSpi} with "name=cache.{cache_name}" instead.
+ *
+ * @see ReadOnlyMetricManager
+ * @see ReadOnlyMetricRegistry
+ * @see JmxMetricExporterSpi
+ * @see MetricExporterSpi
  */
 @Deprecated
-class CacheLocalMetricsMXBeanImpl implements CacheMetricsMXBean {
+public class CacheLocalMetricsMXBeanImpl implements CacheMetricsMXBean {
     /** Cache. */
     private GridCacheAdapter<?, ?> cache;
 
@@ -429,10 +437,12 @@ class CacheLocalMetricsMXBeanImpl implements CacheMetricsMXBean {
         return cache.metrics0().getTotalPartitionsCount();
     }
 
+    /** {@inheritDoc} */
     @Override public long getRebalancedKeys() {
         return cache.metrics0().getRebalancedKeys();
     }
 
+    /** {@inheritDoc} */
     @Override public long getEstimatedRebalancingKeys() {
         return cache.metrics0().getEstimatedRebalancingKeys();
     }
@@ -515,5 +525,15 @@ class CacheLocalMetricsMXBeanImpl implements CacheMetricsMXBean {
     /** {@inheritDoc} */
     @Override public String getTxKeyCollisions() {
         return cache.metrics0().getTxKeyCollisions();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isIndexRebuildInProgress() {
+        return cache.metrics0().isIndexRebuildInProgress();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getIndexRebuildKeysProcessed() {
+        return cache.metrics0().getIndexRebuildKeysProcessed();
     }
 }

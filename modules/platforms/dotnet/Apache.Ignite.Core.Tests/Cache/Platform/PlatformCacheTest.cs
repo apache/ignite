@@ -1285,6 +1285,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             using (new TransactionScope())
             {
                 cache[2] = new Foo(3);
+                Assert.IsNotNull(_grid.GetTransactions().Tx);
                 Assert.AreNotSame(foo, cache[1]);
             }
 
@@ -1461,7 +1462,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
 
                 foreach (var entry in data)
                 {
-                    streamer.AddData(entry.Key, entry.Value + 1);
+                    streamer.Add(entry.Key, entry.Value + 1);
                 }
             }
 

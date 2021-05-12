@@ -32,6 +32,9 @@ namespace Apache.Ignite.Core.Cache.Query
         /// <summary> Default page size. </summary>
         public const int DefaultPageSize = 1024;
 
+        /// <summary> Default value for <see cref="UpdateBatchSize"/>. </summary>
+        public const int DefaultUpdateBatchSize = 1;
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -55,6 +58,7 @@ namespace Apache.Ignite.Core.Cache.Query
             Arguments = args;
 
             PageSize = DefaultPageSize;
+            UpdateBatchSize = DefaultUpdateBatchSize;
         }
 
         /// <summary>
@@ -153,6 +157,21 @@ namespace Apache.Ignite.Core.Cache.Query
         public bool Lazy { get; set; }
 
         /// <summary>
+        /// Gets or sets partitions for the query.
+        /// <para />
+        /// The query will be executed only on nodes which are primary for specified partitions.
+        /// </summary>
+        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays")]
+        public int[] Partitions { get; set; }
+
+        /// <summary>
+        /// Gets or sets batch size for update queries.
+        /// <para />
+        /// Default is 1 (<see cref="DefaultUpdateBatchSize"/>.
+        /// </summary>
+        public int UpdateBatchSize { get; set; }
+
+        /// <summary>
         /// Returns a <see cref="string" /> that represents this instance.
         /// </summary>
         /// <returns>
@@ -160,15 +179,19 @@ namespace Apache.Ignite.Core.Cache.Query
         /// </returns>
         public override string ToString()
         {
-            var args = string.Join(", ", Arguments.Select(x => x == null ? "null" : x.ToString()));
+            var args = Arguments == null
+                ? ""
+                : string.Join(", ", Arguments.Select(x => x == null ? "null" : x.ToString()));
+
+            var parts = Partitions == null
+                ? ""
+                : string.Join(", ", Partitions.Select(x => x.ToString()));
 
             return string.Format("SqlFieldsQuery [Sql={0}, Arguments=[{1}], Local={2}, PageSize={3}, " +
-                                 "EnableDistributedJoins={4}, EnforceJoinOrder={5}, Timeout={6}, ReplicatedOnly={7}" +
-                                 ", Colocated={8}, Schema={9}, Lazy={10}]", Sql, args, Local,
-#pragma warning disable 618
-                                 PageSize, EnableDistributedJoins, EnforceJoinOrder, Timeout, ReplicatedOnly,
-#pragma warning restore 618
-                                 Colocated, Schema, Lazy);
+                                 "EnableDistributedJoins={4}, EnforceJoinOrder={5}, Timeout={6}, Partitions=[{7}], " +
+                                 "UpdateBatchSize={8}, Colocated={9}, Schema={10}, Lazy={11}]", Sql, args, Local,
+                                 PageSize, EnableDistributedJoins, EnforceJoinOrder, Timeout, parts,
+                                 UpdateBatchSize, Colocated, Schema, Lazy);
         }
 
         /** <inheritdoc /> */
@@ -197,6 +220,8 @@ namespace Apache.Ignite.Core.Cache.Query
 #pragma warning restore 618
             writer.WriteBoolean(Colocated);
             writer.WriteString(Schema); // Schema
+            writer.WriteIntArray(Partitions);
+            writer.WriteInt(UpdateBatchSize);
         }
 
         /** <inheritdoc /> */

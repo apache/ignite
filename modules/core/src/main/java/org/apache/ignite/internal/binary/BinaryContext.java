@@ -63,7 +63,6 @@ import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.DuplicateTypeIdException;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.UnregisteredClassException;
@@ -72,41 +71,6 @@ import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataKey;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.datastructures.CollocatedQueueItemKey;
 import org.apache.ignite.internal.processors.datastructures.CollocatedSetItemKey;
-import org.apache.ignite.internal.processors.igfs.IgfsBlockKey;
-import org.apache.ignite.internal.processors.igfs.IgfsDirectoryInfo;
-import org.apache.ignite.internal.processors.igfs.IgfsFileAffinityRange;
-import org.apache.ignite.internal.processors.igfs.IgfsFileInfo;
-import org.apache.ignite.internal.processors.igfs.IgfsFileMap;
-import org.apache.ignite.internal.processors.igfs.IgfsListingEntry;
-import org.apache.ignite.internal.processors.igfs.client.IgfsClientAffinityCallable;
-import org.apache.ignite.internal.processors.igfs.client.IgfsClientDeleteCallable;
-import org.apache.ignite.internal.processors.igfs.client.IgfsClientExistsCallable;
-import org.apache.ignite.internal.processors.igfs.client.IgfsClientInfoCallable;
-import org.apache.ignite.internal.processors.igfs.client.IgfsClientListFilesCallable;
-import org.apache.ignite.internal.processors.igfs.client.IgfsClientListPathsCallable;
-import org.apache.ignite.internal.processors.igfs.client.IgfsClientMkdirsCallable;
-import org.apache.ignite.internal.processors.igfs.client.IgfsClientRenameCallable;
-import org.apache.ignite.internal.processors.igfs.client.IgfsClientSetTimesCallable;
-import org.apache.ignite.internal.processors.igfs.client.IgfsClientSizeCallable;
-import org.apache.ignite.internal.processors.igfs.client.IgfsClientSummaryCallable;
-import org.apache.ignite.internal.processors.igfs.client.IgfsClientUpdateCallable;
-import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaIdsForPathCallable;
-import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaInfoForPathCallable;
-import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaUnlockCallable;
-import org.apache.ignite.internal.processors.igfs.data.IgfsDataPutProcessor;
-import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryCreateProcessor;
-import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingAddProcessor;
-import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingRemoveProcessor;
-import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingRenameProcessor;
-import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingReplaceProcessor;
-import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileCreateProcessor;
-import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileLockProcessor;
-import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileRangeDeleteProcessor;
-import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileRangeUpdateProcessor;
-import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileReserveSpaceProcessor;
-import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileUnlockProcessor;
-import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaUpdatePropertiesProcessor;
-import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaUpdateTimesProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformJavaObjectFactoryProxy;
 import org.apache.ignite.internal.processors.platform.websession.PlatformDotNetSessionData;
 import org.apache.ignite.internal.processors.platform.websession.PlatformDotNetSessionLockResult;
@@ -146,49 +110,6 @@ public class BinaryContext {
     /* Binarylizable system classes set initialization. */
     static {
         Set<String> sysClss = new HashSet<>();
-
-        // IGFS classes.
-        sysClss.add(IgfsPath.class.getName());
-
-        sysClss.add(IgfsBlockKey.class.getName());
-        sysClss.add(IgfsDirectoryInfo.class.getName());
-        sysClss.add(IgfsFileAffinityRange.class.getName());
-        sysClss.add(IgfsFileInfo.class.getName());
-        sysClss.add(IgfsFileMap.class.getName());
-        sysClss.add(IgfsListingEntry.class.getName());
-
-        sysClss.add(IgfsDataPutProcessor.class.getName());
-
-        sysClss.add(IgfsMetaDirectoryCreateProcessor.class.getName());
-        sysClss.add(IgfsMetaDirectoryListingAddProcessor.class.getName());
-        sysClss.add(IgfsMetaDirectoryListingRemoveProcessor.class.getName());
-        sysClss.add(IgfsMetaDirectoryListingRenameProcessor.class.getName());
-        sysClss.add(IgfsMetaDirectoryListingReplaceProcessor.class.getName());
-        sysClss.add(IgfsMetaFileCreateProcessor.class.getName());
-        sysClss.add(IgfsMetaFileLockProcessor.class.getName());
-        sysClss.add(IgfsMetaFileRangeDeleteProcessor.class.getName());
-        sysClss.add(IgfsMetaFileRangeUpdateProcessor.class.getName());
-        sysClss.add(IgfsMetaFileReserveSpaceProcessor.class.getName());
-        sysClss.add(IgfsMetaFileUnlockProcessor.class.getName());
-        sysClss.add(IgfsMetaUpdatePropertiesProcessor.class.getName());
-        sysClss.add(IgfsMetaUpdateTimesProcessor.class.getName());
-
-        sysClss.add(IgfsClientMetaIdsForPathCallable.class.getName());
-        sysClss.add(IgfsClientMetaInfoForPathCallable.class.getName());
-        sysClss.add(IgfsClientMetaUnlockCallable.class.getName());
-
-        sysClss.add(IgfsClientAffinityCallable.class.getName());
-        sysClss.add(IgfsClientDeleteCallable.class.getName());
-        sysClss.add(IgfsClientExistsCallable.class.getName());
-        sysClss.add(IgfsClientInfoCallable.class.getName());
-        sysClss.add(IgfsClientListFilesCallable.class.getName());
-        sysClss.add(IgfsClientListPathsCallable.class.getName());
-        sysClss.add(IgfsClientMkdirsCallable.class.getName());
-        sysClss.add(IgfsClientRenameCallable.class.getName());
-        sysClss.add(IgfsClientSetTimesCallable.class.getName());
-        sysClss.add(IgfsClientSizeCallable.class.getName());
-        sysClss.add(IgfsClientSummaryCallable.class.getName());
-        sysClss.add(IgfsClientUpdateCallable.class.getName());
 
         // Closure processor classes.
         sysClss.add(GridClosureProcessor.C1.class.getName());
@@ -664,6 +585,18 @@ public class BinaryContext {
     }
 
     /**
+     * Registers binary type locally.
+     *
+     * @param binaryType Binary type to register.
+     * @param failIfUnregistered Whether to fail when not registered.
+     * @param platformId Platform ID (see {@link org.apache.ignite.internal.MarshallerPlatformIds}).
+     */
+    public void registerClassLocally(BinaryType binaryType, boolean failIfUnregistered, byte platformId) {
+        metaHnd.addMetaLocally(binaryType.typeId(), binaryType, failIfUnregistered);
+        registerUserClassName(binaryType.typeId(), binaryType.typeName(), failIfUnregistered, true, platformId);
+    }
+
+    /**
      * @param cls Class.
      * @return A descriptor for the given class. If the class hasn't been registered yet, then a new descriptor will be
      * created, but its {@link BinaryClassDescriptor#registered()} will be {@code false}.
@@ -756,9 +689,25 @@ public class BinaryContext {
         Class cls;
 
         try {
-            cls = marshCtx.getClass(typeId, ldr);
+            if (GridBinaryMarshaller.USE_CACHE.get()) {
+                cls = marshCtx.getClass(typeId, ldr);
 
-            desc = descByCls.get(cls);
+                desc = descByCls.get(cls);
+            }
+            else {
+                String clsName = marshCtx.getClassName(JAVA_ID, typeId);
+
+                if (clsName == null)
+                    throw new ClassNotFoundException("Unknown type ID: " + typeId);
+
+                cls = U.forName(clsName, ldr, null);
+
+                desc = descByCls.get(cls);
+
+                if (desc == null)
+                    return createNoneCacheClassDescriptor(cls);
+            }
+
         }
         catch (ClassNotFoundException e) {
             // Class might have been loaded by default class loader.
@@ -786,6 +735,39 @@ public class BinaryContext {
     }
 
     /**
+     * Creates descriptor without registration.
+     *
+     * @param cls Class.
+     * @return Binary class descriptor.
+     */
+    @NotNull private BinaryClassDescriptor createNoneCacheClassDescriptor(Class cls) {
+        String clsName = cls.getName();
+
+        BinaryInternalMapper mapper = userTypeMapper(clsName);
+
+        int typeId = mapper.typeId(clsName);
+
+        String typeName = mapper.typeName(clsName);
+
+        BinarySerializer serializer = serializerForClass(cls);
+
+        String affFieldName = affinityFieldName(cls);
+
+        return new BinaryClassDescriptor(this,
+            cls,
+            true,
+            typeId,
+            typeName,
+            affFieldName,
+            mapper,
+            serializer,
+            true,
+            true,
+            false
+        );
+    }
+
+    /**
      * Attempts registration of the provided {@link BinaryClassDescriptor} in the cluster.
      *
      * @param desc Class descriptor to register.
@@ -803,11 +785,14 @@ public class BinaryContext {
         else {
             BinaryClassDescriptor regDesc = desc.makeRegistered();
 
-            BinaryClassDescriptor old = descByCls.putIfAbsent(desc.describedClass(), regDesc);
+            if (GridBinaryMarshaller.USE_CACHE.get()) {
+                BinaryClassDescriptor old = descByCls.putIfAbsent(desc.describedClass(), regDesc);
 
-            return old != null
-                ? old
-                : regDesc;
+                if (old != null)
+                    return old;
+            }
+
+            return regDesc;
         }
     }
 
@@ -831,7 +816,7 @@ public class BinaryContext {
 
         int typeId = desc.typeId();
 
-        boolean registered = registerUserClassName(typeId, cls.getName(), false, onlyLocReg);
+        boolean registered = registerUserClassName(typeId, cls.getName(), false, onlyLocReg, JAVA_ID);
 
         if (registered) {
             BinaryClassDescriptor regDesc = desc.makeRegistered();
@@ -1201,17 +1186,24 @@ public class BinaryContext {
      * @param failIfUnregistered If {@code true} then throw {@link UnregisteredBinaryTypeException} with {@link
      * org.apache.ignite.internal.processors.marshaller.MappingExchangeResult} future instead of synchronously awaiting
      * for its completion.
+     * @param onlyLocReg Whether to register only on the current node.
+     * @param platformId Platform ID (see {@link org.apache.ignite.internal.MarshallerPlatformIds}).
      * @return {@code True} if the mapping was registered successfully.
      */
-    public boolean registerUserClassName(int typeId, String clsName, boolean failIfUnregistered, boolean onlyLocReg) {
+    public boolean registerUserClassName(
+            int typeId,
+            String clsName,
+            boolean failIfUnregistered,
+            boolean onlyLocReg,
+            byte platformId) {
         IgniteCheckedException e = null;
 
         boolean res = false;
 
         try {
             res = onlyLocReg
-                ? marshCtx.registerClassNameLocally(JAVA_ID, typeId, clsName)
-                : marshCtx.registerClassName(JAVA_ID, typeId, clsName, failIfUnregistered);
+                ? marshCtx.registerClassNameLocally(platformId, typeId, clsName)
+                : marshCtx.registerClassName(platformId, typeId, clsName, failIfUnregistered);
         }
         catch (DuplicateTypeIdException dupEx) {
             // Ignore if trying to register mapped type name of the already registered class name and vise versa
@@ -1447,6 +1439,13 @@ public class BinaryContext {
         }
 
         U.clearClassCache(ldr);
+    }
+
+    /**
+     * @param typeId Type ID.
+     */
+    public synchronized void removeType(int typeId) {
+        schemas.remove(typeId);
     }
 
     /**

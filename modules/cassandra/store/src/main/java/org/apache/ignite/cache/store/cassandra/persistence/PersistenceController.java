@@ -17,9 +17,6 @@
 
 package org.apache.ignite.cache.store.cassandra.persistence;
 
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.Row;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Collections;
@@ -27,7 +24,9 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
+import com.datastax.driver.core.BoundStatement;
+import com.datastax.driver.core.PreparedStatement;
+import com.datastax.driver.core.Row;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.store.cassandra.common.PropertyMappingHelper;
 import org.apache.ignite.cache.store.cassandra.serializer.Serializer;

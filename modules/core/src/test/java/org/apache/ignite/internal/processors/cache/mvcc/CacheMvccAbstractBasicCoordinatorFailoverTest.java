@@ -462,7 +462,7 @@ public abstract class CacheMvccAbstractBasicCoordinatorFailoverTest extends Cach
         WriteMode writeMode) throws Exception {
         for (boolean readInTx : new boolean[]{false, true}) {
             for (int i = 1; i <= 3; i++) {
-                readInProgressCoordinatorFailsSimple(fromClient, i, readInTx,cfgC, readMode, writeMode);
+                readInProgressCoordinatorFailsSimple(fromClient, i, readInTx, cfgC, readMode, writeMode);
 
                 afterTest();
             }

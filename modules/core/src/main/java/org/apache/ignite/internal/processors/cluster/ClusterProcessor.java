@@ -27,10 +27,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.management.JMException;
+import javax.management.ObjectName;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.ClusterTagUpdatedEvent;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.failure.FailureContext;
@@ -53,14 +56,17 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridTimerTask;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -68,6 +74,7 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.mxbean.IgniteClusterMXBean;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
@@ -78,12 +85,14 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_CLUSTER_NAME;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DIAGNOSTIC_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
+import static org.apache.ignite.events.EventType.EVT_CLUSTER_TAG_UPDATED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CLUSTER_PROC;
 import static org.apache.ignite.internal.GridTopic.TOPIC_INTERNAL_DIAGNOSTIC;
 import static org.apache.ignite.internal.GridTopic.TOPIC_METRICS;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLUSTER_METRICS;
 
 /**
  *
@@ -96,11 +105,32 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
     private static final String CLUSTER_ID_TAG_KEY =
         DistributedMetaStorage.IGNITE_INTERNAL_KEY_PREFIX + "cluster.id.tag";
 
+    /** */
+    private static final String M_BEAN_NAME = "IgniteCluster";
+
     /** Periodic version check delay. */
     private static final long PERIODIC_VER_CHECK_DELAY = 1000 * 60 * 60; // Every hour.
 
     /** Periodic version check delay. */
     private static final long PERIODIC_VER_CHECK_CONN_TIMEOUT = 10 * 1000; // 10 seconds.
+
+    /** Total server nodes count metric name. */
+    public static final String TOTAL_SERVER_NODES = "TotalServerNodes";
+
+    /** Total client nodes count metric name. */
+    public static final String TOTAL_CLIENT_NODES = "TotalClientNodes";
+
+    /** Total baseline nodes count metric name. */
+    public static final String TOTAL_BASELINE_NODES = "TotalBaselineNodes";
+
+    /** Active baseline nodes count metric name. */
+    public static final String ACTIVE_BASELINE_NODES = "ActiveBaselineNodes";
+
+    /** @see IgniteSystemProperties#IGNITE_UPDATE_NOTIFIER */
+    public static final boolean DFLT_UPDATE_NOTIFIER = true;
+
+    /** @see IgniteSystemProperties#IGNITE_DIAGNOSTIC_ENABLED */
+    public static final boolean DFLT_DIAGNOSTIC_ENABLED = true;
 
     /** */
     private IgniteClusterImpl cluster;
@@ -136,13 +166,16 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
     private boolean sndMetrics;
 
     /** Cluster ID is stored in local variable before activation when it goes to distributed metastorage. */
-    private volatile UUID localClusterId;
+    private volatile UUID locClusterId;
 
     /** Cluster tag is stored in local variable before activation when it goes to distributed metastorage. */
-    private volatile String localClusterTag;
+    private volatile String locClusterTag;
 
     /** */
     private volatile DistributedMetaStorage metastorage;
+
+    /** */
+    private ObjectName mBean;
 
     /**
      * @param ctx Kernal context.
@@ -150,7 +183,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
     public ClusterProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        notifyEnabled.set(IgniteSystemProperties.getBoolean(IGNITE_UPDATE_NOTIFIER, true));
+        notifyEnabled.set(IgniteSystemProperties.getBoolean(IGNITE_UPDATE_NOTIFIER, DFLT_UPDATE_NOTIFIER));
 
         cluster = new IgniteClusterImpl(ctx);
 
@@ -161,7 +194,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
      * @return Diagnostic flag.
      */
     public boolean diagnosticEnabled() {
-        return getBoolean(IGNITE_DIAGNOSTIC_ENABLED, true);
+        return getBoolean(IGNITE_DIAGNOSTIC_ENABLED, DFLT_DIAGNOSTIC_ENABLED);
     }
 
     /** {@inheritDoc} */
@@ -172,6 +205,8 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
         GridInternalSubscriptionProcessor isp = ctx.internalSubscriptionProcessor();
 
         isp.registerDistributedMetastorageListener(this);
+
+        cluster.start();
     }
 
     /** {@inheritDoc} */
@@ -183,9 +218,44 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
             log.info("Cluster ID and tag has been read from metastorage: " + idAndTag);
 
         if (idAndTag != null) {
-            localClusterId = idAndTag.id();
-            localClusterTag = idAndTag.tag();
+            locClusterId = idAndTag.id();
+            locClusterTag = idAndTag.tag();
         }
+
+        metastorage.listen(
+            (k) -> k.equals(CLUSTER_ID_TAG_KEY),
+            (String k, ClusterIdAndTag oldVal, ClusterIdAndTag newVal) -> {
+                if (log.isInfoEnabled())
+                    log.info(
+                        "Cluster tag will be set to new value: " +
+                            newVal != null ? newVal.tag() : "null" +
+                            ", previous value was: " +
+                            oldVal != null ? oldVal.tag() : "null");
+
+                if (oldVal != null && newVal != null) {
+                    if (ctx.event().isRecordable(EVT_CLUSTER_TAG_UPDATED)) {
+                        String msg = "Tag of cluster with id " +
+                            oldVal.id() +
+                            " has been updated to new value: " +
+                            newVal.tag() +
+                            ", previous value was " +
+                            oldVal.tag();
+
+                        ctx.closure().runLocalSafe((GridPlainRunnable)() -> ctx.event().record(
+                            new ClusterTagUpdatedEvent(
+                                ctx.discovery().localNode(),
+                                msg,
+                                oldVal.id(),
+                                oldVal.tag(),
+                                newVal.tag()
+                            )
+                        ));
+                    }
+                }
+
+                cluster.setTag(newVal != null ? newVal.tag() : null);
+            }
+        );
     }
 
     /**
@@ -208,23 +278,8 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
     @Override public void onReadyForWrite(DistributedMetaStorage metastorage) {
         this.metastorage = metastorage;
 
-        metastorage.listen(
-            (k) -> k.equals(CLUSTER_ID_TAG_KEY),
-            (String k, ClusterIdAndTag oldVal, ClusterIdAndTag newVal) -> {
-                if (log.isInfoEnabled()) {
-                    log.info(
-                        "Cluster tag will be set to new value: " +
-                            (newVal != null ? newVal.tag() : "null") +
-                            ", previous value was: " +
-                            (oldVal != null ? oldVal.tag() : "null"));
-                }
-
-                cluster.setTag(newVal != null ? newVal.tag() : null);
-            }
-        );
-
         ctx.closure().runLocalSafe(
-            () -> {
+            (GridPlainRunnable)() -> {
                 try {
                     ClusterIdAndTag idAndTag = new ClusterIdAndTag(cluster.id(), cluster.tag());
 
@@ -248,6 +303,10 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
     public void updateTag(String newTag) throws IgniteCheckedException {
         ClusterIdAndTag oldTag = metastorage.read(CLUSTER_ID_TAG_KEY);
 
+        if (oldTag == null)
+            throw new IgniteCheckedException("Cannot change tag as default tag has not been set yet. " +
+                "Please try again later.");
+
         if (!metastorage.compareAndSet(CLUSTER_ID_TAG_KEY, oldTag, new ClusterIdAndTag(oldTag.id(), newTag))) {
             ClusterIdAndTag concurrentValue = metastorage.read(CLUSTER_ID_TAG_KEY);
 
@@ -270,9 +329,9 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
      * </ul>
      */
     public void onLocalJoin() {
-        cluster.setId(localClusterId != null ? localClusterId : UUID.randomUUID());
+        cluster.setId(locClusterId != null ? locClusterId : UUID.randomUUID());
 
-        cluster.setTag(localClusterTag != null ? localClusterTag :
+        cluster.setTag(locClusterTag != null ? locClusterTag :
             ClusterTagGenerator.generateTag());
     }
 
@@ -280,8 +339,8 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
         assert ctx.clientNode();
 
-        localClusterId = null;
-        localClusterTag = null;
+        locClusterId = null;
+        locClusterTag = null;
 
         cluster.setId(null);
         cluster.setTag(null);
@@ -291,8 +350,8 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
     @Override public IgniteInternalFuture<?> onReconnected(boolean clusterRestarted) {
         assert ctx.clientNode();
 
-        cluster.setId(localClusterId);
-        cluster.setTag(localClusterTag);
+        cluster.setId(locClusterId);
+        cluster.setTag(locClusterTag);
 
         return null;
     }
@@ -489,20 +548,20 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
             Serializable remoteClusterId = commonData.id();
 
             if (remoteClusterId != null) {
-                if (localClusterId != null && !localClusterId.equals(remoteClusterId)) {
+                if (locClusterId != null && !locClusterId.equals(remoteClusterId)) {
                     log.warning("Received cluster ID differs from locally stored cluster ID " +
                         "and will be rewritten. " +
                         "Received cluster ID: " + remoteClusterId +
-                        ", local cluster ID: " + localClusterId);
+                        ", local cluster ID: " + locClusterId);
                 }
 
-                localClusterId = (UUID)remoteClusterId;
+                locClusterId = (UUID)remoteClusterId;
             }
 
             String remoteClusterTag = commonData.tag();
 
             if (remoteClusterTag != null)
-                localClusterTag = remoteClusterTag;
+                locClusterTag = remoteClusterTag;
         }
     }
 
@@ -550,6 +609,55 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
 
             ctx.timeout().addTimeoutObject(new MetricsUpdateTimeoutObject(updateFreq));
         }
+
+        IgniteClusterMXBeanImpl mxBeanImpl = new IgniteClusterMXBeanImpl(cluster);
+
+        if (!U.IGNITE_MBEANS_DISABLED) {
+            try {
+                mBean = U.registerMBean(
+                    ctx.config().getMBeanServer(),
+                    ctx.igniteInstanceName(),
+                    M_BEAN_NAME,
+                    mxBeanImpl.getClass().getSimpleName(),
+                    mxBeanImpl,
+                    IgniteClusterMXBean.class);
+
+                if (log.isDebugEnabled())
+                    log.debug("Registered " + M_BEAN_NAME + " MBean: " + mBean);
+            }
+            catch (Throwable e) {
+                U.error(log, "Failed to register MBean for cluster: ", e);
+            }
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStop(boolean cancel) {
+        unregisterMBean();
+    }
+
+    /**
+     * Unregister IgniteCluster MBean.
+     */
+    private void unregisterMBean() {
+        ObjectName mBeanName = mBean;
+
+        if (mBeanName == null)
+            return;
+
+        assert !U.IGNITE_MBEANS_DISABLED;
+
+        try {
+            ctx.config().getMBeanServer().unregisterMBean(mBeanName);
+
+            mBean = null;
+
+            if (log.isDebugEnabled())
+                log.debug("Unregistered " + M_BEAN_NAME + " MBean: " + mBeanName);
+        }
+        catch (JMException e) {
+            U.error(log, "Failed to unregister " + M_BEAN_NAME + " MBean: " + mBeanName, e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -565,6 +673,32 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
         // exception on start.
         if (ctx.io() != null)
             ctx.io().removeMessageListener(TOPIC_INTERNAL_DIAGNOSTIC);
+    }
+
+    /**  Registers cluster metrics. */
+    public void registerMetrics() {
+        MetricRegistry reg = ctx.metric().registry(CLUSTER_METRICS);
+
+        reg.register(TOTAL_SERVER_NODES,
+            () -> ctx.isStopping() || ctx.clientDisconnected() ? -1 : cluster.forServers().nodes().size(),
+            "Server nodes count.");
+
+        reg.register(TOTAL_CLIENT_NODES,
+            () -> ctx.isStopping() || ctx.clientDisconnected() ? -1 : cluster.forClients().nodes().size(),
+            "Client nodes count.");
+
+        reg.register(TOTAL_BASELINE_NODES,
+            () -> ctx.isStopping() || ctx.clientDisconnected() ? -1 : F.size(cluster.currentBaselineTopology()),
+            "Total baseline nodes count.");
+
+        reg.register(ACTIVE_BASELINE_NODES, () -> {
+            if (ctx.isStopping() || ctx.clientDisconnected())
+                return -1;
+
+            Collection<Object> srvIds = F.nodeConsistentIds(cluster.forServers().nodes());
+
+            return F.size(cluster.currentBaselineTopology(), node -> srvIds.contains(node.consistentId()));
+        }, "Active baseline nodes count.");
     }
 
     /**
@@ -721,6 +855,13 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
      * @return Cluster name.
      * */
     public String clusterName() {
+        try {
+            ctx.cache().awaitStarted();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+
         return IgniteSystemProperties.getString(
             IGNITE_CLUSTER_NAME,
             ctx.cache().utilityCache().context().dynamicDeploymentId().toString()

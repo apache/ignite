@@ -269,7 +269,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
             warnFirstEvict();
 
         if (obsoleteVer == null)
-            obsoleteVer = cctx.versions().next();
+            obsoleteVer = cctx.cache().nextVersion();
 
         // Do not touch entry if not evicted:
         // 1. If it is call from policy, policy tracks it on its own.
@@ -326,7 +326,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter implements
                     try {
                         plc.onEntryAccessed(true, e.wrapEviction());
                     }
-                    catch (RuntimeException re) {
+                    catch (RuntimeException ignore) {
                         // It seems that this exception can be ignored due to the fact that
                         // the original exception already exists and will be reported to the logger.
                     }

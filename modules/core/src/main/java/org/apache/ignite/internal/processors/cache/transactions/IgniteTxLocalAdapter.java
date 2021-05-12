@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.io.Externalizable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -35,7 +34,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -59,6 +57,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpda
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
@@ -110,9 +110,6 @@ import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
  * Transaction adapter for cache transactions.
  */
 public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements IgniteTxLocalEx {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Commit error updater. */
     protected static final AtomicReferenceFieldUpdater<IgniteTxLocalAdapter, Throwable> COMMIT_ERR_UPD =
         AtomicReferenceFieldUpdater.newUpdater(IgniteTxLocalAdapter.class, Throwable.class, "commitErr");
@@ -157,13 +154,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
     /** */
     protected volatile boolean qryEnlisted;
-
-    /**
-     * Empty constructor required for {@link Externalizable}.
-     */
-    protected IgniteTxLocalAdapter() {
-        // No-op.
-    }
 
     /**
      * @param cctx Cache registry.
@@ -948,7 +938,15 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     U.warn(log, "Failed to commit transaction, node is stopping [tx=" + CU.txString(this) +
                         ", err=" + ex + ']');
 
-                    return;
+                    boolean persistenceEnabled = CU.isPersistenceEnabled(cctx.kernalContext().config());
+
+                    if (persistenceEnabled) {
+                        GridCacheDatabaseSharedManager dbManager = (GridCacheDatabaseSharedManager)cctx.database();
+
+                        dbManager.getCheckpointer().skipCheckpointOnNodeStop(true);
+                    }
+
+                    throw ex;
                 }
 
                 err = heuristicException(ex);
@@ -1251,8 +1249,14 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                 addInvokeResult(txEntry, v, ret, ver);
                             }
                         }
-                        else
-                            ret.value(cacheCtx, v, txEntry.keepBinary());
+                        else {
+                            ret.value(
+                                cacheCtx,
+                                v,
+                                txEntry.keepBinary(),
+                                U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId)
+                            );
+                        }
                     }
 
                     boolean pass = F.isEmpty(filter) || cacheCtx.isAll(cached, filter);
@@ -1322,6 +1326,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         Object val0 = null;
 
         IgniteThread.onEntryProcessorEntered(true);
+
+        if (cctx.kernalContext().deploy().enabled() && deploymentLdrId != null)
+            U.restoreDeploymentContext(cctx.kernalContext(), deploymentLdrId);
 
         try {
             Object res = null;

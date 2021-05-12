@@ -68,7 +68,7 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
 
         log = ctx.logger(getClass());
 
-        finFut = new GridFinishedFuture();
+        finFut = new GridFinishedFuture<>(true);
     }
 
     /** {@inheritDoc} */
@@ -144,8 +144,9 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
     }
 
     /** {@inheritDoc} */
-    @Override public GridDhtPreloaderAssignments generateAssignments(GridDhtPartitionExchangeId exchId,
-                                                                     GridDhtPartitionsExchangeFuture exchFut) {
+    @Override public GridDhtPreloaderAssignments generateAssignments(
+        GridDhtPartitionExchangeId exchId,
+        GridDhtPartitionsExchangeFuture exchFut) {
         return null;
     }
 
@@ -202,4 +203,10 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
         return grp.shared().gridConfig().getRebalanceBatchSize() == DFLT_REBALANCE_BATCH_SIZE ?
             grp.config().getRebalanceBatchSize() : grp.shared().gridConfig().getRebalanceBatchSize();
     }
+
+    /** {@inheritDoc} */
+    @Override public void finishPreloading(AffinityTopologyVersion topVer, long rebalanceId) {
+        // No-op.
+    }
 }
+

@@ -92,7 +92,7 @@ public class SqlStatisticsUserQueriesLongTest extends UserQueriesTestBase {
         SuspendQuerySqlFunctions.setProcessRowsToSuspend(1);
 
         assertMetricsIncrementedOnlyOnReducer(() ->
-            startAndKillQuery(new SqlFieldsQuery("SELECT * FROM TAB WHERE ID < 200 AND suspendHook(ID) <> 5 ")),
+            startAndKillQuery(new SqlFieldsQuery("SELECT * FROM TAB WHERE ID < 200 AND suspendHook(ID) <> 5 ")), 2,
             "success", "failed", "canceled");
     }
 
@@ -128,7 +128,7 @@ public class SqlStatisticsUserQueriesLongTest extends UserQueriesTestBase {
         SuspendQuerySqlFunctions.setProcessRowsToSuspend(1);
 
         assertMetricsIncrementedOnlyOnReducer(() ->
-                startAndKillQuery(new SqlFieldsQuery("SELECT * FROM TAB WHERE ID < 200 AND suspendHook(ID) <> 5 ")),
+                startAndKillQuery(new SqlFieldsQuery("SELECT * FROM TAB WHERE ID < 200 AND suspendHook(ID) <> 5 ")), 2,
             "success", "failed", "canceled");
     }
 

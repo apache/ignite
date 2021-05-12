@@ -51,7 +51,6 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
@@ -66,6 +65,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
@@ -143,7 +143,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         cache.put(keys.get(2), new TestVal(keys.get(2)));
         ops.add(new T2<>(keys.get(2), op));
 
-        assertCountersSame(PARTITION_ID, false);
+        assertCountersSame(PARTITION_ID, false, DEFAULT_CACHE_NAME);
 
         cache.remove(keys.get(2));
         ops.add(new T2<>(keys.get(2), GridCacheOperation.DELETE));
@@ -154,7 +154,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
         cache.remove(keys.get(0));
         ops.add(new T2<>(keys.get(0), GridCacheOperation.DELETE));
 
-        assertCountersSame(PARTITION_ID, false);
+        assertCountersSame(PARTITION_ID, false, DEFAULT_CACHE_NAME);
 
         for (Ignite ignite : G.allGrids()) {
             if (ignite.configuration().isClientMode())
@@ -407,7 +407,7 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
 
         assertPartitionsSame(idleVerify(prim, DEFAULT_CACHE_NAME));
 
-        assertCountersSame(PARTITION_ID, true);
+        assertCountersSame(PARTITION_ID, true, DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -994,8 +994,8 @@ public class TxPartitionCounterStateConsistencyTest extends TxPartitionCounterSt
     }
 
     /**
-     * Tests a scenario when stale partition state message can trigger spurious late affinity switching cause
-     * mapping to moving partitions.
+     * Tests a scenario when stale partition state message can trigger spurious late affinity switching followed by
+     * possible primary mapping to moving partition.
      */
     @Test
     public void testLateAffinityChangeDuringExchange() throws Exception {

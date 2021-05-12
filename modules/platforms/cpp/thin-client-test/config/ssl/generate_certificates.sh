@@ -34,7 +34,7 @@ function generate_ca {
     $OSSL req \
         -newkey rsa:2048 -nodes -sha256 -keyout $CA_KEY \
         -subj "/C=US/ST=Massachusetts/L=Wakefield/CN=ignite.apache.org/O=The Apache Software Foundation/OU=$OU/emailAddress=dev@ignite.apache.org" \
-        -x509 -days=3650 -out $CA_CRT
+        -x509 -days 3650 -out $CA_CRT
 }
 
 function generate_client_key_and_crt {
@@ -55,10 +55,15 @@ function generate_client_key_and_crt {
     # Signing client cerificate
     $OSSL x509 -req \
         -in $CLIENT_CSR -CA $CA_CRT -CAkey $CA_KEY -CAcreateserial \
-        -days=3650 -sha256 -out $CLIENT_CRT
+        -days 3650 -sha256 -out $CLIENT_CRT
 
     # Cleaning up.
     rm -f $CLIENT_CSR
+
+    # Protecting key with the password if required
+    if [ "$4" == "1" ]; then
+      openssl rsa -aes256 -in $CLIENT_KEY -passout pass:654321 -out $CLIENT_KEY
+    fi
 }
 
 function generate_jks {
@@ -89,13 +94,15 @@ function generate_jks {
 
 CA='ca'
 CLIENT='client'
+CLIENT_WITH_PASS='client_with_pass'
 SERVER='server'
 CA_UNKNOWN='ca_unknown'
 CLIENT_UNKNOWN='client_unknown'
 
 generate_ca $CA 'Apache Ignite CA'
-generate_client_key_and_crt $CA 'client' 'Apache Ignite Client Test'
-generate_client_key_and_crt $CA 'server' 'Apache Ignite Server Test'
+generate_client_key_and_crt $CA $CLIENT 'Apache Ignite Client Test'
+generate_client_key_and_crt $CA $CLIENT_WITH_PASS 'Apache Ignite Client Test' 1
+generate_client_key_and_crt $CA $SERVER 'Apache Ignite Server Test'
 
 # We won't sign up any other certs so we do not need CA key or srl
 rm -f "$CA.key" "$CA.srl"
@@ -110,10 +117,11 @@ rm -f $CA_UNKNOWN*
 
 # Re-naming everything as needed
 cat $CLIENT.key $CLIENT.crt > "$CLIENT"_full.pem
+cat $CLIENT_WITH_PASS.key $CLIENT_WITH_PASS.crt > "$CLIENT_WITH_PASS"_full.pem
 cat $CLIENT_UNKNOWN.key $CLIENT_UNKNOWN.crt > $CLIENT_UNKNOWN.pem
 mv $CA.jks trust.jks
 mv $CA.crt ca.pem
 
-rm -f $CLIENT.crt $CLIENT.key $CLIENT_UNKNOWN.key $CLIENT_UNKNOWN.crt $SERVER_KEY $SERVER_CRT
+rm -f $CLIENT.crt $CLIENT.key $CLIENT_WITH_PASS.key $CLIENT_WITH_PASS.crt $CLIENT_UNKNOWN.key $CLIENT_UNKNOWN.crt $SERVER_KEY $SERVER_CRT
 
 

@@ -19,6 +19,7 @@ package org.apache.ignite.ml.clustering.gmm;
 
 import java.util.Collections;
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.apache.ignite.ml.IgniteModel;
 import org.apache.ignite.ml.environment.deploy.DeployableObject;
 import org.apache.ignite.ml.math.primitives.vector.Vector;
@@ -47,12 +48,17 @@ public class GmmModel extends DistributionMixture<MultivariateGaussianDistributi
         super(componentProbs, distributions);
     }
 
+    /** */
+    public GmmModel() {
+    }
+
     /** {@inheritDoc} */
     @Override public Double predict(Vector input) {
         return (double)likelihood(input).maxElement().index();
     }
 
     /** {@inheritDoc} */
+    @JsonIgnore
     @Override public List<Object> getDependencies() {
         return Collections.emptyList();
     }

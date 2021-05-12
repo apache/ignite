@@ -36,9 +36,23 @@
         <!-- Coding Checks. See: https://checkstyle.sourceforge.io/config_coding.html -->
         <module name="SimplifyBooleanExpression"/>
 
+        <!-- Config Blocks. See: https://checkstyle.sourceforge.io/config_blocks.html -->
+        <module name="EmptyCatchBlock">
+            <property name="exceptionVariableName" value="ignore|expected"/>
+        </module>
+
         <!-- Import Checks. See: http://checkstyle.sourceforge.net/config_imports.html -->
         <module name="RedundantImport"/>
         <module name="UnusedImports"/>
+        <module name="CustomImportOrder">
+            <property name="customImportOrderRules"
+                      value="STANDARD_JAVA_PACKAGE###SPECIAL_IMPORTS###THIRD_PARTY_PACKAGE###STATIC"/>
+            <property name="standardPackageRegExp" value="^java\."/>
+            <property name="specialImportsRegExp" value="^javax\."/>
+            <property name="sortImportsInGroupAlphabetically" value="true"/>
+            <property name="separateLineBetweenGroups" value="false"/>
+        </module>
+        <module name="AvoidStarImport"/>
 
         <!-- Whitespaces: See: https://checkstyle.sourceforge.io/config_whitespace.html -->
         <module name="WhitespaceAround">
@@ -67,8 +81,11 @@
         </module>
 
         <!-- @Override annotations on the same line with a method declaration check. -->
-        <module name="org.apache.ignite.tools.checkstyle.OverrideAnnotationOnTheSameLineCheck"/>
-
+        <module name="AnnotationOnSameLine" />
+        <module name="SuppressionXpathSingleFilter">
+            <property name="checks" value="AnnotationOnSameLine" />
+            <property name="query" value="//ANNOTATION[.//IDENT[not(@text='Override')]]" />
+        </module>
         <!--
             Checks the padding between the identifier of a method definition, constructor definition, method call, or
             constructor invocation; and the left parenthesis of the parameter list.
@@ -83,6 +100,14 @@
         <module name="NoWhitespaceAfter">
             <property name="tokens" value="AT, INC, DEC, UNARY_MINUS, UNARY_PLUS, BNOT, LNOT, DOT, ARRAY_DECLARATOR,
                 INDEX_OP, METHOD_REF"/>
+        </module>
+
+        <!--
+            Checks that there is whitespace after a token.
+            See: https://checkstyle.sourceforge.io/config_whitespace.html#WhitespaceAfter
+        -->
+        <module name="WhitespaceAfter">
+            <property name="tokens" value="COMMA, SEMI"/>
         </module>
 
         <!--

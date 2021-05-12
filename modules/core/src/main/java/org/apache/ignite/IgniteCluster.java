@@ -27,6 +27,7 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterStartNodeResult;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
 import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteAsyncSupported;
@@ -526,6 +527,12 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * when all dirty pages are prepared for checkpoint, but not necessarily flushed to disk.
      * <p>
      * WAL state can be changed only for persistent caches.
+     * <p>
+     * <b>NOTE:</b>
+     * Currently, this method should only be called on a stable topology when no nodes are leaving or joining cluster,
+     * and all baseline nodes are present.
+     * Cache may be stuck in inconsistent state due to violation of these conditions. It is advised to destroy
+     * such cache.
      *
      * @param cacheName Cache name.
      * @return Whether WAL disabled by this call.
@@ -544,6 +551,12 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * when all data is persisted to disk.
      * <p>
      * WAL state can be changed only for persistent caches.
+     * <p>
+     * <b>NOTE:</b>
+     * Currently, this method should only be called on a stable topology when no nodes are leaving or joining cluster,
+     * and all baseline nodes are present.
+     * Cache may be stuck in inconsistent state due to violation of these conditions. It is advised to destroy
+     * such cache.
      *
      * @param cacheName Cache name.
      * @return Whether WAL enabled by this call.
@@ -629,4 +642,21 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * @return Status of baseline auto-adjust.
      */
     public BaselineAutoAdjustStatus baselineAutoAdjustStatus();
+
+    /**
+     * Returns a policy of shutdown or default value {@code IgniteConfiguration.DFLT_SHUTDOWN_POLICY}
+     * if the property is not set.
+     *
+     * @return Shutdown policy.
+     */
+    public ShutdownPolicy shutdownPolicy();
+
+    /**
+     * Sets a shutdown policy on a cluster.
+     * If a policy is specified here the value will override static configuration on
+     * {@link IgniteConfiguration#setShutdownPolicy(ShutdownPolicy)} and persists to cluster meta storage.
+     *
+     * @param shutdownPolicy Shutdown policy.
+     */
+    public void shutdownPolicy(ShutdownPolicy shutdownPolicy);
 }

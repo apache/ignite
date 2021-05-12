@@ -46,6 +46,8 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
+
 /**
  *
  */
@@ -360,7 +362,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                 if (affFieldName0 == null)
                     affFieldName0 = ctx.affinityKeyFieldName(typeId);
 
-                ctx.registerUserClassName(typeId, typeName, writer.failIfUnregistered(), false);
+                ctx.registerUserClassName(typeId, typeName, writer.failIfUnregistered(), false, JAVA_ID);
 
                 ctx.updateMetadata(typeId, new BinaryMetadata(typeId, typeName, fieldsMeta, affFieldName0,
                     Collections.singleton(curSchema), false, null), writer.failIfUnregistered());

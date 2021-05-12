@@ -18,24 +18,32 @@ package org.apache.ignite.internal.processors.cache.persistence.metastorage.pend
 
 import java.io.Serializable;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
 
 /**
- * Durable task that should be used to do long operations (e.g. index deletion) in background
- * for cases when node with persistence can fail before operation is completed. After start, node reads it's
- * pending background tasks from metastorage and completes them.
+ * Durable task that should be used to do long operations (e.g. index deletion) in background.
  */
 public interface DurableBackgroundTask extends Serializable {
     /**
-     * Short unique name of the task is used to build metastorage key for saving this task and for logging.
+     * Getting the name of the task to identify it.
+     * Also used as part of a key for storage in a MetaStorage.
      *
-     * @return Short name of this task.
+     * @return Task name.
      */
-    public String shortName();
+    String name();
 
     /**
-     * Method that executes the task. It is called after node start.
-     *
-     * @param ctx Grid kernal context.
+     * Canceling the task.
      */
-    public void execute(GridKernalContext ctx);
+    void cancel();
+
+    /**
+     * Asynchronous task execution.
+     *
+     * Completion of the task execution should be only with the {@link DurableBackgroundTaskResult result}.
+     *
+     * @param ctx Kernal context.
+     * @return Future of the tasks.
+     */
+    IgniteInternalFuture<DurableBackgroundTaskResult> executeAsync(GridKernalContext ctx);
 }

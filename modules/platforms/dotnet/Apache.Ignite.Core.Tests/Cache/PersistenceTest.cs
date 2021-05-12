@@ -66,6 +66,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// Tests that cache data survives node restart.
         /// </summary>
         [Test]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestCacheDataSurvivesNodeRestart(
             [Values(true, false)] bool withCacheStore,
             [Values(true, false)] bool withCustomAffinity)

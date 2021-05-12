@@ -121,7 +121,7 @@ class ClientServicesImpl implements ClientServices {
 
                 return ch.service(ClientOperation.SERVICE_INVOKE,
                     req -> writeServiceInvokeRequest(req, nodeIds, method, args),
-                    res -> utils.readObject(res.in(), false)
+                    res -> utils.readObject(res.in(), false, method.getReturnType())
                 );
             }
             catch (ClientError e) {

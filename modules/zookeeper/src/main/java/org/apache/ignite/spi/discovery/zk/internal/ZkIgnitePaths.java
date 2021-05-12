@@ -22,7 +22,7 @@ import java.util.UUID;
 /**
  *
  */
-class ZkIgnitePaths {
+public class ZkIgnitePaths {
     /** */
     static final String PATH_SEPARATOR = "/";
 
@@ -43,6 +43,9 @@ class ZkIgnitePaths {
 
     /** Directory to store acknowledge messages for custom events. */
     private static final String CUSTOM_EVTS_ACKS_DIR = "ca";
+
+    /** Directory to store node's stopped flags. */
+    private static final String STOPPED_NODES_FLAGS_DIR = "sf";
 
     /** Directory to store EPHEMERAL znodes for alive cluster nodes. */
     static final String ALIVE_NODES_DIR = "n";
@@ -71,6 +74,9 @@ class ZkIgnitePaths {
     /** */
     final String customEvtsAcksDir;
 
+    /** */
+    final String stoppedNodesFlagsDir;
+
     /**
      * @param zkRootPath Base Zookeeper directory for all Ignite nodes.
      */
@@ -83,6 +89,7 @@ class ZkIgnitePaths {
         customEvtsDir = zkPath(CUSTOM_EVTS_DIR);
         customEvtsPartsDir = zkPath(CUSTOM_EVTS_PARTS_DIR);
         customEvtsAcksDir = zkPath(CUSTOM_EVTS_ACKS_DIR);
+        stoppedNodesFlagsDir = zkPath(STOPPED_NODES_FLAGS_DIR);
     }
 
     /**
@@ -90,7 +97,7 @@ class ZkIgnitePaths {
      * @return Full path.
      */
     private String zkPath(String path) {
-        return clusterDir + "/" + path;
+        return join(clusterDir, path);
     }
 
     /**
@@ -99,7 +106,7 @@ class ZkIgnitePaths {
      * @return Path.
      */
     String joiningNodeDataPath(UUID nodeId, UUID prefixId) {
-        return joinDataDir + '/' + prefixId + ":" + nodeId.toString();
+        return join(joinDataDir, prefixId + ":" + nodeId.toString());
     }
 
     /**
@@ -109,7 +116,7 @@ class ZkIgnitePaths {
     static long aliveInternalId(String path) {
         int idx = path.lastIndexOf('|');
 
-        return Integer.parseInt(path.substring(idx + 1));
+        return Long.parseLong(path.substring(idx + 1));
     }
 
     /**
@@ -123,7 +130,7 @@ class ZkIgnitePaths {
         if (node.isClient())
             flags |= CLIENT_NODE_FLAG_MASK;
 
-        return aliveNodesDir + "/" + prefix + ":" + node.id() + ":" + encodeFlags(flags) + "|";
+        return join(aliveNodesDir, prefix + ":" + node.id() + ":" + encodeFlags(flags) + "|");
     }
 
     /**
@@ -153,6 +160,26 @@ class ZkIgnitePaths {
         String idStr = path.substring(startIdx, startIdx + ZkIgnitePaths.UUID_LEN);
 
         return UUID.fromString(idStr);
+    }
+
+    /**
+     * @param node Leaving node.
+     * @return Stopped node path.
+     */
+    String nodeStoppedFlag(ZookeeperClusterNode node) {
+        String path = node.id().toString() + '|' + node.internalId();
+
+        return join(stoppedNodesFlagsDir, path);
+    }
+
+    /**
+     * @param path Leaving flag path.
+     * @return Stopped node internal id.
+     */
+    static long stoppedFlagNodeInternalId(String path) {
+        int idx = path.lastIndexOf('|');
+
+        return Long.parseLong(path.substring(idx + 1));
     }
 
     /**
@@ -212,7 +239,7 @@ class ZkIgnitePaths {
      * @return Path.
      */
     String createCustomEventPath(String prefix, UUID nodeId, int partCnt) {
-        return customEvtsDir + "/" + prefix + ":" + nodeId + ":" + String.format("%04d", partCnt) + '|';
+        return join(customEvtsDir, prefix + ":" + nodeId + ":" + String.format("%04d", partCnt) + '|');
     }
 
     /**
@@ -221,7 +248,7 @@ class ZkIgnitePaths {
      * @return Path.
      */
     String customEventPartsBasePath(String prefix, UUID nodeId) {
-        return customEvtsPartsDir + "/" + prefix + ":" + nodeId + ":";
+        return join(customEvtsPartsDir, prefix + ":" + nodeId + ":");
     }
 
     /**
@@ -239,7 +266,7 @@ class ZkIgnitePaths {
      * @return Event zk path.
      */
     String joinEventDataPathForJoined(long evtId) {
-        return evtsPath + "/fj-" + evtId;
+        return join(evtsPath, "fj-" + evtId);
     }
 
     /**
@@ -247,7 +274,7 @@ class ZkIgnitePaths {
      * @return Event zk path.
      */
     String joinEventSecuritySubjectPath(long topVer) {
-        return evtsPath + "/s-" + topVer;
+        return join(evtsPath, "s-" + topVer);
     }
 
     /**
@@ -257,7 +284,7 @@ class ZkIgnitePaths {
     String ackEventDataPath(long origEvtId) {
         assert origEvtId != 0;
 
-        return customEvtsAcksDir + "/" + String.valueOf(origEvtId);
+        return join(customEvtsAcksDir, String.valueOf(origEvtId));
     }
 
     /**
@@ -265,7 +292,7 @@ class ZkIgnitePaths {
      * @return Future path.
      */
     String distributedFutureBasePath(UUID id) {
-        return evtsPath + "/f-" + id;
+        return join(evtsPath, "f-" + id);
     }
 
     /**
@@ -273,7 +300,7 @@ class ZkIgnitePaths {
      * @return Future path.
      */
     String distributedFutureResultPath(UUID id) {
-        return evtsPath + "/fr-" + id;
+        return join(evtsPath, "fr-" + id);
     }
 
     /**
@@ -303,5 +330,74 @@ class ZkIgnitePaths {
         String flagsStr = path.substring(startIdx, startIdx + 2);
 
         return (byte)(Integer.parseInt(flagsStr, 16) - 128);
+    }
+
+    /**
+     * @param paths Paths to join.
+     * @return Paths joined with separator.
+     */
+    public static String join(String... paths) {
+        return String.join(PATH_SEPARATOR, paths);
+    }
+
+    /**
+     * Validate the provided znode path string.
+     *
+     * @param path znode path string.
+     * @return The given path if it was valid, for fluent chaining.
+     * @throws IllegalArgumentException if the path is invalid/
+     */
+    public static String validatePath(String path) throws IllegalArgumentException {
+        if (path == null)
+            throw new IllegalArgumentException("Path cannot be null");
+
+        if (path.isEmpty())
+            throw new IllegalArgumentException("Path length must be > 0");
+
+        if (path.charAt(0) != '/')
+            throw new IllegalArgumentException("Path must start with / character");
+
+        if (path.length() == 1)
+            return path;
+
+        if (path.charAt(path.length() - 1) == '/')
+            throw new IllegalArgumentException("Path must not end with / character");
+
+        String reason = null;
+        char prev = '/';
+        char chars[] = path.toCharArray();
+        char c;
+
+        for (int i = 1; i < chars.length; prev = chars[i], i++) {
+            c = chars[i];
+
+            if (c == 0) {
+                reason = "null character not allowed @" + i;
+
+                break;
+            }
+            else if (c == '/' && prev == '/') {
+                reason = "empty node name specified @" + i;
+
+                break;
+            }
+            else if (c == '.' && (i + 1 == chars.length || chars[i + 1] == '/')
+                && ((chars[i - 2] == '/' && prev == '.') || chars[i - 1] == '/')) {
+                reason = "relative paths not allowed @" + i;
+
+                break;
+            }
+            else if (c > '\u0000' && c < '\u001f' || c > '\u007f' && c < '\u009f' || c > '\ud800' && c < '\uf8ff'
+                || c > '\ufff0' && c < '\uffff') {
+                reason = "invalid charater @" + i;
+
+                break;
+            }
+        }
+
+        if (reason != null)
+            throw new IllegalArgumentException("Invalid path string \"" + path + "\" caused by " + reason);
+
+        return path;
     }
 }

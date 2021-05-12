@@ -1,0 +1,65 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Fault Tolerance
+:javaFile: {javaCodeDir}/FaultTolerance.java
+
+Ignite supports automatic job failover.
+In case of a node crash, jobs are automatically transferred to other available nodes for re-execution.
+As long as there is at least one node standing, no job is ever lost.
+
+The global failover strategy is controlled by the `IgniteConfiguration.failoverSpi` property.
+
+Available implementations:
+
+* `AlwaysFailoverSpi` — This implementation always reroutes a failed job to another node, and is used by default.
++
+When a job from a compute task fails, an attempt is made to reroute the failed job to a node that has not executed any other job from the same task. If no such node is available, then an attempt is made to reroute the failed job to one of the nodes that may be running other jobs from the same task. If none of the above attempts succeeds, then the job is not failed over.
++
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+include::code-snippets/xml/failover-always.xml[tags=ignite-config;!discovery, indent=0]
+----
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=always,indent=0]
+----
+tab:C#/.NET[unsupported]
+tab:C++[unsupported]
+--
+
+
+* `NeverFailoverSpi` — This implementation never fails over failed jobs.
++
+[tabs]
+--
+tab:XML[]
+[source,xml]
+----
+include::code-snippets/xml/failover-never.xml[tags=ignite-config;!discovery, indent=0]
+----
+tab:Java[]
+[source,java]
+----
+include::{javaFile}[tag=never,indent=0]
+----
+tab:C#/.NET[unsupported]
+tab:C++[unsupported]
+--
+
+* `JobStealingFailoverSpi` — This implementation must be used only if you want to enable link:distributed-computing/load-balancing#job-stealing[job stealing].

@@ -48,6 +48,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
         /// Tests random topology changes.
         /// </summary>
         [Test]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestClientDiscoveryWithRandomTopologyChanges()
         {
             var nodes = new Stack<IIgnite>();

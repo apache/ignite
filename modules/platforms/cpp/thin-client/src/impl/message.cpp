@@ -42,7 +42,7 @@ namespace ignite
                     FAILURE = 1,
 
                     /** Affinity topology change flag. */
-                    AFFINITY_TOPOLOGY_CHANGED = 1 << 1,
+                    AFFINITY_TOPOLOGY_CHANGED = 1 << 1
                 };
             };
 
@@ -195,12 +195,12 @@ namespace ignite
                 value.Read(reader);
             }
 
-            void BinaryTypeGetRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
+            void BinaryTypeGetRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
             {
                 writer.WriteInt32(typeId);
             }
 
-            void BinaryTypePutRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
+            void BinaryTypePutRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
             {
                 writer.WriteInt32(snapshot.GetTypeId());
                 writer.WriteString(snapshot.GetTypeName());
@@ -337,6 +337,80 @@ namespace ignite
             void Int64Response::ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&)
             {
                 value = reader.ReadInt64();
+            }
+
+            void Int32Response::ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&)
+            {
+                value = reader.ReadInt32();
+            }
+
+            SqlFieldsQueryRequest::SqlFieldsQueryRequest(
+                int32_t cacheId,
+                const ignite::thin::cache::query::SqlFieldsQuery &qry
+                ) :
+                CacheRequest<RequestType::QUERY_SQL_FIELDS>(cacheId, false),
+                qry(qry)
+            {
+                // No-op.
+            }
+
+            void SqlFieldsQueryRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
+            {
+                CacheRequest<RequestType::QUERY_SQL_FIELDS>::Write(writer, ver);
+
+                if (qry.schema.empty())
+                    writer.WriteNull();
+                else
+                    writer.WriteString(qry.schema);
+
+                writer.WriteInt32(qry.pageSize);
+                writer.WriteInt32(qry.maxRows);
+                writer.WriteString(qry.sql);
+                writer.WriteInt32(static_cast<int32_t>(qry.args.size()));
+
+                std::vector<impl::thin::CopyableWritable*>::const_iterator it;
+
+                for (it = qry.args.begin(); it != qry.args.end(); ++it)
+                    (*it)->Write(writer);
+
+                writer.WriteInt8(0); // Statement type - Any
+
+                writer.WriteBool(qry.distributedJoins);
+                writer.WriteBool(qry.loc);
+                writer.WriteBool(false); // Replicated only
+                writer.WriteBool(qry.enforceJoinOrder);
+                writer.WriteBool(qry.collocated);
+                writer.WriteBool(qry.lazy);
+                writer.WriteInt64(qry.timeout);
+                writer.WriteBool(true); // Include field names
+            }
+
+            void SqlFieldsQueryResponse::ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&)
+            {
+                ignite::binary::BinaryRawReader rawReader(&reader);
+
+                cursorId = rawReader.ReadInt64();
+
+                int32_t columnsCnt = rawReader.ReadInt32();
+
+                columns.reserve(static_cast<size_t>(columnsCnt));
+
+                for (int32_t i = 0; i < columnsCnt; ++i)
+                {
+                    columns.push_back(rawReader.ReadString());
+                }
+
+                cursorPage.Get()->Read(reader);
+            }
+
+            void SqlFieldsCursorGetPageRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
+            {
+                writer.WriteInt64(cursorId);
+            }
+
+            void SqlFieldsCursorGetPageResponse::ReadOnSuccess(binary::BinaryReaderImpl&reader, const ProtocolVersion&)
+            {
+                cursorPage.Get()->Read(reader);
             }
         }
     }

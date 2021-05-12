@@ -30,18 +30,18 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.LongConsumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.store.PageWriteListener;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteOutClosure;
 
@@ -51,7 +51,19 @@ import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
 
 /**
- * File page store.
+ * FilePageStore is a PageStore implementation that uses regular files to store pages.
+ * <p>
+ * Actual read and write operations are performed with {@link FileIO} abstract interface,
+ * list of its implementations is a good source of information about functionality in Ignite Native Persistence.
+ * </p>
+ * <p>
+ * On a physical level each instance of FilePageStore corresponds to a partition file assigned to the local node or
+ * to index file of a particular cache if any secondary indexes were created.
+ * </p>
+ * <p>
+ * Instances of FilePageStore are managed by {@link FilePageStoreManager} for regular cache operations like assignment
+ * of new partition to the local node or checkpoint event and by {@link IgniteSnapshotManager} during snapshot creation.
+ * </p>
  */
 public class FilePageStore implements PageStore {
     /** Page store file signature. */
@@ -72,11 +84,11 @@ public class FilePageStore implements PageStore {
      */
     private volatile Boolean fileExists;
 
-    /** */
+    /**
+     * The type of stored pages into given page storage. The field can take the following values:
+     * {@link PageStore#TYPE_DATA} for regular affinity partition files or {@link PageStore#TYPE_IDX} for index pages.
+     */
     private final byte type;
-
-    /** Database configuration. */
-    protected final DataStorageConfiguration dbCfg;
 
     /** Factory to provide I/O interfaces for read/write operations with files */
     private final FileIOFactory ioFactory;
@@ -88,7 +100,7 @@ public class FilePageStore implements PageStore {
     private final AtomicLong allocated;
 
     /** Region metrics updater. */
-    private final LongAdderMetric allocatedTracker;
+    private final LongConsumer allocatedTracker;
 
     /** List of listeners for current page store to handle. */
     private final List<PageWriteListener> lsnrs = new CopyOnWriteArrayList<>();
@@ -106,25 +118,32 @@ public class FilePageStore implements PageStore {
     private volatile int tag;
 
     /** */
-    private boolean skipCrc = IgniteSystemProperties.getBoolean(IGNITE_PDS_SKIP_CRC, false);
+    private final boolean skipCrc = IgniteSystemProperties.getBoolean(IGNITE_PDS_SKIP_CRC);
 
     /** */
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
-    /** */
+    /**
+     * @param type Type of stored pages.
+     * @param pathProvider Store path.
+     * @param factory Factory producing an IO accessor.
+     * @param pageSize Page size.
+     * @param allocatedTracker Allocation tracker.
+     */
     public FilePageStore(
         byte type,
         IgniteOutClosure<Path> pathProvider,
         FileIOFactory factory,
-        DataStorageConfiguration cfg,
-        LongAdderMetric allocatedTracker
+        int pageSize,
+        LongConsumer allocatedTracker
     ) {
+        assert type == PageStore.TYPE_DATA || type == PageStore.TYPE_IDX : type;
+
         this.type = type;
         this.pathProvider = pathProvider;
-        this.dbCfg = cfg;
         this.ioFactory = factory;
         this.allocated = new AtomicLong();
-        this.pageSize = dbCfg.getPageSize();
+        this.pageSize = pageSize;
         this.allocatedTracker = allocatedTracker;
     }
 
@@ -235,12 +254,12 @@ public class FilePageStore implements PageStore {
      */
     private long initFile(FileIO fileIO) throws IOException {
         try {
-            ByteBuffer hdr = header(type, dbCfg.getPageSize());
+            ByteBuffer hdr = header(type, pageSize);
 
             fileIO.writeFully(hdr);
 
             //there is 'super' page in every file
-            return headerSize() + dbCfg.getPageSize();
+            return headerSize() + pageSize;
         }
         catch (ClosedByInterruptException e) {
             // If thread was interrupted written header can be inconsistent.
@@ -297,9 +316,9 @@ public class FilePageStore implements PageStore {
 
         int pageSize = hdr.getInt();
 
-        if (dbCfg.getPageSize() != pageSize)
+        if (this.pageSize != pageSize)
             throw new IOException(prefix + "(invalid page size)" +
-                " [expectedPageSize=" + dbCfg.getPageSize() +
+                " [expectedPageSize=" + this.pageSize +
                 ", filePageSize=" + pageSize + "]");
 
         long fileSize = cfgFile.length();
@@ -344,7 +363,7 @@ public class FilePageStore implements PageStore {
             }
         }
         finally {
-            allocatedTracker.add(-1L * allocated.getAndSet(0) / pageSize);
+            allocatedTracker.accept(-1L * allocated.getAndSet(0) / pageSize);
 
             inited = false;
 
@@ -393,7 +412,7 @@ public class FilePageStore implements PageStore {
             throw new StorageException("Failed to truncate partition file [file=" + filePath.toAbsolutePath() + "]", e);
         }
         finally {
-            allocatedTracker.add(-1L * allocated.getAndSet(0) / pageSize);
+            allocatedTracker.accept(-1L * allocated.getAndSet(0) / pageSize);
 
             inited = false;
 
@@ -430,7 +449,7 @@ public class FilePageStore implements PageStore {
 
                 assert delta % pageSize == 0 : delta;
 
-                allocatedTracker.add(delta / pageSize);
+                allocatedTracker.accept(delta / pageSize);
             }
 
             recover = false;
@@ -465,6 +484,18 @@ public class FilePageStore implements PageStore {
 
     /** {@inheritDoc} */
     @Override public boolean read(long pageId, ByteBuffer pageBuf, boolean keepCrc) throws IgniteCheckedException {
+        return read(pageId, pageBuf, !skipCrc, keepCrc);
+    }
+
+    /**
+     * @param pageId Page ID.
+     * @param pageBuf Page buffer to read into.
+     * @param checkCrc Check CRC on page.
+     * @param keepCrc By default reading zeroes CRC which was on file, but you can keep it in pageBuf if set keepCrc
+     * @return {@code true} if page has been read successfully, {@code false} if page hasn't been written yet.
+     * @throws IgniteCheckedException If reading failed (IO error occurred).
+     */
+    public boolean read(long pageId, ByteBuffer pageBuf, boolean checkCrc, boolean keepCrc) throws IgniteCheckedException {
         init();
 
         try {
@@ -493,7 +524,7 @@ public class FilePageStore implements PageStore {
 
             pageBuf.position(0);
 
-            if (!skipCrc) {
+            if (checkCrc) {
                 int curCrc32 = FastCrc.calcCrc(pageBuf, getCrcSize(pageId, pageBuf));
 
                 if ((savedCrc32 ^ curCrc32) != 0)
@@ -579,7 +610,7 @@ public class FilePageStore implements PageStore {
 
                         // Order is important, update of total allocated pages must be called after allocated update
                         // and setting inited to true, because it affects pages() returned value.
-                        allocatedTracker.add(pages());
+                        allocatedTracker.accept(pages());
                     }
                     catch (IOException e) {
                         err = new StorageException(
@@ -826,7 +857,7 @@ public class FilePageStore implements PageStore {
             off = allocated.get();
 
             if (allocated.compareAndSet(off, off + pageSize)) {
-                allocatedTracker.increment();
+                allocatedTracker.accept(1);
 
                 break;
             }

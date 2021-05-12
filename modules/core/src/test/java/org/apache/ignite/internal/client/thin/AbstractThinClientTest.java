@@ -25,6 +25,8 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.mxbean.ClientProcessorMXBean;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -39,6 +41,24 @@ public abstract class AbstractThinClientTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Return thin client port for given node.
+     *
+     * @param node Node.
+     */
+    protected int clientPort(ClusterNode node) {
+        return node.attribute(ClientListenerProcessor.CLIENT_LISTENER_PORT);
+    }
+
+    /**
+     * Return host for given node.
+     *
+     * @param node Node.
+     */
+    protected String clientHost(ClusterNode node) {
+        return F.first(node.addresses());
+    }
+
+    /**
      * Start thin client with configured endpoints to specified nodes.
      *
      * @param nodes Nodes to connect.
@@ -50,7 +70,7 @@ public abstract class AbstractThinClientTest extends GridCommonAbstractTest {
         for (int i = 0; i < nodes.length; i++) {
             ClusterNode node = nodes[i];
 
-            addrs[i] = F.first(node.addresses()) + ":" + node.attribute(ClientListenerProcessor.CLIENT_LISTENER_PORT);
+            addrs[i] = clientHost(node) + ":" + clientPort(node);
         }
 
         return Ignition.startClient(getClientConfiguration().setAddresses(addrs));
@@ -75,5 +95,25 @@ public abstract class AbstractThinClientTest extends GridCommonAbstractTest {
     protected IgniteClient startClient(int... igniteIdxs) {
         return startClient(Arrays.stream(igniteIdxs).mapToObj(igniteIdx -> grid(igniteIdx).cluster().localNode())
             .toArray(ClusterNode[]::new));
+    }
+
+    /**
+     * Drop all thin client connections on given Ignite instance.
+     *
+     * @param ignite Ignite.
+     */
+    protected void dropAllThinClientConnections(Ignite ignite) {
+        ClientProcessorMXBean mxBean = getMxBean(ignite.name(), "Clients",
+            ClientListenerProcessor.class, ClientProcessorMXBean.class);
+
+        mxBean.dropAllConnections();
+    }
+
+    /**
+     * Drop all thin client connections on all Ignite instances.
+     */
+    protected void dropAllThinClientConnections() {
+        for (Ignite ignite : G.allGrids())
+            dropAllThinClientConnections(ignite);
     }
 }

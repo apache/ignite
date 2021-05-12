@@ -24,6 +24,8 @@ namespace Apache.Ignite.Core.Client
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Client.Compute;
+    using Apache.Ignite.Core.Client.Services;
+    using Apache.Ignite.Core.Client.Transactions;
 
     /// <summary>
     /// Main entry point for Ignite Thin Client APIs.
@@ -98,7 +100,7 @@ namespace Apache.Ignite.Core.Client
         IClientCluster GetCluster();
 
         /// <summary>
-        /// Destroys dynamically created (with <see cref="CreateCache{TK,TV}(string)"/> or 
+        /// Destroys dynamically created (with <see cref="CreateCache{TK,TV}(string)"/> or
         /// <see cref="GetOrCreateCache{TK,TV}(string)"/>) cache.
         /// </summary>
         /// <param name="name">The name of the cache to stop.</param>
@@ -110,6 +112,14 @@ namespace Apache.Ignite.Core.Client
         /// <returns>Instance of <see cref="IBinary"/> interface</returns>
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
         IBinary GetBinary();
+
+        /// <summary>
+        /// Gets Ignite transactions facade <see cref="ITransactionsClient"/>.
+        /// <para /> Transactions are bound to the thread started the transaction. After that, each cache operation within this thread
+        /// will belong to the corresponding transaction until the transaction is committed, rolled back or closed.
+        /// <para /> Should not be used with async calls.
+        /// </summary>
+        ITransactionsClient GetTransactions();
 
         /// <summary>
         /// Gets the configuration.
@@ -141,5 +151,10 @@ namespace Apache.Ignite.Core.Client
         /// Gets the compute API.
         /// </summary>
         IComputeClient GetCompute();
+
+        /// <summary>
+        /// Gets the services API.
+        /// </summary>
+        IServicesClient GetServices();
     }
 }

@@ -26,7 +26,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
@@ -65,11 +64,11 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /** Version 2.8.0: adds query id in order to implement cancel feature, partition awareness support: IEP-23.*/
     static final ClientListenerProtocolVersion VER_2_8_0 = ClientListenerProtocolVersion.create(2, 8, 0);
 
-    /** Version 2.8.1: adds features flags support.*/
-    static final ClientListenerProtocolVersion VER_2_8_1 = ClientListenerProtocolVersion.create(2, 8, 1);
+    /** Version 2.9.0: adds user attributes, adds features flags support. */
+    static final ClientListenerProtocolVersion VER_2_9_0 = ClientListenerProtocolVersion.create(2, 9, 0);
 
     /** Current version. */
-    public static final ClientListenerProtocolVersion CURRENT_VER = VER_2_8_1;
+    public static final ClientListenerProtocolVersion CURRENT_VER = VER_2_9_0;
 
     /** Supported versions. */
     private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
@@ -97,7 +96,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
     static {
         SUPPORTED_VERS.add(CURRENT_VER);
-        SUPPORTED_VERS.add(VER_2_8_1);
+        SUPPORTED_VERS.add(VER_2_9_0);
         SUPPORTED_VERS.add(VER_2_8_0);
         SUPPORTED_VERS.add(VER_2_7_0);
         SUPPORTED_VERS.add(VER_2_5_0);
@@ -110,13 +109,14 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /**
      * Constructor.
      * @param ctx Kernal Context.
+     * @param ses Client's NIO session.
      * @param busyLock Shutdown busy lock.
      * @param connId Connection ID.
      * @param maxCursors Maximum allowed cursors.
      */
-    public JdbcConnectionContext(GridKernalContext ctx, GridSpinBusyLock busyLock, long connId,
+    public JdbcConnectionContext(GridKernalContext ctx, GridNioSession ses, GridSpinBusyLock busyLock, long connId,
         int maxCursors) {
-        super(ctx, connId);
+        super(ctx, ses, connId);
 
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
@@ -150,7 +150,6 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         boolean skipReducerOnUpdate = false;
 
         NestedTxMode nestedTxMode = NestedTxMode.DEFAULT;
-        AuthorizationContext actx = null;
 
         if (ver.compareTo(VER_2_1_5) >= 0)
             lazyExec = reader.readBoolean();
@@ -179,11 +178,11 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
             dataPageScanEnabled = nullableBooleanFromByte(reader.readByte());
 
             updateBatchSize = JdbcUtils.readNullableInteger(reader);
-
-            userAttrs = reader.readMap();
         }
 
-        if (ver.compareTo(VER_2_8_1) >= 0) {
+        if (ver.compareTo(VER_2_9_0) >= 0) {
+            userAttrs = reader.readMap();
+
             byte[] cliFeatures = reader.readByteArray();
 
             features = JdbcThinFeature.enumSet(cliFeatures);
@@ -203,10 +202,12 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
                 throw new IgniteCheckedException("Handshake error: " + e.getMessage(), e);
             }
 
-            actx = authenticate(ses.certificates(), user, passwd);
+            authenticate(ses, user, passwd);
         }
 
         protoCtx = new JdbcProtocolContext(ver, features, true);
+
+        initClientDescriptor("jdbc-thin");
 
         parser = new JdbcMessageParser(ctx, protoCtx);
 
@@ -216,16 +217,14 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
                     if (log.isDebugEnabled())
                         log.debug("Async response: [resp=" + resp.status() + ']');
 
-                    byte[] outMsg = parser.encode(resp);
-
-                    ses.send(outMsg);
+                    ses.send(parser.encode(resp));
                 }
             }
         };
 
         handler = new JdbcRequestHandler(busyLock, sender, maxCursors, distributedJoins, enforceJoinOrder,
             collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, nestedTxMode,
-            dataPageScanEnabled, updateBatchSize, actx, ver, this);
+            dataPageScanEnabled, updateBatchSize, ver, this);
 
         handler.start();
     }

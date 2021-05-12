@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Client
 {
     /// <summary>
     /// Client feature ids. Values represent the index in the bit array.
+    /// Unsupported flags must be commented out.
     /// </summary>
     internal enum ClientBitmaskFeature
     {
@@ -26,6 +27,10 @@ namespace Apache.Ignite.Core.Impl.Client
         ExecuteTaskByName = 1,
         // ClusterStates = 2,
         ClusterGroupGetNodesEndpoints = 3,
-        ClusterGroups = 4
+        ClusterGroups = 4,
+        ServiceInvoke = 5, // The flag is not necessary and exists for legacy reasons
+        // DefaultQueryTimeout = 6, // IGNITE-13692
+        QueryPartitionsBatchSize = 7,
+        BinaryConfiguration = 8
     }
 }

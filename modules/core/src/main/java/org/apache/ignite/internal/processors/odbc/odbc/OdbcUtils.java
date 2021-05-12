@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.odbc.odbc;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.IgniteException;
@@ -25,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.SqlListenerDataTypes;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
@@ -241,5 +244,23 @@ public class OdbcUtils {
         }
 
         return 0;
+    }
+
+    /**
+     * Convert metadata in collection from {@link GridQueryFieldMetadata} to
+     * {@link OdbcColumnMeta}.
+     *
+     * @param meta Internal query field metadata.
+     * @return Odbc query field metadata.
+     */
+    public static Collection<OdbcColumnMeta> convertMetadata(Collection<GridQueryFieldMetadata> meta) {
+        List<OdbcColumnMeta> res = new ArrayList<>();
+
+        if (meta != null) {
+            for (GridQueryFieldMetadata info : meta)
+                res.add(new OdbcColumnMeta(info));
+        }
+
+        return res;
     }
 }

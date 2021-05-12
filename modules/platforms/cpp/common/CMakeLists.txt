@@ -54,6 +54,8 @@ if (WIN32)
     add_library(${TARGET}-objlib OBJECT ${SOURCES})
 
     add_library(${TARGET} SHARED $<TARGET_OBJECTS:${TARGET}-objlib>)
+	
+	set_target_properties(${TARGET} PROPERTIES OUTPUT_NAME "ignite.common")
 
     list(APPEND _target_libs ${TARGET}-objlib)
 else()

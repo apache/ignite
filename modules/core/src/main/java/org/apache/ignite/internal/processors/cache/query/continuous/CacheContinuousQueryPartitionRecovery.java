@@ -143,7 +143,7 @@ class CacheContinuousQueryPartitionRecovery {
 
                     for (CacheContinuousQueryEntry evt : pendingEvts.values()) {
                         if (evt != HOLE && !evt.isFiltered())
-                            entries.add(new CacheContinuousQueryEvent<K, V>(cache, cctx, evt));
+                            entries.add(new CacheContinuousQueryEvent<>(cache, cctx, evt));
                     }
 
                     pendingEvts.clear();

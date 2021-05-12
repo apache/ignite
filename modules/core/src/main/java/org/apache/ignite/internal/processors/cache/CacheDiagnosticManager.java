@@ -38,7 +38,7 @@ public class CacheDiagnosticManager extends GridCacheSharedManagerAdapter {
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
 
-        String name = cctx.kernalContext().pdsFolderResolver().resolveFolders().consistentId().toString();
+        String name = U.maskForFileName(cctx.kernalContext().pdsFolderResolver().resolveFolders().consistentId().toString());
 
         pageLockTrackerManager = new PageLockTrackerManager(log, name);
 

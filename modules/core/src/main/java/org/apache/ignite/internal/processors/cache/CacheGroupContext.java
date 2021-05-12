@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.query.continuous.CounterSkipC
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -115,7 +116,7 @@ public class CacheGroupContext {
     /** */
     private final boolean storeCacheId;
 
-    /** We modify content under lock, by making defencive copy, field always contains unmodifiable list. */
+    /** We modify content under lock, by making defensive copy, field always contains unmodifiable list. */
     private volatile List<GridCacheContext> caches = Collections.unmodifiableList(new ArrayList<>());
 
     /** List of caches with registered CQ listeners. */
@@ -200,7 +201,7 @@ public class CacheGroupContext {
      * @param persistenceEnabled Persistence enabled flag.
      * @param walEnabled Wal enabled flag.
      */
-    CacheGroupContext(
+    public CacheGroupContext(
         GridCacheSharedContext ctx,
         int grpId,
         UUID rcvdFrom,
@@ -824,8 +825,6 @@ public class CacheGroupContext {
         IgniteCheckedException err =
             new IgniteCheckedException("Failed to wait for topology update, cache (or node) is stopping.");
 
-        ctx.evict().onCacheGroupStopped(this);
-
         aff.cancelFutures(err);
 
         preldr.onKernalStop();
@@ -1029,7 +1028,7 @@ public class CacheGroupContext {
         final List<Runnable> procC = skipCtx != null ? skipCtx.processClosures() : null;
 
         if (procC != null) {
-            ctx.kernalContext().closure().runLocalSafe(new Runnable() {
+            ctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
                 @Override public void run() {
                     for (Runnable c : procC)
                         c.run();
@@ -1075,15 +1074,15 @@ public class CacheGroupContext {
             );
 
         if (ccfg.getCacheMode() != LOCAL) {
-            top = new GridDhtPartitionTopologyImpl(ctx, this);
+            top = ctx.kernalContext().resource().resolve(new GridDhtPartitionTopologyImpl(ctx, this));
 
             metrics.onTopologyInitialized();
         }
 
         try {
-            offheapMgr = persistenceEnabled
+            offheapMgr = ctx.kernalContext().resource().resolve(persistenceEnabled
                 ? new GridCacheOffheapManager()
-                : new IgniteCacheOffheapManagerImpl();
+                : new IgniteCacheOffheapManagerImpl());
         }
         catch (Exception e) {
             throw new IgniteCheckedException("Failed to initialize offheap manager", e);
@@ -1095,6 +1094,8 @@ public class CacheGroupContext {
             initializeIO();
 
             ctx.affinity().onCacheGroupCreated(this);
+
+            ctx.evict().onCacheGroupStarted(this);
         }
     }
 
@@ -1206,6 +1207,8 @@ public class CacheGroupContext {
 
     /**
      * Local WAL enabled flag.
+     *
+     * @return {@code False} if a durability (WAL logging) is disabled for a group until rebalancing has finished.
      */
     public boolean localWalEnabled() {
         return localWalEnabled;
@@ -1223,9 +1226,10 @@ public class CacheGroupContext {
      */
     public void globalWalEnabled(boolean enabled) {
         if (globalWalEnabled != enabled) {
-            if (log.isInfoEnabled())
-                log.info("Global WAL state for group=" + cacheOrGroupName() +
-                    " changed from " + globalWalEnabled + " to " + enabled);
+            if (log.isInfoEnabled()) {
+                log.info("Global state for group durability has changed [name=" + cacheOrGroupName() +
+                    ", enabled=" + enabled + ']');
+            }
 
             persistGlobalWalState(enabled);
 
@@ -1240,14 +1244,20 @@ public class CacheGroupContext {
     public void localWalEnabled(boolean enabled, boolean persist) {
         if (localWalEnabled != enabled) {
             if (log.isInfoEnabled()) {
-                log.info("Local WAL state for group=" + cacheOrGroupName() +
-                    " changed from " + localWalEnabled + " to " + enabled);
+                log.info("Local state for group durability has changed [name=" + cacheOrGroupName() +
+                    ", enabled=" + enabled + ']');
             }
 
-            if (persist)
-                persistLocalWalState(enabled);
-
             localWalEnabled = enabled;
+        }
+
+        if (persist) {
+            if (log.isInfoEnabled()) {
+                log.info("Local state for group durability has been logged to WAL [name=" + cacheOrGroupName() +
+                    ", enabled=" + enabled + ']');
+            }
+
+            persistLocalWalState(enabled);
         }
     }
 

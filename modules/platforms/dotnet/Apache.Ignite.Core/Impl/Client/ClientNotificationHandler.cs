@@ -35,12 +35,12 @@ namespace Apache.Ignite.Core.Impl.Client
     {
         /** Handler delegate. */
         public delegate void Handler(IBinaryStream stream, Exception ex);
-        
+
         /** Logger. */
         private readonly ILogger _logger;
 
         /** Nested handler. */
-        private Handler _handler;
+        private volatile Handler _handler;
 
         /** Queue. */
         private List<KeyValuePair<IBinaryStream, Exception>> _queue;
@@ -51,9 +51,17 @@ namespace Apache.Ignite.Core.Impl.Client
         public ClientNotificationHandler(ILogger logger, Handler handler = null)
         {
             Debug.Assert(logger != null);
-            
+
             _logger = logger;
             _handler = handler;
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether handler is set for this instance.
+        /// </summary>
+        public bool HasHandler
+        {
+            get { return _handler != null; }
         }
 
         /// <summary>
@@ -69,7 +77,7 @@ namespace Apache.Ignite.Core.Impl.Client
             {
                 // NOTE: Back pressure control should be added here when needed (e.g. for Continuous Queries).
                 var handler = _handler;
-                
+
                 if (handler != null)
                 {
                     ThreadPool.QueueUserWorkItem(_ => Handle(handler, stream, exception));
@@ -86,10 +94,11 @@ namespace Apache.Ignite.Core.Impl.Client
         /// Sets the handler.
         /// </summary>
         /// <param name="handler">Handler.</param>
-        public ClientNotificationHandler SetHandler(Handler handler)
+        public void SetHandler(Handler handler)
         {
             Debug.Assert(handler != null);
-            
+            Debug.Assert(_handler == null);
+
             lock (this)
             {
                 _handler = handler;
@@ -102,8 +111,6 @@ namespace Apache.Ignite.Core.Impl.Client
                     ThreadPool.QueueUserWorkItem(_ => Drain(handler, queue));
                 }
             }
-
-            return this;
         }
 
         /// <summary>

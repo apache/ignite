@@ -163,4 +163,20 @@ public class MetricUtils {
 
         return names;
     }
+
+    /**
+     * Build SQL-like name from Java code style name.
+     * Some examples:
+     *
+     * cacheName -> CACHE_NAME.
+     * affinitiKeyName -> AFFINITY_KEY_NAME.
+     *
+     * @param name Name to convert.
+     * @return SQL compatible name.
+     */
+    public static String toSqlName(String name) {
+        return name
+            .replaceAll("([A-Z])", "_$1")
+            .replaceAll('\\' + SEPARATOR, "_").toUpperCase();
+    }
 }

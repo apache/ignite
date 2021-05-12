@@ -531,6 +531,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
+            StartTxIfNeeded();
+
             TV val;
             if (CanUsePlatformCache && _platformCache.TryGetValue(key, out val))
             {
@@ -553,6 +555,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
+            StartTxIfNeeded();
+
             TV val;
             if (CanUsePlatformCache && _platformCache.TryGetValue(key, out val))
             {
@@ -573,6 +577,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
+            StartTxIfNeeded();
+
             if (CanUsePlatformCache && _platformCache.TryGetValue(key, out value))
             {
                 return true;
@@ -590,6 +596,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
+            StartTxIfNeeded();
+
             return DoOutOpAsync(CacheOp.GetAsync, w => w.WriteObject(key), reader => GetCacheResult(reader));
         }
 
@@ -597,6 +605,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         public ICollection<ICacheEntry<TK, TV>> GetAll(IEnumerable<TK> keys)
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
+
+            StartTxIfNeeded();
 
             if (CanUsePlatformCache)
             {
@@ -659,6 +669,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         public Task<ICollection<ICacheEntry<TK, TV>>> GetAllAsync(IEnumerable<TK> keys)
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
+
+            StartTxIfNeeded();
 
             if (CanUsePlatformCache)
             {

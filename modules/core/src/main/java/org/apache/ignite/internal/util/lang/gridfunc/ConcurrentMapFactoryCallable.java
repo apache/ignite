@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.util.lang.gridfunc;
 
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteCallable;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Concurrent hash map factory.

@@ -784,7 +784,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                 throw new ClusterTopologyException("Failed to execute the query " +
                     "(all affinity nodes left the grid) [cache=" + cctx.name() +
                     ", qry=" + qry +
-                    ", startTopVer=" + cctx.versions().last().topologyVersion() +
                     ", curTopVer=" + qryMgr.queryTopologyVersion().topologyVersion() + ']');
 
             init();

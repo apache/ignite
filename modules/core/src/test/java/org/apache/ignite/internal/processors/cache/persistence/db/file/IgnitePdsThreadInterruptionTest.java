@@ -145,7 +145,7 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
             worker.start();
 
         // Interrupts should not affect reads.
-        for (int i = 0;i < workers.length / 2; i++)
+        for (int i = 0; i < workers.length / 2; i++)
             workers[i].interrupt();
 
         U.sleep(3_000);

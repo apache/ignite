@@ -21,13 +21,11 @@ import java.util.Collection;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.hadoop.Hadoop;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
@@ -121,21 +119,6 @@ public interface IgniteEx extends Ignite {
      * @return {@code True} if restart mode is enabled, {@code false} otherwise.
      */
     public boolean isRestartEnabled();
-
-    /**
-     * Get IGFS instance returning null if it doesn't exist.
-     *
-     * @param name IGFS name.
-     * @return IGFS.
-     */
-    @Nullable public IgniteFileSystem igfsx(String name);
-
-    /**
-     * Get Hadoop facade.
-     *
-     * @return Hadoop.
-     */
-    public Hadoop hadoop();
 
     /** {@inheritDoc} */
     @Override IgniteClusterEx cluster();

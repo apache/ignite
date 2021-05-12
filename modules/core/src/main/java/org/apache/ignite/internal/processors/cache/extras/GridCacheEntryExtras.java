@@ -31,7 +31,7 @@ public interface GridCacheEntryExtras {
     @Nullable public GridCacheMvcc mvcc();
 
     /**
-     * @param mvcc NVCC.
+     * @param mvcc MVCC.
      * @return Updated extras.
      */
     public GridCacheEntryExtras mvcc(GridCacheMvcc mvcc);

@@ -71,6 +71,7 @@ namespace Apache.Ignite.Core.Impl
             // Generic Ignite exceptions.
             Exs["org.apache.ignite.IgniteException"] = (c, m, e, i) => new IgniteException(m, e);
             Exs["org.apache.ignite.IgniteCheckedException"] = (c, m, e, i) => new IgniteException(m, e);
+            Exs["org.apache.ignite.IgniteIllegalStateException"] = (c, m, e, i) => new IgniteIllegalStateException(m, e);
             Exs["org.apache.ignite.IgniteClientDisconnectedException"] = (c, m, e, i) => new ClientDisconnectedException(m, e, i.GetCluster().ClientReconnectTask);
             Exs["org.apache.ignite.internal.IgniteClientDisconnectedCheckedException"] = (c, m, e, i) => new ClientDisconnectedException(m, e, i.GetCluster().ClientReconnectTask);
             Exs["org.apache.ignite.binary.BinaryObjectException"] = (c, m, e, i) => new BinaryObjectException(m, e);
@@ -95,6 +96,7 @@ namespace Apache.Ignite.Core.Impl
 
             // Transaction exceptions.
             Exs["org.apache.ignite.transactions.TransactionOptimisticException"] = (c, m, e, i) => new TransactionOptimisticException(m, e);
+            Exs["org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException"] = (c, m, e, i) => new TransactionOptimisticException(m, e);
             Exs["org.apache.ignite.transactions.TransactionTimeoutException"] = (c, m, e, i) => new TransactionTimeoutException(m, e);
             Exs["org.apache.ignite.transactions.TransactionRollbackException"] = (c, m, e, i) => new TransactionRollbackException(m, e);
             Exs["org.apache.ignite.transactions.TransactionHeuristicException"] = (c, m, e, i) => new TransactionHeuristicException(m, e);

@@ -20,9 +20,14 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.reader;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
+import java.nio.file.StandardOpenOption;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -31,7 +36,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.pagemem.wal.record.SnapshotRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
@@ -40,10 +44,12 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -144,13 +150,13 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
     public void testStrictBounds() throws Exception {
         String dir = createWalFiles();
 
-        FileWALPointer lowBound = null, highBound = null;
+        WALPointer lowBound = null, highBound = null;
 
         for (IgniteBiTuple<WALPointer, WALRecord> p : createWalIterator(dir, null, null, false)) {
             if (lowBound == null)
-                lowBound = (FileWALPointer) p.get1();
+                lowBound = p.get1();
 
-            highBound = (FileWALPointer) p.get1();
+            highBound = p.get1();
         }
 
         assertNotNull(lowBound);
@@ -159,19 +165,19 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
 
         createWalIterator(dir, lowBound, highBound, true);
 
-        final FileWALPointer lBound = lowBound;
-        final FileWALPointer hBound = highBound;
+        final WALPointer lBound = lowBound;
+        final WALPointer hBound = highBound;
 
         //noinspection ThrowableNotThrown
         GridTestUtils.assertThrows(log, () -> {
-            createWalIterator(dir, new FileWALPointer(lBound.index() - 1, 0, 0), hBound, true);
+            createWalIterator(dir, new WALPointer(lBound.index() - 1, 0, 0), hBound, true);
 
             return 0;
         }, IgniteCheckedException.class, null);
 
         //noinspection ThrowableNotThrown
         GridTestUtils.assertThrows(log, () -> {
-            createWalIterator(dir, lBound, new FileWALPointer(hBound.index() + 1, 0, 0), true);
+            createWalIterator(dir, lBound, new WALPointer(hBound.index() + 1, 0, 0), true);
 
             return 0;
         }, IgniteCheckedException.class, null);
@@ -190,6 +196,35 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
 
             return 0;
         }, IgniteCheckedException.class, null);
+    }
+
+    /**
+     * Checks if binary-metadata-writer thread is not hung after standalone iterator is closed.
+     *
+     * @throws Exception if test failed.
+     */
+    @Test
+    public void testBinaryMetadataWriterStopped() throws Exception {
+        String dir = createWalFiles();
+
+        final IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(new NullLogger());
+
+        IgniteWalIteratorFactory.IteratorParametersBuilder iterParametersBuilder =
+            new IgniteWalIteratorFactory.IteratorParametersBuilder().filesOrDirs(dir)
+                .pageSize(4096);
+
+        try (WALIterator stIt = factory.iterator(iterParametersBuilder)) {
+        }
+
+        boolean binaryMetadataWriterStopped = GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                Set<String> threadNames = Thread.getAllStackTraces().keySet().stream().map(Thread::getName).collect(Collectors.toSet());
+
+                return threadNames.stream().noneMatch(t -> t.startsWith("binary-metadata-writer"));
+            }
+        }, 10_000L);
+
+        assertTrue(binaryMetadataWriterStopped);
     }
 
     /**
@@ -224,7 +259,7 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
      * @param highBound High bound.
      * @param strictCheck Strict check.
      */
-    private WALIterator createWalIterator(String walDir, FileWALPointer lowBound, FileWALPointer highBound, boolean strictCheck)
+    private WALIterator createWalIterator(String walDir, WALPointer lowBound, WALPointer highBound, boolean strictCheck)
                     throws IgniteCheckedException {
         IteratorParametersBuilder params = new IteratorParametersBuilder();
 
@@ -262,6 +297,8 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
     private static class CountedFileIOFactory extends RandomAccessFileIOFactory {
         /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
+            assertEquals(Collections.singletonList(StandardOpenOption.READ), Arrays.asList(modes));
+
             return new CountedFileIO(file, modes);
         }
     }

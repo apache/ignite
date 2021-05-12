@@ -28,6 +28,7 @@ import org.apache.ignite.internal.visor.VisorDataTransferObject;
 /**
  * Argument for {@link VisorIgfsResetMetricsTask}.
  */
+@Deprecated
 public class VisorIgfsResetMetricsTaskArg extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;

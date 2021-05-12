@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -130,7 +131,7 @@ public final class GridDhtTxEnlistFuture extends GridDhtTxAbstractEnlistFuture<G
                 res.addEntryProcessResult(cctx, key, null, invokeRes.result(), invokeRes.error(), keepBinary);
         }
         else if (needRes)
-            res.set(cctx, txRes.prevValue(), txRes.success(), keepBinary);
+            res.set(cctx, txRes.prevValue(), txRes.success(), keepBinary, U.deploymentClassLoader(cctx.kernalContext(), deploymentLdrId));
     }
 
     /** {@inheritDoc} */

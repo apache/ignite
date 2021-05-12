@@ -49,14 +49,6 @@ public class IgniteThreadPoolSizeTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testIgfsThreadPoolSize() throws Exception {
-        testWrongPoolSize(configuration().setIgfsThreadPoolSize(WRONG_VALUE));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testManagementThreadPoolSize() throws Exception {
         testWrongPoolSize(configuration().setManagementThreadPoolSize(WRONG_VALUE));
     }

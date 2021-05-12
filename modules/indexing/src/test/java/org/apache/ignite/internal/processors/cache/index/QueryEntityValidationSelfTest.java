@@ -200,4 +200,72 @@ public class QueryEntityValidationSelfTest extends AbstractIndexingCommonTest {
             }
         }, CacheException.class, "Property with name 'notUniqueId' already exists");
     }
+
+    /**
+     * Test class for sql queryable test key with unique annotation's name property.
+     */
+    private static class TestKeyWithUniqueName {
+        /** Non-unique id. */
+        @QuerySqlField(name = "Name1")
+        int notUniqueId;
+    }
+
+    /**
+     * Test class for sql queryable test value with unique annotation's name property.
+     */
+    private static class TestValueWithUniqueName {
+        /** Not unique id. */
+        @QuerySqlField(name = "Name2")
+        int notUniqueId;
+    }
+
+    /**
+     * Test to check validation of known fields names with unique QuerySqlField annotation's name properties
+     *
+     * Steps:
+     * 1) Create 2 classes with same field name, but with different name property for QuerySqlField annotation
+     * 2) Check that CacheConfiguration.setIndexedTypes() works correctly
+     */
+    @Test
+    public void testUniqueNameInAnnotation() {
+        final CacheConfiguration<TestKeyWithUniqueName, TestValueWithUniqueName> ccfg = new CacheConfiguration<TestKeyWithUniqueName, TestValueWithUniqueName>().setName(CACHE_NAME);
+
+        assertNotNull(ccfg.setIndexedTypes(TestKeyWithUniqueName.class, TestValueWithUniqueName.class));
+    }
+
+    /**
+     * Test class for sql queryable test key with not unique annotation's name property.
+     */
+    private static class TestKeyWithNotUniqueName {
+        /** Unique id. */
+        @QuerySqlField(name = "Name3")
+        int uniqueId1;
+    }
+
+    /**
+     * Test class for sql queryable test value with not unique annotation's name property.
+     */
+    private static class TestValueWithNotUniqueName {
+        /** Unique id. */
+        @QuerySqlField(name = "Name3")
+        int uniqueId2;
+    }
+
+    /**
+     * Test to check validation of known fields names with not unique QuerySqlField annotation's name properties
+     *
+     * Steps:
+     * 1) Create 2 classes with different field names and with same name property for QuerySqlField annotation
+     * 2) Check that CacheConfiguration.setIndexedTypes() fails with "Property with name ... already exists" exception
+     */
+    @Test
+    public void testNotUniqueNameInAnnotation() {
+        final CacheConfiguration<TestKeyWithNotUniqueName, TestValueWithNotUniqueName> ccfg = new CacheConfiguration<TestKeyWithNotUniqueName, TestValueWithNotUniqueName>().setName(CACHE_NAME);
+
+        GridTestUtils.assertThrows(log, (Callable<Void>)() -> {
+            ccfg.setIndexedTypes(TestKeyWithNotUniqueName.class, TestValueWithNotUniqueName.class);
+
+            return null;
+        }, CacheException.class, "Property with name 'Name3' already exists");
+    }
 }

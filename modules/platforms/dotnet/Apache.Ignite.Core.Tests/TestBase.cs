@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests
     /// <summary>
     /// Code configuration test base.
     /// </summary>
+    [TestFixture]
     public abstract class TestBase
     {
         /** */

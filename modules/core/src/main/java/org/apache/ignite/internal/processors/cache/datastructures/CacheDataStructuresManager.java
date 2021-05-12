@@ -135,6 +135,16 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
         setsMap = new ConcurrentHashMap<>(10);
     }
 
+    /** @return Sets map. */
+    public ConcurrentMap<IgniteUuid, GridCacheSetProxy> sets() {
+        return setsMap;
+    }
+
+    /** @return Queue map. */
+    public ConcurrentMap<IgniteUuid, GridCacheQueueProxy> queues() {
+        return queuesMap;
+    }
+
     /** {@inheritDoc} */
     @Override protected void onKernalStart0() throws IgniteCheckedException {
         try {

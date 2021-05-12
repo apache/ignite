@@ -30,7 +30,7 @@ abstract class ZkDiscoveryEventData implements Serializable {
     static final byte ZK_EVT_NODE_JOIN = 1;
 
     /** */
-    static final byte ZK_EVT_NODE_FAILED = 2;
+    static final byte ZK_EVT_NODE_LEFT = 2;
 
     /** */
     static final byte ZK_EVT_CUSTOM_EVT = 3;
@@ -59,7 +59,7 @@ abstract class ZkDiscoveryEventData implements Serializable {
      * @param topVer Topology version.
      */
     ZkDiscoveryEventData(long evtId, byte evtType, long topVer) {
-        assert evtType == ZK_EVT_NODE_JOIN || evtType == ZK_EVT_NODE_FAILED || evtType == ZK_EVT_CUSTOM_EVT : evtType;
+        assert evtType == ZK_EVT_NODE_JOIN || evtType == ZK_EVT_NODE_LEFT || evtType == ZK_EVT_CUSTOM_EVT : evtType;
 
         this.evtId = evtId;
         this.evtType = evtType;

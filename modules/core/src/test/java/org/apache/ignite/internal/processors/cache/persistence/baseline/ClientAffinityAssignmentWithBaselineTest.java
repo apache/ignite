@@ -16,7 +16,6 @@
 */
 package org.apache.ignite.internal.processors.cache.persistence.baseline;
 
-import javax.cache.CacheException;
 import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -32,6 +31,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;

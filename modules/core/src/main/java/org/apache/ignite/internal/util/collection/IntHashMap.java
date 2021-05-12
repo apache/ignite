@@ -181,6 +181,32 @@ public class IntHashMap<V> implements IntMap<V> {
     }
 
     /** {@inheritDoc} */
+    @Override public int[] keys() {
+        int[] keys = new int[size];
+
+        int idx = 0;
+
+        for (Entry<V> entry : entries)
+            if (entry != null)
+                keys[idx++] = entry.key;
+
+        return keys;
+    }
+
+    /** {@inheritDoc} */
+    @Override public V[] values() {
+        V[] vals = (V[])new Object[size];
+
+        int idx = 0;
+
+        for (Entry<V> entry : entries)
+            if (entry != null)
+                vals[idx++] = entry.val;
+
+        return vals;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean containsKey(int key) {
         return find(key) >= 0;
     }

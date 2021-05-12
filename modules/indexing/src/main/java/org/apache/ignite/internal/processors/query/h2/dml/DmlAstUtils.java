@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.processors.query.h2.dml;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -54,6 +56,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.h2.command.Parser;
 import org.h2.expression.Expression;
+import org.h2.index.Index;
 import org.h2.table.Column;
 import org.h2.table.Table;
 import org.h2.util.IntArray;
@@ -111,7 +114,7 @@ public final class DmlAstUtils {
 
                 args[i] = arr;
 
-                GridSqlColumn newCol = new GridSqlColumn(null, from, null,"TABLE", colName);
+                GridSqlColumn newCol = new GridSqlColumn(null, from, null, "TABLE", colName);
 
                 newCol.resultType(cols[i].resultType());
 
@@ -349,6 +352,7 @@ public final class DmlAstUtils {
 
         for (GridSqlColumn c : update.cols()) {
             String newColName = Parser.quoteIdentifier("_upd_" + c.columnName());
+
             // We have to use aliases to cover cases when the user
             // wants to update _val field directly (if it's a literal)
             GridSqlAlias alias = new GridSqlAlias(newColName, elementOrDefault(update.set().get(c.columnName()), c), true);
@@ -358,10 +362,72 @@ public final class DmlAstUtils {
 
         GridSqlElement where = update.where();
 
+        // On no MVCC mode we cannot use lazy mode when UPDATE query contains index with updated columns
+        // and that index may be chosen to scan by WHERE condition
+        // because in this case any rows update may be updated several times.
+        // e.g. in the cases below we cannot use lazy mode:
+        //
+        // 1. CREATE INDEX idx on test(val)
+        //    UPDATE test SET val = val + 1 WHERE val >= ?
+        //
+        // 2. CREATE INDEX idx on test(val0, val1)
+        //    UPDATE test SET val1 = val1 + 1 WHERE val0 >= ?
+        mapQry.canBeLazy(!isIndexWithUpdateColumnsMayBeUsed(
+            gridTbl,
+            update.cols().stream()
+                .map(GridSqlColumn::column)
+                .collect(Collectors.toSet()),
+            extractColumns(gridTbl, where)));
+
         mapQry.where(where);
         mapQry.limit(update.limit());
 
         return mapQry;
+    }
+
+    /**
+     * @return Set columns of the specified table that are used in expression.
+     */
+    private static Set<Column> extractColumns(GridH2Table tbl, GridSqlAst expr) {
+        if (expr == null)
+            return Collections.emptySet();
+
+        if (expr instanceof GridSqlColumn && ((GridSqlColumn)expr).column().getTable().equals(tbl))
+            return Collections.singleton(((GridSqlColumn)expr).column());
+
+        HashSet<Column> set = new HashSet<>();
+
+        for (int i = 0; i < expr.size(); ++i)
+            set.addAll(extractColumns(tbl, expr.child(i)));
+
+        return set;
+    }
+
+    /**
+     * @return {@code true} if the index contains update columns may be potentially used for scan.
+     */
+    private static boolean isIndexWithUpdateColumnsMayBeUsed(
+        GridH2Table tbl,
+        Set<Column> updateCols,
+        Set<Column> whereCols) {
+        if (F.isEmpty(whereCols))
+            return false;
+
+        if (updateCols.size() == 1 && whereCols.size() == 1
+            && tbl.rowDescriptor().isValueColumn(F.first(updateCols).getColumnId())
+            && tbl.rowDescriptor().isValueColumn(F.first(whereCols).getColumnId()))
+            return true;
+
+        for (Index idx : tbl.getIndexes()) {
+            if (idx.equals(tbl.getPrimaryKey()) || whereCols.contains(idx.getColumns()[0])) {
+                for (Column idxCol : idx.getColumns()) {
+                    if (updateCols.contains(idxCol))
+                        return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /**

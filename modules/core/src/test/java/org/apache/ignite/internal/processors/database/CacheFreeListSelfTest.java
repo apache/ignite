@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVers
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
@@ -514,8 +515,14 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
 
         IgniteConfiguration cfg = new IgniteConfiguration().setMetricExporterSpi(new NoopMetricExporterSpi());
 
+        GridTestKernalContext ctx = new GridTestKernalContext(new GridTestLog4jLogger(), cfg);
+
+        ctx.add(new GridMetricManager(ctx));
+        ctx.add(new PerformanceStatisticsProcessor(ctx));
+
         DataRegionMetricsImpl regionMetrics = new DataRegionMetricsImpl(plcCfg,
-            new GridMetricManager(new GridTestKernalContext(new GridTestLog4jLogger(), cfg)),
+            ctx.metric(),
+            ctx.performanceStatistics(),
             NO_OP_METRICS);
 
         DataRegion dataRegion = new DataRegion(pageMem, plcCfg, regionMetrics, new NoOpPageEvictionTracker());
@@ -530,7 +537,8 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
             true,
             null,
             new GridTestKernalContext(log),
-            null
+            null,
+            PageIdAllocator.FLAG_IDX
         );
     }
 
@@ -705,6 +713,10 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Nullable @Override public <T> T value(CacheObjectValueContext ctx, boolean cpy) {
+            return value(ctx, cpy, null);
+        }
+
+        @Override public <T> @Nullable T value(CacheObjectValueContext ctx, boolean cpy, ClassLoader ldr) {
             return (T)data;
         }
 

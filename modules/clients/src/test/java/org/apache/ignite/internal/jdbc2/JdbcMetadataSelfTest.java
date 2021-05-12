@@ -109,7 +109,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      */
     protected CacheConfiguration cacheConfiguration(@NotNull String name) {
-        CacheConfiguration<?,?> cache = defaultCacheConfiguration();
+        CacheConfiguration<?, ?> cache = defaultCacheConfiguration();
 
         cache.setName(name);
         cache.setCacheMode(PARTITIONED);
@@ -345,7 +345,19 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             "STRIPED_THREADPOOL_QUEUE",
             "DATASTREAM_THREADPOOL_QUEUE",
             "CACHE_GROUP_PAGE_LISTS",
-            "PARTITION_STATES"
+            "PARTITION_STATES",
+            "BINARY_METADATA",
+            "DISTRIBUTED_METASTORAGE",
+            "METRICS",
+            "DS_QUEUES",
+            "DS_SETS",
+            "DS_ATOMICSEQUENCES",
+            "DS_ATOMICLONGS",
+            "DS_ATOMICREFERENCES",
+            "DS_ATOMICSTAMPED",
+            "DS_COUNTDOWNLATCHES",
+            "DS_SEMAPHORES",
+            "DS_REENTRANTLOCKS"
         ));
 
         Set<String> actViews = new HashSet<>();
@@ -445,6 +457,21 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             assertIsEmpty(meta.getSuperTables(invalidCat, "%", "%"));
             assertIsEmpty(meta.getSchemas(invalidCat, null));
             assertIsEmpty(meta.getPseudoColumns(invalidCat, null, "%", ""));
+        }
+    }
+
+    /**
+     * Check JDBC support flags.
+     */
+    @Test
+    public void testCheckSupports() throws SQLException {
+        try (Connection conn = DriverManager.getConnection(BASE_URL)) {
+            DatabaseMetaData meta = conn.getMetaData();
+
+            assertTrue(meta.supportsANSI92EntryLevelSQL());
+            assertTrue(meta.supportsAlterTableWithAddColumn());
+            assertTrue(meta.supportsAlterTableWithDropColumn());
+            assertTrue(meta.nullPlusNonNullIsNull());
         }
     }
 

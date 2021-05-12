@@ -25,10 +25,12 @@ import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCorrupte
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsMarshallerMappingRestoreOnNodeStartTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsTxCacheRebalancingTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsTxHistoricalRebalancingTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePersistenceSequentialCheckpointTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePersistentStoreCacheGroupsTest;
 import org.apache.ignite.internal.processors.cache.persistence.PersistenceDirectoryWarningLoggingTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgniteCacheGroupsWithRestartsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgniteLogicalRecoveryTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgniteLogicalRecoveryWithParamsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsMultiNodePutGetRestartTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPageEvictionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgniteSequentialNodeCrashRecoveryTest;
@@ -58,6 +60,7 @@ import org.junit.runners.Suite;
     IgnitePdsPageEvictionTest.class,
     IgnitePdsMultiNodePutGetRestartTest.class,
     IgnitePersistentStoreCacheGroupsTest.class,
+    IgnitePersistenceSequentialCheckpointTest.class,
     PersistenceDirectoryWarningLoggingTest.class,
     WalPathsTest.class,
     WalRecoveryTxLogicalRecordsTest.class,
@@ -91,6 +94,7 @@ import org.junit.runners.Suite;
     IgnitePdsCorruptedIndexTest.class,
 
     IgniteLogicalRecoveryTest.class,
+    IgniteLogicalRecoveryWithParamsTest.class,
 
     IgniteSequentialNodeCrashRecoveryTest.class,
 

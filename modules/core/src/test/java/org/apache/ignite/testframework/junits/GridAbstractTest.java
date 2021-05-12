@@ -21,6 +21,8 @@ import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryMXBean;
+import java.lang.management.MemoryUsage;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
@@ -44,6 +46,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 import javax.cache.configuration.Factory;
 import javax.cache.configuration.FactoryBuilder;
 import javax.management.DynamicMBean;
@@ -78,9 +81,11 @@ import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryEnumCache;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.managers.systemview.JmxSystemViewExporterSpi;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.processors.resource.DependencyResolver;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.GridClassLoaderCache;
 import org.apache.ignite.internal.util.GridTestClockTimer;
@@ -111,7 +116,6 @@ import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
-import org.apache.ignite.spi.systemview.jmx.JmxSystemViewExporterSpi;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
@@ -132,6 +136,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.AssumptionViolatedException;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -151,6 +156,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELET
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CLIENT_CACHE_CHANGE_MESSAGE_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_TEST_ENV;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_SENSITIVE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
@@ -158,6 +164,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.GridKernalState.DISCONNECTED;
+import static org.apache.ignite.internal.IgnitionEx.gridx;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValueHierarchy;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
@@ -196,6 +203,12 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
 
     /** Loggers with changed log level for test's purposes. */
     private static final transient Map<Logger, Level> changedLevels = new ConcurrentHashMap<>();
+
+    /** */
+    private static final MemoryMXBean memoryMxBean = ManagementFactory.getMemoryMXBean();
+
+    /** */
+    private static final int BYTES_IN_MEGABYTE = 1024 * 1024;
 
     /** */
     protected static final String DEFAULT_CACHE_NAME = "default";
@@ -270,6 +283,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         System.setProperty(IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY, "1");
         System.setProperty(IGNITE_CLIENT_CACHE_CHANGE_MESSAGE_TIMEOUT, "1000");
         System.setProperty(IGNITE_LOG_CLASSPATH_CONTENT_ON_STARTUP, "false");
+        System.setProperty(IGNITE_TEST_ENV, "true");
 
         S.setIncludeSensitiveSupplier(() -> getBoolean(IGNITE_TO_STRING_INCLUDE_SENSITIVE, true));
 
@@ -671,6 +685,8 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     private void beforeFirstTest() throws Exception {
         sharedStaticIpFinder = new TcpDiscoveryVmIpFinder(true);
 
+        clsLdr = Thread.currentThread().getContextClassLoader();
+
         U.quietAndInfo(log(), ">>> Starting test class: " + testClassDescription() + " <<<");
 
         if (isSafeTopology())
@@ -696,6 +712,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
             t.printStackTrace();
 
             try {
+                // This is a very questionable solution.
                 cleanUpTestEnviroment();
             }
             catch (Exception e) {
@@ -716,7 +733,8 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     private void cleanUpTestEnviroment() throws Exception {
         long dur = System.currentTimeMillis() - ts;
 
-        U.quietAndInfo(log(),">>> Stopping test: " + testDescription() + " in " + dur + " ms <<<");
+        U.quietAndInfo(log(), ">>> Stopping test: " + testDescription() + " in " + dur + " ms <<<");
+        printJvmMemoryStatistic();
 
         try {
             afterTest();
@@ -731,6 +749,22 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
 
             cleanReferences();
         }
+    }
+
+    /** Prints JVM memory statistic. */
+    private void printJvmMemoryStatistic() {
+        U.quietAndInfo(log(),
+            ">>> Heap: " + createPrettyMemoryString(memoryMxBean.getHeapMemoryUsage()) + " <<<");
+
+        U.quietAndInfo(log(),
+            ">>> Non-Heap: " + createPrettyMemoryString(memoryMxBean.getNonHeapMemoryUsage()) + " <<<");
+    }
+
+    /** */
+    private static String createPrettyMemoryString(MemoryUsage usage) {
+        return usage.getUsed() / BYTES_IN_MEGABYTE + " MB used / "
+            + usage.getCommitted() / BYTES_IN_MEGABYTE + " MB commited / "
+            + usage.getMax() / BYTES_IN_MEGABYTE + " MB max";
     }
 
     /**
@@ -794,7 +828,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @return First started grid.
      * @throws Exception If failed.
      */
-    protected final IgniteEx startGrids(int cnt) throws Exception {
+    protected IgniteEx startGrids(int cnt) throws Exception {
         assert cnt > 0;
 
         IgniteEx ignite = null;
@@ -935,6 +969,25 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /**
+     * Starts new grid with given index and overriding {@link DependencyResolver}.
+     *
+     * @param idx Index of the grid to start.
+     * @param rslvr Dependency provider.
+     * @return Started grid.
+     * @throws Exception If anything failed.
+     */
+    protected IgniteEx startGrid(int idx, DependencyResolver rslvr) throws Exception {
+        IgnitionEx.dependencyResolver(rslvr);
+
+        try {
+            return startGrid(getTestIgniteInstanceName(idx));
+        }
+        finally {
+            IgnitionEx.dependencyResolver(null);
+        }
+    }
+
+    /**
      * Starts new grid with given index.
      *
      * @param idx Index of the grid to start.
@@ -983,6 +1036,34 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /**
+     * Starts new grid with given index.
+     *
+     * @param idx Index of the grid to start.
+     * @param cfgC Configuration mutator. Can be used to avoid oversimplification of {@link #getConfiguration()}.
+     * @return Started grid.
+     * @throws Exception If anything failed.
+     */
+    protected IgniteEx startGrid(int idx, Consumer<IgniteConfiguration> cfgC) throws Exception {
+        return startGrid(getTestIgniteInstanceName(idx), cfg -> {
+            cfgC.accept(cfg);
+
+            return cfg;
+        });
+    }
+
+    /**
+     * Starts new grid with given index.
+     *
+     * @param idx Index of the grid to start.
+     * @param cfgOp Configuration mutator. Can be used to avoid overcomplification of {@link #getConfiguration()}.
+     * @return Started grid.
+     * @throws Exception If anything failed.
+     */
+    protected IgniteEx startGrid(int idx, UnaryOperator<IgniteConfiguration> cfgOp) throws Exception {
+        return startGrid(getTestIgniteInstanceName(idx), cfgOp);
+    }
+
+    /**
      * Starts new client grid with given index.
      *
      * @param idx Index of the grid to start.
@@ -991,6 +1072,25 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      */
     protected IgniteEx startClientGrid(int idx) throws Exception {
         return startClientGrid(getTestIgniteInstanceName(idx));
+    }
+
+    /**
+     * Starts new client grid with given index.
+     *
+     * @param idx Index of the grid to start.
+     * @param rslvr Dependency provider.
+     * @return Started grid.
+     * @throws Exception If anything failed.
+     */
+    protected IgniteEx startClientGrid(int idx, DependencyResolver rslvr) throws Exception {
+        IgnitionEx.dependencyResolver(rslvr);
+
+        try {
+            return startClientGrid(getTestIgniteInstanceName(idx));
+        }
+        finally {
+            IgnitionEx.dependencyResolver(null);
+        }
     }
 
     /**
@@ -1049,6 +1149,18 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * Starts new grid with given name.
      *
      * @param igniteInstanceName Ignite instance name.
+     * @param cfgOp Configuration mutator. Can be used to avoid overcomplification of {@link #getConfiguration()}.
+     * @return Started grid.
+     * @throws Exception If anything failed.
+     */
+    protected IgniteEx startGrid(String igniteInstanceName, UnaryOperator<IgniteConfiguration> cfgOp) throws Exception {
+        return (IgniteEx)startGrid(igniteInstanceName, cfgOp, null);
+    }
+
+    /**
+     * Starts new grid with given name.
+     *
+     * @param igniteInstanceName Ignite instance name.
      * @param ctx Spring context.
      * @return Started grid.
      * @throws Exception If failed.
@@ -1083,12 +1195,32 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * Starts new grid with given name.
      *
      * @param igniteInstanceName Ignite instance name.
+     * @param cfgOp Configuration mutator. Can be used to avoid overcomplification of {@link #getConfiguration()}.
+     * @param ctx Spring context.
+     * @return Started grid.
+     * @throws Exception If anything failed.
+     */
+    protected Ignite startGrid(String igniteInstanceName, UnaryOperator<IgniteConfiguration> cfgOp, GridSpringResourceContext ctx) throws Exception {
+        IgniteConfiguration cfg = optimize(getConfiguration(igniteInstanceName));
+
+        if (cfgOp != null)
+            cfg = cfgOp.apply(cfg);
+
+        return startGrid(igniteInstanceName, cfg, ctx);
+    }
+
+    /**
+     * Starts new grid with given name.
+     *
+     * @param igniteInstanceName Ignite instance name.
      * @param ctx Spring context.
      * @return Started grid.
      * @throws Exception If failed.
      */
     protected Ignite startGrid(String igniteInstanceName, IgniteConfiguration cfg, GridSpringResourceContext ctx)
         throws Exception {
+        limitMaxMemoryOfDataStorageConfiguration(cfg);
+
         if (!isRemoteJvm(igniteInstanceName)) {
             IgniteUtils.setCurrentIgniteName(igniteInstanceName);
 
@@ -1134,6 +1266,31 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /**
+     * Limits max memory in data storage if they are default.
+     * By default max memory is 20% of total memory, which is too much for tests.
+     * Required for containerized build servers.
+     */
+    private void limitMaxMemoryOfDataStorageConfiguration(IgniteConfiguration cfg) {
+        DataStorageConfiguration dataStorageCfg = cfg.getDataStorageConfiguration();
+
+        if (dataStorageCfg == null)
+            return;
+
+        updateMaxSizeInRegion(dataStorageCfg.getDefaultDataRegionConfiguration());
+
+        if (dataStorageCfg.getDataRegionConfigurations() != null) {
+            for (DataRegionConfiguration configuration : dataStorageCfg.getDataRegionConfigurations())
+                updateMaxSizeInRegion(configuration);
+        }
+    }
+
+    /** */
+    private static void updateMaxSizeInRegion(DataRegionConfiguration configuration) {
+        if (configuration.getMaxSize() == DataStorageConfiguration.DFLT_DATA_REGION_MAX_SIZE)
+            configuration.setMaxSize(256 * BYTES_IN_MEGABYTE);
+    }
+
+    /**
      * Starts new grid at another JVM with given name.
      *
      * @param igniteInstanceName Ignite instance name.
@@ -1144,7 +1301,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      */
     protected Ignite startRemoteGrid(String igniteInstanceName, IgniteConfiguration cfg, GridSpringResourceContext ctx)
         throws Exception {
-        return startRemoteGrid(igniteInstanceName, cfg, ctx,true);
+        return startRemoteGrid(igniteInstanceName, cfg, ctx, true);
     }
 
     /**
@@ -1315,13 +1472,33 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /**
+     * Stop grid waiting for it to come up
      * @param igniteInstanceName Ignite instance name.
      * @param cancel Cancel flag.
      * @param awaitTop Await topology change flag.
      */
     protected void stopGrid(@Nullable String igniteInstanceName, boolean cancel, boolean awaitTop) {
+        stopGrid0(igniteInstanceName, cancel, awaitTop, false);
+    }
+
+    /**
+     * Stop grid without waiting for it to come up
+     * @param igniteInstanceName Ignite instance name.
+     * @param cancel Cancel flag.
+     * @param awaitTop Await topology change flag.
+     */
+    protected void stopGridx(@Nullable String igniteInstanceName, boolean cancel, boolean awaitTop) {
+        stopGrid0(igniteInstanceName, cancel, awaitTop, true);
+    }
+
+    /**
+     * @param igniteInstanceName Ignite instance name.
+     * @param cancel Cancel flag.
+     * @param awaitTop Await topology change flag.
+     */
+    private void stopGrid0(@Nullable String igniteInstanceName, boolean cancel, boolean awaitTop, boolean stopNotStarted) {
         try {
-            IgniteEx ignite = grid(igniteInstanceName);
+            IgniteEx ignite = stopNotStarted ? gridx(igniteInstanceName) : grid(igniteInstanceName);
 
             assert ignite != null : "Ignite returned null grid for name: " + igniteInstanceName;
 
@@ -1333,7 +1510,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
                 IgniteUtils.setCurrentIgniteName(igniteInstanceName);
 
                 try {
-                    G.stop(igniteInstanceName, cancel);
+                    IgnitionEx.stop(igniteInstanceName, cancel, null, stopNotStarted);
                 }
                 finally {
                     IgniteUtils.setCurrentIgniteName(null);
@@ -1363,14 +1540,24 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /**
+     * Stop all grids waiting for them to start
      * @param cancel Cancel flag.
      */
     protected void stopAllGrids(boolean cancel) {
+        stopAllGrids(cancel, true);
+    }
+
+    /**
+     * Stop all grids
+     * @param cancel Cancel flag.
+     * @param wait Wait for grids to start first.
+     */
+    protected void stopAllGrids(boolean cancel, boolean wait) {
         try {
             Collection<Ignite> clients = new ArrayList<>();
             Collection<Ignite> srvs = new ArrayList<>();
 
-            for (Ignite g : G.allGrids()) {
+            for (Ignite g : wait ? G.allGrids() : IgnitionEx.allGridsx()) {
                 if (g.configuration().getDiscoverySpi().isClientMode())
                     clients.add(g);
                 else
@@ -1378,10 +1565,16 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
             }
 
             for (Ignite g : clients)
-                stopGrid(g.name(), cancel, false);
+                if (wait)
+                    stopGrid(g.name(), cancel, false);
+                else
+                    stopGridx(g.name(), cancel, false);
 
             for (Ignite g : srvs)
-                stopGrid(g.name(), cancel, false);
+                if (wait)
+                    stopGrid(g.name(), cancel, false);
+                else
+                    stopGridx(g.name(), cancel, false);
 
             List<Ignite> nodes = G.allGrids();
 
@@ -1639,6 +1832,9 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /**
+     * Returns a new instance of ignite configuration.
+     * Be aware that this method is not called by {@link #startGrid(int)}.
+     *
      * @return Grid test configuration.
      * @throws Exception If failed.
      */
@@ -2270,7 +2466,12 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
             Throwable t = ex.get();
 
             if (t != null) {
-                U.error(log, "Test failed.", t);
+                if (t instanceof AssumptionViolatedException)
+                    U.quietAndInfo(log, "Test ignored [test=" + testDescription() + ", msg=" + t.getMessage() + "]");
+                else {
+                    U.error(log, "Test failed [test=" + testDescription() +
+                        ", duration=" + (System.currentTimeMillis() - ts) + "]", t);
+                }
 
                 throw t;
             }
@@ -2305,6 +2506,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         LT.clear();
 
         U.quietAndInfo(log(), ">>> Starting test: " + testDescription() + " <<<");
+        printJvmMemoryStatistic();
 
         try {
             beforeTest();

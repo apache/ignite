@@ -25,6 +25,7 @@ import org.apache.ignite.lang.IgniteUuid;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BASELINE_AUTO_ADJUST_LOG_INTERVAL;
 import static org.apache.ignite.IgniteSystemProperties.getLong;
+import static org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineTopologyUpdater.DFLT_BASELINE_AUTO_ADJUST_LOG_INTERVAL;
 
 /**
  * This class able to add task of set baseline with timeout to queue. In one time only one task can be in queue. Every
@@ -56,16 +57,39 @@ class BaselineAutoAdjustScheduler {
     }
 
     /**
-     * Adding task to queue with delay and remove previous one.
+     * Adds a new task to queue based on the given {@code baselineAutoAdjustData} with delay and remove previous one.
+     * A new task can be rejected in case of the given {@code baselineAutoAdjustData} is expired or
+     * the target topology version is less than the already scheduled version.
      *
      * @param baselineAutoAdjustData Data for changing baseline.
      * @param delay Delay after which set baseline should be started.
+     * @return {@code true} If a new task was successfully scheduled.
      */
-    public synchronized void schedule(BaselineAutoAdjustData baselineAutoAdjustData, long delay) {
-        if (baselineTimeoutObj != null)
-            timeoutProcessor.removeTimeoutObject(baselineTimeoutObj);
+    public synchronized boolean schedule(BaselineAutoAdjustData baselineAutoAdjustData, long delay) {
+        if (baselineAutoAdjustExecutor.isExecutionExpired(baselineAutoAdjustData)) {
+            if (log.isDebugEnabled())
+                log.debug("Baseline auto adjust data is expired (will not be scheduled) [data=" + baselineAutoAdjustData + ']');
 
-        timeoutProcessor.addTimeoutObject(
+            return false;
+        }
+
+        if (baselineTimeoutObj != null) {
+            long targetVer = baselineAutoAdjustData.getTargetTopologyVersion();
+            long alreadyScheduledVer = baselineTimeoutObj.baselineAutoAdjustData.getTargetTopologyVersion();
+
+            if (alreadyScheduledVer > targetVer) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Baseline auto adjust data is targeted to obsolete version (will not be scheduled) " +
+                        "[data=" + baselineAutoAdjustData + ", scheduled=" + baselineTimeoutObj.baselineAutoAdjustData + ']');
+                }
+
+                return false;
+            }
+
+            timeoutProcessor.removeTimeoutObject(baselineTimeoutObj);
+        }
+
+        boolean added = timeoutProcessor.addTimeoutObject(
             baselineTimeoutObj = new BaselineMultiplyUseTimeoutObject(
                 baselineAutoAdjustData,
                 delay, baselineAutoAdjustExecutor,
@@ -73,12 +97,19 @@ class BaselineAutoAdjustScheduler {
                 log
             )
         );
+
+        if (log.isDebugEnabled()) {
+            log.info("New baseline timeout object was " + (added ? "successfully scheduled " : " rejected ") +
+                " [data=" + baselineTimeoutObj.baselineAutoAdjustData + ']');
+        }
+
+        return added;
     }
 
     /**
      * @return Time of last scheduled task or -1 if it doesn't exist.
      */
-    public long lastScheduledTaskTime() {
+    public synchronized long lastScheduledTaskTime() {
         if (baselineTimeoutObj == null)
             return -1;
 
@@ -88,13 +119,21 @@ class BaselineAutoAdjustScheduler {
     }
 
     /**
+     * @param data Baseline data for adjust.
+     * @return {@code true} If baseline auto-adjust shouldn't be executed for given data.
+     */
+    boolean isExecutionExpired(BaselineAutoAdjustData data) {
+        return baselineAutoAdjustExecutor.isExecutionExpired(data);
+    }
+
+    /**
      * Timeout object of baseline auto-adjust operation. This object able executing several times: some first times for
      * logging of expecting auto-adjust and last time for baseline adjust.
      */
     private static class BaselineMultiplyUseTimeoutObject implements GridTimeoutObject {
         /** Interval between logging of info about next baseline auto-adjust. */
         private static final long AUTO_ADJUST_LOG_INTERVAL =
-            getLong(IGNITE_BASELINE_AUTO_ADJUST_LOG_INTERVAL, 60_000);
+            getLong(IGNITE_BASELINE_AUTO_ADJUST_LOG_INTERVAL, DFLT_BASELINE_AUTO_ADJUST_LOG_INTERVAL);
 
         /** Last data for set new baseline. */
         private final BaselineAutoAdjustData baselineAutoAdjustData;

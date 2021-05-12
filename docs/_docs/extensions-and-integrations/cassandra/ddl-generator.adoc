@@ -1,0 +1,99 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= DDL Generator
+
+== Overview
+
+One of the benefits of the Ignite Cassandra integration is that you don't need to care about Cassandra DDL syntax for
+table creation and Java to Cassandra type mapping details.
+
+You just need to create an XML configuration which specifies how Ignite cache keys and values should be serialized/deserialized to/from Cassandra.
+Based on this settings all the absent Cassandra keyspaces and tables will be created automatically. The only requirement for all this "magic" to work:
+
+[CAUTION]
+====
+[discrete]
+===
+In connection settings for Cassandra, you should specify user having enough permissions to create keyspaces/tables
+====
+
+However, for some of the deployments it's not possible because of a very strict security policy. Thus the only solution in
+a such situation is to provide DDL scripts for DevOps team to create all the necessary Cassandra keyspaces/tables in advance.
+
+That's the exact use-case for DDL generator utility that generates DDLs from
+link:extensions-and-integrations/cassandra/configuration#persistencesettingsbean[PersistenceSettingsBean settings].
+
+Below is a sample syntax for the Cassandra DDL generation:
+
+[tabs]
+--
+tab:Shell[]
+[source, shell]
+----
+java org.apache.ignite.cache.store.cassandra.utils.DDLGenerator /opt/dev/ignite/persistence-settings-1.xml /opt/dev/ignite/persistence-settings-2.xml
+----
+--
+
+The generated DDL can look as follows:
+
+[tabs]
+--
+tab:Generated Cassandra DDL[]
+[source, sql]
+----
+-------------------------------------------------------------
+DDL for keyspace/table from file: /opt/dev/ignite/persistence-settings-1.xml
+-------------------------------------------------------------
+
+create keyspace if not exists test1
+with replication = {'class' : 'SimpleStrategy', 'replication_factor' : 3} and durable_writes = true;
+
+create table if not exists test1.primitive_test1
+(
+ key int,
+ value int,
+ primary key ((key))
+);
+
+-------------------------------------------------------------
+DDL for keyspace/table from file: /opt/dev/ignite/persistence-settings-2.xml
+-------------------------------------------------------------
+
+create keyspace if not exists test1
+with REPLICATION = {'class' : 'SimpleStrategy', 'replication_factor' : 3} AND DURABLE_WRITES = true;
+
+create table if not exists test1.pojo_test3
+(
+ company text,
+ department text,
+ number int,
+ first_name text,
+ last_name text,
+ age int,
+ married boolean,
+ height bigint,
+ weight float,
+ birth_date timestamp,
+ phones blob,
+ primary key ((company, department), number)
+)
+with comment = 'A most excellent and useful table' AND read_repair_chance = 0.2 and clustering order by (number desc);
+----
+--
+
+Just don't forget to set the `CLASSPATH` environment variable correctly:
+
+. Include the jar file for Ignite Cassandra module (`ignite-cassandra-<version-number>.jar`) in your `CLASSPATH`.
+. If you are using `POJO` persistence strategy for some of your custom java classes you need to include jars with these classes in your CLASSPATH as well.

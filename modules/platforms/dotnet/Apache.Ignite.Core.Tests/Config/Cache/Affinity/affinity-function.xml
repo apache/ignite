@@ -105,6 +105,24 @@
                         </bean>
                     </property>
                 </bean>
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="cache-with-backup-filter"/>
+                    <property name="affinity">
+                        <bean class="org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction">
+                            <property name="partitions" value="256"/>
+                            <property name="affinityBackupFilter">
+                                <bean class="org.apache.ignite.cache.affinity.rendezvous.ClusterNodeAttributeAffinityBackupFilter">
+                                    <constructor-arg>
+                                        <array value-type="java.lang.String">
+                                            <value>AVAILABILITY_ZONE</value>
+                                            <value>REGION</value>
+                                        </array>
+                                    </constructor-arg>
+                                </bean>
+                            </property>
+                        </bean>
+                    </property>
+                </bean>
             </list>
         </property>
 

@@ -20,9 +20,11 @@ project(thin-client-put-get-example)
 set(TARGET ignite-${PROJECT_NAME})
 
 find_package(Ignite)
+find_package(Threads)
 
-include_directories(../include ${IGNITE_INCLUDE_DIR})
+include_directories(SYSTEM ${IGNITE_INCLUDE_DIR})
+include_directories(../include)
 
 add_executable(${TARGET} src/thin_client_put_get_example.cpp)
 
-target_link_libraries(${TARGET} ${IGNITE_THIN_CLIENT_LIB} ${IGNITE_BINARY_LIB} ${IGNITE_COMMON_LIB})
+target_link_libraries(${TARGET} ${IGNITE_THIN_CLIENT_LIB} ${IGNITE_BINARY_LIB} ${IGNITE_COMMON_LIB} ${CMAKE_THREAD_LIBS_INIT})

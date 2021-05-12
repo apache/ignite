@@ -138,7 +138,6 @@
                 <exclude>org.apache.ignite:ignite-cassandra</exclude>
                 <exclude>org.apache.ignite:ignite-yardstick</exclude>
                 <exclude>org.apache.ignite:ignite-benchmarks</exclude>
-                <exclude>org.apache.ignite:ignite-web-agent</exclude>
                 <exclude>org.apache.ignite:ignite-dev-utils</exclude>
                 <exclude>org.apache.ignite:ignite-extdata-platform</exclude>
                 <exclude>org.apache.ignite:ignite-compatibility</exclude>
@@ -146,21 +145,19 @@
                 <!-- Removed from slim packaging are: -->
                 <exclude>org.apache.ignite:ignite-aop</exclude>
                 <exclude>org.apache.ignite:ignite-aws</exclude>
-                <exclude>org.apache.ignite:ignite-camel</exclude>
+                <exclude>org.apache.ignite:ignite-azure</exclude>
                 <exclude>org.apache.ignite:ignite-cassandra-serializers</exclude>
                 <exclude>org.apache.ignite:ignite-cassandra-store</exclude>
                 <exclude>org.apache.ignite:ignite-cloud</exclude>
                 <exclude>org.apache.ignite:ignite-direct-io</exclude>
                 <exclude>org.apache.ignite:ignite-gce</exclude>
                 <exclude>org.apache.ignite:ignite-jcl</exclude>
-                <exclude>org.apache.ignite:ignite-jms11</exclude>
-                <exclude>org.apache.ignite:ignite-kafka</exclude>
                 <exclude>org.apache.ignite:ignite-mesos</exclude>
                 <exclude>org.apache.ignite:ignite-ml</exclude>
                 <exclude>org.apache.ignite:ignite-ml-h2o-model-parser</exclude>
                 <exclude>org.apache.ignite:ignite-ml-spark-model-parser</exclude>
                 <exclude>org.apache.ignite:ignite-ml-xgboost-model-parser</exclude>
-                <exclude>org.apache.ignite:ignite-mqtt</exclude>
+                <exclude>org.apache.ignite:ignite-ml-catboost-model-parser</exclude>
                 <exclude>org.apache.ignite:ignite-osgi</exclude>
                 <exclude>org.apache.ignite:ignite-osgi-karaf</exclude>
                 <exclude>org.apache.ignite:ignite-osgi-paxlogging</exclude>
@@ -168,10 +165,7 @@
                 <exclude>org.apache.ignite:ignite-scalar_2.10</exclude>
                 <exclude>org.apache.ignite:ignite-spark</exclude>
                 <exclude>org.apache.ignite:ignite-spark-2.4</exclude>
-                <exclude>org.apache.ignite:ignite-spring-data</exclude>
-                <exclude>org.apache.ignite:ignite-spring-data_2.0</exclude>
                 <exclude>org.apache.ignite:ignite-ssh</exclude>
-                <exclude>org.apache.ignite:ignite-storm</exclude>
                 <exclude>org.apache.ignite:ignite-web</exclude>
                 <exclude>org.apache.ignite:ignite-yarn</exclude>
                 <exclude>org.apache.ignite:ignite-zookeeper</exclude>

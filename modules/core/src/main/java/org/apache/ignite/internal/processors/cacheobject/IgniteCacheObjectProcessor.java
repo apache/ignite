@@ -338,4 +338,14 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @throws IgniteException If failed.
      */
     public Object marshalToBinary(Object obj, boolean failIfUnregistered) throws IgniteException;
+
+    /**
+     * Remove registered binary type from grid.
+     *
+     * Attention: this is not safe feature, the grid must not contain binary objects
+     * with specified type, operations with specified type must not be processed on the cluster.
+     *
+     * @param typeId Type ID.
+     */
+    public void removeType(int typeId);
 }

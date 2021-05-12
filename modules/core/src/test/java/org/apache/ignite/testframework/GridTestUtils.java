@@ -64,6 +64,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BooleanSupplier;
 import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
 import javax.management.Attribute;
@@ -93,7 +94,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridBusyLock;
@@ -112,6 +112,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.discovery.DiscoveryNotification;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.ssl.SslContextFactory;
@@ -120,6 +121,10 @@ import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
+import static org.apache.ignite.ssl.SslContextFactory.DFLT_KEY_ALGORITHM;
+import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
+import static org.apache.ignite.ssl.SslContextFactory.DFLT_STORE_TYPE;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -218,22 +223,16 @@ public final class GridTestUtils {
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFuture<?> onDiscovery(
-            int type,
-            long topVer,
-            ClusterNode node,
-            Collection<ClusterNode> topSnapshot,
-            @Nullable Map<Long, Collection<ClusterNode>> topHist,
-            @Nullable DiscoverySpiCustomMessage spiCustomMsg
-        ) {
-            hook.beforeDiscovery(spiCustomMsg);
+        @Override public IgniteFuture<?> onDiscovery(DiscoveryNotification notification) {
+            hook.beforeDiscovery(notification.getCustomMsgData());
 
-            IgniteFuture<?> fut = delegate.onDiscovery(type, topVer, node, topSnapshot, topHist, spiCustomMsg);
+            IgniteFuture<?> fut = delegate.onDiscovery(notification);
 
-            fut.listen(f -> hook.afterDiscovery(spiCustomMsg));
+            fut.listen(f -> hook.afterDiscovery(notification.getCustomMsgData()));
 
             return fut;
         }
+
 
         /** {@inheritDoc} */
         @Override public void onLocalNodeInitialized(ClusterNode locNode) {
@@ -1104,7 +1103,7 @@ public final class GridTestUtils {
      * @return Future with task result.
      */
     public static IgniteInternalFuture runAsync(final Runnable task) {
-        return runAsync(task,"async-runnable-runner");
+        return runAsync(task, "async-runnable-runner");
     }
 
     /**
@@ -1609,14 +1608,31 @@ public final class GridTestUtils {
     private static Object findField(Class<?> cls, Object obj,
         String fieldName) throws NoSuchFieldException, IllegalAccessException {
         // Resolve inner field.
-        Field field = cls.getDeclaredField(fieldName);
 
-        boolean accessible = field.isAccessible();
+        NoSuchFieldException ex = null;
 
-        if (!accessible)
-            field.setAccessible(true);
+        while (cls != null) {
+            try {
+                Field field = cls.getDeclaredField(fieldName);
 
-        return field.get(obj);
+                boolean accessible = field.isAccessible();
+
+                if (!accessible)
+                    field.setAccessible(true);
+
+                return field.get(obj);
+            }
+            catch (NoSuchFieldException ex0) {
+                if (ex == null)
+                    ex = ex0;
+                else
+                    ex.addSuppressed(ex0);
+
+                cls = cls.getSuperclass();
+            }
+        }
+
+        throw ex;
     }
 
     /**
@@ -1903,19 +1919,24 @@ public final class GridTestUtils {
      * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If interrupted.
      */
     public static boolean waitForCondition(GridAbsPredicate cond, long timeout) throws IgniteInterruptedCheckedException {
-        long curTime = U.currentTimeMillis();
-        long endTime = curTime + timeout;
+        long endTime = U.currentTimeMillis() + timeout;
+        long endTime0 = endTime < 0 ? Long.MAX_VALUE : endTime;
 
-        if (endTime < 0)
-            endTime = Long.MAX_VALUE;
+        return waitForCondition(cond, () -> U.currentTimeMillis() < endTime0);
+    }
 
-        while (curTime < endTime) {
+    /**
+     * @param cond Condition to wait for.
+     * @param wait Wait predicate.
+     * @return {@code true} if condition was achieved, {@code false} otherwise.
+     * @throws IgniteInterruptedCheckedException If interrupted.
+     */
+    public static boolean waitForCondition(GridAbsPredicate cond, BooleanSupplier wait) throws IgniteInterruptedCheckedException {
+        while (wait.getAsBoolean()) {
             if (cond.apply())
                 return true;
 
             U.sleep(DFLT_BUSYWAIT_SLEEP_INTERVAL);
-
-            curTime = U.currentTimeMillis();
         }
 
         return false;
@@ -1929,13 +1950,13 @@ public final class GridTestUtils {
      * @throws IOException If keystore cannot be accessed.
      */
     public static SSLContext sslContext() throws GeneralSecurityException, IOException {
-        SSLContext ctx = SSLContext.getInstance("TLS");
+        SSLContext ctx = SSLContext.getInstance(DFLT_SSL_PROTOCOL);
 
         char[] storePass = keyStorePassword().toCharArray();
 
-        KeyManagerFactory keyMgrFactory = KeyManagerFactory.getInstance("SunX509");
+        KeyManagerFactory keyMgrFactory = KeyManagerFactory.getInstance(DFLT_KEY_ALGORITHM);
 
-        KeyStore keyStore = KeyStore.getInstance("JKS");
+        KeyStore keyStore = KeyStore.getInstance(DFLT_STORE_TYPE);
 
         keyStore.load(new FileInputStream(U.resolveIgnitePath(GridTestProperties.getProperty("ssl.keystore.path"))),
             storePass);
@@ -2168,6 +2189,17 @@ public final class GridTestUtils {
     }
 
     /**
+     * Deletes index.bin for all cach groups for given {@code igniteInstanceName}
+     */
+    public static void deleteIndexBin(String igniteInstanceName) throws IgniteCheckedException {
+        File workDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
+
+        for (File grp : new File(workDir, U.maskForFileName(igniteInstanceName)).listFiles()) {
+            new File(grp, "index.bin").delete();
+        }
+    }
+
+    /**
      * {@link Class#getSimpleName()} does not return outer class name prefix for inner classes, for example,
      * getSimpleName() returns "RegularDiscovery" instead of "GridDiscoveryManagerSelfTest$RegularDiscovery"
      * This method return correct simple name for inner classes.
@@ -2342,16 +2374,6 @@ public final class GridTestUtils {
     }
 
     /**
-     * Removes idle_verify log files created in tests.
-     */
-    public static void cleanIdleVerifyLogFiles() {
-        File dir = new File(".");
-
-        for (File f : dir.listFiles(n -> n.getName().startsWith(IdleVerifyResultV2.IDLE_VERIFY_FILE_PREFIX)))
-            f.delete();
-    }
-
-    /**
      * @param grid Node.
      * @param grp Group name.
      * @param name Object name.
@@ -2409,6 +2431,24 @@ public final class GridTestUtils {
             while ((remainTime = end - System.currentTimeMillis()) > 0);
 
             return sleepMs;
+        }
+
+        /**
+         * Delays execution for {@code duration} milliseconds.
+         *
+         * @param duration Duration.
+         * @return amount of milliseconds to delay.
+         */
+        @QuerySqlFunction
+        public static long delay(long duration) {
+            try {
+                Thread.sleep(duration);
+            }
+            catch (InterruptedException ignored) {
+                // No-op
+            }
+
+            return duration;
         }
 
         /**

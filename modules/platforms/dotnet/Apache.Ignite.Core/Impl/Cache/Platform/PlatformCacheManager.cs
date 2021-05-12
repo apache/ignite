@@ -38,12 +38,12 @@ namespace Apache.Ignite.Core.Impl.Cache.Platform
         /// Holds thread-local key/val pair to be used for updating platform cache.
         /// </summary>
         internal static readonly ThreadLocal<object> ThreadLocalPair = new ThreadLocal<object>();
-        
+
         /// <summary>
         /// Platform caches per cache id.
         /// Multiple <see cref="CacheImpl{TK,TV}"/> instances can point to the same Ignite cache,
-        /// and share one <see cref="PlatformCache{TK,TV}"/> instance. 
-        /// </summary> 
+        /// and share one <see cref="PlatformCache{TK,TV}"/> instance.
+        /// </summary>
         private readonly CopyOnWriteConcurrentDictionary<int, IPlatformCache> _caches
             = new CopyOnWriteConcurrentDictionary<int, IPlatformCache>();
 
@@ -56,9 +56,9 @@ namespace Apache.Ignite.Core.Impl.Cache.Platform
         /// Current topology version. Store as object for atomic updates.
         /// </summary>
         private volatile object _affinityTopologyVersion;
-        
+
         /// <summary>
-        /// Initializes a new instance of the <see cref="PlatformCacheManager"/> class. 
+        /// Initializes a new instance of the <see cref="PlatformCacheManager"/> class.
         /// </summary>
         /// <param name="ignite">Ignite.</param>
         public PlatformCacheManager(IIgniteInternal ignite)
@@ -77,7 +77,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Platform
             Debug.Assert(cacheConfiguration != null);
 
             var cacheId = BinaryUtils.GetCacheId(cacheConfiguration.Name);
-            
+
             return _caches.GetOrAdd(cacheId, _ => CreatePlatformCache(cacheConfiguration));
         }
 
@@ -89,15 +89,15 @@ namespace Apache.Ignite.Core.Impl.Cache.Platform
             IPlatformCache platformCache;
             return _caches.TryGetValue(cacheId, out platformCache) ? platformCache : null;
         }
-        
+
         /// <summary>
         /// Reads cache entry from a stream and updates the platform cache.
         /// </summary>
         public void Update(int cacheId, IBinaryStream stream, Marshaller marshaller)
         {
-            var cache = _caches.GetOrAdd(cacheId, 
+            var cache = _caches.GetOrAdd(cacheId,
                 _ => CreatePlatformCache(_ignite.GetCacheConfiguration(cacheId)));
-            
+
             cache.Update(stream, marshaller);
         }
 
@@ -133,7 +133,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Platform
         {
             _affinityTopologyVersion = affinityTopologyVersion;
         }
-        
+
         /// <summary>
         /// Creates platform cache.
         /// </summary>
@@ -141,9 +141,9 @@ namespace Apache.Ignite.Core.Impl.Cache.Platform
         {
             var platformCfg = cacheConfiguration.PlatformCacheConfiguration;
             Debug.Assert(platformCfg != null);
-            
+
             Func<object> affinityTopologyVersionFunc = () => _affinityTopologyVersion;
-            var affinity = _ignite.GetAffinity(cacheConfiguration.Name);
+            var affinity = _ignite.GetAffinityManager(cacheConfiguration.Name);
             var keepBinary = platformCfg.KeepBinary;
 
             TypeResolver resolver = null;
@@ -164,7 +164,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Platform
                 if (resolved == null)
                 {
                     throw new InvalidOperationException(string.Format(
-                        "Can not create .NET Platform Cache: {0}.{1} is invalid. Failed to resolve type: '{2}'", 
+                        "Can not create .NET Platform Cache: {0}.{1} is invalid. Failed to resolve type: '{2}'",
                         typeof(PlatformCacheConfiguration).Name, fieldName, typeName));
                 }
 
@@ -174,16 +174,16 @@ namespace Apache.Ignite.Core.Impl.Cache.Platform
             var keyType = resolve(platformCfg.KeyTypeName, "KeyTypeName");
             var valType = resolve(platformCfg.ValueTypeName, "ValueTypeName");
             var cacheType = typeof(PlatformCache<,>).MakeGenericType(keyType, valType);
-            
+
             var platformCache = Activator.CreateInstance(
-                cacheType, 
-                affinityTopologyVersionFunc, 
+                cacheType,
+                affinityTopologyVersionFunc,
                 affinity,
                 keepBinary);
-            
+
             return (IPlatformCache) platformCache;
         }
-        
+
         /// <summary>
         /// Handles client disconnect.
         /// </summary>

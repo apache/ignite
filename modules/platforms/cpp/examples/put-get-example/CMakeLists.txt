@@ -24,8 +24,10 @@ find_package(Threads)
 find_package(Java 1.8 REQUIRED)
 find_package(JNI REQUIRED)
 
-include_directories(../include ${IGNITE_INCLUDE_DIR} ${JNI_INCLUDE_DIRS})
+include_directories(SYSTEM ${IGNITE_INCLUDE_DIR} ${JNI_INCLUDE_DIRS})
+include_directories(../include)
 
 add_executable(${TARGET} src/put_get_example.cpp)
 
-target_link_libraries(${TARGET} ${IGNITE_LIB} ${IGNITE_BINARY_LIB} ${IGNITE_COMMON_LIB} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(${TARGET} ${IGNITE_LIB} ${IGNITE_JNI_LIB} ${IGNITE_BINARY_LIB} ${IGNITE_COMMON_LIB}
+        ${CMAKE_THREAD_LIBS_INIT})

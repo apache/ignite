@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.processors.platform.cache.query;
 
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
-
-import java.util.List;
 
 /**
  * Interop cursor for fields query.

@@ -42,4 +42,10 @@ public interface DistributedChangeableProperty<T extends Serializable> extends D
      * @param newVal New value.
      */
     void localUpdate(Serializable newVal);
+
+    /**
+     * @param str String representation of the property value.
+     * @return Property value.
+     */
+    T parse(String str);
 }

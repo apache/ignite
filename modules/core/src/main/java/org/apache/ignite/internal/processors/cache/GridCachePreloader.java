@@ -76,8 +76,9 @@ public interface GridCachePreloader {
      * @param exchFut Completed exchange future. Can be {@code null} if forced or reassigned generation occurs.
      * @return Partition assignments which will be requested from supplier nodes.
      */
-    @Nullable public GridDhtPreloaderAssignments generateAssignments(GridDhtPartitionExchangeId exchId,
-                                                                     @Nullable GridDhtPartitionsExchangeFuture exchFut);
+    @Nullable public GridDhtPreloaderAssignments generateAssignments(
+        GridDhtPartitionExchangeId exchId,
+        @Nullable GridDhtPartitionsExchangeFuture exchFut);
 
     /**
      * Adds assignments to preloader.
@@ -231,4 +232,12 @@ public interface GridCachePreloader {
      * @return Rebalance message size in bytes.
      */
     public int batchSize();
+
+    /**
+     * Finish preloading for given topology version.
+     *
+     * @param topVer Topology version.
+     * @param rebalanceId Rebalance id.
+     */
+    public void finishPreloading(AffinityTopologyVersion topVer, long rebalanceId);
 }

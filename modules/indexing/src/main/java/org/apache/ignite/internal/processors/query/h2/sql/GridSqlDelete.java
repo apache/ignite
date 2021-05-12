@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 import org.h2.util.StatementBuilder;
 import org.h2.util.StringUtils;
 
+import static org.apache.ignite.internal.processors.query.QueryUtils.delimeter;
+
 /** */
 public class GridSqlDelete extends GridSqlStatement {
     /** */
@@ -52,16 +54,18 @@ public class GridSqlDelete extends GridSqlStatement {
 
     /** {@inheritDoc} */
     @Override public String getSQL() {
+        char delim = delimeter();
+
         StatementBuilder buff = new StatementBuilder(explain() ? "EXPLAIN " : "");
         buff.append("DELETE")
-            .append("\nFROM ")
+            .append(delim).append("FROM ")
             .append(from.getSQL());
 
         if (where != null)
-            buff.append("\nWHERE ").append(StringUtils.unEnclose(where.getSQL()));
+            buff.append(delim).append("WHERE ").append(StringUtils.unEnclose(where.getSQL()));
 
         if (limit != null)
-            buff.append("\nLIMIT (").append(StringUtils.unEnclose(limit.getSQL())).append(')');
+            buff.append(delim).append("LIMIT (").append(StringUtils.unEnclose(limit.getSQL())).append(')');
 
         return buff.toString();
     }

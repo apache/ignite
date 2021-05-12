@@ -38,7 +38,6 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheDeploymentManager;
 import org.apache.ignite.internal.processors.continuous.GridContinuousBatch;
@@ -67,7 +66,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
     private static final long serialVersionUID = 0L;
 
     /** Default callback. */
-    private static final IgniteBiPredicate<UUID,Event> DFLT_CALLBACK = new P2<UUID, Event>() {
+    private static final IgniteBiPredicate<UUID, Event> DFLT_CALLBACK = new P2<UUID, Event>() {
         @Override public boolean apply(UUID uuid, Event e) {
             return true;
         }
@@ -233,17 +232,16 @@ class GridEventConsumeHandler implements GridContinuousHandler {
                                                     if (node == null)
                                                         continue;
 
-                                                    if (ctx.config().isPeerClassLoadingEnabled()) {
-                                                        GridCacheContext cctx =
-                                                            ctx.cache().internalCache(cacheName).context();
+                                                    if (ctx.config().isPeerClassLoadingEnabled() &&
+                                                        ctx.discovery().cacheNode(node, cacheName)) {
+                                                        GridCacheAdapter cache = ctx.cache().internalCache(cacheName);
 
-                                                        if (cctx.deploymentEnabled() &&
-                                                            ctx.discovery().cacheNode(node, cacheName)) {
+                                                        if (cache != null && cache.context().deploymentEnabled()) {
                                                             wrapper.p2pMarshal(ctx.config().getMarshaller());
 
                                                             wrapper.cacheName = cacheName;
 
-                                                            cctx.deploy().prepare(wrapper);
+                                                            cache.context().deploy().prepare(wrapper);
                                                         }
                                                     }
                                                 }
@@ -428,6 +426,11 @@ class GridEventConsumeHandler implements GridContinuousHandler {
 
                 throw e;
             }
+            catch (ExceptionInInitializerError e) {
+                ((GridFutureAdapter)p2pUnmarshalFut).onDone(e);
+
+                throw new IgniteCheckedException("Failed to unmarshal deployable object.", e);
+            }
         }
     }
 
@@ -443,11 +446,6 @@ class GridEventConsumeHandler implements GridContinuousHandler {
 
     /** {@inheritDoc} */
     @Override public void onBatchAcknowledged(UUID routineId, GridContinuousBatch batch, GridKernalContext ctx) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onNodeLeft() {
         // No-op.
     }
 

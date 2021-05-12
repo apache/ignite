@@ -1,0 +1,65 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+= Twitter Streamer
+
+Ignite Twitter Streamer module consumes tweets from Twitter and feeds the transformed key-value pairs `<tweetId, text>` into Ignite.
+
+To stream data from Twitter into Ignite, you need to:
+
+. Import Ignite Twitter Module with Maven and replace `${ignite-twitter-ext.version}` with the actual Ignite Twitter Extension version you are interested in.
++
+[tabs]
+--
+tab:pom.xml[]
+[source,xml]
+----
+<dependency>
+  <groupId>org.apache.ignite</groupId>
+  <artifactId>ignite-twitter-ext</artifactId>
+  <version>${ignite-twitter-ext.version}</version>
+</dependency>
+----
+--
+
+. In your code, set the necessary parameters and start the streamer, like so:
++
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+IgniteDataStreamer dataStreamer = ignite.dataStreamer("myCache");
+dataStreamer.allowOverwrite(true);
+dataStreamer.autoFlushFrequency(10);
+
+OAuthSettings oAuthSettings = new OAuthSettings("setting1", "setting2", "setting3", "setting4");
+
+TwitterStreamer<Integer, String> streamer = new TwitterStreamer<>(oAuthSettings);
+streamer.setIgnite(ignite);
+streamer.setStreamer(dataStreamer);
+
+Map<String, String> params = new HashMap<>();
+params.put("track", "apache, twitter");
+params.put("follow", "3004445758");
+
+streamer.setApiParams(params);// Twitter Streaming API params.
+streamer.setEndpointUrl(endpointUrl);// Twitter streaming API endpoint.
+streamer.setThreadsCount(8);
+
+streamer.start();
+----
+--
+
+Refer to https://dev.twitter.com/streaming/overview[Twitter streaming API, window=_blank] documentation for more information on various streaming parameters.

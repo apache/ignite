@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -187,6 +188,10 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
     /** Map for tracking nodes to which first request was already sent in order to send smaller subsequent requests. */
     private final Set<ClusterNode> firstReqSent = new HashSet<>();
 
+    /** Deployment class loader id which will be used for deserialization of entries on a distributed task. */
+    @GridToStringExclude
+    protected final IgniteUuid deploymentLdrId;
+
     /**
      * @param nearNodeId Near node ID.
      * @param nearLockVer Near lock version.
@@ -227,6 +232,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
         this.tx = tx;
         this.filter = filter;
         this.keepBinary = keepBinary;
+        this.deploymentLdrId = U.contextDeploymentClassLoaderId(cctx.kernalContext());
 
         lockVer = tx.xidVersion();
 
@@ -1030,7 +1036,7 @@ public abstract class GridDhtTxAbstractEnlistFuture<T> extends GridCacheFutureAd
             if (nearNodeId.equals(nodeId))
                 onDone(new ClusterTopologyCheckedException("Requesting node left the grid [nodeId=" + nodeId + ']'));
             else if (pending != null && pending.remove(nodeId) != null)
-                cctx.kernalContext().closure().runLocalSafe(() -> continueLoop(false));
+                cctx.kernalContext().closure().runLocalSafe((GridPlainRunnable)() -> continueLoop(false));
         }
         catch (Exception e) {
             onDone(e);

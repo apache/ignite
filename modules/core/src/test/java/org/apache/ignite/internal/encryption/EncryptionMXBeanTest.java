@@ -20,10 +20,12 @@ package org.apache.ignite.internal.encryption;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.encryption.EncryptionMXBeanImpl;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.mxbean.EncryptionMXBean;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
+import static org.apache.ignite.internal.managers.encryption.GridEncryptionManager.INITIAL_KEY_ID;
 import static org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi.DEFAULT_MASTER_KEY_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
@@ -108,6 +110,28 @@ public class EncryptionMXBeanTest extends AbstractEncryptionTest {
         mBean.changeMasterKey(MASTER_KEY_NAME_2);
 
         assertEquals(MASTER_KEY_NAME_2, grid0.encryption().getMasterKeyName());
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testCacheGroupKeyChange() throws Exception {
+        IgniteEx ignite = startGrid(GRID_0);
+
+        ignite.cluster().active(true);
+
+        createEncryptedCache(ignite, null, cacheName(), null);
+
+        EncryptionMXBean mBean = getMBean(GRID_0);
+
+        int grpId = CU.cacheId(cacheName());
+
+        assertEquals(INITIAL_KEY_ID, ignite.context().encryption().getActiveKey(grpId).id());
+
+        mBean.changeCacheGroupKey(cacheName());
+
+        assertEquals(INITIAL_KEY_ID + 1, ignite.context().encryption().getActiveKey(grpId).id());
+
+        checkGroupKey(grpId, INITIAL_KEY_ID + 1, getTestTimeout());
     }
 
     /** {@inheritDoc} */

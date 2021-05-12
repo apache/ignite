@@ -178,13 +178,31 @@ public abstract class AbstractRemoteSecurityContextCheckTest extends AbstractSec
 
                     setupVerifier(VERIFIER);
 
+                    beforeCompute();
+
                     compute(initiator, nodesToRunIds())
                         .broadcast((IgniteRunnable)new RegisterExecAndForward<>(OPERATION_START, r, endpointIds()));
+
+                    afterCompute();
 
                     VERIFIER.checkResult();
                 }
             )
         );
+    }
+
+    /**
+     * Actions that should be executed before broadcasting test operations.
+     */
+    protected void beforeCompute() {
+        // No-op.
+    }
+
+    /**
+     * Actions that should be executed after broadcasting test operations.
+     */
+    protected void afterCompute() {
+        // No-op.
     }
 
     /**

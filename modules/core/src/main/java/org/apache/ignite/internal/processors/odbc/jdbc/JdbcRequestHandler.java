@@ -47,7 +47,6 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinPartitionAwarenessMappingGroup;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadAckClientParameters;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadProcessor;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
@@ -91,7 +90,7 @@ import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionCont
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_4_0;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_7_0;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_8_0;
-import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_8_1;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_9_0;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BATCH_EXEC;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BATCH_EXEC_ORDERED;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BINARY_TYPE_GET;
@@ -162,9 +161,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     /** Protocol version. */
     private final ClientListenerProtocolVersion protocolVer;
 
-    /** Authentication context */
-    private AuthorizationContext actx;
-
     /** Facade that hides transformations internal cache api entities -> jdbc metadata. */
     private final JdbcMetadataInfo meta;
 
@@ -185,7 +181,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param skipReducerOnUpdate Skip reducer on update flag.
      * @param dataPageScanEnabled Enable scan data page mode.
      * @param updateBatchSize Size of internal batch for DML queries.
-     * @param actx Authentication context.
      * @param protocolVer Protocol version.
      * @param connCtx Jdbc connection context.
      */
@@ -203,7 +198,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         NestedTxMode nestedTxMode,
         @Nullable Boolean dataPageScanEnabled,
         @Nullable Integer updateBatchSize,
-        AuthorizationContext actx,
         ClientListenerProtocolVersion protocolVer,
         JdbcConnectionContext connCtx
     ) {
@@ -236,7 +230,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         this.autoCloseCursors = autoCloseCursors;
         this.nestedTxMode = nestedTxMode;
         this.protocolVer = protocolVer;
-        this.actx = actx;
 
         log = connCtx.kernalContext().log(getClass());
 
@@ -309,9 +302,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         if (!busyLock.enterBusy())
             return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN,
                 "Failed to handle JDBC request because node is stopping.");
-
-        if (actx != null)
-            AuthorizationContext.context(actx);
 
         JdbcResponse resp;
         try {
@@ -403,8 +393,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             return resp;
         }
         finally {
-            AuthorizationContext.clear();
-
             busyLock.leaveBusy();
         }
     }
@@ -512,7 +500,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public ClientListenerResponse handleException(Exception e, ClientListenerRequest req) {
+    @Override public ClientListenerResponse handleException(Throwable e, ClientListenerRequest req) {
         return exceptionToResult(e);
     }
 
@@ -534,7 +522,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             writer.writeUuid(connCtx.kernalContext().localNodeId());
 
         // Write all features supported by the node.
-        if (protocolVer.compareTo(VER_2_8_1) >= 0)
+        if (protocolVer.compareTo(VER_2_9_0) >= 0)
             writer.writeByteArray(ThinProtocolFeature.featuresAsBytes(connCtx.protocolContext().features()));
     }
 
@@ -631,6 +619,11 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             qry.setArgs(req.arguments());
             qry.setAutoCommit(req.autoCommit());
+
+            if (req.explicitTimeout()) {
+                // Timeout is handled on a client side, do not handle it on a server side.
+                qry.setTimeout(0, TimeUnit.MILLISECONDS);
+            }
 
             if (req.pageSize() <= 0)
                 return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Invalid fetch size: " + req.pageSize());
@@ -1003,7 +996,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         qry.setLazy(cliCtx.isLazy());
         qry.setNestedTxMode(nestedTxMode);
         qry.setSchema(schemaName);
-        qry.setTimeout(0, TimeUnit.MILLISECONDS);
+        qry.setQueryInitiatorId(connCtx.clientDescriptor());
 
         if (cliCtx.updateBatchSize() != null)
             qry.setUpdateBatchSize(cliCtx.updateBatchSize());
@@ -1027,7 +1020,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     qry.getSchema(),
                     cliCtx,
                     qry.getSql(),
-                    qry.batchedArguments()
+                    qry.batchedArguments(),
+                    connCtx.clientDescriptor()
                 );
 
                 for (int i = 0; i < cnt.size(); i++)
@@ -1327,7 +1321,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param e Exception to convert.
      * @return resulting {@link JdbcResponse}.
      */
-    private JdbcResponse exceptionToResult(Exception e) {
+    private JdbcResponse exceptionToResult(Throwable e) {
         if (e instanceof QueryCancelledException)
             return new JdbcResponse(IgniteQueryErrorCode.QUERY_CANCELED, e.getMessage());
         if (e instanceof TransactionSerializationException)

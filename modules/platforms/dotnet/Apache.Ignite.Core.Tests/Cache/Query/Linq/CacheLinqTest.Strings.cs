@@ -28,6 +28,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Text.RegularExpressions;
     using Apache.Ignite.Linq;
@@ -42,6 +43,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
         /// Tests strings.
         /// </summary>
         [Test]
+        [SuppressMessage("ReSharper", "StringCompareIsCultureSpecific.2", Justification = "SQL")]
+        [SuppressMessage("ReSharper", "StringCompareIsCultureSpecific.3", Justification = "SQL")]
         public void TestStrings()
         {
             var strings = GetSecondPersonCache().AsCacheQueryable().Select(x => x.Value.Name);
@@ -66,7 +69,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
 
             CheckFunc(x => x.Trim(), strings);
 
-#if !NETCOREAPP2_0 && !NETCOREAPP2_1 && !NETCOREAPP3_0  // Trim is not supported on .NET Core
             CheckFunc(x => x.Trim('P'), strings);
             var toTrim = new[] { 'P' };
             CheckFunc(x => x.Trim(toTrim), strings);
@@ -83,7 +85,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             Assert.Throws<NotSupportedException>(() => CheckFunc(x => x.Trim(toTrimFails), strings));
             Assert.Throws<NotSupportedException>(() => CheckFunc(x => x.TrimStart(toTrimFails), strings));
             Assert.Throws<NotSupportedException>(() => CheckFunc(x => x.TrimEnd(toTrimFails), strings));
-#endif
 
             CheckFunc(x => Regex.Replace(x, @"son.\d", "kele!"), strings);
             CheckFunc(x => Regex.Replace(x, @"son.\d", "kele!", RegexOptions.None), strings);
@@ -112,6 +113,74 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
 
             // String + int
             CheckFunc(x => x + 10, strings);
+
+            // string.Compare(string strA, string strB)
+            CheckWhereFunc(x => string.Compare(x, "Person_1300") < 0, strings);
+            CheckWhereFunc(x => string.Compare(x, "Person_1300") > 0, strings);
+            CheckWhereFunc(x => string.Compare(x, "Person_1300") == 0, strings);
+            CheckWhereFunc(x => string.Compare(x, "Person_1300") <= 0, strings);
+            CheckWhereFunc(x => string.Compare(x, "Person_1300") >= 0, strings);
+            CheckWhereFunc(x => string.Compare(x, "person_1300", StringComparison.Ordinal) < 0, x => string.Compare(x, "person_1300") < 0, strings);
+            CheckWhereFunc(x => string.Compare(x, "person_1300", StringComparison.Ordinal) > 0, x => string.Compare(x, "person_1300") > 0, strings);
+            CheckWhereFunc(x => string.Compare(x, "person_1300") == 0, strings);
+            CheckWhereFunc(x => string.Compare(x, "person_1300", StringComparison.Ordinal) <= 0, x => string.Compare(x, "person_1300") <= 0, strings);
+            CheckWhereFunc(x => string.Compare(x, "person_1300", StringComparison.Ordinal) >= 0, x => string.Compare(x, "person_1300") >= 0, strings);
+            CheckWhereFunc(x => string.Compare(x, null) == 0, strings);
+            CheckWhereFunc(x => string.Compare(x, null) < 0, strings);
+            CheckWhereFunc(x => string.Compare(x, null) > 0, strings);
+            CheckWhereFunc(x => string.Compare(null, x) == 0, strings);
+            CheckWhereFunc(x => string.Compare(null, x) < 0, strings);
+            CheckWhereFunc(x => string.Compare(null, x) > 0, strings);
+            CheckWhereFunc(x => string.Compare(null, null) == 0, strings);
+            CheckWhereFunc(x => string.Compare(null, null) < 0, strings);
+            CheckWhereFunc(x => string.Compare(null, null) > 0, strings);
+
+            // string.Compare(string strA, string strB, true)
+            CheckWhereFunc(x => string.Compare(x, "Person_1300", true) < 0, strings);
+            CheckWhereFunc(x => string.Compare(x, "Person_1300", true) > 0, strings);
+            CheckWhereFunc(x => string.Compare(x, "Person_1300", true) == 0, strings);
+            CheckWhereFunc(x => string.Compare(x, "Person_1300", true) <= 0, strings);
+            CheckWhereFunc(x => string.Compare(x, "Person_1300", true) >= 0, strings);
+            CheckWhereFunc(x => string.Compare(x, "person_1300", true) < 0, strings);
+            CheckWhereFunc(x => string.Compare(x, "person_1300", true) > 0, strings);
+            CheckWhereFunc(x => string.Compare(x, "person_1300", true) == 0, strings);
+            CheckWhereFunc(x => string.Compare(x, "person_1300", true) <= 0, strings);
+            CheckWhereFunc(x => string.Compare(x, "person_1300", true) >= 0, strings);
+            CheckWhereFunc(x => string.Compare(x, null, true) == 0, strings);
+            CheckWhereFunc(x => string.Compare(x, null, true) < 0, strings);
+            CheckWhereFunc(x => string.Compare(x, null, true) > 0, strings);
+            CheckWhereFunc(x => string.Compare(null, x, true) == 0, strings);
+            CheckWhereFunc(x => string.Compare(null, x, true) < 0, strings);
+            CheckWhereFunc(x => string.Compare(null, x, true) > 0, strings);
+            CheckWhereFunc(x => string.Compare(null, null, true) == 0, strings);
+            CheckWhereFunc(x => string.Compare(null, null, true) < 0, strings);
+            CheckWhereFunc(x => string.Compare(null, null, true) > 0, strings);
+
+            // string.Compare(string strA, string strB, false)
+            CheckWhereFunc(x => string.Compare(x, "Person_1300", false) < 0, strings);
+            CheckWhereFunc(x => string.Compare(x, "Person_1300", false) > 0, strings);
+            CheckWhereFunc(x => string.Compare(x, "Person_1300", false) == 0, strings);
+            CheckWhereFunc(x => string.Compare(x, "Person_1300", false) <= 0, strings);
+            CheckWhereFunc(x => string.Compare(x, "Person_1300", false) >= 0, strings);
+            CheckWhereFunc(x => string.Compare(x, "person_1300", StringComparison.Ordinal) < 0, x => string.Compare(x, "person_1300", false) < 0, strings);
+            CheckWhereFunc(x => string.Compare(x, "person_1300", StringComparison.Ordinal) > 0, x => string.Compare(x, "person_1300", false) > 0, strings);
+            CheckWhereFunc(x => string.Compare(x, "person_1300", false) == 0, strings);
+            CheckWhereFunc(x => string.Compare(x, "person_1300", StringComparison.Ordinal) <= 0, x => string.Compare(x, "person_1300", false) <= 0, strings);
+            CheckWhereFunc(x => string.Compare(x, "person_1300", StringComparison.Ordinal) >= 0, x => string.Compare(x, "person_1300", false) >= 0, strings);
+            CheckWhereFunc(x => string.Compare(x, null, false) == 0, strings);
+            CheckWhereFunc(x => string.Compare(x, null, false) < 0, strings);
+            CheckWhereFunc(x => string.Compare(x, null, false) > 0, strings);
+            CheckWhereFunc(x => string.Compare(null, x, false) == 0, strings);
+            CheckWhereFunc(x => string.Compare(null, x, false) < 0, strings);
+            CheckWhereFunc(x => string.Compare(null, x, false) > 0, strings);
+            CheckWhereFunc(x => string.Compare(null, null, false) == 0, strings);
+            CheckWhereFunc(x => string.Compare(null, null, false) < 0, strings);
+            CheckWhereFunc(x => string.Compare(null, null, false) > 0, strings);
+
+            // ReSharper disable once ReturnValueOfPureMethodIsNotUsed (force LINQ evaluation)
+            Assert.Throws<NotSupportedException>(
+                () => strings.Where(x => string.Compare(x, "person_1300", x.StartsWith("Person")) == 0).ToArray(),
+                "Parameter 'ignoreCase' from 'string.Compare' method should be specified as a constant expression");
         }
     }
 }

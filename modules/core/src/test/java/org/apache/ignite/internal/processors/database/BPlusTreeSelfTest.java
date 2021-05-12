@@ -811,7 +811,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     private void doTestRandomInvoke(boolean canGetRow) throws IgniteCheckedException {
         TestTree tree = createTestTree(canGetRow);
 
-        Map<Long,Long> map = new HashMap<>();
+        Map<Long, Long> map = new HashMap<>();
 
         int loops = reuseList == null ? 20_000 : 60_000;
 
@@ -1173,7 +1173,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     private void doTestRandomPutRemove(boolean canGetRow) throws IgniteCheckedException {
         TestTree tree = createTestTree(canGetRow);
 
-        Map<Long,Long> map = new HashMap<>();
+        Map<Long, Long> map = new HashMap<>();
 
         int loops = reuseList == null ? 100_000 : 300_000;
 
@@ -1211,7 +1211,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @param map Map.
      * @throws IgniteCheckedException If failed.
      */
-    private void assertEqualContents(IgniteTree<Long, Long> tree, Map<Long,Long> map) throws IgniteCheckedException {
+    private void assertEqualContents(IgniteTree<Long, Long> tree, Map<Long, Long> map) throws IgniteCheckedException {
         GridCursor<Long> cursor = tree.find(null, null);
 
         while (cursor.next()) {
@@ -1271,7 +1271,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         TestTree tree = createTestTree(true);
 
-        TreeMap<Long,Long> map = new TreeMap<>();
+        TreeMap<Long, Long> map = new TreeMap<>();
 
         for (int i = 0; i < 20_000 + rnd.nextInt(2 * MAX_PER_PAGE); i++) {
             Long row = (long)rnd.nextInt(40_000);
@@ -1352,7 +1352,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             items[i] = (long) i;
 
         TestTree testTree = createTestTree(true);
-        TreeMap<Long,Long> goldenMap = new TreeMap<>();
+        TreeMap<Long, Long> goldenMap = new TreeMap<>();
 
         assertEquals(0, testTree.size());
         assertEquals(0, goldenMap.size());
@@ -2509,7 +2509,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     private void doTestRandomPutRemoveMultithreaded(boolean canGetRow) throws Exception {
         final TestTree tree = createTestTree(canGetRow);
 
-        final Map<Long,Long> map = new ConcurrentHashMap<>();
+        final Map<Long, Long> map = new ConcurrentHashMap<>();
 
         final int loops = reuseList == null ? 20_000 : 60_000;
 
@@ -2567,7 +2567,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                                 }
                             });
 
-                            map.put(x,x);
+                            map.put(x, x);
                         }
                         else if (op == 3) {
                             tree.invoke(x, null, new IgniteTree.InvokeClosure<Long>() {
@@ -2773,6 +2773,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                 reuseList,
                 new IOVersions<>(new LongInnerIO(canGetRow)),
                 new IOVersions<>(new LongLeafIO()),
+                PageIdAllocator.FLAG_IDX,
                 new FailureProcessor(new GridTestKernalContext(log)) {
                     @Override public boolean process(FailureContext failureCtx) {
                         lockTrackerManager.dumpLocksToLog();
@@ -2817,12 +2818,12 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
          * @param beforeLock Before lock.
          */
         private static void printLocks(SB b, ConcurrentMap<Object, Map<Long, Long>> locks, Map<Object, Long> beforeLock) {
-            for (Map.Entry<Object,Map<Long,Long>> entry : locks.entrySet()) {
+            for (Map.Entry<Object, Map<Long, Long>> entry : locks.entrySet()) {
                 Object thId = entry.getKey();
 
                 Long z = beforeLock.get(thId);
 
-                Set<Map.Entry<Long,Long>> xx = entry.getValue().entrySet();
+                Set<Map.Entry<Long, Long>> xx = entry.getValue().entrySet();
 
                 if (z == null && xx.isEmpty())
                     continue;
@@ -2834,7 +2835,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
                 b.a('\n');
 
-                for (Map.Entry<Long,Long> x : xx)
+                for (Map.Entry<Long, Long> x : xx)
                     b.a(" -  ").appendHex(x.getValue()).a("  (").appendHex(x.getKey()).a(")\n");
 
                 b.a('\n');
@@ -2907,7 +2908,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Long getLookupRow(BPlusTree<Long,?> tree, long pageAddr, int idx) {
+        @Override public Long getLookupRow(BPlusTree<Long, ?> tree, long pageAddr, int idx) {
             Long row = PageUtils.getLong(pageAddr, offset(idx));
 
             checkNotRemoved(row);
@@ -2975,7 +2976,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Long getLookupRow(BPlusTree<Long,?> tree, long pageAddr, int idx) {
+        @Override public Long getLookupRow(BPlusTree<Long, ?> tree, long pageAddr, int idx) {
             return PageUtils.getLong(pageAddr, offset(idx));
         }
     }

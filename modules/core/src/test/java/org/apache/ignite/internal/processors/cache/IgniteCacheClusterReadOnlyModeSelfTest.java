@@ -416,7 +416,7 @@ public class IgniteCacheClusterReadOnlyModeSelfTest extends IgniteCacheClusterRe
     /** */
     @Test
     public void testReplaceDenied() {
-        performActionReadOnlyExceptionExpected(cache -> cache.replace(KEY,VAL + 1));
+        performActionReadOnlyExceptionExpected(cache -> cache.replace(KEY, VAL + 1));
     }
 
     /** */
@@ -428,7 +428,7 @@ public class IgniteCacheClusterReadOnlyModeSelfTest extends IgniteCacheClusterRe
     /** */
     @Test
     public void testGetAndReplaceDenied() {
-        performActionReadOnlyExceptionExpected(cache -> cache.getAndReplace(KEY,VAL + 1));
+        performActionReadOnlyExceptionExpected(cache -> cache.getAndReplace(KEY, VAL + 1));
     }
 
     /** */
@@ -516,11 +516,6 @@ public class IgniteCacheClusterReadOnlyModeSelfTest extends IgniteCacheClusterRe
     @Test
     public void testCloseAllowed() {
         performAction((node, cache) -> {
-            if (!node.configuration().isClientMode()) {
-                // FIXME https://issues.apache.org/jira/browse/IGNITE-13102
-                return;
-            }
-
             assertFalse(cache.isClosed());
 
             cache.close();

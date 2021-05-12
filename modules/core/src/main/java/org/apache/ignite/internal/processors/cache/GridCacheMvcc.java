@@ -44,7 +44,7 @@ import org.jetbrains.annotations.Nullable;
  * in proper order and that there is no more than only one active lock present at all
  * times. It also ensures that new generated lock candidates will appear after
  * old ones in the pending set, hence preventing lock starvation.
- * See {@link GridCacheVersionManager#next()} for information on how lock IDs are
+ * See {@link GridCacheVersionManager#next(long topVer)} for information on how lock IDs are
  * generated to prevent starvation.
  */
 public final class GridCacheMvcc {

@@ -17,15 +17,14 @@
 
 package org.apache.ignite.ml.tree.randomforest.data.impurity;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.ignite.ml.dataset.feature.BucketMeta;
 import org.apache.ignite.ml.dataset.feature.FeatureMeta;
 import org.apache.ignite.ml.dataset.impl.bootstrapping.BootstrappedVector;
 import org.apache.ignite.ml.math.primitives.vector.VectorUtils;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.junit.Assert.assertTrue;
 

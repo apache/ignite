@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
@@ -42,6 +43,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
@@ -49,11 +51,14 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.TestRecordingCommunicationSpi.blockDemandMessageForGroup;
 
 /**
  * Test scenarios with rebalancing, IGNITE_DISABLE_WAL_DURING_REBALANCING optimization and topology changes
@@ -294,22 +299,32 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
 
         // Blocking fileIO and blockMessagePredicate to block checkpointer and rebalancing for node idx=1.
         useBlockingFileIO = true;
-        int groupId = ((IgniteEx) ig0).cachex(CACHE3_NAME).context().groupId();
-        blockMessagePredicate = (node, msg) -> {
-            if (blockRebalanceEnabled.get() && msg instanceof GridDhtPartitionDemandMessage)
-                return ((GridDhtPartitionDemandMessage) msg).groupId() == groupId;
-
-            return false;
-        };
 
         IgniteEx ig1;
         CacheGroupMetricsImpl metrics;
         int locMovingPartsNum;
 
-        // Enable blocking checkpointer on node idx=1 (see BlockingCheckpointFileIOFactory).
-        fileIoBlockingSemaphore.drainPermits();
         try {
-            ig1 = startGrid(1);
+            IgniteConfiguration cfg1 = getConfiguration(getTestIgniteInstanceName(1));
+            TestRecordingCommunicationSpi spi1 = (TestRecordingCommunicationSpi) cfg1.getCommunicationSpi();
+            spi1.blockMessages(blockDemandMessageForGroup(CU.cacheId(CACHE3_NAME)));
+
+            IgniteInternalFuture<IgniteEx> startFut = GridTestUtils.runAsync(new Callable<IgniteEx>() {
+                @Override public IgniteEx call() throws Exception {
+                    return startGrid(cfg1);
+                }
+            });
+
+            spi1.waitForBlocked();
+
+            ig1 = startFut.get();
+
+            // Enable blocking checkpointer on node idx=1 (see BlockingCheckpointFileIOFactory).
+            fileIoBlockingSemaphore.drainPermits();
+
+            spi1.stopBlock(true, null, false, true);
+
+            doSleep(500);
 
             metrics = ig1.cachex(CACHE3_NAME).context().group().metrics();
             locMovingPartsNum = metrics.getLocalNodeMovingPartitionsCount();
@@ -318,11 +333,11 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
             assertTrue("Expected non-zero value for local moving partitions count on node idx = 1: " +
                 locMovingPartsNum, 0 < locMovingPartsNum && locMovingPartsNum < CACHE3_PARTS_NUM);
 
-            blockRebalanceEnabled.set(true);
-
             // Change baseline topology and release checkpointer to verify
             // that no partitions will be owned after affinity change.
             ig0.cluster().setBaselineTopology(ig1.context().discovery().topologyVersion());
+
+            spi1.waitForBlocked();
         }
         finally {
             fileIoBlockingSemaphore.release(Integer.MAX_VALUE);
@@ -368,11 +383,37 @@ public class IgnitePdsCacheWalDisabledOnRebalancingTest extends GridCommonAbstra
         // Blocking fileIO and blockMessagePredicate to block checkpointer and rebalancing for node idx=1.
         useBlockingFileIO = true;
 
+        // Wait for rebalance (all partitions will be in MOVING state until cp is finished).
+        IgniteConfiguration cfg1 = getConfiguration(getTestIgniteInstanceName(1));
+        TestRecordingCommunicationSpi spi1 = (TestRecordingCommunicationSpi) cfg1.getCommunicationSpi();
+        spi1.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+            @Override public boolean apply(ClusterNode clusterNode, Message msg) {
+                if (msg instanceof GridDhtPartitionDemandMessage) {
+                    GridDhtPartitionDemandMessage msg0 = (GridDhtPartitionDemandMessage) msg;
+
+                    return msg0.groupId() == CU.cacheId(CACHE3_NAME);
+                }
+
+                return false;
+            }
+        });
+
+        IgniteInternalFuture<Void> startFut = GridTestUtils.runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                startGrid(cfg1);
+
+                return null;
+            }
+        });
+
+        spi1.waitForBlocked();
+
+        startFut.get();
+
         // Enable blocking checkpointer on node idx=1 (see BlockingCheckpointFileIOFactory).
         fileIoBlockingSemaphore.drainPermits();
 
-        // Wait for rebalance (all partitions will be in MOVING state until cp is finished).
-        startGrid(1).cachex(CACHE3_NAME).context().group().preloader().rebalanceFuture().get();
+        spi1.stopBlock(); // Will block before owning partitions for CACHE3_NAME.
 
         startClientGrid("client");
 

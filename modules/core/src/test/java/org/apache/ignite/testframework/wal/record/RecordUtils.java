@@ -26,12 +26,13 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.ExchangeRecord;
-import org.apache.ignite.internal.pagemem.wal.record.MasterKeyChangeRecord;
+import org.apache.ignite.internal.pagemem.wal.record.MasterKeyChangeRecordV2;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MvccDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MvccTxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
+import org.apache.ignite.internal.pagemem.wal.record.ReencryptionStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.RollbackRecord;
 import org.apache.ignite.internal.pagemem.wal.record.SnapshotRecord;
 import org.apache.ignite.internal.pagemem.wal.record.SwitchSegmentRecord;
@@ -55,12 +56,14 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageCutRootRecord
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRootInlineRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRootRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateIndexDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateLastAllocatedIndex;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateLastSuccessfulFullSnapshotId;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateLastSuccessfulSnapshotId;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateNextSnapshotId;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdatePartitionDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdatePartitionDataRecordV2;
+import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdatePartitionDataRecordV3;
 import org.apache.ignite.internal.pagemem.wal.record.delta.NewRootInitRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageListMetaResetCountRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListAddPageRecord;
@@ -79,7 +82,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.TrackingPageDeltaReco
 import org.apache.ignite.internal.pagemem.wal.record.delta.TrackingPageRepairDeltaRecord;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionImpl;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.tree.DataInnerIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.transactions.TransactionState;
@@ -110,11 +113,15 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_PAGE_UPDATE_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_DATA_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_DATA_RECORD_V2;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_RECORD_V2;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.EXCHANGE;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.HEADER_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.INDEX_META_PAGE_DELTA_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.INIT_NEW_PAGE_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MASTER_KEY_CHANGE_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MASTER_KEY_CHANGE_RECORD_V2;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MEMORY_RECOVERY;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.METASTORE_DATA_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.META_PAGE_INIT;
@@ -127,6 +134,7 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MVCC_DATA_PAGE_TX_STATE_HINT_UPDATED_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MVCC_DATA_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MVCC_TX_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.OUT_OF_ORDER_UPDATE;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.PAGES_LIST_ADD_PAGE;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.PAGES_LIST_INIT_NEW_PAGE;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.PAGES_LIST_REMOVE_PAGE;
@@ -135,9 +143,11 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.PAGE_LIST_META_RESET_COUNT_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.PAGE_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.PARTITION_DESTROY;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.PARTITION_META_PAGE_DELTA_RECORD_V3;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.PARTITION_META_PAGE_UPDATE_COUNTERS;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.PARTITION_META_PAGE_UPDATE_COUNTERS_V2;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.PART_META_UPDATE_STATE;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.REENCRYPTION_START_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.RESERVED;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ROLLBACK_TX_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ROTATED_ID_PART_RECORD;
@@ -188,6 +198,7 @@ public class RecordUtils {
             put(PAGES_LIST_ADD_PAGE, RecordUtils::buildPagesListAddPageRecord);
             put(PAGES_LIST_REMOVE_PAGE, RecordUtils::buildPagesListRemovePageRecord);
             put(META_PAGE_INIT, RecordUtils::buildMetaPageInitRecord);
+            put(INDEX_META_PAGE_DELTA_RECORD, RecordUtils::buildMetaPageIndexDeltaRecord);
             put(PARTITION_META_PAGE_UPDATE_COUNTERS, RecordUtils::buildMetaPageUpdatePartitionDataRecord);
             put(MEMORY_RECOVERY, RecordUtils::buildMemoryRecoveryRecord);
             put(TRACKING_PAGE_DELTA, RecordUtils::buildTrackingPageDeltaRecord);
@@ -208,17 +219,23 @@ public class RecordUtils {
             put(RESERVED, RecordUtils::buildReservedRecord);
             put(ROLLBACK_TX_RECORD, RecordUtils::buildRollbackRecord);
             put(PARTITION_META_PAGE_UPDATE_COUNTERS_V2, RecordUtils::buildMetaPageUpdatePartitionDataRecordV2);
+            put(PARTITION_META_PAGE_DELTA_RECORD_V3, RecordUtils::buildMetaPageUpdatePartitionDataRecordV3);
             put(MASTER_KEY_CHANGE_RECORD, RecordUtils::buildMasterKeyChangeRecord);
+            put(MASTER_KEY_CHANGE_RECORD_V2, RecordUtils::buildMasterKeyChangeRecordV2);
+            put(REENCRYPTION_START_RECORD, RecordUtils::buildEncryptionStatusRecord);
             put(ROTATED_ID_PART_RECORD, RecordUtils::buildRotatedIdPartRecord);
             put(MVCC_DATA_PAGE_MARK_UPDATED_RECORD, RecordUtils::buildDataPageMvccMarkUpdatedRecord);
             put(MVCC_DATA_PAGE_TX_STATE_HINT_UPDATED_RECORD, RecordUtils::buildDataPageMvccUpdateTxStateHintRecord);
             put(MVCC_DATA_PAGE_NEW_TX_STATE_HINT_UPDATED_RECORD, RecordUtils::buildDataPageMvccUpdateNewTxStateHintRecord);
             put(ENCRYPTED_RECORD, RecordUtils::buildEncryptedRecord);
             put(ENCRYPTED_DATA_RECORD, RecordUtils::buildEncryptedDataRecord);
+            put(ENCRYPTED_RECORD_V2, RecordUtils::buildEncryptedRecordV2);
+            put(ENCRYPTED_DATA_RECORD_V2, RecordUtils::buildEncryptedDataRecordV2);
             put(MVCC_DATA_RECORD, RecordUtils::buildMvccDataRecord);
             put(MVCC_TX_RECORD, RecordUtils::buildMvccTxRecord);
             put(CONSISTENT_CUT, RecordUtils::buildConsistentCutRecord);
             put(BTREE_META_PAGE_INIT_ROOT_V3, RecordUtils::buildBtreeMetaPageInitRootV3);
+            put(OUT_OF_ORDER_UPDATE, RecordUtils::buildOutOfOrderRecord);
         }};
 
     /** **/
@@ -253,7 +270,7 @@ public class RecordUtils {
 
     /** **/
     public static CheckpointRecord buildCheckpointRecord() {
-        CheckpointRecord record = new CheckpointRecord(new FileWALPointer(1, 1, 1));
+        CheckpointRecord record = new CheckpointRecord(new WALPointer(1, 1, 1));
         record.cacheGroupStates(new HashMap<>());
         return record;
     }
@@ -408,6 +425,11 @@ public class RecordUtils {
     }
 
     /** **/
+    public static MetaPageUpdateIndexDataRecord buildMetaPageIndexDeltaRecord() {
+        return new MetaPageUpdateIndexDataRecord(1, 1, 0, 0);
+    }
+
+    /** **/
     public static MetaPageUpdatePartitionDataRecord buildMetaPageUpdatePartitionDataRecord() {
         return new MetaPageUpdatePartitionDataRecord(1, 1, 1, 1, 1, 1, (byte)1, 1);
     }
@@ -512,8 +534,23 @@ public class RecordUtils {
     }
 
     /** **/
-    public static MasterKeyChangeRecord buildMasterKeyChangeRecord() {
-        return new MasterKeyChangeRecord("", new HashMap<>());
+    public static MetaPageUpdatePartitionDataRecordV3 buildMetaPageUpdatePartitionDataRecordV3() {
+        return new MetaPageUpdatePartitionDataRecordV3(1, 1, 1, 1, 1, 1, (byte)1, 1, 1, 0, 0);
+    }
+
+    /** **/
+    public static UnsupportedWalRecord buildMasterKeyChangeRecord() {
+        return new UnsupportedWalRecord(MASTER_KEY_CHANGE_RECORD);
+    }
+
+    /** **/
+    public static MasterKeyChangeRecordV2 buildMasterKeyChangeRecordV2() {
+        return new MasterKeyChangeRecordV2("", Collections.emptyList());
+    }
+
+    /** **/
+    public static ReencryptionStartRecord buildEncryptionStatusRecord() {
+        return new ReencryptionStartRecord(Collections.emptyMap());
     }
 
     /** **/
@@ -547,6 +584,16 @@ public class RecordUtils {
     }
 
     /** **/
+    public static UnsupportedWalRecord buildEncryptedRecordV2() {
+        return new UnsupportedWalRecord(ENCRYPTED_RECORD_V2);
+    }
+
+    /** **/
+    public static UnsupportedWalRecord buildEncryptedDataRecordV2() {
+        return new UnsupportedWalRecord(ENCRYPTED_DATA_RECORD_V2);
+    }
+
+    /** **/
     public static MvccDataRecord buildMvccDataRecord() {
         return new MvccDataRecord(Collections.emptyList(), 1);
     }
@@ -570,6 +617,11 @@ public class RecordUtils {
     /** **/
     public static UnsupportedWalRecord buildBtreeMetaPageInitRootV3() {
         return new UnsupportedWalRecord(BTREE_META_PAGE_INIT_ROOT_V3);
+    }
+
+    /** **/
+    public static UnsupportedWalRecord buildOutOfOrderRecord() {
+        return new UnsupportedWalRecord(OUT_OF_ORDER_UPDATE);
     }
 
     /**

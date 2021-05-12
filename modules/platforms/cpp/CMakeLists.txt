@@ -16,7 +16,7 @@
 #
 
 cmake_minimum_required(VERSION 3.6)
-project(Ignite.C++ VERSION 2.9.0.42453)
+project(Ignite.C++ VERSION 2.11.0.51807)
 
 set(CMAKE_CXX_STANDARD 98)
 
@@ -41,12 +41,29 @@ endif("${isSystemDir}" STREQUAL "-1")
 if (WIN32)
     add_definitions(-DUNICODE=1)
 
-    add_compile_options(/source-charset:utf-8)
+    set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+
+    set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+endif()
+
+if (MSVC)
+    add_compile_options(/source-charset:utf-8 /execution-charset:utf-8)
+
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
 endif()
 
 option (WITH_ODBC OFF)
 option (WITH_THIN_CLIENT OFF)
 option (WITH_TESTS OFF)
+option (WARNINGS_AS_ERRORS OFF)
+
+if (${WARNINGS_AS_ERRORS})
+    if (MSVC)
+        add_compile_options(/WX)
+    else()
+        add_compile_options(-Wall -Wextra -Werror -Wno-variadic-macros)
+    endif()
+endif()
 
 add_subdirectory(common)
 add_subdirectory(binary)

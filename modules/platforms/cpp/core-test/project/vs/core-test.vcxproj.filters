@@ -61,9 +61,6 @@
     <ClCompile Include="..\..\src\interop_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\cluster_test.cpp">
-      <Filter>Code</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\continuous_query_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
@@ -89,6 +86,18 @@
       <Filter>Code</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\compute_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\cluster_group_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\cluster_node_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\cluster_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\affinity_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
   </ItemGroup>
@@ -193,5 +202,43 @@
     <None Include="..\..\config\persistence-store-default.xml">
       <Filter>Configs</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="..\..\config\compute-client.xml">
+      <Filter>Configs</Filter>
+    </Xml>
+    <Xml Include="..\..\config\compute-client-32.xml">
+      <Filter>Configs</Filter>
+    </Xml>
+    <Xml Include="..\..\config\compute-client-default.xml">
+      <Filter>Configs</Filter>
+    </Xml>
+    <Xml Include="..\..\config\compute-server0.xml">
+      <Filter>Configs</Filter>
+    </Xml>
+    <Xml Include="..\..\config\compute-server0-32.xml">
+      <Filter>Configs</Filter>
+    </Xml>
+    <Xml Include="..\..\config\compute-server0-default.xml">
+      <Filter>Configs</Filter>
+    </Xml>
+    <Xml Include="..\..\config\compute-server1.xml">
+      <Filter>Configs</Filter>
+    </Xml>
+    <Xml Include="..\..\config\compute-server1-32.xml">
+      <Filter>Configs</Filter>
+    </Xml>
+    <Xml Include="..\..\config\compute-server1-default.xml">
+      <Filter>Configs</Filter>
+    </Xml>
+    <Xml Include="..\..\config\cache-native-persistence-test.xml">
+      <Filter>Configs</Filter>
+    </Xml>
+    <Xml Include="..\..\config\cache-native-persistence-test-32.xml">
+      <Filter>Configs</Filter>
+    </Xml>
+    <Xml Include="..\..\config\cache-native-persistence-test-default.xml">
+      <Filter>Configs</Filter>
+    </Xml>
   </ItemGroup>
 </Project>

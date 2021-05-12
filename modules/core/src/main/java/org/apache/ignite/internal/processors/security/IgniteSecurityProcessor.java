@@ -224,7 +224,7 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
         secPrc.start();
 
         if (hasSecurityManager() && secPrc.sandboxEnabled()) {
-            sandbox = new AccessControllerSandbox(this);
+            sandbox = new AccessControllerSandbox(ctx, this);
 
             updatePackageAccessProperty();
         }
@@ -352,6 +352,21 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
         return secPrc.onReconnected(clusterRestarted);
     }
 
+    /** {@inheritDoc} */
+    @Override public void createUser(String login, char[] pwd) throws IgniteCheckedException {
+        secPrc.createUser(login, pwd);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void alterUser(String login, char[] pwd) throws IgniteCheckedException {
+        secPrc.alterUser(login, pwd);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void dropUser(String login) throws IgniteCheckedException {
+        secPrc.dropUser(login);
+    }
+
     /**
      * Getting local node's security context.
      *
@@ -378,5 +393,10 @@ public class IgniteSecurityProcessor implements IgniteSecurity, GridProcessor {
         }
 
         return null;
+    }
+
+    /** @return Security processor implementation to which current security facade delegates operations. */
+    public GridSecurityProcessor securityProcessor() {
+        return secPrc;
     }
 }

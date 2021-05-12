@@ -16,8 +16,6 @@
  */
 
 #include <ignite/impl/thin/cache/cache_client_proxy.h>
-
-#include <ignite/impl/thin/cache/cache_client_proxy.h>
 #include <impl/cache/cache_client_impl.h>
 
 using namespace ignite::impl::thin;
@@ -30,11 +28,6 @@ namespace
     CacheClientImpl& GetCacheImpl(SharedPointer<void>& ptr)
     {
         return *reinterpret_cast<CacheClientImpl*>(ptr.Get());
-    }
-
-    const CacheClientImpl& GetCacheImpl(const SharedPointer<void>& ptr)
-    {
-        return *reinterpret_cast<const CacheClientImpl*>(ptr.Get());
     }
 }
 
@@ -155,6 +148,14 @@ namespace ignite
                     Readable& valOut)
                 {
                     GetCacheImpl(impl).GetAndPutIfAbsent(key, valIn, valOut);
+                }
+
+                ignite::thin::cache::query::QueryFieldsCursor CacheClientProxy::Query(
+                        const ignite::thin::cache::query::SqlFieldsQuery &qry)
+                {
+                    query::SP_QueryFieldsCursorImpl cursorImpl = GetCacheImpl(impl).Query(qry);
+
+                    return ignite::thin::cache::query::QueryFieldsCursor(cursorImpl);
                 }
             }
         }

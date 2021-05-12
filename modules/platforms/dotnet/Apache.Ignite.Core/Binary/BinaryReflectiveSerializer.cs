@@ -21,21 +21,21 @@ namespace Apache.Ignite.Core.Binary
     using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
-    /// Binary serializer which reflectively writes all fields except of ones with 
+    /// Binary serializer which reflectively writes all fields except of ones with
     /// <see cref="System.NonSerializedAttribute"/>.
     /// <para />
-    /// Note that Java platform stores dates as a difference between current time 
-    /// and predefined absolute UTC date. Therefore, this difference is always the 
-    /// same for all time zones. .NET, in contrast, stores dates as a difference 
-    /// between current time and some predefined date relative to the current time 
-    /// zone. It means that this difference will be different as you change time zones. 
-    /// To overcome this discrepancy Ignite always converts .Net date to UTC form 
-    /// before serializing and allows user to decide whether to deserialize them 
-    /// in UTC or local form using <c>ReadTimestamp(..., true/false)</c> methods in 
+    /// Note that Java platform stores dates as a difference between current time
+    /// and predefined absolute UTC date. Therefore, this difference is always the
+    /// same for all time zones. .NET, in contrast, stores dates as a difference
+    /// between current time and some predefined date relative to the current time
+    /// zone. It means that this difference will be different as you change time zones.
+    /// To overcome this discrepancy Ignite always converts .NET date to UTC form
+    /// before serializing and allows user to decide whether to deserialize them
+    /// in UTC or local form using <c>ReadTimestamp(..., true/false)</c> methods in
     /// <see cref="IBinaryReader"/> and <see cref="IBinaryRawReader"/>.
     /// This serializer always read dates in UTC form. It means that if you have
     /// local date in any field/property, it will be implicitly converted to UTC
-    /// form after the first serialization-deserialization cycle. 
+    /// form after the first serialization-deserialization cycle.
     /// </summary>
     public sealed class BinaryReflectiveSerializer : IBinarySerializer
     {
@@ -94,7 +94,7 @@ namespace Apache.Ignite.Core.Binary
         /// Normally serializer uses <see cref="IBinaryWriter.WriteObject{T}"/> for DateTime fields.
         /// This attribute changes the behavior to <see cref="IBinaryWriter.WriteTimestamp"/>.
         /// <para />
-        /// See also <see cref="TimestampAttribute"/>.
+        /// See also <see cref="TimestampAttribute"/>, <see cref="BinaryConfiguration.ForceTimestamp"/>.
         /// </summary>
         public bool ForceTimestamp
         {

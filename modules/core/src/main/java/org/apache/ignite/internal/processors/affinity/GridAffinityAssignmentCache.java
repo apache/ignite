@@ -66,11 +66,17 @@ import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVE
  * Affinity cached function.
  */
 public class GridAffinityAssignmentCache {
+    /** @see IgniteSystemProperties#IGNITE_AFFINITY_HISTORY_SIZE */
+    public static final int DFLT_AFFINITY_HISTORY_SIZE = 25;
+
+    /** @see IgniteSystemProperties#IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD */
+    public static final float DFLT_PART_DISTRIBUTION_WARN_THRESHOLD = 50f;
+
     /**
      * Affinity cache will shrink when total number of non-shallow (see {@link HistoryAffinityAssignmentImpl})
      * historical instances will be greater than value of this constant.
      */
-    private final int MAX_NON_SHALLOW_HIST_SIZE = getInteger(IGNITE_AFFINITY_HISTORY_SIZE, 25);
+    private final int MAX_NON_SHALLOW_HIST_SIZE = getInteger(IGNITE_AFFINITY_HISTORY_SIZE, DFLT_AFFINITY_HISTORY_SIZE);
 
     /**
      * Affinity cache will also shrink when total number of both shallow ({@link HistoryAffinityAssignmentShallowCopy})
@@ -89,7 +95,8 @@ public class GridAffinityAssignmentCache {
     private final int MIN_NON_SHALLOW_HIST_SIZE = 2;
 
     /** Partition distribution. */
-    private final float partDistribution = getFloat(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, 50f);
+    private final float partDistribution =
+        getFloat(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, DFLT_PART_DISTRIBUTION_WARN_THRESHOLD);
 
     /** Group name if specified or cache name. */
     private final String cacheOrGrpName;

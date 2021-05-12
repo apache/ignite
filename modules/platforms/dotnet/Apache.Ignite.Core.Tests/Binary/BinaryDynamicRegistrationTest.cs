@@ -18,7 +18,11 @@
 // ReSharper disable UnusedAutoPropertyAccessor.Local
 namespace Apache.Ignite.Core.Tests.Binary
 {
-    extern alias ExamplesDll;
+#if !NETCOREAPP
+    extern alias TestDll2;
+    using Apache.Ignite.Core.Tests.TestDll2;
+    using ExamplesAccount = TestDll2.Apache.Ignite.Core.Tests.TestDll2.Account;
+#endif
 
     using System;
     using System.Collections;
@@ -35,10 +39,7 @@ namespace Apache.Ignite.Core.Tests.Binary
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Tests.Compute;
-    using Apache.Ignite.ExamplesDll.Binary;
     using NUnit.Framework;
-
-    using ExamplesAccount = ExamplesDll::Apache.Ignite.ExamplesDll.Binary.Account;
 
     /// <summary>
     /// Tests the dynamic type registration.
@@ -224,9 +225,9 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// Tests the single grid scenario.
         /// </summary>
         [Test]
-        public void TestSingleGrid()
+        public void TestSingleGrid([Values(false, true)] bool customMapper)
         {
-            using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
+            using (var ignite = Ignition.Start(GetConfig(false, customMapper)))
             {
                 Test(ignite, ignite);
             }
@@ -236,23 +237,20 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// Tests the two grid scenario.
         /// </summary>
         [Test]
-        public void TestTwoGrids([Values(false, true)] bool clientMode)
+        public void TestTwoGrids([Values(false, true)] bool clientMode, [Values(false, true)] bool customMapper)
         {
-            using (var ignite1 = Ignition.Start(TestUtils.GetTestConfiguration()))
-            {
-                var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
-                {
-                    IgniteInstanceName = "grid2",
-                    ClientMode = clientMode
-                };
+            var cfg1 = GetConfig(false, customMapper);
+            var cfg2 = GetConfig(clientMode, customMapper, "grid2");
 
-                using (var ignite2 = Ignition.Start(cfg))
+            using (var ignite1 = Ignition.Start(cfg1))
+            {
+                using (var ignite2 = Ignition.Start(cfg2))
                 {
                     Test(ignite1, ignite2);
                 }
 
                 // Test twice to verify double registration.
-                using (var ignite2 = Ignition.Start(cfg))
+                using (var ignite2 = Ignition.Start(cfg2))
                 {
                     Test(ignite1, ignite2);
                 }
@@ -297,7 +295,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         }
 
         /// <summary>
-        /// Tests interop scenario: Java and .NET exchange an object with the same type id, 
+        /// Tests interop scenario: Java and .NET exchange an object with the same type id,
         /// but marshaller cache contains different entries for different platforms for the same id.
         /// </summary>
         [Test]
@@ -339,6 +337,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             }
         }
 
+#if !NETCOREAPP
         /// <summary>
         /// Tests that types with same FullName from different assemblies are mapped to each other.
         /// </summary>
@@ -360,6 +359,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 }
             }
         }
+#endif
 
         /// <summary>
         /// Tests registration in multiple threads.
@@ -376,7 +376,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 var bin = ignite.GetBinary();
                 Func<Type, IBinaryObjectBuilder> getBuilder = x =>
                     useTypeName ? bin.GetBuilder(x.FullName) : bin.GetBuilder(x);
-                    
+
                 var types = new[] { typeof(Foo), typeof(Bar), typeof(Bin) };
 
                 foreach (var type in types)
@@ -444,12 +444,17 @@ namespace Apache.Ignite.Core.Tests.Binary
             // Test compute.
             var serverNodeCount = ignite1.GetCluster().ForServers().GetNodes().Count;
 
-            var res = ignite1.GetCompute().Broadcast(new CompFn<DateTime>(() => DateTime.Now));
-            Assert.AreEqual(serverNodeCount, res.Count);
+            var res0 = ignite1.GetCompute().Broadcast(new CompDateTimeFn());
+            Assert.AreEqual(serverNodeCount, res0.Count);
+
+#if !NETCOREAPP // Serializing delegates is not supported on this platform
+            var res1 = ignite1.GetCompute().Broadcast(new CompFn<DateTime>(() => DateTime.Now));
+            Assert.AreEqual(serverNodeCount, res1.Count);
 
             // Variable capture.
             var res2 = ignite1.GetCompute().Broadcast(new CompFn<string>(() => bar0.Str));
             Assert.AreEqual(Enumerable.Repeat(bar0.Str, serverNodeCount), res2);
+#endif
         }
 
         /// <summary>
@@ -463,6 +468,32 @@ namespace Apache.Ignite.Core.Tests.Binary
             var files = Directory.GetFiles(home, "*.classname*", SearchOption.AllDirectories);
 
             files.ToList().ForEach(File.Delete);
+        }
+
+        /// <summary>
+        /// Gets the config.
+        /// </summary>
+        private static IgniteConfiguration GetConfig(bool client, bool customMapper, string name = null)
+        {
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                ClientMode = client,
+                IgniteInstanceName = name
+            };
+
+            if (customMapper)
+            {
+                cfg.BinaryConfiguration = new BinaryConfiguration
+                {
+                    NameMapper = new BinaryBasicNameMapper
+                    {
+                        NamespaceToLower = true,
+                        NamespacePrefix = "foo.bar."
+                    }
+                };
+            }
+
+            return cfg;
         }
 
         private interface ITest
@@ -560,6 +591,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             }
         }
 
+#if !NETCOREAPP // Serializing delegates is not supported on this platform
         private class CompFn<T> : IComputeFunc<T>
         {
             private readonly Func<T> _func;
@@ -574,13 +606,23 @@ namespace Apache.Ignite.Core.Tests.Binary
                 return _func();
             }
         }
+#endif
+
+        private class CompDateTimeFn : IComputeFunc<DateTime>
+        {
+            public DateTime Invoke()
+            {
+                return DateTime.UtcNow;
+            }
+        }
     }
 }
 
-namespace Apache.Ignite.ExamplesDll.Binary
+#if !NETCOREAPP
+namespace Apache.Ignite.Core.Tests.TestDll2
 {
     /// <summary>
-    /// Copy of Account class in ExamplesDll. Same name and namespace, different assembly.
+    /// Copy of Account class in TestDll2. Same name and namespace, different assembly.
     /// </summary>
     public class Account
     {
@@ -589,3 +631,4 @@ namespace Apache.Ignite.ExamplesDll.Binary
         public decimal Balance { get; set; }
     }
 }
+#endif

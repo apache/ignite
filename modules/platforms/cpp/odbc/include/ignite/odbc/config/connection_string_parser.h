@@ -98,6 +98,12 @@ namespace ignite
                     /** Connection attribute keyword for password attribute. */
                     static const std::string password;
 
+                    /** Connection attribute keyword for username attribute. */
+                    static const std::string uid;
+
+                    /** Connection attribute keyword for password attribute. */
+                    static const std::string pwd;
+
                     /** Connection attribute keyword for nestedTxMode attribute. */
                     static const std::string nestedTxMode;
                 };

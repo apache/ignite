@@ -39,7 +39,7 @@
 }
 
 namespace ignite
-{    
+{
     namespace impl
     {
         namespace interop 
@@ -95,7 +95,7 @@ namespace ignite
                 for (int i = 0; i < len; i++)
                     *(res + i) = ReadBool();
             }
-                
+
             int16_t InteropInputStream::ReadInt16()
             {
                 IGNITE_INTEROP_IN_READ(int16_t, 2);
@@ -183,7 +183,7 @@ namespace ignite
             {
                 IGNITE_INTEROP_IN_READ_ARRAY(len, 3);
             }
-                
+
             int32_t InteropInputStream::Remaining() const
             {
                 return len - pos;
@@ -202,6 +202,11 @@ namespace ignite
                     IGNITE_ERROR_FORMATTED_3(IgniteError::IGNITE_ERR_MEMORY, "Requested input stream position is out of bounds",
                         "memPtr", mem->PointerLong(), "len", len, "pos", pos);
                 }
+            }
+
+            void InteropInputStream::Ignore(int32_t cnt)
+            {
+                Shift(cnt);
             }
 
             void InteropInputStream::Synchronize()
@@ -235,4 +240,4 @@ namespace ignite
             }
         }
     }
-}        
+}

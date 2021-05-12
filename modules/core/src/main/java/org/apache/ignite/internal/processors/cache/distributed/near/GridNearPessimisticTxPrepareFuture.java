@@ -38,6 +38,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxMapp
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
+import org.apache.ignite.internal.processors.tracing.MTC;
+import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -48,6 +50,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
+import static org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
+import static org.apache.ignite.internal.processors.tracing.SpanType.TX_NEAR_PREPARE;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
 import static org.apache.ignite.transactions.TransactionState.PREPARING;
 
@@ -57,6 +61,9 @@ import static org.apache.ignite.transactions.TransactionState.PREPARING;
 public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureAdapter {
     /** */
     private static final long serialVersionUID = 4014479758215810181L;
+
+    /** Tracing span. */
+    private Span span;
 
     /**
      * @param cctx Context.
@@ -166,29 +173,32 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
     /** {@inheritDoc} */
     @Override public void prepare() {
-        if (!tx.state(PREPARING)) {
-            if (tx.isRollbackOnly() || tx.setRollbackOnly()) {
-                if (tx.remainingTime() == -1)
-                    onDone(tx.timeoutException());
+        try (TraceSurroundings ignored =
+                 MTC.supportContinual(span = cctx.kernalContext().tracing().create(TX_NEAR_PREPARE, MTC.span()))) {
+            if (!tx.state(PREPARING)) {
+                if (tx.isRollbackOnly() || tx.setRollbackOnly()) {
+                    if (tx.remainingTime() == -1)
+                        onDone(tx.timeoutException());
+                    else
+                        onDone(tx.rollbackException());
+                }
                 else
-                    onDone(tx.rollbackException());
+                    onDone(new IgniteCheckedException("Invalid transaction state for prepare " +
+                        "[state=" + tx.state() + ", tx=" + this + ']'));
+
+                return;
             }
-            else
-                onDone(new IgniteCheckedException("Invalid transaction state for prepare " +
-                    "[state=" + tx.state() + ", tx=" + this + ']'));
 
-            return;
-        }
+            try {
+                tx.userPrepare(Collections.<IgniteTxEntry>emptyList());
 
-        try {
-            tx.userPrepare(Collections.<IgniteTxEntry>emptyList());
+                cctx.mvcc().addFuture(this);
 
-            cctx.mvcc().addFuture(this);
-
-            preparePessimistic();
-        }
-        catch (IgniteCheckedException e) {
-            onDone(e);
+                preparePessimistic();
+            }
+            catch (IgniteCheckedException e) {
+                onDone(e);
+            }
         }
     }
 
@@ -433,22 +443,24 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
     /** {@inheritDoc} */
     @Override public boolean onDone(@Nullable IgniteInternalTx res, @Nullable Throwable err) {
-        if (err != null)
-            ERR_UPD.compareAndSet(GridNearPessimisticTxPrepareFuture.this, null, err);
+        try (TraceSurroundings ignored = MTC.support(span)) {
+            if (err != null)
+                ERR_UPD.compareAndSet(GridNearPessimisticTxPrepareFuture.this, null, err);
 
-        err = this.err;
+            err = this.err;
 
-        if ((!tx.onePhaseCommit() || tx.mappings().get(cctx.localNodeId()) == null) &&
-            (err == null || tx.needCheckBackup()))
-            tx.state(PREPARED);
+            if ((!tx.onePhaseCommit() || tx.mappings().get(cctx.localNodeId()) == null) &&
+                (err == null || tx.needCheckBackup()))
+                tx.state(PREPARED);
 
-        if (super.onDone(tx, err)) {
-            cctx.mvcc().removeVersionedFuture(this);
+            if (super.onDone(tx, err)) {
+                cctx.mvcc().removeVersionedFuture(this);
 
-            return true;
+                return true;
+            }
+
+            return false;
         }
-
-        return false;
     }
 
     /** {@inheritDoc} */

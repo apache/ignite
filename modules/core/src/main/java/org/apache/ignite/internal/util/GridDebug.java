@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.util;
 
-import com.sun.management.HotSpotDiagnosticMXBean;
-import com.sun.management.OperatingSystemMXBean;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -35,6 +33,8 @@ import java.util.Date;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.management.MBeanServer;
+import com.sun.management.HotSpotDiagnosticMXBean;
+import com.sun.management.OperatingSystemMXBean;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -66,7 +66,7 @@ public class GridDebug {
      * sudo mkdir /ramdisk
      * sudo mount -t tmpfs -o size=2048M tmpfs /ramdisk
      */
-    private static final String LOGS_PATH = null;// "/ramdisk/";
+    private static final String LOGS_PATH = null; // "/ramdisk/";
 
     /** */
     private static boolean allowLog;
@@ -225,7 +225,7 @@ public class GridDebug {
         if (que == null)
             return;
 
-        int start = -1;// que.size() - 5000;
+        int start = -1; // que.size() - 5000;
 
         int x = 0;
 

@@ -17,29 +17,27 @@
 
 package org.apache.ignite.tests.utils;
 
-import org.apache.ignite.cache.store.cassandra.common.SystemHelper;
-import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
-import org.apache.ignite.tests.load.Generator;
-import org.springframework.core.io.ClassPathResource;
-
+import java.util.Calendar;
 import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
-import java.util.Set;
-import java.util.HashSet;
 import java.util.Random;
 import java.util.ResourceBundle;
-import java.util.Calendar;
-import java.util.Date;
-
+import java.util.Set;
+import org.apache.ignite.cache.store.cassandra.common.SystemHelper;
+import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
+import org.apache.ignite.tests.load.Generator;
+import org.apache.ignite.tests.pojos.Person;
+import org.apache.ignite.tests.pojos.PersonId;
 import org.apache.ignite.tests.pojos.Product;
 import org.apache.ignite.tests.pojos.ProductOrder;
-import org.apache.ignite.tests.pojos.Person;
 import org.apache.ignite.tests.pojos.SimplePerson;
-import org.apache.ignite.tests.pojos.PersonId;
 import org.apache.ignite.tests.pojos.SimplePersonId;
+import org.springframework.core.io.ClassPathResource;
 
 /**
  * Helper class for all tests

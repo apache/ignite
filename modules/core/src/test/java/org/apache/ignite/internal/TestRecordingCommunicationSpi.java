@@ -30,8 +30,12 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
+import org.apache.ignite.internal.processors.tracing.MTC;
+import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
+import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -58,7 +62,7 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
     private List<Object> recordedMsgs = new ArrayList<>();
 
     /** */
-    private List<T2<ClusterNode, GridIoMessage>> blockedMsgs = new ArrayList<>();
+    private List<BlockedMessageDescriptor> blockedMsgs = new ArrayList<>();
 
     /** */
     private Map<Class<?>, Set<String>> blockCls = new HashMap<>();
@@ -119,7 +123,7 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
                     ignite.log().info("Block message [node=" + node.id() + ", order=" + node.order() +
                         ", msg=" + ioMsg.message() + ']');
 
-                    blockedMsgs.add(new T2<>(node, ioMsg));
+                    blockedMsgs.add(new BlockedMessageDescriptor(node, ioMsg, MTC.span()));
 
                     notifyAll();
 
@@ -253,9 +257,9 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
      * @return {@code True} if has blocked message.
      */
     private boolean hasMessage(Class<?> cls, String nodeName) {
-        for (T2<ClusterNode, GridIoMessage> msg : blockedMsgs) {
-            if (msg.get2().message().getClass() == cls &&
-                nodeName.equals(msg.get1().attribute(ATTR_IGNITE_INSTANCE_NAME)))
+        for (BlockedMessageDescriptor blockedMsg : blockedMsgs) {
+            if (blockedMsg.ioMessage().message().getClass() == cls &&
+                nodeName.equals(blockedMsg.destinationNode().attribute(ATTR_IGNITE_INSTANCE_NAME)))
                 return true;
         }
 
@@ -319,7 +323,7 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
      * @param sndMsgs If {@code true} sends blocked messages.
      * @param unblockPred If not null unblocks only messages allowed by predicate.
      */
-    public void stopBlock(boolean sndMsgs, @Nullable IgnitePredicate<T2<ClusterNode, GridIoMessage>> unblockPred) {
+    public void stopBlock(boolean sndMsgs, @Nullable IgnitePredicate<BlockedMessageDescriptor> unblockPred) {
         stopBlock(sndMsgs, unblockPred, true, true);
     }
 
@@ -333,7 +337,7 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
      * @param rmvBlockedMsgs {@code true} to remove blocked messages. Sometimes useful in conjunction with {@code
      * sndMsgs=false}.
      */
-    public void stopBlock(boolean sndMsgs, @Nullable IgnitePredicate<T2<ClusterNode, GridIoMessage>> unblockPred,
+    public void stopBlock(boolean sndMsgs, @Nullable IgnitePredicate<BlockedMessageDescriptor> unblockPred,
         boolean clearFilters, boolean rmvBlockedMsgs) {
         synchronized (this) {
             if (clearFilters) {
@@ -341,25 +345,23 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
                 blockP = null;
             }
 
-            Iterator<T2<ClusterNode, GridIoMessage>> iter = blockedMsgs.iterator();
+            Iterator<BlockedMessageDescriptor> iter = blockedMsgs.iterator();
 
             while (iter.hasNext()) {
-                T2<ClusterNode, GridIoMessage> msg = iter.next();
+                BlockedMessageDescriptor blockedMsg = iter.next();
 
                 // It is important what predicate if called only once for each message.
-                if (unblockPred != null && !unblockPred.apply(msg))
+                if (unblockPred != null && !unblockPred.apply(blockedMsg))
                     continue;
 
                 if (sndMsgs) {
-                    try {
-                        ignite.log().info("Send blocked message [node=" + msg.get1().id() +
-                            ", order=" + msg.get1().order() +
-                            ", msg=" + msg.get2().message() + ']');
+                    try (TraceSurroundings ignored = MTC.supportContinual(blockedMsg.span())) {
+                        ignite.log().info("Send blocked message " + blockedMsg);
 
-                        super.sendMessage(msg.get1(), msg.get2());
+                        super.sendMessage(blockedMsg.destinationNode(), blockedMsg.ioMessage());
                     }
                     catch (Throwable e) {
-                        U.error(ignite.log(), "Failed to send blocked message: " + msg, e);
+                        U.error(ignite.log(), "Failed to send blocked message: " + blockedMsg, e);
                     }
                 }
 
@@ -375,5 +377,101 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
     public static void stopBlockAll() {
         for (Ignite ignite : G.allGrids())
             spi(ignite).stopBlock(true);
+    }
+
+    /**
+     * @param grpId Group id.
+     */
+    public static IgniteBiPredicate<ClusterNode, Message> blockDemandMessageForGroup(int grpId) {
+        return new IgniteBiPredicate<ClusterNode, Message>() {
+            @Override public boolean apply(ClusterNode clusterNode, Message msg) {
+                if (msg instanceof GridDhtPartitionDemandMessage) {
+                    GridDhtPartitionDemandMessage msg0 = (GridDhtPartitionDemandMessage) msg;
+
+                    return msg0.groupId() == grpId;
+                }
+
+                return false;
+            }
+        };
+    }
+
+    /** */
+    public static IgniteBiPredicate<ClusterNode, Message> blockSingleExhangeMessage() {
+        return new IgniteBiPredicate<ClusterNode, Message>() {
+            @Override public boolean apply(ClusterNode clusterNode, Message msg) {
+                if (msg instanceof GridDhtPartitionsSingleMessage) {
+                    GridDhtPartitionsSingleMessage msg0 = (GridDhtPartitionsSingleMessage) msg;
+
+                    return msg0.exchangeId() != null;
+                }
+
+                return false;
+            }
+        };
+    }
+
+    /** */
+    public static IgniteBiPredicate<ClusterNode, Message> blockSinglePartitionStateMessage() {
+        return new IgniteBiPredicate<ClusterNode, Message>() {
+            @Override public boolean apply(ClusterNode clusterNode, Message msg) {
+                if (msg instanceof GridDhtPartitionsSingleMessage) {
+                    GridDhtPartitionsSingleMessage msg0 = (GridDhtPartitionsSingleMessage) msg;
+
+                    return msg0.exchangeId() == null;
+                }
+
+                return false;
+            }
+        };
+    }
+
+    /**
+     * Description of the blocked message.
+     */
+    public static class BlockedMessageDescriptor {
+        /** Destination node for the blocked message. */
+        private final ClusterNode destNode;
+
+        /** Blocked message. */
+        private final GridIoMessage msg;
+
+        /** Span in which context sending must be done. */
+        private final Span span;
+
+        /**
+         *
+         */
+        public BlockedMessageDescriptor(ClusterNode destNode, GridIoMessage msg, Span span) {
+            this.destNode = destNode;
+            this.msg = msg;
+            this.span = span;
+        }
+
+        /**
+         * @return Destination node for the blocked message.
+         */
+        public ClusterNode destinationNode() {
+            return destNode;
+        }
+
+        /**
+         * @return Blocked message.
+         */
+        public GridIoMessage ioMessage() {
+            return msg;
+        }
+
+        /**
+         * @return Span in which context sending must be done.
+         */
+        public Span span() {
+            return span;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "[node=" + destNode.id() + ", order=" + destNode.order() + ", msg=" + msg.message() + ']';
+        }
     }
 }

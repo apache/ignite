@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.failure;
 
-import com.google.common.collect.ImmutableSet;
 import java.util.concurrent.atomic.AtomicBoolean;
+import com.google.common.collect.ImmutableSet;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.IgniteConfiguration;

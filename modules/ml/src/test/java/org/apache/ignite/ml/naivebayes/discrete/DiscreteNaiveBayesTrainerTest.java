@@ -137,7 +137,7 @@ public class DiscreteNaiveBayesTrainerTest extends TrainerTest {
     public void testReturnsCorrectPriorProbabilities() {
         double[][][] expectedPriorProbabilites = new double[][][] {
             {{.5, .5}, {.5, .5}, {2. / 3., 1. / 3.}, {.5, .5}, {.5, .5}},
-            {{0, 1}, {3. / 7, 4. / 7}, {4. / 7, 3. / 7}, {2. / 7, 5. / 7}, {4. / 7, 3. / 7,}}
+            {{0, 1}, {3. / 7, 4. / 7}, {4. / 7, 3. / 7}, {2. / 7, 5. / 7}, {4. / 7, 3. / 7}}
         };
 
         DiscreteNaiveBayesModel mdl = trainer.fit(

@@ -41,4 +41,14 @@ public class ClientFeatureNotSupportedByServerException extends ClientException 
     public ClientFeatureNotSupportedByServerException(ProtocolBitmaskFeature feature) {
         super("Feature " + feature.name() + " is not supported by the server");
     }
+
+    /**
+     * Constructs a new exception with the specified cause and detail message.
+     *
+     * @param msg the detail message.
+     * @param cause the cause.
+     */
+    public ClientFeatureNotSupportedByServerException(String msg, Throwable cause) {
+        super(msg, cause);
+    }
 }

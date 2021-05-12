@@ -50,6 +50,8 @@ import org.apache.ignite.internal.util.GridCursorIteratorWrapper;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
+
 /**
  */
 public abstract class AbstractFreeList<T extends Storable> extends PagesList implements FreeList<T>, ReuseList {
@@ -425,6 +427,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
      * @param wal Write ahead log manager.
      * @param metaPageId Metadata page ID.
      * @param initNew {@code True} if new metadata should be initialized.
+     * @param pageFlag Default flag value for allocated pages.
      * @throws IgniteCheckedException If failed.
      */
     public AbstractFreeList(
@@ -438,9 +441,10 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         boolean initNew,
         PageLockListener lockLsnr,
         GridKernalContext ctx,
-        AtomicLong pageListCacheLimit
+        AtomicLong pageListCacheLimit,
+        byte pageFlag
     ) throws IgniteCheckedException {
-        super(cacheId, name, memPlc.pageMemory(), BUCKETS, wal, metaPageId, lockLsnr, ctx);
+        super(cacheId, name, memPlc.pageMemory(), BUCKETS, wal, metaPageId, lockLsnr, ctx, pageFlag);
 
         rmvRow = new RemoveRowHandler(cacheId == 0);
 
@@ -565,9 +569,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
      */
     private long allocateDataPage(int part) throws IgniteCheckedException {
         assert part <= PageIdAllocator.MAX_PARTITION_ID;
-        assert part != PageIdAllocator.INDEX_PARTITION;
 
-        return pageMem.allocatePage(grpId, part, PageIdAllocator.FLAG_DATA);
+        return pageMem.allocatePage(grpId, part, FLAG_DATA);
     }
 
     /** {@inheritDoc} */
@@ -719,17 +722,23 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         }
 
         if (pageId == 0L) { // Handle reuse bucket.
-            pageId = reuseList == this ?
-                takeEmptyPage(REUSE_BUCKET, row.ioVersions(), statHolder) : reuseList.takeRecycledPage();
+            if (reuseList == this)
+                pageId = takeEmptyPage(REUSE_BUCKET, row.ioVersions(), statHolder);
+            else {
+                pageId = reuseList.takeRecycledPage();
+
+                if (pageId != 0)
+                    pageId = reuseList.initRecycledPage(pageId, FLAG_DATA, row.ioVersions().latest());
+            }
         }
 
         if (pageId == 0L)
             return 0;
 
-        if (PageIdUtils.tag(pageId) != PageIdAllocator.FLAG_DATA) // Page is taken from reuse bucket.
-            return initReusedPage(row, pageId, statHolder);
-        else // Page is taken from free space bucket. For in-memory mode partition must be changed.
-            return PageIdUtils.changePartitionId(pageId, row.partition());
+        assert PageIdUtils.flag(pageId) == FLAG_DATA
+            : "rowVersions=" + row.ioVersions() + ", pageId=" + PageIdUtils.toDetailString(pageId);
+
+        return PageIdUtils.changePartitionId(pageId, row.partition());
     }
 
     /**
@@ -909,6 +918,11 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         catch (Throwable t) {
             throw new CorruptedFreeListException("Failed to take recycled page", t);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public long initRecycledPage(long pageId, byte flag, PageIO initIO) throws IgniteCheckedException {
+        return initRecycledPage0(pageId, flag, initIO);
     }
 
     /** {@inheritDoc} */

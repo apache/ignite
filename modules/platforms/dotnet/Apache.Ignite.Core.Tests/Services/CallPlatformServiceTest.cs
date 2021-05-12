@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// ReSharper disable NonReadonlyMemberInGetHashCode
 namespace Apache.Ignite.Core.Tests.Services
 {
     using System;
@@ -38,7 +39,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
         /** */
         private const string CheckCollectionsTaskName = "org.apache.ignite.platform.PlatformServiceCallCollectionsTask";
-        
+
         /** */
         private const string CheckThinTaskName = "org.apache.ignite.platform.PlatformServiceCallThinTask";
 
@@ -54,7 +55,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
         /** */
         protected IIgnite Grid3;
-        
+
         /// <summary>
         /// Start grids and deploy test service.
         /// </summary>
@@ -63,7 +64,7 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             StartGrids();
         }
-        
+
         /// <summary>
         /// Stop grids after test.
         /// </summary>
@@ -91,7 +92,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 TotalCount = 1,
                 Service = new TestPlatformService()
             };
-            
+
             Grid1.GetServices().Deploy(cfg);
 
             Grid1.GetCompute().ExecuteJavaTask<object>(taskName, new object[] { ServiceName, local });
@@ -119,7 +120,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             Ignition.StopAll(true);
         }
-        
+
         /// <summary>
         /// Gets the Ignite configuration.
         /// </summary>
@@ -128,23 +129,23 @@ namespace Apache.Ignite.Core.Tests.Services
             return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 IgniteInstanceName = "grid" + idx,
-                BinaryConfiguration = new BinaryConfiguration(typeof(TestKey), typeof(TestValue), 
+                BinaryConfiguration = new BinaryConfiguration(typeof(TestKey), typeof(TestValue),
                     typeof(BinarizableTestValue))
                 {
                     NameMapper = BinaryBasicNameMapper.SimpleNameInstance
                 }
             };
         }
-        
+
         /** */
         public interface ITestPlatformService : IService
         {
             /** */
             Guid NodeId { get; }
-            
+
             /** */
             Guid? GuidProp { get; set; }
-            
+
             /** */
             TestValue ValueProp { get; set; }
 
@@ -165,7 +166,7 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         #pragma warning disable 649
-        
+
         /** */
         private class TestPlatformService : ITestPlatformService
         {
@@ -181,7 +182,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             /** <inheritdoc /> */
             public Guid? GuidProp { get; set; }
-            
+
             /** <inheritdoc /> */
             public TestValue ValueProp { get; set; }
 
@@ -190,7 +191,7 @@ namespace Apache.Ignite.Core.Tests.Services
             {
                 throw new Exception("Failed method");
             }
-            
+
             /** <inheritdoc /> */
             public TestValue[] AddOneToEach(TestValue[] arr)
             {
@@ -209,7 +210,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 {
                     Id = val.Id + 1,
                     Name = val.Name
-                
+
                 }).ToList();
 
                 return new ArrayList(res);
@@ -223,16 +224,16 @@ namespace Apache.Ignite.Core.Tests.Services
                 foreach (DictionaryEntry pair in dict)
                 {
                     var k = new TestKey(((TestKey) pair.Key).Id + 1);
-                    
+
                     var v = new TestValue()
                     {
                         Id = ((TestValue)pair.Value).Id + 1,
                         Name = ((TestValue)pair.Value).Name
                     };
-                    
+
                     res.Add(k, v);
                 }
-                
+
                 return res;
             }
 
@@ -264,7 +265,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 // No-op;
             }
         }
-        
+
         #pragma warning restore 649
 
         /** */
@@ -278,25 +279,25 @@ namespace Apache.Ignite.Core.Tests.Services
 
             /** */
             public int Id { get; set; }
-            
+
             /** <inheritdoc /> */
             public override int GetHashCode()
             {
                 return Id;
             }
-            
+
             /** <inheritdoc /> */
             public override bool Equals(object obj)
             {
-                if (ReferenceEquals(null, obj)) 
+                if (ReferenceEquals(null, obj))
                     return false;
-                
-                if (ReferenceEquals(this, obj)) 
+
+                if (ReferenceEquals(this, obj))
                     return true;
-                
-                if (obj.GetType() != GetType()) 
+
+                if (obj.GetType() != GetType())
                     return false;
-                
+
                 return Id == ((TestKey)obj).Id;
             }
         }
@@ -306,7 +307,7 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             /** */
             public int Id { get; set; }
-            
+
             /** */
             public string Name { get; set; }
         }

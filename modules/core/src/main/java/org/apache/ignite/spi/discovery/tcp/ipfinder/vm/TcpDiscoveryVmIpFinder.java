@@ -17,7 +17,9 @@
 
 package org.apache.ignite.spi.discovery.tcp.ipfinder.vm;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -54,9 +56,13 @@ public class TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
     @LoggerResource
     private IgniteLogger log;
 
-    /** Addresses. */
+    /** Addresses from the configuration or IGNITE_TCP_DISCOVERY_ADDRESSES. */
     @GridToStringInclude
-    private Collection<InetSocketAddress> addrs;
+    private Collection<String> addrs = new ArrayList<>();
+
+    /** Registered InetSocketAddresses. */
+    @GridToStringInclude
+    private Collection<InetSocketAddress> registeredAddrs = new LinkedHashSet<>();
 
     /**
      * Initialize from system property.
@@ -65,15 +71,13 @@ public class TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
         String ips = IgniteSystemProperties.getString(IGNITE_TCP_DISCOVERY_ADDRESSES);
 
         if (!F.isEmpty(ips)) {
-            Collection<InetSocketAddress> addrsList = new LinkedHashSet<>();
-
             for (String s : ips.split(",")) {
                 if (!F.isEmpty(s)) {
                     s = s.trim();
 
                     if (!F.isEmpty(s)) {
                         try {
-                            addrsList.addAll(address(s));
+                            addrs.add(s);
                         }
                         catch (IgniteSpiException e) {
                             throw new IgniteException(e);
@@ -81,11 +85,7 @@ public class TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
                     }
                 }
             }
-
-            addrs = addrsList;
         }
-        else
-            addrs = new LinkedHashSet<>();
     }
 
     /**
@@ -136,12 +136,11 @@ public class TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
         if (F.isEmpty(addrs))
             return this;
 
-        Collection<InetSocketAddress> newAddrs = new LinkedHashSet<>();
-
+        // Validate the spot that addresses can be resolved, to preserve the existing behavior.
         for (String ipStr : addrs)
-            newAddrs.addAll(address(ipStr));
+            address(ipStr);
 
-        this.addrs = newAddrs;
+        this.addrs = new ArrayList<>(addrs);
 
         return this;
     }
@@ -183,8 +182,20 @@ public class TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
                 return addresses(ipStr, "\\:", errMsg);
         }
 
-        // Provided address does not contain port (will use default one).
-        return Collections.singleton(new InetSocketAddress(ipStr, 0));
+        Collection<InetSocketAddress> col = new LinkedHashSet<>();
+
+        try {
+            InetAddress[] inetAddresses = InetAddress.getAllByName(ipStr);
+
+            for (InetAddress addrs : inetAddresses)
+                col.add(new InetSocketAddress(addrs, 0));
+        }
+        catch (UnknownHostException ignored) {
+            // Preserve existing behavior on UnknownHostException
+            col = Collections.singleton(new InetSocketAddress(ipStr, 0));
+        }
+
+        return col;
     }
 
     /**
@@ -204,36 +215,44 @@ public class TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
         if (tokens.length == 2) {
             String addrStr = tokens[0];
             String portStr = tokens[1];
+            int port1, port2;
 
             if (portStr.contains("..")) {
+                port1 = Integer.parseInt(portStr.substring(0, portStr.indexOf("..")));
+                port2 = Integer.parseInt(portStr.substring(portStr.indexOf("..") + 2, portStr.length()));
+            }
+            else
+                port1 = port2 = Integer.parseInt(portStr);
+
+            if ((port1 != port2 && port2 < port1) || port1 <= 0 || port2 <= 0)
+                throw new IgniteSpiException(errMsg);
+
+            try {
+                Collection<InetSocketAddress> res = new ArrayList<>();
+
+                InetAddress[] inetAddresses;
+
                 try {
-                    int port1 = Integer.parseInt(portStr.substring(0, portStr.indexOf("..")));
-                    int port2 = Integer.parseInt(portStr.substring(portStr.indexOf("..") + 2, portStr.length()));
-
-                    if (port2 < port1 || port1 == port2 || port1 <= 0 || port2 <= 0)
-                        throw new IgniteSpiException(errMsg);
-
-                    Collection<InetSocketAddress> res = new ArrayList<>(port2 - port1);
-
-                    // Upper bound included.
+                    inetAddresses = InetAddress.getAllByName(addrStr);
+                }
+                catch (UnknownHostException e) {
+                    // Ignore
                     for (int i = port1; i <= port2; i++)
                         res.add(new InetSocketAddress(addrStr, i));
 
                     return res;
                 }
-                catch (IllegalArgumentException e) {
-                    throw new IgniteSpiException(errMsg, e);
-                }
-            }
-            else {
-                try {
-                    int port = Integer.parseInt(portStr);
 
-                    return Collections.singleton(new InetSocketAddress(addrStr, port));
+                for (InetAddress curAddr : inetAddresses) {
+                    // Upper bound included.
+                    for (int i = port1; i <= port2; i++)
+                        res.add(new InetSocketAddress(curAddr, i));
                 }
-                catch (IllegalArgumentException e) {
-                    throw new IgniteSpiException(errMsg, e);
-                }
+
+                return res;
+            }
+            catch (IllegalArgumentException e) {
+                throw new IgniteSpiException(errMsg, e);
             }
         }
         else
@@ -242,25 +261,30 @@ public class TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
 
     /** {@inheritDoc} */
     @Override public synchronized Collection<InetSocketAddress> getRegisteredAddresses() {
-        return Collections.unmodifiableCollection(addrs);
+        Collection<InetSocketAddress> resolvedAddrs = new LinkedHashSet<>();
+
+        for (String ipStr : addrs)
+            resolvedAddrs.addAll(address(ipStr));
+
+        resolvedAddrs.addAll(registeredAddrs);
+
+        return resolvedAddrs;
     }
 
     /** {@inheritDoc} */
     @Override public synchronized void registerAddresses(Collection<InetSocketAddress> addrs) {
         assert !F.isEmpty(addrs);
 
-        this.addrs = new LinkedHashSet<>(this.addrs);
-
-        this.addrs.addAll(addrs);
+        if (!F.isEmpty(addrs))
+            this.registeredAddrs.addAll(addrs);
     }
 
     /** {@inheritDoc} */
     @Override public synchronized void unregisterAddresses(Collection<InetSocketAddress> addrs) {
         assert !F.isEmpty(addrs);
 
-        this.addrs = new LinkedHashSet<>(this.addrs);
-
-        this.addrs.removeAll(addrs);
+        if (!F.isEmpty(addrs))
+            this.registeredAddrs.removeAll(addrs);
     }
 
     /** {@inheritDoc} */

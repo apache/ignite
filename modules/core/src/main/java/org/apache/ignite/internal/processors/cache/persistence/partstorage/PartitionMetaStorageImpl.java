@@ -49,6 +49,7 @@ public class PartitionMetaStorageImpl<T extends Storable> extends AbstractFreeLi
      * @param wal Wal.
      * @param metaPageId Meta page id.
      * @param initNew Initialize new.
+     * @param pageFlag Default flag value for allocated pages.
      */
     public PartitionMetaStorageImpl(
         int cacheId, String name,
@@ -60,9 +61,10 @@ public class PartitionMetaStorageImpl<T extends Storable> extends AbstractFreeLi
         boolean initNew,
         PageLockListener lsnr,
         GridKernalContext ctx,
-        AtomicLong pageListCacheLimit
+        AtomicLong pageListCacheLimit,
+        byte pageFlag
     ) throws IgniteCheckedException {
-        super(cacheId, name, memMetrics, memPlc, reuseList, wal, metaPageId, initNew, lsnr, ctx, pageListCacheLimit);
+        super(cacheId, name, memMetrics, memPlc, reuseList, wal, metaPageId, initNew, lsnr, ctx, pageListCacheLimit, pageFlag);
     }
 
     /**

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal.io;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExpander;
@@ -69,19 +70,29 @@ final class LockedReadFileInput extends SimpleFileInput {
         if (available >= requested)
             return;
 
-        boolean readArchive = segmentAware.checkCanReadArchiveOrReserveWorkSegment(segmentId);
+        // Segment deletion protection.
+        if (!segmentAware.reserve(segmentId))
+            throw new FileNotFoundException("Segment does not exist: " + segmentId);
+
         try {
-            if (readArchive && !isLastReadFromArchive) {
-                isLastReadFromArchive = true;
+            // Protection against transferring a segment to the archive by #archiver.
+            boolean readArchive = !segmentAware.lock(segmentId);
+            try {
+                if (readArchive && !isLastReadFromArchive) {
+                    isLastReadFromArchive = true;
 
-                refreshIO();
+                    refreshIO();
+                }
+
+                super.ensure(requested);
             }
-
-            super.ensure(requested);
+            finally {
+                if (!readArchive)
+                    segmentAware.unlock(segmentId);
+            }
         }
         finally {
-            if (!readArchive)
-                segmentAware.releaseWorkSegment(segmentId);
+            segmentAware.release(segmentId);
         }
     }
 
