@@ -185,6 +185,7 @@ public class DmsDataWriterWorker extends GridWorker {
         }
 
         updateQueue.offer(new FutureTask<>(() -> STOP));
+        latch.countDown();
 
         U.cancel(this);
         U.join(runner(), log);
