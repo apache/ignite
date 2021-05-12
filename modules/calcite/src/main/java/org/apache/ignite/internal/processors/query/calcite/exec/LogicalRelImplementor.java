@@ -24,7 +24,6 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.JoinRelType;
@@ -463,7 +462,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
     /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteTableFunctionScan rel) {
-        Supplier<Enumerable<Object[]>> dataSupplier = expressionFactory.execute(rel.getCall());
+        Supplier<Iterable<Object[]>> dataSupplier = expressionFactory.execute(rel.getCall());
 
         RelDataType rowType = rel.getRowType();
 

@@ -442,7 +442,6 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         return ctx.rowHandler().factory(types).create(fields);
     }
 
-
     /** */
     protected static void createTable(IgniteSchema schema, String name, RelDataType type, IgniteDistribution distr,
         List<List<UUID>> assignment) {

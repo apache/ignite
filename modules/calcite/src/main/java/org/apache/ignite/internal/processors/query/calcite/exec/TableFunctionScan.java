@@ -19,21 +19,20 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.Iterator;
 import java.util.function.Supplier;
-import org.apache.calcite.linq4j.Enumerable;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.util.typedef.F;
 
 /** */
 public class TableFunctionScan<Row> implements Iterable<Row> {
     /** */
-    private final Supplier<Enumerable<Object[]>> dataSupplier;
+    private final Supplier<Iterable<Object[]>> dataSupplier;
 
     /** */
     private final RowFactory<Row> rowFactory;
 
     /** */
     public TableFunctionScan(
-        Supplier<Enumerable<Object[]>> dataSupplier,
+        Supplier<Iterable<Object[]>> dataSupplier,
         RowFactory<Row> rowFactory
     ) {
         this.dataSupplier = dataSupplier;
