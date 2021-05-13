@@ -27,6 +27,7 @@ import org.apache.ignite.network.ClusterService;
  * Baseline manager is responsible for handling baseline related logic.
  */
 // TODO: IGNITE-14586 Remove @SuppressWarnings when implementation provided.
+// TODO: https://issues.apache.org/jira/browse/IGNITE-14716 Adapt concept of baseline topology IEP-4.
 @SuppressWarnings({"FieldCanBeLocal", "unused"}) public class BaselineManager {
     /** Configuration manager in order to handle and listen baseline specific configuration.*/
     private final ConfigurationManager configurationMgr;

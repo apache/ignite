@@ -130,7 +130,7 @@ public class MetaStorageManager {
         Predicate<ClusterNode> metaStorageNodesContainsLocPred =
             clusterNode -> Arrays.asList(metastorageNodes).contains(clusterNode.name());
 
-        if (hasMetastorageLocally(locNodeName, metastorageNodes)) {
+        if (hasMetastorage(locNodeName, metastorageNodes)) {
             this.metaStorageSvcFut = CompletableFuture.completedFuture(new MetaStorageServiceImpl(
                     raftMgr.startRaftGroup(
                         METASTORAGE_RAFT_GROUP_NAME,
@@ -509,24 +509,46 @@ public class MetaStorageManager {
     }
 
     /**
-     * Checks whether the local node hosts meta storage.
+     * Checks whether the given node hosts meta storage.
      *
-     * @param locNodeName Local node uniq name.
+     * @param nodeName Node unique name.
      * @param metastorageMembers Meta storage members names.
-     * @return True if the node has meta storage, false otherwise.
+     * @return {@code true} if the node has meta storage, {@code false} otherwise.
      */
-    public static boolean hasMetastorageLocally(String locNodeName, String[] metastorageMembers) {
-        boolean isLocNodeHasMetasorage = false;
+    public static boolean hasMetastorage(String nodeName, String[] metastorageMembers) {
+        boolean isNodeHasMetasorage = false;
 
         for (String name : metastorageMembers) {
-            if (name.equals(locNodeName)) {
-                isLocNodeHasMetasorage = true;
+            if (name.equals(nodeName)) {
+                isNodeHasMetasorage = true;
 
                 break;
             }
         }
 
-        return isLocNodeHasMetasorage;
+        return isNodeHasMetasorage;
+    }
+
+    /**
+     * Checks whether the local node hosts meta storage.
+     *
+     * @param configurationMgr Configuration manager.
+     * @return {@code true} if the node has meta storage, {@code false} otherwise.
+     */
+    public static boolean hasMetastorageLocally(ConfigurationManager configurationMgr) {
+        String locNodeName = configurationMgr
+            .configurationRegistry()
+            .getConfiguration(NodeConfiguration.KEY)
+            .name()
+            .value();
+
+        String[] metastorageMembers = configurationMgr
+            .configurationRegistry()
+            .getConfiguration(NodeConfiguration.KEY)
+            .metastorageNodes()
+            .value();
+
+        return hasMetastorage(locNodeName, metastorageMembers);
     }
 
     // TODO: IGNITE-14691 Temporally solution that should be removed after implementing reactive watches.
