@@ -197,7 +197,7 @@ class IgniteSpec(metaclass=ABCMeta):
         try:
             os.mkdir(local_dir)
         except FileExistsError:
-            self.service.logger.debug("Shared dir already exists, while should not." + local_dir)
+            self.service.logger.debug("Shared dir already exists, ignoring and continue." + local_dir)
 
         script_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "certs")
 
