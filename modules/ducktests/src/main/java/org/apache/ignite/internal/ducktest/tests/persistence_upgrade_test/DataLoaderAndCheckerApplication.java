@@ -93,7 +93,7 @@ public class DataLoaderAndCheckerApplication extends IgniteAwareApplication {
             bVal = idx % 2 == 0;
             cVal = sVal.charAt(0);
             iArVal = new Integer[] {idx, idx * 2, idx * idx};
-            iLiVal = new ArrayList<>(Arrays.asList(iArVal));
+            iLiVal = Arrays.asList(iArVal);
         }
 
         /** {@inheritDoc} */
