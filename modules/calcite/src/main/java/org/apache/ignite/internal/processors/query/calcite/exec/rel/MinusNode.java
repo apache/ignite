@@ -96,6 +96,5 @@ public class MinusNode<Row> extends AbstractSetOpNode<Row> {
 
             cntrs[0] -= amount;
         }
-
     }
 }

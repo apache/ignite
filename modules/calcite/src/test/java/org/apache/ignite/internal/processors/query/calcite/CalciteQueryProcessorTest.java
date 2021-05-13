@@ -761,7 +761,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testExceptBigBatch() throws Exception {
+    public void testSetOpBigBatch() throws Exception {
         client.getOrCreateCache(new CacheConfiguration<Integer, Integer>()
             .setName("cache1")
             .setQueryEntities(F.asList(new QueryEntity(Integer.class, Integer.class).setTableName("table1")))
@@ -819,6 +819,18 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         assertEquals(1920, F.size(rows, r -> r.get(0).equals(3)));
         assertEquals(32768, F.size(rows, r -> r.get(0).equals(4)));
 
+        rows = sql("SELECT _val FROM \"cache1\".table1 INTERSECT SELECT _val FROM \"cache2\".table2");
+
+        assertEquals(2, rows.size());
+        assertEquals(1, F.size(rows, r -> r.get(0).equals(1)));
+        assertEquals(1, F.size(rows, r -> r.get(0).equals(3)));
+
+        rows = sql("SELECT _val FROM \"cache1\".table1 INTERSECT ALL SELECT _val FROM \"cache2\".table2");
+
+        assertEquals(136, rows.size());
+        assertEquals(8, F.size(rows, r -> r.get(0).equals(1)));
+        assertEquals(128, F.size(rows, r -> r.get(0).equals(3)));
+
         // Check 1 replicated and 1 partitioned caches.
         rows = sql("SELECT _val FROM \"cache1Replicated\".table1_repl EXCEPT SELECT _val FROM \"cache2\".table2");
 
@@ -834,6 +846,18 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         assertEquals(128, F.size(rows, r -> r.get(0).equals(2)));
         assertEquals(1920, F.size(rows, r -> r.get(0).equals(3)));
         assertEquals(32768, F.size(rows, r -> r.get(0).equals(4)));
+
+        rows = sql("SELECT _val FROM \"cache1Replicated\".table1_repl INTERSECT SELECT _val FROM \"cache2\".table2");
+
+        assertEquals(2, rows.size());
+        assertEquals(1, F.size(rows, r -> r.get(0).equals(1)));
+        assertEquals(1, F.size(rows, r -> r.get(0).equals(3)));
+
+        rows = sql("SELECT _val FROM \"cache1Replicated\".table1_repl INTERSECT ALL SELECT _val FROM \"cache2\".table2");
+
+        assertEquals(136, rows.size());
+        assertEquals(8, F.size(rows, r -> r.get(0).equals(1)));
+        assertEquals(128, F.size(rows, r -> r.get(0).equals(3)));
 
         // Check 2 replicated caches.
         rows = sql("SELECT _val FROM \"cache1Replicated\".table1_repl EXCEPT SELECT _val FROM \"cache2Replicated\"" +
@@ -852,6 +876,112 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         assertEquals(128, F.size(rows, r -> r.get(0).equals(2)));
         assertEquals(1920, F.size(rows, r -> r.get(0).equals(3)));
         assertEquals(32768, F.size(rows, r -> r.get(0).equals(4)));
+
+        rows = sql("SELECT _val FROM \"cache1Replicated\".table1_repl INTERSECT SELECT _val FROM \"cache2Replicated\"" +
+            ".table2_repl");
+
+        assertEquals(2, rows.size());
+        assertEquals(1, F.size(rows, r -> r.get(0).equals(1)));
+        assertEquals(1, F.size(rows, r -> r.get(0).equals(3)));
+
+        rows = sql("SELECT _val FROM \"cache1Replicated\".table1_repl INTERSECT ALL SELECT _val FROM \"cache2Replicated\"" +
+            ".table2_repl");
+
+        assertEquals(136, rows.size());
+        assertEquals(8, F.size(rows, r -> r.get(0).equals(1)));
+        assertEquals(128, F.size(rows, r -> r.get(0).equals(3)));
+    }
+
+    /** */
+    @Test
+    public void testIntersect() throws Exception {
+        populateTables();
+
+        List<List<?>> rows = sql("SELECT name FROM Orders INTERSECT SELECT name from Account");
+
+        assertEquals(2, rows.size());
+        assertEquals(1, F.size(rows, r -> r.get(0).equals("Igor1")));
+        assertEquals(1, F.size(rows, r -> r.get(0).equals("Roman")));
+    }
+
+    /** */
+    @Test
+    public void testInstersectAll() throws Exception {
+        populateTables();
+
+        List<List<?>> rows = sql("SELECT name FROM Orders INTERSECT ALL SELECT name from Account");
+
+        assertEquals(3, rows.size());
+        assertEquals(2, F.size(rows, r -> r.get(0).equals("Igor1")));
+        assertEquals(1, F.size(rows, r -> r.get(0).equals("Roman")));
+    }
+
+    /** */
+    @Test
+    public void testIntersectEmpty() throws Exception {
+        populateTables();
+
+        copyCacheAsReplicated("orders");
+        copyCacheAsReplicated("account");
+
+        List<List<?>> rows = sql("SELECT name FROM Orders WHERE salary < 0 INTERSECT SELECT name FROM Account");
+
+        assertEquals(0, rows.size());
+
+        rows = sql("SELECT name FROM Orders_repl WHERE salary < 0 INTERSECT SELECT name FROM Account_repl");
+
+        assertEquals(0, rows.size());
+    }
+
+    /** */
+    @Test
+    public void testIntersectMerge() throws Exception {
+        populateTables();
+        copyCacheAsReplicated("orders");
+
+        List<List<?>> rows = sql("SELECT name FROM Orders_repl INTERSECT ALL SELECT name FROM Account INTERSECT ALL " +
+            "SELECT name FROM orders WHERE salary < 14");
+
+        assertEquals(2, rows.size());
+        assertEquals(2, F.size(rows, r -> r.get(0).equals("Igor1")));
+    }
+
+    /** */
+    @Test
+    public void testIntersectReplicated() throws Exception {
+        populateTables();
+        copyCacheAsReplicated("orders");
+        copyCacheAsReplicated("account");
+
+        List<List<?>> rows = sql("SELECT name FROM Orders_repl INTERSECT ALL SELECT name from Account_repl");
+
+        assertEquals(3, rows.size());
+        assertEquals(2, F.size(rows, r -> r.get(0).equals("Igor1")));
+        assertEquals(1, F.size(rows, r -> r.get(0).equals("Roman")));
+    }
+
+    /** */
+    @Test
+    public void testIntersectReplicatedWithPartitioned() throws Exception {
+        populateTables();
+        copyCacheAsReplicated("orders");
+
+        List<List<?>> rows = sql("SELECT name FROM Orders_repl INTERSECT ALL SELECT name from Account");
+
+        assertEquals(3, rows.size());
+        assertEquals(2, F.size(rows, r -> r.get(0).equals("Igor1")));
+        assertEquals(1, F.size(rows, r -> r.get(0).equals("Roman")));
+    }
+
+    /** */
+    @Test
+    public void testIntersectSeveralColumns() throws Exception {
+        populateTables();
+
+        List<List<?>> rows = sql("SELECT name, salary FROM Orders INTERSECT ALL SELECT name, salary from Account");
+
+        assertEquals(2, rows.size());
+        assertEquals(2, F.size(rows, r -> r.get(0).equals("Igor1")));
     }
 
     /**

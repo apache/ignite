@@ -564,6 +564,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             case VALUES:
             case UNION:
             case EXCEPT:
+            case INTERSECT:
                 return prepareQuery(sqlNode, ctx);
 
             case INSERT:

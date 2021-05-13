@@ -20,27 +20,46 @@ package org.apache.ignite.internal.processors.query.calcite.planner;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteMapIntersect;
 import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteMapMinus;
+import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteMapSetOp;
+import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteReduceIntersect;
 import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteReduceMinus;
+import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteReduceSetOp;
+import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteSetOp;
+import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteSingleIntersect;
 import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteSingleMinus;
+import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteSingleSetOp;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 /**
- * Test to verify EXCEPT operator.
+ * Test to verify set op (EXCEPT, INTERSECT).
  */
-public class ExceptPlannerTest extends AbstractPlannerTest {
+@RunWith(Parameterized.class)
+public class SetOpPlannerTest extends AbstractPlannerTest {
+    /** Algorithm. */
+    @Parameterized.Parameter
+    public SetOp setOp;
+
+    /** */
+    @Parameterized.Parameters(name = "SetOp = {0}")
+    public static List<Object[]> parameters() {
+        return Stream.of(SetOp.values()).map(a -> new Object[]{a}).collect(Collectors.toList());
+    }
+
     /** Public schema. */
     private IgniteSchema publicSchema;
-
-    /** Last error. */
-    private String lastError;
 
     /** {@inheritDoc} */
     @Before
@@ -83,14 +102,14 @@ public class ExceptPlannerTest extends AbstractPlannerTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testExceptRandom() throws Exception {
-        String sql = "" +
+    public void testSetOpRandom() throws Exception {
+        String sql =
             "SELECT * FROM random_tbl1 " +
-            "EXCEPT " +
+            setOp() +
             "SELECT * FROM random_tbl2 ";
 
-        assertPlan(sql, publicSchema, isInstanceOf(IgniteReduceMinus.class).and(n -> !n.all)
-            .and(hasChildThat(isInstanceOf(IgniteMapMinus.class)
+        assertPlan(sql, publicSchema, isInstanceOf(setOp.reduce).and(n -> !n.all())
+            .and(hasChildThat(isInstanceOf(setOp.map)
                 .and(input(0, isTableScan("random_tbl1")))
                 .and(input(1, isTableScan("random_tbl2")))
             ))
@@ -101,14 +120,14 @@ public class ExceptPlannerTest extends AbstractPlannerTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testExceptAllRandom() throws Exception {
-        String sql = "" +
+    public void testSetOpAllRandom() throws Exception {
+        String sql =
             "SELECT * FROM random_tbl1 " +
-            "EXCEPT ALL " +
+            setOpAll() +
             "SELECT * FROM random_tbl2 ";
 
-        assertPlan(sql, publicSchema, isInstanceOf(IgniteReduceMinus.class).and(n -> n.all)
-            .and(hasChildThat(isInstanceOf(IgniteMapMinus.class)
+        assertPlan(sql, publicSchema, isInstanceOf(setOp.reduce).and(IgniteSetOp::all)
+            .and(hasChildThat(isInstanceOf(setOp.map)
                 .and(input(0, isTableScan("random_tbl1")))
                 .and(input(1, isTableScan("random_tbl2")))
             ))
@@ -119,13 +138,13 @@ public class ExceptPlannerTest extends AbstractPlannerTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testExceptBroadcast() throws Exception {
-        String sql = "" +
+    public void testSetOpBroadcast() throws Exception {
+        String sql =
             "SELECT * FROM broadcast_tbl1 " +
-            "EXCEPT " +
+            setOp() +
             "SELECT * FROM broadcast_tbl2 ";
 
-        assertPlan(sql, publicSchema, isInstanceOf(IgniteSingleMinus.class)
+        assertPlan(sql, publicSchema, isInstanceOf(setOp.single)
             .and(input(0, isTableScan("broadcast_tbl1")))
             .and(input(1, isTableScan("broadcast_tbl2")))
         );
@@ -135,13 +154,13 @@ public class ExceptPlannerTest extends AbstractPlannerTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testExceptSingle() throws Exception {
-        String sql = "" +
+    public void testSetOpSingle() throws Exception {
+        String sql =
             "SELECT * FROM single_tbl1 " +
-            "EXCEPT " +
+            setOp() +
             "SELECT * FROM single_tbl2 ";
 
-        assertPlan(sql, publicSchema, isInstanceOf(IgniteSingleMinus.class)
+        assertPlan(sql, publicSchema, isInstanceOf(setOp.single)
             .and(input(0, isTableScan("single_tbl1")))
             .and(input(1, isTableScan("single_tbl2"))));
     }
@@ -150,13 +169,13 @@ public class ExceptPlannerTest extends AbstractPlannerTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testExceptSingleAndRandom() throws Exception {
-        String sql = "" +
+    public void testSetOpSingleAndRandom() throws Exception {
+        String sql =
             "SELECT * FROM single_tbl1 " +
-            "EXCEPT " +
+            setOp() +
             "SELECT * FROM random_tbl1 ";
 
-        assertPlan(sql, publicSchema, isInstanceOf(IgniteSingleMinus.class)
+        assertPlan(sql, publicSchema, isInstanceOf(setOp.single)
             .and(input(0, isTableScan("single_tbl1")))
             .and(input(1, hasChildThat(isTableScan("random_tbl1")))));
     }
@@ -165,13 +184,13 @@ public class ExceptPlannerTest extends AbstractPlannerTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testExceptSingleAndAffinity() throws Exception {
-        String sql = "" +
+    public void testSetOpSingleAndAffinity() throws Exception {
+        String sql =
             "SELECT * FROM single_tbl1 " +
-            "EXCEPT " +
+            setOp() +
             "SELECT * FROM affinity_tbl1 ";
 
-        assertPlan(sql, publicSchema, isInstanceOf(IgniteSingleMinus.class)
+        assertPlan(sql, publicSchema, isInstanceOf(setOp.single)
             .and(input(0, isTableScan("single_tbl1")))
             .and(input(1, hasChildThat(isTableScan("affinity_tbl1")))));
     }
@@ -180,13 +199,13 @@ public class ExceptPlannerTest extends AbstractPlannerTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testExceptSingleAndBroadcast() throws Exception {
-        String sql = "" +
+    public void testSetOpSingleAndBroadcast() throws Exception {
+        String sql =
             "SELECT * FROM single_tbl1 " +
-            "EXCEPT " +
+            setOp() +
             "SELECT * FROM broadcast_tbl1 ";
 
-        assertPlan(sql, publicSchema, isInstanceOf(IgniteSingleMinus.class)
+        assertPlan(sql, publicSchema, isInstanceOf(setOp.single)
             .and(input(0, isTableScan("single_tbl1")))
             .and(input(1, isTableScan("broadcast_tbl1")))
         );
@@ -196,14 +215,14 @@ public class ExceptPlannerTest extends AbstractPlannerTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testExceptAffinity() throws Exception {
-        String sql = "" +
+    public void testSetOpAffinity() throws Exception {
+        String sql =
             "SELECT * FROM affinity_tbl1 " +
-            "EXCEPT " +
+            setOp() +
             "SELECT * FROM affinity_tbl2 ";
 
-        assertPlan(sql, publicSchema, isInstanceOf(IgniteReduceMinus.class)
-            .and(hasChildThat(isInstanceOf(IgniteMapMinus.class)
+        assertPlan(sql, publicSchema, isInstanceOf(setOp.reduce)
+            .and(hasChildThat(isInstanceOf(setOp.map)
                 .and(input(0, isTableScan("affinity_tbl1")))
                 .and(input(1, isTableScan("affinity_tbl2")))
             ))
@@ -214,13 +233,13 @@ public class ExceptPlannerTest extends AbstractPlannerTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testExceptBroadcastAndRandom() throws Exception {
-        String sql = "" +
+    public void testSetOpBroadcastAndRandom() throws Exception {
+        String sql =
             "SELECT * FROM random_tbl1 " +
-            "EXCEPT " +
+            setOp() +
             "SELECT * FROM broadcast_tbl1 ";
 
-        assertPlan(sql, publicSchema, isInstanceOf(IgniteSingleMinus.class)
+        assertPlan(sql, publicSchema, isInstanceOf(setOp.single)
             .and(input(0, hasChildThat(isTableScan("random_tbl1"))))
             .and(input(1, isTableScan("broadcast_tbl1")))
         );
@@ -230,41 +249,53 @@ public class ExceptPlannerTest extends AbstractPlannerTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testExceptRandomNested() throws Exception {
-        String sql = "" +
-            "SELECT * FROM random_tbl2 EXCEPT (" +
+    public void testSetOpRandomNested() throws Exception {
+        String sql =
+            "SELECT * FROM random_tbl2 " + setOp() + "(" +
             "   SELECT * FROM random_tbl1 " +
-            "   EXCEPT " +
+            setOp() +
             "   SELECT * FROM random_tbl2" +
             ")";
 
-        assertPlan(sql, publicSchema, isInstanceOf(IgniteSingleMinus.class)
-            .and(input(0, hasChildThat(isTableScan("random_tbl2"))))
-            .and(input(1, isInstanceOf(IgniteReduceMinus.class)
-                .and(hasChildThat(isInstanceOf(IgniteMapMinus.class)
-                    .and(input(0, isTableScan("random_tbl1")))
-                    .and(input(1, isTableScan("random_tbl2")))
+        if (setOp == SetOp.EXCEPT) {
+            assertPlan(sql, publicSchema, isInstanceOf(setOp.single)
+                .and(input(0, hasChildThat(isTableScan("random_tbl2"))))
+                .and(input(1, isInstanceOf(setOp.reduce)
+                    .and(hasChildThat(isInstanceOf(setOp.map)
+                        .and(input(0, isTableScan("random_tbl1")))
+                        .and(input(1, isTableScan("random_tbl2")))
+                    ))
                 ))
-            ))
-        );
+            );
+        }
+        else {
+            // INTERSECT operator is commutative and can be merged.
+            assertPlan(sql, publicSchema, isInstanceOf(setOp.reduce)
+                .and(hasChildThat(isInstanceOf(setOp.map)
+                    .and(input(0, isTableScan("random_tbl2")))
+                    .and(input(1, isTableScan("random_tbl1")))
+                    .and(input(2, isTableScan("random_tbl2")))
+                ))
+            );
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
     @Test
-    public void testExceptBroadcastAndRandomNested() throws Exception {
-        String sql = "" +
-            "SELECT * FROM broadcast_tbl1 EXCEPT (" +
+    public void testSetOpBroadcastAndRandomNested() throws Exception {
+        String sql =
+            "SELECT * FROM broadcast_tbl1 " + setOp() + "(" +
             "   SELECT * FROM random_tbl1 " +
-            "   EXCEPT " +
+            setOp() +
             "   SELECT * FROM random_tbl2" +
             ")";
 
-        assertPlan(sql, publicSchema, isInstanceOf(IgniteSingleMinus.class)
+        assertPlan(sql, publicSchema, isInstanceOf(setOp.single)
             .and(input(0, isTableScan("broadcast_tbl1")))
-            .and(input(1, isInstanceOf(IgniteReduceMinus.class)
-                .and(hasChildThat(isInstanceOf(IgniteMapMinus.class)
+            .and(input(1, isInstanceOf(setOp.reduce)
+                .and(hasChildThat(isInstanceOf(setOp.map)
                     .and(input(0, isTableScan("random_tbl1")))
                     .and(input(1, isTableScan("random_tbl2")))
                 ))
@@ -276,18 +307,18 @@ public class ExceptPlannerTest extends AbstractPlannerTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testExceptMerge() throws Exception {
-        String sql = "" +
+    public void testSetOpMerge() throws Exception {
+        String sql =
             "SELECT * FROM random_tbl1 " +
-            "EXCEPT " +
+            setOp() +
             "SELECT * FROM random_tbl2 " +
-            "EXCEPT " +
+            setOp() +
             "SELECT * FROM affinity_tbl1 " +
-            "EXCEPT " +
+            setOp() +
             "SELECT * FROM affinity_tbl2 ";
 
-        assertPlan(sql, publicSchema, isInstanceOf(IgniteReduceMinus.class)
-            .and(hasChildThat(isInstanceOf(IgniteMapMinus.class)
+        assertPlan(sql, publicSchema, isInstanceOf(setOp.reduce)
+            .and(hasChildThat(isInstanceOf(setOp.map)
                 .and(input(0, isTableScan("random_tbl1")))
                 .and(input(1, isTableScan("random_tbl2")))
                 .and(input(2, isTableScan("affinity_tbl1")))
@@ -300,18 +331,18 @@ public class ExceptPlannerTest extends AbstractPlannerTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testExceptAllMerge() throws Exception {
-        String sql = "" +
+    public void testSetOpAllMerge() throws Exception {
+        String sql =
             "SELECT * FROM random_tbl1 " +
-            "EXCEPT ALL " +
+            setOpAll() +
             "SELECT * FROM random_tbl2 " +
-            "EXCEPT ALL " +
+            setOpAll() +
             "SELECT * FROM affinity_tbl1 " +
-            "EXCEPT ALL " +
+            setOpAll() +
             "SELECT * FROM affinity_tbl2 ";
 
-        assertPlan(sql, publicSchema, isInstanceOf(IgniteReduceMinus.class).and(n -> n.all)
-            .and(hasChildThat(isInstanceOf(IgniteMapMinus.class)
+        assertPlan(sql, publicSchema, isInstanceOf(setOp.reduce).and(IgniteSetOp::all)
+            .and(hasChildThat(isInstanceOf(setOp.map)
                 .and(input(0, isTableScan("random_tbl1")))
                 .and(input(1, isTableScan("random_tbl2")))
                 .and(input(2, isTableScan("affinity_tbl1")))
@@ -324,20 +355,66 @@ public class ExceptPlannerTest extends AbstractPlannerTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testExceptAllWithExceptMerge() throws Exception {
-        String sql = "" +
+    public void testSetOpAllWithExceptMerge() throws Exception {
+        String sql =
             "SELECT * FROM random_tbl1 " +
-            "EXCEPT ALL " +
+            setOpAll() +
             "SELECT * FROM random_tbl2 " +
-            "EXCEPT " +
+            setOp() +
             "SELECT * FROM affinity_tbl1 ";
 
-        assertPlan(sql, publicSchema, isInstanceOf(IgniteReduceMinus.class).and(n -> !n.all)
-            .and(hasChildThat(isInstanceOf(IgniteMapMinus.class)
+        assertPlan(sql, publicSchema, isInstanceOf(setOp.reduce).and(n -> !n.all())
+            .and(hasChildThat(isInstanceOf(setOp.map)
                 .and(input(0, isTableScan("random_tbl1")))
                 .and(input(1, isTableScan("random_tbl2")))
                 .and(input(2, isTableScan("affinity_tbl1")))
             ))
         );
+    }
+
+    /** */
+    private String setOp() {
+        return setOp.name() + ' ';
+    }
+
+    /** */
+    private String setOpAll() {
+        return setOp.name() + " ALL ";
+    }
+
+    /** */
+    enum SetOp {
+        /** */
+        EXCEPT(
+            IgniteSingleMinus.class,
+            IgniteMapMinus.class,
+            IgniteReduceMinus.class
+        ),
+
+        /** */
+        INTERSECT(
+            IgniteSingleIntersect.class,
+            IgniteMapIntersect.class,
+            IgniteReduceIntersect.class
+        );
+
+        /** */
+        public final Class<? extends IgniteSingleSetOp> single;
+
+        /** */
+        public final Class<? extends IgniteMapSetOp> map;
+
+        /** */
+        public final Class<? extends IgniteReduceSetOp> reduce;
+
+        /** */
+        SetOp(
+            Class<? extends IgniteSingleSetOp> single,
+            Class<? extends IgniteMapSetOp> map,
+            Class<? extends IgniteReduceSetOp> reduce) {
+            this.single = single;
+            this.map = map;
+            this.reduce = reduce;
+        }
     }
 }

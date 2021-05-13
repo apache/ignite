@@ -27,11 +27,11 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
- * Physical node for MINUS (EXCEPT) operator which inputs satisfy SINGLE distribution.
+ * Physical node for INTERSECT operator which inputs satisfy SINGLE distribution.
  */
-public class IgniteSingleMinus extends IgniteMinus implements IgniteSingleSetOp {
+public class IgniteSingleIntersect extends IgniteIntersect implements IgniteSingleSetOp {
     /** {@inheritDoc} */
-    public IgniteSingleMinus(
+    public IgniteSingleIntersect(
         RelOptCluster cluster,
         RelTraitSet traitSet,
         List<RelNode> inputs,
@@ -41,18 +41,18 @@ public class IgniteSingleMinus extends IgniteMinus implements IgniteSingleSetOp 
     }
 
     /** */
-    public IgniteSingleMinus(RelInput input) {
+    public IgniteSingleIntersect(RelInput input) {
         super(input);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteSingleMinus copy(RelTraitSet traitSet, List<RelNode> inputs, boolean all) {
-        return new IgniteSingleMinus(getCluster(), traitSet, inputs, all);
+    @Override public IgniteSingleIntersect copy(RelTraitSet traitSet, List<RelNode> inputs, boolean all) {
+        return new IgniteSingleIntersect(getCluster(), traitSet, inputs, all);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteSingleMinus(cluster, getTraitSet(), Commons.cast(inputs), all);
+        return new IgniteSingleIntersect(cluster, getTraitSet(), Commons.cast(inputs), all);
     }
 
     /** {@inheritDoc} */
@@ -62,6 +62,6 @@ public class IgniteSingleMinus extends IgniteMinus implements IgniteSingleSetOp 
 
     /** {@inheritDoc} */
     @Override public int aggregateFieldsCount() {
-        return getInput(0).getRowType().getFieldCount() + COUNTER_FIELDS_CNT;
+        return getInput(0).getRowType().getFieldCount() + getInputs().size();
     }
 }
