@@ -16,7 +16,7 @@
 """
 This module contains Spec classes that describes config and command line to start Ignite services
 """
-
+import socket
 import base64
 import importlib
 import json
@@ -193,13 +193,15 @@ class IgniteSpec(metaclass=ABCMeta):
         """
         Prepare files that should be copied on all nodes.
         """
-        self.service.logger.debug("Agent TMPDIR: " + os.getenv("TMPDIR"))
-        self.service.logger.debug("Agent TEMP: " + os.getenv("TEMP"))
-        self.service.logger.debug("Agent TMP: " + os.getenv("TMP"))
-        self.service.logger.debug("Agent TMP: " + os.getenv("TMP"))
 
         for k, v in sorted(os.environ.items()):
             self.service.logger.debug(k+':', v)
+
+        self.service.logger.debug("Agent TMPDIR: " + os.getenv("TMPDIR", "None"))
+        self.service.logger.debug("Agent TEMP: " + os.getenv("TEMP", "None"))
+        self.service.logger.debug("Agent TMP: " + os.getenv("TMP", "None"))
+        self.service.logger.debug("Agent hostname: " + socket.gethostname())
+
 
         self.service.logger.debug("Local shared dir not exists. Creating. " + local_dir)
         os.mkdir(local_dir)
