@@ -203,7 +203,7 @@ public class StartNodeCallableImpl implements StartNodeCallable {
 
             shell(ses, "mkdir " + scriptOutputDir);
 
-            String scriptOutputPath = "C:\\Users\\user\\log.log" + separator + scriptOutputFileName;
+            String scriptOutputPath = scriptOutputDir + separator + scriptOutputFileName;
 
             String findSuccess;
 
