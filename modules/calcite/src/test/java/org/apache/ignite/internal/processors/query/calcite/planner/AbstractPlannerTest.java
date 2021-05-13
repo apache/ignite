@@ -54,6 +54,7 @@ import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Statistic;
 import org.apache.calcite.sql.SqlCall;
+import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.cluster.ClusterNode;
@@ -75,6 +76,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningConte
 import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
@@ -107,7 +109,7 @@ import static org.apache.ignite.internal.processors.query.calcite.externalize.Re
  *
  */
 //@WithSystemProperty(key = "calcite.debug", value = "true")
-@SuppressWarnings({"TooBroadScope", "FieldCanBeLocal", "TypeMayBeWeakened", "unchecked"})
+@SuppressWarnings({"TooBroadScope", "FieldCanBeLocal", "TypeMayBeWeakened"})
 public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     /** */
     protected List<UUID> nodes;
@@ -117,6 +119,9 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
     /** */
     protected volatile Throwable lastE;
+
+    /** Last error message. */
+    private String lastErrorMsg;
 
     /** */
     @Before
@@ -139,6 +144,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
     /** */
     interface TestVisitor {
+        /** */
         public void visit(RelNode node, int ordinal, RelNode parent);
     }
 
@@ -195,7 +201,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
     /** */
     public static <T extends RelNode> Predicate<RelNode> byClass(Class<T> cls) {
-        return node -> cls.isInstance(node);
+        return cls::isInstance;
     }
 
     /** */
@@ -375,7 +381,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         }
 
         List<RelNode> expectedRels = fragments.stream()
-            .map(f -> f.root())
+            .map(Fragment::root)
             .collect(Collectors.toList());
 
         assertEquals("Invalid deserialization fragments count", expectedRels.size(), deserializedNodes.size());
@@ -434,6 +440,125 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         }
 
         return ctx.rowHandler().factory(types).create(fields);
+    }
+
+    /** */
+    protected static void createTable(IgniteSchema schema, String name, RelDataType type, IgniteDistribution distr,
+        List<List<UUID>> assignment) {
+        TestTable table = new TestTable(type) {
+            @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
+                if (F.isEmpty(assignment))
+                    return super.colocationGroup(ctx);
+                else
+                    return ColocationGroup.forAssignments(assignment);
+            }
+
+            @Override public IgniteDistribution distribution() {
+                return distr;
+            }
+
+            @Override public String name() {
+                return name;
+            }
+        };
+
+        schema.addTable(name, table);
+    }
+
+    /** */
+    protected <T extends RelNode> void assertPlan(String sql, IgniteSchema schema, Predicate<T> predicate,
+        String... disabledRules) throws Exception {
+        IgniteRel plan = physicalPlan(sql, schema, disabledRules);
+
+        if (!predicate.test((T)plan)) {
+            String invalidPlanMsg = "Invalid plan (" + lastErrorMsg + "):\n" +
+                RelOptUtil.toString(plan, SqlExplainLevel.ALL_ATTRIBUTES);
+
+            fail(invalidPlanMsg);
+        }
+    }
+
+    /**
+     * Predicate builder for "Instance of class" condition.
+     */
+    protected <T extends RelNode> Predicate<T> isInstanceOf(Class<T> cls) {
+        return node -> {
+            if (cls.isInstance(node))
+                return true;
+
+            lastErrorMsg = "Unexpected node class [node=" + node + ", cls=" + cls.getSimpleName() + ']';
+
+            return false;
+        };
+    }
+
+    /**
+     * Predicate builder for "Table scan with given name" condition.
+     */
+    protected <T extends RelNode> Predicate<IgniteTableScan> isTableScan(String tableName) {
+        return isInstanceOf(IgniteTableScan.class).and(
+            n -> {
+                String scanTableName = n.getTable().unwrap(TestTable.class).name();
+
+                if (tableName.equalsIgnoreCase(scanTableName))
+                    return true;
+
+                lastErrorMsg = "Unexpected table name [exp=" + tableName + ", act=" + scanTableName + ']';
+
+                return false;
+            });
+    }
+
+    /**
+     * Predicate builder for "Any child satisfy predicate" condition.
+     */
+    protected <T extends RelNode> Predicate<RelNode> hasChildThat(Predicate<T> predicate) {
+        return new Predicate<RelNode>() {
+            public boolean checkRecursively(RelNode node) {
+                if (predicate.test((T)node))
+                    return true;
+
+                for (RelNode input : node.getInputs()) {
+                    if (checkRecursively(input))
+                        return true;
+                }
+
+                return false;
+            }
+
+            @Override public boolean test(RelNode node) {
+                for (RelNode input : node.getInputs()) {
+                    if (checkRecursively(input))
+                        return true;
+                }
+
+                lastErrorMsg = "Not found child for defined condition [node=" + node + ']';
+
+                return false;
+            }
+        };
+    }
+
+    /**
+     * Predicate builder for "Current node or any child satisfy predicate" condition.
+     */
+    protected Predicate<RelNode> nodeOrAnyChild(Predicate<? extends RelNode> predicate) {
+        return (Predicate<RelNode>)predicate.or(hasChildThat(predicate));
+    }
+
+    /**
+     * Predicate builder for "Input with given index satisfy predicate" condition.
+     */
+    protected <T extends RelNode> Predicate<RelNode> input(int idx, Predicate<T> predicate) {
+        return node -> {
+            if (F.size(node.getInputs()) <= idx) {
+                lastErrorMsg = "No input for node [idx=" + idx + ", node=" + node + ']';
+
+                return false;
+            }
+
+            return predicate.test((T)node.getInput(idx));
+        };
     }
 
     /** */

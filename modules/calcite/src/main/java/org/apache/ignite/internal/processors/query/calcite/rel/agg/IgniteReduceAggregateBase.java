@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.rel.agg;
 
 import java.util.List;
-
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.RelOptCluster;
@@ -39,6 +38,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitsAwareIgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /**
  *
@@ -120,6 +120,15 @@ public abstract class IgniteReduceAggregateBase extends SingleRel implements Tra
     /** */
     public List<AggregateCall> getAggregateCalls() {
         return aggCalls;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughDistribution(RelTraitSet nodeTraits,
+        List<RelTraitSet> inTraits) {
+        if (TraitUtils.distribution(nodeTraits) == IgniteDistributions.single())
+            return Pair.of(nodeTraits, Commons.transform(inTraits, t -> t.replace(IgniteDistributions.single())));
+
+        return null;
     }
 
     /** {@inheritDoc} */

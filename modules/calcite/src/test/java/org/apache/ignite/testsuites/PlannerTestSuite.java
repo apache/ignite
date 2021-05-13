@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.query.calcite.planner.JoinColocatio
 import org.apache.ignite.internal.processors.query.calcite.planner.PlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.SortAggregatePlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.SortedIndexSpoolPlannerTest;
+import org.apache.ignite.internal.processors.query.calcite.planner.TableFunctionTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.TableSpoolPlannerTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -46,7 +47,8 @@ import org.junit.runners.Suite;
     HashAggregatePlannerTest.class,
     SortAggregatePlannerTest.class,
     JoinColocationPlannerTest.class,
-    ExceptPlannerTest.class
+    ExceptPlannerTest.class,
+    TableFunctionTest.class,
 })
 public class PlannerTestSuite {
 }

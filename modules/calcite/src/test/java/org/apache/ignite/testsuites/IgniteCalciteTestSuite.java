@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.query.calcite.CalciteErrorHandlilng
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessorTest;
 import org.apache.ignite.internal.processors.query.calcite.CancelTest;
 import org.apache.ignite.internal.processors.query.calcite.DateTimeTest;
+import org.apache.ignite.internal.processors.query.calcite.FunctionsTest;
 import org.apache.ignite.internal.processors.query.calcite.LimitOffsetTest;
 import org.apache.ignite.internal.processors.query.calcite.MetadataIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.QueryCheckerTest;
@@ -64,6 +65,7 @@ import org.junit.runners.Suite;
 
     SqlDdlParserTest.class,
     TableDdlIntegrationTest.class,
+    FunctionsTest.class,
 })
 public class IgniteCalciteTestSuite {
 }

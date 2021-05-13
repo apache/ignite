@@ -1,7 +1,6 @@
 # name: test/sql/aggregate/aggregates/test_sum.test
 # description: Test sum aggregate
 # group: [aggregates]
-# Ignored: https://issues.apache.org/jira/browse/IGNITE-14681
 
 statement ok
 CREATE TABLE integers(i INTEGER);
@@ -67,7 +66,7 @@ INSERT INTO bigints SELECT * FROM table(system_range(4611686018427387904, 461168
 
 # sum them up
 query I
-SELECT SUM(b) FROM bigints
+SELECT SUM(b::DECIMAL) FROM bigints
 ----
 4611686018427388403500
 

@@ -18,12 +18,13 @@
 package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.List;
-
 import org.apache.calcite.config.Lex;
 import org.apache.calcite.plan.Contexts;
+import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.sql.fun.SqlLibrary;
 import org.apache.calcite.sql.fun.SqlLibraryOperatorTableFactory;
 import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
@@ -45,6 +46,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistry;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutorImpl;
+import org.apache.ignite.internal.processors.query.calcite.fun.IgniteSqlFunctions;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
@@ -85,12 +87,14 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             .withIdentifierExpansion(true)
             .withSqlConformance(SqlConformanceEnum.DEFAULT))
         // Dialects support.
-        .operatorTable(SqlLibraryOperatorTableFactory.INSTANCE
-            .getOperatorTable(
-                SqlLibrary.STANDARD,
-                SqlLibrary.POSTGRESQL,
-                SqlLibrary.ORACLE,
-                SqlLibrary.MYSQL))
+        .operatorTable(SqlOperatorTables.chain(
+            SqlLibraryOperatorTableFactory.INSTANCE
+                .getOperatorTable(
+                    SqlLibrary.STANDARD,
+                    SqlLibrary.POSTGRESQL,
+                    SqlLibrary.ORACLE,
+                    SqlLibrary.MYSQL),
+            CalciteCatalogReader.operatorTable(IgniteSqlFunctions.class.getName())))
         // Context provides a way to store data within the planner session that can be accessed in planner rules.
         .context(Contexts.empty())
         // Custom cost factory to use during optimization
