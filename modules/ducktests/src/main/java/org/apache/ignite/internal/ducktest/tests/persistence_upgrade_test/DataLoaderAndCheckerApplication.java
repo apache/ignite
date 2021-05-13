@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.ducktest.tests.persistence_upgrade_test;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
