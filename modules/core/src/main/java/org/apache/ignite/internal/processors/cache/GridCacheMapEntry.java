@@ -3349,7 +3349,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         boolean primary,
         CacheDataRow row
     ) throws IgniteCheckedException, GridCacheEntryRemovedException {
-        assert primary || preload;
+        assert !primary || !(preload || fromStore);
 
         ensureFreeSpace();
 
