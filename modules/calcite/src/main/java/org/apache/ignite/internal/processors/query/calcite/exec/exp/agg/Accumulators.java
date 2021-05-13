@@ -1017,7 +1017,6 @@ public class Accumulators {
         /** */
         private final Set<Object> set = new HashSet<>();
 
-
         /** */
         private DistinctAccumulator(Supplier<Accumulator> accSup) {
             this.acc = accSup.get();
