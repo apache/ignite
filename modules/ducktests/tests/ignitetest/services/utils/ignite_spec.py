@@ -193,18 +193,11 @@ class IgniteSpec(metaclass=ABCMeta):
         """
         Prepare files that should be copied on all nodes.
         """
-
-        for k, v in sorted(os.environ.items()):
-            self.service.logger.debug(k+':', v)
-
-        self.service.logger.debug("Agent TMPDIR: " + os.getenv("TMPDIR", "None"))
-        self.service.logger.debug("Agent TEMP: " + os.getenv("TEMP", "None"))
-        self.service.logger.debug("Agent TMP: " + os.getenv("TMP", "None"))
-        self.service.logger.debug("Agent hostname: " + socket.gethostname())
-
-
         self.service.logger.debug("Local shared dir not exists. Creating. " + local_dir)
-        os.mkdir(local_dir)
+        try:
+            os.mkdir(local_dir)
+        except FileExistsError:
+            self.service.logger.debug("Shared dir already exists, while should not." + local_dir)
 
         script_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "certs")
 
