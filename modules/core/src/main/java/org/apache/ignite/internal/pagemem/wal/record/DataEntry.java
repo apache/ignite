@@ -33,13 +33,13 @@ public class DataEntry {
     public static final byte EMPTY_FLAGS = 0;
 
     /** */
-    public static final byte PRIMARY_FLAG = (byte)0b00000001;
+    public static final byte PRIMARY_FLAG = 0b00000001;
 
     /** */
-    public static final byte PRELOAD_FLAG = (byte)0b00000010;
+    public static final byte PRELOAD_FLAG = 0b00000010;
 
     /** */
-    public static final byte FROM_STORE_FLAG = (byte)0b00000100;
+    public static final byte FROM_STORE_FLAG = 0b00000100;
 
     /** Cache ID. */
     @GridToStringInclude
