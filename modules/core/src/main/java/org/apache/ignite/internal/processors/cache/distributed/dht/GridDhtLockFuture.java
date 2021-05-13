@@ -1147,7 +1147,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                                     topVer,
                                     GridDrType.DR_LOAD,
                                     true,
-                                    inTx() ? CU.txOnPrimary(tx) : entry0.localPartition().primary(topVer));
+                                    false);
                             }
                             catch (GridCacheEntryRemovedException e) {
                                 assert false : "Should not get removed exception while holding lock on entry " +

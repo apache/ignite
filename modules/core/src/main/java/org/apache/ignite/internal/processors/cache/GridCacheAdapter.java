@@ -3859,7 +3859,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 topVer,
                 replicate ? DR_LOAD : DR_NONE,
                 true,
-                ctx.topology().nodes(entry.partition(), topVer).get(0).isLocal());
+                false);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to put cache value: " + entry, e);
