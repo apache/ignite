@@ -3349,6 +3349,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         boolean primary,
         CacheDataRow row
     ) throws IgniteCheckedException, GridCacheEntryRemovedException {
+        assert primary || preload;
+
         ensureFreeSpace();
 
         boolean deferred = false;
@@ -3501,7 +3503,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             expireTime,
                             partition(),
                             updateCntr,
-                            primary
+                            DataEntry.flags(primary, preload, fromStore)
                         )));
                     }
                 }
@@ -4354,7 +4356,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     expireTime,
                     partition(),
                     updCntr,
-                    primary)));
+                    DataEntry.flags(primary))));
         }
         catch (StorageException e) {
             throw new IgniteCheckedException("Failed to log ATOMIC cache update [key=" + key + ", op=" + op +
@@ -4394,7 +4396,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 expireTime,
                 key.partition(),
                 updCntr,
-                CU.txOnPrimary(tx))));
+                DataEntry.flags(CU.txOnPrimary(tx)))));
         }
         else
             return null;

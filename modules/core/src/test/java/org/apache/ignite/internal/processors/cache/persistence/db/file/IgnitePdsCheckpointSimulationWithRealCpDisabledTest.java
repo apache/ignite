@@ -358,7 +358,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                     cctx.affinity().partition(i), i, new MvccVersionImpl(1000L, 10L, i + 1 /* Non-zero */)) :
                 new DataEntry(cctx.cacheId(), key, val, op, null, cctx.cache().nextVersion(),
                     0L,
-                    cctx.affinity().partition(i), i, false));
+                    cctx.affinity().partition(i), i, DataEntry.EMPTY_FLAGS));
         }
 
         UUID cpId = UUID.randomUUID();

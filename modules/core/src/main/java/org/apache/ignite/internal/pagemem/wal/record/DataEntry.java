@@ -29,6 +29,18 @@ import org.jetbrains.annotations.Nullable;
  * Represents Data Entry ({@link #key}, {@link #val value}) pair update {@link #op operation} in WAL log.
  */
 public class DataEntry {
+    /** Empty flags. */
+    public static final byte EMPTY_FLAGS = 0;
+
+    /** */
+    public static final byte PRIMARY_FLAG = (byte)0b00000001;
+
+    /** */
+    public static final byte PRELOAD_FLAG = (byte)0b00000010;
+
+    /** */
+    public static final byte FROM_STORE_FLAG = (byte)0b00000100;
+
     /** Cache ID. */
     @GridToStringInclude
     protected int cacheId;
@@ -62,9 +74,16 @@ public class DataEntry {
     @GridToStringInclude
     protected long partCnt;
 
-    /** If {@code true} then change made on primary node. */
+    /**
+     * Bit flags.
+     * <ul>
+     *  <li>0 bit - primary - seted when current node is primary for entry partition.</li>
+     *  <li>1 bit - preload - seted when entry logged during preload(rebalance).</li>
+     *  <li>2 bit - fromStore - seted when entry loaded from third-party store.</li>
+     * </ul>
+     */
     @GridToStringInclude
-    protected boolean primary;
+    protected byte flags;
 
     /** Constructor. */
     private DataEntry() {
@@ -81,7 +100,7 @@ public class DataEntry {
      * @param expireTime Expire time.
      * @param partId Partition ID.
      * @param partCnt Partition counter.
-     * @param primary {@code True} if node is primary for partition in the moment of logging.
+     * @param flags Entry flags.
      */
     public DataEntry(
         int cacheId,
@@ -93,7 +112,7 @@ public class DataEntry {
         long expireTime,
         int partId,
         long partCnt,
-        boolean primary
+        byte flags
     ) {
         this.cacheId = cacheId;
         this.key = key;
@@ -104,10 +123,34 @@ public class DataEntry {
         this.expireTime = expireTime;
         this.partId = partId;
         this.partCnt = partCnt;
-        this.primary = primary;
+        this.flags = flags;
 
         // Only READ, CREATE, UPDATE and DELETE operations should be stored in WAL.
         assert op == GridCacheOperation.READ || op == GridCacheOperation.CREATE || op == GridCacheOperation.UPDATE || op == GridCacheOperation.DELETE : op;
+    }
+
+    /**
+     * @param primary {@code True} if node is primary for partition in the moment of logging.
+     * @return Flags value.
+     */
+    public static byte flags(boolean primary) {
+        return flags(primary, false, false);
+    }
+
+    /**
+     * @param primary {@code True} if node is primary for partition in the moment of logging.
+     * @param preload {@code True} if logged during preload(rebalance).
+     * @param fromStore {@code True} if logged during loading from third-party store.
+     * @return Flags value.
+     */
+    public static byte flags(boolean primary, boolean preload, boolean fromStore) {
+        byte val = EMPTY_FLAGS;
+
+        val |= primary ? PRIMARY_FLAG : EMPTY_FLAGS;
+        val |= preload ? PRELOAD_FLAG : EMPTY_FLAGS;
+        val |= fromStore ? FROM_STORE_FLAG : EMPTY_FLAGS;
+
+        return val;
     }
 
     /**
@@ -186,10 +229,11 @@ public class DataEntry {
     }
 
     /**
-     * @return {@code True} if node is primary for partition in the moment of logging.
+     * Entry flags.
+     * @see #flags
      */
-    public boolean primary() {
-        return primary;
+    public byte flags() {
+        return flags;
     }
 
     /** {@inheritDoc} */

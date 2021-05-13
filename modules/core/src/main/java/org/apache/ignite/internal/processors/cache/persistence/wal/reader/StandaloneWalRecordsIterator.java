@@ -501,7 +501,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
                 dataEntry.partitionCounter(),
                 coCtx,
                 keepBinary,
-                dataEntry.primary());
+                dataEntry.flags());
     }
 
     /** {@inheritDoc} */

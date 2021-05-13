@@ -1964,7 +1964,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         buf.putLong(entry.expireTime());
 
         if (!(entry instanceof MvccDataEntry))
-            buf.put(entry.primary() ? (byte)1 : 0);
+            buf.put(entry.flags());
     }
 
     /**
@@ -2073,7 +2073,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         int partId = in.readInt();
         long partCntr = in.readLong();
         long expireTime = in.readLong();
-        boolean primary = type == DATA_RECORD_V2 && in.readByte() == (byte)1;
+        byte flags = type == DATA_RECORD_V2 ? in.readByte() : (byte)0;
 
         GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
@@ -2097,7 +2097,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                     expireTime,
                     partId,
                     partCntr,
-                    primary
+                    flags
             );
         }
         else
@@ -2114,7 +2114,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                     expireTime,
                     partId,
                     partCntr,
-                    primary
+                    flags
             );
     }
 
@@ -2285,7 +2285,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     public static class EncryptedDataEntry extends DataEntry {
         /** Constructor. */
         EncryptedDataEntry() {
-            super(0, null, null, READ, null, null, 0, 0, 0, false);
+            super(0, null, null, READ, null, null, 0, 0, 0, EMPTY_FLAGS);
         }
     }
 }

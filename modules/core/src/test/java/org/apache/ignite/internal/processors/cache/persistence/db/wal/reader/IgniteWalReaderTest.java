@@ -281,7 +281,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                         CacheObject val = entry.value();
 
                         if (walRecord.type() == DATA_RECORD_V2)
-                            assertEquals(primary, entry.primary());
+                            assertEquals(primary, (entry.flags() & DataEntry.PRIMARY_FLAG) != 0);
 
                         if (DUMP_RECORDS)
                             log.info("Op: " + entry.op() + ", Key: " + key + ", Value: " + val);
@@ -1502,7 +1502,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
                         for (DataEntry entry : entries) {
                             if (walRecord.type() == DATA_RECORD_V2)
-                                assertEquals(primary, entry.primary());
+                                assertEquals(primary, (entry.flags() & DataEntry.PRIMARY_FLAG) != 0);
 
                             GridCacheVersion globalTxId = entry.nearXidVersion();
 
