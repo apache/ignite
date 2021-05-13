@@ -25,6 +25,7 @@ import tempfile
 from abc import ABCMeta
 from datetime import datetime
 from enum import IntEnum
+from pathlib import Path
 from threading import Thread
 from filelock import FileLock
 
@@ -34,7 +35,7 @@ from ducktape.utils.util import wait_until
 from ignitetest.services.utils import IgniteServiceType
 from ignitetest.services.utils.background_thread import BackgroundThreadService
 from ignitetest.services.utils.concurrent import CountDownLatch, AtomicValue
-from ignitetest.services.utils.ignite_spec import resolve_spec
+from ignitetest.services.utils.ignite_spec import resolve_spec, SHARED_PREPARED_FILE
 from ignitetest.services.utils.jmx_utils import ignite_jmx_mixin
 from ignitetest.services.utils.log_utils import monitor_log
 from ignitetest.services.utils.path import IgnitePathAware
@@ -203,6 +204,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         with FileLock("init_shared.lock", timeout=120):
             if self.spec.is_prepare_shared_files(local_dir):
                 self.spec.prepare_shared_files(local_dir)
+                Path(os.path.join(local_dir, SHARED_PREPARED_FILE)).touch()
 
         return local_dir
 

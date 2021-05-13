@@ -204,7 +204,6 @@ class IgniteSpec(metaclass=ABCMeta):
         self._runcmd(f"cp {script_dir}/* {local_dir}")
         self._runcmd(f"chmod a+x {local_dir}/*.sh")
         self._runcmd(f"{local_dir}/mkcerts.sh")
-        self._runcmd(f"touch {os.path.join(local_dir, SHARED_PREPARED_FILE)}")
 
     def _jvm_opts(self):
         """
