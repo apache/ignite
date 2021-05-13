@@ -58,6 +58,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
+import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 
 /**
  *
@@ -436,30 +437,19 @@ public class CacheContinuousQueryOperationP2PTest extends GridCommonAbstractTest
             @Override public boolean apply(Event evt) {
                 if (evt.type() == EVT_CLIENT_NODE_DISCONNECTED) {
                     GridTestUtils.runAsync(() -> {
-                        try {
-                            IgniteCache<Integer, Integer> cache = grid(nodeIdx).cache(cacheName);
+                        IgniteCache<Integer, Integer> cache = grid(nodeIdx).cache(cacheName);
 
-                            cache.put(0, 0);
-
-                            fail();
-                        }
-                        catch (CacheException | IgniteClientDisconnectedException e) {
-                            IgniteClientDisconnectedException e0 = e instanceof CacheException
-                                ? (IgniteClientDisconnectedException)e.getCause()
-                                : (IgniteClientDisconnectedException)e;
-
-                            e0.reconnectFuture().get();
-
-                            reconnectLatch.countDown();
-                        }
+                        cache.put(0, 0);
                     });
 
                     disconnectLatch.countDown();
                 }
+                else if (evt.type() == EVT_CLIENT_NODE_RECONNECTED)
+                    reconnectLatch.countDown();
 
                 return true;
             }
-        }, EVT_CLIENT_NODE_DISCONNECTED);
+        }, EVT_CLIENT_NODE_DISCONNECTED, EVT_CLIENT_NODE_RECONNECTED);
 
         IgniteDiscoverySpi clientDiscSpi = (IgniteDiscoverySpi) grid(nodeIdx).configuration().getDiscoverySpi();
 
