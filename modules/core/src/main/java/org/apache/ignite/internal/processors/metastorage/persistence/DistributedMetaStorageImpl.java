@@ -306,8 +306,14 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     private void stopWorker(boolean cancel) {
         assert lock.isWriteLockedByCurrentThread();
 
-        if (isPersistenceEnabled)
-            worker.cancel(cancel);
+        if (isPersistenceEnabled) {
+            try {
+                worker.cancel(cancel);
+            }
+            catch (InterruptedException e) {
+                log.error("Cannot stop distributed metastorage worker.", e);
+            }
+        }
     }
 
     /**

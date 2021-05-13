@@ -176,7 +176,7 @@ public class DmsDataWriterWorker extends GridWorker {
     }
 
     /** */
-    public void cancel(boolean halt) {
+    public void cancel(boolean halt) throws InterruptedException {
         if (halt) {
             updateQueue.clear();
 
@@ -188,7 +188,11 @@ public class DmsDataWriterWorker extends GridWorker {
         latch.countDown();
 
         U.cancel(this);
-        U.join(runner(), log);
+
+        Thread runner = runner();
+
+        if (runner != null)
+            runner.join();
     }
 
     /** {@inheritDoc} */
