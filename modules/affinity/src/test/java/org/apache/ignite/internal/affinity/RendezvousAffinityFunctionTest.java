@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 import java.util.function.Function;
 import org.apache.ignite.internal.util.ByteUtils;
 import org.apache.ignite.lang.IgniteLogger;
@@ -101,7 +102,7 @@ public class RendezvousAffinityFunctionTest {
         ArrayList<ClusterNode> clusterNodes = new ArrayList<>(nodes);
 
         for (int i = 0; i < nodes; i++)
-            clusterNodes.add(new ClusterNode("Node " + i, "127.0.0.1", 121212));
+            clusterNodes.add(new ClusterNode(UUID.randomUUID().toString(), "Node " + i, "127.0.0.1", 121212));
         return clusterNodes;
     }
 

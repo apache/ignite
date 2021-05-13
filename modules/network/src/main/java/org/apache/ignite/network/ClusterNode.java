@@ -19,13 +19,15 @@ package org.apache.ignite.network;
 import java.io.Serializable;
 import java.util.Objects;
 import org.apache.ignite.internal.tostring.S;
-import java.util.UUID;
 
 /**
  * Representation of a node in a cluster.
  */
 public class ClusterNode implements Serializable {
-    /** Unique name of member in cluster. */
+    /** Local id assigned to this node instance. Changes between restarts. */
+    private final String id;
+
+    /** Unique name of member in the cluster. Consistent between restarts. */
     private final String name;
 
     /** Node host. */
@@ -34,31 +36,49 @@ public class ClusterNode implements Serializable {
     /** Node port. */
     private final int port;
 
+    /** Node address in host:port format (lazily evaluated) */
+    private String address;
+
     /**
      * @param name Unique name of member in cluster.
      */
-    public ClusterNode(String name, String host, int port) {
+    public ClusterNode(String id, String name, String host, int port) {
+        this.id = id;
         this.name = name;
         this.host = host;
         this.port = port;
     }
 
+    public String id() {
+        return id;
+    }
+
     /**
-     * @return Unique name of member in cluster.
+     * @return Unique name of member in cluster. Doesn't change between restarts.
      */
     public String name() {
         return name;
     }
 
     /**
-     * @return node host name.
+     * @return Node host name.
      */
     public String host() {
         return host;
     }
 
     /**
-     * @return node port.
+     * @return The address.
+     */
+    public String address() {
+        if (address == null)
+            address = host + ":" + port;
+
+        return address;
+    }
+
+    /**
+     * @return Node port.
      */
     public int port() {
         return port;
@@ -72,15 +92,6 @@ public class ClusterNode implements Serializable {
             return false;
         ClusterNode that = (ClusterNode)o;
         return port == that.port && name.equals(that.name) && host.equals(that.host);
-    }
-
-    /**
-     * Creates node UUID.
-     *
-     * @return Node UUID identifier.
-     */
-    public UUID id() {
-        return new UUID(name.hashCode(), name.substring(name.length() / 2).hashCode());
     }
 
     /** {@inheritDoc} */

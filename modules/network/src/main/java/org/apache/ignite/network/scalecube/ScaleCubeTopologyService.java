@@ -16,13 +16,12 @@
  */
 package org.apache.ignite.network.scalecube;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import io.scalecube.cluster.Member;
 import io.scalecube.cluster.membership.MembershipEvent;
-import org.apache.ignite.lang.IgniteInternalException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.network.AbstractTopologyService;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.TopologyEventHandler;
@@ -36,7 +35,7 @@ final class ScaleCubeTopologyService extends AbstractTopologyService {
     private ClusterNode localMember;
 
     /** Topology members. */
-    private final Map<String, ClusterNode> members = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, ClusterNode> members = new ConcurrentHashMap<>();
 
     /**
      * Sets the ScaleCube's local {@link Member}.
@@ -54,37 +53,16 @@ final class ScaleCubeTopologyService extends AbstractTopologyService {
     void onMembershipEvent(MembershipEvent event) {
         ClusterNode member = fromMember(event.member());
 
-        String memberName = member.name();
+        if (event.isAdded()) {
+            members.put(member.address(), member);
 
-        switch (event.type()) {
-            case ADDED:
-                members.put(memberName, member);
+            fireAppearedEvent(member);
+        }
+        else if (event.isRemoved()) {
+            members.compute(member.address(), // Ignore stale remove event.
+                (k, v) -> v.id().equals(member.id()) ? null : v);
 
-                fireAppearedEvent(member);
-
-                break;
-
-            case LEAVING:
-                members.remove(memberName);
-
-                fireDisappearedEvent(member);
-
-                break;
-
-            case REMOVED:
-                // In case if member left non-gracefully, without sending LEAVING event.
-                if (members.remove(memberName) != null)
-                    fireDisappearedEvent(member);
-
-                break;
-
-            case UPDATED:
-                // No-op.
-                break;
-
-            default:
-                throw new IgniteInternalException("This event is not supported: event = " + event);
-
+            fireDisappearedEvent(member);
         }
     }
 
@@ -120,10 +98,15 @@ final class ScaleCubeTopologyService extends AbstractTopologyService {
         return Collections.unmodifiableCollection(members.values());
     }
 
+    /** {@inheritDoc} */
+    @Override public ClusterNode getByAddress(String addr) {
+        return members.get(addr);
+    }
+
     /**
      * Converts the given {@link Member} to a {@link ClusterNode}.
      */
     private static ClusterNode fromMember(Member member) {
-        return new ClusterNode(member.alias(), member.address().host(), member.address().port());
+        return new ClusterNode(member.id(), member.alias(), member.address().host(), member.address().port());
     }
 }

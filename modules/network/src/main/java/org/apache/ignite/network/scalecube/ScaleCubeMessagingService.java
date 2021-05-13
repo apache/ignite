@@ -18,10 +18,8 @@
 package org.apache.ignite.network.scalecube;
 
 import java.time.Duration;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import io.scalecube.cluster.Cluster;
 import io.scalecube.cluster.transport.api.Message;
 import io.scalecube.net.Address;
@@ -29,8 +27,6 @@ import org.apache.ignite.network.AbstractMessagingService;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.MessagingService;
 import org.apache.ignite.network.NetworkMessageHandler;
-import org.apache.ignite.network.TopologyEventHandler;
-import org.apache.ignite.network.TopologyService;
 import org.apache.ignite.network.message.NetworkMessage;
 
 /**
@@ -43,21 +39,13 @@ final class ScaleCubeMessagingService extends AbstractMessagingService {
     private Cluster cluster;
 
     /**
-     * Utility map for recognizing cluster members by their addresses.
+     * Topology service.
      */
-    private final Map<Address, ClusterNode> addressMemberMap = new ConcurrentHashMap<>();
+    private ScaleCubeTopologyService topologyService;
 
     /** */
-    ScaleCubeMessagingService(TopologyService topologyService) {
-        topologyService.addEventHandler(new TopologyEventHandler() {
-            @Override public void onAppeared(ClusterNode member) {
-                addressMemberMap.put(clusterNodeAddress(member), member);
-            }
-
-            @Override public void onDisappeared(ClusterNode member) {
-                addressMemberMap.remove(clusterNodeAddress(member));
-            }
-        });
+    ScaleCubeMessagingService(ScaleCubeTopologyService topologyService) {
+        this.topologyService = topologyService;
     }
 
     /**
@@ -72,7 +60,11 @@ final class ScaleCubeMessagingService extends AbstractMessagingService {
      */
     void fireEvent(Message message) {
         NetworkMessage msg = message.data();
-        ClusterNode sender = addressMemberMap.get(message.sender());
+        ClusterNode sender = topologyService.getByAddress(message.header(Message.HEADER_SENDER));
+
+        if (sender == null) // Ignore the message from the unknown node.
+            return;
+
         String correlationId = message.correlationId();
         for (NetworkMessageHandler handler : getMessageHandlers())
             handler.onReceived(msg, sender, correlationId);

@@ -28,7 +28,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.UUID;
 import java.util.function.BiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteLogger;
@@ -92,7 +91,7 @@ public class RendezvousAffinityFunction {
         int part,
         List<ClusterNode> nodes,
         int replicas,
-        Map<UUID, Collection<ClusterNode>> neighborhoodCache,
+        Map<String, Collection<ClusterNode>> neighborhoodCache,
         boolean exclNeighbors,
         BiPredicate<ClusterNode, List<ClusterNode>> nodeFilter
     ) {
@@ -251,7 +250,7 @@ public class RendezvousAffinityFunction {
 
         List<List<ClusterNode>> assignments = new ArrayList<>(partitions);
 
-        Map<UUID, Collection<ClusterNode>> neighborhoodCache = exclNeighbors ?
+        Map<String, Collection<ClusterNode>> neighborhoodCache = exclNeighbors ?
             neighbors(currentTopologySnapshot) : null;
 
         List<ClusterNode> nodes = new ArrayList<>(currentTopologySnapshot);
@@ -271,7 +270,7 @@ public class RendezvousAffinityFunction {
      * @param topSnapshot Topology snapshot.
      * @return Neighbors map.
      */
-    public static Map<UUID, Collection<ClusterNode>> neighbors(Collection<ClusterNode> topSnapshot) {
+    public static Map<String, Collection<ClusterNode>> neighbors(Collection<ClusterNode> topSnapshot) {
         Map<String, Collection<ClusterNode>> macMap = new HashMap<>(topSnapshot.size(), 1.0f);
 
         // Group by mac addresses.
@@ -287,7 +286,7 @@ public class RendezvousAffinityFunction {
             nodes.add(node);
         }
 
-        Map<UUID, Collection<ClusterNode>> neighbors = new HashMap<>(topSnapshot.size(), 1.0f);
+        Map<String, Collection<ClusterNode>> neighbors = new HashMap<>(topSnapshot.size(), 1.0f);
 
         for (Collection<ClusterNode> group : macMap.values())
             for (ClusterNode node : group)
@@ -308,7 +307,7 @@ public class RendezvousAffinityFunction {
         /** {@inheritDoc} */
         @Override public int compare(IgniteBiTuple<Long, ClusterNode> o1, IgniteBiTuple<Long, ClusterNode> o2) {
             return o1.get1() < o2.get1() ? -1 : o1.get1() > o2.get1() ? 1 :
-                o1.get2().id().compareTo(o2.get2().id());
+                o1.get2().name().compareTo(o2.get2().name());
         }
     }
 

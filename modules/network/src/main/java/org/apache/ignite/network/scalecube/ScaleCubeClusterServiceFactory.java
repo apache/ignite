@@ -17,13 +17,14 @@
 
 package org.apache.ignite.network.scalecube;
 
+import io.scalecube.cluster.ClusterConfig;
+import java.util.List;
+import java.util.stream.Collectors;
 import io.scalecube.cluster.ClusterImpl;
 import io.scalecube.cluster.ClusterMessageHandler;
 import io.scalecube.cluster.membership.MembershipEvent;
 import io.scalecube.cluster.transport.api.Message;
 import io.scalecube.net.Address;
-import java.util.List;
-import java.util.stream.Collectors;
 import org.apache.ignite.network.AbstractClusterService;
 import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterService;
@@ -41,7 +42,7 @@ public class ScaleCubeClusterServiceFactory implements ClusterServiceFactory {
         var messagingService = new ScaleCubeMessagingService(topologyService);
         var transportFactory = new DelegatingTransportFactory(messagingService);
 
-        var cluster = new ClusterImpl()
+        var cluster = new ClusterImpl(defaultConfig())
             .handler(cl -> new ClusterMessageHandler() {
                 /** {@inheritDoc} */
                 @Override public void onMessage(Message message) {
@@ -55,7 +56,7 @@ public class ScaleCubeClusterServiceFactory implements ClusterServiceFactory {
             })
             .config(opts -> opts.memberAlias(context.getName()))
             .transport(opts -> opts.port(context.getPort()).transportFactory(transportFactory))
-            .membership(opts -> opts.seedMembers(parseAddresses(context.getMemberAddresses())).suspicionMult(1));
+            .membership(opts -> opts.seedMembers(parseAddresses(context.getMemberAddresses())));
 
         // resolve cyclic dependencies
         messagingService.setCluster(cluster);
@@ -74,6 +75,13 @@ public class ScaleCubeClusterServiceFactory implements ClusterServiceFactory {
                 cluster.onShutdown().block();
             }
         };
+    }
+
+    /**
+     * @return The default configuration.
+     */
+    protected ClusterConfig defaultConfig() {
+        return ClusterConfig.defaultConfig();
     }
 
     /**

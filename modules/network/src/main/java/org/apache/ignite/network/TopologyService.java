@@ -17,6 +17,7 @@
 package org.apache.ignite.network;
 
 import java.util.Collection;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Entry point for obtaining information about a cluster's topology.
@@ -39,4 +40,12 @@ public interface TopologyService {
      * Registers a handler for topology change events.
      */
     void addEventHandler(TopologyEventHandler handler);
+
+    /**
+     * Returns a cluster node by it's network address in host:port format.
+     *
+     * @param addr The address.
+     * @return The node or {@code null} if the node is not yet discovered or dead.
+     */
+    @Nullable ClusterNode getByAddress(String addr);
 }

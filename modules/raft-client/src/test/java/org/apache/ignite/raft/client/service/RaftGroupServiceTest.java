@@ -67,9 +67,9 @@ public class RaftGroupServiceTest {
 
     /** */
     private static final List<Peer> NODES = of(
-        new Peer(new ClusterNode("node1", "foobar", 123)),
-        new Peer(new ClusterNode("node2", "foobar", 123)),
-        new Peer(new ClusterNode("node3", "foobar", 123))
+        new Peer(new ClusterNode("id1", "node1", "foobar", 123)),
+        new Peer(new ClusterNode("id2", "node2", "foobar", 124)),
+        new Peer(new ClusterNode("id3", "node3", "foobar", 125))
     );
 
     /** */

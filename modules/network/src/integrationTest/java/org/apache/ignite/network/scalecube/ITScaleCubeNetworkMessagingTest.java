@@ -257,7 +257,7 @@ class ITScaleCubeNetworkMessagingTest {
         /** */
         private static final MessageSerializationRegistry SERIALIZATION_REGISTRY = new MessageSerializationRegistry();
         /** */
-        private static final ClusterServiceFactory NETWORK_FACTORY = new ScaleCubeClusterServiceFactory();
+        private static final ClusterServiceFactory NETWORK_FACTORY = new TestScaleCubeClusterServiceFactory();
 
         /** */
         final List<ClusterService> members;
