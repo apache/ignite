@@ -193,7 +193,6 @@ class IgniteSpec(metaclass=ABCMeta):
         """
         Prepare files that should be copied on all nodes.
         """
-        self.service.logger.debug("Agent uname: " + os.uname())
         self.service.logger.debug("Agent TMPDIR: " + os.getenv("TMPDIR"))
         self.service.logger.debug("Agent TEMP: " + os.getenv("TEMP"))
         self.service.logger.debug("Agent TMP: " + os.getenv("TMP"))
