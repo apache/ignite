@@ -64,7 +64,7 @@ public class DataLoaderAndCheckerApplication extends IgniteAwareApplication {
     /**
      *
      */
-    private static class CustomObject{
+    private static class CustomObject {
         /** String value. */
         private final String sVal;
 
