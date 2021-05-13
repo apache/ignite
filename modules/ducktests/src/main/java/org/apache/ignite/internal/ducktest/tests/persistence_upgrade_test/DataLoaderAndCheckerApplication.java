@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.ducktest.tests.persistence_upgrade_test;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -33,18 +37,21 @@ public class DataLoaderAndCheckerApplication extends IgniteAwareApplication {
         boolean check = jNode.get("check").asBoolean();
 
         markInitialized();
-
         waitForActivation();
 
-        CacheConfiguration<Integer, Integer> cacheCfg = new CacheConfiguration<>("cache");
+        CacheConfiguration<Integer, CustomObject> cacheCfg = new CacheConfiguration<>("cache");
 
-        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(cacheCfg);
+        IgniteCache<Integer, CustomObject> cache = ignite.getOrCreateCache(cacheCfg);
+
+        log.info(check ? "Checking..." : " Preparing...");
 
         for (int i = 0; i < 10_000; i++) {
+            CustomObject obj = new CustomObject(i);
+
             if (!check)
-                cache.put(i, i);
+                cache.put(i, obj);
             else
-                assert cache.get(i) == i;
+                assert cache.get(i).equals(obj);
         }
 
         log.info(check ? "Checked." : " Prepared.");
@@ -54,4 +61,62 @@ public class DataLoaderAndCheckerApplication extends IgniteAwareApplication {
 
         markFinished();
     }
+
+    /**
+     *
+     */
+    private static class CustomObject{
+        /** String value. */
+        private final String sVal;
+
+        /** Integer value. */
+        private final Integer iVal;
+
+        /** Boolean value. */
+        private final Boolean bVal;
+
+        /** char value. */
+        private final char cVal;
+
+        /** Integer array value. */
+        private final Integer[] iArVal;
+
+        /** Integer List. */
+        private final List<Integer> iLiVal;
+
+        /**
+         * @param idx Index.
+         */
+        public CustomObject(int idx) {
+            sVal = String.valueOf(idx);
+            iVal = idx;
+            bVal = idx % 2 == 0;
+            cVal = sVal.charAt(0);
+            iArVal = new Integer[] {idx, idx * 2, idx * idx};
+            iLiVal = new ArrayList<>(Arrays.asList(iArVal));
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+            CustomObject obj = (CustomObject)o;
+            return cVal == obj.cVal
+                && Objects.equals(sVal, obj.sVal)
+                && Objects.equals(iVal, obj.iVal)
+                && Objects.equals(bVal, obj.bVal)
+                && Arrays.equals(iArVal, obj.iArVal)
+                && Objects.equals(iLiVal, obj.iLiVal);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            int result = Objects.hash(sVal, iVal, bVal, cVal, iLiVal);
+            result = 31 * result + Arrays.hashCode(iArVal);
+            return result;
+        }
+    }
+
 }
