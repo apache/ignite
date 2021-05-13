@@ -583,7 +583,43 @@ public class ClusterCachesInfo {
     public boolean onCacheChangeRequested(DynamicCacheChangeBatch batch, AffinityTopologyVersion topVer) {
         DiscoveryDataClusterState state = ctx.state().clusterState();
 
-        if (!state.active() || state.transition()) {
+        if (state.active() && !state.transition()) {
+            Collection<UUID> nodes = ctx.cache().context().snapshotMgr().cacheStartRequiredAliveNodes(batch.requests());
+
+            for (UUID nodeId : nodes) {
+                ClusterNode node = ctx.discovery().node(nodeId);
+
+                if (node != null && CU.baselineNode(node, state) && ctx.discovery().alive(node))
+                    continue;
+
+                ClusterTopologyCheckedException err =
+                    new ClusterTopologyCheckedException("Required node has left the cluster [nodeId=" + nodeId + ']');
+
+                for (DynamicCacheChangeRequest req : batch.requests())
+                    ctx.cache().completeCacheStartFuture(req, false, err);
+
+                return false;
+            }
+
+            ExchangeActions exchangeActions = new ExchangeActions();
+
+            CacheChangeProcessResult res = processCacheChangeRequests(exchangeActions,
+                batch.requests(),
+                topVer,
+                false);
+
+            if (res.needExchange) {
+                assert !exchangeActions.empty() : exchangeActions;
+
+                batch.exchangeActions(exchangeActions);
+
+                if (!F.isEmpty(nodes))
+                    exchangeActions.cacheStartRequiredAliveNodes(nodes);
+            }
+
+            return res.needExchange;
+        }
+        else {
             IgniteCheckedException err = new IgniteCheckedException("Failed to start/stop cache, cluster state change " +
                 "is in progress.");
 
@@ -598,41 +634,6 @@ public class ClusterCachesInfo {
 
             return false;
         }
-
-        if (!F.isEmpty(batch.topologyNodes())) {
-            for (UUID nodeId : batch.topologyNodes()) {
-                ClusterNode node = ctx.discovery().node(nodeId);
-
-                if (node != null && CU.baselineNode(node, state) && ctx.discovery().alive(node))
-                    continue;
-
-                ClusterTopologyCheckedException err =
-                    new ClusterTopologyCheckedException("Required node has left the cluster [nodeId=" + nodeId + ']');
-
-                for (DynamicCacheChangeRequest req : batch.requests())
-                    ctx.cache().completeCacheStartFuture(req, false, err);
-
-                return false;
-            }
-        }
-
-        ExchangeActions exchangeActions = new ExchangeActions();
-
-        CacheChangeProcessResult res = processCacheChangeRequests(exchangeActions,
-            batch.requests(),
-            topVer,
-            false);
-
-        if (res.needExchange) {
-            assert !exchangeActions.empty() : exchangeActions;
-
-            batch.exchangeActions(exchangeActions);
-
-            if (!F.isEmpty(batch.topologyNodes()))
-                exchangeActions.cacheStartRequiredAliveNodes(batch.topologyNodes());
-        }
-
-        return res.needExchange;
     }
 
     /**
@@ -1028,7 +1029,7 @@ public class ClusterCachesInfo {
             }
         }
 
-        if (err == null && !req.internal()) {
+        if (err == null && req.restartId() == null) {
             IgniteSnapshotManager snapshotMgr = ctx.cache().context().snapshotMgr();
 
             if (snapshotMgr.isRestoring(cacheName, ccfg.getGroupName())) {

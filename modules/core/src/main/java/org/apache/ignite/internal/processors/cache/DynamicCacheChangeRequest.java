@@ -107,9 +107,6 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Cache configuration enrichment. */
     private CacheConfigurationEnrichment cacheCfgEnrichment;
 
-    /** Flag indicating that the cache was started internally and not by the user. */
-    private boolean internal;
-
     /**
      * @param reqId Unique request ID.
      * @param cacheName Cache stop name.
@@ -481,20 +478,6 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** @return Master key digest that encrypted the group encryption key. */
     @Nullable public byte[] masterKeyDigest() {
         return masterKeyDigest;
-    }
-
-    /**
-     * @param internal Flag indicating that the cache was started internally and not by the user.
-     */
-    public void internal(boolean internal) {
-        this.internal = internal;
-    }
-
-    /**
-     * @return Flag indicating that the cache was started internally and not by the user.
-     */
-    public boolean internal() {
-        return internal;
     }
 
     /**

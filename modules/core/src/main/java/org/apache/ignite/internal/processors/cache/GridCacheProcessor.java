@@ -3520,8 +3520,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 false,
                 null,
                 ccfg != null && ccfg.isEncryptionEnabled() ? grpKeys.iterator().next() : null,
-                ccfg != null && ccfg.isEncryptionEnabled() ? masterKeyDigest : null,
-                false);
+                ccfg != null && ccfg.isEncryptionEnabled() ? masterKeyDigest : null);
 
             if (req != null) {
                 if (req.clientStartOnly())
@@ -3709,23 +3708,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param failIfExists Fail if exists flag.
      * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
      * @param disabledAfterStart If true, cache proxies will be only activated after {@link #restartProxies()}.
-     * @param internal Flag indicating that the cache was started internally and not by the user.
      * @return Future that will be completed when all caches are deployed.
      */
     public IgniteInternalFuture<Boolean> dynamicStartCaches(
         Collection<CacheConfiguration> ccfgList,
         boolean failIfExists,
         boolean checkThreadTx,
-        boolean disabledAfterStart,
-        boolean internal
+        boolean disabledAfterStart
     ) {
         return dynamicStartCachesByStoredConf(
             ccfgList.stream().map(StoredCacheData::new).collect(toList()),
             failIfExists,
             checkThreadTx,
             disabledAfterStart,
-            null,
-            internal);
+            null);
     }
 
     /**
@@ -3736,7 +3732,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
      * @param disabledAfterStart If true, cache proxies will be only activated after {@link #restartProxies()}.
      * @param restartId Restart requester id (it'll allow to start this cache only him).
-     * @param internal Flag indicating that the cache was started internally and not by the user.
      * @return Future that will be completed when all caches are deployed.
      */
     public IgniteInternalFuture<Boolean> dynamicStartCachesByStoredConf(
@@ -3744,34 +3739,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean failIfExists,
         boolean checkThreadTx,
         boolean disabledAfterStart,
-        IgniteUuid restartId,
-        boolean internal
-    ) {
-        return dynamicStartCachesByStoredConf(storedCacheDataList, failIfExists, checkThreadTx, disabledAfterStart,
-            restartId, internal, null);
-    }
-
-    /**
-     * Dynamically starts multiple caches.
-     *
-     * @param storedCacheDataList Collection of stored cache data.
-     * @param failIfExists Fail if exists flag.
-     * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
-     * @param disabledAfterStart If true, cache proxies will be only activated after {@link #restartProxies()}.
-     * @param restartId Restart requester id (it'll allow to start this cache only him).
-     * @param internal Flag indicating that the cache was started internally and not by the user.
-     * @param topNodes Server nodes on which a successful start of the cache(s) is required, if any of these nodes fails
-     *                 when starting the cache(s), the whole procedure is rolled back.
-     * @return Future that will be completed when all caches are deployed.
-     */
-    public IgniteInternalFuture<Boolean> dynamicStartCachesByStoredConf(
-        Collection<StoredCacheData> storedCacheDataList,
-        boolean failIfExists,
-        boolean checkThreadTx,
-        boolean disabledAfterStart,
-        IgniteUuid restartId,
-        boolean internal,
-        @Nullable Set<UUID> topNodes
+        IgniteUuid restartId
     ) {
         if (checkThreadTx) {
             sharedCtx.tm().checkEmptyTransactions(() -> {
@@ -3806,8 +3774,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     disabledAfterStart,
                     ccfg.queryEntities(),
                     ccfg.config().isEncryptionEnabled() ? grpKeysIter.next() : null,
-                    ccfg.config().isEncryptionEnabled() ? masterKeyDigest : null,
-                    internal);
+                    ccfg.config().isEncryptionEnabled() ? masterKeyDigest : null);
 
                 if (req != null) {
                     if (req.clientStartOnly()) {
@@ -3833,7 +3800,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             GridCompoundFuture<?, Boolean> compoundFut = new GridCompoundFuture<>();
 
-            for (DynamicCacheStartFuture fut : initiateCacheChanges(srvReqs, topNodes))
+            for (DynamicCacheStartFuture fut : initiateCacheChanges(srvReqs))
                 compoundFut.add((IgniteInternalFuture)fut);
 
             if (clientReqs != null) {
@@ -4087,19 +4054,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private Collection<DynamicCacheStartFuture> initiateCacheChanges(
         Collection<DynamicCacheChangeRequest> reqs
     ) {
-        return initiateCacheChanges(reqs, null);
-    }
-
-    /**
-     * @param reqs Requests.
-     * @param rqNodes Server nodes on which a successful start of the cache(s) is required, if any of these nodes fails
-     *                when starting the cache(s), the whole procedure is rolled back.
-     * @return Collection of futures.
-     */
-    private Collection<DynamicCacheStartFuture> initiateCacheChanges(
-        Collection<DynamicCacheChangeRequest> reqs,
-        @Nullable Collection<UUID> rqNodes
-    ) {
         Collection<DynamicCacheStartFuture> res = new ArrayList<>(reqs.size());
 
         Collection<DynamicCacheChangeRequest> sndReqs = new ArrayList<>(reqs.size());
@@ -4154,7 +4108,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (!sndReqs.isEmpty()) {
             try {
-                ctx.discovery().sendCustomEvent(new DynamicCacheChangeBatch(sndReqs, rqNodes));
+                ctx.discovery().sendCustomEvent(new DynamicCacheChangeBatch(sndReqs));
 
                 err = checkNodeState();
             }
@@ -4719,7 +4673,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         Exception err = null;
 
         try {
-            ctx.discovery().sendCustomEvent(new DynamicCacheChangeBatch(Collections.singleton(req), null));
+            ctx.discovery().sendCustomEvent(new DynamicCacheChangeBatch(Collections.singleton(req)));
 
             if (ctx.isStopping()) {
                 err = new IgniteCheckedException("Failed to execute dynamic cache change request, " +
@@ -5091,7 +5045,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param qryEntities Query entities.
      * @param encKey Encryption key.
      * @param masterKeyDigest Master key digest.
-     * @param internal Flag indicating that the cache was started internally and not by the user.
      * @return Request or {@code null} if cache already exists.
      * @throws IgniteCheckedException if some of pre-checks failed
      * @throws CacheExistsException if cache exists and failIfExists flag is {@code true}
@@ -5108,8 +5061,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean disabledAfterStart,
         @Nullable Collection<QueryEntity> qryEntities,
         @Nullable byte[] encKey,
-        @Nullable byte[] masterKeyDigest,
-        boolean internal
+        @Nullable byte[] masterKeyDigest
     ) throws IgniteCheckedException {
         DynamicCacheDescriptor desc = cacheDescriptor(cacheName);
 
@@ -5126,8 +5078,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         req.encryptionKey(encKey);
 
         req.restartId(restartId);
-
-        req.internal(internal);
 
         if (ccfg != null) {
             cloneCheckSerializable(ccfg);

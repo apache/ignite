@@ -79,6 +79,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheType;
+import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
@@ -128,6 +129,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -774,6 +776,21 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     public boolean isRestoring() {
         return restoreCacheGrpProc.isRestoring();
+    }
+
+    /**
+     * @param reqs Collection of cache change requests.
+     * @return Server nodes on which a successful start of the cache(s) is required, if any of these nodes fails when
+     *         starting the cache(s), the whole procedure is rolled back.
+     */
+    public Set<UUID> cacheStartRequiredAliveNodes(Collection<DynamicCacheChangeRequest> reqs) {
+        IgniteUuid restoreId = F.first(
+            F.viewReadOnly(reqs, DynamicCacheChangeRequest::restartId, req -> req.start() && req.restartId() != null));
+
+        if (restoreId == null)
+            return Collections.emptySet();
+
+        return restoreCacheGrpProc.cacheStartRequiredAliveNodes(restoreId);
     }
 
     /**

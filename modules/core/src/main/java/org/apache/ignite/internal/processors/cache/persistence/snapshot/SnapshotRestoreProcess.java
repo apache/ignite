@@ -64,6 +64,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.IgniteFeatures.SNAPSHOT_RESTORE_CACHE_GROUP;
@@ -317,6 +318,20 @@ public class SnapshotRestoreProcess {
         }
 
         return false;
+    }
+
+    /**
+     * @param reqId Request ID.
+     * @return Server nodes on which a successful start of the cache(s) is required, if any of these nodes fails when
+     *         starting the cache(s), the whole procedure is rolled back.
+     */
+    public Set<UUID> cacheStartRequiredAliveNodes(IgniteUuid reqId) {
+        SnapshotRestoreContext opCtx0 = opCtx;
+
+        if (opCtx0 == null || !reqId.globalId().equals(opCtx0.reqId))
+            return Collections.emptySet();
+
+        return Collections.unmodifiableSet(opCtx0.nodes);
     }
 
     /**
@@ -736,7 +751,7 @@ public class SnapshotRestoreProcess {
 
         // We set the topology node IDs required to successfully start the cache, if any of the required nodes leave
         // the cluster during the cache startup, the whole procedure will be rolled back.
-        return ctx.cache().dynamicStartCachesByStoredConf(ccfgs, true, true, false, null, true, opCtx0.nodes);
+        return ctx.cache().dynamicStartCachesByStoredConf(ccfgs, true, true, false, IgniteUuid.fromUuid(reqId));
     }
 
     /**
