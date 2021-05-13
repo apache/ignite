@@ -1,7 +1,6 @@
 # name: test/sql/aggregate/aggregates/test_aggr_string.test
 # description: Test aggregations on strings
 # group: [aggregates]
-# Ignore: https://issues.apache.org/jira/browse/IGNITE-14544
 # Ignore: https://issues.apache.org/jira/browse/IGNITE-14545
 
 query TTTTI
@@ -53,6 +52,27 @@ SELECT a, COUNT(*), COUNT(s), COUNT(DISTINCT s) FROM test GROUP BY a ORDER BY a;
 ----
 11	3	2	1
 12	2	2	1
+
+
+# string min/max with long strings
+statement ok
+CREATE TABLE test_strings(s VARCHAR);
+INSERT INTO test_strings VALUES ('aaaaaaaahello'), ('bbbbbbbbbbbbbbbbbbbbhello'), ('ccccccccccccccchello'), ('aaaaaaaaaaaaaaaaaaaaaaaahello')
+
+query II
+SELECT MIN(s), MAX(s) FROM test_strings;
+----
+aaaaaaaaaaaaaaaaaaaaaaaahello	ccccccccccccccchello
+
+# string min/max with long strings 2
+statement ok
+CREATE TABLE test_strings2(s VARCHAR);
+INSERT INTO test_strings2 VALUES ('a'), ('aa'), ('A'), ('AA'), ('D')
+
+query II
+SELECT MAX(s), MIN(s) FROM test_strings2;
+----
+aa	A
 
 # now with WHERE clause
 query IIII
