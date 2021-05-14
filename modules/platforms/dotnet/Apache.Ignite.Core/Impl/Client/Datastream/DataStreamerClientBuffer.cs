@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Client.Datastream
 {
+    using System;
     using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;
@@ -183,11 +184,12 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             // for completions?
 
             _parent.FlushAsync(this).ContinueWith(
-                _ => ThreadPool.QueueUserWorkItem(buf => ((DataStreamerClientBuffer<TK, TV>)buf).OnFlushed(), this),
+                t => ThreadPool.QueueUserWorkItem(buf =>
+                    ((DataStreamerClientBuffer<TK, TV>)buf).OnFlushed(t.Exception), this),
                 TaskContinuationOptions.ExecuteSynchronously);
         }
 
-        private void OnFlushed()
+        private void OnFlushed(AggregateException exception = null)
         {
             TaskCompletionSource<object> tcs;
 
@@ -206,14 +208,27 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
                 if (previous == null)
                 {
-                    tcs.TrySetResult(null);
+                    TrySetResult(tcs, exception);
                 }
                 else
                 {
                     previous.GetChainFlushTask().ContinueWith(
-                        _ => tcs.TrySetResult(null),
+                        t => TrySetResult(tcs, exception ?? t.Exception),
                         TaskContinuationOptions.ExecuteSynchronously);
                 }
+            }
+        }
+
+        /** */
+        private static void TrySetResult(TaskCompletionSource<object> tcs, Exception exception)
+        {
+            if (exception == null)
+            {
+                tcs.TrySetResult(null);
+            }
+            else
+            {
+                tcs.TrySetException(exception);
             }
         }
 
