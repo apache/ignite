@@ -229,8 +229,8 @@ public class PageMemoryImpl implements PageMemoryEx {
     private final PageStoreWriter flushDirtyPage;
 
     /**
-     * Delayed page replacement (rotation with disk) tracker. Because other thread may require exactly the same page to be loaded from store,
-     * reads are protected by locking.
+     * Delayed page replacement (rotation with disk) tracker.
+     * Because other thread may require exactly the same page to be loaded from store, reads are protected by locking.
      * {@code Null} if delayed write functionality is disabled.
      */
     @Nullable private final DelayedPageReplacementTracker delayedPageReplacementTracker;
@@ -1653,7 +1653,8 @@ public class PageMemoryImpl implements PageMemoryEx {
             );
 
             assert PageIO.getType(tmpAbsPtr + PAGE_OVERHEAD) != 0 : "Invalid state. Type is 0! pageId = " + U.hexLong(fullId.pageId());
-            assert PageIO.getVersion(tmpAbsPtr + PAGE_OVERHEAD) != 0 : "Invalid state. Version is 0! pageId = " + U.hexLong(fullId.pageId());
+            assert PageIO.getVersion(tmpAbsPtr + PAGE_OVERHEAD) != 0
+                : "Invalid state. Version is 0! pageId = " + U.hexLong(fullId.pageId());
 
             PageHeader.dirty(absPtr, false);
             PageHeader.tempBufferPointer(absPtr, tmpRelPtr);

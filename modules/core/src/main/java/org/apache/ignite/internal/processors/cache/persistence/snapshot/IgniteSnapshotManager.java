@@ -905,8 +905,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         try (InputStream in = new BufferedInputStream(new FileInputStream(smf))) {
             SnapshotMetadata meta = marsh.unmarshal(in, U.resolveClassLoader(cctx.gridConfig()));
 
-            if (!U.maskForFileName(meta.consistentId()).equals(smfName))
-                throw new IgniteException("Error reading snapshot metadata [smfName=" + smfName + ", consId=" + U.maskForFileName(meta.consistentId()));
+            if (!U.maskForFileName(meta.consistentId()).equals(smfName)) {
+                throw new IgniteException(
+                    "Error reading snapshot metadata [smfName=" + smfName + ", consId=" + U.maskForFileName(meta.consistentId())
+                );
+            }
 
             return meta;
         }
@@ -1003,14 +1006,20 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             ClusterSnapshotFuture snpFut0;
 
             synchronized (snpOpMux) {
-                if (clusterSnpFut != null && !clusterSnpFut.isDone())
-                    throw new IgniteException("Create snapshot request has been rejected. The previous snapshot operation was not completed.");
+                if (clusterSnpFut != null && !clusterSnpFut.isDone()) {
+                    throw new IgniteException(
+                        "Create snapshot request has been rejected. The previous snapshot operation was not completed."
+                    );
+                }
 
                 if (clusterSnpReq != null)
                     throw new IgniteException("Create snapshot request has been rejected. Parallel snapshot processes are not allowed.");
 
-                if (localSnapshotNames().contains(name))
-                    throw new IgniteException("Create snapshot request has been rejected. Snapshot with given name already exists on local node.");
+                if (localSnapshotNames().contains(name)) {
+                    throw new IgniteException(
+                        "Create snapshot request has been rejected. Snapshot with given name already exists on local node."
+                    );
+                }
 
                 snpFut0 = new ClusterSnapshotFuture(UUID.randomUUID(), name);
 
@@ -1177,11 +1186,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         List<File> grps = cacheDirectories(nodePath, name -> name.equals(grpName));
 
-        if (F.isEmpty(grps))
-            throw new IgniteCheckedException("The snapshot cache group not found [dir=" + snpDir.getAbsolutePath() + ", grpName=" + grpName + ']');
+        if (F.isEmpty(grps)) {
+            throw new IgniteCheckedException(
+                "The snapshot cache group not found [dir=" + snpDir.getAbsolutePath() + ", grpName=" + grpName + ']'
+            );
+        }
 
-        if (grps.size() > 1)
-            throw new IgniteCheckedException("The snapshot cache group directory cannot be uniquely identified [dir=" + snpDir.getAbsolutePath() + ", grpName=" + grpName + ']');
+        if (grps.size() > 1) {
+            throw new IgniteCheckedException(
+                "The snapshot cache group directory cannot be uniquely identified [dir=" + snpDir.getAbsolutePath() +
+                    ", grpName=" + grpName + ']'
+            );
+        }
 
         File snpPart = getPartitionFile(new File(snapshotLocalDir(snpName), databaseRelativePath(folderName)),
             grps.get(0).getName(), partId);
@@ -1221,8 +1237,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         Map<Integer, Set<Integer>> parts,
         SnapshotSender snpSndr
     ) {
-        if (!busyLock.enterBusy())
-            return new SnapshotFutureTask(new IgniteCheckedException("Snapshot manager is stopping [locNodeId=" + cctx.localNodeId() + ']'));
+        if (!busyLock.enterBusy()) {
+            return new SnapshotFutureTask(
+                new IgniteCheckedException("Snapshot manager is stopping [locNodeId=" + cctx.localNodeId() + ']'));
+        }
 
         try {
             if (locSnpTasks.containsKey(snpName))

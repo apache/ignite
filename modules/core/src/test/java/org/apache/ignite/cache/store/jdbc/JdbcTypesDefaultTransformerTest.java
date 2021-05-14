@@ -148,7 +148,8 @@ public class JdbcTypesDefaultTransformerTest extends GridCommonAbstractTest {
             stmt.executeUpdate("INSERT INTO TEST_TRANSFORMER(id, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13) " +
                 "VALUES (3, null, null, null, null, null, null, null, null, null, null, null, null, null)");
 
-            ResultSet rs = stmt.executeQuery("select c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13 from TEST_TRANSFORMER order by id");
+            ResultSet rs =
+                stmt.executeQuery("select c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13 from TEST_TRANSFORMER order by id");
 
             assertTrue(rs.next());
 

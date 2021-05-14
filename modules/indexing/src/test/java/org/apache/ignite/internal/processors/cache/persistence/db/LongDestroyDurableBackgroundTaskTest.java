@@ -114,7 +114,8 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
 
     /** */
     private final LogListener blockedSysCriticalThreadLsnr =
-        LogListener.matches("Blocked system-critical thread has been detected. This can lead to cluster-wide undefined behaviour [workerName=db-checkpoint-thread").build();
+        LogListener.matches("Blocked system-critical thread has been detected. " +
+            "This can lead to cluster-wide undefined behaviour [workerName=db-checkpoint-thread").build();
 
     /** Latch that waits for execution of durable background task. */
     private CountDownLatch pendingDelLatch;
