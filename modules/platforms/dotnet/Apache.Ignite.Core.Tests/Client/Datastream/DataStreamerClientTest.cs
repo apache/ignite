@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Datastream
 {
+    using System;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
@@ -297,8 +298,21 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         [Test]
         public void TestOptionsValidation()
         {
-            // var opts = new DataStreamerClientOptions()
-            Assert.Fail("TODO");
+            var opts = new DataStreamerClientOptions
+            {
+                ClientPerNodeBufferSize = -1
+            };
+
+            Assert.Throws<ArgumentException>(() => Client.GetDataStreamer<int, int>("c", opts));
+        }
+
+        [Test]
+        public void TestStreamerThrowsWhenCacheDoesNotExist()
+        {
+            var streamer = Client.GetDataStreamer<int, int>(Guid.NewGuid().ToString());
+            streamer.Add(1, 1);
+
+            Assert.Throws<IgniteClientException>(() => streamer.Flush());
         }
 
         protected override IgniteConfiguration GetIgniteConfiguration()
