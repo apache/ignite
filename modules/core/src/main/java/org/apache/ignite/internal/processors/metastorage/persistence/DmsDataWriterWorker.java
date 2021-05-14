@@ -187,12 +187,9 @@ public class DmsDataWriterWorker extends GridWorker {
         updateQueue.offer(new FutureTask<>(() -> STOP));
         latch.countDown();
 
-        U.cancel(this);
+        isCancelled = true;
 
-        Thread runner = runner();
-
-        if (runner != null)
-            runner.join();
+        U.join(runner(), log);
     }
 
     /** {@inheritDoc} */
@@ -204,7 +201,7 @@ public class DmsDataWriterWorker extends GridWorker {
                 curTask.run();
 
                 // Result will be null for any runnable executed tasks over metastorage and non-null for system DMS tasks.
-                Object res = curTask.get();
+                Object res = U.get(curTask);
 
                 if (res == STOP)
                     break;
