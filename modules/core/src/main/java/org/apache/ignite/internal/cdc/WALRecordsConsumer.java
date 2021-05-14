@@ -58,6 +58,10 @@ public class WALRecordsConsumer<K, V> {
         if (!(e instanceof UnwrappedDataEntry))
             throw new IllegalStateException("Unexpected data entry type[" + e.getClass().getName());
 
+        if ((e.flags() & DataEntry.PRELOAD_FLAG) != 0 ||
+            (e.flags() & DataEntry.FROM_STORE_FLAG) != 0)
+            return false;
+
         return OPS_TYPES.contains(e.op());
     };
 
@@ -78,11 +82,7 @@ public class WALRecordsConsumer<K, V> {
      * @return {@code True} if current offset in WAL should be commited.
      */
     public <T extends WALRecord> boolean onRecords(Iterator<T> recs) {
-        recs = F.iterator(recs, r -> r, true, r -> {
-            //System.out.println(r.type());
-
-            return r.type() == WALRecord.RecordType.DATA_RECORD_V2;
-        });
+        recs = F.iterator(recs, r -> r, true, r -> r.type() == WALRecord.RecordType.DATA_RECORD_V2);
 
         return dataConsumer.onChange(F.concat(F.iterator(recs, r -> F.iterator(((DataRecord)r).writeEntries(), e -> {
             UnwrappedDataEntry ue = (UnwrappedDataEntry)e;
@@ -102,7 +102,7 @@ public class WALRecordsConsumer<K, V> {
             return new ChangeEventImpl(
                 ue.unwrappedKey(),
                 ue.unwrappedValue(),
-                e.primary(),
+                (e.flags() & DataEntry.PRIMARY_FLAG) != 0,
                 e.partitionId(),
                 ord,
                 e.cacheId()
