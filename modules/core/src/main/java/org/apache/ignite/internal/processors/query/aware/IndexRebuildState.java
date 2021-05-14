@@ -17,17 +17,38 @@
 
 package org.apache.ignite.internal.processors.query.aware;
 
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.internal.util.typedef.internal.S;
+
+import static org.apache.ignite.internal.processors.query.aware.IndexRebuildState.State.INIT;
 
 /**
  * State of rebuilding indexes for the cache.
  */
 public class IndexRebuildState {
+    /**
+     * Enumeration of index rebuild states.
+     */
+    enum State {
+        /** Initial state. */
+        INIT,
+
+        /** Completed. */
+        COMPLETED,
+
+        /** To be deleted. */
+        DELETE
+    }
+
+    /** Index rebuild state state atomic updater. */
+    private static final AtomicReferenceFieldUpdater<IndexRebuildState, State> STATE_UPDATER =
+        AtomicReferenceFieldUpdater.newUpdater(IndexRebuildState.class, State.class, "state");
+
     /** Persistent cache. */
     private final boolean persistent;
 
-    /** Index rebuild is complete. */
-    private boolean completed;
+    /** Index rebuild state. */
+    private volatile State state = INIT;
 
     /**
      * Constructor.
@@ -48,24 +69,32 @@ public class IndexRebuildState {
     }
 
     /**
-     * Checks if rebuilding indexes for the cache has completed.
+     * Getting the state rebuild of indexes.
      *
-     * @return {@code True} if completed.
+     * @return Current state.
      */
-    public boolean completed() {
-        return completed;
+    public State state() {
+        return state;
     }
 
     /**
-     * Changing the state of completion of rebuilding cache indexes.
+     * Setting the state rebuild of the indexes.
      *
-     * @param completed Completion state.
-     * @return {@code this} for chaining.
+     * @param state New state.
      */
-    public IndexRebuildState completed(boolean completed) {
-        this.completed = completed;
+    public void state(State state) {
+        this.state = state;
+    }
 
-        return this;
+    /**
+     * Atomically sets of the state rebuild of the indexes.
+     *
+     * @param exp Expected state.
+     * @param newState New state.
+     * @return {@code True} if successful.
+     */
+    public boolean state(State exp, State newState) {
+        return STATE_UPDATER.compareAndSet(this, exp, newState);
     }
 
     /** {@inheritDoc} */

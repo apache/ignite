@@ -127,15 +127,15 @@ public abstract class AbstractRebuildIndexTest extends GridCommonAbstractTest {
      *
      * @param n Node.
      * @param cacheName Cache name.
-     * @param brakePred Predicate for throwing an {@link IgniteCheckedException}.
+     * @param breakPred Predicate for throwing an {@link IgniteCheckedException}.
      * @return New instance of {@link BreakRebuildIndexConsumer}.
      */
     protected BreakRebuildIndexConsumer addBreakRebuildIndexConsumer(
         IgniteEx n,
         String cacheName,
-        IgniteThrowableBiPredicate<BreakRebuildIndexConsumer, CacheDataRow> brakePred
+        IgniteThrowableBiPredicate<BreakRebuildIndexConsumer, CacheDataRow> breakPred
     ) {
-        BreakRebuildIndexConsumer breakRebuildIdxConsumer = new BreakRebuildIndexConsumer(getTestTimeout(), brakePred);
+        BreakRebuildIndexConsumer breakRebuildIdxConsumer = new BreakRebuildIndexConsumer(getTestTimeout(), breakPred);
 
         addCacheRowConsumer(nodeName(n), cacheName, breakRebuildIdxConsumer);
 

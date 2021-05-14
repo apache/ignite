@@ -3892,7 +3892,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /**
      * Callback on finish of rebuild cache indexes.
-     * {@link #onStartRebuildIndexes} is expected to have been called before.
      * <p/>
      * If the cache is persistent, then we mark that the rebuilding of the
      * indexes is completed and the entry will be deleted from the MetaStorage
@@ -3901,7 +3900,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cacheCtx Cache context.
      */
     public void onFinishRebuildIndexes(GridCacheContext cacheCtx) {
-        idxRebuildStateStorage.onFinishRebuildIndexes(cacheCtx);
+        idxRebuildStateStorage.onFinishRebuildIndexes(cacheCtx.name());
     }
 
     /**
@@ -3918,7 +3917,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /**
      * Force a mark that the index rebuild for the cache has completed.
-     * {@link #onStartRebuildIndexes} is not expected to have been called before.
      * <p/>
      * If the cache is persistent, then we mark that the rebuilding of the
      * indexes is completed and the entry will be deleted from the MetaStorage
@@ -3928,6 +3926,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cacheName Cache name.
      */
     public void completeRebuildIndexes(String cacheName) {
-        idxRebuildStateStorage.completeRebuildIndexes(cacheName);
+        idxRebuildStateStorage.onFinishRebuildIndexes(cacheName);
     }
 }
