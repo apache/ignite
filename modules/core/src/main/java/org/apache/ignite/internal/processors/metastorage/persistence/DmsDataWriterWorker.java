@@ -189,7 +189,10 @@ public class DmsDataWriterWorker extends GridWorker {
 
         isCancelled = true;
 
-        U.join(runner(), log);
+        Thread runner = runner();
+
+        if (runner != null)
+            runner.join();
     }
 
     /** {@inheritDoc} */
