@@ -632,7 +632,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                     0,
                                                     txEntry.key().partition(),
                                                     txEntry.updateCounter(),
-                                                    cacheCtx.affinity().primaryByPartition(cctx.localNode(), txEntry.key().partition(), topVer)
+                                                    DataEntry.flags(CU.txOnPrimary(this))
                                                 ),
                                                 txEntry
                                             )

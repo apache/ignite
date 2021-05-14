@@ -2315,7 +2315,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                             false,
                             topVer,
                             primary ? GridDrType.DR_LOAD : GridDrType.DR_PRELOAD,
-                            false);
+                            false,
+                            primary);
 
                         entry.touch();
 

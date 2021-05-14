@@ -131,17 +131,14 @@ public class PdsFolderResolver<L extends FileLockHolder> {
      */
     private PdsFolderSettings<L> compatibleResolve(
         @Nullable final File pstStoreBasePath,
-        @Nullable final Serializable consistentId) {
+        @NotNull final Serializable consistentId) {
 
         if (cfg.getConsistentId() != null) {
             // compatible mode from configuration is used fot this case, no locking, no consitent id change
             return new PdsFolderSettings<>(pstStoreBasePath, cfg.getConsistentId());
         }
 
-        if (consistentId == null)
-            return new PdsFolderSettings<>(pstStoreBasePath, consistentId);
-
-        return null;
+        return new PdsFolderSettings<>(pstStoreBasePath, consistentId);
     }
 
     /**
