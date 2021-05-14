@@ -31,26 +31,17 @@ import org.apache.ignite.stream.StreamReceiver;
 
 import java.util.Collection;
 
+import static org.apache.ignite.internal.processors.platform.client.streamer.ClientDataStreamerFlags.ALLOW_OVERWRITE;
+import static org.apache.ignite.internal.processors.platform.client.streamer.ClientDataStreamerFlags.CLOSE;
+import static org.apache.ignite.internal.processors.platform.client.streamer.ClientDataStreamerFlags.FLUSH;
+import static org.apache.ignite.internal.processors.platform.client.streamer.ClientDataStreamerFlags.KEEP_BINARY;
+import static org.apache.ignite.internal.processors.platform.client.streamer.ClientDataStreamerFlags.SKIP_STORE;
+
 /**
  *
  */
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class ClientDataStreamerStartRequest extends ClientRequest {
-    /** Allow overwrite flag mask. */
-    private static final byte ALLOW_OVERWRITE_FLAG_MASK = 0x01;
-
-    /** Skip store flag mask. */
-    private static final byte SKIP_STORE_FLAG_MASK = 0x02;
-
-    /** Keep binary flag mask. */
-    private static final byte KEEP_BINARY_FLAG_MASK = 0x04;
-
-    /** Streamer flush flag mask. */
-    private static final byte FLUSH_FLAG_MASK = 0x08;
-
-    /** Streamer close flag mask. */
-    private static final byte CLOSE_FLAG_MASK = 0x10;
-
     /** */
     private final int cacheId;
 
@@ -96,21 +87,21 @@ public class ClientDataStreamerStartRequest extends ClientRequest {
         if (perThreadBufferSize >= 0)
             dataStreamer.perThreadBufferSize(perThreadBufferSize);
 
-        dataStreamer.allowOverwrite((flags & ALLOW_OVERWRITE_FLAG_MASK) != 0);
-        dataStreamer.skipStore((flags & SKIP_STORE_FLAG_MASK) != 0);
-        dataStreamer.keepBinary((flags & KEEP_BINARY_FLAG_MASK) != 0);
+        dataStreamer.allowOverwrite((flags & ALLOW_OVERWRITE) != 0);
+        dataStreamer.skipStore((flags & SKIP_STORE) != 0);
+        dataStreamer.keepBinary((flags & KEEP_BINARY) != 0);
 
         if (receiver != null)
             dataStreamer.receiver(receiver);
 
         dataStreamer.addData(entries);
 
-        if ((flags & CLOSE_FLAG_MASK) != 0) {
+        if ((flags & CLOSE) != 0) {
             dataStreamer.close();
 
             return new ClientLongResponse(requestId(), 0);
         } else {
-            if ((flags & FLUSH_FLAG_MASK) != 0)
+            if ((flags & FLUSH) != 0)
                 dataStreamer.flush();
 
             long rsrcId = ctx.resources().put(new ClientDataStreamerHandle(dataStreamer));

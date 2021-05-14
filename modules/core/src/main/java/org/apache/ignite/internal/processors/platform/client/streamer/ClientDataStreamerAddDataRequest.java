@@ -23,27 +23,18 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
-import org.apache.ignite.internal.processors.platform.client.ClientLongResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-import org.apache.ignite.stream.StreamReceiver;
 
 import java.util.Collection;
+
+import static org.apache.ignite.internal.processors.platform.client.streamer.ClientDataStreamerFlags.CLOSE;
+import static org.apache.ignite.internal.processors.platform.client.streamer.ClientDataStreamerFlags.FLUSH;
 
 /**
  *
  */
 public class ClientDataStreamerAddDataRequest extends ClientRequest {
-    /**
-     * Streamer flush flag mask.
-     */
-    private static final byte FLUSH_FLAG_MASK = 0x01;
-
-    /**
-     * Streamer end flag mask.
-     */
-    private static final byte END_FLAG_MASK = 0x02;
-
     /** */
     private final long streamerId;
 
@@ -73,10 +64,10 @@ public class ClientDataStreamerAddDataRequest extends ClientRequest {
         // To remove data, pass null as a value for the key.
         dataStreamer.addData(entries);
 
-        if ((flags & END_FLAG_MASK) != 0) {
+        if ((flags & CLOSE) != 0) {
             dataStreamer.close();
             ctx.resources().release(streamerId);
-        } else if ((flags & FLUSH_FLAG_MASK) != 0)
+        } else if ((flags & FLUSH) != 0)
             dataStreamer.flush();
 
         return new ClientResponse(requestId());
