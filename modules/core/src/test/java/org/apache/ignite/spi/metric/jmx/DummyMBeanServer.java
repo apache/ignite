@@ -201,7 +201,12 @@ class DummyMBeanServer implements MBeanServer {
     /**
      * {@inheritDoc}
      */
-    @Override public void removeNotificationListener(ObjectName name, NotificationListener lsnr, NotificationFilter filter, Object handback) {
+    @Override public void removeNotificationListener(
+        ObjectName name,
+        NotificationListener lsnr,
+        NotificationFilter filter,
+        Object handback
+    ) {
 
     }
 
