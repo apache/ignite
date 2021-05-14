@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGr
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.jetbrains.annotations.NotNull;
@@ -68,7 +69,7 @@ public class AbstractAggregatePlannerTest extends AbstractPlannerTest {
                 .add("VAL1", f.createJavaType(Integer.class))
                 .add("GRP0", f.createJavaType(Integer.class))
                 .add("GRP1", f.createJavaType(Integer.class))
-                .build()) {
+                .build(), RewindabilityTrait.REWINDABLE, 10_000_000) {
 
             @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
                 return ColocationGroup.forAssignments(Arrays.asList(

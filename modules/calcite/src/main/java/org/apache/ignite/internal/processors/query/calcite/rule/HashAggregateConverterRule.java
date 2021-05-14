@@ -23,6 +23,7 @@ import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.PhysicalNode;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
@@ -30,6 +31,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteMapHash
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteSingleHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.internal.processors.query.calcite.util.HintUtils;
 
 /**
  *
@@ -56,6 +58,9 @@ public class HashAggregateConverterRule {
         /** {@inheritDoc} */
         @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq,
             LogicalAggregate agg) {
+            if (HintUtils.isExpandDistinctAggregate(agg) && agg.getAggCallList().stream().anyMatch(AggregateCall::isDistinct))
+                return null;
+
             RelOptCluster cluster = agg.getCluster();
             RelTraitSet inTrait = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(IgniteDistributions.single());
             RelTraitSet outTrait = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(IgniteDistributions.single());
@@ -82,6 +87,9 @@ public class HashAggregateConverterRule {
         /** {@inheritDoc} */
         @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq,
             LogicalAggregate agg) {
+            if (HintUtils.isExpandDistinctAggregate(agg) && agg.getAggCallList().stream().anyMatch(AggregateCall::isDistinct))
+                return null;
+
             RelOptCluster cluster = agg.getCluster();
             RelTraitSet inTrait = cluster.traitSetOf(IgniteConvention.INSTANCE);
             RelTraitSet outTrait = cluster.traitSetOf(IgniteConvention.INSTANCE);

@@ -135,10 +135,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
         programs = frameworkCfg.getPrograms();
         parserCfg = frameworkCfg.getParserConfig();
-        sqlToRelConverterCfg = frameworkCfg.getSqlToRelConverterConfig()
-            .withHintStrategyTable(HintStrategyTable.builder()
-                .hintStrategy("DISABLE_RULE", (hint, rel) -> true)
-                .build());
+        sqlToRelConverterCfg = frameworkCfg.getSqlToRelConverterConfig();
         validatorCfg = frameworkCfg.getSqlValidatorConfig();
         convertletTbl = frameworkCfg.getConvertletTable();
         rexExecutor = frameworkCfg.getExecutor();

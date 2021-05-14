@@ -23,6 +23,7 @@ import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.logical.LogicalSort;
+import org.apache.calcite.rel.rules.AggregateExpandDistinctAggregatesRule;
 import org.apache.calcite.rel.rules.AggregateMergeRule;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.rules.FilterJoinRule.FilterIntoJoinRule;
@@ -133,6 +134,8 @@ public enum PlannerPhase {
                                     b1.operand(LogicalAggregate.class)
                                         .predicate(Aggregate::isSimple)
                                         .anyInputs())).toRule(),
+
+                    AggregateExpandDistinctAggregatesRule.Config.JOIN.toRule(),
 
                     SortRemoveRule.Config.DEFAULT
                         .withOperandSupplier(b ->
