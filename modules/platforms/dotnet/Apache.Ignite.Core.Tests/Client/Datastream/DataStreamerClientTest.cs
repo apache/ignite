@@ -256,6 +256,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             }
 
             Assert.AreEqual(0, cache.GetSize());
+            Assert.Fail("TODO: Check streamers on server side - do this in TearDown");
         }
 
         [Test]

@@ -36,6 +36,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /** */
         private readonly SemaphoreSlim _semaphore;
 
+        /** Task for the first flush has streamer id as the result. */
+        private volatile Task<long> _firstFlushTask;
+
         /** Only the thread that completes the previous buffer can set a new one to this field. */
         private volatile DataStreamerClientBuffer<TK, TV> _buffer;
 
@@ -88,20 +91,28 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
                     if (Interlocked.CompareExchange(ref _buffer, null, buffer) == buffer)
                     {
-                        buffer.ScheduleFlush();
+                        // TODO: If buffer is empty or no task was scheduled, send a dedicated close request.
+                        buffer.ScheduleFlush(true);
                         return buffer.GetChainFlushTask();
                     }
                 }
             }
 
             buffer = GetBuffer();
-            buffer.ScheduleFlush();
+            buffer.ScheduleFlush(false);
 
             return buffer.GetChainFlushTask();
         }
 
-        internal Task FlushAsync(DataStreamerClientBuffer<TK,TV> buffer)
+        internal Task<long> FlushAsync(DataStreamerClientBuffer<TK, TV> buffer, bool close)
         {
+            var firstFlushTask = _firstFlushTask;
+
+            if (firstFlushTask != null)
+            {
+                // TODO:
+            }
+
             // TODO: Create streamer and preserve ID.
             return _client.FlushBufferAsync(buffer, _socket, _semaphore, flush: true, close: true);
         }
