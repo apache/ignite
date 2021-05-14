@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Client.Datastream
 {
     using System.ComponentModel;
     using Apache.Ignite.Core.Datastream;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Thin client data streamer options.
@@ -29,6 +30,18 @@ namespace Apache.Ignite.Core.Client.Datastream
     /// </summary>
     public class DataStreamerClientOptions
     {
+        /** */
+        private int _clientPerNodeParallelOperations;
+
+        /** */
+        private int _serverPerThreadBufferSize;
+
+        /** */
+        private int _serverPerNodeBufferSize;
+
+        /** */
+        private int _clientPerNodeBufferSize;
+
         /// <summary>
         /// Initializes a new instance of <see cref="DataStreamerClientOptions"/>.
         /// </summary>
@@ -99,7 +112,15 @@ namespace Apache.Ignite.Core.Client.Datastream
         /// <para />
         /// Default is <see cref="DataStreamerClientDefaults.ClientPerNodeBufferSize"/>.
         /// </summary>
-        public int ClientPerNodeBufferSize { get; set; }
+        public int ClientPerNodeBufferSize
+        {
+            get { return _clientPerNodeBufferSize; }
+            set
+            {
+                IgniteArgumentCheck.Ensure(value > 0, "value", "should be > 0");
+                _clientPerNodeBufferSize = value;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the size of per node entry buffer.
@@ -107,7 +128,15 @@ namespace Apache.Ignite.Core.Client.Datastream
         /// Default is <see cref="DataStreamerClientDefaults.ServerPerNodeBufferSize"/>.
         /// </summary>
         [DefaultValue(DataStreamerClientDefaults.ServerPerNodeBufferSize)]
-        public int ServerPerNodeBufferSize { get; set; }
+        public int ServerPerNodeBufferSize
+        {
+            get { return _serverPerNodeBufferSize; }
+            set
+            {
+                IgniteArgumentCheck.Ensure(value > 0, "value", "should be > 0");
+                _serverPerNodeBufferSize = value;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the size of per thread entry buffer.
@@ -115,15 +144,34 @@ namespace Apache.Ignite.Core.Client.Datastream
         /// Default is <see cref="DataStreamerClientDefaults.ServerPerThreadBufferSize"/>.
         /// </summary>
         [DefaultValue(DataStreamerClientDefaults.ServerPerThreadBufferSize)]
-        public int ServerPerThreadBufferSize { get; set; }
+        public int ServerPerThreadBufferSize
+        {
+            get { return _serverPerThreadBufferSize; }
+            set
+            {
+                IgniteArgumentCheck.Ensure(value > 0, "value", "should be > 0");
+                _serverPerThreadBufferSize = value;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the limit for parallel operations per server node.
         /// <para />
         /// Default is <see cref="DataStreamerClientDefaults.ClientPerNodeParallelOperations"/>.
         /// </summary>
-        public int ClientPerNodeParallelOperations { get; set; }
+        public int ClientPerNodeParallelOperations
+        {
+            get { return _clientPerNodeParallelOperations; }
+            set
+            {
+                IgniteArgumentCheck.Ensure(value > 0, "value", "should be > 0");
+                _clientPerNodeParallelOperations = value;
+            }
+        }
 
+        /// <summary>
+        /// Gets or sets the receiver object.
+        /// </summary>
         internal object ReceiverInternal { get; set; }
     }
 
