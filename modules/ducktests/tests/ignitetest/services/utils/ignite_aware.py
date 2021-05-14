@@ -21,10 +21,13 @@ import re
 import signal
 import sys
 import time
+import tempfile
 from abc import ABCMeta
 from datetime import datetime
 from enum import IntEnum
+from pathlib import Path
 from threading import Thread
+from filelock import FileLock
 
 from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.utils.util import wait_until
@@ -32,7 +35,7 @@ from ducktape.utils.util import wait_until
 from ignitetest.services.utils import IgniteServiceType
 from ignitetest.services.utils.background_thread import BackgroundThreadService
 from ignitetest.services.utils.concurrent import CountDownLatch, AtomicValue
-from ignitetest.services.utils.ignite_spec import resolve_spec
+from ignitetest.services.utils.ignite_spec import resolve_spec, SHARED_PREPARED_FILE
 from ignitetest.services.utils.jmx_utils import ignite_jmx_mixin
 from ignitetest.services.utils.log_utils import monitor_log
 from ignitetest.services.utils.path import IgnitePathAware
@@ -177,7 +180,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         Init shared directory. Content of shared directory must be equal on all test nodes.
         :param node: Ignite service node.
         """
-        local_shared_dir = self.spec.init_local_shared()
+        local_shared_dir = self._init_local_shared()
 
         if not os.path.isdir(local_shared_dir):
             self.logger.debug("Local shared dir not exists. Nothing to copy. " + str(local_shared_dir))
@@ -188,6 +191,22 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         for file in os.listdir(local_shared_dir):
             self.logger.debug("Copying shared file to node. " + str(file))
             node.account.copy_to(os.path.join(local_shared_dir, file), self.shared_root)
+
+    def _init_local_shared(self):
+        """
+        :return: path to local share folder. Files should be copied on all nodes in `shared_root` folder.
+        """
+        local_dir = os.path.join(tempfile.gettempdir(), str(self.context.session_context.session_id))
+
+        if not self.spec.is_prepare_shared_files(local_dir):
+            return local_dir
+
+        with FileLock("init_shared.lock", timeout=120):
+            if self.spec.is_prepare_shared_files(local_dir):
+                self.spec.prepare_shared_files(local_dir)
+                Path(os.path.join(local_dir, SHARED_PREPARED_FILE)).touch()
+
+        return local_dir
 
     def _prepare_configs(self, node):
         config = self.spec \

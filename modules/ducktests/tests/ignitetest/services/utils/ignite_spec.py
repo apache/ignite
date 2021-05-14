@@ -22,7 +22,6 @@ import importlib
 import json
 import os
 import subprocess
-import tempfile
 from abc import ABCMeta, abstractmethod
 
 from ignitetest.services.utils import IgniteServiceType
@@ -33,6 +32,8 @@ from ignitetest.services.utils.path import get_home_dir, get_module_path, Ignite
 from ignitetest.services.utils.ssl.ssl_params import is_ssl_enabled
 from ignitetest.utils.ignite_test import JFR_ENABLED
 from ignitetest.utils.version import DEV_BRANCH
+
+SHARED_PREPARED_FILE = ".ignite_prepared"
 
 
 def resolve_spec(service, **kwargs):
@@ -173,31 +174,36 @@ class IgniteSpec(metaclass=ABCMeta):
         """
         return self.service.config_file
 
-    def init_local_shared(self):
+    def is_prepare_shared_files(self, local_dir):
         """
-        :return: path to local share folder. Files should be copied on all nodes in `shared_root` folder.
+        :return True if we have something to prepare.
         """
-        local_dir = os.path.join(tempfile.gettempdir(), str(self.service.context.session_context.session_id))
-
         if not is_ssl_enabled(self.service.context.globals) and \
                 not (self.service.config.service_type == IgniteServiceType.NODE and self.service.config.ssl_params):
             self.service.logger.debug("Ssl disabled. Nothing to generate.")
-            return local_dir
+            return False
 
-        if os.path.isdir(local_dir):
-            self.service.logger.debug("Local shared dir already exists. Exiting. " + local_dir)
-            return local_dir
+        if os.path.isfile(os.path.join(local_dir, SHARED_PREPARED_FILE)):
+            self.service.logger.debug("Local shared dir already prepared. Exiting. " + local_dir)
+            return False
 
+        return True
+
+    def prepare_shared_files(self, local_dir):
+        """
+        Prepare files that should be copied on all nodes.
+        """
         self.service.logger.debug("Local shared dir not exists. Creating. " + local_dir)
-        os.mkdir(local_dir)
+        try:
+            os.mkdir(local_dir)
+        except FileExistsError:
+            self.service.logger.debug("Shared dir already exists, ignoring and continue." + local_dir)
 
         script_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "certs")
 
         self._runcmd(f"cp {script_dir}/* {local_dir}")
         self._runcmd(f"chmod a+x {local_dir}/*.sh")
         self._runcmd(f"{local_dir}/mkcerts.sh")
-
-        return local_dir
 
     def _jvm_opts(self):
         """
