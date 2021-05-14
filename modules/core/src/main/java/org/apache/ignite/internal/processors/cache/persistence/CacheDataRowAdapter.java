@@ -37,11 +37,8 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTreeRun
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
-import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -55,7 +52,6 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CR
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.KEY_ONLY;
 import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.LINK_WITH_HEADER;
-import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_DATA;
 import static org.apache.ignite.internal.util.GridUnsafe.wrapPointer;
 
 /**
@@ -166,109 +162,6 @@ public class CacheDataRowAdapter implements CacheDataRow {
     }
 
     /**
-     * @param sctx Cache shared context.
-     * @param coctx Cache object context for data deserialization.
-     * @param reader Reader to read fragmented pages.
-     * @param pageBuff Initial page buffer with headers.
-     * @param itemId Item id to read.
-     * @param readCacheId {@code true} if cache id must be read.
-     * @param rowData Which data from page must be read.
-     * @param skipVer {@code true} if cache version must be skipped.
-     * @throws IgniteCheckedException If fails.
-     */
-    public final void initFromPageBuffer(
-        GridCacheSharedContext<?, ?> sctx,
-        CacheObjectContext coctx,
-        IgniteThrowableFunction<Long, ByteBuffer> reader,
-        ByteBuffer pageBuff,
-        int itemId,
-        boolean readCacheId,
-        RowData rowData,
-        boolean skipVer
-    ) throws IgniteCheckedException {
-        long nextLink;
-        int itemId0 = itemId;
-        ByteBuffer buff = pageBuff;
-        IncompleteObject<?> incomplete = null;
-
-        for (;;) {
-            long pageAddr = GridUnsafe.bufferAddress(buff);
-
-            incomplete = readIncomplete(incomplete, sctx, coctx, buff.capacity(), buff.capacity(),
-                pageAddr, itemId0, PageIO.getPageIO(T_DATA, PageIO.getVersion(buff)), rowData, readCacheId, skipVer);
-
-            if (incomplete == null)
-                break;
-
-            nextLink = incomplete.getNextLink();
-
-            if (nextLink == 0)
-                break;
-            else {
-                buff = reader.apply(pageId(nextLink));
-                itemId0 = itemId(nextLink);
-
-                assert itemId0 == 0 : "Only one item is possible on the fragmented page: " + PageIdUtils.toDetailString(nextLink);
-            }
-        }
-
-        assert isReady() : "Entry must has the 'ready' state, when the init ends";
-    }
-
-    /**
-     * @param io Data page IO.
-     * @param pageAddr Data page address.
-     * @param itemId Row item Id.
-     * @param grp Cache group.
-     * @param sharedCtx Cache shared context.
-     * @param pageMem Page memory.
-     * @param rowData Required row data.
-     * @param skipVer Whether version read should be skipped.
-     * @throws IgniteCheckedException If failed.
-     */
-    public final void initFromDataPage(
-        DataPageIO io,
-        long pageAddr,
-        int itemId,
-        @Nullable CacheGroupContext grp,
-        GridCacheSharedContext<?, ?> sharedCtx,
-        PageMemory pageMem,
-        RowData rowData,
-        boolean skipVer
-    ) throws IgniteCheckedException {
-        // Group is null if try evict page, with persistence evictions should be disabled.
-        assert grp != null || pageMem instanceof PageMemoryNoStoreImpl;
-
-        CacheObjectContext coctx = grp != null ? grp.cacheObjectContext() : null;
-        boolean readCacheId = grp == null || grp.storeCacheIdInDataPage();
-        int grpId = grp != null ? grp.groupId() : 0;
-        IoStatisticsHolder statHolder = grp != null ? grp.statisticsHolderData() : IoStatisticsHolderNoOp.INSTANCE;
-
-        IncompleteObject<?> incomplete = readIncomplete(null, sharedCtx, coctx, pageMem.pageSize(),
-            pageMem.realPageSize(grpId), pageAddr, itemId, io, rowData, readCacheId, skipVer);
-
-        if (incomplete != null) {
-            // Initialize the remaining part of the large row from other pages.
-            long nextLink = incomplete.getNextLink();
-
-            if (nextLink != 0L) {
-                doInitFromLink(
-                    nextLink,
-                    sharedCtx,
-                    coctx,
-                    pageMem,
-                    grpId,
-                    statHolder,
-                    readCacheId,
-                    rowData,
-                    incomplete,
-                    skipVer
-                );
-            }
-        }
-    }
-
-    /**
      * @param link Link.
      * @param sharedCtx Cache shared context.
      * @param coctx Cache object context.
@@ -364,7 +257,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @return Incomplete object.
      * @throws IgniteCheckedException If failed.
      */
-    protected IncompleteObject<?> readIncomplete(
+    public IncompleteObject<?> readIncomplete(
         IncompleteObject<?> incomplete,
         GridCacheSharedContext<?, ?> sharedCtx,
         CacheObjectContext coctx,

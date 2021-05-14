@@ -113,8 +113,10 @@ public class DataRow extends CacheDataRowAdapter {
     /**
      * @param partId Partition id.
      */
-    public void partition(int partId) {
+    public DataRow partition(int partId) {
         part = partId;
+
+        return this;
     }
 
     /** {@inheritDoc} */

@@ -931,7 +931,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                                 // Data page scan is disabled by default for scan queries.
                                 // TODO https://issues.apache.org/jira/browse/IGNITE-11998
-                                CacheDataTree.setDataPageScanEnabled(false);
+                                CacheDataTree.setDataPageScanEnabled(dataPageScanEnabled != null && dataPageScanEnabled);
 
                                 try {
                                     if (mvccSnapshot == null)
