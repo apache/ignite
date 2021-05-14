@@ -167,6 +167,8 @@ namespace Apache.Ignite.Core.Client
         /// <returns>Data streamer.</returns>
         IDataStreamerClient<TK, TV> GetDataStreamer<TK, TV>(string cacheName);
 
+        IDataStreamerClient<TK, TV> GetDataStreamer<TK, TV>(string cacheName, DataStreamerClientOptions options);
+
         IDataStreamerClient<TK, TV> GetDataStreamer<TK, TV>(string cacheName, DataStreamerClientOptions<TK, TV> options);
     }
 }

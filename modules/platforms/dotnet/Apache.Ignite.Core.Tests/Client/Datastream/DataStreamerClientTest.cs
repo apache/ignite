@@ -71,9 +71,9 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             var cache = GetClientCache<int>();
             cache.PutAll(Enumerable.Range(1, 10).ToDictionary(x => x, x => x + 1));
 
-            using (var streamer = Client.GetDataStreamer(
+            using (var streamer = Client.GetDataStreamer<int, int>(
                 cache.Name,
-                new DataStreamerClientOptions<int, int> {AllowOverwrite = true}))
+                new DataStreamerClientOptions {AllowOverwrite = true}))
             {
                 streamer.Add(1, 11);
                 streamer.Add(20, 20);
@@ -267,7 +267,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 WriteThrough = true
             });
 
-            var options = new DataStreamerClientOptions<int, int>
+            var options = new DataStreamerClientOptions
             {
                 ClientPerNodeParallelOperations = 2,
                 ClientPerNodeBufferSize = 1,
@@ -276,7 +276,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
             BlockingCacheStore.Gate.Reset();
 
-            using (var streamer = Client.GetDataStreamer(serverCache.Name, options))
+            using (var streamer = Client.GetDataStreamer<int, int>(serverCache.Name, options))
             {
                 streamer.Add(1, 1);
                 streamer.Add(2, 2);

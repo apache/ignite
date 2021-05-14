@@ -293,11 +293,17 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /** <inheritDoc /> */
+        public IDataStreamerClient<TK, TV> GetDataStreamer<TK, TV>(string cacheName, DataStreamerClientOptions options)
+        {
+            return GetDataStreamer(cacheName, new DataStreamerClientOptions<TK, TV>(options));
+        }
+
+        /** <inheritDoc /> */
         public IDataStreamerClient<TK, TV> GetDataStreamer<TK, TV>(string cacheName,
             DataStreamerClientOptions<TK, TV> options)
         {
             IgniteArgumentCheck.NotNullOrEmpty(cacheName, "cacheName");
-            
+
             return new DataStreamerClient<TK, TV>(_socket, cacheName, options);
         }
 
