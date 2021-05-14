@@ -254,7 +254,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             return socket.DoOutInOpAsync(
                     streamerId == null ? ClientOp.DataStreamerStart : ClientOp.DataStreamerAddData,
                     ctx => WriteBuffer(buffer, streamerId, ctx.Writer, flush, close),
-                    ctx => ctx.Stream.ReadLong(),
+                    ctx => streamerId == null ? ctx.Stream.ReadLong() : 0,
                     syncCallback: true)
                 .ContinueWith(t =>
                 {
