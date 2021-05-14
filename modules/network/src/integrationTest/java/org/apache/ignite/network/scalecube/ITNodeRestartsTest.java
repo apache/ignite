@@ -24,6 +24,8 @@ import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.ClusterServiceFactory;
 import org.apache.ignite.network.message.MessageSerializationRegistry;
+import org.apache.ignite.network.scalecube.message.ScaleCubeMessage;
+import org.apache.ignite.network.scalecube.message.ScaleCubeMessageSerializationFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -38,10 +40,11 @@ class ITNodeRestartsTest {
     private static final IgniteLogger LOG = IgniteLogger.forClass(ITNodeRestartsTest.class);
 
     /** */
-    private static final MessageSerializationRegistry SERIALIZATION_REGISTRY = new MessageSerializationRegistry();
+    private final MessageSerializationRegistry serializationRegistry = new MessageSerializationRegistry()
+        .registerFactory(ScaleCubeMessage.TYPE, new ScaleCubeMessageSerializationFactory());
 
     /** */
-    private static final ClusterServiceFactory NETWORK_FACTORY = new TestScaleCubeClusterServiceFactory();
+    private final ClusterServiceFactory networkFactory = new TestScaleCubeClusterServiceFactory();
 
     /** */
     private List<ClusterService> services;
@@ -103,9 +106,9 @@ class ITNodeRestartsTest {
 
     /** */
     private ClusterService startNetwork(String name, int port, List<String> addresses) {
-        var context = new ClusterLocalConfiguration(name, port, addresses, SERIALIZATION_REGISTRY);
+        var context = new ClusterLocalConfiguration(name, port, addresses, serializationRegistry);
 
-        ClusterService clusterService = NETWORK_FACTORY.createClusterService(context);
+        ClusterService clusterService = networkFactory.createClusterService(context);
 
         clusterService.start();
 

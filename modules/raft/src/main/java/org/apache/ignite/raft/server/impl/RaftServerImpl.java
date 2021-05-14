@@ -130,8 +130,6 @@ public class RaftServerImpl implements RaftServer {
             }
         });
 
-        server.start();
-
         readWorker = new Thread(() -> processQueue(readQueue, RaftGroupCommandListener::onRead), "read-cmd-worker#" + id);
         readWorker.setDaemon(true);
         readWorker.start();
