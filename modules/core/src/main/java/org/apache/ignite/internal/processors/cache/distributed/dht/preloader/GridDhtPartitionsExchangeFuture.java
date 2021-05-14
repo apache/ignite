@@ -1145,9 +1145,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         ensureClientCachesStarted();
 
-        // Continue re-encrypting the cache(s) after initialization if necessary.
-        cctx.kernalContext().encryption().startReencryption();
-
         return cachesRegistrationFut;
     }
 

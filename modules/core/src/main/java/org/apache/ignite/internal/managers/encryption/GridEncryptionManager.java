@@ -52,6 +52,8 @@ import org.apache.ignite.internal.pagemem.wal.record.MasterKeyChangeRecordV2;
 import org.apache.ignite.internal.pagemem.wal.record.ReencryptionStartRecord;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
@@ -136,7 +138,7 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
  * @see #performMKChangeProc
  */
 public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> implements EncryptionCacheKeyProvider,
-    MetastorageLifecycleListener, IgniteChangeGlobalStateSupport, IgniteEncryption {
+    MetastorageLifecycleListener, IgniteChangeGlobalStateSupport, IgniteEncryption, PartitionsExchangeAware {
     /**
      * Cache encryption introduced in this Ignite version.
      */
@@ -328,8 +330,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /** {@inheritDoc} */
-    @Override protected void onKernalStart0() throws IgniteCheckedException {
-        // No-op.
+    @Override protected void onKernalStart0() {
+        ctx.cache().context().exchange().registerExchangeAwareComponent(this);
     }
 
     /** {@inheritDoc} */
@@ -792,7 +794,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 log.info("New encryption key for group was added [grpId=" + grpId + ", keyId=" + newKeyId + ']');
         }
 
-        startReencryption();
+        startReencryption(encryptionStatus.keySet());
     }
 
     /**
@@ -1102,14 +1104,24 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
 
             return null;
         });
-
-        startReencryption();
     }
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
         synchronized (metaStorageMux) {
             writeToMetaStoreEnabled = false;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDoneAfterTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
+        if (fut.activateCluster() || fut.localJoinExchange()) {
+            try {
+                startReencryption(reencryptGroups.keySet());
+            }
+            catch (IgniteCheckedException e) {
+                log.error("Unable to start reencryption", e);
+            }
         }
     }
 
@@ -1217,46 +1229,38 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         if (!reencryptionInProgress(grpId))
             throw new IgniteCheckedException("Re-encryption completed or not required [grpId=" + grpId + "]");
 
-        startReencryption(grpId);
+        startReencryption(Collections.singleton(grpId));
 
         return true;
     }
 
     /**
-     * Start reencryption.
-     *
+     * @param grpIds Cache group IDs.
      * @throws IgniteCheckedException If failed.
      */
-    public void startReencryption() throws IgniteCheckedException {
-        for (Integer grpId : reencryptGroups.keySet())
-            startReencryption(grpId);
-    }
+    private void startReencryption(Collection<Integer> grpIds) throws IgniteCheckedException {
+        for (int grpId : grpIds) {
+            IgniteInternalFuture<?> fut = pageScanner.schedule(grpId);
 
-    /**
-     * @param grpId Cache group ID.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void startReencryption(Integer grpId) throws IgniteCheckedException {
-        IgniteInternalFuture<?> fut = pageScanner.schedule(grpId);
+            fut.listen(f -> {
+                if (f.isCancelled() || f.error() != null) {
+                    log.warning("Reencryption " +
+                        (f.isCancelled() ? "cancelled" : "failed") + " [grp=" + grpId + "]", f.error());
 
-        fut.listen(f -> {
-            if (f.isCancelled() || f.error() != null) {
-                log.warning("Reencryption " +
-                    (f.isCancelled() ? "cancelled" : "failed") + " [grp=" + grpId + "]", f.error());
-
-                return;
-            }
-
-            withMasterKeyChangeReadLock(() -> {
-                synchronized (metaStorageMux) {
-                    cleanupKeys(grpId);
-
-                    reencryptGroups.remove(grpId);
+                    return;
                 }
 
-                return null;
+                withMasterKeyChangeReadLock(() -> {
+                    synchronized (metaStorageMux) {
+                        cleanupKeys(grpId);
+
+                        reencryptGroups.remove(grpId);
+                    }
+
+                    return null;
+                });
             });
-        });
+        }
     }
 
     /**
