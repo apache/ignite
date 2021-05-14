@@ -22,10 +22,9 @@ import org.apache.calcite.config.Lex;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.core.Aggregate;
+import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.hint.HintStrategy;
 import org.apache.calcite.rel.hint.HintStrategyTable;
-import org.apache.calcite.rel.hint.NodeTypeHintPredicate;
-import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.sql.fun.SqlLibrary;
 import org.apache.calcite.sql.fun.SqlLibraryOperatorTableFactory;
 import org.apache.calcite.sql.parser.SqlParser;
@@ -61,6 +60,8 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.MappingServi
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCache;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCacheImpl;
+import org.apache.ignite.internal.processors.query.calcite.rule.HashAggregateConverterRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.SortAggregateConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolderImpl;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlParserImpl;
@@ -86,7 +87,16 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             .withHintStrategyTable(
                 HintStrategyTable.builder()
                     .hintStrategy("DISABLE_RULE", (hint, rel) -> true)
-                    .hintStrategy("EXPAND_DISTINCT_AGG", (hint, rel) -> rel instanceof Aggregate)
+//                    .hintStrategy("EXPAND_DISTINCT_AGG", (hint, rel) -> rel instanceof Aggregate)
+                    .hintStrategy("EXPAND_DISTINCT_AGG", HintStrategy.builder(
+                        (hint, rel) -> rel instanceof Aggregate && ((Aggregate)rel).getAggCallList().stream().anyMatch(AggregateCall::isDistinct))
+                        .excludedRules(
+                            HashAggregateConverterRule.SINGLE,
+                            HashAggregateConverterRule.MAP_REDUCE,
+                            SortAggregateConverterRule.SINGLE,
+                            SortAggregateConverterRule.MAP_REDUCE
+                        )
+                        .build())
                     .build()
             )
         )
