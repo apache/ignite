@@ -52,7 +52,7 @@ public class CorrelatedNestedLoopJoinRule extends ConverterRule {
     /** */
     public static final RelOptRule INSTANCE = Config.DEFAULT.toRule();
 
-    /** */
+    /** Todo: https://issues.apache.org/jira/browse/IGNITE-14757 */
     public static final RelOptRule INSTANCE_BATCHED = Config.DEFAULT.withBatchSize(100).toRule();
 
     /** */
@@ -124,13 +124,12 @@ public class CorrelatedNestedLoopJoinRule extends ConverterRule {
 
         RelNode right = relBuilder.build();
 
-        CorrelationTrait corrTrait = CorrelationTrait.correlations(correlationIds);
-        right = right.copy(filterInTraits.replace(corrTrait), right.getInputs());
-
         JoinRelType joinType = rel.getJoinType();
 
         RelTraitSet outTraits = cluster.traitSetOf(IgniteConvention.INSTANCE);
         RelTraitSet leftInTraits = cluster.traitSetOf(IgniteConvention.INSTANCE);
+
+        CorrelationTrait corrTrait = CorrelationTrait.correlations(correlationIds);
 
         RelTraitSet rightInTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
             .replace(RewindabilityTrait.REWINDABLE)

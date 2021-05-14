@@ -40,6 +40,7 @@ import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.metadata.CachingRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
@@ -53,6 +54,7 @@ import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.validate.SqlValidator;
+import org.apache.calcite.sql2rel.DeduplicateCorrelateVariables;
 import org.apache.calcite.sql2rel.SqlRexConvertletTable;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.FrameworkConfig;
@@ -61,11 +63,13 @@ import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.RuleSets;
 import org.apache.calcite.tools.ValidationException;
 import org.apache.calcite.util.Pair;
+import org.apache.calcite.util.Util;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RelMetadataQueryEx;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Query planer.
@@ -216,7 +220,20 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     @Override public RelRoot rel(SqlNode sql) {
         SqlToRelConverter sqlToRelConverter = sqlToRelConverter(validator(), catalogReader, sqlToRelConverterCfg);
         RelRoot root = sqlToRelConverter.convertQuery(sql, false, true);
-        root = root.withRel(sqlToRelConverter.decorrelate(sql, root.rel));
+        RelNode rootRel = root.rel;
+
+        final Set<CorrelationId> correlatedVariables = RelOptUtil.getVariablesUsed(root.rel);
+
+        if (correlatedVariables.size() > 1) {
+            final List<CorrelationId> correlNames = U.arrayList(correlatedVariables);
+
+            correlNames.addAll(correlatedVariables);
+
+            rootRel = DeduplicateCorrelateVariables.go(rexBuilder, correlNames.get(0), Util.skip(correlNames), root.rel);
+        }
+
+        root = root.withRel(sqlToRelConverter.decorrelate(sql, rootRel));
+
         root = trimUnusedFields(root);
 
         return root;
@@ -338,6 +355,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         // near the leaves created by trim migrate past joins and seem to
         // prevent join-reordering.
         final SqlToRelConverter.Config config = sqlToRelConverterCfg
+            .withExpand(false)
             .withTrimUnusedFields(RelOptUtil.countJoins(root.rel) < 2);
         SqlToRelConverter converter = sqlToRelConverter(validator(), catalogReader, config);
         boolean ordered = !root.collation.getFieldCollations().isEmpty();

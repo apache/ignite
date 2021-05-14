@@ -48,6 +48,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCorrelVariable;
+import org.apache.calcite.rex.RexFieldAccess;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexProgram;
@@ -326,6 +327,14 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
                 b.append(';');
 
             b.append(nodes.get(i));
+
+            new RexShuttle() {
+                @Override public RexNode visitFieldAccess(RexFieldAccess fieldAccess) {
+                    b.append(", fldIdx=").append(fieldAccess.getField().getIndex());
+
+                    return super.visitFieldAccess(fieldAccess);
+                }
+            }.apply(nodes.get(i));
         }
 
         b.append(']');
