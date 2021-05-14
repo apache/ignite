@@ -45,6 +45,9 @@ namespace Apache.Ignite.Core.Tests.Client
         protected const string RequestNamePrefixCache = "cache.ClientCache";
 
         /** */
+        protected const string RequestNamePrefixStreamer = "streamer.ClientDataStreamer";
+
+        /** */
         protected const string RequestNamePrefixBinary = "binary.ClientBinary";
 
         /** Grid count. */
