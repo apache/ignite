@@ -47,9 +47,6 @@ namespace Apache.Ignite.Core.Tests.Client
         /** */
         protected const string RequestNamePrefixStreamer = "streamer.ClientDataStreamer";
 
-        /** */
-        protected const string RequestNamePrefixBinary = "binary.ClientBinary";
-
         /** Grid count. */
         private readonly int _gridCount = 1;
 
@@ -135,14 +132,6 @@ namespace Apache.Ignite.Core.Tests.Client
         /// Gets the client.
         /// </summary>
         public IIgniteClient Client { get; set; }
-
-        /// <summary>
-        /// Gets the value indicating whether partition awareness is enabled for this instance.
-        /// </summary>
-        public bool EnablePartitionAwareness
-        {
-            get { return _enablePartitionAwareness; }
-        }
 
         /// <summary>
         /// Gets Ignite.
