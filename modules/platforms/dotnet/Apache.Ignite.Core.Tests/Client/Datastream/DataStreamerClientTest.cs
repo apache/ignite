@@ -284,12 +284,18 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             {
                 streamer.Add(1, 1);
                 streamer.Add(2, 2);
-                streamer.Add(3, 3);
+
+                // ReSharper disable once AccessToDisposedClosure
+                var task = Task.Factory.StartNew(() => streamer.Add(3, 3));
+
+                // Task is blocked because two streamer operations are already in progress.
+                Assert.IsFalse(TestUtils.WaitForCondition(() => task.IsCompleted, 500));
+
+                BlockingCacheStore.Gate.Set();
+                TestUtils.WaitForTrueCondition(() => task.IsCompleted, 500);
             }
 
-            Assert.AreEqual(2, serverCache.GetSize());
-
-            Assert.Fail("TODO: Test that Add method blocks when too many parallel operations are active");
+            Assert.AreEqual(3, serverCache.GetSize());
         }
 
         protected override IgniteConfiguration GetIgniteConfiguration()
