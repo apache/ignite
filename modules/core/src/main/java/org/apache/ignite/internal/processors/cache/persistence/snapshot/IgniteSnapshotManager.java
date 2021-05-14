@@ -79,7 +79,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheType;
-import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
@@ -779,14 +778,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param reqs Collection of cache change requests.
+     * @param restoreId Restore process ID.
      * @return Server nodes on which a successful start of the cache(s) is required, if any of these nodes fails when
      *         starting the cache(s), the whole procedure is rolled back.
      */
-    public Set<UUID> cacheStartRequiredAliveNodes(Collection<DynamicCacheChangeRequest> reqs) {
-        IgniteUuid restoreId = F.first(
-            F.viewReadOnly(reqs, DynamicCacheChangeRequest::restartId, req -> req.start() && req.restartId() != null));
-
+    public Set<UUID> cacheStartRequiredAliveNodes(@Nullable IgniteUuid restoreId) {
         if (restoreId == null)
             return Collections.emptySet();
 

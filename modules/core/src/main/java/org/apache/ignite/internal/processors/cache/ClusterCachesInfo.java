@@ -584,7 +584,12 @@ public class ClusterCachesInfo {
         DiscoveryDataClusterState state = ctx.state().clusterState();
 
         if (state.active() && !state.transition()) {
-            Collection<UUID> nodes = ctx.cache().context().snapshotMgr().cacheStartRequiredAliveNodes(batch.requests());
+            Set<IgniteUuid> restartIds = new HashSet<>(F.viewReadOnly(
+                batch.requests(), DynamicCacheChangeRequest::restartId, req -> req.start() && req.restartId() != null));
+
+            assert restartIds.size() <= 1 : batch.requests();
+
+            Collection<UUID> nodes = ctx.cache().context().snapshotMgr().cacheStartRequiredAliveNodes(F.first(restartIds));
 
             for (UUID nodeId : nodes) {
                 ClusterNode node = ctx.discovery().node(nodeId);
@@ -613,7 +618,7 @@ public class ClusterCachesInfo {
 
                 batch.exchangeActions(exchangeActions);
 
-                if (!F.isEmpty(nodes))
+                if (!nodes.isEmpty())
                     exchangeActions.cacheStartRequiredAliveNodes(nodes);
             }
 
