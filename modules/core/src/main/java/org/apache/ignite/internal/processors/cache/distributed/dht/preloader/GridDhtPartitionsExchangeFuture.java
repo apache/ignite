@@ -299,7 +299,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private boolean forceAffReassignment;
 
     /** Exception that was thrown during init phase on local node. */
-    private Exception exchangeLocE;
+    private volatile Exception exchangeLocE;
 
     /** Exchange exceptions from all participating nodes. */
     private final Map<UUID, Exception> exchangeGlobalExceptions = new ConcurrentHashMap<>();
@@ -5124,6 +5124,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                             if (crd0 == null)
                                 finishState = new FinishState(null, initialVersion(), null);
+
+                            if (dynamicCacheStartExchange() && exchangeLocE == null &&
+                                exchActions.cacheStartRequiredAliveNodes().contains(node.id())) {
+                                exchangeGlobalExceptions.put(cctx.localNodeId(), exchangeLocE = new ClusterTopologyCheckedException(
+                                    "Required node has left the cluster [nodeId=" + node.id() + ']'));
+                            }
                         }
 
                         if (crd0 == null) {
