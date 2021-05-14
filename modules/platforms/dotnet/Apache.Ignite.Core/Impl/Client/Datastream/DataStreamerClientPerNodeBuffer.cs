@@ -108,13 +108,34 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         {
             var firstFlushTask = _firstFlushTask;
 
-            if (firstFlushTask != null)
+            if (firstFlushTask == null)
             {
-                // TODO:
+                lock (this)
+                {
+                    firstFlushTask = _firstFlushTask;
+
+                    if (firstFlushTask == null)
+                    {
+                        firstFlushTask = _client.FlushBufferAsync(
+                            buffer, streamerId: null, _socket, _semaphore, flush: true, close: false);
+
+                        _firstFlushTask = firstFlushTask;
+
+                        return firstFlushTask;
+                    }
+                }
             }
 
-            // TODO: Create streamer and preserve ID.
-            return _client.FlushBufferAsync(buffer, _socket, _semaphore, flush: true, close: true);
+            if (firstFlushTask.IsCompleted)
+            {
+                return _client.FlushBufferAsync(
+                    buffer, streamerId: firstFlushTask.Result, _socket, _semaphore, flush: true, close: false);
+            }
+
+            return firstFlushTask
+                .ContinueWith(t => _client.FlushBufferAsync(
+                    buffer, streamerId: t.Result, _socket, _semaphore, flush: true, close: false))
+                .Unwrap();
         }
 
         private DataStreamerClientBuffer<TK, TV> GetBuffer()

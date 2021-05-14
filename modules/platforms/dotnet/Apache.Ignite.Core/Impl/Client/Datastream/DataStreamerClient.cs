@@ -237,6 +237,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         internal Task<long> FlushBufferAsync(
             DataStreamerClientBuffer<TK, TV> buffer,
+            long? streamerId,
             ClientSocket socket,
             SemaphoreSlim semaphore,
             bool flush,
@@ -251,8 +252,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             // TODO: Flush in a loop until succeeded.
             // TODO: Make sure to call OnFlushCompleted in any case.
             return socket.DoOutInOpAsync(
-                    ClientOp.DataStreamerStart,
-                    ctx => WriteBuffer(buffer, ctx.Writer, flush, close),
+                    streamerId == null ? ClientOp.DataStreamerStart : ClientOp.DataStreamerAddData,
+                    ctx => WriteBuffer(buffer, streamerId, ctx.Writer, flush, close),
                     ctx => ctx.Stream.ReadLong(),
                     syncCallback: true)
                 .ContinueWith(t =>
@@ -294,14 +295,26 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             _arrayPool.Push(buffer);
         }
 
-        private void WriteBuffer(DataStreamerClientBuffer<TK, TV> buffer, BinaryWriter w, bool flush, bool close)
+        private void WriteBuffer(
+            DataStreamerClientBuffer<TK, TV> buffer,
+            long? streamerId,
+            BinaryWriter w,
+            bool flush,
+            bool close)
         {
-            // TODO: Open streamer once and reuse.
-            w.WriteInt(_cacheId);
-            w.WriteByte((byte) GetFlags(flush, close));
-            w.WriteInt(_options.ServerPerNodeBufferSize);
-            w.WriteInt(_options.ServerPerThreadBufferSize);
-            w.WriteObject(_options.Receiver);
+            if (streamerId == null)
+            {
+                w.WriteInt(_cacheId);
+                w.WriteByte((byte) GetFlags(flush, close));
+                w.WriteInt(_options.ServerPerNodeBufferSize);
+                w.WriteInt(_options.ServerPerThreadBufferSize);
+                w.WriteObject(_options.Receiver);
+            }
+            else
+            {
+                w.WriteLong(streamerId.Value);
+                w.WriteByte((byte) GetFlags(flush, close));
+            }
 
             w.WriteInt(buffer.Count);
 
