@@ -36,61 +36,44 @@ import java.util.Collection;
  */
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class ClientDataStreamerStartRequest extends ClientRequest {
-    /**
-     * Allow overwrite flag mask.
-     */
+    /** Allow overwrite flag mask. */
     private static final byte ALLOW_OVERWRITE_FLAG_MASK = 0x01;
 
-    /**
-     * Skip store flag mask.
-     */
+    /** Skip store flag mask. */
     private static final byte SKIP_STORE_FLAG_MASK = 0x02;
 
-    /**
-     * Keep binary flag mask.
-     */
+    /** Keep binary flag mask. */
     private static final byte KEEP_BINARY_FLAG_MASK = 0x04;
 
-    /**
-     * Streamer flush flag mask.
-     */
+    /** Streamer flush flag mask. */
     private static final byte FLUSH_FLAG_MASK = 0x08;
 
-    /**
-     * Streamer close flag mask.
-     */
+    /** Streamer close flag mask. */
     private static final byte CLOSE_FLAG_MASK = 0x10;
 
-    /**
-     *
-     */
+    /** */
     private final int cacheId;
 
-    /**
-     *
-     */
+    /** */
     private final byte flags;
 
-    /**
-     *
-     */
+    /** */
     private final int perNodeBufferSize;
 
-    /**
-     *
-     */
+    /** */
     private final int perThreadBufferSize;
 
-    /**
-     *
-     */
+    /** */
     private final StreamReceiver receiver;
 
-    /**
-     * Data entries.
-     */
+    /** Data entries. */
     private final Collection<DataStreamerEntry> entries;
 
+    /**
+     * Ctor.
+     *
+     * @param reader Data reader.
+     */
     public ClientDataStreamerStartRequest(BinaryReaderExImpl reader) {
         super(reader);
 
@@ -102,9 +85,7 @@ public class ClientDataStreamerStartRequest extends ClientRequest {
         entries = ClientDataStreamerReader.read(reader);
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         String cacheName = ClientCacheRequest.cacheDescriptor(ctx, cacheId).cacheName();
         IgniteDataStreamer<KeyCacheObject, CacheObject> dataStreamer = ctx.kernalContext().grid().dataStreamer(cacheName);
