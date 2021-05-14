@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.persistence.filename;
 import java.io.File;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.NodeFileLockHolder;
@@ -30,9 +29,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * Component for resolving PDS storage file names, also used for generating consistent ID for case PDS mode is enabled
  */
 public class PdsConsistentIdProcessor extends GridProcessorAdapter implements PdsFoldersResolver {
-    /** Config. */
-    private final IgniteConfiguration cfg;
-
     /** Logger. */
     private final IgniteLogger log;
 
@@ -50,7 +46,6 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
     public PdsConsistentIdProcessor(final GridKernalContext ctx) {
         super(ctx);
 
-        this.cfg = ctx.config();
         this.log = ctx.log(PdsFoldersResolver.class);
         this.ctx = ctx;
     }
@@ -60,7 +55,7 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
         if (settings == null) {
             //here deprecated method is used to get compatible version of consistentId
             PdsFolderResolver<NodeFileLockHolder> resolver =
-                new PdsFolderResolver<>(cfg, log, ctx.discovery().consistentId(), this::tryLock);
+                new PdsFolderResolver<>(ctx.config(), log, ctx.discovery().consistentId(), this::tryLock);
 
             settings = resolver.resolve();
 
@@ -91,8 +86,7 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
             return null;
 
         final String path = dbStoreDirWithSubdirectory.getAbsolutePath();
-        final NodeFileLockHolder fileLockHolder
-            = new NodeFileLockHolder(path, ctx, log);
+        final NodeFileLockHolder fileLockHolder = new NodeFileLockHolder(path, ctx, log);
 
         try {
             fileLockHolder.tryLock(1000);

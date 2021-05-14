@@ -403,8 +403,7 @@ public class PdsFolderResolver<L extends FileLockHolder> {
         }
 
         Collections.sort(res, new Comparator<FolderCandidate>() {
-            @Override public int compare(
-                FolderCandidate c1, FolderCandidate c2) {
+            @Override public int compare(FolderCandidate c1, FolderCandidate c2) {
                 return Integer.compare(c1.nodeIndex(), c2.nodeIndex());
             }
         });

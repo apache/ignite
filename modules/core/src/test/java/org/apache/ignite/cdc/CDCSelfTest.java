@@ -87,7 +87,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
     }
 
     /** Consistent id. */
-    private static final UUID CONSISTENT_ID = UUID.randomUUID();
+    private UUID consistentId = UUID.randomUUID();
 
     /** Keys count. */
     private static final int KEYS_CNT = 50;
@@ -97,7 +97,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if (specificConsistentId)
-            cfg.setConsistentId(CONSISTENT_ID);
+            cfg.setConsistentId(consistentId);
 
         int segmentSz = 10 * 1024 * 1024;
 
@@ -368,6 +368,10 @@ public class CDCSelfTest extends GridCommonAbstractTest {
     @Test
     public void testTwoGrids() throws Exception {
         IgniteEx ign1 = startGrid(0);
+
+        if (specificConsistentId)
+            consistentId = UUID.randomUUID();
+
         IgniteEx ign2 = startGrid(1);
 
         ign1.cluster().state(ACTIVE);
