@@ -231,7 +231,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     private CacheGroupPageScanner pageScanner;
 
     /** Flag indicating that the cluster has been deactivated. */
-    private boolean deactivated;
+    private volatile boolean deactivated;
 
     /**
      * @param ctx Kernel context.
