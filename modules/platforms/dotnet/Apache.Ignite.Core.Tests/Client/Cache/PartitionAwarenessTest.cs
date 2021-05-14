@@ -37,15 +37,15 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     {
         /** */
         private const int ServerCount = 3;
-        
+
         /** */
         private ICacheClient<int, int> _cache;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PartitionAwarenessTest"/> class.
         /// </summary>
-        public PartitionAwarenessTest() 
-            : base(ServerCount)
+        public PartitionAwarenessTest()
+            : base(ServerCount, enableServerListLogging: true)
         {
             // No-op.
         }
@@ -285,7 +285,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 .Select(l => GetServerRequestNames(l, RequestNamePrefixCache).ToArray())
                 .Where(x => x.Length > 0)
                 .ToArray();
-            
+
             // All requests should go to a single (default) node, because partition awareness is not applicable.
             Assert.AreEqual(1, reqs.Length);
 

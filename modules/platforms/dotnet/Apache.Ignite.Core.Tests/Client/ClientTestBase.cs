@@ -56,6 +56,9 @@ namespace Apache.Ignite.Core.Tests.Client
         /** Partition Awareness */
         private readonly bool _enablePartitionAwareness;
 
+        /** Enable logging to a list logger for checks and assertions. */
+        private readonly bool _enableServerListLogging;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientTestBase"/> class.
         /// </summary>
@@ -70,11 +73,13 @@ namespace Apache.Ignite.Core.Tests.Client
         public ClientTestBase(
             int gridCount,
             bool enableSsl = false,
-            bool enablePartitionAwareness = false)
+            bool enablePartitionAwareness = false,
+            bool enableServerListLogging = false)
         {
             _gridCount = gridCount;
             _enableSsl = enableSsl;
             _enablePartitionAwareness = enablePartitionAwareness;
+            _enableServerListLogging = enableServerListLogging;
         }
 
         /// <summary>
@@ -217,7 +222,9 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                Logger = new ListLogger(new TestUtils.TestContextLogger()),
+                Logger = _enableServerListLogging
+                    ? (ILogger) new ListLogger(new TestUtils.TestContextLogger())
+                    : new TestUtils.TestContextLogger(),
                 SpringConfigUrl = _enableSsl ? Path.Combine("Config", "Client", "server-with-ssl.xml") : null
             };
         }
