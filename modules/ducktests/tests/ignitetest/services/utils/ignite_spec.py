@@ -16,6 +16,7 @@
 """
 This module contains Spec classes that describes config and command line to start Ignite services
 """
+
 import base64
 import importlib
 import json
