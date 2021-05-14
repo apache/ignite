@@ -312,7 +312,9 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             var streamer = Client.GetDataStreamer<int, int>(Guid.NewGuid().ToString());
             streamer.Add(1, 1);
 
-            Assert.Throws<IgniteClientException>(() => streamer.Flush());
+            var ex = Assert.Throws<AggregateException>(() => streamer.Flush());
+            var baseEx = ex.GetBaseException();
+            StringAssert.StartsWith("Cache does not exist", baseEx.Message);
         }
 
         protected override IgniteConfiguration GetIgniteConfiguration()
