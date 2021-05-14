@@ -1356,7 +1356,6 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 break;
 
-            case DATA_RECORD:
             case DATA_RECORD_V2:
                 DataRecord dataRec = (DataRecord)rec;
 
