@@ -23,12 +23,14 @@ namespace Apache.Ignite.Core.Client.Datastream
     /// <summary>
     /// Thin client data streamer options.
     /// <para />
+    /// To set a receiver, use generic class <see cref="DataStreamerClientOptions{K,V}"/>.
+    /// <para />
     /// See also <see cref="IDataStreamerClient{TK,TV}"/>, <see cref="IIgniteClient.GetDataStreamer{TK,TV}(string)"/>.
     /// </summary>
-    public class DataStreamerClientOptions<TK, TV> // TODO: Think twice: should this be generic?
+    public class DataStreamerClientOptions
     {
         /// <summary>
-        /// Initializes a new instance of <see cref="DataStreamerClientOptions{TK,TV}"/>.
+        /// Initializes a new instance of <see cref="DataStreamerClientOptions"/>.
         /// </summary>
         public DataStreamerClientOptions()
         {
@@ -39,10 +41,10 @@ namespace Apache.Ignite.Core.Client.Datastream
         }
 
         /// <summary>
-        /// Initializes a new instance of <see cref="DataStreamerClientOptions{TK,TV}"/>.
+        /// Initializes a new instance of <see cref="DataStreamerClientOptions"/>.
         /// </summary>
         /// <param name="options">Options to copy from.</param>
-        public DataStreamerClientOptions(DataStreamerClientOptions<TK, TV> options) : this()
+        public DataStreamerClientOptions(DataStreamerClientOptions options) : this()
         {
             if (options == null)
             {
@@ -51,7 +53,7 @@ namespace Apache.Ignite.Core.Client.Datastream
 
             // TODO: Auto flush interval
             ReceiverKeepBinary = options.ReceiverKeepBinary;
-            Receiver = options.Receiver;
+            ReceiverInternal = options.ReceiverInternal;
             AllowOverwrite = options.AllowOverwrite;
             SkipStore = options.SkipStore;
             ClientPerNodeBufferSize = options.ClientPerNodeBufferSize;
@@ -62,15 +64,10 @@ namespace Apache.Ignite.Core.Client.Datastream
         }
 
         /// <summary>
-        /// Gets or sets a value indicating whether <see cref="Receiver"/> should operate in binary mode.
+        /// Gets or sets a value indicating whether <see cref="DataStreamerClientOptions{K,V}.Receiver"/>
+        /// should operate in binary mode.
         /// </summary>
         public bool ReceiverKeepBinary { get; set; }
-
-        /// <summary>
-        /// Gets or sets a custom stream receiver.
-        /// Stream receiver is invoked for every cache entry on the primary server node for that entry.
-        /// </summary>
-        public IStreamReceiver<TK, TV> Receiver { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether existing values can be overwritten by the data streamer.
@@ -126,5 +123,51 @@ namespace Apache.Ignite.Core.Client.Datastream
         /// Default is <see cref="DataStreamerClientDefaults.ClientPerNodeParallelOperations"/>.
         /// </summary>
         public int ClientPerNodeParallelOperations { get; set; }
+
+        internal object ReceiverInternal { get; set; }
+    }
+
+    /// <summary>
+    /// Thin client data streamer extended options.
+    /// <para />
+    /// See also <see cref="IDataStreamerClient{TK,TV}"/>, <see cref="IIgniteClient.GetDataStreamer{TK,TV}(string)"/>.
+    /// </summary>
+    public class DataStreamerClientOptions<TK, TV> : DataStreamerClientOptions
+    {
+        /// <summary>
+        /// Initializes a new instance of <see cref="DataStreamerClientOptions{TK,TV}"/>.
+        /// </summary>
+        public DataStreamerClientOptions()
+        {
+            // No-op.
+        }
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="DataStreamerClientOptions{TK,TV}"/>.
+        /// </summary>
+        /// <param name="options">Options to copy from.</param>
+        public DataStreamerClientOptions(DataStreamerClientOptions options) : base(options)
+        {
+            // No-op.
+        }
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="DataStreamerClientOptions{TK,TV}"/>.
+        /// </summary>
+        /// <param name="options">Options to copy from.</param>
+        public DataStreamerClientOptions(DataStreamerClientOptions<TK, TV> options) : base(options)
+        {
+            // No-op.
+        }
+
+        /// <summary>
+        /// Gets or sets a custom stream receiver.
+        /// Stream receiver is invoked for every cache entry on the primary server node for that entry.
+        /// </summary>
+        public IStreamReceiver<TK, TV> Receiver
+        {
+            get { return (IStreamReceiver<TK, TV>) ReceiverInternal; }
+            set { ReceiverInternal = value; }
+        }
     }
 }

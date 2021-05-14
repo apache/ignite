@@ -29,10 +29,6 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
     /// <summary>
     /// Tests for <see cref="IDataStreamerClient{TK,TV}"/>.
-    /// TODO:
-    /// * Test for small buffer size
-    /// * Test for mismatching buffer size
-    /// *
     /// </summary>
     public class DataStreamerClientTest : ClientTestBase
     {
@@ -296,6 +292,13 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             }
 
             Assert.AreEqual(3, serverCache.GetSize());
+        }
+
+        [Test]
+        public void TestOptionsValidation()
+        {
+            // var opts = new DataStreamerClientOptions()
+            Assert.Fail("TODO");
         }
 
         protected override IgniteConfiguration GetIgniteConfiguration()
