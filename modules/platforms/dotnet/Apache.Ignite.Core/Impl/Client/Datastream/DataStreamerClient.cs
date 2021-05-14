@@ -183,11 +183,11 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             if (cancel)
             {
                 // Disregard current buffers, but wait for active flushes.
-                SetCloseResultIfNoActiveFlushes();
+                SetCloseResultIfNoActiveFlushes(null);
             }
             else
             {
-                FlushAsync(close: true).ContWith(_ => SetCloseResultIfNoActiveFlushes());
+                FlushAsync(close: true).ContWith(t => SetCloseResultIfNoActiveFlushes(t.Exception));
             }
 
             return _closeTaskSource.Task;
@@ -257,12 +257,13 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                     syncCallback: true)
                 .ContinueWith(t =>
                 {
-                    var res = Interlocked.Decrement(ref _activeFlushes);
                     semaphore.Release();
 
-                    if (_isClosed && res == 0)
+                    Interlocked.Decrement(ref _activeFlushes);
+
+                    if (_isClosed)
                     {
-                        ThreadPool.QueueUserWorkItem(__ => _closeTaskSource.TrySetResult(null));
+                        ThreadPool.QueueUserWorkItem(__ => SetCloseResultIfNoActiveFlushes(t.Exception));
                     }
 
                     return t.Result;
@@ -383,11 +384,19 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
         }
 
-        private void SetCloseResultIfNoActiveFlushes()
+        private void SetCloseResultIfNoActiveFlushes(Exception exception)
         {
+            // TODO: Use a lock instead.
             if (Interlocked.CompareExchange(ref _activeFlushes, 0, 0) == 0)
             {
-                _closeTaskSource.TrySetResult(null);
+                if (exception == null)
+                {
+                    _closeTaskSource.TrySetResult(null);
+                }
+                else
+                {
+                    _closeTaskSource.TrySetException(exception);
+                }
             }
         }
 

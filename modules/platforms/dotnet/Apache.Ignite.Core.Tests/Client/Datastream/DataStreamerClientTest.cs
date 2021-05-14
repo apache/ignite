@@ -309,18 +309,27 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         [Test]
         public void TestFlushThrowsWhenCacheDoesNotExist()
         {
-            using (var streamer = Client.GetDataStreamer<int, int>(Guid.NewGuid().ToString()))
+            using (var streamer = Client.GetDataStreamer<int, int>("bad-cache-name"))
             {
                 streamer.Add(1, 1);
 
                 var ex = Assert.Throws<AggregateException>(() => streamer.Flush());
-                var baseEx = ex.GetBaseException();
-                StringAssert.StartsWith("Cache does not exist", baseEx.Message);
+                StringAssert.StartsWith("Cache does not exist", ex.GetBaseException().Message);
 
                 // Close and Dispose do not throw.
                 streamer.Flush();
                 streamer.Close(cancel: false);
             }
+        }
+
+        [Test]
+        public void TestDisposeThrowsWhenCacheDoesNotExist()
+        {
+            var streamer = Client.GetDataStreamer<int, int>("bad-cache-name");
+            streamer.Add(1, 1);
+
+            var ex = Assert.Throws<AggregateException>(() => streamer.Dispose());
+            StringAssert.StartsWith("Cache does not exist", ex.GetBaseException().Message);
         }
 
         protected override IgniteConfiguration GetIgniteConfiguration()
