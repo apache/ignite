@@ -44,4 +44,13 @@ public class ClientDataStreamerHandle implements ClientCloseableResource {
     @Override public void close() {
         streamer.close(true);
     }
+
+    /**
+     * Gets the wrapped streamer.
+     *
+     * @return Wrapped streamer.
+     */
+    public IgniteDataStreamer<KeyCacheObject, CacheObject> getStreamer() {
+        return streamer;
+    }
 }

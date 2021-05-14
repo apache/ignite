@@ -113,7 +113,7 @@ public class ClientDataStreamerStartRequest extends ClientRequest {
             if ((flags & FLUSH_FLAG_MASK) != 0)
                 dataStreamer.flush();
 
-            long rsrcId = ctx.resources().put(dataStreamer);
+            long rsrcId = ctx.resources().put(new ClientDataStreamerHandle(dataStreamer));
 
             return new ClientLongResponse(requestId(), rsrcId);
         }

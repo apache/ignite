@@ -67,7 +67,8 @@ public class ClientDataStreamerAddDataRequest extends ClientRequest {
      * {@inheritDoc}
      */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        IgniteDataStreamer<KeyCacheObject, CacheObject> dataStreamer = ctx.resources().get(streamerId);
+        ClientDataStreamerHandle handle = ctx.resources().get(streamerId);
+        IgniteDataStreamer<KeyCacheObject, CacheObject> dataStreamer = handle.getStreamer();
 
         // To remove data, pass null as a value for the key.
         dataStreamer.addData(entries);
