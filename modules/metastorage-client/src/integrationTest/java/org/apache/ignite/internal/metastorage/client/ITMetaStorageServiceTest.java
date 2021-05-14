@@ -48,7 +48,7 @@ import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.ClusterServiceFactory;
 import org.apache.ignite.network.message.MessageSerializationRegistry;
-import org.apache.ignite.network.scalecube.ScaleCubeClusterServiceFactory;
+import org.apache.ignite.network.scalecube.TestScaleCubeClusterServiceFactory;
 import org.apache.ignite.network.scalecube.message.ScaleCubeMessage;
 import org.apache.ignite.network.scalecube.message.ScaleCubeMessageSerializationFactory;
 import org.apache.ignite.raft.client.Peer;
@@ -78,9 +78,9 @@ import static org.mockito.Mockito.verify;
  * Meta storage client tests.
  */
 @SuppressWarnings("WeakerAccess")
-public class MetaStorageServiceTest {
+public class ITMetaStorageServiceTest {
     /** The logger. */
-    private static final IgniteLogger LOG = IgniteLogger.forClass(MetaStorageServiceTest.class);
+    private static final IgniteLogger LOG = IgniteLogger.forClass(ITMetaStorageServiceTest.class);
 
     /** Base network port. */
     private static final int NODE_PORT_BASE = 20_000;
@@ -98,7 +98,7 @@ public class MetaStorageServiceTest {
     private static RaftClientMessageFactory FACTORY = new RaftClientMessageFactoryImpl();
 
     /** Network factory. */
-    private static final ClusterServiceFactory NETWORK_FACTORY = new ScaleCubeClusterServiceFactory();
+    private static final ClusterServiceFactory NETWORK_FACTORY = new TestScaleCubeClusterServiceFactory();
 
     /** */
     private static final MessageSerializationRegistry SERIALIZATION_REGISTRY = new MessageSerializationRegistry()

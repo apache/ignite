@@ -33,6 +33,8 @@ public class TestScaleCubeClusterServiceFactory extends ScaleCubeClusterServiceF
         // Theoretical upper bound for detection of faulty node by some other node: 500 * (e / (e - 1)) = 790ms
         cfg = cfg.failureDetector(opts -> opts.pingInterval(500).pingReqMembers(1));
 
+        cfg = cfg.gossip(opts -> opts.gossipInterval(10));
+
         return cfg;
     }
 }

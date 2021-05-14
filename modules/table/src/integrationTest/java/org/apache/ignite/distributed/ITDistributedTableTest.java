@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.table.distributed;
+package org.apache.ignite.distributed;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -45,7 +45,7 @@ import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.ClusterServiceFactory;
 import org.apache.ignite.network.message.MessageSerializationRegistry;
-import org.apache.ignite.network.scalecube.ScaleCubeClusterServiceFactory;
+import org.apache.ignite.network.scalecube.TestScaleCubeClusterServiceFactory;
 import org.apache.ignite.network.scalecube.message.ScaleCubeMessage;
 import org.apache.ignite.network.scalecube.message.ScaleCubeMessageSerializationFactory;
 import org.apache.ignite.raft.client.Peer;
@@ -70,9 +70,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Distributed internal table tests.
  */
-public class DistributedTableTest {
+public class ITDistributedTableTest {
     /** The logger. */
-    private static final IgniteLogger LOG = IgniteLogger.forClass(DistributedTableTest.class);
+    private static final IgniteLogger LOG = IgniteLogger.forClass(ITDistributedTableTest.class);
 
     /** Base network port. */
     public static final int NODE_PORT_BASE = 20_000;
@@ -87,7 +87,7 @@ public class DistributedTableTest {
     private static RaftClientMessageFactory FACTORY = new RaftClientMessageFactoryImpl();
 
     /** Network factory. */
-    private static final ClusterServiceFactory NETWORK_FACTORY = new ScaleCubeClusterServiceFactory();
+    private static final ClusterServiceFactory NETWORK_FACTORY = new TestScaleCubeClusterServiceFactory();
 
     /** */
     private static final MessageSerializationRegistry SERIALIZATION_REGISTRY = new MessageSerializationRegistry()
