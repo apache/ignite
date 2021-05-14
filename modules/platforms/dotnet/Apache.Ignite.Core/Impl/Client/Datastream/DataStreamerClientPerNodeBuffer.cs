@@ -36,18 +36,13 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /** */
         private readonly SemaphoreSlim _semaphore;
 
-        /** */
-        private readonly int _maxBufferSize;
-
         /** Only the thread that completes the previous buffer can set a new one to this field. */
         private volatile DataStreamerClientBuffer<TK, TV> _buffer;
-
 
         public DataStreamerClientPerNodeBuffer(DataStreamerClient<TK, TV> client, ClientSocket socket)
         {
             Debug.Assert(client != null);
 
-            _maxBufferSize = client.Options.ClientPerNodeBufferSize;
             _client = client;
             _socket = socket;
             _semaphore = new SemaphoreSlim(client.Options.ClientPerNodeParallelOperations);
