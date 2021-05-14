@@ -20,8 +20,11 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Datastream;
+    using Apache.Ignite.Core.Common;
     using NUnit.Framework;
 
     /// <summary>
@@ -261,6 +264,31 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         [Test]
         public void TestBackPressure()
         {
+            var serverCache = Ignition.GetIgnite().CreateCache<int, int>(new CacheConfiguration
+            {
+                Name = TestUtils.TestName,
+                CacheStoreFactory = new BlockingCacheStore(),
+                WriteThrough = true
+            });
+
+            var options = new DataStreamerClientOptions<int, int>
+            {
+                ClientPerNodeParallelOperations = 2,
+                ClientPerNodeBufferSize = 1,
+                AllowOverwrite = true // Required for cache store to be invoked.
+            };
+
+            BlockingCacheStore.Gate.Reset();
+
+            using (var streamer = Client.GetDataStreamer(serverCache.Name, options))
+            {
+                streamer.Add(1, 1);
+                streamer.Add(2, 2);
+                streamer.Add(3, 3);
+            }
+
+            Assert.AreEqual(2, serverCache.GetSize());
+
             Assert.Fail("TODO: Test that Add method blocks when too many parallel operations are active");
         }
 
@@ -270,6 +298,31 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             {
                 Logger = new TestUtils.TestContextLogger()
             };
+        }
+
+        private class BlockingCacheStore : CacheStoreAdapter<int, int>, IFactory<ICacheStore>
+        {
+            public static ManualResetEventSlim Gate = new ManualResetEventSlim();
+
+            public override int Load(int key)
+            {
+                throw new System.NotImplementedException();
+            }
+
+            public override void Write(int key, int val)
+            {
+                Gate.Wait();
+            }
+
+            public override void Delete(int key)
+            {
+                throw new System.NotImplementedException();
+            }
+
+            public ICacheStore CreateInstance()
+            {
+                return new BlockingCacheStore();
+            }
         }
     }
 }
