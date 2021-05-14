@@ -159,8 +159,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             var cache = GetClientCache<int>();
             const int count = 50000;
 
-            // Note: this test is ~10 times slower than ThinClientDataStreamerBenchmark
-            // because of the logging in the base class.
+            // TODO: Exceptions "data streamer closed" are being swallowed! Deal with this first.
             using (var streamer = Client.GetDataStreamer<int, int>(cache.Name))
             {
                 for (var k = 0; k < count; k++)

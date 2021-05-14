@@ -117,7 +117,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                     if (firstFlushTask == null)
                     {
                         firstFlushTask = _client.FlushBufferAsync(
-                            buffer, streamerId: null, _socket, _semaphore, flush: true, close: false);
+                            buffer, streamerId: null, _socket, _semaphore, flush: true, close);
 
                         _firstFlushTask = firstFlushTask;
 
@@ -129,12 +129,12 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             if (firstFlushTask.IsCompleted)
             {
                 return _client.FlushBufferAsync(
-                    buffer, streamerId: firstFlushTask.Result, _socket, _semaphore, flush: true, close: false);
+                    buffer, streamerId: firstFlushTask.Result, _socket, _semaphore, flush: true, close);
             }
 
             return firstFlushTask
                 .ContinueWith(t => _client.FlushBufferAsync(
-                    buffer, streamerId: t.Result, _socket, _semaphore, flush: true, close: false))
+                    buffer, streamerId: t.Result, _socket, _semaphore, flush: true, close))
                 .Unwrap();
         }
 
