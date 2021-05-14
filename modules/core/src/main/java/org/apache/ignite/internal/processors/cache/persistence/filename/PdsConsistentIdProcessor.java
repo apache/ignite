@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
-import java.io.Serializable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -26,8 +25,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.NodeFileLockHolder;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Component for resolving PDS storage file names, also used for generating consistent ID for case PDS mode is enabled
@@ -56,25 +53,6 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
         this.cfg = ctx.config();
         this.log = ctx.log(PdsFoldersResolver.class);
         this.ctx = ctx;
-    }
-
-    /**
-     * Prepares compatible PDS folder settings. No locking is performed, consistent ID is not overridden.
-     *
-     * @param pstStoreBasePath DB storage base path or null if persistence is not enabled.
-     * @param consistentId compatibility consistent ID
-     * @return PDS folder settings compatible with previous versions.
-     */
-    private PdsFolderSettings<NodeFileLockHolder> compatibleResolve(
-        @Nullable final File pstStoreBasePath,
-        @NotNull final Serializable consistentId) {
-
-        if (cfg.getConsistentId() != null) {
-            // compatible mode from configuration is used fot this case, no locking, no consitent id change
-            return new PdsFolderSettings<>(pstStoreBasePath, cfg.getConsistentId());
-        }
-
-        return new PdsFolderSettings<>(pstStoreBasePath, consistentId);
     }
 
     /** {@inheritDoc} */

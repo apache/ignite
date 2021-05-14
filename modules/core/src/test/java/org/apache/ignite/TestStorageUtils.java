@@ -83,7 +83,7 @@ public class TestStorageUtils {
                 0L,
                 partId,
                 updateCntr,
-                false
+                DataEntry.EMPTY_FLAGS
             );
 
             IgniteCacheDatabaseSharedManager db = ctx.shared().database();

@@ -863,7 +863,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             0,
                                             txEntry.key().partition(),
                                             txEntry.updateCounter(),
-                                            cacheCtx.affinity().primaryByPartition(cctx.localNode(), txEntry.key().partition(), topVer))));
+                                            DataEntry.flags(CU.txOnPrimary(this)))));
                                     }
 
                                     ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(txEntry);
