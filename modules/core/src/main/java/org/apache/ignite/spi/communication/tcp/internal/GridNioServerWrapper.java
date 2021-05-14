@@ -203,12 +203,8 @@ public class GridNioServerWrapper {
     private volatile ThrowableSupplier<SocketChannel, IOException> socketChannelFactory = SocketChannel::open;
 
     /** Enable forcible node kill. */
-    private boolean enableForcibleNodeKill = IgniteSystemProperties
+    private boolean forcibleNodeKillEnabled = IgniteSystemProperties
         .getBoolean(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
-
-    /** Enable troubleshooting logger. */
-    private boolean enableTroubleshootingLog = IgniteSystemProperties
-        .getBoolean(IgniteSystemProperties.IGNITE_TROUBLESHOOTING_LOGGER);
 
     /** NIO server. */
     private GridNioServer<Message> nioSrv;
@@ -647,12 +643,16 @@ public class GridNioServerWrapper {
         }
 
         if (ses == null) {
-            if (!(Thread.currentThread() instanceof IgniteDiscoveryThread) && locNodeIsSrv) {
-                if (node.isClient() && (addrs.size() - skippedAddrs == failedAddrsSet.size())) {
-                    String msg = "Failed to connect to all addresses of node " + node.id() + ": " + failedAddrsSet +
-                        "; inverse connection will be requested.";
+            // If local node and remote node are configured to use paired connections we won't even request
+            // inverse connection so no point in throwing NodeUnreachableException
+            if (!cfg.usePairedConnections() || !Boolean.TRUE.equals(node.attribute(attrs.pairedConnection()))) {
+                if (!(Thread.currentThread() instanceof IgniteDiscoveryThread) && locNodeIsSrv) {
+                    if (node.isClient() && (addrs.size() - skippedAddrs == failedAddrsSet.size())) {
+                        String msg = "Failed to connect to all addresses of node " + node.id() + ": " + failedAddrsSet +
+                            "; inverse connection will be requested.";
 
-                    throw new NodeUnreachableException(msg);
+                        throw new NodeUnreachableException(msg);
+                    }
                 }
             }
 
@@ -669,7 +669,7 @@ public class GridNioServerWrapper {
      * @return {@code True} if exception shows that client is unreachable, {@code false} otherwise.
      */
     private boolean isNodeUnreachableException(Exception e) {
-        return e instanceof SocketTimeoutException;
+        return e instanceof NodeUnreachableException || e instanceof SocketTimeoutException;
     }
 
     /**
@@ -768,25 +768,14 @@ public class GridNioServerWrapper {
             ctx.resolveCommunicationFailure(node, errs);
         }
 
-        if (!commErrResolve && enableForcibleNodeKill) {
+        if (!commErrResolve && forcibleNodeKillEnabled) {
             if (ctx.node(node.id()) != null
                 && node.isClient()
                 && !locNodeSupplier.get().isClient()
                 && isRecoverableException(errs)
             ) {
-                // Only server can fail client for now, as in TcpDiscovery resolveCommunicationFailure() is not supported.
-                String msg = "TcpCommunicationSpi failed to establish connection to node, node will be dropped from " +
-                    "cluster [" + "rmtNode=" + node + ']';
-
-                if (enableTroubleshootingLog)
-                    U.error(log, msg, errs);
-                else
-                    U.warn(log, msg);
-
-                ctx.failNode(node.id(), "TcpCommunicationSpi failed to establish connection to node [" +
-                    "rmtNode=" + node +
-                    ", errs=" + errs +
-                    ", connectErrs=" + X.getSuppressedList(errs) + ']');
+                CommunicationTcpUtils.failNode(node,
+                    ctx, errs, log);
             }
         }
 

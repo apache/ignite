@@ -363,7 +363,8 @@ namespace ignite
                 CacheRequest(int32_t cacheId, bool binary) :
                     cacheId(cacheId),
                     binary(binary),
-                    actTx(false)
+                    actTx(false),
+                    txId(0)
                 {
                     // No-op.
                 }
@@ -536,15 +537,6 @@ namespace ignite
                 }
 
                 /**
-                 * Sets transaction active flag and appropriate txId.
-                 * @param active Transaction activity flag.
-                 * @param id Transaction id.
-                 */
-                void activeTx(bool active, int32_t id) {
-                    CacheRequest<OpCode>::activeTx(active, id);
-                }
-
-                /**
                  * Write request using provided writer.
                  * @param writer Writer.
                  * @param ver Version.
@@ -691,11 +683,11 @@ namespace ignite
                  * Constructor.
                  *
                  * @param id Transaction id.
-                 * @param comm Need to commit flag.
+                 * @param commit Need to commit flag.
                  */
-                TxEndRequest(int32_t id, bool comm) :
+                TxEndRequest(int32_t id, bool commit) :
                     txId(id),
-                    commited(comm)
+                    commited(commit)
                 {
                     // No-op.
                 }

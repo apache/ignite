@@ -95,3 +95,4 @@ packages
 modules/ducktests/tests/docker/build/**
 modules/ducktests/tests/.tox
 modules/ducktests/tests/certs/*
+modules/ducktests/tests/ignitetest.egg-info/**

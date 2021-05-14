@@ -28,6 +28,7 @@ from ducktape.cluster.remoteaccount import RemoteCommandError
 from ignitetest.services.utils.auth import get_credentials, is_auth_enabled
 from ignitetest.services.utils.ssl.ssl_params import get_ssl_params, is_ssl_enabled, IGNITE_ADMIN_ALIAS
 from ignitetest.services.utils.jmx_utils import JmxClient
+from ignitetest.utils.version import V_2_11_0
 
 
 class ControlUtility:
@@ -44,7 +45,7 @@ class ControlUtility:
         if ssl_params:
             self.ssl_params = ssl_params
         elif is_ssl_enabled(cluster.context.globals):
-            self.ssl_params = get_ssl_params(cluster.context.globals, IGNITE_ADMIN_ALIAS)
+            self.ssl_params = get_ssl_params(cluster.context.globals, cluster.shared_root, IGNITE_ADMIN_ALIAS)
 
         if username and password:
             self.username, self.password = username, password
@@ -157,7 +158,12 @@ class ControlUtility:
         """
         data = self.__run("--cache idle_verify")
 
-        assert ('idle_verify check has finished, no conflicts have been found.' in data), data
+        if self._cluster.config.version < V_2_11_0:
+            msg = 'idle_verify check has finished, no conflicts have been found.'
+        else:
+            msg = 'The check procedure has finished, no conflicts have been found.'
+
+        assert (msg in data), data
 
     def idle_verify_dump(self, node=None):
         """

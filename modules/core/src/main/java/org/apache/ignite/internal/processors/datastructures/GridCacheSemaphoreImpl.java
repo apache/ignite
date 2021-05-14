@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.AbstractQueuedSynchronizer;
@@ -40,11 +41,16 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.retryTopologySafe;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -660,6 +666,35 @@ public final class GridCacheSemaphoreImpl extends AtomicDataStructureProxy<GridC
         finally {
             ctx.kernalContext().gateway().readUnlock();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> IgniteFuture<T> acquireAndExecute(IgniteCallable<T> callable,
+                                                           int numPermits) {
+        acquire(numPermits);
+
+        Future<T> passedInCallableFuture = ctx.kernalContext().getExecutorService().submit(callable);
+
+        final GridFutureAdapter<T> fut = new GridFutureAdapter<T>() {
+            @Override public T get() {
+                try {
+                    return passedInCallableFuture.get();
+                } catch (Exception e) {
+                    throw new RuntimeException(e.getMessage());
+                }
+            }
+        };
+
+        IgniteFuture<T> future = new IgniteFutureImpl<>(fut);
+
+        future.listen(new IgniteInClosure<IgniteFuture<T>>() {
+            /** {@inheritDoc} */
+            @Override public void apply(IgniteFuture<T> igniteFuture) {
+                release(numPermits);
+            }
+        });
+
+        return future;
     }
 
     /** {@inheritDoc} */

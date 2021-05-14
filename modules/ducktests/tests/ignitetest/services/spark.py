@@ -21,14 +21,14 @@ import os.path
 from distutils.version import LooseVersion
 
 from ducktape.cluster.remoteaccount import RemoteCommandError
-from ducktape.services.service import Service
-
-from ignitetest.services.utils.path import PathAware
-from ignitetest.services.utils.log_utils import monitor_log
-
 
 # pylint: disable=abstract-method
-class SparkService(Service, PathAware):
+from ignitetest.services.utils.ducktests_service import DucktestsService
+from ignitetest.services.utils.log_utils import monitor_log
+from ignitetest.services.utils.path import PathAware
+
+
+class SparkService(DucktestsService, PathAware):
     """
     Start a spark node.
     """
@@ -45,16 +45,20 @@ class SparkService(Service, PathAware):
         self.init_logs_attribute()
 
     @property
-    def project(self):
-        return "spark"
-
-    @property
-    def version(self):
-        return self._version
+    def product(self):
+        return "%s-%s" % ("spark", self._version)
 
     @property
     def globals(self):
         return self.context.globals
+
+    @property
+    def config_file(self):
+        return None
+
+    @property
+    def log_config_file(self):
+        return None
 
     def start(self, **kwargs):
         super().start(**kwargs)
@@ -107,24 +111,27 @@ class SparkService(Service, PathAware):
         timeout_sec = 30
         with monitor_log(node, log_file) as monitor:
             node.account.ssh(cmd)
-            monitor.wait_until(log_msg, timeout_sec=timeout_sec, backoff_sec=5,
+            monitor.wait_until(log_msg, timeout_sec=timeout_sec, backoff_sec=.1,
                                err_msg="Spark doesn't start at %d seconds" % timeout_sec)
 
         if len(self.pids(node)) == 0:
             raise Exception("No process ids recorded on node %s" % node.account.hostname)
 
-    def stop_node(self, node, **kwargs):
-        if node == self.nodes[0]:
-            node.account.ssh(os.path.join(self.home_dir, "sbin", "stop-master.sh"))
+    def stop_node(self, node, force_stop=False, **kwargs):
+        if force_stop:
+            node.account.kill_java_processes(self.java_class_name(node), clean_shutdown=False, allow_fail=True)
         else:
-            node.account.ssh(os.path.join(self.home_dir, "sbin", "stop-slave.sh"))
+            if node == self.nodes[0]:
+                node.account.ssh(os.path.join(self.home_dir, "sbin", "stop-master.sh"))
+            else:
+                node.account.ssh(os.path.join(self.home_dir, "sbin", "stop-slave.sh"))
 
     def clean_node(self, node, **kwargs):
         """
         Clean spark persistence files
         """
-        node.account.kill_java_processes(self.java_class_name(node),
-                                         clean_shutdown=False, allow_fail=True)
+        super().clean_node(node, **kwargs)
+
         node.account.ssh("rm -rf -- %s" % self.persistent_root, allow_fail=False)
 
     def pids(self, node):
@@ -168,9 +175,3 @@ class SparkService(Service, PathAware):
             userID=node.account.user,
             instance=1,
             host=node.account.hostname)
-
-    def kill(self):
-        """
-        Kills the service.
-        """
-        self.stop()

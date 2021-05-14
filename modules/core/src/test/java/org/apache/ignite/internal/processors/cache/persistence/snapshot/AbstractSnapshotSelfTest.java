@@ -82,6 +82,7 @@ import org.junit.Before;
 import static java.nio.file.Files.newDirectoryStream;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
@@ -102,6 +103,9 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
     /** Number of cache keys to pre-create at node start. */
     protected static final int CACHE_KEYS_RANGE = 1024;
+
+    /** Timeout in milliseconds to await for snapshot operation being completed. */
+    protected static final int SNAPSHOT_AWAIT_TIMEOUT_MS = 15_000;
 
     /** List of collected snapshot test events. */
     protected final List<Integer> locEvts = new CopyOnWriteArrayList<>();
@@ -127,7 +131,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
                     .setMaxSize(100L * 1024 * 1024)
                     .setPersistenceEnabled(persistence))
                 .setCheckpointFrequency(3000)
-                .setPageSize(4096))
+                .setPageSize(DFLT_PAGE_SIZE))
             .setCacheConfiguration(dfltCacheCfg)
             .setClusterStateOnStart(INACTIVE)
             .setIncludeEventTypes(EVTS_CLUSTER_SNAPSHOT)
@@ -491,6 +495,24 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
          */
         public void waitBlocked(long timeout) throws IgniteInterruptedCheckedException {
             GridTestUtils.waitForCondition(() -> !blocked.isEmpty(), timeout);
+        }
+    }
+
+    /** */
+    protected static class Value {
+        /** */
+        private final byte[] arr;
+
+        /**
+         * @param arr Test array.
+         */
+        public Value(byte[] arr) {
+            this.arr = arr;
+        }
+
+        /** */
+        public byte[] arr() {
+            return arr;
         }
     }
 

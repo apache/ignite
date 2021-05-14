@@ -1307,7 +1307,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                         tx.commit();
 
                     // We don't update part counter if nothing was removed when MVCC enabled.
-                    updatePartitionCounter(cache, key, partCntr, expEvtCntrs,mvccEnabled && proc.getOldVal() == null);
+                    updatePartitionCounter(cache, key, partCntr, expEvtCntrs, mvccEnabled && proc.getOldVal() == null);
 
                     waitAndCheckEvent(evtsQueues, partCntr, expEvtCntrs, affinity(cache), key, oldVal, oldVal);
 

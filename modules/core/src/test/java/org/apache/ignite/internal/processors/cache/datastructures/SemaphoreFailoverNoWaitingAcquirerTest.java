@@ -101,7 +101,7 @@ public class SemaphoreFailoverNoWaitingAcquirerTest extends GridCommonAbstractTe
             awaitPartitionMapExchange();
             IgniteSemaphore sem2 = grid(1).semaphore("sem", 1, true, true);
 
-            assertTrue("Could not aquire after 'restart'",sem2.tryAcquire(1, 5000, TimeUnit.MILLISECONDS));
+            assertTrue("Could not aquire after 'restart'", sem2.tryAcquire(1, 5000, TimeUnit.MILLISECONDS));
         }
         finally {
             stopAllGrids();

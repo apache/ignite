@@ -20,7 +20,4 @@
 # due to python version naming restrictions, which are enforced by python packaging tools
 # (see  https://www.python.org/dev/peps/pep-0440/)
 #
-# Instead, in development branches, the version should have a suffix of the form ".devN"
-#
-# For example, when Ignite is at version 2.9.0-SNAPSHOT, this should be something like "2.9.0.dev0"
-__version__ = '2.10.0.dev0'
+__version__ = '2.11.0-SNAPSHOT'

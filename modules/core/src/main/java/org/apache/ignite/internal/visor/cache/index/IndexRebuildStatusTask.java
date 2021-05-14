@@ -103,7 +103,7 @@ public class IndexRebuildStatusTask extends VisorMultiNodeTask<IndexRebuildStatu
 
             Set<IndexRebuildStatusInfoContainer> res = new HashSet<>();
 
-            for (IgniteCache<?,?> cache : rebuildIdxCaches)
+            for (IgniteCache<?, ?> cache : rebuildIdxCaches)
                 res.add(new IndexRebuildStatusInfoContainer(cache.getConfiguration(CacheConfiguration.class)));
 
             return res;

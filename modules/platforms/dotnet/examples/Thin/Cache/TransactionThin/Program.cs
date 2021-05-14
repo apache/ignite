@@ -109,7 +109,7 @@ namespace Apache.Ignite.Examples.Thin.Cache.TransactionThin
             Console.WriteLine(">>> Transfer finished.");
 
             Console.WriteLine();
-            Console.WriteLine(">>> Accounts after transfer: ");
+            Console.WriteLine(">>> Accounts after transfer:");
             Console.WriteLine(">>>     " + cache.Get(1));
             Console.WriteLine(">>>     " + cache.Get(2));
             Console.WriteLine();
@@ -128,7 +128,7 @@ namespace Apache.Ignite.Examples.Thin.Cache.TransactionThin
             cache.Put(2, new Account(2, 200));
 
             Console.WriteLine();
-            Console.WriteLine(">>> Accounts before transfer: ");
+            Console.WriteLine(">>> Accounts before transfer:");
             Console.WriteLine(">>>     " + cache.Get(1));
             Console.WriteLine(">>>     " + cache.Get(2));
             Console.WriteLine();

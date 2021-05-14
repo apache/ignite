@@ -19,12 +19,12 @@ namespace Apache.Ignite.Examples.Thick.Misc.Events
 {
     using System;
     using System.Linq;
+    using System.Threading;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Examples.Shared;
     using Apache.Ignite.Examples.Shared.Compute;
     using Apache.Ignite.Examples.Shared.Models;
-    using LocalEventListener = Apache.Ignite.Examples.Shared.Events.LocalEventListener;
 
     /// <summary>
     /// This example demonstrates Ignite events.
@@ -47,6 +47,9 @@ namespace Apache.Ignite.Examples.Thick.Misc.Events
                 ignite.GetEvents().LocalListen(listener, EventType.TaskExecutionAll);
 
                 ExecuteTask(ignite);
+
+                // Some events arrive asynchronously - wait for them.
+                listener.WaitForEvents(3);
 
                 ignite.GetEvents().StopLocalListen(listener);
 
@@ -79,6 +82,33 @@ namespace Apache.Ignite.Examples.Thick.Misc.Events
             }).ToArray();
 
             ignite.GetCompute().Execute(new AverageSalaryTask(), employees);
+        }
+
+        private class LocalEventListener : IEventListener<IEvent>
+        {
+            private int _eventsReceived;
+
+            public int EventsReceived
+            {
+                get { return _eventsReceived; }
+            }
+
+            public bool Invoke(IEvent evt)
+            {
+                Interlocked.Increment(ref _eventsReceived);
+
+                Console.WriteLine("Local listener received an event [evt={0}]", evt.Name);
+
+                return true;
+            }
+
+            public void WaitForEvents(int count)
+            {
+                for (var i = 0; i < 50 && Interlocked.CompareExchange(ref _eventsReceived, 0, 0) < count; i++)
+                {
+                    Thread.Sleep(100);
+                }
+            }
         }
     }
 }

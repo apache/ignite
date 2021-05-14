@@ -21,8 +21,13 @@ from time import monotonic
 from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.tests.test import Test
 
-
 # pylint: disable=W0223
+from ignitetest.services.utils.ducktests_service import DucktestsService
+
+# globals:
+JFR_ENABLED = "jfr_enabled"
+
+
 class IgniteTest(Test):
     """
     Basic ignite test.
@@ -42,17 +47,23 @@ class IgniteTest(Test):
         """
         return monotonic()
 
-    # pylint: disable=W0212
     def tearDown(self):
-        self.logger.debug("Killing all services to speed-up the tearing down.")
+        # jfr requires graceful shutdown to save the recording.
+        if not self.test_context.globals.get(JFR_ENABLED, False):
+            self.logger.debug("Killing all runned services to speed-up the tearing down.")
 
-        for service in self.test_context.services._services.values():
-            try:
-                service.kill()
-            except RemoteCommandError:
-                pass  # Process may be already self-killed on segmentation.
+            # pylint: disable=W0212
+            for service in self.test_context.services._services.values():
+                assert isinstance(service, DucktestsService)
 
-        self.logger.debug("All services killed.")
+                try:
+                    service.kill()
+                except RemoteCommandError:
+                    pass  # Process may be already self-killed on segmentation.
+
+                assert service.stopped
+
+            self.logger.debug("All runned services killed.")
 
         super().tearDown()
 

@@ -17,8 +17,8 @@
 Module contains useful test decorators.
 """
 
-from collections.abc import Iterable
 import copy
+from collections.abc import Iterable
 
 from ducktape.cluster.cluster_spec import ClusterSpec
 from ducktape.mark._mark import Ignore, Mark, _inject
@@ -73,6 +73,8 @@ class IgniteVersionParametrize(Mark):
                 raise AssertionError("Expected string or iterable as parameter in ignite_versions, "
                                      "%s of type %s passed" % (ver, type(ver)))
 
+        self.versions = self._inject_global_project(self.versions, seed_context.globals.get("project"))
+
         new_context_list = []
         if context_list:
             for ctx in context_list:
@@ -86,6 +88,16 @@ class IgniteVersionParametrize(Mark):
                 new_context_list.insert(0, self._prepare_new_ctx(version, seed_context))
 
         return new_context_list
+
+    @staticmethod
+    def _inject_global_project(version, project):
+        if isinstance(version, (list, tuple)):
+            return list(map(lambda v: IgniteVersionParametrize._inject_global_project(v, project), version))
+
+        if (version.lower() == "dev" or version[0].isdigit()) and project:
+            version = "%s-%s" % (project, version)
+
+        return version
 
     def _prepare_new_ctx(self, version, seed_context, ctx=None):
         injected_args = dict(ctx.injected_args) if ctx and ctx.injected_args else {}

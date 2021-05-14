@@ -67,6 +67,15 @@
     <ClCompile Include="..\..\src\impl\affinity\affinity_manager.cpp">
       <Filter>Code\impl\affinity</Filter>
     </ClCompile>
+	<ClCompile Include="..\..\src\impl\transactions\transaction_impl.cpp">
+      <Filter>Code\impl\transactions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\transactions\transactions_impl.cpp">
+      <Filter>Code\impl\transactions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\transactions\transactions_proxy.cpp">
+      <Filter>Code\impl\transactions</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\ignite\thin\ignite_client.h">
@@ -173,6 +182,21 @@
     </ClInclude>
     <ClInclude Include="..\..\src\impl\affinity\partition_awareness_group.h">
       <Filter>Code\impl\affinity</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\thin\transactions\transactions.h">
+      <Filter>Code\transactions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\thin\transactions\transaction.h">
+      <Filter>Code\transactions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\thin\transactions\transaction_consts.h">
+      <Filter>Code\transactions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\thin\transactions\transactions_proxy.h">
+      <Filter>Code\transactions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\impl\transactions\transactions_impl.h">
+      <Filter>Code\impl\transactions</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

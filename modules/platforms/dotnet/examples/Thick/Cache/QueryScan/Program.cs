@@ -30,7 +30,7 @@ namespace Apache.Ignite.Examples.Thick.Cache.QueryScan
     /// </summary>
     public static class Program
     {
-        private const string EmployeeCacheName = "dotnet_cache_query_employee";
+        private const string EmployeeCacheName = "dotnet_cache_query_scan_employee";
 
         public static void Main()
         {

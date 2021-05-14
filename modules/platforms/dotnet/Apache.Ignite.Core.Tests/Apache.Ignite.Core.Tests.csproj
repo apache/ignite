@@ -291,6 +291,7 @@
     <Compile Include="Services\Model.cs" />
     <Compile Include="Services\IJavaService.cs" />
     <Compile Include="Services\JavaServiceDynamicProxy.cs" />
+    <Compile Include="Services\PlatformTestService.cs" />
     <Compile Include="Ssl\SslConfigurationTest.cs" />
     <Compile Include="TaskExtensions.cs" />
     <Compile Include="TestAppConfig.cs" />

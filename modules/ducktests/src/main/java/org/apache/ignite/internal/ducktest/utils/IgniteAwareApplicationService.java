@@ -22,6 +22,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
@@ -36,6 +38,18 @@ public class IgniteAwareApplicationService {
     /** Logger. */
     private static final Logger log = LogManager.getLogger(IgniteAwareApplicationService.class.getName());
 
+    /** Application modes. */
+    private enum IgniteServiceType {
+        /** Server or client node. */
+        NODE,
+
+        /** Thin client connection. */
+        THIN_CLIENT,
+
+        /** Run application without precreated connections. */
+        NONE
+    }
+
     /**
      * @param args Args.
      */
@@ -44,7 +58,7 @@ public class IgniteAwareApplicationService {
 
         String[] params = args[0].split(",");
 
-        boolean startIgnite = Boolean.parseBoolean(params[0]);
+        IgniteServiceType svcType = IgniteServiceType.valueOf(params[0]);
 
         Class<?> clazz = Class.forName(params[1]);
 
@@ -60,7 +74,7 @@ public class IgniteAwareApplicationService {
 
         app.cfgPath = cfgPath;
 
-        if (startIgnite) {
+        if (svcType == IgniteServiceType.NODE) {
             log.info("Starting Ignite node...");
 
             IgniteBiTuple<IgniteConfiguration, GridSpringResourceContext> cfgs = IgnitionEx.loadConfiguration(cfgPath);
@@ -76,7 +90,23 @@ public class IgniteAwareApplicationService {
                 log.info("Ignite instance closed. [interrupted=" + Thread.currentThread().isInterrupted() + "]");
             }
         }
-        else
+        else if (svcType == IgniteServiceType.THIN_CLIENT) {
+            log.info("Starting thin client...");
+
+            ClientConfiguration cfg = IgnitionEx.loadSpringBean(cfgPath, "thin.client.cfg");
+
+            try (IgniteClient client = Ignition.startClient(cfg)) {
+                app.client = client;
+
+                app.start(jsonNode);
+            }
+            finally {
+                log.info("Thin client instance closed. [interrupted=" + Thread.currentThread().isInterrupted() + "]");
+            }
+        }
+        else if (svcType == IgniteServiceType.NONE)
             app.start(jsonNode);
+        else
+            throw new IllegalArgumentException("Unknown service type " + svcType);
     }
 }

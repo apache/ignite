@@ -31,10 +31,13 @@ public class GridNodeMetricsLogPdsSelfTest extends GridNodeMetricsLogSelfTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
-            .setDefaultDataRegionConfiguration(
-                new DataRegionConfiguration()
-                    .setMaxSize(30 * 1024 * 1024)
-                    .setPersistenceEnabled(true))
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setMaxSize(30 * 1024 * 1024)
+                .setPersistenceEnabled(true))
+            .setDataRegionConfigurations(new DataRegionConfiguration()
+                .setName(IN_MEMORY_REGION)
+                .setMaxSize(20 * 1024 * 1024)
+                .setPersistenceEnabled(false))
             .setWalMode(WALMode.LOG_ONLY);
 
         cfg.setDataStorageConfiguration(memCfg);

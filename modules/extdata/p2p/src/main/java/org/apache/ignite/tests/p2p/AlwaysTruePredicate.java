@@ -25,6 +25,6 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 public class AlwaysTruePredicate implements IgniteBiPredicate<Object, Object> {
     /** */
     @Override public boolean apply(Object k, Object v) {
-        return new CacheDeploymentAlwaysTruePredicate().apply(k,v);
+        return new CacheDeploymentAlwaysTruePredicate().apply(k, v);
     }
 }

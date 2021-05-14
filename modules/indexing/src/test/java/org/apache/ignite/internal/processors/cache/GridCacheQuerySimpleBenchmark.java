@@ -53,7 +53,7 @@ public class GridCacheQuerySimpleBenchmark extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration<?,?> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
+        CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setName("offheap-cache");
         ccfg.setCacheMode(CacheMode.PARTITIONED);
@@ -91,7 +91,7 @@ public class GridCacheQuerySimpleBenchmark extends GridCommonAbstractTest {
     public void testPerformance() throws Exception {
         Random rnd = new GridRandom();
 
-        final IgniteCache<Long,Person> c = ignite.cache("offheap-cache");
+        final IgniteCache<Long, Person> c = ignite.cache("offheap-cache");
 
         X.println("___ PUT start");
 

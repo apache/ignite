@@ -120,9 +120,9 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
         IgniteCache cache1 = node1.createCache(new CacheConfiguration("cache1")
             .setAtomicityMode(TRANSACTIONAL_SNAPSHOT));
 
-        cache1.put(1,1);
-        cache1.put(2,2);
-        cache1.put(2,2);
+        cache1.put(1, 1);
+        cache1.put(2, 2);
+        cache1.put(2, 2);
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() {

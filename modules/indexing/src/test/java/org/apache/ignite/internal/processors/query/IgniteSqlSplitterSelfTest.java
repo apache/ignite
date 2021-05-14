@@ -387,9 +387,9 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
     /**
      */
     private void doTestReplicatedTablesUsingPartitionedCache(int segments, boolean client, boolean replicatedOnlyFlag) {
-        IgniteCache<Integer,Value> p = ignite(client ? CLIENT : 0).getOrCreateCache(cacheConfig("p", true,
+        IgniteCache<Integer, Value> p = ignite(client ? CLIENT : 0).getOrCreateCache(cacheConfig("p", true,
             Integer.class, Value.class).setQueryParallelism(segments));
-        IgniteCache<Integer,Value> r = ignite(client ? CLIENT : 0).getOrCreateCache(cacheConfig("r", false,
+        IgniteCache<Integer, Value> r = ignite(client ? CLIENT : 0).getOrCreateCache(cacheConfig("r", false,
             Integer.class, Value.class));
 
         try {
@@ -435,9 +435,9 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
     /**
      */
     private void doTestPartitionedTablesUsingReplicatedCache(int segments, boolean client) {
-        IgniteCache<Integer,Value> p = ignite(client ? CLIENT : 0).getOrCreateCache(cacheConfig("p", true,
+        IgniteCache<Integer, Value> p = ignite(client ? CLIENT : 0).getOrCreateCache(cacheConfig("p", true,
             Integer.class, Value.class).setQueryParallelism(segments));
-        IgniteCache<Integer,Value> r = ignite(client ? CLIENT : 0).getOrCreateCache(cacheConfig("r", false,
+        IgniteCache<Integer, Value> r = ignite(client ? CLIENT : 0).getOrCreateCache(cacheConfig("r", false,
             Integer.class, Value.class));
 
         try {
@@ -522,9 +522,9 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
     @SuppressWarnings("SuspiciousMethodCalls")
     @Test
     public void testExists() {
-        IgniteCache<Integer,Person2> x = ignite(0).getOrCreateCache(cacheConfig("x", true,
+        IgniteCache<Integer, Person2> x = ignite(0).getOrCreateCache(cacheConfig("x", true,
             Integer.class, Person2.class));
-        IgniteCache<Integer,Person2> y = ignite(0).getOrCreateCache(cacheConfig("y", true,
+        IgniteCache<Integer, Person2> y = ignite(0).getOrCreateCache(cacheConfig("y", true,
             Integer.class, Person2.class));
 
         try {
@@ -566,7 +566,7 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
      */
     @Test
     public void testSortedMergeIndex() throws Exception {
-        IgniteCache<Integer,Value> c = ignite(0).getOrCreateCache(cacheConfig("v", true,
+        IgniteCache<Integer, Value> c = ignite(0).getOrCreateCache(cacheConfig("v", true,
             Integer.class, Value.class));
 
         try {
@@ -1704,7 +1704,7 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
      * @param enforceJoinOrder Enforce join order.
      */
     private void doTestDistributedJoins(
-        IgniteCache<?,?> qryCache,
+        IgniteCache<?, ?> qryCache,
         IgniteCache<Integer, Person2> c1,
         IgniteCache<Integer, Organization> c2,
         int orgs,

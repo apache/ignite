@@ -36,13 +36,13 @@ import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
-import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.util.GridLogThrottle;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.mxbean.MetricsMxBean;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.stream.StreamTransformer;
 import org.jetbrains.annotations.Nullable;
 
@@ -493,7 +493,7 @@ public final class IgniteSystemProperties {
      * concurrency level for structure holding job metrics snapshots.
      * Default value is {@code 64}.
      *
-     * @deprecated Use {@link GridMetricManager} instead.
+     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=compute.jobs" instead.
      */
     @Deprecated
     @SystemProperty(value = "Job metrics processor property defining concurrency level " +
@@ -1013,9 +1013,8 @@ public final class IgniteSystemProperties {
      * When set to {@code true} fields are written by BinaryMarshaller in sorted order. Otherwise
      * the natural order is used.
      * <p>
-     * @deprecated Should be removed in Apache Ignite 2.0.
+     * NOTICE: Should be the default in Apache Ignite 3.0
      */
-    @Deprecated
     @SystemProperty("Enables fields to be written by BinaryMarshaller in sorted order. " +
         "By default, the natural order is used")
     public static final String IGNITE_BINARY_SORT_OBJECT_FIELDS = "IGNITE_BINARY_SORT_OBJECT_FIELDS";

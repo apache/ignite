@@ -123,7 +123,7 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
         final PersistenceBasicCompatibilityTest.TestStringContainerToBePrinted actual = (PersistenceBasicCompatibilityTest.TestStringContainerToBePrinted)ignite.cache(CACHE_NAME).get(KEY_OBJ);
         assertEquals(VAL, actual.data);
 
-        assertNodeIndexesInFolder();// should not create any new style directories
+        assertNodeIndexesInFolder(); // should not create any new style directories
 
         stopAllGrids();
     }
