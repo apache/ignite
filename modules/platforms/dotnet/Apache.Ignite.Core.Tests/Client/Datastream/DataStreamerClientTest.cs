@@ -298,12 +298,12 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         [Test]
         public void TestOptionsValidation()
         {
-            var opts = new DataStreamerClientOptions
-            {
-                ClientPerNodeBufferSize = -1
-            };
+            var opts = new DataStreamerClientOptions();
 
-            Assert.Throws<ArgumentException>(() => Client.GetDataStreamer<int, int>("c", opts));
+            Assert.Throws<ArgumentException>(() => opts.ClientPerNodeBufferSize = -1);
+            Assert.Throws<ArgumentException>(() => opts.ClientPerNodeParallelOperations = -1);
+            Assert.Throws<ArgumentException>(() => opts.ServerPerNodeBufferSize = -1);
+            Assert.Throws<ArgumentException>(() => opts.ServerPerThreadBufferSize = -1);
         }
 
         [Test]
@@ -329,7 +329,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
             public override int Load(int key)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public override void Write(int key, int val)
@@ -339,7 +339,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
             public override void Delete(int key)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public ICacheStore CreateInstance()
