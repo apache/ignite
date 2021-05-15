@@ -278,25 +278,26 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 AllowOverwrite = true // Required for cache store to be invoked.
             };
 
+            // Get primary keys for one of the nodes.
+            var keys = TestUtils.GetPrimaryKeys(Ignition.GetIgnite(), serverCache.Name).Take(5).ToArray();
 
             using (var streamer = Client.GetDataStreamer<int, int>(serverCache.Name, options))
             {
                 // Open the streamers with the first flush.
                 BlockingCacheStore.Gate.Set();
-                streamer.Add(0, 0);
+                streamer.Add(keys[0], 0);
                 streamer.Flush();
 
                 // Block writes and add data.
                 BlockingCacheStore.Gate.Reset();
-                streamer.Add(1, 1);
-                streamer.Add(2, 2);
+                streamer.Add(keys[1], 1);
+                streamer.Add(keys[2], 2);
 
                 // ReSharper disable once AccessToDisposedClosure
-                var task = Task.Factory.StartNew(() => streamer.Add(3, 3));
+                var task = Task.Factory.StartNew(() => streamer.Add(keys[3], 3));
 
                 // Task is blocked because two streamer operations are already in progress.
                 Assert.IsFalse(TestUtils.WaitForCondition(() => task.IsCompleted, 500));
-
                 BlockingCacheStore.Gate.Set();
                 TestUtils.WaitForTrueCondition(() => task.IsCompleted, 500);
             }
