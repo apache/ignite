@@ -116,7 +116,7 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
     /** Time interval (in milliseconds) for rate-based metrics. */
     private long metricsRateTimeInterval;
 
-    /** Time interval (in milliseconds) for running auto archiving for incompletely WAL segment. */
+    /** Time interval of inactivity (in milliseconds) for running auto archiving for incompletely WAL segment. */
     private long walAutoArchiveAfterInactivity;
 
     /** Time interval (in milliseconds) for running auto archiving for incompletely WAL segment. */
@@ -436,10 +436,10 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
         out.writeInt(metricsSubIntervalCount);
         out.writeLong(metricsRateTimeInterval);
         out.writeLong(walAutoArchiveAfterInactivity);
-        out.writeLong(walForceArchiveTimeout);
         out.writeBoolean(writeThrottlingEnabled);
         out.writeInt(walBufSize);
         out.writeBoolean(walCompactionEnabled);
+        out.writeLong(walForceArchiveTimeout);
     }
 
     /** {@inheritDoc} */
@@ -472,13 +472,15 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
         metricsSubIntervalCount = in.readInt();
         metricsRateTimeInterval = in.readLong();
         walAutoArchiveAfterInactivity = in.readLong();
-        walForceArchiveTimeout = in.readLong();
         writeThrottlingEnabled = in.readBoolean();
 
         if (protoVer > V1) {
             walBufSize = in.readInt();
             walCompactionEnabled = in.readBoolean();
         }
+
+        if (protoVer >= V5)
+            walForceArchiveTimeout = in.readLong();
     }
 
     /** {@inheritDoc} */

@@ -772,19 +772,17 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         assert timeoutRolloverMux != null;
 
         synchronized (timeoutRolloverMux) {
-            long nextEndTime;
-
-            if (walForceArchiveTimeout > 0) {
-                long lastRollover = lastRolloverMs.get();
-                nextEndTime = lastRollover == 0 ? U.currentTimeMillis() : lastRollover + walForceArchiveTimeout;
-            }
-            else {
-                long lastRecMs = lastRecordLoggedMs.get();
-                nextEndTime = lastRecMs <= 0 ? U.currentTimeMillis() : lastRecMs + walAutoArchiveAfterInactivity;
-            }
+            long nextEndTime = walForceArchiveTimeout > 0
+                ? nextTimeout(lastRolloverMs.get(), walForceArchiveTimeout)
+                : nextTimeout(lastRecordLoggedMs.get(), walAutoArchiveAfterInactivity);
 
             cctx.time().addTimeoutObject(timeoutRollover = new TimeoutRollover(nextEndTime));
         }
+    }
+
+    /** */
+    private long nextTimeout(long lastEvt, long timeout) {
+        return lastEvt <= 0 ? U.currentTimeMillis() : lastEvt + timeout;
     }
 
     /** {@inheritDoc} */
@@ -801,30 +799,15 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (walAutoArchiveAfterInactivity <= 0 && walForceArchiveTimeout <= 0)
             return; // feature not configured, nothing to do.
 
-        final long lastRecMs = lastRecordLoggedMs.get();
-
-        if (lastRecMs == 0)
+        if (lastRecordLoggedMs.get() == 0)
             return; //no records were logged to current segment, does not consider inactivity.
 
         if (walForceArchiveTimeout > 0) {
-            final long lastRollover = lastRolloverMs.get();
-            final long elapsedMs = U.currentTimeMillis() - lastRollover;
-
-            if (elapsedMs < walForceArchiveTimeout)
-                return; // not enough time elapsed since last rollover.
-
-            if (!lastRolloverMs.compareAndSet(lastRollover, 0))
-                return; // record write occurred concurrently.
+            if (!checkTimeout(lastRolloverMs, walForceArchiveTimeout))
+                return;
         }
-        else {
-            final long elapsedMs = U.currentTimeMillis() - lastRecMs;
-
-            if (elapsedMs <= walAutoArchiveAfterInactivity)
-                return; // not enough time elapsed since last write.
-
-            if (!lastRecordLoggedMs.compareAndSet(lastRecMs, 0))
-                return; // record write occurred concurrently.
-        }
+        else if (!checkTimeout(lastRecordLoggedMs, walAutoArchiveAfterInactivity))
+            return;
 
         final FileWriteHandle handle = currentHandle();
 
@@ -836,6 +819,19 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, e));
         }
+    }
+
+    /** */
+    private boolean checkTimeout(AtomicLong lastEvt, long timeout) {
+        final long lastEvtMs = lastEvt.get();
+
+        final long elapsedMs = U.currentTimeMillis() - lastEvtMs;
+
+        if (elapsedMs <= timeout)
+            return false; // not enough time elapsed since last write.
+
+        // Will return false if record write occurred concurrently.
+        return lastEvt.compareAndSet(lastEvtMs, 0);
     }
 
     /** {@inheritDoc} */
