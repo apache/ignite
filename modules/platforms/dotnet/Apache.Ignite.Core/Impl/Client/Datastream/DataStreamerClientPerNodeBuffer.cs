@@ -36,6 +36,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /** */
         private readonly SemaphoreSlim _semaphore;
 
+        /** */
+        private readonly object _firstFlushTaskSyncRoot = new object();
+
         /** Task for the first flush has streamer id as the result. */
         private volatile Task<long> _firstFlushTask;
 
@@ -106,11 +109,13 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         internal Task<long> FlushAsync(DataStreamerClientBuffer<TK, TV> buffer, bool close)
         {
+            // First task opens the streamer on the server and returns the ID.
+            // We need to wait for the first flush before starting more flushes.
             var firstFlushTask = _firstFlushTask;
 
             if (firstFlushTask == null)
             {
-                lock (this)
+                lock (_firstFlushTaskSyncRoot)
                 {
                     firstFlushTask = _firstFlushTask;
 
