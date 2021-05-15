@@ -112,7 +112,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
             try
             {
-                if (_flushing)
+                if (_flushing || _flushed)
                 {
                     return false;
                 }
