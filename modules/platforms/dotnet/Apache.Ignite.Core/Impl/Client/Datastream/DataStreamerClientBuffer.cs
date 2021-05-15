@@ -59,10 +59,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /** TODO: Handle exceptions on top level. Either retry or close streamer with an error. */
         private volatile Exception _exception;
 
-        private static long _idCounter;
-
-        private long _id;
-
         public DataStreamerClientBuffer(
             DataStreamerClientEntry<TK,TV>[] entries,
             DataStreamerClientPerNodeBuffer<TK, TV> parent,
@@ -73,9 +69,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             _entries = entries;
             _parent = parent;
             _previous = previous;
-
-            _id = Interlocked.Increment(ref _idCounter);
-            Console.WriteLine("Buffer created: " + _id);
         }
 
         public int Count
@@ -109,7 +102,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 }
 
                 // TODO: This does not work when this and previous bufs are flushed
-                Console.WriteLine($"Returning chain task: " + _id);
                 return _flushCompletionSource.Task;
             }
             finally
@@ -220,8 +212,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         private void RunFlushAction(bool close)
         {
-            Console.WriteLine($"Buffer flushing: {_id}");
-
             // TODO: This is not necessary during normal operation - can we get rid of this if no one listens
             // for completions?
 
@@ -238,8 +228,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
             _rwLock.EnterWriteLock();
 
-            Console.WriteLine($"Buffer flushed: {_id}, error: '{exception?.GetBaseException().Message}'");
-
             try
             {
                 _flushed = true;
@@ -254,8 +242,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
 
             CheckChainFlushed();
-
-            Console.WriteLine($"Buffer flushed: {_id}, tcs: '{tcs}'");
 
             if (tcs != null)
             {
@@ -277,8 +263,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /** */
         private void TrySetResultOrException(TaskCompletionSource<object> tcs, Exception exception)
         {
-            Console.WriteLine("TrySetResultOrException " + _id);
-
             if (exception == null)
             {
                 tcs.TrySetResult(null);

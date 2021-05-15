@@ -230,8 +230,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 }
             }
 
-            Console.WriteLine($"Flushing: {close}, buffers: {tasks.Count}");
-
             return TaskRunner.WhenAll(tasks.ToArray());
         }
 
