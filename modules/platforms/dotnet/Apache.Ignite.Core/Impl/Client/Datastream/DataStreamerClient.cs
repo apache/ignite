@@ -411,6 +411,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         private void SetCloseResultIfNoActiveFlushes(Exception exception)
         {
             // TODO: Use a lock instead.
+            // TODO: Close all open streamers on the server.
             if (Interlocked.CompareExchange(ref _activeFlushes, 0, 0) == 0)
             {
                 if (exception == null)
