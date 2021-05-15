@@ -309,17 +309,14 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         [Test]
         public void TestFlushThrowsWhenCacheDoesNotExist()
         {
-            using (var streamer = Client.GetDataStreamer<int, int>("bad-cache-name"))
-            {
-                streamer.Add(1, 1);
+            var streamer = Client.GetDataStreamer<int, int>("bad-cache-name");
+            streamer.Add(1, 1);
 
-                var ex = Assert.Throws<AggregateException>(() => streamer.Flush());
-                StringAssert.StartsWith("Cache does not exist", ex.GetBaseException().Message);
+            var ex = Assert.Throws<AggregateException>(() => streamer.Flush());
+            StringAssert.StartsWith("Cache does not exist", ex.GetBaseException().Message);
 
-                // Close and Dispose do not throw.
-                streamer.Flush();
-                streamer.Close(cancel: false);
-            }
+            // Streamer is closed because of the flush failure.
+            Assert.IsTrue(streamer.IsClosed);
         }
 
         [Test]

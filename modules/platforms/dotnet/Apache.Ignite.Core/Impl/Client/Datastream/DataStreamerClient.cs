@@ -71,8 +71,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /** */
         private int _activeFlushes;
 
-        /** */
-        private volatile bool _isClosed;
+        /** Exception. When set, the streamer is closed. */
+        private volatile Exception _exception;
 
         public DataStreamerClient(
             ClientFailoverSocket socket,
@@ -106,6 +106,12 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         public string CacheName
         {
             get { return _cacheName; }
+        }
+
+        /** <inheritdoc /> */
+        public bool IsClosed
+        {
+            get { return _exception != null; }
         }
 
         public DataStreamerClientOptions<TK, TV> Options
@@ -173,12 +179,12 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         public Task CloseAsync(bool cancel)
         {
-            if (_isClosed)
+            if (_exception != null)
             {
                 return _closeTaskSource.Task;
             }
 
-            _isClosed = true;
+            _exception = new ObjectDisposedException("DataStreamerClient", "Data streamer has been disposed");
 
             if (cancel)
             {
@@ -262,7 +268,10 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
                     Interlocked.Decrement(ref _activeFlushes);
 
-                    if (_isClosed)
+                    // TODO: RwLock here and in other places?
+                    _exception = _exception ?? t.Exception;
+
+                    if (_exception != null)
                     {
                         ThreadPool.QueueUserWorkItem(__ => SetCloseResultIfNoActiveFlushes(t.Exception));
                     }
@@ -391,9 +400,11 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         private void ThrowIfClosed()
         {
-            if (_isClosed)
+            var ex = _exception;
+
+            if (ex != null)
             {
-                throw new ObjectDisposedException("DataStreamerClient", "Data streamer has been disposed");
+                throw ex;
             }
         }
 

@@ -32,6 +32,11 @@ namespace Apache.Ignite.Core.Client.Datastream
     {
         string CacheName { get; }
 
+        /// <summary>
+        /// Gets a value indicating whether this streamer is closed.
+        /// </summary>
+        bool IsClosed { get; }
+
         DataStreamerClientOptions<TK, TV> Options { get; }
 
         /// <summary>
