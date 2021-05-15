@@ -56,7 +56,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /** */
         private volatile bool _flushed;
 
-        /** */
+        /** TODO: Handle exceptions on top level. Either retry or close streamer with an error. */
         private volatile Exception _exception;
 
         public DataStreamerClientBuffer(
@@ -81,6 +81,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             lock (this)
             {
                 // TODO: This ignores exceptions in previous flushes!
+                // There are 2 kinds of exceptions:
+                // 1. Connection failure => buffer should be re-added for other connections.
+                // 2. Other failures => streamer closes with a failure.
                 if (CheckChainFlushed())
                 {
                     return TaskRunner.CompletedTask;
@@ -201,7 +204,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
             try
             {
-                _flushed = exception == null;
+                _flushed = true;
                 _flushing = false;
                 _exception = exception;
 
