@@ -189,9 +189,23 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
                 _flushing = true;
 
-                if (Count > 0)
+                if (close)
                 {
-                    RunFlushAction(close);
+                    var previous = _previous;
+
+                    if (previous != null && !previous._flushed)
+                    {
+                        // All previous flushes must complete before we close the streamer.
+                        previous.GetChainFlushTask().ContinueWith(_ => RunFlushAction(true));
+                    }
+                    else
+                    {
+                        RunFlushAction(true);
+                    }
+                }
+                else if (Count > 0)
+                {
+                    RunFlushAction(false);
                 }
                 else
                 {
