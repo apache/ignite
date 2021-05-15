@@ -62,14 +62,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             new ConcurrentDictionary<ClientSocket, DataStreamerClientPerNodeBuffer<TK, TV>>();
 
         /** */
-        private readonly TaskCompletionSource<object> _closeTaskSource = new TaskCompletionSource<object>();
-
-        /** */
         private readonly ConcurrentStack<DataStreamerClientEntry<TK, TV>[]> _arrayPool
             = new ConcurrentStack<DataStreamerClientEntry<TK, TV>[]>();
-
-        /** */
-        private int _activeFlushes;
 
         /** Exception. When set, the streamer is closed. */
         private volatile Exception _exception;
@@ -181,7 +175,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         {
             if (_exception != null)
             {
-                return _closeTaskSource.Task;
+                // TODO: ??
+                return Task.CompletedTask;
             }
 
             _exception = new ObjectDisposedException("DataStreamerClient", "Data streamer has been disposed");
@@ -189,14 +184,11 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             if (cancel)
             {
                 // Disregard current buffers, but wait for active flushes.
-                SetCloseResultIfNoActiveFlushes(null);
-            }
-            else
-            {
-                FlushAsync(close: true).ContWith(t => SetCloseResultIfNoActiveFlushes(t.Exception));
+                // TODO: Implement!
+                return Task.CompletedTask;
             }
 
-            return _closeTaskSource.Task;
+            return FlushAsync(close: true);
         }
 
         private void Add(DataStreamerClientEntry<TK, TV> entry)
@@ -238,6 +230,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 }
             }
 
+            Console.WriteLine($"Flushing: {close}, buffers: {tasks.Count}");
+
             return TaskRunner.WhenAll(tasks.ToArray());
         }
 
@@ -253,7 +247,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             // Use reflection to get it.
             // semaphore.WaitAsync();
             semaphore.Wait();
-            Interlocked.Increment(ref _activeFlushes);
 
             // TODO: Flush in a loop until succeeded.
             // TODO: Make sure to call OnFlushCompleted in any case.
@@ -266,15 +259,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 {
                     semaphore.Release();
 
-                    Interlocked.Decrement(ref _activeFlushes);
-
                     // TODO: RwLock here and in other places?
                     _exception = _exception ?? t.Exception;
-
-                    if (_exception != null)
-                    {
-                        ThreadPool.QueueUserWorkItem(__ => SetCloseResultIfNoActiveFlushes(t.Exception));
-                    }
 
                     return t.Result;
                 }, TaskContinuationOptions.ExecuteSynchronously);
@@ -405,23 +391,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             if (ex != null)
             {
                 throw ex;
-            }
-        }
-
-        private void SetCloseResultIfNoActiveFlushes(Exception exception)
-        {
-            // TODO: Use a lock instead.
-            // TODO: Close all open streamers on the server.
-            if (Interlocked.CompareExchange(ref _activeFlushes, 0, 0) == 0)
-            {
-                if (exception == null)
-                {
-                    _closeTaskSource.TrySetResult(null);
-                }
-                else
-                {
-                    _closeTaskSource.TrySetException(exception);
-                }
             }
         }
 

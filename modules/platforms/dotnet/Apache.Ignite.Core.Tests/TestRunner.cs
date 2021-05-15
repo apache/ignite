@@ -152,14 +152,17 @@ namespace Apache.Ignite.Core.Tests
         {
             var t = new DataStreamerClientTest();
             t.FixtureSetUp();
+            t.TestSetUp();
 
-            for (int i = 0; i < 20; i++)
-            {
-                t.TestSetUp();
-                var sw = Stopwatch.StartNew();
-                t.TestStreamParallelFor();
-                Console.WriteLine("{0}: {1}", i, sw.Elapsed);
-            }
+            t.TestStreamLongList();
+
+            // for (int i = 0; i < 20; i++)
+            // {
+            //     t.TestSetUp();
+            //     var sw = Stopwatch.StartNew();
+            //     t.TestStreamParallelFor();
+            //     Console.WriteLine("{0}: {1}", i, sw.Elapsed);
+            // }
         }
     }
 }
