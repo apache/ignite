@@ -56,6 +56,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /** */
         private volatile bool _flushed;
 
+        /** */
+        private volatile Exception _exception;
+
         public DataStreamerClientBuffer(
             DataStreamerClientEntry<TK,TV>[] entries,
             DataStreamerClientPerNodeBuffer<TK, TV> parent,
@@ -77,6 +80,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         {
             lock (this)
             {
+                // TODO: This ignores exceptions in previous flushes!
                 if (CheckChainFlushed())
                 {
                     return TaskRunner.CompletedTask;
@@ -193,11 +197,19 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         {
             TaskCompletionSource<object> tcs;
 
-            lock (this)
+            _rwLock.EnterWriteLock();
+
+            try
             {
-                _flushed = true;
+                _flushed = exception == null;
+                _flushing = false;
+                _exception = exception;
 
                 tcs = _flushCompletionSource;
+            }
+            finally
+            {
+                _rwLock.ExitWriteLock();
             }
 
             CheckChainFlushed();
@@ -208,19 +220,19 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
                 if (previous == null)
                 {
-                    TrySetResult(tcs, exception);
+                    TrySetResultOrException(tcs, exception);
                 }
                 else
                 {
                     previous.GetChainFlushTask().ContinueWith(
-                        t => TrySetResult(tcs, exception ?? t.Exception),
+                        t => TrySetResultOrException(tcs, exception ?? t.Exception),
                         TaskContinuationOptions.ExecuteSynchronously);
                 }
             }
         }
 
         /** */
-        private static void TrySetResult(TaskCompletionSource<object> tcs, Exception exception)
+        private static void TrySetResultOrException(TaskCompletionSource<object> tcs, Exception exception)
         {
             if (exception == null)
             {
@@ -231,7 +243,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 tcs.TrySetException(exception);
             }
         }
-
 
         /** */
         private bool CheckChainFlushed()
