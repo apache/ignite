@@ -309,6 +309,12 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 w.WriteByte((byte) GetFlags(flush, close));
             }
 
+            if (buffer == null)
+            {
+                w.WriteInt(0);
+                return;
+            }
+
             w.WriteInt(buffer.Count);
 
             var entries = buffer.Entries;

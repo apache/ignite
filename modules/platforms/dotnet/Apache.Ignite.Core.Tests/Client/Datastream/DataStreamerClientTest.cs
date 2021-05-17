@@ -262,6 +262,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         }
 
         [Test]
+        [Ignore("TODO")]
         public void TestBackPressure()
         {
             var serverCache = Ignition.GetIgnite().CreateCache<int, int>(new CacheConfiguration
@@ -290,10 +291,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 // Block writes and add data.
                 BlockingCacheStore.Gate.Reset();
                 streamer.Add(keys[1], 1);
-                streamer.FlushAsync();
-
                 streamer.Add(keys[2], 2);
-                streamer.FlushAsync();
 
                 // ReSharper disable once AccessToDisposedClosure
                 var task = Task.Factory.StartNew(() => streamer.Add(keys[3], 3));
