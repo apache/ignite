@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.cluster.ClusterNode;
@@ -66,6 +67,13 @@ public class SnapshotPartitionsVerifyTaskResult extends IgniteDataTransferObject
      */
     public IdleVerifyResultV2 idleVerifyResult() {
         return idleRes;
+    }
+
+    /**
+     * @return Exceptions on nodes.
+     */
+    public Map<ClusterNode, Exception> exceptions() {
+        return idleRes == null ? Collections.emptyMap() : idleRes.exceptions();
     }
 
     /** {@inheritDoc} */

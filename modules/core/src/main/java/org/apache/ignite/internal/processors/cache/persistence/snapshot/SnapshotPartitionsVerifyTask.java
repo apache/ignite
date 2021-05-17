@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -28,6 +29,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -49,6 +51,7 @@ import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitions
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -75,7 +78,7 @@ import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPar
  */
 @GridInternal
 public class SnapshotPartitionsVerifyTask
-    extends ComputeTaskAdapter<Map<ClusterNode, List<SnapshotMetadata>>, SnapshotPartitionsVerifyTaskResult> {
+    extends ComputeTaskAdapter<T2<Map<ClusterNode, List<SnapshotMetadata>>, Collection<String>>, SnapshotPartitionsVerifyTaskResult> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -89,8 +92,10 @@ public class SnapshotPartitionsVerifyTask
     /** {@inheritDoc} */
     @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(
         List<ClusterNode> subgrid,
-        @Nullable Map<ClusterNode, List<SnapshotMetadata>> clusterMetas
+        @Nullable T2<Map<ClusterNode, List<SnapshotMetadata>>, Collection<String>> in
     ) throws IgniteException {
+        Map<ClusterNode, List<SnapshotMetadata>> clusterMetas = in.get1();
+
         if (!subgrid.containsAll(clusterMetas.keySet())) {
             throw new IgniteSnapshotVerifyException(F.asMap(ignite.localNode(),
                 new IgniteException("Some of Ignite nodes left the cluster during the snapshot verification " +
@@ -128,7 +133,7 @@ public class SnapshotPartitionsVerifyTask
                 if (meta == null)
                     continue;
 
-                jobs.put(new VisorVerifySnapshotPartitionsJob(meta.snapshotName(), meta.consistentId()), e.getKey());
+                jobs.put(new VisorVerifySnapshotPartitionsJob(meta.snapshotName(), meta.consistentId(), in.get2()), e.getKey());
 
                 if (allMetas.isEmpty())
                     break;
@@ -168,13 +173,19 @@ public class SnapshotPartitionsVerifyTask
         /** Consistent snapshot metadata file name. */
         private final String consId;
 
+        /** Set of cache groups to be checked in the snapshot or {@code empty} to check everything. */
+        private final Set<String> rqGrps = new HashSet<>();
+
         /**
          * @param snpName Snapshot name to validate.
          * @param consId Consistent snapshot metadata file name.
          */
-        public VisorVerifySnapshotPartitionsJob(String snpName, String consId) {
+        public VisorVerifySnapshotPartitionsJob(String snpName, String consId, Collection<String> rqGrps) {
             this.snpName = snpName;
             this.consId = consId;
+
+            if (rqGrps != null)
+                this.rqGrps.addAll(rqGrps);
         }
 
         @Override public Map<PartitionKeyV2, PartitionHashRecordV2> execute() throws IgniteException {
@@ -186,7 +197,8 @@ public class SnapshotPartitionsVerifyTask
             }
 
             SnapshotMetadata meta = snpMgr.readSnapshotMetadata(snpName, consId);
-            Set<Integer> grps = new HashSet<>(meta.partitions().keySet());
+            Set<Integer> grps = rqGrps.isEmpty() ? new HashSet<>(meta.partitions().keySet()) :
+                rqGrps.stream().map(CU::cacheId).collect(Collectors.toSet());
             Set<File> partFiles = new HashSet<>();
 
             for (File dir : snpMgr.snapshotCacheDirectories(snpName, meta.folderName())) {

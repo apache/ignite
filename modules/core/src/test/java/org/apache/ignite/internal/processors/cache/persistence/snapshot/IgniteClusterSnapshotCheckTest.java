@@ -67,6 +67,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -481,8 +482,10 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
             true));
 
         IdleVerifyResultV2 snpVerifyRes = ignite.compute().execute(new TestSnapshotPartitionsVerifyTask(),
-            Collections.singletonMap(ignite.cluster().localNode(),
-                Collections.singletonList(snp(ignite).readSnapshotMetadata(SNAPSHOT_NAME, (String)ignite.configuration().getConsistentId()))));
+            new T2<>(Collections.singletonMap(ignite.cluster().localNode(),
+                Collections.singletonList(snp(ignite).readSnapshotMetadata(SNAPSHOT_NAME,
+                    (String)ignite.configuration().getConsistentId()))), new HashSet<>()))
+            .idleVerifyResult();
 
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> idleVerifyHashes = jobResults.get(TestVisorBackupPartitionsTask.class);
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> snpCheckHashes = jobResults.get(TestVisorBackupPartitionsTask.class);
@@ -492,6 +495,30 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         assertEquals(idleVerifyHashes, snpCheckHashes);
         assertEquals(idleVerifyRes, snpVerifyRes);
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testClusterSnapshotCheckWithSetOfCacheGroups() throws Exception {
+        Random rnd = new Random();
+        CacheConfiguration<Integer, Value> ccfg1 = txCacheConfig(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
+        CacheConfiguration<Integer, Value> ccfg2 = txCacheConfig(new CacheConfiguration<>("TEST"));
+
+        IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, k -> new Value(new byte[rnd.nextInt(32768)]),
+            ccfg1, ccfg2);
+
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+
+        SnapshotPartitionsVerifyTaskResult res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, Collections.singleton("TEST")).get();
+
+        StringBuilder b = new StringBuilder();
+        res.idleVerifyResult().print(b::append, true);
+
+        assertTrue(F.isEmpty(res.exceptions()));
+
+        System.out.println(">>>>> " + b);
+
+        assertContains(log, b.toString(), "The check procedure has finished, no conflicts have been found");
     }
 
     /**
@@ -529,8 +556,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     /** Test compute task to collect partition data hashes when the snapshot check procedure ends. */
     private class TestSnapshotPartitionsVerifyTask extends SnapshotPartitionsVerifyTask {
         /** {@inheritDoc} */
-        @Override public @Nullable IdleVerifyResultV2 reduce(List<ComputeJobResult> results) throws IgniteException {
-            IdleVerifyResultV2 res = super.reduce(results);
+        @Override public @Nullable SnapshotPartitionsVerifyTaskResult reduce(List<ComputeJobResult> results) throws IgniteException {
+            SnapshotPartitionsVerifyTaskResult res = super.reduce(results);
 
             saveHashes(TestSnapshotPartitionsVerifyTask.class, results);
 
