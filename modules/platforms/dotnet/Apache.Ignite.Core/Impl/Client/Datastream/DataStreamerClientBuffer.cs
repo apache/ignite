@@ -146,7 +146,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
             if (newSize == _entries.Length)
             {
-                TryRunFlushAction(close: false);
+                TryRunFlushAction(serverFlush: false, close: false);
             }
 
             return true;
@@ -164,12 +164,12 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 return false;
             }
 
-            TryRunFlushAction(close);
+            TryRunFlushAction(serverFlush: true, close);
 
             return true;
         }
 
-        private void TryRunFlushAction(bool close)
+        private void TryRunFlushAction(bool serverFlush, bool close)
         {
             _rwLock.EnterWriteLock();
 
@@ -189,16 +189,16 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                     if (previous != null && !previous.CheckChainFlushed())
                     {
                         // All previous flushes must complete before we close the streamer.
-                        previous.GetChainFlushTask().ContinueWith(_ => RunFlushAction(true));
+                        previous.GetChainFlushTask().ContinueWith(_ => RunFlushAction(true, true));
                     }
                     else
                     {
-                        RunFlushAction(true);
+                        RunFlushAction(true, true);
                     }
                 }
                 else if (Count > 0)
                 {
-                    RunFlushAction(false);
+                    RunFlushAction(serverFlush, close: false);
                 }
                 else
                 {
@@ -211,13 +211,13 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
         }
 
-        private void RunFlushAction(bool close)
+        private void RunFlushAction(bool serverFlush, bool close)
         {
             // TODO: This is not necessary during normal operation - can we get rid of this if no one listens
             // for completions?
 
             // NOTE: Continuation runs on socket thread - set result on thread pool.
-            _parent.FlushAsync(this, close).ContinueWith(
+            _parent.FlushAsync(this, serverFlush, close).ContinueWith(
                 t => ThreadPool.QueueUserWorkItem(buf =>
                     ((DataStreamerClientBuffer<TK, TV>)buf).OnFlushed(t.Exception), this),
                 TaskContinuationOptions.ExecuteSynchronously);

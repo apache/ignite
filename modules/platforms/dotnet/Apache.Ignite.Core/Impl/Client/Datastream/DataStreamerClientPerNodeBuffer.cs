@@ -107,13 +107,13 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             return buffer.GetChainFlushTask();
         }
 
-        internal Task<long> FlushAsync(DataStreamerClientBuffer<TK, TV> buffer, bool close)
+        internal Task<long> FlushAsync(DataStreamerClientBuffer<TK, TV> buffer, bool serverFlush, bool close)
         {
             // First task opens the streamer on the server and returns the ID.
             if (Interlocked.CompareExchange(ref _firstFlushStarted, 1, 0) == 0)
             {
                 var task = _client.FlushBufferAsync(
-                    buffer, streamerId: null, _socket, _semaphore, flush: true, close);
+                    buffer, streamerId: null, _socket, _semaphore, serverFlush, close);
 
                 _firstFlushTask = task;
 
@@ -125,13 +125,13 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             if (firstFlushTask != null && firstFlushTask.IsCompletedSuccessfully && firstFlushTask.Result != 0)
             {
                 return _client.FlushBufferAsync(
-                    buffer, streamerId: firstFlushTask.Result, _socket, _semaphore, flush: true, close);
+                    buffer, streamerId: firstFlushTask.Result, _socket, _semaphore, serverFlush, close);
             }
 
             // We don't have an open streamer on the server - use stateless mode:
             // server-side streamer per buffer.
             return _client.FlushBufferAsync(
-                buffer, streamerId: null, _socket, _semaphore, flush: true, true);
+                buffer, streamerId: null, _socket, _semaphore, serverFlush, true);
         }
 
         private DataStreamerClientBuffer<TK, TV> GetBuffer()
