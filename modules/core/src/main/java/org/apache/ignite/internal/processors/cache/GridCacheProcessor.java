@@ -90,7 +90,6 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
-import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCache;
@@ -221,7 +220,6 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearE
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistentCache;
 import static org.apache.ignite.internal.processors.cache.ValidationOnNodeJoinUtils.validateHashIdResolvers;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition.DFLT_CACHE_REMOVE_ENTRIES_TTL;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.ifAuthenticationEnabled;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 
@@ -632,7 +630,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             log.debug("Started cache processor.");
 
         ctx.state().cacheProcessorStarted();
-        ifAuthenticationEnabled(ctx, IgniteAuthenticationProcessor::cacheProcessorStarted);
 
         ctx.systemView().registerFiltrableView(
             CACHE_GRP_PAGE_LIST_VIEW,
@@ -4274,6 +4271,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (res == null)
             res = validateRestartingCaches(node);
 
+        if (res == null)
+            res = validateRestoringCaches(node);
+
         return res;
     }
 
@@ -4301,6 +4301,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param node Joining node to validate.
+     * @return Node validation result if there was an issue with the joining node, {@code null} otherwise.
+     */
+    private IgniteNodeValidationResult validateRestoringCaches(ClusterNode node) {
+        if (ctx.cache().context().snapshotMgr().isRestoring()) {
+            String msg = "Joining node during caches restore is not allowed [joiningNodeId=" + node.id() + ']';
+
+            return new IgniteNodeValidationResult(node.id(), msg);
+        }
+
+        return null;
+    }
+
+    /**
      * @return Keep static cache configuration flag. If {@code true}, static cache configuration will override
      * configuration persisted on disk.
      */
@@ -4314,7 +4328,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param <V> type of values.
      * @return Cache instance for given name.
      */
-    public <K, V> IgniteInternalCache<K, V> cache(String name) {
+    public <K, V> @Nullable IgniteInternalCache<K, V> cache(String name) {
         assert name != null;
 
         if (log.isDebugEnabled())
@@ -4469,6 +4483,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param <K> type of keys.
      * @param <V> type of values.
      * @return Cache instance for given name.
+     * @throws IllegalArgumentException If cache not exists.
      */
     public <K, V> IgniteInternalCache<K, V> publicCache(String name) {
         assert name != null;

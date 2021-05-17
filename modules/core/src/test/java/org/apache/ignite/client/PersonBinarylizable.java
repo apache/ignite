@@ -21,6 +21,8 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * A person entity for the tests.
@@ -36,10 +38,14 @@ public class PersonBinarylizable implements Binarylizable {
     private boolean readThrows;
 
     /** */
-    public PersonBinarylizable(String name, boolean writeThrows, boolean readThrows) {
+    private boolean readWaits;
+
+    /** */
+    public PersonBinarylizable(String name, boolean writeThrows, boolean readThrows, boolean readWaits) {
         this.name = name;
         this.writeThrows = writeThrows;
         this.readThrows = readThrows;
+        this.readWaits = readWaits;
     }
 
     /** */
@@ -72,11 +78,22 @@ public class PersonBinarylizable implements Binarylizable {
         this.readThrows = readThrows;
     }
 
+    /** */
+    public boolean isReadWaits() {
+        return readWaits;
+    }
+
+    /** */
+    public void setReadWaits(boolean readWaits) {
+        this.readWaits = readWaits;
+    }
+
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
         writer.writeString("name", name);
         writer.writeBoolean("writeThrows", writeThrows);
         writer.writeBoolean("readThrows", readThrows);
+        writer.writeBoolean("readWaits", readWaits);
 
         if (writeThrows)
             throw new ArithmeticException("_write_");
@@ -87,6 +104,18 @@ public class PersonBinarylizable implements Binarylizable {
         name = reader.readString("name");
         writeThrows = reader.readBoolean("writeThrows");
         readThrows = reader.readBoolean("readThrows");
+        readWaits = reader.readBoolean("readWaits");
+
+        if (readWaits) {
+            try {
+                U.sleep(1000);
+            }
+            catch (IgniteInterruptedCheckedException e) {
+                e.printStackTrace();
+
+                Thread.currentThread().interrupt();
+            }
+        }
 
         if (readThrows)
             throw new ArithmeticException("_read_");
