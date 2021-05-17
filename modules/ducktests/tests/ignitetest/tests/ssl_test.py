@@ -20,13 +20,20 @@ from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
-from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
+from ignitetest.services.utils.path import PathAware
 from ignitetest.services.utils.ssl.connector_configuration import ConnectorConfiguration
 from ignitetest.services.utils.ssl.ssl_params import SslParams, DEFAULT_SERVER_KEYSTORE, DEFAULT_CLIENT_KEYSTORE, \
     DEFAULT_ADMIN_KEYSTORE
 from ignitetest.utils import ignite_versions, cluster
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import IgniteVersion, DEV_BRANCH, LATEST
+
+
+def get_shared_root(test_context):
+    """
+    :return shared_root
+    """
+    return PathAwareSslTestImpl(test_context).shared_root
 
 
 # pylint: disable=W0223
@@ -42,23 +49,21 @@ class SslTest(IgniteTest):
         Test that IgniteService, IgniteApplicationService correctly start and stop with ssl configurations.
         And check ControlUtility with ssl arguments.
         """
-        ignite = IgniteService(self.test_context, config=None, num_nodes=2,
-                               startup_timeout_sec=180)
+        shared_root = get_shared_root(self.test_context)
 
-        server_ssl = SslParams(ignite.shared_root, key_store_jks=DEFAULT_SERVER_KEYSTORE)
+        server_ssl = SslParams(shared_root, key_store_jks=DEFAULT_SERVER_KEYSTORE)
 
         server_configuration = IgniteConfiguration(
-            version=IgniteVersion(ignite_version),
-            ssl_params=server_ssl,
+            version=IgniteVersion(ignite_version), ssl_params=server_ssl,
             connector_configuration=ConnectorConfiguration(ssl_enabled=True, ssl_params=server_ssl))
 
-        ignite.config = server_configuration
+        ignite = IgniteService(self.test_context, server_configuration, num_nodes=2,
+                               startup_timeout_sec=180)
 
-        client_configuration = IgniteConfiguration(
+        client_configuration = server_configuration._replace(
             client_mode=True,
-            version=IgniteVersion(ignite_version),
-            discovery_spi=from_ignite_cluster(ignite),
-            ssl_params=SslParams(ignite.shared_root, key_store_jks=DEFAULT_CLIENT_KEYSTORE))
+            ssl_params=SslParams(shared_root, key_store_jks=DEFAULT_CLIENT_KEYSTORE),
+            connector_configuration=None)
 
         app = IgniteApplicationService(
             self.test_context,
@@ -66,9 +71,8 @@ class SslTest(IgniteTest):
             java_class_name="org.apache.ignite.internal.ducktest.tests.smoke_test.SimpleApplication",
             startup_timeout_sec=180)
 
-        control_utility = ControlUtility(
-            cluster=ignite,
-            ssl_params=SslParams(ignite.shared_root, key_store_jks=DEFAULT_ADMIN_KEYSTORE))
+        admin_ssl = SslParams(shared_root, key_store_jks=DEFAULT_ADMIN_KEYSTORE)
+        control_utility = ControlUtility(cluster=ignite, ssl_params=admin_ssl)
 
         ignite.start()
         app.start()
@@ -77,3 +81,15 @@ class SslTest(IgniteTest):
 
         app.stop()
         ignite.stop()
+
+
+class PathAwareSslTestImpl(PathAware):
+    """
+    PathAware implemetation used to get shared root path in ssl test
+    """
+    def __init__(self, context):
+        self.context = context
+
+    @property
+    def globals(self):
+        return self.context.globals
