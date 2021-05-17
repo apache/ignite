@@ -80,15 +80,16 @@ public final class JavaLoggerFileHandler extends StreamHandler {
      * @param nodeId Node id.
      */
     public void nodeId(UUID nodeId, String workDir) throws IgniteCheckedException, IOException {
-        postfix(U.id8(nodeId), workDir);
+        nodeId(null, nodeId, workDir);
     }
 
     /**
-     * Sets Postfix and instantiates {@link FileHandler} delegate.
+     * Sets Node id and instantiates {@link FileHandler} delegate.
      *
-     * @param postfix Postfix.
+     * @param app Application name.
+     * @param nodeId Node id.
      */
-    public void postfix(String postfix, String workDir) throws IgniteCheckedException, IOException {
+    public void nodeId(@Nullable String app, UUID nodeId, String workDir) throws IgniteCheckedException, IOException {
         if (delegate != null)
             return;
 
@@ -97,9 +98,13 @@ public final class JavaLoggerFileHandler extends StreamHandler {
         String ptrn = manager.getProperty(clsName + ".pattern");
 
         if (ptrn == null)
-            ptrn = "ignite-%{id8}.%g.log";
+            ptrn = "%{app}-%{id8}.%g.log";
 
-        ptrn = new File(logDirectory(workDir), ptrn.replace("%{id8}", postfix)).getAbsolutePath();
+        String fileName = ptrn
+            .replace("%{app}", app != null ? app : "ignite")
+            .replace("%{id8}", U.id8(nodeId));
+
+        ptrn = new File(logDirectory(workDir), fileName).getAbsolutePath();
 
         int limit = getIntProperty(clsName + ".limit", 0);
 
