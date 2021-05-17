@@ -30,6 +30,11 @@ namespace Apache.Ignite.BenchmarkDotNet.ThinClient
     /// | StreamThinClient | 161.6 ms | 6.09 ms | 17.39 ms | 3000.0000 | 1000.0000 |     - |  18.05 MB |
     /// Keep open streamers, background init:
     /// | StreamThinClient | 144.6 ms | 5.73 ms | 16.88 ms | 2000.0000 |     - |     - |  16.69 MB |
+    /// Keep open streamers, do not flush on server when not necessary:
+    /// |            Method |     Mean |    Error |   StdDev | Ratio | RatioSD |     Gen 0 |     Gen 1 | Gen 2 | Allocated |
+    /// |------------------ |---------:|---------:|---------:|------:|--------:|----------:|----------:|------:|----------:|
+    /// |  StreamThinClient | 74.02 ms | 2.036 ms | 5.776 ms |  1.02 |    0.10 | 2000.0000 |         - |     - |  16.58 MB |
+    /// | StreamThickClient | 73.05 ms | 1.458 ms | 3.409 ms |  1.00 |    0.00 | 2000.0000 | 1000.0000 |     - |  13.83 MB |
     /// </summary>
     [MemoryDiagnoser]
     public class ThinClientDataStreamerBenchmarkMultithreaded : ThinClientBenchmarkBase
@@ -82,7 +87,7 @@ namespace Apache.Ignite.BenchmarkDotNet.ThinClient
         /// <summary>
         /// Benchmark: thick client streamer.
         /// </summary>
-        // [Benchmark(Baseline = true)]
+        [Benchmark(Baseline = true)]
         public void StreamThickClient()
         {
             using (var streamer = ThickClient.GetDataStreamer<int, int>(CacheName))
