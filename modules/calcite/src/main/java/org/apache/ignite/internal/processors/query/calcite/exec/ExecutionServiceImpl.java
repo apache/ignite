@@ -675,6 +675,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 igniteRel = new IgniteProject(igniteRel.getCluster(), desired, igniteRel, projects, root.validatedRowType);
             }
 
+            if (sqlNode.isA(ImmutableSet.of(SqlKind.INSERT, SqlKind.UPDATE, SqlKind.MERGE)))
+                igniteRel = new FixDependentModifyNodeShuttle().visit(igniteRel);
+
             return igniteRel;
         }
         catch (Throwable ex) {
@@ -686,7 +689,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    // TODO: prepareExplain should reuse prepare* methods for different query types
     private QueryPlan prepareExplain(SqlNode explain, PlanningContext ctx) throws ValidationException {
         IgnitePlanner planner = ctx.planner();
 
@@ -697,9 +699,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         // Convert to Relational operators graph
         IgniteRel igniteRel = optimize(sql, planner);
-
-        if (sql.isA(ImmutableSet.of(SqlKind.INSERT, SqlKind.UPDATE)))
-            igniteRel = new FixDependentModifyNodeShuttle().visit(igniteRel);
 
         String plan = RelOptUtil.toString(igniteRel, SqlExplainLevel.ALL_ATTRIBUTES);
 
