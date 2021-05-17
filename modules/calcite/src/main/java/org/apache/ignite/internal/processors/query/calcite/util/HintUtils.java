@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.calcite.rel.hint.Hintable;
+import org.apache.calcite.rel.logical.LogicalAggregate;
 
 /** */
 public class HintUtils {
@@ -38,5 +39,11 @@ public class HintUtils {
             .filter(h -> "DISABLE_RULE".equals(h.hintName))
             .flatMap(h -> h.listOptions.stream())
             .collect(Collectors.toSet());
+    }
+
+    /** */
+    public static boolean isExpandDistinctAggregate(LogicalAggregate rel) {
+        return rel.getHints().stream()
+            .anyMatch(h -> "EXPAND_DISTINCT_AGG".equals(h.hintName));
     }
 }
