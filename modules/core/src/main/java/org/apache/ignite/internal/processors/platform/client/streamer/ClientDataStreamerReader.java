@@ -39,6 +39,9 @@ class ClientDataStreamerReader {
     public static Collection<DataStreamerEntry> read(BinaryReaderExImpl reader) {
         int entriesCnt = reader.readInt();
 
+        if (entriesCnt == 0)
+            return null;
+
         Collection<DataStreamerEntry> entries = new ArrayList<>(entriesCnt);
 
         for (int i = 0; i < entriesCnt; i++) {

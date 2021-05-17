@@ -94,7 +94,8 @@ public class ClientDataStreamerStartRequest extends ClientRequest {
         if (receiver != null)
             dataStreamer.receiver(receiver);
 
-        dataStreamer.addData(entries);
+        if (entries != null)
+            dataStreamer.addData(entries);
 
         if ((flags & CLOSE) != 0) {
             dataStreamer.close();

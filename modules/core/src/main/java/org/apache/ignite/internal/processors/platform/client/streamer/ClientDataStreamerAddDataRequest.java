@@ -62,7 +62,8 @@ public class ClientDataStreamerAddDataRequest extends ClientRequest {
         IgniteDataStreamer<KeyCacheObject, CacheObject> dataStreamer = handle.getStreamer();
 
         // To remove data, pass null as a value for the key.
-        dataStreamer.addData(entries);
+        if (entries != null)
+            dataStreamer.addData(entries);
 
         if ((flags & CLOSE) != 0) {
             dataStreamer.close();
