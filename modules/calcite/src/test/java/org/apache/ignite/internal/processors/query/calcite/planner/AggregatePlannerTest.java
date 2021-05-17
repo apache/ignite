@@ -22,9 +22,13 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelCollations;
+import org.apache.calcite.rel.core.Aggregate;
+import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.fun.SqlAvgAggFunction;
 import org.apache.calcite.util.ImmutableIntList;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
@@ -207,6 +211,43 @@ public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
         IgniteReduceAggregateBase rdcAgg = findFirstNode(phys, byClass(algo.reduce));
 
         assertEquals(IgniteDistributions.single(), TraitUtils.distribution(rdcAgg));
+    }
+
+    /**
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void expandDistinctAggregates() throws Exception {
+        TestTable tbl = createAffinityTable()
+            .addIndex(RelCollations.of(ImmutableIntList.of(3, 1, 0)), "idx_val0")
+            .addIndex(RelCollations.of(ImmutableIntList.of(3, 2, 0)), "idx_val1");
+
+        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
+
+        publicSchema.addTable("TEST", tbl);
+
+        String sql = "SELECT /*+ EXPAND_DISTINCT_AGG */ SUM(DISTINCT val0), AVG(DISTINCT val1) FROM test GROUP BY grp0";
+
+        IgniteRel phys = physicalPlan(
+            sql,
+            publicSchema,
+            algo.rulesToDisable
+        );
+
+        checkSplitAndSerialization(phys, publicSchema);
+
+        assertFalse(
+            "Invalid plan\n" + RelOptUtil.toString(phys, SqlExplainLevel.ALL_ATTRIBUTES),
+            findNodes(phys, byClass(IgniteAggregate.class)).stream()
+                .anyMatch(n -> ((Aggregate)n).getAggCallList().stream()
+                    .anyMatch(AggregateCall::isDistinct)
+                )
+        );
+
+        assertNotNull(
+            "Invalid plan\n" + RelOptUtil.toString(phys, SqlExplainLevel.ALL_ATTRIBUTES),
+            findFirstNode(phys, byClass(Join.class)));
     }
 
     /** */
