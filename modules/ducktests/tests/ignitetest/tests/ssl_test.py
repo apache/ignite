@@ -22,6 +22,7 @@ from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
+from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.services.utils.ssl.connector_configuration import ConnectorConfiguration
 from ignitetest.services.utils.ssl.ssl_params import SslParams, DEFAULT_SERVER_KEYSTORE, DEFAULT_CLIENT_KEYSTORE, \
     DEFAULT_ADMIN_KEYSTORE
@@ -43,21 +44,23 @@ class SslTest(IgniteTest):
         Test that IgniteService, IgniteApplicationService correctly start and stop with ssl configurations.
         And check ControlUtility with ssl arguments.
         """
-        shared_root = os.path.join(self.test_context.globals.get("persistent_root", "/mnt/service"), "shared")
-
-        server_ssl = SslParams(shared_root, key_store_jks=DEFAULT_SERVER_KEYSTORE)
-
-        server_configuration = IgniteConfiguration(
-            version=IgniteVersion(ignite_version), ssl_params=server_ssl,
-            connector_configuration=ConnectorConfiguration(ssl_enabled=True, ssl_params=server_ssl))
-
-        ignite = IgniteService(self.test_context, server_configuration, num_nodes=2,
+        ignite = IgniteService(self.test_context, config=None, num_nodes=2,
                                startup_timeout_sec=180)
 
-        client_configuration = server_configuration._replace(
+        server_ssl = SslParams(ignite.shared_root, key_store_jks=DEFAULT_SERVER_KEYSTORE)
+
+        server_configuration = IgniteConfiguration(
+            version=IgniteVersion(ignite_version),
+            ssl_params=server_ssl,
+            connector_configuration=ConnectorConfiguration(ssl_enabled=True, ssl_params=server_ssl))
+
+        ignite.config = server_configuration
+
+        client_configuration = IgniteConfiguration(
             client_mode=True,
-            ssl_params=SslParams(shared_root, key_store_jks=DEFAULT_CLIENT_KEYSTORE),
-            connector_configuration=None)
+            version=IgniteVersion(ignite_version),
+            discovery_spi=from_ignite_cluster(ignite),
+            ssl_params=SslParams(ignite.shared_root, key_store_jks=DEFAULT_CLIENT_KEYSTORE))
 
         app = IgniteApplicationService(
             self.test_context,
@@ -65,8 +68,9 @@ class SslTest(IgniteTest):
             java_class_name="org.apache.ignite.internal.ducktest.tests.smoke_test.SimpleApplication",
             startup_timeout_sec=180)
 
-        admin_ssl = SslParams(shared_root, key_store_jks=DEFAULT_ADMIN_KEYSTORE)
-        control_utility = ControlUtility(cluster=ignite, ssl_params=admin_ssl)
+        control_utility = ControlUtility(
+            cluster=ignite,
+            ssl_params=SslParams(ignite.shared_root, key_store_jks=DEFAULT_ADMIN_KEYSTORE))
 
         ignite.start()
         app.start()
