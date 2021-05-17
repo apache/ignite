@@ -357,9 +357,8 @@ public class IgnitionEx {
             grid.starterThread.interrupt();
         }
 
-        if (grid != null) {
-            if (grid.state() == STARTED)
-                grid.stop(cancel, shutdown);
+        if (grid != null && grid.state() == STARTED) {
+            grid.stop(cancel, shutdown);
 
             boolean fireEvt;
 
