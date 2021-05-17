@@ -95,7 +95,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                     if (Interlocked.CompareExchange(ref _buffer, null, buffer) == buffer)
                     {
                         // TODO: If buffer is empty or no task was scheduled, send a dedicated close request.
-                        buffer.ScheduleFlush(true);
+                        buffer.ScheduleFlush(close: true);
+
                         return buffer.GetChainFlushTask();
                     }
                 }
