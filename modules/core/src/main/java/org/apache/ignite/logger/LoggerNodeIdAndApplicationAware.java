@@ -18,25 +18,22 @@
 package org.apache.ignite.logger;
 
 import java.util.UUID;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Interface for Ignite file appenders to attach node ID to log file names.
- *
- * @deprecated Use {@link LoggerNodeIdAndApplicationAware} instead.
+ * Interface for Ignite file appenders to attach postfix to log file names.
  */
-@Deprecated
-public interface LoggerNodeIdAware {
-    /**
-     * Sets node ID.
-     *
-     * @param nodeId Node ID.
-     */
-    public void setNodeId(UUID nodeId);
+public interface LoggerNodeIdAndApplicationAware extends LoggerNodeIdAware {
+    /** {@inheritDoc} */
+    @Override public default void setNodeId(UUID nodeId) {
+        setApplicationAndNode(null, nodeId);
+    }
 
     /**
-     * Gets node ID.
+     * Sets application name and node ID.
      *
-     * @return Node ID.
+     * @param application Application.
+     * @param nodeId Node ID.
      */
-    public UUID getNodeId();
+    public void setApplicationAndNode(@Nullable String application, UUID nodeId);
 }

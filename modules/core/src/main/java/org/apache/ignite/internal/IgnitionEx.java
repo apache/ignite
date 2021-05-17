@@ -109,6 +109,7 @@ import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.logger.LoggerNodeIdAndApplicationAware;
 import org.apache.ignite.logger.LoggerNodeIdAware;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.marshaller.Marshaller;
@@ -2294,7 +2295,7 @@ public class IgnitionEx {
             if (!F.isEmpty(predefineConsistentId))
                 myCfg.setConsistentId(predefineConsistentId);
 
-            IgniteLogger cfgLog = initLogger(cfg.getGridLogger(), nodeId, workDir);
+            IgniteLogger cfgLog = initLogger(cfg.getGridLogger(), null, nodeId, workDir);
 
             assert cfgLog != null;
 
@@ -2558,7 +2559,7 @@ public class IgnitionEx {
          * @throws IgniteCheckedException If failed.
          */
         @SuppressWarnings("ErrorNotRethrown")
-        private IgniteLogger initLogger(@Nullable IgniteLogger cfgLog, UUID nodeId, String workDir)
+        private IgniteLogger initLogger(@Nullable IgniteLogger cfgLog, @Nullable String app, UUID nodeId, String workDir)
             throws IgniteCheckedException {
             try {
                 Exception log4jInitErr = null;
@@ -2622,7 +2623,9 @@ public class IgnitionEx {
                     ((JavaLogger)cfgLog).setWorkDirectory(workDir);
 
                 // Set node IDs for all file appenders.
-                if (cfgLog instanceof LoggerNodeIdAware)
+                if (cfgLog instanceof LoggerNodeIdAndApplicationAware)
+                    ((LoggerNodeIdAndApplicationAware)cfgLog).setApplicationAndNode(app, nodeId);
+                else if (cfgLog instanceof LoggerNodeIdAware)
                     ((LoggerNodeIdAware)cfgLog).setNodeId(nodeId);
 
                 if (log4jInitErr != null)
