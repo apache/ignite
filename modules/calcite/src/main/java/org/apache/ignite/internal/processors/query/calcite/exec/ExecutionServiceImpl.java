@@ -29,6 +29,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.ConventionTraitDef;
@@ -48,6 +49,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlDdl;
 import org.apache.calcite.sql.SqlExplain;
 import org.apache.calcite.sql.SqlExplainLevel;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.parser.SqlParseException;
@@ -684,16 +686,20 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
+    // TODO: prepareExplain should reuse prepare* methods for different query types
     private QueryPlan prepareExplain(SqlNode explain, PlanningContext ctx) throws ValidationException {
         IgnitePlanner planner = ctx.planner();
 
         SqlNode sql = ((SqlExplain)explain).getExplicandum();
 
         // Validate
-        explain = planner.validate(sql);
+        sql = planner.validate(sql);
 
         // Convert to Relational operators graph
-        IgniteRel igniteRel = optimize(explain, planner);
+        IgniteRel igniteRel = optimize(sql, planner);
+
+        if (sql.isA(ImmutableSet.of(SqlKind.INSERT, SqlKind.UPDATE)))
+            igniteRel = new FixDependentInsertNodeShuttle().visit(igniteRel);
 
         String plan = RelOptUtil.toString(igniteRel, SqlExplainLevel.ALL_ATTRIBUTES);
 
@@ -1160,10 +1166,11 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         }
     }
 
-    static class FixDependentInsertNodeShuttle extends IgniteRelShuttle {
+    /** */
+    private static class FixDependentInsertNodeShuttle extends IgniteRelShuttle {
         /**
          * Flags indicate whether a {@link IgniteTableModify insert node}
-         * modifies the same table used for querying a data set to isnert.
+         * modifies the same table used for querying a data set to insert.
          */
         private boolean dependent;
 
@@ -1174,7 +1181,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         @Override public IgniteRel visit(IgniteTableModify rel) {
             assert tbl == null;
 
-            if (!rel.isInsert())
+            if (rel.isDelete())
                 return rel;
 
             tbl = rel.getTable().unwrap(IgniteTable.class);

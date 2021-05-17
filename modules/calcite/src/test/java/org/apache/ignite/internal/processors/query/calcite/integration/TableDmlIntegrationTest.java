@@ -20,12 +20,14 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -38,11 +40,14 @@ import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessorTest;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import static java.lang.Math.pow;
 
 /** */
 public class TableDmlIntegrationTest extends GridCommonAbstractTest {
@@ -128,17 +133,53 @@ public class TableDmlIntegrationTest extends GridCommonAbstractTest {
         });
 
         for (int i = 8; i < 18; i++) {
-            int off = (int)Math.pow(2, i - 1);
+            int off = (int)pow(2, i - 1);
 
             executeSql("INSERT INTO test SELECT id + ?::INT, val FROM test", off);
 
             long cnt = (Long)executeSql("SELECT count(*) FROM test").get(0).get(0);
 
-            assertEquals("Unexpected rows count", Math.pow(2, i), cnt);
+            assertEquals("Unexpected rows count", pow(2, i), cnt);
         }
 
         stop.set(true);
         fut.get(getTestTimeout());
+    }
+
+    /**
+     * Ensure that update node updates each row only once.
+     */
+    @Test
+    public void testUpdate() {
+        executeSql("CREATE TABLE test (val integer)");
+
+        client.context().query().querySqlFields(
+            new SqlFieldsQuery("CREATE INDEX test_val_idx ON test (val)").setSchema("PUBLIC"), false).getAll();
+
+        for (int i = 1; i <= 4096; i++)
+            executeSql("INSERT INTO test VALUES (?)", i);
+
+        final String updateSql = "UPDATE test SET val = val * 10";
+
+        int mul = 1;
+        for (int i = 1; i < 5; i++) {
+            mul *= 10;
+            executeSql(updateSql);
+        }
+
+        final int fMul = mul;
+
+        List<List<?>> rows = executeSql("SELECT val FROM test ORDER BY val");
+
+        List<Integer> vals = rows.stream().map(r -> (Integer)r.get(0)).collect(Collectors.toList());
+
+        for (int rowNum = 1; rowNum <= rows.size(); rowNum++) {
+            assertEquals(
+                "Unexpected results: " + S.compact(vals, i -> i + fMul),
+                rowNum * fMul,
+                rows.get(rowNum - 1).get(0)
+            );
+        }
     }
 
     /** */

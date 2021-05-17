@@ -90,7 +90,7 @@ public class TableSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
 
         requested += rowsCnt;
 
-        if (waiting == -1 || (rowIdx < rows.size() && !inLoop))
+        if ((waiting == -1 || rowIdx < rows.size()) && !inLoop)
             context().execute(this::doPush, this::onError);
         else if (waiting == 0)
             source().request(waiting = IN_BUFFER_SIZE);
