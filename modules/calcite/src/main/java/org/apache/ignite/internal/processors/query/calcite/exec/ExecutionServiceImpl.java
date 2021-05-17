@@ -624,7 +624,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         // Convert to Relational operators graph
         IgniteRel igniteRel = optimize(sqlNode, planner);
 
-        igniteRel = new FixDependentInsertNodeShuttle().visit(igniteRel);
+        igniteRel = new FixDependentModifyNodeShuttle().visit(igniteRel);
 
         // Split query plan to query fragments.
         List<Fragment> fragments = new Splitter().go(igniteRel);
@@ -699,7 +699,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         IgniteRel igniteRel = optimize(sql, planner);
 
         if (sql.isA(ImmutableSet.of(SqlKind.INSERT, SqlKind.UPDATE)))
-            igniteRel = new FixDependentInsertNodeShuttle().visit(igniteRel);
+            igniteRel = new FixDependentModifyNodeShuttle().visit(igniteRel);
 
         String plan = RelOptUtil.toString(igniteRel, SqlExplainLevel.ALL_ATTRIBUTES);
 
@@ -1166,8 +1166,13 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         }
     }
 
-    /** */
-    private static class FixDependentInsertNodeShuttle extends IgniteRelShuttle {
+    /**
+     * This shuttle analyzes a relation tree and inserts an eager spool node
+     * just under the TableModify in case latter depends upon a table used
+     * to query the data for modify node to avoid the double processing
+     * of the retrieved rows.
+     */
+    private static class FixDependentModifyNodeShuttle extends IgniteRelShuttle {
         /**
          * Flags indicate whether a {@link IgniteTableModify insert node}
          * modifies the same table used for querying a data set to insert.

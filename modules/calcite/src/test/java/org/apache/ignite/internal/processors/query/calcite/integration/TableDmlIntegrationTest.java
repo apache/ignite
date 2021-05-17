@@ -29,10 +29,6 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.query.QueryEngine;
@@ -47,15 +43,10 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static java.lang.Math.pow;
-
 /** */
 public class TableDmlIntegrationTest extends GridCommonAbstractTest {
     /** */
     private static final String CLIENT_NODE_NAME = "client";
-
-    /** */
-    private static final String DATA_REGION_NAME = "test_data_region";
 
     /** */
     private IgniteEx client;
@@ -65,18 +56,6 @@ public class TableDmlIntegrationTest extends GridCommonAbstractTest {
         startGrids(2);
 
         client = startClientGrid(CLIENT_NODE_NAME);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName)
-            .setSqlConfiguration(
-                new SqlConfiguration().setSqlSchemas("MY_SCHEMA")
-            )
-            .setDataStorageConfiguration(
-                new DataStorageConfiguration()
-                    .setDataRegionConfigurations(new DataRegionConfiguration().setName(DATA_REGION_NAME))
-            );
     }
 
     /** */
@@ -133,13 +112,13 @@ public class TableDmlIntegrationTest extends GridCommonAbstractTest {
         });
 
         for (int i = 8; i < 18; i++) {
-            int off = (int)pow(2, i - 1);
+            int off = 1 << (i - 1);
 
             executeSql("INSERT INTO test SELECT id + ?::INT, val FROM test", off);
 
             long cnt = (Long)executeSql("SELECT count(*) FROM test").get(0).get(0);
 
-            assertEquals("Unexpected rows count", pow(2, i), cnt);
+            assertEquals("Unexpected rows count", 1 << i, cnt);
         }
 
         stop.set(true);
