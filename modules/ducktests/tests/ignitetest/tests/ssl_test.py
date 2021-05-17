@@ -16,6 +16,8 @@
 """
 This module contains ssl tests.
 """
+import os
+
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.control_utility import ControlUtility
@@ -41,7 +43,7 @@ class SslTest(IgniteTest):
         Test that IgniteService, IgniteApplicationService correctly start and stop with ssl configurations.
         And check ControlUtility with ssl arguments.
         """
-        shared_root = "/mnt/service/shared"
+        shared_root = os.path.join(self.test_context.globals.get("persistent_root", "/mnt/service"), "shared")
 
         server_ssl = SslParams(shared_root, key_store_jks=DEFAULT_SERVER_KEYSTORE)
 
