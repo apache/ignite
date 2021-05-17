@@ -58,6 +58,9 @@ public class HashAggregateConverterRule {
         /** {@inheritDoc} */
         @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq,
             LogicalAggregate agg) {
+            if (HintUtils.isExpandDistinctAggregate(agg) && agg.getAggCallList().stream().anyMatch(AggregateCall::isDistinct))
+                return null;
+
             RelOptCluster cluster = agg.getCluster();
             RelTraitSet inTrait = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(IgniteDistributions.single());
             RelTraitSet outTrait = cluster.traitSetOf(IgniteConvention.INSTANCE).replace(IgniteDistributions.single());
@@ -84,6 +87,9 @@ public class HashAggregateConverterRule {
         /** {@inheritDoc} */
         @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq,
             LogicalAggregate agg) {
+            if (HintUtils.isExpandDistinctAggregate(agg) && agg.getAggCallList().stream().anyMatch(AggregateCall::isDistinct))
+                return null;
+
             RelOptCluster cluster = agg.getCluster();
             RelTraitSet inTrait = cluster.traitSetOf(IgniteConvention.INSTANCE);
             RelTraitSet outTrait = cluster.traitSetOf(IgniteConvention.INSTANCE);
