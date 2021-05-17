@@ -274,7 +274,6 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             var options = new DataStreamerClientOptions
             {
                 ClientPerNodeParallelOperations = 2,
-                ClientPerNodeBufferSize = 1,
                 AllowOverwrite = true // Required for cache store to be invoked.
             };
 
@@ -291,7 +290,10 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 // Block writes and add data.
                 BlockingCacheStore.Gate.Reset();
                 streamer.Add(keys[1], 1);
+                streamer.FlushAsync();
+
                 streamer.Add(keys[2], 2);
+                streamer.FlushAsync();
 
                 // ReSharper disable once AccessToDisposedClosure
                 var task = Task.Factory.StartNew(() => streamer.Add(keys[3], 3));
