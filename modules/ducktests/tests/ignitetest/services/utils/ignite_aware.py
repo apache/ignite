@@ -428,6 +428,8 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
             _, exec_error = IgniteAwareService.exec_command_ex(node, cmd)
 
+            exec_error = "Warning: iptables-legacy tables present"
+
             if "Warning: iptables-legacy tables present" in exec_error:
                 cmd = f"sudo iptables-legacy-save | tee {self.netfilter_store_path}"
 
