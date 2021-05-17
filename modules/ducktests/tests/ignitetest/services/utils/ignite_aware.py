@@ -472,7 +472,14 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
         Reads current netfilter settings on the node for debugging purposes.
         """
-        return IgniteAwareService.exec_command(node, "sudo iptables -L -n")
+        out, err = IgniteAwareService.exec_command_ex(node, "sudo iptables -L -n")
+
+        if "Warning: iptables-legacy tables present" in err:
+            out, err = IgniteAwareService.exec_command_ex(node, "sudo iptables-legacy -L -n")
+
+        assert len(err) == 0, "Failed to dump iptables rules on '%s': %s" % (node.name, err)
+
+        return out
 
     def __update_node_log_file(self, node):
         """

@@ -109,7 +109,7 @@ class DiscoveryTest(IgniteTest):
     @cluster(num_nodes=MAX_CONTAINERS)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @matrix(nodes_to_kill=[1, 2], load_type=[ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
-    def test_nonsequential_failure_tcp_no_recovery(self, ignite_version, nodes_to_kill, load_type):
+    def _test_nonsequential_failure_tcp_no_recovery(self, ignite_version, nodes_to_kill, load_type):
         """
         Test nodes failure scenario with TcpDiscoverySpi not allowing nodes to fail in a row with. The connection
         recovery is disabled.
@@ -137,7 +137,7 @@ class DiscoveryTest(IgniteTest):
     @cluster(num_nodes=MAX_CONTAINERS)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @matrix(load_type=[ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
-    def test_sequential_failure_tcp_no_recovery(self, ignite_version, load_type):
+    def _test_sequential_failure_tcp_no_recovery(self, ignite_version, load_type):
         """
         Test 2 nodes sequential failure scenario with TcpDiscoverySpi. The connection recovery is disabled.
         """
@@ -151,7 +151,7 @@ class DiscoveryTest(IgniteTest):
     @ignore_if(lambda version, globals: version == V_2_8_0)  # ignite-zookeeper package is broken in 2.8.0
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @matrix(nodes_to_kill=[1, 2], load_type=[ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
-    def test_nodes_fail_not_sequential_zk(self, ignite_version, nodes_to_kill, load_type):
+    def _test_nodes_fail_not_sequential_zk(self, ignite_version, nodes_to_kill, load_type):
         """
         Test node failure scenario with ZooKeeperSpi not allowing nodes to fail in a row.
         """
@@ -165,7 +165,7 @@ class DiscoveryTest(IgniteTest):
     @ignore_if(lambda version, globals: version == V_2_8_0)  # ignite-zookeeper package is broken in 2.8.0
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @matrix(load_type=[ClusterLoad.ATOMIC, ClusterLoad.TRANSACTIONAL])
-    def test_2_nodes_fail_sequential_zk(self, ignite_version, load_type):
+    def _test_2_nodes_fail_sequential_zk(self, ignite_version, load_type):
         """
         Test node failure scenario with ZooKeeperSpi not allowing to fail nodes in a row.
         """
