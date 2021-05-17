@@ -1,7 +1,8 @@
 # name: test/sql/aggregate/aggregates/test_perfect_ht.test
 # description: Test aggregates that can trigger a perfect HT
 # group: [aggregates]
-# Ignored: https://issues.apache.org/jira/browse/IGNITE-14542
+# Ignored: https://issues.apache.org/jira/browse/IGNITE-14555
+# Ignored: https://issues.apache.org/jira/browse/IGNITE-14680
 
 statement ok
 PRAGMA enable_verification
@@ -35,31 +36,31 @@ NULL	[1]	1
 # many small columns each having only the values 0 and 1
 # total possible combinations is 2^10, but there are only 2 groups
 statement ok
-create table manycolumns as select i a, i b, i c, i d, i e from range(0,2) tbl(i);
+create table manycolumns as select x a, x b, x c, x d, x e from table(system_range(0,1));
 
 query IIIII
-select a, b, c, d, e FROM manycolumns GROUP BY 1, 2, 3, 4, 5
+select a, b, c, d, e FROM manycolumns GROUP BY a, b, c, d, e ORDER BY 1
 ----
 0	0	0	0	0
 1	1	1	1	1
 
 # test edge cases: multiple tinyints without statistics
-# create a table of tinyints [-127, 128] stored as varchar
+# create a table of tinyints [-127, 127] stored as varchar
 # by forcing a varchar to tinyint cast we lose statistics
 statement ok
-CREATE TABLE tinyints AS SELECT i::TINYINT::VARCHAR AS t FROM range(-127, 128) tbl(i);
+CREATE TABLE tinyints AS SELECT x::TINYINT::VARCHAR AS t FROM table(system_range(-127, 127));
 
 query IIII
-SELECT COUNT(DISTINCT i), MIN(i), MAX(i), SUM(i) / COUNT(i) FROM (SELECT t::TINYINT t1 FROM tinyints GROUP BY t1) tbl(i)
+SELECT COUNT(DISTINCT i), MIN(i), MAX(i), SUM(i) / COUNT(i) FROM (SELECT t::TINYINT i FROM tinyints GROUP BY t)
 ----
 255	-127	127	0
 
 # now do the same with a single smallint column
 statement ok
-CREATE TABLE smallints AS SELECT i::SMALLINT::VARCHAR AS t FROM range(-32767, 32768) tbl(i);
+CREATE TABLE smallints AS SELECT x::SMALLINT::VARCHAR AS t FROM table(system_range(-32767, 32767));
 
 query IIII
-SELECT COUNT(DISTINCT i), MIN(i), MAX(i), SUM(i) / COUNT(i) FROM (SELECT t::SMALLINT t1 FROM smallints GROUP BY t1) tbl(i)
+SELECT COUNT(DISTINCT i), MIN(i), MAX(i), SUM(i) / COUNT(i) FROM (SELECT t::SMALLINT i FROM smallints GROUP BY t)
 ----
 65535	-32767	32767	0
 

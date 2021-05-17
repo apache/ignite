@@ -1,7 +1,6 @@
 # name: test/sql/aggregate/aggregates/test_approx_quantile.test
 # description: Test approx quantile operator
 # group: [aggregates]
-# Ignored: https://issues.apache.org/jira/browse/IGNITE-14542
 # Ignored: https://issues.apache.org/jira/browse/IGNITE-14637
 
 statement ok
