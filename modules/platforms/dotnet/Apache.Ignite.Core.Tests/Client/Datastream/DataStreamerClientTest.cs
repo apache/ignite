@@ -270,7 +270,6 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         }
 
         [Test]
-        [Ignore("TODO")]
         public void TestBackPressure()
         {
             var serverCache = Ignition.GetIgnite().CreateCache<int, int>(new CacheConfiguration
@@ -283,6 +282,8 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             var options = new DataStreamerClientOptions
             {
                 ClientPerNodeParallelOperations = 2,
+                ServerPerNodeBufferSize = 1,
+                ServerPerThreadBufferSize = 1,
                 AllowOverwrite = true // Required for cache store to be invoked.
             };
 
