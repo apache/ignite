@@ -93,6 +93,7 @@ import org.apache.ignite.internal.pagemem.wal.record.MvccTxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.ReencryptionStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.RollbackRecord;
+import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WalRecordCacheGroupAware;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
@@ -137,6 +138,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.processors.configuration.distributed.SimpleDistributedProperty;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
@@ -166,8 +168,11 @@ import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
 import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PREFER_WAL_REBALANCE;
@@ -180,6 +185,7 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MASTER_KEY_CHANGE_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MASTER_KEY_CHANGE_RECORD_V2;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.METASTORE_DATA_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.TX_RECORD;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.fromOrdinal;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
@@ -403,7 +409,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 catch (IgniteCheckedException e) {
                     log.warning("Metastore iteration error", e);
 
-                    return Collections.emptyList();
+                    return emptyList();
                 }
             }, identity());
     }
@@ -836,7 +842,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 metaStorage = createMetastorage(true);
 
-                applyLogicalUpdates(status, onlyMetastorageGroup(), onlyMetastorageAndEncryptionRecords(), false);
+                applyLogicalUpdates(status, onlyMetastorageGroup(), onlyMetastorageAndEncryptionRecords(), true);
 
                 fillWalDisabledGroups();
 
@@ -1429,25 +1435,55 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (defrgMgr != null)
             return;
 
-        rebuildIndexes(cctx.cacheContexts(), (cacheCtx) -> cacheCtx.startTopologyVersion().equals(exchangeFut.initialVersion()));
+        Collection<GridCacheContext> rejected = rebuildIndexes(
+            cctx.cacheContexts(),
+            (cacheCtx) -> cacheCtx.startTopologyVersion().equals(exchangeFut.initialVersion()) &&
+                cctx.kernalContext().query().rebuildIndexOnExchange(cacheCtx.cacheId(), exchangeFut),
+            false
+        );
+
+        if (!rejected.isEmpty()) {
+            cctx.kernalContext().query().removeIndexRebuildFuturesOnExchange(
+                exchangeFut,
+                rejected.stream().map(GridCacheContext::cacheId).collect(toSet())
+            );
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void forceRebuildIndexes(Collection<GridCacheContext> contexts) {
-        contexts.forEach(ctx -> cctx.kernalContext().query().prepareIndexRebuildFuture(ctx.cacheId()));
+    @Override public Collection<GridCacheContext> forceRebuildIndexes(Collection<GridCacheContext> contexts) {
+        Set<Integer> cacheIds = contexts.stream().map(GridCacheContext::cacheId).collect(toSet());
 
-        rebuildIndexes(contexts, (cacheCtx) -> true);
+        Set<Integer> rejected = cctx.kernalContext().query().prepareRebuildIndexes(cacheIds);
+
+        if (log.isDebugEnabled()) {
+            log.debug("Preparing features of rebuilding indexes for caches on force rebuild [requested=" + cacheIds +
+                ", rejected=" + rejected + ']');
+        }
+
+        rebuildIndexes(contexts, (cacheCtx) -> !rejected.contains(cacheCtx.cacheId()), true);
+
+        return rejected.isEmpty() ? emptyList() :
+            contexts.stream().filter(ctx -> rejected.contains(ctx.cacheId())).collect(toList());
     }
 
     /**
+     * Rebuilding indexes for caches.
+     *
      * @param contexts Collection of cache contexts for which indexes should be rebuilt.
      * @param rebuildCond Condition that should be met for indexes to be rebuilt for specific cache.
+     * @param force Force rebuild indexes.
+     * @return Cache contexts that did not pass by {@code rebuildCond}.
      */
-    private void rebuildIndexes(Collection<GridCacheContext> contexts, Predicate<GridCacheContext> rebuildCond) {
+    private Collection<GridCacheContext> rebuildIndexes(
+        Collection<GridCacheContext> contexts,
+        Predicate<GridCacheContext> rebuildCond,
+        boolean force
+    ) {
         GridQueryProcessor qryProc = cctx.kernalContext().query();
 
         if (!qryProc.moduleEnabled())
-            return;
+            return emptyList();
 
         GridCountDownCallback rebuildIndexesCompleteCntr = new GridCountDownCallback(
             contexts.size(),
@@ -1458,17 +1494,26 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             1  //need at least 1 index rebuilded to print message about rebuilding completion
         );
 
+        Collection<GridCacheContext> rejected = null;
+
         for (GridCacheContext cacheCtx : contexts) {
-            if (!rebuildCond.test(cacheCtx))
-                continue;
+            if (rebuildCond.test(cacheCtx)) {
+                IgniteInternalFuture<?> rebuildFut = qryProc.rebuildIndexesFromHash(cacheCtx, force);
 
-            IgniteInternalFuture<?> rebuildFut = qryProc.rebuildIndexesFromHash(cacheCtx);
+                if (nonNull(rebuildFut))
+                    rebuildFut.listen(fut -> rebuildIndexesCompleteCntr.countDown(true));
+                else
+                    rebuildIndexesCompleteCntr.countDown(false);
+            }
+            else {
+                if (rejected == null)
+                    rejected = new ArrayList<>();
 
-            if (nonNull(rebuildFut))
-                rebuildFut.listen(fut -> rebuildIndexesCompleteCntr.countDown(true));
-            else
-                rebuildIndexesCompleteCntr.countDown(false);
+                rejected.add(cacheCtx);
+            }
         }
+
+        return rejected == null ? emptyList() : rejected;
     }
 
     /**
@@ -1492,7 +1537,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         List<Integer> stoppedGrpIds = stoppedGrps.stream()
             .filter(IgniteBiTuple::get2)
             .map(t -> t.get1().groupId())
-            .collect(Collectors.toList());
+            .collect(toList());
 
         cctx.snapshotMgr().onCacheGroupsStopped(stoppedGrpIds);
 
@@ -1903,8 +1948,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 status,
                 groupsWithEnabledWal(),
                 logicalRecords(),
-                true
+                false
             );
+
+            cctx.tm().clearUncommitedStates();
 
             if (recoveryVerboseLogging && log.isInfoEnabled()) {
                 log.info("Partition states information after LOGICAL RECOVERY phase:");
@@ -2556,6 +2603,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /**
      * @param status Last registered checkpoint status.
+     * @param restoreMeta Metastore restore phase if {@code true}.
      * @throws IgniteCheckedException If failed to apply updates.
      * @throws StorageException If IO exception occurred while reading write-ahead log.
      */
@@ -2563,13 +2611,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         CheckpointStatus status,
         IgnitePredicate<Integer> cacheGroupsPredicate,
         IgniteBiPredicate<WALRecord.RecordType, WALPointer> recordTypePredicate,
-        boolean skipFieldLookup
+        boolean restoreMeta
     ) throws IgniteCheckedException {
         if (log.isInfoEnabled())
-            log.info("Applying lost cache updates since last checkpoint record [lastMarked="
+            log.info("Applying lost " + (restoreMeta ? "metastore" : "cache") + " updates since last checkpoint record [lastMarked="
                 + status.startPtr + ", lastCheckpointId=" + status.cpStartId + ']');
 
-        if (skipFieldLookup)
+        if (!restoreMeta)
             cctx.kernalContext().query().skipFieldLookup(true);
 
         long start = U.currentTimeMillis();
@@ -2591,6 +2639,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         RestoreLogicalState restoreLogicalState =
             new RestoreLogicalState(status, it, lastArchivedSegment, cacheGroupsPredicate, partitionRecoveryStates);
 
+        final IgniteTxManager txManager = cctx.tm();
+
         try {
             while (it.hasNextX()) {
                 WALRecord rec = restoreLogicalState.next();
@@ -2599,6 +2649,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     break;
 
                 switch (rec.type()) {
+                    case TX_RECORD:
+                        if (restoreMeta) { // Also restore tx states.
+                            TxRecord txRec = (TxRecord)rec;
+
+                            txManager.collectTxStates(txRec);
+                        }
+
+                        break;
                     case CHECKPOINT_RECORD: // Calculate initial partition states
                         CheckpointRecord cpRec = (CheckpointRecord)rec;
 
@@ -2640,6 +2698,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         DataRecord dataRec = (DataRecord)rec;
 
                         for (DataEntry dataEntry : dataRec.writeEntries()) {
+                            if (!restoreMeta && txManager.uncommitedTx(dataEntry))
+                                continue;
+
                             int cacheId = dataEntry.cacheId();
 
                             DynamicCacheDescriptor cacheDesc = cctx.cache().cacheDescriptor(cacheId);
@@ -2652,7 +2713,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                 GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
                                 if (skipRemovedIndexUpdates(cacheCtx.groupId(), PageIdAllocator.INDEX_PARTITION))
-                                    cctx.kernalContext().query().markAsRebuildNeeded(cacheCtx);
+                                    cctx.kernalContext().query().markAsRebuildNeeded(cacheCtx, true);
 
                                 try {
                                     applyUpdate(cacheCtx, dataEntry);
@@ -2735,7 +2796,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         finally {
             it.close();
 
-            if (skipFieldLookup)
+            if (!restoreMeta)
                 cctx.kernalContext().query().skipFieldLookup(false);
         }
 
@@ -3423,7 +3484,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @return WAL records predicate that passes only Metastorage and encryption data records.
      */
     private IgniteBiPredicate<WALRecord.RecordType, WALPointer> onlyMetastorageAndEncryptionRecords() {
-        return (type, ptr) -> type == METASTORE_DATA_RECORD ||
+        return (type, ptr) -> type == METASTORE_DATA_RECORD || type == TX_RECORD ||
             type == MASTER_KEY_CHANGE_RECORD || type == MASTER_KEY_CHANGE_RECORD_V2;
     }
 
@@ -3545,7 +3606,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     return cctx.cacheContext(cacheId) != null && cacheGroupPredicate.apply(cctx.cacheContext(cacheId).groupId());
                 })
-                .collect(Collectors.toList());
+                .collect(toList());
 
             return record.setWriteEntries(filteredEntries);
         }

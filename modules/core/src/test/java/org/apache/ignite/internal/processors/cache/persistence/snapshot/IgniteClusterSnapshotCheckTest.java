@@ -284,7 +284,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
             .filter(f -> !f.getName().equals(DFLT_SNAPSHOT_DIRECTORY))
             .forEach(U::delete);
 
-        Set<UUID> assigns = new HashSet<>();
+        Set<UUID> assigns = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
         for (int i = 4; i < 7; i++) {
             startGrid(optimize(getConfiguration(getTestIgniteInstanceName(i)).setCacheConfiguration()));
@@ -313,8 +313,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         res.print(b::append, true);
 
         // GridJobExecuteRequest is not send to the local node.
-        assertTrue("Number of jobs must be equal to the cluster size (except local node): " + assigns,
-            waitForCondition(() -> assigns.size() == 2, 5_000L));
+        assertTrue("Number of jobs must be equal to the cluster size (except local node): " + assigns + ", count: "
+                + assigns.size(), waitForCondition(() -> assigns.size() == 2, 5_000L));
 
         assertTrue(F.isEmpty(res.exceptions()));
         assertPartitionsSame(res);

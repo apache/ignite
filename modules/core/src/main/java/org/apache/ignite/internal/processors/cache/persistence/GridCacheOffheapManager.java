@@ -1063,6 +1063,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /** {@inheritDoc} */
+    @Override public @Nullable RootPage findRootPageForIndex(int cacheId, String idxName, int segment) throws IgniteCheckedException {
+        return indexStorage.findCacheIndex(cacheId, idxName, segment);
+    }
+
+    /** {@inheritDoc} */
     @Override public void dropRootPageForIndex(int cacheId, String idxName, int segment) throws IgniteCheckedException {
         indexStorage.dropCacheIndex(cacheId, idxName, segment);
     }
@@ -1336,11 +1341,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 try {
                     RootPage page = indexStorage.allocateIndex(name);
 
-                    ctx.kernalContext().query().getIndexing().destroyOrphanIndex(
+                    ctx.kernalContext().indexProcessor().destroyOrphanIndex(
+                        ctx.kernalContext(),
                         page,
                         name,
                         grp.groupId(),
-                        grp.dataRegion().pageMemory(), globalRemoveId(),
+                        grp.dataRegion().pageMemory(),
+                        globalRemoveId(),
                         reuseListForIndex(name),
                         grp.mvccEnabled()
                     );

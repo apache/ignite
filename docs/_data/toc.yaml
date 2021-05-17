@@ -380,6 +380,8 @@
       url: net-specific/net-deployment-options
     - title: Standalone Nodes
       url: net-specific/net-standalone-nodes
+    - title: Asynchronous APIs
+      url: net-specific/net-async
     - title: Logging
       url: net-specific/net-logging
     - title: LINQ
@@ -491,6 +493,8 @@
           url: extensions-and-integrations/spring/spring-data
         - title: Spring Caching
           url: extensions-and-integrations/spring/spring-caching
+        - title: Spring Transactions
+          url: extensions-and-integrations/spring/spring-tx
     - title: Ignite for Spark
       items:
         - title: Overview

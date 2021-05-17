@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -56,8 +57,8 @@ import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.cache.query.index.sorted.inline.InlineRecommender.IGNITE_THROTTLE_INLINE_SIZE_CALCULATION;
 import static org.apache.ignite.internal.processors.query.h2.H2TableDescriptor.PK_IDX_NAME;
-import static org.apache.ignite.internal.processors.query.h2.database.H2Tree.IGNITE_THROTTLE_INLINE_SIZE_CALCULATION;
 import static org.apache.ignite.internal.processors.query.h2.opt.H2TableScanIndex.SCAN_INDEX_NAME_SUFFIX;
 
 /**
@@ -313,6 +314,59 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         expect = Arrays.asList("F3", "F2");
 
         checkPkFldSequence(tblName, expect, idx);
+    }
+
+    /**
+     * Checks that fields in primary index have correct order after node restart.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCorrectPkFieldsSequenceAfterRestart() throws Exception {
+        inlineSize = 10;
+
+        IgniteEx ig0 = startGrid(getConfiguration("0").setDataStorageConfiguration(
+            new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setPersistenceEnabled(true)
+            )
+        ));
+
+        ig0.cluster().state(ClusterState.ACTIVE);
+
+        {
+            GridQueryProcessor qryProc = ig0.context().query();
+
+            IgniteH2Indexing idx = (IgniteH2Indexing)(ig0).context().query().getIndexing();
+
+            String tblName = "T1";
+
+            qryProc.querySqlFields(new SqlFieldsQuery("CREATE TABLE PUBLIC." + tblName + " (F1 VARCHAR, F2 VARCHAR, F3 VARCHAR, " +
+                "CONSTRAINT PK PRIMARY KEY (F2, F1))"), true).getAll();
+
+            List<String> expect = Arrays.asList("F2", "F1");
+
+            checkPkFldSequence(tblName, expect, idx);
+        }
+
+        stopAllGrids();
+
+        ig0 = startGrid(getConfiguration("0").setDataStorageConfiguration(
+            new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setPersistenceEnabled(true)
+            )
+        ));
+
+        ig0.cluster().state(ClusterState.ACTIVE);
+
+        {
+            IgniteH2Indexing idx = (IgniteH2Indexing)(ig0).context().query().getIndexing();
+
+            String tblName = "T1";
+
+            List<String> expect = Arrays.asList("F2", "F1");
+
+            checkPkFldSequence(tblName, expect, idx);
+        }
     }
 
     /**

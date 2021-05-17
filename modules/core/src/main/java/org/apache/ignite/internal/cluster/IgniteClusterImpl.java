@@ -158,7 +158,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            return new ClusterGroupAdapter(ctx, null, Collections.singleton(cfg.getNodeId()));
+            return new ClusterGroupAdapter(ctx, null, Collections.singleton(ctx.discovery().localNode().id()));
         }
         finally {
             unguard();

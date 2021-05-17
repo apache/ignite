@@ -74,7 +74,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.WorkProgressDispatcher;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
 
@@ -608,7 +607,7 @@ public class CheckpointWorkflow {
      * @param checkpointedRegions Regions which will be checkpointed.
      * @return Checkpoint listeners which should be handled.
      */
-    @NotNull private List<CheckpointListener> getRelevantCheckpointListeners(Collection<DataRegion> checkpointedRegions) {
+    public List<CheckpointListener> getRelevantCheckpointListeners(Collection<DataRegion> checkpointedRegions) {
         return lsnrs.entrySet().stream()
             .filter(entry -> entry.getValue() == NO_REGION || checkpointedRegions.contains(entry.getValue()))
             .map(Map.Entry::getKey)

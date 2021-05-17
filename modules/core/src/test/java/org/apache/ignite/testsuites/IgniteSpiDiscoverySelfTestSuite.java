@@ -44,6 +44,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryConcurrentStartTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryCoordinatorFailureTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryFailedJoinTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryIpFinderCleanerTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryIpFinderFailureTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryMarshallerCheckSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryMetricsWarnLogTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryMultiThreadedTest;
@@ -71,10 +72,12 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySslSecuredUnsecuredTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySslSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySslTrustedSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySslTrustedUntrustedTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryWithAddressFilterTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryWithWrongServerTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc.TcpDiscoveryJdbcIpFinderSelfTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinderSelfTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.TcpDiscoverySharedFsIpFinderSelfTest;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinderDnsResolveTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinderSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.BeforeClass;
@@ -88,6 +91,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+    TcpDiscoveryVmIpFinderDnsResolveTest.class,
     TcpDiscoveryVmIpFinderSelfTest.class,
     TcpDiscoverySharedFsIpFinderSelfTest.class,
     TcpDiscoveryJdbcIpFinderSelfTest.class,
@@ -133,6 +137,8 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
 
     TcpDiscoveryWithWrongServerTest.class,
 
+    TcpDiscoveryWithAddressFilterTest.class,
+
     TcpDiscoverySpiReconnectDelayTest.class,
 
     TcpDiscoveryNetworkIssuesTest.class,
@@ -172,7 +178,9 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
 
     DiscoveryClientSocketTest.class,
 
-    DiscoverySpiDataExchangeTest.class
+    DiscoverySpiDataExchangeTest.class,
+
+    TcpDiscoveryIpFinderFailureTest.class
 })
 public class IgniteSpiDiscoverySelfTestSuite {
     /** */

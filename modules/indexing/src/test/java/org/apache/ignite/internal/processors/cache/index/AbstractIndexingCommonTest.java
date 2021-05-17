@@ -27,6 +27,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
@@ -147,15 +148,15 @@ public class AbstractIndexingCommonTest extends GridCommonAbstractTest {
      * <p>
      * Blocks the indexes rebuilding until unblocked via {@link #stopBlock(String)}.
      */
-    public static class BlockingIndexing extends IgniteH2Indexing {
+    public static class BlockingIndexesRebuildTask extends IndexesRebuildTask {
         /** */
         private final Map<String, CountDownLatch> latches = new ConcurrentHashMap<>();
 
         /** {@inheritDoc} */
-        @Override protected void rebuildIndexesFromHash0(
+        @Override protected void startRebuild(
             GridCacheContext cctx,
-            SchemaIndexCacheVisitorClosure clo,
             GridFutureAdapter<Void> rebuildIdxFut,
+            SchemaIndexCacheVisitorClosure clo,
             SchemaIndexOperationCancellationToken cancel
         ) {
             CountDownLatch startThread = new CountDownLatch(1);
