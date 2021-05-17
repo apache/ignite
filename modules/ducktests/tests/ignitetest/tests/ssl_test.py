@@ -16,7 +16,6 @@
 """
 This module contains ssl tests.
 """
-
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.control_utility import ControlUtility
