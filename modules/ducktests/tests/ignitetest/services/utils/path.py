@@ -42,11 +42,11 @@ def get_module_path(project_dir, module_name, is_dev):
     return os.path.join(project_dir, module_path)
 
 
-def get_shared_root_path(_globals):
+def get_shared_root_path(test_globals):
     """
     Get path to shared root directory.
     """
-    return os.path.join(_globals.get("persistent_root", "/mnt/service"), "shared")
+    return os.path.join(test_globals.get("persistent_root", "/mnt/service"), "shared")
 
 
 class PathAware:
