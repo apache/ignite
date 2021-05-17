@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.ducktest.tests.cellular_affinity_test;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
@@ -38,7 +40,11 @@ public class CellularPreparedTxStreamer extends IgniteAwareApplication {
         final String cacheName = jsonNode.get("cacheName").asText();
         final String attr = jsonNode.get("attr").asText();
         final String cell = jsonNode.get("cell").asText();
-        final int txCnt = jsonNode.get("txCnt").asInt();
+        final int txCnt = jsonNode.get("colocatedTxCnt").asInt();
+        final int multiTxCnt = jsonNode.get("multiTxCnt").asInt();
+        final int noncolocatedTxCnt = jsonNode.get("noncolocatedTxCnt").asInt();
+
+        final String avoidCell = "C0"; // Always exist, should show speed of non-affected cell.
 
         markInitialized();
 
@@ -51,32 +57,71 @@ public class CellularPreparedTxStreamer extends IgniteAwareApplication {
         Affinity<Integer> aff = ignite.affinity(cacheName);
 
         int cnt = 0;
-        int i = -1; // Negative keys to have no intersection with load.
+        int i = 0; // Negative keys to have no intersection with load.
+
+        // Single key transactions affects only current cell.
+        // Will cause delay during current cell switch.
 
         while (cnt != txCnt && !terminated()) {
-            Collection<ClusterNode> nodes = aff.mapKeyToPrimaryAndBackups(i);
-
-            Map<Object, Long> stat = nodes.stream().collect(
-                Collectors.groupingBy(n -> n.attributes().get(attr), Collectors.counting()));
-
-            assert 1 == stat.keySet().size() :
-                "Partition should be located on nodes from only one cell " +
-                    "[key=" + i + ", nodes=" + nodes.size() + ", stat=" + stat + "]";
-
-            if (stat.containsKey(cell)) {
-                cnt++;
-
+            if (getCellIdByKey(aff, --i, attr).equals(cell)) {
                 Transaction tx = ignite.transactions().txStart();
 
                 cache.put(i, i);
 
                 ((TransactionProxyImpl<?, ?>)tx).tx().prepare(true);
 
-                if (cnt % 100 == 0)
-                    log.info("Long Tx prepared [key=" + i + ",cnt=" + cnt + ", cell=" + stat.keySet() + "]");
+                if (cnt++ % 100 == 0)
+                    log.info("Long Tx prepared [key=" + i + ",cnt=" + cnt + "]");
+            }
+        }
+
+        // Multikey transactions.
+        // May cause delay during current and other cell switch.
+
+        cnt = 0;
+
+        assert i > -10_000_000;
+        i = -10_000_000; // To have no intersection with other node's txs.
+
+        while (cnt != multiTxCnt && !terminated()) {
+            Set<Integer> keys = new HashSet<>();
+
+            while (keys.size() < 3) {
+                if (!getCellIdByKey(aff, --i, attr).equals(avoidCell))
+                    keys.add(i);
             }
 
-            i--;
+            Transaction tx = ignite.transactions().txStart();
+
+            for (int key : keys)
+                cache.put(key, key);
+
+            ((TransactionProxyImpl<?, ?>)tx).tx().prepare(true);
+
+            if (cnt++ % 100 == 0)
+                log.info("Long Multikey Tx prepared [key=" + i + ",cnt=" + cnt + "]");
+        }
+
+        // Transactions started from this node but contain no local keys.
+        // Should not cause significant delay during any cell switch.
+
+        cnt = 0;
+        assert i > -20_000_000;
+        i = -20_000_000; // To have no intersection with other node's txs.
+
+        while (cnt != noncolocatedTxCnt && !terminated()) {
+            String keyCell = getCellIdByKey(aff, --i, attr);
+
+            if (!keyCell.equals(cell) && !keyCell.equals(avoidCell)) {
+                Transaction tx = ignite.transactions().txStart();
+
+                cache.put(i, i);
+
+                ((TransactionProxyImpl<?, ?>)tx).tx().prepare(true);
+
+                if (cnt++ % 100 == 0)
+                    log.info("Long Noncolocated Tx prepared [key=" + i + ",cnt=" + cnt + "]");
+            }
         }
 
         log.info("ALL_TRANSACTIONS_PREPARED (" + cnt + ")");
@@ -88,5 +133,21 @@ public class CellularPreparedTxStreamer extends IgniteAwareApplication {
         }
 
         markFinished();
+    }
+
+    /**
+     *
+     */
+    private String getCellIdByKey(Affinity<Integer> aff, int key, String attr) {
+        Collection<ClusterNode> nodes = aff.mapKeyToPrimaryAndBackups(key);
+
+        Map<Object, Long> stat = nodes.stream().collect(
+            Collectors.groupingBy(n -> n.attributes().get(attr), Collectors.counting()));
+
+        assert 1 == stat.keySet().size() :
+            "Partition should be located on nodes from only one cell " +
+                "[key=" + key + ", nodes=" + nodes.size() + ", stat=" + stat + "]";
+
+        return (String)stat.keySet().iterator().next();
     }
 }

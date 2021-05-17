@@ -175,28 +175,6 @@ public class H2PkHashIndex extends GridH2IndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public long getRowCount(Session ses) {
-        Cursor cursor = find(ses, null, null);
-
-        long res = 0;
-
-        while (cursor.next())
-            res++;
-
-        return res;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean canGetFirstOrLast() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Cursor findFirstOrLast(Session ses, boolean b) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
     @Override public long totalRowCount(IndexingQueryCacheFilter partsFilter) {
         CacheDataRowStore.setSkipVersion(true);
 
@@ -225,6 +203,28 @@ public class H2PkHashIndex extends GridH2IndexBase {
         finally {
             CacheDataRowStore.setSkipVersion(false);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getRowCount(Session ses) {
+        Cursor cursor = find(ses, null, null);
+
+        long res = 0;
+
+        while (cursor.next())
+            res++;
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean canGetFirstOrLast() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Cursor findFirstOrLast(Session ses, boolean b) {
+        throw new UnsupportedOperationException();
     }
 
     /**

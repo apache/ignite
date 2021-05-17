@@ -20,9 +20,9 @@
 -->
 
 <log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/" debug="false">
-    <appender name="CONSOLE_ERR" class="org.apache.log4j.ConsoleAppender">
-        <param name="Target" value="System.err"/>
-
+    <appender name="FILE" class="org.apache.log4j.FileAppender">
+        <param name="File" value="{{ service.log_dir }}/ignite.log"/>
+        <param name="Append" value="true"/>
         <layout class="org.apache.log4j.PatternLayout">
             <param name="ConversionPattern" value="[%d{{ISO8601}}][%-5p][%t][%c{{1}}] %m%n"/>
         </layout>
@@ -58,6 +58,6 @@
 
     <root>
         <level value="INFO"/>
-        <appender-ref ref="CONSOLE_ERR"/>
+        <appender-ref ref="FILE"/>
     </root>
 </log4j:configuration>

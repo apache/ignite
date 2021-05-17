@@ -45,7 +45,7 @@ class ControlUtility:
         if ssl_params:
             self.ssl_params = ssl_params
         elif is_ssl_enabled(cluster.context.globals):
-            self.ssl_params = get_ssl_params(cluster.context.globals, IGNITE_ADMIN_ALIAS)
+            self.ssl_params = get_ssl_params(cluster.context.globals, cluster.shared_root, IGNITE_ADMIN_ALIAS)
 
         if username and password:
             self.username, self.password = username, password

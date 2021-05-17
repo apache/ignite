@@ -37,13 +37,11 @@ class IgniteApplicationService(IgniteAwareService):
 
     # pylint: disable=R0913
     def __init__(self, context, config, java_class_name, num_nodes=1, params="", startup_timeout_sec=60,
-                 shutdown_timeout_sec=10, modules=None, servicejava_class_name=SERVICE_JAVA_CLASS_NAME, jvm_opts=None,
-                 full_jvm_opts=None, start_ignite=True):
-        super().__init__(context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, modules=modules,
-                         servicejava_class_name=servicejava_class_name, java_class_name=java_class_name, params=params,
-                         jvm_opts=jvm_opts, full_jvm_opts=full_jvm_opts, start_ignite=start_ignite)
+                 shutdown_timeout_sec=60, modules=None, main_java_class=SERVICE_JAVA_CLASS_NAME, jvm_opts=None,
+                 full_jvm_opts=None):
+        super().__init__(context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, main_java_class,
+                         modules, jvm_opts=jvm_opts, full_jvm_opts=full_jvm_opts)
 
-        self.servicejava_class_name = servicejava_class_name
         self.java_class_name = java_class_name
         self.params = params
 
@@ -86,18 +84,6 @@ class IgniteApplicationService(IgniteAwareService):
         :return: Application finish time.
         """
         return self.get_event_time(self.APP_FINISH_EVT_MSG, selector=selector)
-
-    def clean_node(self, node, **kwargs):
-        if self.alive(node):
-            self.logger.warn("%s %s was still alive at cleanup time. Killing forcefully..." %
-                             (self.__class__.__name__, node.account))
-
-        node.account.kill_java_processes(self.servicejava_class_name, clean_shutdown=False, allow_fail=True)
-
-        node.account.ssh("rm -rf -- %s" % self.persistent_root, allow_fail=False)
-
-    def pids(self, node):
-        return node.account.java_pids(self.servicejava_class_name)
 
     def extract_result(self, name):
         """

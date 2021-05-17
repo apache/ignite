@@ -173,7 +173,6 @@ JDBC/ODBC:
 Java thin-client:
 * Added non-blocking socket IO usage
 * Added support for IPv6 addresses
-* Added thin Client Continuous Query
 * Added thin client Java API - async API
 * Added thin client Kubernetes discovery
 * Fixed unnecessary CHM get/remove on each request to server
@@ -194,6 +193,7 @@ Ignite .NET:
 * Added Partitions and UpdateBatchSize to SqlFieldsQuery
 * Added RendezvousAffinityFunction.BackupFilter
 * Added includeExpired to ContinuousQuery
+* Added thin client continuous query
 * Added thin client service invocation
 * Added thin client transactions
 * Fixed CachePartialUpdateException: failed to update keys (using Cache.PutAsync)

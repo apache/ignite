@@ -24,8 +24,10 @@ from time import monotonic
 from typing import NamedTuple
 
 from ducktape.mark import matrix
-from ignitetest.services.ignite import IgniteAwareService, IgniteService, get_event_time, node_failed_event_pattern
+
+from ignitetest.services.ignite import IgniteAwareService, IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
+from ignitetest.services.utils.ignite_aware import node_failed_event_pattern
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_zookeeper_cluster, from_ignite_cluster, \
@@ -33,9 +35,9 @@ from ignitetest.services.utils.ignite_configuration.discovery import from_zookee
 from ignitetest.services.utils.time_utils import epoch_mills
 from ignitetest.services.zk.zookeeper import ZookeeperService, ZookeeperSettings
 from ignitetest.utils import ignite_versions, ignore_if, cluster
+from ignitetest.utils.enum import constructible
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST, LATEST_2_7, V_2_8_0, V_2_9_0, IgniteVersion
-from ignitetest.utils.enum import constructible
 
 
 @constructible
@@ -267,8 +269,8 @@ class DiscoveryTest(IgniteTest):
 
         for survivor in [n for n in servers.nodes if n not in failed_nodes]:
             for failed_id in ids_to_wait:
-                logged_timestamps.append(get_event_time(servers, survivor, node_failed_event_pattern(failed_id),
-                                                        timeout=event_timeout_sec))
+                logged_timestamps.append(servers.get_event_time_on_node(survivor, node_failed_event_pattern(failed_id),
+                                                                        timeout=event_timeout_sec))
 
             self._check_failed_number(failed_nodes, survivor)
 
@@ -287,14 +289,14 @@ class DiscoveryTest(IgniteTest):
         """Ensures number of failed nodes is correct."""
         cmd = "grep '%s' %s | wc -l" % (node_failed_event_pattern(), survived_node.log_file)
 
-        failed_cnt = int(IgniteApplicationService.exec_command(survived_node, cmd))
+        failed_cnt = int(IgniteAwareService.exec_command(survived_node, cmd))
 
         # Cache survivor id, do not read each time.
         surv_id = IgniteApplicationService.node_id(survived_node)
 
         if failed_cnt != len(failed_nodes):
-            failed = IgniteApplicationService.exec_command(survived_node, "grep '%s' %s" % (node_failed_event_pattern(),
-                                                                                            survived_node.log_file))
+            failed = IgniteAwareService.exec_command(survived_node, "grep '%s' %s" % (node_failed_event_pattern(),
+                                                                                      survived_node.log_file))
 
             self.logger.warn("Node '%s' (%s) has detected the following failures:%s%s" %
                              (survived_node.name, surv_id, os.linesep, failed))
@@ -308,7 +310,7 @@ class DiscoveryTest(IgniteTest):
             for node in [srv_node for srv_node in service.nodes if srv_node not in failed_nodes]:
                 cmd = "grep -i '%s' %s | wc -l" % ("local node segmented", node.log_file)
 
-                failed = IgniteApplicationService.exec_command(node, cmd)
+                failed = IgniteAwareService.exec_command(node, cmd)
 
                 if int(failed) > 0:
                     raise AssertionError(

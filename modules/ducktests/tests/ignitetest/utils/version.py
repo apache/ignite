@@ -16,7 +16,7 @@
 """
 Module contains ignite version utility class.
 """
-
+import re
 from distutils.version import LooseVersion
 
 from ignitetest import __version__
@@ -34,18 +34,39 @@ class IgniteVersion(LooseVersion):
         v28 = IgniteVersion("2.8.1")
         assert v28 > v27  # assertion passes!
     """
-    def __init__(self, version_string):
-        self.is_dev = (version_string.lower() == __version__.lower()) or (version_string.lower() == "dev")
-        if self.is_dev:
-            version_string = __version__
 
-        super().__init__(version_string)
+    DEV_VERSION = "dev"
+    DEFAULT_PROJECT = "ignite"
+
+    def __init__(self, vstring=None):
+        if vstring == self.DEV_VERSION:
+            self.project = self.DEFAULT_PROJECT
+            version = vstring
+        else:
+            match = re.match(r'([a-zA-Z]*)-*([\d(dev)]+.*)', vstring)
+            self.project = self.DEFAULT_PROJECT if not match.group(1) else match.group(1)
+            version = match.group(2)
+
+        self.is_dev = (version.lower() == __version__.lower()) or version == self.DEV_VERSION
+
+        if self.is_dev:
+            version = __version__  # we may also parse pom file to gain correct version (in future)
+
+        super().__init__(version)
 
     def __str__(self):
-        if self.is_dev:
-            return "dev"
+        return "%s-%s" % (self.project, "dev" if self.is_dev else super().__str__())
 
-        return super().__str__()
+    def _cmp(self, other):
+        if isinstance(other, str):
+            other = IgniteVersion(other)
+
+        # pylint: disable=W0511
+        # todo solve comparability issues and uncomment the following
+        # if self.project != other.project:
+        #     raise Exception("Incomperable versons v1=%s, v2=%s because of different projects" % (self, other))
+
+        return super()._cmp(other)
 
     def __repr__(self):
         return "IgniteVersion ('%s')" % str(self)
@@ -77,3 +98,4 @@ V_2_11_0 = IgniteVersion("2.11.0")
 # if you updated the LATEST version
 # please check DEV version in 'tests/ignitetest/__init__.py'
 LATEST = LATEST_2_10
+OLDEST = V_2_7_6

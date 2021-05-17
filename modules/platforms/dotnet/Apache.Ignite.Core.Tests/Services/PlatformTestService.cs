@@ -395,6 +395,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /** <inheritDoc /> */
         public ServicesTest.PlatformComputeBinarizable[] testBinarizableArray(ServicesTest.PlatformComputeBinarizable[] x)
         {
+            // ReSharper disable once CoVariantArrayConversion
             return (ServicesTest.PlatformComputeBinarizable[])testBinarizableArrayOfObjects(x);
         }
 

@@ -70,7 +70,7 @@ public class GridDhtPartitionsReservation implements GridReservable {
         assert cctx != null;
         assert appKey != null;
 
-        this.topVer = cctx.shared().exchange().lastAffinityChangedTopologyVersion(topVer);
+        this.topVer = topVer;
         this.cctx = cctx;
         this.appKey = appKey;
     }
@@ -197,8 +197,7 @@ public class GridDhtPartitionsReservation implements GridReservable {
             if (reservations.compareAndSet(r, r - 1)) {
                 // If it was the last reservation and topology version changed -> attempt to evict partitions.
                 if (r == 1 && !cctx.kernalContext().isStopping() &&
-                    !topVer.equals(cctx.shared().exchange().lastAffinityChangedTopologyVersion(
-                        cctx.topology().lastTopologyChangeVersion())))
+                    !topVer.equals(cctx.topology().lastTopologyChangeVersion()))
                     tryContinueClearing(parts.get());
 
                 return;

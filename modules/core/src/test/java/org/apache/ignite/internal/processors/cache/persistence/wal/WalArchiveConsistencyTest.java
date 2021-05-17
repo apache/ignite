@@ -273,16 +273,6 @@ public class WalArchiveConsistencyTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Getting WAL manager of node.
-     *
-     * @param n Node.
-     * @return WAL manager.
-     */
-    private FileWriteAheadLogManager walMgr(IgniteEx n) {
-        return (FileWriteAheadLogManager)n.context().cache().context().wal();
-    }
-
-    /**
      * Getting db manager of node.
      *
      * @param n Node.

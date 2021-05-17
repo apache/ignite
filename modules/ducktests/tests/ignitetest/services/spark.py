@@ -45,12 +45,8 @@ class SparkService(DucktestsService, PathAware):
         self.init_logs_attribute()
 
     @property
-    def project(self):
-        return "spark"
-
-    @property
-    def version(self):
-        return self._version
+    def product(self):
+        return "%s-%s" % ("spark", self._version)
 
     @property
     def globals(self):
@@ -115,7 +111,7 @@ class SparkService(DucktestsService, PathAware):
         timeout_sec = 30
         with monitor_log(node, log_file) as monitor:
             node.account.ssh(cmd)
-            monitor.wait_until(log_msg, timeout_sec=timeout_sec, backoff_sec=5,
+            monitor.wait_until(log_msg, timeout_sec=timeout_sec, backoff_sec=.1,
                                err_msg="Spark doesn't start at %d seconds" % timeout_sec)
 
         if len(self.pids(node)) == 0:
