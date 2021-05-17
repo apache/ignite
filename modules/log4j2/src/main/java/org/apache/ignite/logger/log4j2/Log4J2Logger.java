@@ -31,7 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.logger.LoggerPostfixAware;
+import org.apache.ignite.logger.LoggerNodeIdAware;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Marker;
@@ -81,7 +81,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
  * logger in your task/job code. See {@link org.apache.ignite.resources.LoggerResource} annotation about logger
  * injection.
  */
-public class Log4J2Logger implements IgniteLogger, LoggerPostfixAware {
+public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
     /** */
     private static final String NODE_ID = "nodeId";
 
@@ -387,14 +387,10 @@ public class Log4J2Logger implements IgniteLogger, LoggerPostfixAware {
     @Override public void setNodeId(UUID nodeId) {
         A.notNull(nodeId, "nodeId");
 
-        postfix(nodeId, U.id8(nodeId));
-    }
-
-    private void postfix(UUID nodeId, String postfix) {
         this.nodeId = nodeId;
 
-        // Set postfix as system variable to be used at configuration.
-        System.setProperty(NODE_ID, postfix);
+        // Set nodeId as system variable to be used at configuration.
+        System.setProperty(NODE_ID, U.id8(nodeId));
 
         if (inited) {
             final LoggerContext ctx = impl.getContext();
@@ -417,13 +413,6 @@ public class Log4J2Logger implements IgniteLogger, LoggerPostfixAware {
     /** {@inheritDoc} */
     @Override public UUID getNodeId() {
         return nodeId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setPostfix(String postfix) {
-        A.notNull(postfix, "nodeId");
-
-        postfix(null, postfix);
     }
 
     /**

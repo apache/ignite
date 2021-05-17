@@ -21,10 +21,7 @@ import java.util.UUID;
 
 /**
  * Interface for Ignite file appenders to attach node ID to log file names.
- *
- * @deprecated Use {@link LoggerPostfixAware} instead.
  */
-@Deprecated
 public interface LoggerNodeIdAware {
     /**
      * Sets node ID.

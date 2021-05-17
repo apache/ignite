@@ -395,7 +395,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         waitingForEvt.set(true); // Flag for skipping regular log() and rollOver().
 
-        boolean recordedAfterSleep = forceArchiveSegment.await(forceArchiveSegmentMs + 1001, TimeUnit.MILLISECONDS);
+        putDummyRecords(ignite, 1);
+
+        boolean recordedAfterSleep = forceArchiveSegment.await(forceArchiveSegmentMs + getTestTimeout(), TimeUnit.MILLISECONDS);
 
         stopGrid();
 
