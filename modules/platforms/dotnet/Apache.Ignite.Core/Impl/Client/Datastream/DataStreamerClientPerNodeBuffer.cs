@@ -36,12 +36,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /** */
         private readonly SemaphoreSlim _semaphore;
 
-        /** */
-        private readonly object _firstFlushTaskSyncRoot = new object();
-
-        /** Task for the first flush has streamer id as the result. */
-        private volatile Task<long> _firstFlushTask;
-
         /** Only the thread that completes the previous buffer can set a new one to this field. */
         private volatile DataStreamerClientBuffer<TK, TV> _buffer;
 
@@ -77,71 +71,18 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
         }
 
-        public Task FlushAllAsync(bool close)
+        public Task FlushAllAsync()
         {
-            DataStreamerClientBuffer<TK, TV> buffer;
-
-            if (close)
-            {
-                while (true)
-                {
-                    buffer = _buffer;
-
-                    if (buffer == null)
-                    {
-                        return null;
-                    }
-
-                    if (Interlocked.CompareExchange(ref _buffer, null, buffer) == buffer)
-                    {
-                        // TODO: If buffer is empty or no task was scheduled, send a dedicated close request.
-                        buffer.ScheduleFlush(close: true);
-
-                        return buffer.GetChainFlushTask();
-                    }
-                }
-            }
-
-            buffer = GetBuffer();
+            var buffer = GetBuffer();
             buffer.ScheduleFlush(false);
 
             return buffer.GetChainFlushTask();
         }
 
-        internal Task<long> FlushAsync(DataStreamerClientBuffer<TK, TV> buffer, bool close)
+        internal Task<long> FlushAsync(DataStreamerClientBuffer<TK, TV> buffer)
         {
-            // First task opens the streamer on the server and returns the ID.
-            // We need to wait for the first flush before starting more flushes.
-            var firstFlushTask = _firstFlushTask;
-
-            if (firstFlushTask == null)
-            {
-                lock (_firstFlushTaskSyncRoot)
-                {
-                    firstFlushTask = _firstFlushTask;
-
-                    if (firstFlushTask == null)
-                    {
-                        firstFlushTask = _client.FlushBufferAsync(
-                            buffer, streamerId: null, _socket, _semaphore, flush: true, close);
-
-                        _firstFlushTask = firstFlushTask;
-
-                        return firstFlushTask;
-                    }
-                }
-            }
-
-            if (firstFlushTask.IsCompleted)
-            {
-                return _client.FlushBufferAsync(
-                    buffer, streamerId: firstFlushTask.Result, _socket, _semaphore, flush: true, close);
-            }
-
-            return firstFlushTask
-                .ContinueWith(t => _client.FlushBufferAsync(
-                    buffer, streamerId: t.Result, _socket, _semaphore, flush: true, close))
-                .Unwrap();
+            return _client.FlushBufferAsync(
+                buffer, streamerId: null, _socket, _semaphore, flush: true, close: true);
         }
 
         private DataStreamerClientBuffer<TK, TV> GetBuffer()
