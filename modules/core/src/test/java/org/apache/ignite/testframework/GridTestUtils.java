@@ -2513,10 +2513,10 @@ public final class GridTestUtils {
          *
          * @throws Exception If failed.
          */
-        void acceptX(T t) throws Exception;
+        public void acceptX(T t) throws Exception;
 
         /** {@inheritDoc} */
-        @Override default void accept(T t) {
+        @Override public default void accept(T t) {
             try {
                 acceptX(t);
             }

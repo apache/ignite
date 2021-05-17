@@ -54,7 +54,7 @@ public class TestCertificateSecurityProcessor extends GridProcessorAdapter imple
     /** Permissions. */
     public static final Map<String, SecurityPermissionSet> PERMS = new ConcurrentHashMap<>();
 
-    /** */
+    /** Key - security subject ID, value - security contexts referred to this security subject. */
     private final Map<UUID, SecurityContext> secCtxs = new ConcurrentHashMap<>();
 
     /** Users security data. */

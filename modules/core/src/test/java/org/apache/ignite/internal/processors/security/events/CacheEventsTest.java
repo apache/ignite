@@ -336,7 +336,9 @@ public class CacheEventsTest extends AbstractCacheEventsTest {
         return op;
     }
 
-    /** */
+    /**
+     * @return Operation to test.
+     */
     @Override protected GridTestUtils.ConsumerX<String> operation() {
         if ("rest".equals(expLogin)) {
             if (op == TestOperation.SCAN_QUERY) {

@@ -45,7 +45,6 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridInternalWrapper;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteDomainCombiner;
@@ -349,6 +348,7 @@ public class SecurityUtils {
             });
         }
     }
+
     /**
      * Runnable that can throw exceptions.
      */

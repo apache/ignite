@@ -1367,12 +1367,22 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         dataStreamExecSvc = wrapToSecurityAware(dataStreamExecSvc);
     }
 
-    /** */
+    /**
+     * Wraps original executor by security aware implementation.
+     *
+     * @param original Original executor.
+     * @return Security aware executor.
+     */
     private StripedExecutor wrapToSecurityAware(StripedExecutor original) {
         return original != null ? new SecurityAwareStripedExecutor(this, original) : null;
     }
 
-    /** */
+    /**
+     * Wraps original executor by security aware implementation.
+     *
+     * @param original Original executor.
+     * @return Security aware executor.
+     */
     private ExecutorService wrapToSecurityAware(ExecutorService original) {
         return original != null ? new SecurityAwareExecutorService(this, original) : null;
     }

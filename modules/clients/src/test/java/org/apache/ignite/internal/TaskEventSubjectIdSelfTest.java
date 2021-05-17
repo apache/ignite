@@ -316,7 +316,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
 
     /**
      * Events for class tasks that was started from external clients should contain
-     * subject id if security enabled, otherwise null.
+     * subject ID if security enabled, otherwise null.
      *
      * @throws Exception If failed.
      */

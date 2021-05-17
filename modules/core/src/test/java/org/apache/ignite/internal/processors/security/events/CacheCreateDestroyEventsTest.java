@@ -233,7 +233,11 @@ public class CacheCreateDestroyEventsTest extends AbstractSecurityTest {
         }
     }
 
-    /** */
+    /**
+     * Create/destroy cach events should contain relevant subject ID.
+     *
+     * @throws Exception if fail.
+     */
     @Test
     public void testDynamicCreateDestroyCache() throws Exception {
         int expTimes = cacheCnt * (op != TestOperation.CHANGE_CLUSTER_STATE &&

@@ -226,7 +226,9 @@ public class TaskAndJobEventsTest extends AbstractSecurityTest {
             locSet.isEmpty());
     }
 
-    /** */
+    /**
+     * @return Operation to test.
+     */
     private GridTestUtils.RunnableX operation() {
         final Long timeToSleep = timedout ? TIME_TO_SLEEP : null;
 
