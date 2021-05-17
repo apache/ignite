@@ -38,7 +38,7 @@ import static org.apache.ignite.internal.processors.cache.CacheGetRemoveSkipStor
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
 
 /**
- * Tests REST processor configuration via Ignite plugins functionality.
+ * Tests REST processor authorization commands GET_OR_CREATE_CACHE / DESTROY_CACHE.
  */
 public class RestProcessorAuthorizationTest extends CommonSecurityCheckTest {
     /** */
