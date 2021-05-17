@@ -46,7 +46,6 @@ SELECT a, COUNT(*), COUNT(s), COUNT(DISTINCT s) FROM test GROUP BY a ORDER BY a;
 11	3	2	1
 12	2	2	1
 
-
 # string min/max with long strings
 statement ok
 CREATE TABLE test_strings(s VARCHAR);

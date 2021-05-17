@@ -214,7 +214,6 @@ public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
     }
 
     /**
-     *
      * @throws Exception If failed.
      */
     @Test
