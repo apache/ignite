@@ -139,7 +139,10 @@ public enum IgniteFeatures {
     CACHE_GROUP_KEY_CHANGE(47),
 
     /** Collecting performance statistics. */
-    PERFORMANCE_STATISTICS(48);
+    PERFORMANCE_STATISTICS(48),
+
+    /** Restore cache group from the snapshot. */
+    SNAPSHOT_RESTORE_CACHE_GROUP(49);
 
     /**
      * Unique feature identifier.
