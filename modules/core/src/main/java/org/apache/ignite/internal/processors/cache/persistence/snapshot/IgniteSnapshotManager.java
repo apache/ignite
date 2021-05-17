@@ -55,6 +55,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -106,6 +107,7 @@ import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
+import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridBusyLock;
@@ -166,6 +168,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirectories;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.DB_DEFAULT_FOLDER;
+import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
+import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_DATA;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getPageIO;
@@ -477,7 +481,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (!snpDir.exists())
             return;
 
-        assert snpDir.isDirectory() : snpDir;
+        if (!snpDir.isDirectory())
+            return;
 
         try {
             File binDir = binaryWorkDir(snpDir.getAbsolutePath(), folderName);
@@ -579,6 +584,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         Set<Integer> leftGrps = new HashSet<>(grpIds);
         leftGrps.removeAll(cctx.cache().cacheGroupDescriptors().keySet());
+        boolean withMetaStorage = leftGrps.remove(METASTORAGE_CACHE_ID);
 
         if (!leftGrps.isEmpty()) {
             return new GridFinishedFuture<>(new IgniteCheckedException("Some of requested cache groups doesn't exist " +
@@ -598,13 +604,19 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         IgniteInternalFuture<Set<GroupPartitionId>> task0;
 
-        if (parts.isEmpty())
+        if (parts.isEmpty() && !withMetaStorage)
             task0 = new GridFinishedFuture<>(Collections.emptySet());
         else {
             task0 = registerSnapshotTask(req.snapshotName(),
                 req.operationalNodeId(),
                 parts,
+                withMetaStorage,
                 locSndrFactory.apply(req.snapshotName()));
+
+            if (withMetaStorage) {
+                ((DistributedMetaStorageImpl)cctx.kernalContext().distributedMetastorage())
+                    .suspend(((SnapshotFutureTask)task0).started());
+            }
 
             clusterSnpReq = req;
         }
@@ -945,12 +957,22 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return The list of cache or cache group names in given snapshot on local node.
      */
     public List<File> snapshotCacheDirectories(String snpName, String folderName) {
+        return snapshotCacheDirectories(snpName, folderName, name -> true);
+    }
+
+    /**
+     * @param snpName Snapshot name.
+     * @param folderName Directory name for cache group.
+     * @param names Cache group names to filter.
+     * @return The list of cache or cache group names in given snapshot on local node.
+     */
+    public List<File> snapshotCacheDirectories(String snpName, String folderName, Predicate<String> names) {
         File snpDir = snapshotLocalDir(snpName);
 
         if (!snpDir.exists())
             return Collections.emptyList();
 
-        return cacheDirectories(new File(snpDir, databaseRelativePath(folderName)), name -> true);
+        return cacheDirectories(new File(snpDir, databaseRelativePath(folderName)), names);
     }
 
     /**
@@ -1097,6 +1119,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 .map(CacheGroupDescriptor::cacheOrGroupName)
                 .collect(Collectors.toList());
 
+            grps.add(METASTORAGE_CACHE_NAME);
+
             List<ClusterNode> srvNodes = cctx.discovery().serverNodes(AffinityTopologyVersion.NONE);
 
             snpFut0.listen(f -> {
@@ -1112,8 +1136,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 grps,
                 new HashSet<>(F.viewReadOnly(srvNodes,
                     F.node2id(),
-                    (node) -> CU.baselineNode(node, clusterState)))
-            ));
+                    (node) -> CU.baselineNode(node, clusterState)))));
 
             String msg = "Cluster-wide snapshot operation started [snpName=" + name + ", grps=" + grps + ']';
 
@@ -1206,7 +1229,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             // Schedule task on a checkpoint and wait when it starts.
             try {
-                task.awaitStarted();
+                task.started().get();
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Fail to wait while cluster-wide snapshot operation started", e);
@@ -1297,6 +1320,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param snpName Unique snapshot name.
      * @param srcNodeId Node id which cause snapshot operation.
      * @param parts Collection of pairs group and appropriate cache partition to be snapshot.
+     * @param withMetaStorage {@code true} if all metastorage data must be also included into snapshot.
      * @param snpSndr Factory which produces snapshot receiver instance.
      * @return Snapshot operation task which should be registered on checkpoint to run.
      */
@@ -1304,6 +1328,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         String snpName,
         UUID srcNodeId,
         Map<Integer, Set<Integer>> parts,
+        boolean withMetaStorage,
         SnapshotSender snpSndr
     ) {
         if (!busyLock.enterBusy())
@@ -1323,6 +1348,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     ioFactory,
                     snpSndr,
                     parts,
+                    withMetaStorage,
                     locBuff));
 
             if (prev != null)
