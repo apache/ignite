@@ -33,7 +33,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.logger.LoggerPostfixAware;
+import org.apache.ignite.logger.LoggerNodeIdAware;
 import org.apache.log4j.Appender;
 import org.apache.log4j.Category;
 import org.apache.log4j.ConsoleAppender;
@@ -79,7 +79,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
  * logger in your task/job code. See {@link org.apache.ignite.resources.LoggerResource} annotation about logger
  * injection.
  */
-public class Log4JLogger implements IgniteLogger, LoggerPostfixAware, Log4jFileAware {
+public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAware {
     /** Appenders. */
     private static Collection<FileAppender> fileAppenders = new GridConcurrentHashSet<>();
 
@@ -503,26 +503,14 @@ public class Log4JLogger implements IgniteLogger, LoggerPostfixAware, Log4jFileA
     @Override public void setNodeId(UUID nodeId) {
         A.notNull(nodeId, "nodeId");
 
-        postfix(nodeId, U.id8(nodeId));
-    }
-
-    /** */
-    private void postfix(UUID nodeId, String postfix) {
         this.nodeId = nodeId;
 
-        updateFilePath(new Log4jNodeIdFilePath(postfix));
+        updateFilePath(new Log4jNodeIdFilePath(nodeId));
     }
 
     /** {@inheritDoc} */
     @Override public UUID getNodeId() {
         return nodeId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setPostfix(String postfix) {
-        A.notNull(postfix, "postfix");
-
-        postfix(nodeId, postfix);
     }
 
     /**
