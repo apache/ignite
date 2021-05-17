@@ -70,6 +70,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.IgniteFeatures.SNAPSHOT_RESTORE_CACHE_GROUP;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_ROLLBACK;
@@ -625,7 +626,10 @@ public class SnapshotRestoreProcess {
         FilePageStoreManager pageStore = (FilePageStoreManager)cctx.pageStore();
 
         // Collect the cache configurations and prepare a temporary directory for copying files.
-        for (File snpCacheDir : cctx.snapshotMgr().snapshotCacheDirectories(req.snapshotName(), meta.folderName())) {
+        // Metastorage can be restored only manually by directly copying files.
+        for (File snpCacheDir : cctx.snapshotMgr().snapshotCacheDirectories(req.snapshotName(), meta.folderName(),
+            name -> !METASTORAGE_CACHE_NAME.equals(name)))
+        {
             String grpName = FilePageStoreManager.cacheGroupName(snpCacheDir);
 
             if (!F.isEmpty(req.groups()) && !req.groups().contains(grpName))
