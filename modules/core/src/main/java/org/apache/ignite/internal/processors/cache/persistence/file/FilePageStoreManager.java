@@ -1006,6 +1006,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /**
      * @param dir Directory to check.
+     * @param names Cache group names to filter.
      * @return Files that match cache or cache group pattern.
      */
     public static List<File> cacheDirectories(File dir, Predicate<String> names) {

@@ -55,6 +55,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -956,12 +957,22 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return The list of cache or cache group names in given snapshot on local node.
      */
     public List<File> snapshotCacheDirectories(String snpName, String folderName) {
+        return snapshotCacheDirectories(snpName, folderName, name -> true);
+    }
+
+    /**
+     * @param snpName Snapshot name.
+     * @param folderName Directory name for cache group.
+     * @param names Cache group names to filter.
+     * @return The list of cache or cache group names in given snapshot on local node.
+     */
+    public List<File> snapshotCacheDirectories(String snpName, String folderName, Predicate<String> names) {
         File snpDir = snapshotLocalDir(snpName);
 
         if (!snpDir.exists())
             return Collections.emptyList();
 
-        return cacheDirectories(new File(snpDir, databaseRelativePath(folderName)), name -> true);
+        return cacheDirectories(new File(snpDir, databaseRelativePath(folderName)), names);
     }
 
     /**
