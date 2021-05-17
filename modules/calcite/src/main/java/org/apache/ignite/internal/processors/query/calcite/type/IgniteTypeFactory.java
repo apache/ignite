@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.type;
 
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
+import java.nio.charset.Charset;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -213,6 +214,12 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
             return F.first(types);
 
         return super.leastRestrictive(types);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Charset getDefaultCharset() {
+        // Use JVM default charset rather then Calcite default charset (ISO-8859-1).
+        return Charset.defaultCharset();
     }
 
     /** */
