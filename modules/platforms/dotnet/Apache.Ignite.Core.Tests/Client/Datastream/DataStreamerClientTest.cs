@@ -99,9 +99,17 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             var cache = GetClientCache<string>();
             var keys = TestUtils.GetPrimaryKeys(GetIgnite(), cache.Name).Take(10).ToArray();
 
+            // Set server buffers to 1 so that server always flushes the data.
+            var options = new DataStreamerClientOptions<int, int>
+            {
+                ClientPerNodeBufferSize = 3,
+                ServerPerNodeBufferSize = 1,
+                ServerPerThreadBufferSize = 1
+            };
+
             using (var streamer = Client.GetDataStreamer(
                 cache.Name,
-                new DataStreamerClientOptions<int, int>{ClientPerNodeBufferSize = 3}))
+                options))
             {
                 streamer.Add(keys[1], 1);
                 Assert.AreEqual(0, cache.GetSize());
