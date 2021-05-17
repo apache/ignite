@@ -44,7 +44,7 @@ def get_module_path(project_dir, module_name, is_dev):
 
 def get_shared_root_path(_globals):
     """
-    Get path shared root directory.
+    Get path to shared root directory.
     """
     return os.path.join(_globals.get("persistent_root", "/mnt/service"), "shared")
 
