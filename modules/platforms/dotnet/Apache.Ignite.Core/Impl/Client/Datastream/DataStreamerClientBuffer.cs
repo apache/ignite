@@ -146,7 +146,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
             if (newSize == _entries.Length)
             {
-                TryRunFlushAction(serverFlush: false, close: false);
+                TryRunFlushAction(close: false);
             }
 
             return true;
@@ -164,12 +164,12 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 return false;
             }
 
-            TryRunFlushAction(serverFlush: true, close);
+            TryRunFlushAction(close);
 
             return true;
         }
 
-        private void TryRunFlushAction(bool serverFlush, bool close)
+        private void TryRunFlushAction(bool close)
         {
             _rwLock.EnterWriteLock();
 
@@ -198,7 +198,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 }
                 else if (Count > 0)
                 {
-                    RunFlushAction(serverFlush, close: false);
+                    RunFlushAction(serverFlush: false, close: false);
                 }
                 else
                 {

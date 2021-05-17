@@ -104,7 +104,11 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             buffer = GetBuffer();
             buffer.ScheduleFlush(false);
 
-            return buffer.GetChainFlushTask();
+            return buffer.GetChainFlushTask()
+                // Force server-side flush after all flush tasks are complete.
+                // _firstFlushTask should be finished at this point.
+                .ContinueWith(_ => _client.FlushBufferAsync(null, _firstFlushTask.Result, _socket, _semaphore, flush: true, close: false))
+                .Unwrap();
         }
 
         internal Task<long> FlushAsync(DataStreamerClientBuffer<TK, TV> buffer, bool serverFlush, bool close)
