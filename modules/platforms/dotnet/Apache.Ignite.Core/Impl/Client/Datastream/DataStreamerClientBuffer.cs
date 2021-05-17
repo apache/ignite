@@ -101,8 +101,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                     _flushCompletionSource = new TaskCompletionSource<object>();
                 }
 
-                // TODO: This does not work when this and previous bufs are flushed
-                return _flushCompletionSource.Task;
+                return previous == null
+                    ? _flushCompletionSource.Task
+                    : TaskRunner.WhenAll(new[] {previous.GetChainFlushTask(), _flushCompletionSource.Task});
             }
             finally
             {
