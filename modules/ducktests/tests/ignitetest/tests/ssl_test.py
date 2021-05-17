@@ -20,20 +20,13 @@ from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
-from ignitetest.services.utils.path import PathAware
+from ignitetest.services.utils.path import get_shared_root_path
 from ignitetest.services.utils.ssl.connector_configuration import ConnectorConfiguration
 from ignitetest.services.utils.ssl.ssl_params import SslParams, DEFAULT_SERVER_KEYSTORE, DEFAULT_CLIENT_KEYSTORE, \
     DEFAULT_ADMIN_KEYSTORE
 from ignitetest.utils import ignite_versions, cluster
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import IgniteVersion, DEV_BRANCH, LATEST
-
-
-def get_shared_root(test_context):
-    """
-    :return shared_root
-    """
-    return PathAwareSslTestImpl(test_context).shared_root
 
 
 # pylint: disable=W0223
@@ -49,7 +42,7 @@ class SslTest(IgniteTest):
         Test that IgniteService, IgniteApplicationService correctly start and stop with ssl configurations.
         And check ControlUtility with ssl arguments.
         """
-        shared_root = get_shared_root(self.test_context)
+        shared_root = get_shared_root_path(self.test_context.globals)
 
         server_ssl = SslParams(shared_root, key_store_jks=DEFAULT_SERVER_KEYSTORE)
 
@@ -81,15 +74,3 @@ class SslTest(IgniteTest):
 
         app.stop()
         ignite.stop()
-
-
-class PathAwareSslTestImpl(PathAware):
-    """
-    PathAware implemetation used to get shared root path in ssl test
-    """
-    def __init__(self, context):
-        self.context = context
-
-    @property
-    def globals(self):
-        return self.context.globals
