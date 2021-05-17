@@ -1,10 +1,9 @@
 # name: test/sql/aggregate/aggregates/test_aggr_string.test
 # description: Test aggregations on strings
 # group: [aggregates]
-# Ignore: https://issues.apache.org/jira/browse/IGNITE-14545
 
 query TTTTI
-SELECT NULL as a, NULL as b, NULL as c, NULL as d, 1 as id UNION SELECT 'Кирилл' as a, 'Müller' as b, '我是谁' as c, 'ASCII' as d, 2 as id ORDER BY 1
+SELECT NULL as a, NULL as b, NULL as c, NULL as d, 1 as id UNION SELECT 'Кирилл' as a, 'Müller' as b, '我是谁' as c, 'ASCII' as d, 2 as id ORDER BY 1 NULLS FIRST
 ----
 NULL	NULL	NULL	NULL	1
 Кирилл	Müller	我是谁	ASCII	2
@@ -53,6 +52,12 @@ SELECT a, COUNT(*), COUNT(s), COUNT(DISTINCT s) FROM test GROUP BY a ORDER BY a;
 11	3	2	1
 12	2	2	1
 
+# now with WHERE clause
+query IIII
+SELECT a, COUNT(*), COUNT(s), COUNT(DISTINCT s) FROM test WHERE s IS NOT NULL GROUP BY a ORDER BY a;
+----
+11	2	2	1
+12	2	2	1
 
 # string min/max with long strings
 statement ok
@@ -74,9 +79,3 @@ SELECT MAX(s), MIN(s) FROM test_strings2;
 ----
 aa	A
 
-# now with WHERE clause
-query IIII
-SELECT a, COUNT(*), COUNT(s), COUNT(DISTINCT s) FROM test WHERE s IS NOT NULL GROUP BY a ORDER BY a;
-----
-11	2	2	1
-12	2	2	1
