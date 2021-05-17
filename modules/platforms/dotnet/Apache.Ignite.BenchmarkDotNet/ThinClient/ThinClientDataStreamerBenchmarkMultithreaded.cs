@@ -25,13 +25,11 @@ namespace Apache.Ignite.BenchmarkDotNet.ThinClient
     /// |----------------- |---------:|--------:|--------:|----------:|----------:|------:|----------:|
     /// | StreamThinClient | 108.4 ms | 2.71 ms | 7.82 ms | 3000.0000 | 1000.0000 |     - |  19.79 MB |
     /// Clear parent links, reduce task alloc:
-    /// |           Method |     Mean |   Error |  StdDev |     Gen 0 | Gen 1 | Gen 2 | Allocated |
-    /// |----------------- |---------:|--------:|--------:|----------:|------:|------:|----------:|
     /// | StreamThinClient | 106.6 ms | 2.89 ms | 8.43 ms | 2000.0000 |     - |     - |  16.67 MB |
     /// Keep open streamers:
-    /// |           Method |     Mean |   Error |   StdDev |     Gen 0 |     Gen 1 | Gen 2 | Allocated |
-    /// |----------------- |---------:|--------:|---------:|----------:|----------:|------:|----------:|
     /// | StreamThinClient | 161.6 ms | 6.09 ms | 17.39 ms | 3000.0000 | 1000.0000 |     - |  18.05 MB |
+    /// Keep open streamers, background init:
+    /// | StreamThinClient | 144.6 ms | 5.73 ms | 16.88 ms | 2000.0000 |     - |     - |  16.69 MB |
     /// </summary>
     [MemoryDiagnoser]
     public class ThinClientDataStreamerBenchmarkMultithreaded : ThinClientBenchmarkBase
