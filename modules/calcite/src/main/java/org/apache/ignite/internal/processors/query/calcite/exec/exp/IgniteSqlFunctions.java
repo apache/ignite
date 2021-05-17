@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.query.calcite.fun;
+package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
 import org.apache.calcite.DataContext;
 import org.apache.calcite.config.CalciteConnectionConfig;
@@ -22,13 +22,11 @@ import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
-import org.apache.calcite.linq4j.function.Strict;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.ScannableTable;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.Statistic;
-import org.apache.calcite.schema.Statistics;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.type.SqlTypeName;
@@ -46,19 +44,13 @@ public class IgniteSqlFunctions {
     }
 
     /** SQL SYSTEM_RANGE(start, end) table function. */
-    public static ScannableTable system_range(Object rangeStart, Object rangeEnd) {
+    public static ScannableTable systemRange(Object rangeStart, Object rangeEnd) {
         return new RangeTable(rangeStart, rangeEnd, 1L);
     }
 
     /** SQL SYSTEM_RANGE(start, end, increment) table function. */
-    public static ScannableTable system_range(Object rangeStart, Object rangeEnd, Object increment) {
+    public static ScannableTable systemRange(Object rangeStart, Object rangeEnd, Object increment) {
         return new RangeTable(rangeStart, rangeEnd, increment);
-    }
-
-    /** SQL LENGTH(string) function. */
-    @Strict
-    public static int length(String str) {
-        return str.length();
     }
 
     /** */
@@ -140,9 +132,7 @@ public class IgniteSqlFunctions {
 
         /** {@inheritDoc} */
         @Override public Statistic getStatistic() {
-            // We can't get access to this method from physical node on planning phase and Calcite dosn't use it either,
-            // so we can return any value here, it can't be used.
-            return Statistics.UNKNOWN;
+            throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */
