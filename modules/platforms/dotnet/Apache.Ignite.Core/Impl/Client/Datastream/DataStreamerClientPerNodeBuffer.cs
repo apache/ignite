@@ -77,7 +77,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
         }
 
-        public Task ScheduleFlush(bool close)
+        public Task FlushAllAsync(bool close)
         {
             DataStreamerClientBuffer<TK, TV> buffer;
 
