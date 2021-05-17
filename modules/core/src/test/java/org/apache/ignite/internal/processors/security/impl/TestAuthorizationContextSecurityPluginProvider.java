@@ -58,13 +58,13 @@ public class TestAuthorizationContextSecurityPluginProvider extends TestSecurity
      */
     public static class TestAuthorizationContext {
         /** */
-        private final String name;
+        public final String name;
 
         /** */
-        private final SecurityPermission perm;
+        public final SecurityPermission perm;
 
         /** */
-        private final SecurityContext securityCtx;
+        public final SecurityContext securityCtx;
 
         /** */
         public TestAuthorizationContext(String name, SecurityPermission perm,
@@ -72,21 +72,6 @@ public class TestAuthorizationContextSecurityPluginProvider extends TestSecurity
             this.name = name;
             this.perm = perm;
             this.securityCtx = securityCtx;
-        }
-
-        /** */
-        public String getName() {
-            return name;
-        }
-
-        /** */
-        public SecurityPermission getPerm() {
-            return perm;
-        }
-
-        /** */
-        public SecurityContext getSecurityCtx() {
-            return securityCtx;
         }
     }
 

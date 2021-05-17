@@ -42,12 +42,12 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL
  */
 public class RestProcessorAuthorizationTest extends CommonSecurityCheckTest {
     /** */
-    private final List<TestAuthorizationContext> hndlr = new ArrayList<>();
+    private final List<TestAuthorizationContext> authorizationCtxList = new ArrayList<>();
 
     /** {@inheritDoc} */
     @Override protected PluginProvider<?> getPluginProvider(String name) {
         return new TestAuthorizationContextSecurityPluginProvider(name, null, ALLOW_ALL,
-            globalAuth, hndlr::add, clientData());
+            globalAuth, authorizationCtxList::add, clientData());
     }
 
     /**
@@ -68,23 +68,23 @@ public class RestProcessorAuthorizationTest extends CommonSecurityCheckTest {
 
         executeCommand(GridRestCommand.GET_OR_CREATE_CACHE, login, pwd);
 
-        TestAuthorizationContext ctx = hndlr.get(0);
+        TestAuthorizationContext ctx = authorizationCtxList.get(0);
 
-        assertEquals(TEST_CACHE, ctx.getName());
-        assertEquals(SecurityPermission.CACHE_CREATE, ctx.getPerm());
-        assertEquals(login, ctx.getSecurityCtx().subject().login());
+        assertEquals(TEST_CACHE, ctx.name);
+        assertEquals(SecurityPermission.CACHE_CREATE, ctx.perm);
+        assertEquals(login, ctx.securityCtx.subject().login());
 
         assertNotNull(ignite.cache(TEST_CACHE));
 
-        hndlr.clear();
+        authorizationCtxList.clear();
 
         executeCommand(GridRestCommand.DESTROY_CACHE, login, pwd);
 
-        ctx = hndlr.get(0);
+        ctx = authorizationCtxList.get(0);
 
-        assertEquals(TEST_CACHE, ctx.getName());
-        assertEquals(SecurityPermission.CACHE_DESTROY, ctx.getPerm());
-        assertEquals(login, ctx.getSecurityCtx().subject().login());
+        assertEquals(TEST_CACHE, ctx.name);
+        assertEquals(SecurityPermission.CACHE_DESTROY, ctx.perm);
+        assertEquals(login, ctx.securityCtx.subject().login());
 
         assertNull(ignite.cache(TEST_CACHE));
     }
