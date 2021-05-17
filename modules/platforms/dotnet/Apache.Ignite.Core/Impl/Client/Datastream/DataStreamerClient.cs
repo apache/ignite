@@ -222,7 +222,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             foreach (var pair in _buffers)
             {
                 var buffer = pair.Value;
-                var task = buffer.FlushAllAsync();
+                var task = buffer.FlushAllAsync(close);
 
                 if (task != null && !task.IsCompleted)
                 {
