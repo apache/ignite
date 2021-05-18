@@ -445,6 +445,21 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         /**
          * Rotate performance statistics.
          */
-        PERFORMANCE_STATISTICS_ROTATE
+        PERFORMANCE_STATISTICS_ROTATE,
+
+        /**
+         * Cache group restore prepare phase.
+         */
+        RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE,
+
+        /**
+         * Cache group restore cache start phase.
+         */
+        RESTORE_CACHE_GROUP_SNAPSHOT_START,
+
+        /**
+         * Cache group restore rollback phase.
+         */
+        RESTORE_CACHE_GROUP_SNAPSHOT_ROLLBACK
     }
 }
