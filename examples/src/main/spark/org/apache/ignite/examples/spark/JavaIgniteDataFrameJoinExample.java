@@ -120,7 +120,9 @@ public class JavaIgniteDataFrameJoinExample {
         cities.createOrReplaceTempView("city");
 
         // Selecting data from Ignite through Spark SQL Engine.
-        Dataset<Row> joinResult = spark.sql("SELECT person.name AS person, age, city.name AS city, country FROM person JOIN city ON person.city_id = city.id");
+        Dataset<Row> joinResult = spark.sql(
+            "SELECT person.name AS person, age, city.name AS city, country FROM person JOIN city ON person.city_id = city.id"
+        );
 
         joinResult.explain(true);
         joinResult.printSchema();
