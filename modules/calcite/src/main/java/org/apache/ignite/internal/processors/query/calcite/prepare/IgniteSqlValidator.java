@@ -53,6 +53,7 @@ import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.sql.validate.SqlValidatorTable;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTableImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -128,9 +129,13 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** {@inheritDoc} */
     @Override protected SqlSelect createSourceSelectForUpdate(SqlUpdate call) {
-        final SqlNodeList selectList = SqlNodeList.of(
-            new SqlIdentifier(QueryUtils.KEY_FIELD_NAME, SqlParserPos.ZERO),
-            new SqlIdentifier(QueryUtils.VAL_FIELD_NAME, SqlParserPos.ZERO));
+        final SqlNodeList selectList = new SqlNodeList(SqlParserPos.ZERO);
+        final SqlValidatorTable table = getCatalogReader().getTable(((SqlIdentifier)call.getTargetTable()).names);
+
+        table.unwrap(IgniteTable.class).descriptor().selectForUpdateRowType((IgniteTypeFactory)typeFactory)
+            .getFieldNames().stream()
+            .map(name -> new SqlIdentifier(name, SqlParserPos.ZERO))
+            .forEach(selectList::add);
 
         int ordinal = 0;
         // Force unique aliases to avoid a duplicate for Y with SET X=Y
