@@ -58,7 +58,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 
@@ -71,7 +70,7 @@ import static org.junit.Assert.assertThat;
  *
  */
 @WithSystemProperty(key = "calcite.debug", value = "false")
-public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
+public class CalciteQueryProcessorTest extends GridCommonCalciteAbstractTest {
     /** */
     private static IgniteEx client;
 

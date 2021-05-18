@@ -25,9 +25,9 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.QueryEngine;
+import org.apache.ignite.internal.processors.query.calcite.GridCommonCalciteAbstractTest;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -53,7 +53,7 @@ import static org.hamcrest.CoreMatchers.not;
  * SELECT * FROM products
  *      WHERE subcategory ='Camera Media' AND LNNVL(category, 'Photo');
  */
-public class OrToUnionRuleTest extends GridCommonAbstractTest {
+public class OrToUnionRuleTest extends GridCommonCalciteAbstractTest {
     /** */
     public static final String IDX_SUBCAT_ID = "IDX_SUBCAT_ID";
 

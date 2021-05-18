@@ -33,7 +33,6 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.AbstractNode
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static java.util.Collections.singletonList;
@@ -41,7 +40,7 @@ import static java.util.Collections.singletonList;
 /**
  * Limit / offset tests.
  */
-public class LimitOffsetTest extends GridCommonAbstractTest {
+public class LimitOffsetTest extends GridCommonCalciteAbstractTest {
     /** */
     private static IgniteCache<Integer, String> cacheRepl;
 

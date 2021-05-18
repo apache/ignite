@@ -36,7 +36,6 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.RemoteExcept
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static java.util.Collections.singletonList;
@@ -46,7 +45,7 @@ import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.a
 /**
  * Cancel query test.
  */
-public class CancelTest extends GridCommonAbstractTest {
+public class CancelTest extends GridCommonCalciteAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         startGrids(2);

@@ -30,7 +30,7 @@ import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
 import org.apache.calcite.sql.ddl.SqlKeyConstraint;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.internal.processors.query.calcite.GridCommonCalciteAbstractTest;
 import org.hamcrest.CustomMatcher;
 import org.hamcrest.Matcher;
 import org.junit.Test;
@@ -44,7 +44,7 @@ import static org.junit.Assert.assertThat;
 /**
  * Test suite to verify parsing of the DDL command.
  */
-public class SqlDdlParserTest extends GridCommonAbstractTest {
+public class SqlDdlParserTest extends GridCommonCalciteAbstractTest {
     /**
      * Very simple case where only table name and a few columns are presented.
      */

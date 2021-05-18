@@ -41,7 +41,6 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.hamcrest.CustomMatcher;
 import org.hamcrest.Matcher;
 import org.junit.After;
@@ -56,7 +55,7 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
 
 /** */
-public class TableDdlIntegrationTest extends GridCommonAbstractTest {
+public class TableDdlIntegrationTest extends GridCommonCalciteAbstractTest {
     /** */
     private static final String CLIENT_NODE_NAME = "client";
 

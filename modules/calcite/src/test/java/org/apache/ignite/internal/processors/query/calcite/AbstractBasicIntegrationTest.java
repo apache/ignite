@@ -28,13 +28,12 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  *
  */
 @WithSystemProperty(key = "calcite.debug", value = "false")
-public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
+public class AbstractBasicIntegrationTest extends GridCommonCalciteAbstractTest {
     /** */
     private static IgniteEx client;
 
@@ -53,16 +52,6 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         }
 
         cleanQueryPlanCache();
-    }
-
-    /** */
-    protected void cleanQueryPlanCache() {
-        for (Ignite ign : G.allGrids()) {
-            CalciteQueryProcessor qryProc = (CalciteQueryProcessor)Commons.lookupComponent(
-                ((IgniteEx)ign).context(), QueryEngine.class);
-
-            qryProc.queryPlanCache().clear();
-        }
     }
 
     /** */

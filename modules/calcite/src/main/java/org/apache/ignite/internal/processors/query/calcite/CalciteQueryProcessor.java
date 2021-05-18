@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.QueryEngine;
+import org.apache.ignite.internal.processors.query.RunningFragmentInfo;
 import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeServiceImpl;
@@ -262,13 +263,18 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     }
 
     /** {@inheritDoc} */
-    @Override public List<RunningQueryInfo> runningSqlQueries() {
-        return runningQryScv.runningSqlQueries();
+    @Override public List<RunningQueryInfo> runningQueries() {
+        return runningQryScv.runningQueries();
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<RunningFragmentInfo> runningFragments() {
+        return runningQryScv.runningFragments();
     }
 
     /** {@inheritDoc} */
     @Override public void cancelQuery(UUID qryId) {
-        runningQryScv.cancelQuery(qryId);
+        executionSvc.cancelQuery(qryId);
     }
 
     /** */

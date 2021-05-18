@@ -52,7 +52,7 @@ import static org.hamcrest.CoreMatchers.not;
 /**
  * Basic index tests.
  */
-public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstractTest {
+public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonCalciteAbstractTest {
     /** */
     private static final String DEPID_IDX = "DEPID_IDX";
 

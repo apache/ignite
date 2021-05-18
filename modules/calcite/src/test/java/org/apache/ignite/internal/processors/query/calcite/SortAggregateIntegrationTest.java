@@ -33,7 +33,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static java.util.Collections.singletonList;
@@ -41,7 +40,7 @@ import static java.util.Collections.singletonList;
 /**
  * Sort aggregate integration test.
  */
-public class SortAggregateIntegrationTest extends GridCommonAbstractTest {
+public class SortAggregateIntegrationTest extends GridCommonCalciteAbstractTest {
     /** */
     public static final int ROWS = 103;
 

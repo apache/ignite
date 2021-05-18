@@ -34,6 +34,13 @@ public interface MessageService extends Service {
     void send(UUID nodeId, CalciteMessage msg) throws IgniteCheckedException;
 
     /**
+     * Sends broadcast message in cluster.
+     *
+     * @param msg Message.
+     */
+    void send(CalciteMessage msg) throws IgniteCheckedException;
+
+    /**
      * Checks whether a node with given ID is alive.
      *
      * @param nodeId Node ID.

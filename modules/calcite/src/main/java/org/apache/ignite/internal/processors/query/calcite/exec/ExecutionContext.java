@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.calcite.util.Commons.checkRange;
 
@@ -76,13 +77,9 @@ public class ExecutionContext<Row> implements DataContext {
     /** */
     private Object[] correlations = new Object[16];
 
-    /**
-     * @param ctx Parent context.
-     * @param qryId Query ID.
-     * @param fragmentDesc Partitions information.
-     * @param params Parameters.
-     */
-    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    /** */
+    private final RunnableX finishAct;
+
     public ExecutionContext(
         QueryTaskExecutor executor,
         PlanningContext ctx,
@@ -91,12 +88,32 @@ public class ExecutionContext<Row> implements DataContext {
         RowHandler<Row> handler,
         Map<String, Object> params
     ) {
+        this(executor, ctx, qryId, fragmentDesc, handler, params, null);
+    }
+    /**
+     * @param ctx Parent context.
+     * @param qryId Query ID.
+     * @param fragmentDesc Partitions information.
+     * @param params Parameters.
+     * @param finishAct Action to be executed on the finish.
+     */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    public ExecutionContext(
+        QueryTaskExecutor executor,
+        PlanningContext ctx,
+        UUID qryId,
+        FragmentDescription fragmentDesc,
+        RowHandler<Row> handler,
+        Map<String, Object> params,
+        @Nullable RunnableX finishAct
+    ) {
         this.executor = executor;
         this.ctx = ctx;
         this.qryId = qryId;
         this.fragmentDesc = fragmentDesc;
         this.handler = handler;
         this.params = params;
+        this.finishAct = finishAct;
 
         expressionFactory = new ExpressionFactoryImpl<>(this, ctx.typeFactory(), ctx.conformance());
     }
@@ -283,7 +300,17 @@ public class ExecutionContext<Row> implements DataContext {
      * @return {@code True} if flag was changed by this call.
      */
     public boolean finish() {
-        return !finishFlag.get() && finishFlag.compareAndSet(false, true);
+        boolean finishedRightNow = !finishFlag.get() && finishFlag.compareAndSet(false, true);
+
+        if(finishedRightNow && finishAct != null) {
+            try {
+                finishAct.run();
+            }
+            catch (Exception e) {
+                planningContext().logger().warning("Can't execute finish action", e);
+            }
+        }
+        return finishedRightNow;
     }
 
     /** */

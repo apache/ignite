@@ -39,4 +39,11 @@ public interface ExecutionService extends Service {
      * @return Query cursor.
      */
     List<FieldsQueryCursor<List<?>>> executeQuery(@Nullable QueryContext ctx, String schema, String query, Object[] params);
+
+    /**
+     * Cancel a query by id.
+     *
+     * @param queryId Id of cancelling query.
+     */
+    void cancelQuery(UUID queryId);
 }

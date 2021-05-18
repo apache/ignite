@@ -30,13 +30,12 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static java.util.Collections.singletonList;
 
 @WithSystemProperty(key = "calcite.debug", value = "true")
-public class DateTimeTest extends GridCommonAbstractTest {
+public class DateTimeTest extends GridCommonCalciteAbstractTest {
     /** */
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
 

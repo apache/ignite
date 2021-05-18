@@ -34,6 +34,7 @@ public enum MessageType {
     QUERY_INBOX_CANCEL_MESSAGE(305, InboxCloseMessage::new),
     QUERY_OUTBOX_CANCEL_MESSAGE(306, OutboxCloseMessage::new),
     GENERIC_VALUE_MESSAGE(307, GenericValueMessage::new),
+    QUERY_CANCEL_REQUEST(308, QueryCancelRequest::new),
 
     FRAGMENT_MAPPING(350, FragmentMapping::new),
     COLOCATION_GROUP(351, ColocationGroup::new),

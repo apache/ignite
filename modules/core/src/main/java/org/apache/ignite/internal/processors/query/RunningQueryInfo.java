@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  * Represents information about running query.
  */
-public final class RunningQueryInfo {
+public class RunningQueryInfo {
     /** Unique query identifier. */
     private final UUID qryId;
 
@@ -54,7 +54,12 @@ public final class RunningQueryInfo {
      * @param schemaName Schema name.
      * @param cancel Query cancel.
      */
-    public RunningQueryInfo(RunningStage stage, UUID qryId, String qry, String schemaName, GridQueryCancel cancel) {
+    public RunningQueryInfo(
+        RunningStage stage,
+        UUID qryId,
+        String qry,
+        String schemaName,
+        GridQueryCancel cancel) {
         this.qryId = qryId;
         this.qry = qry;
         this.schemaName = schemaName;

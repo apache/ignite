@@ -43,7 +43,14 @@ public interface QueryEngine extends GridProcessor {
      *
      * @return SQL running queries.
      */
-    List<RunningQueryInfo> runningSqlQueries();
+    List<RunningQueryInfo> runningQueries();
+
+    /**
+     * Return running queries fragments.
+     *
+     * @return Running queries fragments.
+     */
+    List<RunningFragmentInfo> runningFragments();
 
     /**
      * Cancel specified query.

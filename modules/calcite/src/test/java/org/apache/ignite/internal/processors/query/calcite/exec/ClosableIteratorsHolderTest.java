@@ -24,8 +24,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.ignite.internal.processors.query.calcite.GridCommonCalciteAbstractTest;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -33,7 +33,7 @@ import org.junit.Test;
 /**
  *
  */
-public class ClosableIteratorsHolderTest extends GridCommonAbstractTest {
+public class ClosableIteratorsHolderTest extends GridCommonCalciteAbstractTest {
     /** */
     private static final int GENERATED = 10000;
 

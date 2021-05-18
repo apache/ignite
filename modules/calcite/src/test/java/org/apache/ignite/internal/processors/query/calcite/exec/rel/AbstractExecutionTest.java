@@ -38,6 +38,7 @@ import com.google.common.collect.ImmutableMap;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.query.calcite.GridCommonCalciteAbstractTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeServiceImpl;
@@ -55,7 +56,6 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
@@ -68,7 +68,7 @@ import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KE
  *
  */
 @RunWith(Parameterized.class)
-public class AbstractExecutionTest extends GridCommonAbstractTest {
+public class AbstractExecutionTest extends GridCommonCalciteAbstractTest {
     /** Last parameter number. */
     protected static final int LAST_PARAM_NUM = 0;
 
@@ -282,7 +282,7 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
                 .localNodeId(nodeId)
                 .logger(log())
                 .build(),
-            qryId, fragmentDesc, ArrayRowHandler.INSTANCE, ImmutableMap.of());
+            qryId, fragmentDesc, ArrayRowHandler.INSTANCE, ImmutableMap.of(), () -> {});
     }
 
     /** */

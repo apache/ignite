@@ -44,7 +44,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Test;
 
@@ -54,7 +53,7 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.LogicalRe
 /** */
 @WithSystemProperty(key = "calcite.debug", value = "false")
 @WithSystemProperty(key = IGNITE_EXPERIMENTAL_SQL_ENGINE, value = "true")
-public class CalciteErrorHandlilngIntegrationTest extends GridCommonAbstractTest {
+public class CalciteErrorHandlilngIntegrationTest extends GridCommonCalciteAbstractTest {
     /** */
     @After
     public void cleanUp() {

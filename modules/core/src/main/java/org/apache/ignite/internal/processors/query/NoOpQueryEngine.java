@@ -40,7 +40,12 @@ public class NoOpQueryEngine extends GridProcessorAdapter implements QueryEngine
     }
 
     /** {@inheritDoc} */
-    @Override public List<RunningQueryInfo> runningSqlQueries() {
+    @Override public List<RunningFragmentInfo> runningFragments() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<RunningQueryInfo> runningQueries() {
         return null;
     }
 

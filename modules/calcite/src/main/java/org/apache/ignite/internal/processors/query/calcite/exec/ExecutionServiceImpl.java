@@ -70,6 +70,8 @@ import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryCancellable;
 import org.apache.ignite.internal.processors.query.QueryContext;
+import org.apache.ignite.internal.processors.query.RunningFragmentInfo;
+import org.apache.ignite.internal.processors.query.RunningQueryInfo;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.ddl.DdlCommandHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
@@ -79,6 +81,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.RootNode;
 import org.apache.ignite.internal.processors.query.calcite.message.ErrorMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
+import org.apache.ignite.internal.processors.query.calcite.message.QueryCancelRequest;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryStartRequest;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryStartResponse;
 import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
@@ -129,6 +132,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.singletonList;
 import static org.apache.calcite.rel.type.RelDataType.PRECISION_NOT_SPECIFIED;
+import static org.apache.ignite.cache.query.QueryCancelledException.ERR_MSG;
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
 import static org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonReader.fromJson;
 
@@ -407,15 +411,29 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** {@inheritDoc} */
+    @Override public void cancelQuery(UUID qryId) {
+        boolean cancelled = runningQrySvc.cancelQuery(qryId);
+
+        if (cancelled)
+            return;
+
+        //Send broadcast cancel message in case we don't have information on local node.
+        try {
+            messageService().send(new QueryCancelRequest(qryId));
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteSQLException("Failed to plan query.", IgniteQueryErrorCode.UNKNOWN, e);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public List<FieldsQueryCursor<List<?>>> executeQuery(
         @Nullable QueryContext ctx,
         String schema,
         String qry,
         Object[] params
     ) {
-        GridQueryCancel qryCancel = new GridQueryCancel();
-
-        PlanningContext pctx = createContext(Commons.convert(ctx), topologyVersion(), localNodeId(), schema, qry, params, qryCancel);
+        PlanningContext pctx = createContext(Commons.convert(ctx), topologyVersion(), localNodeId(), schema, qry, params);
 
         UUID planningId = runningQrySvc.register(pctx);
 
@@ -424,7 +442,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             qryPlans = queryPlanCache().queryPlan(pctx, new CacheKey(pctx.schemaName(), pctx.query()), this::prepareQuery);
         }
         finally {
-            runningQrySvc.unregister(planningId);
+            runningQrySvc.deregister(planningId);
         }
 
         return executePlans(qryPlans, pctx);
@@ -480,6 +498,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         messageService().register((n,m) -> onMessage(n, (QueryStartRequest) m), MessageType.QUERY_START_REQUEST);
         messageService().register((n,m) -> onMessage(n, (QueryStartResponse) m), MessageType.QUERY_START_RESPONSE);
         messageService().register((n,m) -> onMessage(n, (ErrorMessage) m), MessageType.QUERY_ERROR_MESSAGE);
+        messageService().register((n,m) -> onMessage(n, (QueryCancelRequest) m), MessageType.QUERY_CANCEL_REQUEST);
 
         eventManager().addDiscoveryEventListener(discoLsnr, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
 
@@ -503,12 +522,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     /** */
     private PlanningContext createContext(Context parent, AffinityTopologyVersion topVer, UUID originator,
         @Nullable String schema, String qry, Object[] params) {
-        return createContext(parent, topVer, originator, schema, qry, params, new GridQueryCancel());
-    }
-
-    /** */
-    private PlanningContext createContext(Context parent, AffinityTopologyVersion topVer, UUID originator,
-        @Nullable String schema, String qry, Object[] params, @Nullable GridQueryCancel qryCancel) {
         RelTraitDef<?>[] traitDefs = {
             ConventionTraitDef.INSTANCE,
             RelCollationTraitDef.INSTANCE,
@@ -531,7 +544,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             .parameters(params)
             .topologyVersion(topVer)
             .logger(log)
-            .qryCancel(qryCancel)
+            .qryCancel(new GridQueryCancel())
             .build();
     }
 
@@ -799,17 +812,17 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             qryExecId,
             fragmentDesc,
             handler,
-            Commons.parametersMap(pctx.parameters()));
+            Commons.parametersMap(pctx.parameters()), ()-> runningQrySvc.deregister(qryExecId));
 
         Node<Row> node = new LogicalRelImplementor<>(ectx, partitionService(), mailboxRegistry(),
             exchangeService(), failureProcessor()).go(fragment.root());
 
-        QueryInfo qryInfo = new QueryInfo(ectx, plan, node, qryExecId);
+        QueryInfo qryInfo = new QueryInfo(ectx, plan, node);
         try {
             pctx.queryCancel().add(qryInfo);
         }
         catch (QueryCancelledException e) {
-            runningQrySvc.unregister(qryExecId);
+            runningQrySvc.deregister(qryExecId);
 
             throw new IgniteSQLException(e.getMessage(), IgniteQueryErrorCode.QUERY_CANCELED);
         }
@@ -861,10 +874,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
     /** */
     private void executeFragment(UUID qryId, FragmentPlan plan, PlanningContext pctx, FragmentDescription fragmentDesc) {
-        ExecutionContext<Row> ectx = new ExecutionContext<>(taskExecutor(), pctx, qryId,
-            fragmentDesc, handler, Commons.parametersMap(pctx.parameters()));
-
         long frId = fragmentDesc.fragmentId();
+        ExecutionContext<Row> ectx = new ExecutionContext<>(taskExecutor(), pctx, qryId,
+            fragmentDesc, handler, Commons.parametersMap(pctx.parameters()), ()->runningQrySvc.deregisterFragment(qryId, frId));
         UUID origNodeId = pctx.originatingNodeId();
 
         Outbox<Row> node = new LogicalRelImplementor<>(
@@ -905,6 +917,20 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         try {
             PlanningContext pctx = createContext(Contexts.empty(), msg.topologyVersion(), nodeId, msg.schema(), msg.root(), msg.parameters());
 
+            runningQrySvc.registerFragment(msg.queryId(), msg.fragmentId(), pctx);
+            try {
+                pctx.queryCancel().add(() ->
+                    finishFragmentByError(
+                        nodeId,
+                        msg.queryId(),
+                        msg.fragmentId(),
+                        new IgniteSQLException(ERR_MSG, IgniteQueryErrorCode.QUERY_CANCELED)));
+            }
+            catch (QueryCancelledException e) {
+                throw new IgniteSQLException(e.getMessage(), IgniteQueryErrorCode.QUERY_CANCELED);
+            }
+
+
             List<QueryPlan> qryPlans = queryPlanCache().queryPlan(
                 pctx,
                 new CacheKey(pctx.schemaName(), pctx.query()),
@@ -914,31 +940,37 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             assert qryPlans.size() == 1 && qryPlans.get(0).type() == QueryPlan.Type.FRAGMENT;
 
             FragmentPlan plan = (FragmentPlan)qryPlans.get(0);
-
             executeFragment(msg.queryId(), plan, pctx, msg.fragmentDescription());
         }
         catch (Throwable ex) {
             U.error(log, "Failed to start query fragment ", ex);
 
-            mailboxRegistry.outboxes(msg.queryId(), msg.fragmentId(), -1)
-                .forEach(Outbox::close);
-            mailboxRegistry.inboxes(msg.queryId(), msg.fragmentId(), -1)
-                .forEach(Inbox::close);
-
-            try {
-                messageService().send(nodeId, new QueryStartResponse(msg.queryId(), msg.fragmentId(), ex));
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Error occurred during send error message: " + X.getFullStackTrace(e));
-
-                IgniteException wrpEx = new IgniteException("Error occurred during send error message", e);
-
-                e.addSuppressed(ex);
-
-                throw wrpEx;
-            }
+            finishFragmentByError(nodeId, msg.queryId(), msg.fragmentId(), ex);
 
             throw ex;
+        }
+    }
+
+    /** */
+    private void finishFragmentByError(UUID nodeId, UUID qryId, long fragmentId, Throwable ex) {
+        runningQrySvc.deregisterFragment(qryId, fragmentId);
+
+        mailboxRegistry.outboxes(qryId, fragmentId, -1)
+            .forEach(Outbox::close);
+        mailboxRegistry.inboxes(qryId, fragmentId, -1)
+            .forEach(Inbox::close);
+
+        try {
+            messageService().send(nodeId, new QueryStartResponse(qryId, fragmentId, ex));
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Error occurred during send error message: " + X.getFullStackTrace(e));
+
+            IgniteException wrpEx = new IgniteException("Error occurred during send error message", e);
+
+            e.addSuppressed(ex);
+
+            throw wrpEx;
         }
     }
 
@@ -962,9 +994,22 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             qryInfo.onError(new RemoteException(nodeId, msg.queryId(), msg.fragmentId(), msg.error()));
     }
 
+    private void onMessage(UUID nodeId, QueryCancelRequest msg) {
+        assert nodeId != null && msg != null;
+
+        RunningQueryInfo query = runningQrySvc.query(msg.queryId());
+        if(query != null)
+            runningQrySvc.cancelQuery(msg.queryId());
+    }
+
     /** */
     private void onNodeLeft(UUID nodeId) {
         executing.forEach((uuid, queryInfo) -> queryInfo.onNodeLeft(nodeId));
+
+        runningQrySvc.runningFragments().stream()
+            .map(RunningFragmentInfo::originatingNodeId)
+            .filter((r) -> r.equals(nodeId))
+            .forEach(runningQrySvc::deregister);
     }
 
     /** */
@@ -1031,20 +1076,15 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         private final Set<RemoteFragmentKey> waiting;
 
         /** */
-        private final UUID qryId;
-
-        /** */
         private volatile QueryState state;
 
         /**
          * @param ctx Execution context.
          * @param plan Plan.
          * @param root Root.
-         * @param qryId Query identifier.
          * */
-        private QueryInfo(ExecutionContext<Row> ctx, MultiStepPlan plan, Node<Row> root, UUID qryId) {
+        private QueryInfo(ExecutionContext<Row> ctx, MultiStepPlan plan, Node<Row> root) {
             this.ctx = ctx;
-            this.qryId = qryId;
 
             RootNode<Row> rootNode = new RootNode<>(ctx, plan.fieldsMetadata().rowType(), this::tryClose);
             rootNode.register(root);
@@ -1098,8 +1138,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             }
 
             if (state0 == QueryState.CLOSED) {
-                // 2) unregister runing query
-                runningQrySvc.unregister(qryId);
+                // 2) deregister runing query
+                executing.remove(ctx.queryId());
 
                 // 4) close remote fragments
                 IgniteException wrpEx = null;

@@ -25,9 +25,9 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.QueryEngine;
+import org.apache.ignite.internal.processors.query.calcite.GridCommonCalciteAbstractTest;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
@@ -46,7 +46,7 @@ import static org.apache.ignite.internal.processors.query.calcite.rules.OrToUnio
  * sql execution: SELECT t1.f11, t2.f21 FROM T1 t1 INNER JOIN T2 t2 on t1.f11 = t2.f22"
  * need to eleminate all unused coluns and take into account only: f11, f21 and f22 cols.
  */
-public class ProjectScanMergeRuleTest extends GridCommonAbstractTest {
+public class ProjectScanMergeRuleTest extends GridCommonCalciteAbstractTest {
     /** */
     public static final String IDX_CAT_ID = "IDX_CAT_ID";
 

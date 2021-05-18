@@ -33,7 +33,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -47,7 +46,7 @@ import static org.junit.Assert.assertThat;
  * Index spool test.
  */
 @RunWith(Parameterized.class)
-public class IndexSpoolIntegrationTest extends GridCommonAbstractTest {
+public class IndexSpoolIntegrationTest extends GridCommonCalciteAbstractTest {
     /** Rows. */
     private static final int[] ROWS = {1, 10, 512, 513, 2000};
 

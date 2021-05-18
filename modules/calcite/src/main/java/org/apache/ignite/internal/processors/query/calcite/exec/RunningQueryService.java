@@ -19,11 +19,13 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-
+import java.util.stream.Collectors;
+import org.apache.ignite.internal.processors.query.RunningFragmentInfo;
 import org.apache.ignite.internal.processors.query.RunningQueryInfo;
 import org.apache.ignite.internal.processors.query.RunningStage;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
@@ -32,11 +34,14 @@ import org.apache.ignite.internal.processors.query.calcite.util.Service;
 /** */
 public class RunningQueryService implements Service {
     /** */
-    private final Map<UUID, RunningQueryInfo> running;
+    private final Map<UUID, RunningQueryInfo> queries;
+    /** */
+    private final Map<UUID, List<RunningFragmentInfo>> fragments;
 
     /** */
     public RunningQueryService() {
-        running = new ConcurrentHashMap<>();
+        queries = new ConcurrentHashMap<>();
+        fragments = new ConcurrentHashMap<>();
     }
 
     /**
@@ -55,7 +60,7 @@ public class RunningQueryService implements Service {
             pctx.schemaName(),
             pctx.queryCancel());
 
-        running.put(run.qryId(), run);
+        queries.put(run.qryId(), run);
 
         return qryId;
     }
@@ -77,44 +82,100 @@ public class RunningQueryService implements Service {
             pctx.schemaName(),
             pctx.queryCancel());
 
-        running.put(run.qryId(), run);
+        RunningQueryInfo prev = queries.put(run.qryId(), run);
+
+        assert prev == null;
 
         return qryId;
     }
 
     /**
-     * Unregister running query.
+     * Deregister running query or their fragment.
      *
      * @param qryId id of the query, which is given by {@link #register register} method.
      */
-    public void unregister(UUID qryId) {
-        running.remove(qryId);
+    public void deregister(UUID qryId) {
+        queries.remove(qryId);
+        fragments.remove(qryId);
+    }
+
+    /**
+     * Register running fragment of query
+     *
+     * @param qryId id of the query related to fragment,
+     * which is given by {@link #register register} method on originator node.
+     * @param pctx Planning context.
+     */
+    public synchronized void registerFragment(UUID qryId, long fragmentId, PlanningContext pctx) {
+        RunningFragmentInfo fragmentInfo = new RunningFragmentInfo(
+            qryId,
+            pctx.query(),
+            pctx.schemaName(),
+            pctx.queryCancel(),
+            pctx.originatingNodeId(),
+            fragmentId);
+
+        fragments.computeIfAbsent(qryId, k -> new ArrayList<>()).add(fragmentInfo);
+    }
+
+    /**
+     * Deregister running fragment
+     *
+     * @param qryId id of the query, which is given by {@link #register register} method.
+     * @param fragmentId if of fragment related to query id.
+     */
+    public synchronized void deregisterFragment(UUID qryId, long fragmentId) {
+        List<RunningFragmentInfo> frs = fragments.get(qryId);
+        if (frs != null && !frs.isEmpty()) {
+            frs.removeIf(info -> info.fragmentId() == fragmentId);
+
+            if(frs.isEmpty())
+                fragments.remove(qryId);
+        }
     }
 
     /**
      * Cancel query.
      *
      * @param qryId Query id.
+     * @return {@code true} If query found and cancellation has been invoked.
      */
-    public void cancelQuery(UUID qryId) {
-        RunningQueryInfo runningInfo = running.get(qryId);
+    public boolean cancelQuery(UUID qryId) {
+        RunningQueryInfo runningInfo = queries.get(qryId);
 
-        if (runningInfo != null)
+        if (runningInfo != null) {
             runningInfo.cancel();
+
+            return true;
+        }
+
+        List<RunningFragmentInfo> frs = new ArrayList<>(fragments.get(qryId));
+
+        if (frs != null) {
+            frs.forEach(RunningFragmentInfo::cancel);
+
+            return true;
+        }
+
+        return false;
     }
 
     /**
      * Gets info about running query by their id.
+     *
      * @param qryId Id of running query.
      * @return Running query info or {@code null} in case no running query for given id.
      */
-    public RunningQueryInfo runningQueryInfo(UUID qryId) {
-        return running.get(qryId);
+    public RunningQueryInfo query(UUID qryId) {
+        return queries.get(qryId);
     }
+
+
 
     /** {@inheritDoc} */
     @Override public void tearDown() {
-        running.clear();
+        queries.clear();
+        fragments.clear();
     }
 
     /**
@@ -122,13 +183,16 @@ public class RunningQueryService implements Service {
      *
      * @return List of SQL running queries.
      */
-    public List<RunningQueryInfo> runningSqlQueries() {
-        List<RunningQueryInfo> res = new ArrayList<>();
+    public List<RunningQueryInfo> runningQueries() {
+        return new ArrayList<>(queries.values());
+    }
 
-        for (RunningQueryInfo run : running.values()) {
-                res.add(run);
-        }
-
-        return res;
+    /**
+     * Return SQL queries which executing right now.
+     *
+     * @return List of SQL running queries.
+     */
+    public List<RunningFragmentInfo> runningFragments() {
+        return fragments.values().stream().flatMap(Collection::stream).collect(Collectors.toList());
     }
 }
