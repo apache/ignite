@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -157,5 +158,9 @@ public class ProjectScanMergeRuleTest extends GridCommonAbstractTest {
             .matches(containsAnyProject("PUBLIC", "PRODUCTS"))
             .returns("noname4")
             .check();
+
+        GridTestUtils.assertThrowsWithCause(
+            () -> checkQuery("SELECT NAME FROM products WHERE CAT_ID = (SELECT CAT_ID FROM products WHERE SUBCAT_ID = 11)")
+                .check(), IllegalArgumentException.class);
     }
 }

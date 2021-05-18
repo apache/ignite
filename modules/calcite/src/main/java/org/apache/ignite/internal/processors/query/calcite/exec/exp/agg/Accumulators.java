@@ -161,6 +161,9 @@ public class Accumulators {
         @Override public void add(Object... args) {
             assert args.length == 1 : args.length;
 
+            if (holder != null)
+                throw new IllegalArgumentException("Input for single_value function has more than one row.");
+
             holder = args[0];
         }
 
