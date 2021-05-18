@@ -255,7 +255,12 @@ public class TcpDiscoverySslParametersTest extends GridCommonAbstractTest {
      * @param msg exception message
      * @throws Exception If failed.
      */
-    private void checkDiscoveryFailure(String[][] cipherSuites, String[][] protocols, Class<? extends Throwable> ex, String msg) throws Exception {
+    private void checkDiscoveryFailure(
+        String[][] cipherSuites,
+        String[][] protocols,
+        Class<? extends Throwable> ex,
+        String msg
+    ) throws Exception {
         this.cipherSuites = cipherSuites != null ? cipherSuites[0] : null;
         this.protocols = protocols != null ? protocols[0] : null;
 

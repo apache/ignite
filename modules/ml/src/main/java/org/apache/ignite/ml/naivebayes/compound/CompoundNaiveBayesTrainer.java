@@ -83,7 +83,11 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
 
             GaussianNaiveBayesModel model = (mdl == null)
                 ? gaussianNaiveBayesTrainer.fit(datasetBuilder, extractor.map(skipFeatures(gaussianFeatureIdsToSkip)))
-                : gaussianNaiveBayesTrainer.update(mdl.getGaussianModel(), datasetBuilder, extractor.map(skipFeatures(gaussianFeatureIdsToSkip)));
+                : gaussianNaiveBayesTrainer.update(
+                    mdl.getGaussianModel(),
+                    datasetBuilder,
+                    extractor.map(skipFeatures(gaussianFeatureIdsToSkip))
+                );
 
             compoundModel.withGaussianModel(model)
                 .withGaussianFeatureIdsToSkip(gaussianFeatureIdsToSkip)

@@ -528,7 +528,9 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                 PageSnapshot snap = (PageSnapshot)tup.get2();
 
                 //there are extra tracking pages, skip them
-                if (TrackingPageIO.VERSIONS.latest().trackingPageFor(snap.fullPageId().pageId(), pageMem.pageSize()) == snap.fullPageId().pageId()) {
+                long trackingPageFor = TrackingPageIO.VERSIONS.latest().trackingPageFor(snap.fullPageId().pageId(), pageMem.pageSize());
+
+                if (trackingPageFor == snap.fullPageId().pageId()) {
                     tup = it.next();
 
                     assertTrue(tup.get2() instanceof PageSnapshot);

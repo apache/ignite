@@ -1376,7 +1376,8 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
             c1.put(4, new Person2(2, "p2"));
             c1.put(5, new Person2(3, "p3"));
 
-            String select0 = "select o.name n1, p.name n2 from \"pers\".Person2 p, \"org\".Organization o where p.orgId = o._key and o._key=1";
+            String select0 =
+                "select o.name n1, p.name n2 from \"pers\".Person2 p, \"org\".Organization o where p.orgId = o._key and o._key=1";
 
             checkQueryPlan(c1, true, 1, new SqlFieldsQuery(select0));
 
@@ -1492,7 +1493,8 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
             c1.put(4, new Person2(2, "p2"));
             c1.put(5, new Person2(3, "p3"));
 
-            String select0 = "select o.name n1, p.name n2 from \"pers\".Person2 p, \"org\".Organization o where p.orgId = o._key and o._key=1";
+            String select0 =
+                "select o.name n1, p.name n2 from \"pers\".Person2 p, \"org\".Organization o where p.orgId = o._key and o._key=1";
 
             final SqlFieldsQuery qry = new SqlFieldsQuery(select0);
 
