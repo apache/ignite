@@ -39,6 +39,7 @@ import org.apache.calcite.rel.rules.SortRemoveRule;
 import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.RuleSets;
+import org.apache.ignite.internal.processors.query.calcite.rule.CorrelateToNestedLoopRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.CorrelatedNestedLoopJoinRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.FilterConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.FilterSpoolMergeToHashIndexSpoolRule;
@@ -51,6 +52,7 @@ import org.apache.ignite.internal.processors.query.calcite.rule.NestedLoopJoinCo
 import org.apache.ignite.internal.processors.query.calcite.rule.ProjectConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.SortAggregateConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.SortConverterRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.TableFunctionScanConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.TableModifyConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.UnionConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.ValuesConverterRule;
@@ -160,6 +162,7 @@ public enum PlannerPhase {
                     LogicalOrToUnionRule.INSTANCE,
 
                     CorrelatedNestedLoopJoinRule.INSTANCE,
+                    CorrelateToNestedLoopRule.INSTANCE,
                     NestedLoopJoinConverterRule.INSTANCE,
                     MergeJoinConverterRule.INSTANCE,
 
@@ -180,7 +183,8 @@ public enum PlannerPhase {
                     UnionConverterRule.INSTANCE,
                     SortConverterRule.INSTANCE,
                     FilterSpoolMergeToSortedIndexSpoolRule.INSTANCE,
-                    FilterSpoolMergeToHashIndexSpoolRule.INSTANCE
+                    FilterSpoolMergeToHashIndexSpoolRule.INSTANCE,
+                    TableFunctionScanConverterRule.INSTANCE
                 )
             );
         }

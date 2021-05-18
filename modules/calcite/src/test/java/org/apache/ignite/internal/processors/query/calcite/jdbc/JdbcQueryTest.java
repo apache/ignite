@@ -114,7 +114,9 @@ public class JdbcQueryTest extends GridCommonCalciteAbstractTest {
             "float_col FLOAT, " +
             "double_col DOUBLE, " +
             "time_col TIME, " +
-            "timestamp_col TIMESTAMP, " +
+            "timestamp_col_14 TIMESTAMP(14), " +
+            "timestamp_col_10 TIMESTAMP(10), " +
+            "timestamp_col_def TIMESTAMP, " +
             "date_col DATE, " +
             "PRIMARY KEY (id));");
 
@@ -122,8 +124,8 @@ public class JdbcQueryTest extends GridCommonCalciteAbstractTest {
             new AffinityTopologyVersion(3, 2)).get(10_000, TimeUnit.MILLISECONDS);
 
         stmt.executeUpdate("INSERT INTO t1 (id, bool_col, tinyint_col, smallint_col, int_col, bigint_col, " +
-            "varchar_col, char_col, float_col, double_col, time_col, timestamp_col, date_col) VALUES (1, null, null, " +
-            "null, null, null, null, null, null, null, null, null, null);");
+            "varchar_col, char_col, float_col, double_col, time_col, timestamp_col_14, timestamp_col_10, timestamp_col_def, date_col) " +
+            "VALUES (1, null, null, null, null, null, null, null, null, null, null, null, null, null, null);");
 
         try (ResultSet rs = stmt.executeQuery("SELECT * FROM t1;")) {
             assertTrue(rs.next());
@@ -138,17 +140,14 @@ public class JdbcQueryTest extends GridCommonCalciteAbstractTest {
             assertEquals(Types.INTEGER, md.getColumnType(5));
             assertEquals(Types.BIGINT, md.getColumnType(6));
             assertEquals(Types.VARCHAR, md.getColumnType(7));
-            // TODO https://issues.apache.org/jira/browse/IGNITE-13547 H2 maps SQL type FLOAT to Value.DOUBLE and
-            //  SQL type CHAR to Value.STRING_FIXED, which are maped to java classes Double/String,
-            //  and to Types.DOUBLE/Types.VARCHAR respectively. Calcite DDL can map this types in a different way.
-            //assertEquals(Types.CHAR, md.getColumnType(8));
-            //assertEquals(Types.FLOAT, md.getColumnType(9));
             assertEquals(Types.VARCHAR, md.getColumnType(8));
-            assertEquals(Types.DOUBLE, md.getColumnType(9));
+            assertEquals(Types.FLOAT, md.getColumnType(9));
             assertEquals(Types.DOUBLE, md.getColumnType(10));
-            assertEquals(Types.TIME, md.getColumnType(11));
-            assertEquals(Types.TIMESTAMP, md.getColumnType(12));
-            assertEquals(Types.DATE, md.getColumnType(13));
+            assertEquals(Types.INTEGER, md.getColumnType(11));
+            assertEquals(Types.BIGINT, md.getColumnType(12));
+            assertEquals(Types.BIGINT, md.getColumnType(13));
+            assertEquals(Types.BIGINT, md.getColumnType(14));
+            assertEquals(Types.INTEGER, md.getColumnType(15));
         }
 
         stmt.execute("DROP TABLE t1");

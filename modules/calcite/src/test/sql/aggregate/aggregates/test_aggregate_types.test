@@ -3,7 +3,7 @@
 # group: [aggregates]
 
 statement ok
-CREATE TABLE strings(s STRING, g INTEGER)
+CREATE TABLE strings(s VARCHAR, g INTEGER)
 
 statement ok
 INSERT INTO strings VALUES ('hello', 0), ('world', 1), (NULL, 0), ('r', 1)
@@ -25,49 +25,6 @@ SELECT COUNT(*), COUNT(s), MIN(s), MAX(s) FROM strings WHERE s IS NULL
 NULL
 NULL
 
-# add string agg
-query TTTT
-SELECT STRING_AGG(s, ' '), STRING_AGG(s, ''), STRING_AGG('', ''), STRING_AGG('hello', ' ') FROM strings
-----
-hello world r
-helloworldr
-(empty)
-hello hello hello hello
-
-# more complex agg (groups)
-query IIITTT
-SELECT g, COUNT(*), COUNT(s), MIN(s), MAX(s), STRING_AGG(s, ' ') FROM strings GROUP BY g ORDER BY g
-----
-0
-2
-1
-hello
-hello
-hello
-1
-2
-2
-r
-world
-world r
-
-# empty group
-query IIITTT
-SELECT g, COUNT(*), COUNT(s), MIN(s), MAX(s), STRING_AGG(s, ' ') FROM strings WHERE s IS NULL OR s <> 'hello' GROUP BY g ORDER BY g
-----
-0
-1
-0
-NULL
-NULL
-NULL
-1
-2
-2
-r
-world
-world r
-
 # unsupported aggregates
 statement error
 SELECT SUM(s) FROM strings GROUP BY g ORDER BY g
@@ -87,8 +44,8 @@ SELECT COUNT(*), COUNT(b), MIN(b), MAX(b) FROM booleans
 ----
 4
 3
-0
-1
+false
+true
 
 query IITT
 SELECT COUNT(*), COUNT(b), MIN(b), MAX(b) FROM booleans WHERE b IS NULL
@@ -104,13 +61,13 @@ SELECT g, COUNT(*), COUNT(b), MIN(b), MAX(b) FROM booleans GROUP BY g ORDER BY g
 0
 2
 1
-0
-0
+false
+false
 1
 2
 2
-0
-1
+false
+true
 
 query IIITT
 SELECT g, COUNT(*), COUNT(b), MIN(b), MAX(b) FROM booleans WHERE b IS NULL OR b=true GROUP BY g ORDER BY g
@@ -123,8 +80,8 @@ NULL
 1
 1
 1
-1
-1
+true
+true
 
 statement error
 SELECT SUM(b) FROM booleans GROUP BY g ORDER BY g

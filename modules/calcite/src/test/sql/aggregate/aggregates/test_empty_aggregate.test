@@ -5,13 +5,11 @@
 statement ok
 CREATE TABLE integers(i INTEGER);
 
-query IIRRRIII
-SELECT COUNT(*), COUNT(i), STDDEV_SAMP(i), SUM(i), SUM(DISTINCT i), FIRST(i), MAX(i), MIN(i) FROM integers WHERE i > 100
+query IIRRRI
+SELECT COUNT(*), COUNT(i), SUM(i), SUM(DISTINCT i), MAX(i), MIN(i) FROM integers WHERE i > 100
 ----
 0
 0
-NULL
-NULL
 NULL
 NULL
 NULL

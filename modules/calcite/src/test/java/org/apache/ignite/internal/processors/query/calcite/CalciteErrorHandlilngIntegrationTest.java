@@ -48,7 +48,7 @@ import org.junit.After;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_EXPERIMENTAL_SQL_ENGINE;
-import static org.apache.ignite.internal.processors.query.calcite.exec.LogicalRelImplementor.CNLJ_SUPPORTS_ONLY_INNER_ASSERTION_MSG;
+import static org.apache.ignite.internal.processors.query.calcite.exec.LogicalRelImplementor.CNLJ_NOT_SUPPORTED_JOIN_ASSERTION_MSG;
 
 /** */
 @WithSystemProperty(key = "calcite.debug", value = "false")
@@ -97,7 +97,7 @@ public class CalciteErrorHandlilngIntegrationTest extends GridCommonCalciteAbstr
         String sql = "select /*+ DISABLE_RULE('NestedLoopJoinConverter', 'MergeJoinConverter') */ t1.id from test t1, test t2 where t1.id = t2.id";
 
         Throwable t = GridTestUtils.assertThrowsWithCause(() -> sql(client, sql), AssertionError.class);
-        assertEquals(CNLJ_SUPPORTS_ONLY_INNER_ASSERTION_MSG, t.getCause().getMessage());
+        assertEquals(CNLJ_NOT_SUPPORTED_JOIN_ASSERTION_MSG, t.getCause().getMessage());
     }
 
     /**

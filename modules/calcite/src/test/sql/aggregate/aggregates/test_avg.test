@@ -9,20 +9,6 @@ SELECT AVG(3), AVG(NULL)
 3
 NULL
 
-# test average on sequence
-statement ok
-CREATE SEQUENCE seq;
-
-query R
-SELECT AVG(nextval('seq'))
-----
-1
-
-query R
-SELECT AVG(nextval('seq'))
-----
-2
-
 statement ok
 CREATE TABLE integers(i INTEGER);
 

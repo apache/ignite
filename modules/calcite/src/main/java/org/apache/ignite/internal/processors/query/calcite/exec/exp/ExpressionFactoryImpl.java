@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Primitives;
+import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.enumerable.EnumUtils;
 import org.apache.calcite.adapter.enumerable.RexToLixTranslator;
 import org.apache.calcite.adapter.enumerable.RexToLixTranslator.InputGetter;
@@ -282,6 +283,9 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
 
         ParameterExpression out_ =
             Expressions.parameter(Object.class, "out");
+
+        builder.add(
+            Expressions.declare(Modifier.FINAL, DataContext.ROOT, Expressions.convert_(ctx_, DataContext.class)));
 
         Expression hnd_ = builder.append("hnd",
             Expressions.call(ctx_,

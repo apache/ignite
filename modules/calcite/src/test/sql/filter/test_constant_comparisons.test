@@ -89,7 +89,7 @@ statement ok
 SELECT * FROM integers WHERE 2 IN ((1+1)*2, 3, 4, 5)
 
 query I
-SELECT CASE WHEN 1 THEN 13 ELSE 12 END;
+SELECT CASE WHEN 1=1 THEN 13 ELSE 12 END;
 ----
 13
 

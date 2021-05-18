@@ -97,8 +97,11 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
         Class<?> fromType = Primitives.wrap((Class<?>)typeFactory.getJavaClass(from));
         Class<?> toType = Primitives.wrap((Class<?>)typeFactory.getJavaClass(to));
 
-        if (fromType == toType)
+        if (toType.isAssignableFrom(fromType))
             return Function.identity();
+
+        if (Void.class == toType)
+            return o -> null;
 
         return compileCast(typeFactory, from, to);
     }

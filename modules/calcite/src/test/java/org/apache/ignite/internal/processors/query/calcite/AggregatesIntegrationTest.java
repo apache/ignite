@@ -31,6 +31,7 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
         assertQuery("select count(name) from person").returns(4L).check();
         assertQuery("select count(*) from person").returns(5L).check();
         assertQuery("select count(1) from person").returns(5L).check();
+        assertQuery("select count(null) from person").returns(0L).check();
 
         assertQuery("select count(*) from person where salary < 0").returns(0L).check();
         assertQuery("select count(*) from person where salary < 0 and salary > 0").returns(0L).check();

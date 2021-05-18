@@ -116,7 +116,7 @@ import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_CL
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_EXEC;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_FETCH;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_META;
-import static org.apache.ignite.internal.processors.query.GridQueryProcessor.shouldRedirectToCalcite;
+import static org.apache.ignite.internal.processors.query.GridQueryProcessor.executeWithExperimentalEngine;
 
 /**
  * JDBC request handler.
@@ -787,7 +787,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     /** */
     private List<FieldsQueryCursor<List<?>>> querySqlFields(SqlFieldsQueryEx qry, GridQueryCancel cancel) {
         if (experimentalQueryEngine != null) {
-            if (shouldRedirectToCalcite(qry.getSql()))
+            if (executeWithExperimentalEngine(qry.getSql()))
                 return experimentalQueryEngine.query(QueryContext.of(qry, cancel), qry.getSchema(), qry.getSql(), qry.getArgs());
         }
 
