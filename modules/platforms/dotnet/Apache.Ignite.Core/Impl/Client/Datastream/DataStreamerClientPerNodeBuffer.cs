@@ -36,11 +36,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /** */
         private readonly SemaphoreSlim _semaphore;
 
-        /** Task for the first flush has streamer id as the result. */
-        private volatile Task<long> _firstFlushTask;
-
-        private int _firstFlushStarted;
-
         /** Only the thread that completes the previous buffer can set a new one to this field. */
         private volatile DataStreamerClientBuffer<TK, TV> _buffer;
 
@@ -93,8 +88,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
                     if (Interlocked.CompareExchange(ref _buffer, null, buffer) == buffer)
                     {
-                        // TODO: If buffer is empty or no task was scheduled, send a dedicated close request.
-                        buffer.ScheduleFlush(close: true);
+                        buffer.ScheduleFlush();
 
                         return buffer.GetChainFlushTask();
                     }
@@ -102,40 +96,15 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
 
             buffer = GetBuffer();
-            buffer.ScheduleFlush(false);
+            buffer.ScheduleFlush();
 
-            return buffer.GetChainFlushTask()
-                // Force server-side flush after all flush tasks are complete.
-                // _firstFlushTask should be finished at this point.
-                .ContinueWith(_ => _client.FlushBufferAsync(null, _firstFlushTask.Result, _socket, _semaphore, flush: true, close: false))
-                .Unwrap();
+            return buffer.GetChainFlushTask();
         }
 
-        internal Task<long> FlushAsync(DataStreamerClientBuffer<TK, TV> buffer, bool serverFlush, bool close)
+        internal Task FlushAsync(DataStreamerClientBuffer<TK, TV> buffer)
         {
-            // First task opens the streamer on the server and returns the ID.
-            if (Interlocked.CompareExchange(ref _firstFlushStarted, 1, 0) == 0)
-            {
-                var task = _client.FlushBufferAsync(
-                    buffer, streamerId: null, _socket, _semaphore, serverFlush, close);
-
-                _firstFlushTask = task;
-
-                return task;
-            }
-
-            var firstFlushTask = _firstFlushTask;
-
-            if (firstFlushTask != null && firstFlushTask.IsCompletedSuccessfully && firstFlushTask.Result != 0)
-            {
-                return _client.FlushBufferAsync(
-                    buffer, streamerId: firstFlushTask.Result, _socket, _semaphore, serverFlush, close);
-            }
-
-            // We don't have an open streamer on the server - use stateless mode:
-            // server-side streamer per buffer.
-            return _client.FlushBufferAsync(
-                buffer, streamerId: null, _socket, _semaphore, serverFlush, true);
+            // Stateless mode: every client client-side buffer creates a one-off streamer on the server. 
+            return _client.FlushBufferAsync(buffer, _socket, _semaphore);
         }
 
         private DataStreamerClientBuffer<TK, TV> GetBuffer()

@@ -143,7 +143,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
             if (newSize == _entries.Length)
             {
-                TryRunFlushAction(close: false);
+                TryRunFlushAction();
             }
 
             return true;
@@ -152,8 +152,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /// <summary>
         /// Returns true if flushing has started as a result of this call or before that.
         /// </summary>
-        /// <param name="close"></param>
-        public bool ScheduleFlush(bool close)
+        public bool ScheduleFlush()
         {
             if (Interlocked.CompareExchange(ref _size, -1, -1) == 0)
             {
@@ -161,12 +160,12 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 return false;
             }
 
-            TryRunFlushAction(close);
+            TryRunFlushAction();
 
             return true;
         }
 
-        private void TryRunFlushAction(bool close)
+        private void TryRunFlushAction()
         {
             _rwLock.EnterWriteLock();
 
@@ -179,23 +178,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
                 _flushing = true;
 
-                if (close)
+                if (Count > 0)
                 {
-                    var previous = _previous;
-
-                    if (previous != null && !previous.CheckChainFlushed())
-                    {
-                        // All previous flushes must complete before we close the streamer.
-                        previous.GetChainFlushTask().ContinueWith(_ => RunFlushAction(true, true));
-                    }
-                    else
-                    {
-                        RunFlushAction(true, true);
-                    }
-                }
-                else if (Count > 0)
-                {
-                    RunFlushAction(serverFlush: false, close: false);
+                    RunFlushAction();
                 }
                 else
                 {
@@ -208,13 +193,13 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
         }
 
-        private void RunFlushAction(bool serverFlush, bool close)
+        private void RunFlushAction()
         {
             // TODO: This is not necessary during normal operation - can we get rid of this if no one listens
             // for completions?
 
             // NOTE: Continuation runs on socket thread - set result on thread pool.
-            _parent.FlushAsync(this, serverFlush, close).ContinueWith(
+            _parent.FlushAsync(this).ContinueWith(
                 t => ThreadPool.QueueUserWorkItem(buf =>
                     ((DataStreamerClientBuffer<TK, TV>)buf).OnFlushed(t.Exception), this),
                 TaskContinuationOptions.ExecuteSynchronously);

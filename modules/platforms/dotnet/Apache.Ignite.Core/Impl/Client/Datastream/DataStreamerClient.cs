@@ -37,7 +37,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         [Flags]
         private enum Flags : byte
         {
-            None = 0,
             AllowOverwrite = 0x01,
             SkipStore = 0x02,
             KeepBinary = 0x04,
@@ -233,27 +232,23 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             return TaskRunner.WhenAll(tasks.ToArray());
         }
 
-        internal Task<long> FlushBufferAsync(
+        internal Task FlushBufferAsync(
             DataStreamerClientBuffer<TK, TV> buffer,
-            long? streamerId,
             ClientSocket socket,
-            SemaphoreSlim semaphore,
-            bool flush,
-            bool close)
+            SemaphoreSlim semaphore)
         {
             // TODO: WaitAsync is not available on .NET 4, but is available on .NET 4.5 and later
             // Use reflection to get it.
             // semaphore.WaitAsync();
             semaphore.Wait();
 
+            // TODO: Flush in a loop until succeeded.
             var tcs = new TaskCompletionSource<long>();
 
-            // TODO: Flush in a loop until succeeded.
-            // TODO: Make sure to call OnFlushCompleted in any case.
             return socket.DoOutInOpAsync(
-                    streamerId == null ? ClientOp.DataStreamerStart : ClientOp.DataStreamerAddData,
-                    ctx => WriteBuffer(buffer, streamerId, ctx.Writer, flush, close),
-                    ctx => streamerId == null ? ctx.Stream.ReadLong() : 0,
+                    ClientOp.DataStreamerStart,
+                    ctx => WriteBuffer(buffer, ctx.Writer),
+                    ctx => (object)null,
                     syncCallback: true)
                 .ContinueWith(t =>
                 {
@@ -261,38 +256,36 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
                     // TODO: RwLock here and in other places?
                     _exception = _exception ?? t.Exception;
-
-                    return t.Result;
                 }, TaskContinuationOptions.ExecuteSynchronously);
         }
 
-        private void FlushBuffer(
-            DataStreamerClientBuffer<TK, TV> buffer,
-            long? streamerId,
-            ClientSocket socket,
-            TaskCompletionSource<long> tcs,
-            bool flush,
-            bool close)
-        {
-            socket.DoOutInOpAsync(
-                    streamerId == null ? ClientOp.DataStreamerStart : ClientOp.DataStreamerAddData,
-                    ctx => WriteBuffer(buffer, streamerId, ctx.Writer, flush, close),
-                    ctx => streamerId == null ? ctx.Stream.ReadLong() : 0,
-                    syncCallback: true)
-                .ContinueWith(t =>
-                {
-                    // TODO: Retry when socket disconnected.
-                    // TODO: What if server fails with some buffered data there??? This is a huge problem for perf!
-                    if (t.Exception != null)
-                    {
-                        tcs.TrySetException(t.Exception);
-                    }
-                    else
-                    {
-                        tcs.TrySetResult(t.Result);
-                    }
-                }, TaskContinuationOptions.ExecuteSynchronously);
-        }
+        // private void FlushBuffer(
+        //     DataStreamerClientBuffer<TK, TV> buffer,
+        //     long? streamerId,
+        //     ClientSocket socket,
+        //     TaskCompletionSource<long> tcs,
+        //     bool flush,
+        //     bool close)
+        // {
+        //     socket.DoOutInOpAsync(
+        //             streamerId == null ? ClientOp.DataStreamerStart : ClientOp.DataStreamerAddData,
+        //             ctx => WriteBuffer(buffer, streamerId, ctx.Writer, flush, close),
+        //             ctx => streamerId == null ? ctx.Stream.ReadLong() : 0,
+        //             syncCallback: true)
+        //         .ContinueWith(t =>
+        //         {
+        //             // TODO: Retry when socket disconnected.
+        //             // TODO: What if server fails with some buffered data there??? This is a huge problem for perf!
+        //             if (t.Exception != null)
+        //             {
+        //                 tcs.TrySetException(t.Exception);
+        //             }
+        //             else
+        //             {
+        //                 tcs.TrySetResult(t.Result);
+        //             }
+        //         }, TaskContinuationOptions.ExecuteSynchronously);
+        // }
 
         internal DataStreamerClientEntry<TK, TV>[] GetArray()
         {
@@ -318,32 +311,13 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             _arrayPool.Push(buffer);
         }
 
-        private void WriteBuffer(
-            DataStreamerClientBuffer<TK, TV> buffer,
-            long? streamerId,
-            BinaryWriter w,
-            bool flush,
-            bool close)
+        private void WriteBuffer(DataStreamerClientBuffer<TK, TV> buffer, BinaryWriter w)
         {
-            if (streamerId == null)
-            {
                 w.WriteInt(_cacheId);
-                w.WriteByte((byte) GetFlags(flush, close));
+                w.WriteByte((byte) GetFlags());
                 w.WriteInt(_options.ServerPerNodeBufferSize);
                 w.WriteInt(_options.ServerPerThreadBufferSize);
                 w.WriteObject(_options.Receiver);
-            }
-            else
-            {
-                w.WriteLong(streamerId.Value);
-                w.WriteByte((byte) GetFlags(flush, close));
-            }
-
-            if (buffer == null)
-            {
-                w.WriteInt(0);
-                return;
-            }
 
             w.WriteInt(buffer.Count);
 
@@ -373,19 +347,10 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             ReturnArray(entries);
         }
 
-        private Flags GetFlags(bool flush, bool close)
+        private Flags GetFlags()
         {
-            var flags = Flags.None;
-
-            if (flush)
-            {
-                flags |= Flags.Flush;
-            }
-
-            if (close)
-            {
-                flags |= Flags.Close;
-            }
+            // TODO: Cache the flags once in ctor.
+            var flags = Flags.Flush | Flags.Close;
 
             if (_options.AllowOverwrite)
             {
