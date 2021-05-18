@@ -26,9 +26,12 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.Executor;
@@ -73,7 +76,6 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_AUX;
-import static org.apache.ignite.internal.pagemem.PageIdAllocator.OLD_METASTORE_PARTITION;
 
 /**
  * General purpose key-value local-only storage.
@@ -84,6 +86,19 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
 
     /** */
     public static final int METASTORAGE_CACHE_ID = CU.cacheId(METASTORAGE_CACHE_NAME);
+
+    /** Metastorage cache directory to store data. */
+    public static final String METASTORAGE_DIR_NAME = "metastorage";
+
+    /** Old special partition reserved for metastore space. */
+    public static final int OLD_METASTORE_PARTITION = 0x0;
+
+    /** Special partition reserved for metastore space. */
+    public static final int METASTORE_PARTITION = 0x1;
+
+    /** The set of all metastorage partitions. */
+    public static final Set<Integer> METASTORAGE_PARTITIONS =
+        Collections.unmodifiableSet(new HashSet<>(Arrays.asList(OLD_METASTORE_PARTITION, METASTORE_PARTITION)));
 
     /** This flag is used ONLY FOR TESTING the migration of a metastorage from Part 0 to Part 1. */
     public static boolean PRESERVE_LEGACY_METASTORAGE_PARTITION_ID = false;
@@ -245,9 +260,9 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
      */
     private void initInternal(IgniteCacheDatabaseSharedManager db) throws IgniteCheckedException {
         if (PRESERVE_LEGACY_METASTORAGE_PARTITION_ID)
-            getOrAllocateMetas(partId = PageIdAllocator.OLD_METASTORE_PARTITION);
-        else if (!readOnly || getOrAllocateMetas(partId = PageIdAllocator.OLD_METASTORE_PARTITION))
-            getOrAllocateMetas(partId = PageIdAllocator.METASTORE_PARTITION);
+            getOrAllocateMetas(partId = OLD_METASTORE_PARTITION);
+        else if (!readOnly || getOrAllocateMetas(partId = OLD_METASTORE_PARTITION))
+            getOrAllocateMetas(partId = METASTORE_PARTITION);
 
         if (!empty) {
             CacheDiagnosticManager diagnosticMgr = cctx.diagnostic();
