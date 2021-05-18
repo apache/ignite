@@ -995,6 +995,9 @@ namespace Apache.Ignite.Core.Impl.Client
                 {
                     return;
                 }
+                
+                // Set disposed state before ending requests so that request continuations see disconnected socket.
+                _isDisposed = true;
 
                 _exception = _exception ?? new ObjectDisposedException(typeof(ClientSocket).FullName);
                 EndRequestsWithError();
@@ -1009,8 +1012,6 @@ namespace Apache.Ignite.Core.Impl.Client
                 {
                     _timeoutCheckTimer.Dispose();
                 }
-
-                _isDisposed = true;
             }
         }
 
