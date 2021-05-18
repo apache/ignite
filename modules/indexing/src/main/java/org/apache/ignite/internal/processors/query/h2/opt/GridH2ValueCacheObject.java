@@ -163,12 +163,17 @@ public class GridH2ValueCacheObject extends Value {
             return o1.getClass().getName().compareTo(o2.getClass().getName());
         }
 
-        return compareHashOrBytes(o1, o2, (v1, v2) -> Bits.compareNotNullSigned(((Value)v1).getBytesNoCopy(),
+        return compareHashOrBytes(this, v, (v1, v2) -> Bits.compareNotNullSigned(((Value)v1).getBytesNoCopy(),
             ((Value)v2).getBytesNoCopy()));
     }
 
     /** Compare hash codes. */
-    public static int compareHashOrBytes(Object o1, Object o2, Comparator<Object> comp) {
+    public static int compareHashOrBytes(Object o1, Object o2) {
+        return compareHashOrBytes(o1, o2, null);
+    }
+
+    /** Compare hash codes. */
+    private static int compareHashOrBytes(Object o1, Object o2, Comparator<Object> comp) {
         int h1 = o1.hashCode();
         int h2 = o2.hashCode();
 
