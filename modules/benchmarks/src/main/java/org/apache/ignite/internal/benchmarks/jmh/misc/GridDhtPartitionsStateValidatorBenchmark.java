@@ -90,7 +90,10 @@ public class GridDhtPartitionsStateValidatorBenchmark extends JmhAbstractBenchma
          * @param sizesMap Sizes map.
          * @return Message with specified {@code countersMap} and {@code sizeMap}.
          */
-        private GridDhtPartitionsSingleMessage from(@Nullable Map<Integer, T2<Long, Long>> countersMap, @Nullable Map<Integer, Long> sizesMap) {
+        private GridDhtPartitionsSingleMessage from(
+            @Nullable Map<Integer, T2<Long, Long>> countersMap,
+            @Nullable Map<Integer, Long> sizesMap
+        ) {
             GridDhtPartitionsSingleMessage msg = new GridDhtPartitionsSingleMessage();
             if (countersMap != null)
                 msg.addPartitionUpdateCounters(0, countersMap);
