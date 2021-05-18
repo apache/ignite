@@ -247,7 +247,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
         ig.cluster().active(true);
 
         DataRegionMetricsImpl regionMetrics = ig.cachex(DEFAULT_CACHE_NAME)
-            .context().group().dataRegion().memoryMetrics();
+            .context().group().dataRegion().metrics();
 
         Assert.assertTrue(regionMetrics.getCheckpointBufferSize() != 0);
         Assert.assertTrue(regionMetrics.getCheckpointBufferSize() <= MAX_REGION_SIZE);
@@ -265,7 +265,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
         ig.cluster().active(true);
 
         final DataRegionMetricsImpl regionMetrics = ig.cachex(DEFAULT_CACHE_NAME)
-            .context().group().dataRegion().memoryMetrics();
+            .context().group().dataRegion().metrics();
 
         Assert.assertEquals(0, regionMetrics.getUsedCheckpointBufferPages());
         Assert.assertEquals(0, regionMetrics.getUsedCheckpointBufferSize());

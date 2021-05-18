@@ -59,10 +59,7 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
@@ -424,7 +421,7 @@ public class BaselineAutoAdjustTest extends GridCommonAbstractTest {
         if (isPersistent())
             assertEquals(initBaseline, baselineAfterNodeLeft);
         else {
-            assertThat(initBaseline, is(not(equalTo(baselineAfterNodeLeft))));
+            assertNotEquals(initBaseline, baselineAfterNodeLeft);
 
             assertEquals(1, baselineAfterNodeLeft.size());
         }
