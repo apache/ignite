@@ -205,11 +205,6 @@ public enum OperationType {
         return 8 + 8;
     }
 
-    /** @return Rebalance record size. */
-    public static int rebalanceRecordSize() {
-        return 8 + 1;
-    }
-
     /** @return Rebalance chain finished record size. */
     public static int rebalanceChainFinishedRecordSize() {
         return 8 * 6;
