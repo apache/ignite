@@ -246,6 +246,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             // semaphore.WaitAsync();
             semaphore.Wait();
 
+            var tcs = new TaskCompletionSource<long>();
+
             // TODO: Flush in a loop until succeeded.
             // TODO: Make sure to call OnFlushCompleted in any case.
             return socket.DoOutInOpAsync(
@@ -261,6 +263,34 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                     _exception = _exception ?? t.Exception;
 
                     return t.Result;
+                }, TaskContinuationOptions.ExecuteSynchronously);
+        }
+
+        private void FlushBuffer(
+            DataStreamerClientBuffer<TK, TV> buffer,
+            long? streamerId,
+            ClientSocket socket,
+            TaskCompletionSource<long> tcs,
+            bool flush,
+            bool close)
+        {
+            socket.DoOutInOpAsync(
+                    streamerId == null ? ClientOp.DataStreamerStart : ClientOp.DataStreamerAddData,
+                    ctx => WriteBuffer(buffer, streamerId, ctx.Writer, flush, close),
+                    ctx => streamerId == null ? ctx.Stream.ReadLong() : 0,
+                    syncCallback: true)
+                .ContinueWith(t =>
+                {
+                    // TODO: Retry when socket disconnected.
+                    // TODO: What if server fails with some buffered data there??? This is a huge problem for perf!
+                    if (t.Exception != null)
+                    {
+                        tcs.TrySetException(t.Exception);
+                    }
+                    else
+                    {
+                        tcs.TrySetResult(t.Result);
+                    }
                 }, TaskContinuationOptions.ExecuteSynchronously);
         }
 
