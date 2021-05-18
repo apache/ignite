@@ -30,8 +30,6 @@ namespace Apache.Ignite.BenchmarkDotNet
         /// </summary>
         public static void Main()
         {
-            // TODO: Add benchmarks with pre-opened streamers! Do not waste time on closing them
-            // Compare results in stateful vs stateless modes.
             BenchmarkRunner.Run<ThinClientDataStreamerBenchmark>();
         }
     }

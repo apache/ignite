@@ -136,8 +136,6 @@ namespace Apache.Ignite.Core.Tests
 #else
 namespace Apache.Ignite.Core.Tests
 {
-    using System;
-    using System.Diagnostics;
     using Apache.Ignite.Core.Tests.Client.Datastream;
 
     /// <summary>

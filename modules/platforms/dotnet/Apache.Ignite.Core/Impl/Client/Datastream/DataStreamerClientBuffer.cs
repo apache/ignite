@@ -56,9 +56,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /** */
         private volatile bool _flushed;
 
-        /** TODO: Handle exceptions on top level. Either retry or close streamer with an error. */
-        private volatile Exception _exception;
-
         public DataStreamerClientBuffer(
             DataStreamerClientEntry<TK,TV>[] entries,
             DataStreamerClientPerNodeBuffer<TK, TV> parent,
@@ -233,7 +230,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             {
                 _flushed = true;
                 _flushing = false;
-                _exception = exception;
 
                 tcs = _flushCompletionSource;
             }
