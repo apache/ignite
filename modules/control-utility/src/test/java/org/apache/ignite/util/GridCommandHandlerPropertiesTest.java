@@ -166,7 +166,7 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
     }
 
     /**
-     * Check the set command fro property 'sql.defaultQueryTimeout'.
+     * Check the set command for property 'sql.defaultQueryTimeout'.
      * Steps:
      */
     @Test
@@ -196,5 +196,32 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
                 "--val", "invalidVal"
             )
         );
+    }
+
+    /**
+     * Check the set command for property 'wal.rebalance.threshold'.
+     */
+    @Test
+    public void testPropertyWalRebalanceThreshold() {
+        assertEquals(
+            EXIT_CODE_OK,
+            execute(
+                "--property", "set",
+                "--name", "wal.rebalance.threshold",
+                "--val", "1000"
+            )
+        );
+
+        for (Ignite ign : G.allGrids()) {
+            IgniteEx ignEx = (IgniteEx) ign;
+
+            if (ign.configuration().isClientMode())
+                continue;
+
+            DistributedChangeableProperty<Serializable> prop =
+                ignEx.context().distributedConfiguration().property("wal.rebalance.threshold");
+
+            assertEquals(prop.get(), 1000);
+        }
     }
 }
