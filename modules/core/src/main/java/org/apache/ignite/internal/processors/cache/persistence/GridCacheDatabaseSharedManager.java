@@ -248,8 +248,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** @see IgniteSystemProperties#IGNITE_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE */
     public static final int DFLT_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE = 60;
 
-    /** */
-    private final int walRebalanceThreshold =
+    /** @deprecated use {@link #walRebalanceThreshold}. */
+    @Deprecated
+    private final int walRebalanceThresholdLegacy =
         getInteger(IGNITE_PDS_WAL_REBALANCE_THRESHOLD, DFLT_PDS_WAL_REBALANCE_THRESHOLD);
 
     /** Prefer historical rebalance flag. */
@@ -358,6 +359,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** Checkpoint frequency deviation. */
     private SimpleDistributedProperty<Integer> cpFreqDeviation;
+
+    /** WAL rebalance threshold. */
+    private final SimpleDistributedProperty<Integer> walRebalanceThreshold =
+        new SimpleDistributedProperty<>("wal.rebalance.threshold", Integer::parseInt);
 
     /**
      * @param ctx Kernal context.
@@ -526,6 +531,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         final GridKernalContext kernalCtx = cctx.kernalContext();
 
         assert !kernalCtx.clientNode();
+
+        initWalRebalanceThreshold();
 
         if (!kernalCtx.clientNode()) {
             kernalCtx.internalSubscriptionProcessor().registerDatabaseListener(new MetastorageRecoveryLifecycle());
@@ -1742,7 +1749,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 continue;
 
             for (GridDhtLocalPartition locPart : grp.topology().currentLocalPartitions()) {
-                if (locPart.state() == OWNING && (preferWalRebalance() || locPart.fullSize() > walRebalanceThreshold))
+                if (locPart.state() == OWNING && (preferWalRebalance() ||
+                    locPart.fullSize() > walRebalanceThreshold.getOrDefault(walRebalanceThresholdLegacy)))
                     res.computeIfAbsent(grp.groupId(), k -> new HashSet<>()).add(locPart.id());
             }
         }
@@ -3733,5 +3741,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         public Map<GroupPartitionId, Integer> partitionRecoveryStates() {
             return Collections.unmodifiableMap(partitionRecoveryStates);
         }
+    }
+
+    /** Registers {@link #walRebalanceThreshold} property in distributed metastore. */
+    private void initWalRebalanceThreshold(){
+        cctx.kernalContext().internalSubscriptionProcessor().registerDistributedConfigurationListener(dispatcher -> {
+            walRebalanceThreshold.addListener((name, oldVal, newVal) ->
+                U.log(log, "Historical rebalance WAL threshold changed [oldVal=" + oldVal + ", newVal=" + newVal + "]"));
+
+            dispatcher.registerProperty(walRebalanceThreshold);
+        });
     }
 }
