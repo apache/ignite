@@ -243,21 +243,66 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             semaphore.Wait();
 
             // TODO: Flush in a loop until succeeded.
-            var tcs = new TaskCompletionSource<long>();
+            var tcs = new TaskCompletionSource<object>();
+            
+            FlushBuffer(buffer, socket, tcs);
 
-            return socket.DoOutInOpAsync(
+            return tcs.Task.ContinueWith(t =>
+            {
+                semaphore.Release();
+
+                _exception = _exception ?? t.Exception;
+
+                return t.Result;
+            });
+        }
+
+        private void FlushBuffer(
+            DataStreamerClientBuffer<TK, TV> buffer,
+            ClientSocket socket,
+            TaskCompletionSource<object> tcs)
+        {
+            socket.DoOutInOpAsync(
                     ClientOp.DataStreamerStart,
                     ctx => WriteBuffer(buffer, ctx.Writer),
                     ctx => (object)null,
                     syncCallback: true)
                 .ContinueWith(t =>
                 {
-                    semaphore.Release();
+                    if (t.Exception == null)
+                    {
+                        tcs.SetResult(null);
+                        return;
+                    }
 
-                    // TODO: RwLock here and in other places?
-                    _exception = _exception ?? t.Exception;
+                    if (!socket.IsDisposed)
+                    {
+                        // Socket is still connected: this error does not need to be retried.
+                        tcs.SetException(t.Exception);
+                        return;
+                    }
                     
-                    return t.Result;
+                    // Connection failed.
+                    // 1. Re-add buffer data
+                    // 2. Flush all only if it was requested by the user.
+                    var entries = buffer.Entries;
+
+                    for (var i = 0; i < entries.Length; i++)
+                    {
+                        var entry = entries[i];
+
+                        if (!entry.IsEmpty)
+                        {
+                            Add(entry);
+                        }
+                    }
+
+                    // TODO: Flush only when requested by the user!
+                    // TODO: What if we are in Close mode?
+                    FlushAsync().ContinueWith(ft =>
+                    {
+                        
+                    });
                 }, TaskContinuationOptions.ExecuteSynchronously);
         }
 
