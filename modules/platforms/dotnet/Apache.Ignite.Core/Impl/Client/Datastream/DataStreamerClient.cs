@@ -256,6 +256,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
                     // TODO: RwLock here and in other places?
                     _exception = _exception ?? t.Exception;
+                    
+                    return t.Result;
                 }, TaskContinuationOptions.ExecuteSynchronously);
         }
 
