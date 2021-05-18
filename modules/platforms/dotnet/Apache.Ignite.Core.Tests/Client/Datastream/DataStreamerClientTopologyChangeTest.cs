@@ -40,6 +40,14 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 streamer.Flush();
                 
                 Assert.AreEqual(1, cache[1]);
+
+                var node2 = StartServer();
+                node1.Dispose();
+                
+                streamer.Add(2, 2);
+                streamer.Flush();
+                
+                Assert.AreEqual(2, cache[2]);
             }
         }
 
