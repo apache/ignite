@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
@@ -53,6 +54,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_NAME_PATTERN;
 
 /**
@@ -298,8 +300,8 @@ public class IgniteCDC implements Runnable {
             .binaryMetadataFileStoreDir(binaryMeta)
             .marshallerMappingFileStoreDir(marshaller)
             .keepBinary(cdcCfg.isKeepBinary())
-            .filesOrDirs(segment.toFile());
-            //.addFilter((type, ptr) -> type == DATA_RECORD_V2);
+            .filesOrDirs(segment.toFile())
+            .addFilter((type, ptr) -> type == DATA_RECORD_V2);
 
         if (initState != null) {
             long segmentIdx = segmentIndex(segment);
@@ -421,7 +423,9 @@ public class IgniteCDC implements Runnable {
      */
     private static IgniteLogger logger(IgniteConfiguration cfg) {
         try {
-            return IgnitionEx.IgniteNamedInstance.initLogger(cfg.getGridLogger(), null, "cdc", cfg.getWorkDirectory());
+            UUID nodeId = cfg.getNodeId() != null ? cfg.getNodeId() : UUID.randomUUID();
+
+            return IgnitionEx.IgniteNamedInstance.initLogger(cfg.getGridLogger(), "ignite-cdc", nodeId, cfg.getWorkDirectory());
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
