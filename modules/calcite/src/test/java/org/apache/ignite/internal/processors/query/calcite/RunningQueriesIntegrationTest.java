@@ -148,14 +148,14 @@ public class RunningQueriesIntegrationTest extends GridCommonCalciteAbstractTest
         QueryEngine serverEngine = queryProcessor(srv);
         int cnt = 6;
 
-        executeSql(client, "CREATE TABLE person (id int, val varchar)");
+        executeSql(client, "CREATE TABLE t (id int, val varchar)");
 
         String data = IntStream.range(0, 10000).mapToObj((i) -> "(" + i + ",'" + i + "')").collect(joining(", "));
-        String insertSql = "INSERT INTO person (id, val) VALUES " + data;
+        String insertSql = "INSERT INTO t (id, val) VALUES " + data;
 
         executeSql(client, insertSql);
 
-        String bigJoin = IntStream.range(0, cnt).mapToObj((i) -> "person p" + i).collect(joining(", "));
+        String bigJoin = IntStream.range(0, cnt).mapToObj((i) -> "t t" + i).collect(joining(", "));
         String sql = "SELECT * FROM " + bigJoin;
 
         IgniteInternalFuture<List<List<?>>> fut = GridTestUtils.runAsync(() -> executeSql(client, sql));

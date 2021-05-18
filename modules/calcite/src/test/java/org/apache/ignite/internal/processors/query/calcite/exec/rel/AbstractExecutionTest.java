@@ -282,7 +282,7 @@ public class AbstractExecutionTest extends GridCommonCalciteAbstractTest {
                 .localNodeId(nodeId)
                 .logger(log())
                 .build(),
-            qryId, fragmentDesc, ArrayRowHandler.INSTANCE, ImmutableMap.of(), () -> {});
+            qryId, fragmentDesc, ArrayRowHandler.INSTANCE, ImmutableMap.of());
     }
 
     /** */
