@@ -162,7 +162,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         public Task FlushAsync()
         {
-            return FlushAsync(false);
+            return FlushAsync(close: false);
         }
 
         public void Close(bool cancel)
@@ -232,10 +232,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             return TaskRunner.WhenAll(tasks.ToArray());
         }
 
-        internal Task FlushBufferAsync(
-            DataStreamerClientBuffer<TK, TV> buffer,
+        internal Task FlushBufferAsync(DataStreamerClientBuffer<TK, TV> buffer,
             ClientSocket socket,
-            SemaphoreSlim semaphore)
+            SemaphoreSlim semaphore, bool userRequested)
         {
             // TODO: WaitAsync is not available on .NET 4, but is available on .NET 4.5 and later
             // Use reflection to get it.
@@ -245,7 +244,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             // TODO: Flush in a loop until succeeded.
             var tcs = new TaskCompletionSource<object>();
             
-            FlushBuffer(buffer, socket, tcs);
+            FlushBuffer(buffer, socket, tcs, userRequested);
 
             return tcs.Task.ContinueWith(t =>
             {
@@ -257,10 +256,10 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             });
         }
 
-        private void FlushBuffer(
-            DataStreamerClientBuffer<TK, TV> buffer,
+        private void FlushBuffer(DataStreamerClientBuffer<TK, TV> buffer,
             ClientSocket socket,
-            TaskCompletionSource<object> tcs)
+            TaskCompletionSource<object> tcs, 
+            bool userRequested)
         {
             socket.DoOutInOpAsync(
                     ClientOp.DataStreamerStart,
@@ -283,9 +282,10 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                         return;
                     }
 
-                    // Connection failed.
-                    // 1. Re-add buffer data
-                    // 2. Flush all only if it was requested by the user.
+                    // Connection failed. Remove disconnected socket from the map.
+                    _buffers.TryRemove(socket, out _);
+
+                    // Re-add entries to other buffers.
                     var entries = buffer.Entries;
 
                     for (var i = 0; i < entries.Length; i++)
@@ -298,12 +298,14 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                         }
                     }
                     
-                    // Remove disconnected socket from the map.
-                    _buffers.TryRemove(socket, out _);
-
                     // TODO: Flush only when requested by the user!
                     // TODO: What if we are in Close mode?
-                    FlushAsync().ContinueWith(flushTask => flushTask.SetAsResult(tcs));
+                    if (userRequested)
+                    {
+                        // When flush is initiated by the user, we should retry flushing immediately.
+                        // Otherwise re-adding entries to other buffers is enough. 
+                        FlushAsync().ContinueWith(flushTask => flushTask.SetAsResult(tcs));
+                    }
                 }, TaskContinuationOptions.ExecuteSynchronously);
         }
 

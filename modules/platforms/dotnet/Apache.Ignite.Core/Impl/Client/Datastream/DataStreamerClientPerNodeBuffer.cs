@@ -88,7 +88,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
                     if (Interlocked.CompareExchange(ref _buffer, null, buffer) == buffer)
                     {
-                        buffer.ScheduleFlush();
+                        buffer.ScheduleFlush(userRequested: true);
 
                         return buffer.GetChainFlushTask();
                     }
@@ -96,15 +96,15 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
 
             buffer = GetBuffer();
-            buffer.ScheduleFlush();
+            buffer.ScheduleFlush(userRequested: true);
 
             return buffer.GetChainFlushTask();
         }
 
-        internal Task FlushAsync(DataStreamerClientBuffer<TK, TV> buffer)
+        internal Task FlushAsync(DataStreamerClientBuffer<TK, TV> buffer, bool userRequested)
         {
             // Stateless mode: every client client-side buffer creates a one-off streamer on the server. 
-            return _client.FlushBufferAsync(buffer, _socket, _semaphore);
+            return _client.FlushBufferAsync(buffer, _socket, _semaphore, userRequested);
         }
 
         private DataStreamerClientBuffer<TK, TV> GetBuffer()
