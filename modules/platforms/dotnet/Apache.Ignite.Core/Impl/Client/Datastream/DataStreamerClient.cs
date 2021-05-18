@@ -269,6 +269,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                     syncCallback: true)
                 .ContinueWith(t =>
                 {
+                    // TODO: We are on socket thread here! Looks like this affects perf.
                     if (t.Exception == null)
                     {
                         tcs.SetResult(null);
