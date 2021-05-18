@@ -260,7 +260,7 @@ public class RecordV1Serializer implements RecordSerializer {
             int recordType = in.readUnsignedByte();
 
             if (recordType == WALRecord.RecordType.STOP_ITERATION_RECORD_TYPE)
-                throw new SegmentEofException("Reached logical end of the segment[segId=" + io.getSegmentId() + ']', null);
+                throw new SegmentEofException("Reached logical end of the segment", null);
 
             WALRecord.RecordType type = WALRecord.RecordType.fromIndex(recordType - 1);
 

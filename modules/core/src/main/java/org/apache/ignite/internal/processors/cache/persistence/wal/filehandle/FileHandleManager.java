@@ -54,7 +54,7 @@ public interface FileHandleManager {
      *
      * @throws IgniteCheckedException if fail.
      */
-    void onDeactivate(boolean rollOver) throws IgniteCheckedException;
+    void onDeactivate() throws IgniteCheckedException;
 
     /**
      * Resume logging.

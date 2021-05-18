@@ -361,7 +361,7 @@ public abstract class AbstractWalRecordsIterator
 
             return createReadFileHandle(fileIO, serializerFactory.createSerializer(serVer), in);
         }
-        catch (SegmentEofException | EOFException e) {
+        catch (SegmentEofException | EOFException ignore) {
             try {
                 fileIO.close();
             }
