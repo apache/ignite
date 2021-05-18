@@ -27,10 +27,20 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
     public class DataStreamerClientTopologyChangeTest
     {
         [Test]
-        public void TestNodeLeave()
+        public void TestStreamerDoesNotLoseDataWhenNewNodeEntersAndOriginalNodeLeaves()
         {
             var node1 = StartServer();
             var client = StartClient();
+
+            var cache = client.CreateCache<int, int>(TestUtils.TestName);
+
+            using (var streamer = client.GetDataStreamer<int, int>(cache.Name))
+            {
+                streamer.Add(1, 1);
+                streamer.Flush();
+                
+                Assert.AreEqual(1, cache[1]);
+            }
         }
 
         [TestFixtureTearDown]
