@@ -281,7 +281,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                         tcs.SetException(t.Exception);
                         return;
                     }
-                    
+
                     // Connection failed.
                     // 1. Re-add buffer data
                     // 2. Flush all only if it was requested by the user.
@@ -296,6 +296,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                             Add(entry);
                         }
                     }
+                    
+                    // Remove disconnected socket from the map.
+                    _buffers.TryRemove(socket, out _);
 
                     // TODO: Flush only when requested by the user!
                     // TODO: What if we are in Close mode?
