@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
-import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -28,6 +27,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.ConventionTraitDef;
@@ -705,7 +706,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
             return igniteRel;
         }
-        catch (IgniteSQLException sqlEx){
+        catch (IgniteSQLException sqlEx) {
             throw sqlEx;
         }
         catch (Throwable ex) {
@@ -812,7 +813,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             qryExecId,
             fragmentDesc,
             handler,
-            Commons.parametersMap(pctx.parameters()), ()-> runningQrySvc.deregister(qryExecId));
+            Commons.parametersMap(pctx.parameters()), () -> runningQrySvc.deregister(qryExecId));
 
         Node<Row> node = new LogicalRelImplementor<>(ectx, partitionService(), mailboxRegistry(),
             exchangeService(), failureProcessor()).go(fragment.root());
@@ -875,9 +876,14 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     /** */
     private void executeFragment(UUID qryId, FragmentPlan plan, PlanningContext pctx, FragmentDescription fragmentDesc) {
         long frId = fragmentDesc.fragmentId();
-        ExecutionContext<Row> ectx = new ExecutionContext<>(taskExecutor(), pctx, qryId,
-            fragmentDesc, handler, Commons.parametersMap(pctx.parameters()), ()->runningQrySvc.deregisterFragment(qryId, frId));
-        UUID origNodeId = pctx.originatingNodeId();
+        ExecutionContext<Row> ectx = new ExecutionContext<>(
+            taskExecutor(),
+            pctx,
+            qryId,
+            fragmentDesc,
+            handler,
+            Commons.parametersMap(pctx.parameters()),
+            () -> runningQrySvc.deregisterFragment(qryId, frId));
 
         Outbox<Row> node = new LogicalRelImplementor<>(
                 ectx,
@@ -887,6 +893,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 failureProcessor())
                 .go(plan.root());
 
+        UUID origNodeId = pctx.originatingNodeId();
         try {
             messageService().send(origNodeId, new QueryStartResponse(qryId, frId));
         }
@@ -929,7 +936,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             catch (QueryCancelledException e) {
                 throw new IgniteSQLException(e.getMessage(), IgniteQueryErrorCode.QUERY_CANCELED);
             }
-
 
             List<QueryPlan> qryPlans = queryPlanCache().queryPlan(
                 pctx,
@@ -994,11 +1000,12 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             qryInfo.onError(new RemoteException(nodeId, msg.queryId(), msg.fragmentId(), msg.error()));
     }
 
+    /** */
     private void onMessage(UUID nodeId, QueryCancelRequest msg) {
         assert nodeId != null && msg != null;
 
         RunningQueryInfo query = runningQrySvc.query(msg.queryId());
-        if(query != null)
+        if (query != null)
             runningQrySvc.cancelQuery(msg.queryId());
     }
 

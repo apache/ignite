@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.Service;
 public class RunningQueryService implements Service {
     /** */
     private final Map<UUID, RunningQueryInfo> queries;
+
     /** */
     private final Map<UUID, List<RunningFragmentInfo>> fragments;
 
@@ -129,7 +130,7 @@ public class RunningQueryService implements Service {
         if (frs != null && !frs.isEmpty()) {
             frs.removeIf(info -> info.fragmentId() == fragmentId);
 
-            if(frs.isEmpty())
+            if (frs.isEmpty())
                 fragments.remove(qryId);
         }
     }

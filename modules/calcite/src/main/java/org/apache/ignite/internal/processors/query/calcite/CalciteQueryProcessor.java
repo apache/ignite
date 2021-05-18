@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.List;
-
 import java.util.UUID;
+
 import org.apache.calcite.config.Lex;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.prepare.CalciteCatalogReader;
@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.RunningFragmentInfo;
+import org.apache.ignite.internal.processors.query.RunningQueryInfo;
 import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeServiceImpl;
@@ -49,8 +50,8 @@ import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistry;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutorImpl;
-import org.apache.ignite.internal.processors.query.calcite.fun.IgniteSqlFunctions;
 import org.apache.ignite.internal.processors.query.calcite.exec.RunningQueryService;
+import org.apache.ignite.internal.processors.query.calcite.fun.IgniteSqlFunctions;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
@@ -66,7 +67,6 @@ import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlParserIm
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.processors.query.calcite.util.LifecycleAware;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
-import org.apache.ignite.internal.processors.query.RunningQueryInfo;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.calcite.rex.RexUtil.EXECUTOR;

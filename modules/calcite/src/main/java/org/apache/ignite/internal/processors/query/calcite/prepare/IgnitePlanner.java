@@ -392,7 +392,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
             try {
                 GridQueryCancel cancel = externalCtx.queryCancel();
 
-                if(cancel != null)
+                if (cancel != null)
                     cancel.add(() -> {
                         cancelFlag.set(true);
                     });

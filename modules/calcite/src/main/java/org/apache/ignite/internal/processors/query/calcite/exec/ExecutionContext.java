@@ -24,7 +24,6 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
-
 import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.schema.SchemaPlus;
@@ -90,6 +89,7 @@ public class ExecutionContext<Row> implements DataContext {
     ) {
         this(executor, ctx, qryId, fragmentDesc, handler, params, null);
     }
+
     /**
      * @param ctx Parent context.
      * @param qryId Query ID.
@@ -302,7 +302,7 @@ public class ExecutionContext<Row> implements DataContext {
     public boolean finish() {
         boolean finishedRightNow = !finishFlag.get() && finishFlag.compareAndSet(false, true);
 
-        if(finishedRightNow && finishAct != null) {
+        if (finishedRightNow && finishAct != null) {
             try {
                 finishAct.run();
             }

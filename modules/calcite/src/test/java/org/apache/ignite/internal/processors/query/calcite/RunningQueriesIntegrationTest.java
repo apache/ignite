@@ -59,7 +59,7 @@ public class RunningQueriesIntegrationTest extends GridCommonCalciteAbstractTest
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception{
+    @Override protected void afterTest() throws Exception {
         for (Ignite ign : G.allGrids()) {
             for (String cacheName : ign.cacheNames())
                 ign.destroyCache(cacheName);
@@ -70,7 +70,9 @@ public class RunningQueriesIntegrationTest extends GridCommonCalciteAbstractTest
         super.afterTest();
     }
 
-    /** */
+    /**
+     *
+     */
     @Test
     public void testCancelAtPlanningPhase() throws IgniteCheckedException {
         QueryEngine engine = queryProcessor(client);
@@ -80,12 +82,13 @@ public class RunningQueriesIntegrationTest extends GridCommonCalciteAbstractTest
             executeSql(client, "CREATE TABLE person" + i + " (id int, val varchar)");
 
         String bigJoin = IntStream.range(0, cnt).mapToObj((i) -> "person" + i + " p" + i).collect(joining(", "));
-        String sql = "SELECT * FROM " + bigJoin + " WHERE id>0 ORDER BY id DESC";;
+        String sql = "SELECT * FROM " + bigJoin + " WHERE id>0 ORDER BY id DESC";
+        ;
 
         IgniteInternalFuture<List<List<?>>> fut = GridTestUtils.runAsync(() -> executeSql(client, sql));
 
         Assert.assertTrue(GridTestUtils.waitForCondition(
-            () -> !engine.runningQueries().isEmpty()  || fut.isDone(), TIMEOUT_IN_MS));
+            () -> !engine.runningQueries().isEmpty() || fut.isDone(), TIMEOUT_IN_MS));
 
         List<RunningQueryInfo> running = engine.runningQueries();
 
@@ -125,8 +128,8 @@ public class RunningQueriesIntegrationTest extends GridCommonCalciteAbstractTest
                 List<RunningQueryInfo> queries = engine.runningQueries();
 
                 return !queries.isEmpty() && queries.get(0).stage() == RunningStage.EXECUTION;
-            }
-            , TIMEOUT_IN_MS));
+            },
+            TIMEOUT_IN_MS));
 
         List<RunningQueryInfo> running = engine.runningQueries();
 
@@ -165,8 +168,8 @@ public class RunningQueriesIntegrationTest extends GridCommonCalciteAbstractTest
                 List<RunningQueryInfo> queries = clientEngine.runningQueries();
 
                 return !queries.isEmpty() && queries.get(0).stage() == RunningStage.EXECUTION;
-            }
-            , TIMEOUT_IN_MS));
+            },
+            TIMEOUT_IN_MS));
 
         Assert.assertTrue(GridTestUtils.waitForCondition(() -> !serverEngine.runningFragments().isEmpty(), TIMEOUT_IN_MS));
 

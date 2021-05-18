@@ -18,7 +18,6 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.util.StringJoiner;
 import java.util.UUID;
 
 /**
@@ -51,7 +50,7 @@ public final class RunningFragmentInfo extends RunningQueryInfo {
         super(RunningStage.EXECUTION, qryId, qry, schemaName, cancel);
 
         this.originatingNodeId = originatingNodeId;
-        this.fragmentId=fragmentId;
+        this.fragmentId = fragmentId;
     }
 
     /**
