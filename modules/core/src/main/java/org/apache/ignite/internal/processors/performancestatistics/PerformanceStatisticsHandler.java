@@ -138,4 +138,30 @@ public interface PerformanceStatisticsHandler {
      * @param duration Duration in milliseconds.
      */
     void pagesWriteThrottle(UUID nodeId, long endTime, long duration);
+
+    /**
+     * @param nodeId Node id.
+     * @param startTime Start time in milliseconds.
+     * @param duration Duration in milliseconds.
+     * @param rebalanced {@code True} if cluster fully rebalanced.
+     */
+    void pme(UUID nodeId, long startTime, long duration, boolean rebalanced);
+
+    /**
+     * @param nodeId Node id.
+     * @param rebalanceId Rebalance id.
+     * @param parts Parts.
+     * @param entries Entries.
+     * @param bytes Bytes.
+     * @param startTime Start time in milliseconds.
+     * @param duration Duration in milliseconds.
+     */
+    void rebalanceChainFinished(
+        UUID nodeId,
+        long rebalanceId,
+        long parts,
+        long entries,
+        long bytes,
+        long startTime,
+        long duration);
 }

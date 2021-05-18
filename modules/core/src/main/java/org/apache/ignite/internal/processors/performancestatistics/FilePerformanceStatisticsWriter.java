@@ -54,8 +54,10 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CHECKPOINT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.JOB;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.PAGES_WRITE_THROTTLE;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.PME;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.QUERY_READS;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.REBALANCE_CHAIN_FINISHED;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TASK;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_COMMIT;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.TX_ROLLBACK;
@@ -64,8 +66,10 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.checkpointRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.jobRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.pagesWriteThrottleRecordSize;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.pmeRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.queryReadsRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.queryRecordSize;
+import static org.apache.ignite.internal.processors.performancestatistics.OperationType.rebalanceChainFinishedRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.taskRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.transactionRecordSize;
 
@@ -382,6 +386,44 @@ public class FilePerformanceStatisticsWriter {
         doWrite(PAGES_WRITE_THROTTLE, pagesWriteThrottleRecordSize(), buf -> {
             buf.putLong(endTime);
             buf.putLong(duration);
+        });
+    }
+
+    /**
+     * @param rebalanceId Rebalance id.
+     * @param parts Parts.
+     * @param entries Entries.
+     * @param bytes Bytes.
+     * @param startTime Start time in milliseconds.
+     * @param duration Duration in milliseconds.
+     */
+    public void rebalanceChainFinished(
+        long rebalanceId,
+        long parts,
+        long entries,
+        long bytes,
+        long startTime,
+        long duration) {
+        doWrite(REBALANCE_CHAIN_FINISHED, rebalanceChainFinishedRecordSize(), buf -> {
+            buf.putLong(rebalanceId);
+            buf.putLong(parts);
+            buf.putLong(entries);
+            buf.putLong(bytes);
+            buf.putLong(startTime);
+            buf.putLong(duration);
+        });
+    }
+
+    /**
+     * @param startTime Start time in milliseconds.
+     * @param duration Duration in milliseconds.
+     * @param rebalanced {@code True} if cluster fully rebalanced.
+     */
+    public void pme(long startTime, long duration, boolean rebalanced) {
+        doWrite(PME, pmeRecordSize(), buf -> {
+            buf.putLong(startTime);
+            buf.putLong(duration);
+            buf.put(rebalanced ? (byte)1 : 0);
         });
     }
 

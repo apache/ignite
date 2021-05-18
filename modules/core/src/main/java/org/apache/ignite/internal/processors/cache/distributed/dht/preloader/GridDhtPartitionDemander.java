@@ -1963,10 +1963,21 @@ public class GridDhtPartitionDemander {
                 minStartTime = Math.min(minStartTime, fut.startTime);
             }
 
+            long duration = System.currentTimeMillis() - minStartTime;
+
+            if (ctx.kernalContext().performanceStatistics().enabled())
+                ctx.kernalContext().performanceStatistics().rebalanceChainFinished(
+                    rebalanceId,
+                    parts,
+                    entries,
+                    bytes,
+                    minStartTime,
+                    duration);
+
             log.info("Completed rebalance chain: [rebalanceId=" + rebalanceId +
                 ", partitions=" + parts +
                 ", entries=" + entries +
-                ", duration=" + U.humanReadableDuration(System.currentTimeMillis() - minStartTime) +
+                ", duration=" + U.humanReadableDuration(duration) +
                 ", bytesRcvd=" + U.humanReadableByteCount(bytes) + ']');
         }
 

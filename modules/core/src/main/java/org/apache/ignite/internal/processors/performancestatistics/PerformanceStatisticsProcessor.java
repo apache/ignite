@@ -261,6 +261,33 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param startTime Time in milliseconds.
+     * @param duratione Time in milliseconds.
+     * @param rebalanced {@code True} if cluster fully rebalanced.
+     */
+    public void pme(long startTime, long duratione, boolean rebalanced) {
+        write(writer -> writer.pme(startTime, duratione, rebalanced));
+    }
+
+    /**
+     * @param rebalanceId Rebalance id.
+     * @param parts Parts.
+     * @param entries Entries.
+     * @param bytes Bytes.
+     * @param startTime Start time in milliseconds.
+     * @param duration Duration in milliseconds.
+     */
+    public void rebalanceChainFinished(
+        long rebalanceId,
+        long parts,
+        long entries,
+        long bytes,
+        long startTime,
+        long duration) {
+        write(writer -> writer.rebalanceChainFinished(rebalanceId, parts, entries, bytes, startTime, duration));
+    }
+
+    /**
      * Starts collecting performance statistics.
      *
      * @throws IgniteCheckedException If starting failed.

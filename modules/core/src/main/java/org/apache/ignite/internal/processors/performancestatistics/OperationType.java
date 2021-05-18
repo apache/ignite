@@ -85,7 +85,13 @@ public enum OperationType {
     CHECKPOINT(18),
 
     /** Pages write throttle. */
-    PAGES_WRITE_THROTTLE(19);
+    PAGES_WRITE_THROTTLE(19),
+
+    /** Partition map exchange. */
+    PME(20),
+
+    /** Rebalance chain finished. */
+    REBALANCE_CHAIN_FINISHED(21);
 
     /** Cache operations. */
     public static final EnumSet<OperationType> CACHE_OPS = EnumSet.of(CACHE_GET, CACHE_PUT, CACHE_REMOVE,
@@ -197,5 +203,20 @@ public enum OperationType {
     /** @return Pages write throttle record size. */
     public static int pagesWriteThrottleRecordSize() {
         return 8 + 8;
+    }
+
+    /** @return Rebalance record size. */
+    public static int rebalanceRecordSize() {
+        return 8 + 1;
+    }
+
+    /** @return Rebalance chain finished record size. */
+    public static int rebalanceChainFinishedRecordSize() {
+        return 8 * 6;
+    }
+
+    /** @return Rebalance record size. */
+    public static int pmeRecordSize() {
+        return 8 + 8 + 1;
     }
 }

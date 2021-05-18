@@ -224,6 +224,17 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
         @Override public void pagesWriteThrottle(UUID nodeId, long endTime, long duration) {
             // No-op.
         }
+
+        /** {@inheritDoc} */
+        @Override public void pme(UUID nodeId, long startTime, long duration, boolean rebalanced) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void rebalanceChainFinished(UUID nodeId, long rebalanceId, long parts, long entries,
+            long bytes, long startTime, long duration) {
+            // No-op.
+        }
     }
 
     /** Client type to run load from. */
