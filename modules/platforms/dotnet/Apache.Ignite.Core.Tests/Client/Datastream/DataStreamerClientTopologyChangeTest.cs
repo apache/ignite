@@ -29,7 +29,37 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         [Test]
         public void TestStreamerDoesNotLoseDataWhenNewNodeEntersAndOriginalNodeLeaves()
         {
-            var node1 = StartServer();
+            var server = StartServer();
+            var client = StartClient();
+
+            var cache = client.CreateCache<int, int>(TestUtils.TestName);
+
+            using (var streamer = client.GetDataStreamer<int, int>(cache.Name))
+            {
+                // Add to the buffer for the initial server.
+                streamer.Add(1, 1);
+
+                // Start new server, stop old one.
+                StartServer();
+                server.Dispose();
+                
+                streamer.Add(2, 2);
+                streamer.Flush();
+                
+                Assert.AreEqual(1, cache[1]);
+                Assert.AreEqual(2, cache[2]);
+
+                streamer.Add(3, 3);
+                streamer.Flush();
+                
+                Assert.AreEqual(3, cache[3]);
+            }
+        }
+
+        [Test]
+        public void TestStreamerDoesNotLoseDataOnDisposeWhenNewNodeEntersAndOriginalNodeLeaves()
+        {
+            var server = StartServer();
             var client = StartClient();
 
             var cache = client.CreateCache<int, int>(TestUtils.TestName);
@@ -37,18 +67,15 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             using (var streamer = client.GetDataStreamer<int, int>(cache.Name))
             {
                 streamer.Add(1, 1);
-                streamer.Flush();
-                
-                Assert.AreEqual(1, cache[1]);
 
-                var node2 = StartServer();
-                node1.Dispose();
+                StartServer();
+                server.Dispose();
                 
                 streamer.Add(2, 2);
-                streamer.Flush();
-                
-                Assert.AreEqual(2, cache[2]);
             }
+            
+            Assert.AreEqual(1, cache[1]);
+            Assert.AreEqual(2, cache[2]);
         }
 
         [TestFixtureTearDown]
