@@ -19,22 +19,33 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
+
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.core.Spool;
+import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.schema.Table;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteRelShuttle;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerPhase;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.ColumnDefinition;
+import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.CreateTableCommand;
 import org.apache.ignite.internal.processors.query.calcite.rel.AbstractIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
@@ -45,9 +56,12 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
 import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
+import org.apache.ignite.internal.processors.query.calcite.schema.LazyRelOptTable;
+import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.HintUtils;
+import org.apache.ignite.internal.util.typedef.F;
 
 /** */
 public class PlannerHelper {
@@ -105,6 +119,72 @@ public class PlannerHelper {
 
             throw ex;
         }
+    }
+
+    /**
+     * Creates physical plan for "INSERT INTO table SELECT ..." based on "CREATE TABLE table AS SELECT ..." statement.
+     */
+    public static IgniteRel makeCreateTableAsSelectPlan(CreateTableCommand createTableCmd, PlanningContext ctx,
+        IgniteLogger log, SchemaHolder schemaHolder) {
+        assert createTableCmd.query() != null;
+
+        // query() - already validated SqlNode.
+        IgniteRel qryRel = optimize(createTableCmd.query(), ctx.planner(), log);
+
+        String schemaName = createTableCmd.schemaName();
+        String tableName = createTableCmd.tableName();
+
+        Supplier<Table> tableSupplier = () -> schemaHolder.schema().getSubSchema(schemaName).getTable(tableName);
+
+        RelDataTypeFactory.Builder rowTypeBuilder = new RelDataTypeFactory.Builder(ctx.typeFactory());
+        List<RexNode> projects = new ArrayList<>();
+        RexBuilder rexBuilder = qryRel.getCluster().getRexBuilder();
+
+        RelDataType objType = ctx.typeFactory().createJavaType(Object.class);
+
+        rowTypeBuilder.add(QueryUtils.KEY_FIELD_NAME, objType);
+        rowTypeBuilder.add(QueryUtils.VAL_FIELD_NAME, objType);
+
+        projects.add(rexBuilder.makeNullLiteral(objType));
+        projects.add(rexBuilder.makeNullLiteral(objType));
+
+        RelDataType inputRowDataType = qryRel.getRowType();
+        List<ColumnDefinition> cols = createTableCmd.columns();
+
+        assert inputRowDataType.getFieldCount() == cols.size();
+
+        for (int i = 0; i < inputRowDataType.getFieldCount(); i++) {
+            RelDataTypeField fld = inputRowDataType.getFieldList().get(i);
+            ColumnDefinition col = cols.get(i);
+
+            rowTypeBuilder.add(col.name(), col.type());
+
+            if (F.eq(col.type(), fld.getType()))
+                projects.add(rexBuilder.makeInputRef(fld.getType(), i));
+            else
+                projects.add(rexBuilder.makeCast(col.type(), rexBuilder.makeInputRef(fld.getType(), i)));
+        }
+
+        RelDataType outputRowDataType = rowTypeBuilder.build();
+
+        IgniteRel projectRel = new IgniteProject(
+            qryRel.getCluster(),
+            qryRel.getTraitSet(),
+            qryRel,
+            projects,
+            outputRowDataType
+        );
+
+        return new IgniteTableModify(
+            qryRel.getCluster(),
+            qryRel.getTraitSet(),
+            new LazyRelOptTable(tableSupplier, outputRowDataType, tableName),
+            projectRel,
+            TableModify.Operation.INSERT,
+            null,
+            null,
+            false
+        );
     }
 
     /**

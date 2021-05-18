@@ -47,7 +47,7 @@ public class AbstractDdlIntegrationTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGrids(1);
+        startGrids(2);
 
         client = startClientGrid(CLIENT_NODE_NAME);
 

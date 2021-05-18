@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.prepare.ddl;
 
 import java.util.List;
 
+import org.apache.calcite.sql.SqlNode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.jetbrains.annotations.Nullable;
@@ -77,6 +78,9 @@ public class CreateTableCommand implements DdlCommand {
 
     /** Encrypted flag. */
     private boolean encrypted;
+
+    /** Query for AS SELECT statement. */
+    private SqlNode qry;
 
     /**
      * @return Cache name upon which new cache configuration for this table must be based.
@@ -300,5 +304,19 @@ public class CreateTableCommand implements DdlCommand {
      */
     public void encrypted(boolean encrypted) {
         this.encrypted = encrypted;
+    }
+
+    /**
+     * @return Query.
+     */
+    public SqlNode query() {
+        return qry;
+    }
+
+    /**
+     * @param qry Query.
+     */
+    public void query(SqlNode qry) {
+        this.qry = qry;
     }
 }

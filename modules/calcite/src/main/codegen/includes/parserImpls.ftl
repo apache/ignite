@@ -148,19 +148,29 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     final SqlIdentifier id;
     final SqlNodeList columnList;
     final SqlNodeList optionList;
+    final SqlNode query;
 }
 {
     <TABLE>
     ifNotExists = IfNotExistsOpt()
     id = CompoundIdentifier()
-    columnList = TableElementList()
+    (
+        columnList = TableElementList()
+    |
+        { columnList = null; }
+    )
+    (
+        <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY)
+    |
+        { query = null; }
+    )
     (
         <WITH> { s.add(this); } optionList = CreateTableOptionList()
     |
         { optionList = null; }
     )
     {
-        return new IgniteSqlCreateTable(s.end(this), ifNotExists, id, columnList, optionList);
+        return new IgniteSqlCreateTable(s.end(this), ifNotExists, id, columnList, query, optionList);
     }
 }
 

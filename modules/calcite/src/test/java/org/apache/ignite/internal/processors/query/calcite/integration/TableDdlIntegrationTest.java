@@ -276,6 +276,88 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
     }
 
     /**
+     * Creates table as select.
+     */
+    @Test
+    public void createTableAsSelectSimpleCase() {
+        executeSql("create table my_table as select 1 as i, 'test' as s");
+        List<List<?>> res = executeSql("select i, s from my_table");
+
+        assertEquals(1, res.size());
+
+        List<?> row = res.get(0);
+
+        assertEquals(1, row.get(0));
+        assertEquals("test", row.get(1));
+    }
+
+    /**
+     * Creates table with specified columns as select.
+     */
+    @Test
+    public void createTableAsSelectWithColumns() {
+        executeSql("create table my_table(i integer, s varchar) as select 1, 'test'");
+        List<List<?>> res = executeSql("select * from my_table");
+
+        assertEquals(1, res.size());
+
+        List<?> row = res.get(0);
+
+        assertEquals(1, row.get(0));
+        assertEquals("test", row.get(1));
+    }
+
+    /**
+     * Creates table with cast of query columns to table columns.
+     */
+    @Test
+    public void createTableAsSelectWithTypeCast() {
+        executeSql("create table my_table(i integer, s varchar) as select '1', 1");
+        List<List<?>> res = executeSql("select * from my_table");
+
+        assertEquals(1, res.size());
+
+        List<?> row = res.get(0);
+
+        assertEquals(1, row.get(0));
+        assertEquals("1", row.get(1));
+
+        GridTestUtils.assertThrowsAnyCause(log,
+            () -> executeSql("create table my_table2(i integer) as select 'test'"),
+            NumberFormatException.class, null);
+    }
+
+    /** */
+    @Test
+    public void createTableAsSelectWrongColumnsCount() {
+        GridTestUtils.assertThrowsAnyCause(log,
+            () -> executeSql("create table my_table(i integer, s1 varchar, s2 varchar) as select 1, 'test'"),
+            IgniteSQLException.class, "Number of columns");
+    }
+
+    /**
+     * Creates table as select from another table.
+     */
+    @Test
+    public void createTableAsSelectFromDistributedTable() {
+        executeSql("create table my_table1(i int) as select x from table(system_range(1, 100))");
+
+        assertEquals(100L, executeSql("select count(*) from my_table1").get(0).get(0));
+
+        executeSql("create table my_table2(i int) as select * from my_table1");
+
+        assertEquals(100L, executeSql("select count(*) from my_table2").get(0).get(0));
+    }
+
+    /** */
+    @Test
+    public void createTableWithoutColumnsOrQuery() {
+        GridTestUtils.assertThrowsAnyCause(log,
+            () -> executeSql("create table my_table"),
+            IgniteSQLException.class, "Column list or query");
+    }
+
+    /**
      * Drops a table created in a default schema.
      */
     @Test

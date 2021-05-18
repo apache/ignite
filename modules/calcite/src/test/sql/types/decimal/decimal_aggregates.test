@@ -46,3 +46,17 @@ NULL
 45672564564938245.1
 4567645908450368043562342564564938245.1
 
+# decimal aggregates over a table
+statement ok
+CREATE TABLE decimals AS SELECT x::DECIMAL(4,1) AS d1, (x * x)::DECIMAL(9,1) AS d2, (x * x * x)::DECIMAL(18,1) AS d3, (x * x * x * x)::DECIMAL(38,1) AS d4 FROM table(system_range(1, 999));
+
+statement ok
+INSERT INTO decimals VALUES ('0.1', '0.1', '0.1', '0.1'), ('0.2', '0.2', '0.2', '0.2')
+
+query IIII
+SELECT SUM(d1)::VARCHAR, SUM(d2)::VARCHAR, SUM(d3)::VARCHAR, SUM(d4)::VARCHAR FROM decimals;
+----
+499500.3
+332833500.3
+249500250000.3
+199500333333300.3

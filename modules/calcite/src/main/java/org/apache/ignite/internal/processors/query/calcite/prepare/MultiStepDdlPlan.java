@@ -20,18 +20,29 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.DdlCommand;
 
 /** */
-public class DdlPlan implements QueryPlan {
+public class MultiStepDdlPlan extends AbstractMultiStepPlan {
     /** */
     private final DdlCommand cmd;
 
     /** */
-    public DdlPlan(DdlCommand cmd) {
+    public MultiStepDdlPlan(DdlCommand cmd, QueryTemplate qryTemplate, FieldsMetadata fieldsMetadata) {
+        super(qryTemplate, fieldsMetadata);
         this.cmd = cmd;
+    }
+
+    /** */
+    public MultiStepDdlPlan(DdlCommand cmd) {
+        this(cmd, null, null);
     }
 
     /** */
     public DdlCommand command() {
         return cmd;
+    }
+
+    /** */
+    public boolean hasQuery() {
+        return queryTemplate != null;
     }
 
     /** {@inheritDoc} */
@@ -41,6 +52,6 @@ public class DdlPlan implements QueryPlan {
 
     /** {@inheritDoc} */
     @Override public QueryPlan copy() {
-        return this;
+        return new MultiStepDdlPlan(cmd, queryTemplate, fieldsMetadata);
     }
 }
