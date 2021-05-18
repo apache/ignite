@@ -1113,8 +1113,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     );
                 }
 
-                if (isRestoring())
-                    throw new IgniteException("Snapshot operation has been rejected. Cache group restore operation is currently in progress.");
+                if (isRestoring()) {
+                    throw new IgniteException(
+                        "Snapshot operation has been rejected. Cache group restore operation is currently in progress."
+                    );
+                }
 
                 snpFut0 = new ClusterSnapshotFuture(UUID.randomUUID(), name);
 
