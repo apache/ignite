@@ -299,10 +299,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
                     // TODO: Flush only when requested by the user!
                     // TODO: What if we are in Close mode?
-                    FlushAsync().ContinueWith(ft =>
-                    {
-                        
-                    });
+                    FlushAsync().ContinueWith(flushTask => flushTask.SetAsResult(tcs));
                 }, TaskContinuationOptions.ExecuteSynchronously);
         }
 
