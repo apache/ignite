@@ -140,6 +140,9 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationLifecycleListener;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedPropertyDispatcher;
 import org.apache.ignite.internal.processors.configuration.distributed.SimpleDistributedProperty;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
@@ -179,7 +182,10 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PREFER_WAL_REBALAN
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_RECOVERY_SEMAPHORE_PERMITS;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
+import static org.apache.ignite.IgniteSystemProperties.getString;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
+import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.makeUpdateListener;
+import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.setDefaultValue;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.partId;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CHECKPOINT_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.MASTER_KEY_CHANGE_RECORD;
@@ -247,6 +253,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** @see IgniteSystemProperties#IGNITE_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE */
     public static final int DFLT_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE = 60;
+
+    /** WAL rebalance threshold distributed configuration key */
+    public static final String WAL_REBALANCE_THRESHOLD_DMS_KEY = "wal.rebalance.threshold";
 
     /** @deprecated use {@link #walRebalanceThreshold}. */
     @Deprecated
@@ -362,7 +371,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** WAL rebalance threshold. */
     private final SimpleDistributedProperty<Integer> walRebalanceThreshold =
-        new SimpleDistributedProperty<>("wal.rebalance.threshold", Integer::parseInt);
+        new SimpleDistributedProperty<>(WAL_REBALANCE_THRESHOLD_DMS_KEY, Integer::parseInt);
 
     /**
      * @param ctx Kernal context.
@@ -3744,12 +3753,20 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** Registers {@link #walRebalanceThreshold} property in distributed metastore. */
-    private void initWalRebalanceThreshold(){
-        cctx.kernalContext().internalSubscriptionProcessor().registerDistributedConfigurationListener(dispatcher -> {
-            walRebalanceThreshold.addListener((name, oldVal, newVal) ->
-                U.log(log, "Historical rebalance WAL threshold changed [oldVal=" + oldVal + ", newVal=" + newVal + "]"));
+    private void initWalRebalanceThreshold() {
+        cctx.kernalContext().internalSubscriptionProcessor().registerDistributedConfigurationListener(
+            new DistributedConfigurationLifecycleListener() {
+                @Override public void onReadyToRegister(DistributedPropertyDispatcher dispatcher) {
+                    String logMsgFmt = "Historical rebalance WAL threshold [property=%s] changed[oldVal=%s, newVal=%s]";
+                    walRebalanceThreshold.addListener(makeUpdateListener(logMsgFmt, log));
 
-            dispatcher.registerProperty(walRebalanceThreshold);
-        });
+                    dispatcher.registerProperties(walRebalanceThreshold);
+                }
+
+                @Override public void onReadyToWrite() {
+                    setDefaultValue(walRebalanceThreshold, walRebalanceThresholdLegacy, log);
+                }
+            }
+        );
     }
 }
