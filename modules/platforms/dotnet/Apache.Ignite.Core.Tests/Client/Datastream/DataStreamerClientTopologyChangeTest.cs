@@ -121,7 +121,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                         // ReSharper disable once AccessToDisposedClosure
                         streamer.Add(id, id);
 
-                        if (id % 512 == 0)
+                        if (id % 2000 == 0)
                         {
                             // Sleep once in a while to reduce streamed data size.
                             Thread.Sleep(100);
@@ -149,6 +149,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             
             Assert.AreEqual(1, cache[1]);
             Assert.AreEqual(id, cache.GetSize());
+            Assert.Greater(id, 10000);
         }
 
         [Test]
