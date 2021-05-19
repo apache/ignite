@@ -395,17 +395,18 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         private void WriteBuffer(DataStreamerClientBuffer<TK, TV> buffer, BinaryWriter w)
         {
-                w.WriteInt(_cacheId);
-                w.WriteByte((byte) GetFlags());
-                w.WriteInt(_options.ServerPerNodeBufferSize);
-                w.WriteInt(_options.ServerPerThreadBufferSize);
-                w.WriteObject(_options.Receiver);
+            w.WriteInt(_cacheId);
+            w.WriteByte((byte) GetFlags());
+            w.WriteInt(_options.ServerPerNodeBufferSize);
+            w.WriteInt(_options.ServerPerThreadBufferSize);
+            w.WriteObject(_options.Receiver);
 
-            w.WriteInt(buffer.Count);
+            var count = buffer.Count;
+            w.WriteInt(count);
 
             var entries = buffer.Entries;
 
-            for (var i = 0; i < entries.Length; i++)
+            for (var i = 0; i < count; i++)
             {
                 var entry = entries[i];
 
