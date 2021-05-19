@@ -18,12 +18,15 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -84,8 +87,10 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFileName;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METAFILE_EXT;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
+import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -97,6 +102,9 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
     /** Partition id used for tests. */
     private static final int PART_ID = 0;
+
+    /** Optional cache name to be created on demand. */
+    private static final String OPTIONAL_CACHE_NAME = "CacheName";
 
     /** Cleanup data of task execution results if need. */
     @Before
@@ -330,28 +338,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
 
-        Path part0 = U.searchFileRecursively(snp(ignite).snapshotLocalDir(SNAPSHOT_NAME).toPath(),
-            getPartitionFileName(PART_ID));
-
-        try (FilePageStore pageStore = (FilePageStore)((FilePageStoreManager)ignite.context().cache().context().pageStore())
-            .getPageStoreFactory(CU.cacheId(dfltCacheCfg.getName()), false)
-            .createPageStore(getTypeByPartId(PART_ID),
-                () -> part0,
-                val -> {
-                })
-        ) {
-            ByteBuffer buff = ByteBuffer.allocateDirect(ignite.configuration().getDataStorageConfiguration().getPageSize())
-                .order(ByteOrder.nativeOrder());
-            pageStore.read(0, buff, false);
-
-            pageStore.beginRecover();
-
-            PageIO.setCrc(buff, 1);
-
-            buff.flip();
-            pageStore.write(PageIO.getPageId(buff), buff, 0, false);
-            pageStore.finishRecover();
-        }
+        corruptPartitionFile(ignite, SNAPSHOT_NAME, dfltCacheCfg, PART_ID);
 
         IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME).get();
 
@@ -499,26 +486,46 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
     /** @throws Exception If fails. */
     @Test
-    public void testClusterSnapshotCheckWithSetOfCacheGroups() throws Exception {
-        Random rnd = new Random();
-        CacheConfiguration<Integer, Value> ccfg1 = txCacheConfig(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
-        CacheConfiguration<Integer, Value> ccfg2 = txCacheConfig(new CacheConfiguration<>("TEST"));
+    public void testClusterSnapshotCheckWithTwoCachesCheckNullInput() throws Exception {
+        SnapshotPartitionsVerifyTaskResult res = checkSnapshotWithTwoCachesWhenOneIsCorrupted(null);
 
-        IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, k -> new Value(new byte[rnd.nextInt(32768)]),
-            ccfg1, ccfg2);
+        StringBuilder b = new StringBuilder();
+        res.idleVerifyResult().print(b::append, true);
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        assertFalse(F.isEmpty(res.exceptions()));
+        assertNotNull(res.metas());
+        assertContains(log, b.toString(), "The check procedure failed on 1 node.");
+        assertContains(log, b.toString(), "Failed to read page (CRC validation failed)");
+    }
 
-        SnapshotPartitionsVerifyTaskResult res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, Collections.singleton("TEST")).get();
+    /** @throws Exception If fails. */
+    @Test
+    public void testClusterSnapshotCheckWithTwoCachesCheckNotCorrupted() throws Exception {
+        SnapshotPartitionsVerifyTaskResult res = checkSnapshotWithTwoCachesWhenOneIsCorrupted(Collections.singletonList(
+            OPTIONAL_CACHE_NAME));
 
         StringBuilder b = new StringBuilder();
         res.idleVerifyResult().print(b::append, true);
 
         assertTrue(F.isEmpty(res.exceptions()));
-
-        System.out.println(">>>>> " + b);
-
+        assertNotNull(res.metas());
         assertContains(log, b.toString(), "The check procedure has finished, no conflicts have been found");
+        assertNotContains(log, b.toString(), "Failed to read page (CRC validation failed)");
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testClusterSnapshotCheckWithTwoCachesCheckTwoCaches() throws Exception {
+        SnapshotPartitionsVerifyTaskResult res = checkSnapshotWithTwoCachesWhenOneIsCorrupted(Arrays.asList(
+            OPTIONAL_CACHE_NAME, DEFAULT_CACHE_NAME));
+
+        StringBuilder b = new StringBuilder();
+        res.idleVerifyResult().print(b::append, true);
+
+        assertFalse(F.isEmpty(res.exceptions()));
+        assertNotNull(res.metas());
+        assertContains(log, b.toString(), "The check procedure failed on 1 node.");
+        assertContains(log, b.toString(), "Failed to read page (CRC validation failed)");
     }
 
     /**
@@ -539,6 +546,67 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         Object mustBeNull = jobResults.putIfAbsent(cls, hashes);
 
         assertNull(mustBeNull);
+    }
+
+    /**
+     * @param cachesToCheck Cache names to check.
+     * @return Check result.
+     * @throws Exception If fails.
+     */
+    private SnapshotPartitionsVerifyTaskResult checkSnapshotWithTwoCachesWhenOneIsCorrupted(Collection<String> cachesToCheck) throws Exception {
+        Random rnd = new Random();
+        CacheConfiguration<Integer, Value> ccfg1 = txCacheConfig(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
+        CacheConfiguration<Integer, Value> ccfg2 = txCacheConfig(new CacheConfiguration<>(OPTIONAL_CACHE_NAME));
+
+        IgniteEx ignite = startGridsWithCache(2, CACHE_KEYS_RANGE, k -> new Value(new byte[rnd.nextInt(32768)]),
+            ccfg1, ccfg2);
+
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+
+        corruptPartitionFile(ignite, SNAPSHOT_NAME, ccfg1, PART_ID);
+
+        return snp(ignite).checkSnapshot(SNAPSHOT_NAME, cachesToCheck).get(TIMEOUT);
+    }
+
+    /**
+     * @param ignite Ignite instance.
+     * @param snpName Snapshot name.
+     * @param ccfg Cache configuration.
+     * @param partId Partition id to corrupt.
+     * @throws IgniteCheckedException If fails.
+     * @throws IOException If partition file failed to be changed.
+     */
+    private static void corruptPartitionFile(
+        IgniteEx ignite,
+        String snpName,
+        CacheConfiguration<?, ?> ccfg,
+        int partId
+    ) throws IgniteCheckedException, IOException {
+        Path cachePath = Paths.get(snp(ignite).snapshotLocalDir(snpName).getAbsolutePath(),
+            databaseRelativePath(ignite.context().pdsFolderResolver().resolveFolders().folderName()),
+            cacheDirName(ccfg));
+
+        Path part0 = U.searchFileRecursively(cachePath, getPartitionFileName(partId));
+
+        try (FilePageStore pageStore = (FilePageStore)((FilePageStoreManager)ignite.context().cache().context().pageStore())
+            .getPageStoreFactory(CU.cacheId(ccfg.getName()), false)
+            .createPageStore(getTypeByPartId(partId),
+                () -> part0,
+                val -> {
+                })
+        ) {
+            ByteBuffer buff = ByteBuffer.allocateDirect(ignite.configuration().getDataStorageConfiguration().getPageSize())
+                .order(ByteOrder.nativeOrder());
+            pageStore.read(0, buff, false);
+
+            pageStore.beginRecover();
+
+            PageIO.setCrc(buff, 1);
+
+            buff.flip();
+            pageStore.write(PageIO.getPageId(buff), buff, 0, false);
+            pageStore.finishRecover();
+        }
     }
 
     /** */
