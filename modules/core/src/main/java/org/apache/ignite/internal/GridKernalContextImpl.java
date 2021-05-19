@@ -1311,7 +1311,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public DurableBackgroundTasksProcessor durableBackgroundTasksProcessor() {
+    @Override public DurableBackgroundTasksProcessor durableBackgroundTask() {
         return durableBackgroundTasksProcessor;
     }
 

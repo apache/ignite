@@ -48,6 +48,8 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageTree;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
@@ -95,7 +97,7 @@ import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_NODE;
  *
  */
 public class IgniteAuthenticationProcessor extends GridProcessorAdapter implements GridSecurityProcessor,
-    MetastorageLifecycleListener {
+    MetastorageLifecycleListener, PartitionsExchangeAware {
     /** Store user prefix. */
     private static final String STORE_USER_PREFIX = "user.";
 
@@ -169,6 +171,10 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
         ctx.addNodeAttribute(ATTR_AUTHENTICATION_ENABLED, true);
 
+        sharedCtx = ctx.cache().context();
+
+        sharedCtx.exchange().registerExchangeAwareComponent(this);
+
         GridDiscoveryManager discoMgr = ctx.discovery();
 
         GridIoManager ioMgr = ctx.io();
@@ -176,6 +182,8 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         discoMgr.setCustomEventListener(UserProposedMessage.class, new UserProposedListener());
 
         discoMgr.setCustomEventListener(UserAcceptedMessage.class, new UserAcceptedListener());
+
+        discoMgr.localJoinFuture().listen(fut -> onLocalJoin());
 
         discoLsnr = (evt, discoCache) -> {
             if (ctx.isStopping())
@@ -216,13 +224,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
             1,
             0,
             new LinkedBlockingQueue<>());
-    }
-
-    /**
-     * On cache processor started.
-     */
-    public void cacheProcessorStarted() {
-        sharedCtx = ctx.cache().context();
     }
 
     /** {@inheritDoc} */
@@ -791,8 +792,8 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      * Local node joined to topology. Discovery cache is available but no discovery custom message are received.
      * Initial user set and initial user operation (received on join) are processed here.
      */
-    public void onLocalJoin() {
-        if (coordinator() == null)
+    private void onLocalJoin() {
+        if (ctx.isDaemon() || ctx.clientDisconnected() || coordinator() == null)
             return;
 
         if (F.eq(coordinator().id(), ctx.localNodeId())) {
@@ -829,10 +830,8 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         readyForAuthFut.onDone();
     }
 
-    /**
-     * Called on node activate.
-     */
-    public void onActivate() {
+    /** {@inheritDoc} */
+    @Override public void onDoneBeforeTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
         activateFut.onDone();
     }
 

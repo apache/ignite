@@ -15,16 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.metastorage.persistence;
+package org.apache.ignite.tests.p2p.compute;
+
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.LoggerResource;
 
 /** */
-enum DmsWorkerStatus {
+public class ExternalEntryProcessor implements EntryProcessor<Object, Object, Object> {
     /** */
-    CONTINUE,
+    @IgniteInstanceResource
+    Ignite ignite;
+
+    /** Logger. */
+    @LoggerResource
+    private IgniteLogger log;
 
     /** */
-    CANCEL,
+    @Override public Object process(MutableEntry<Object, Object> entry, Object... arguments) throws EntryProcessorException {
+        log.info("!!!!! I am entry processor " + entry.getKey() + " on " + ignite.name());
 
-    /** */
-    HALT;
+        return 42;
+    }
 }
