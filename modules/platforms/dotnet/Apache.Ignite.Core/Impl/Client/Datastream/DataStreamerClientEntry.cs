@@ -82,5 +82,11 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         {
             get { return _status == 0; }
         }
+
+        /** <inheritdoc /> */
+        public override string ToString()
+        {
+            return $"DataStreamerClientEntry [Key={Key}, Val={Val}, Remove={Remove}, IsEmpty={IsEmpty}]";
+        }
     }
 }
