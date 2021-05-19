@@ -17,7 +17,9 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Datastream
 {
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Client;
+    using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Impl.Client;
     using NUnit.Framework;
 
@@ -32,7 +34,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             var server = StartServer();
             var client = StartClient();
 
-            var cache = client.CreateCache<int, int>(TestUtils.TestName);
+            var cache = CreateCache(client);
 
             using (var streamer = client.GetDataStreamer<int, int>(cache.Name))
             {
@@ -62,7 +64,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             var server = StartServer();
             var client = StartClient();
 
-            var cache = client.CreateCache<int, int>(TestUtils.TestName);
+            var cache = CreateCache(client);
 
             using (var streamer = client.GetDataStreamer<int, int>(cache.Name))
             {
@@ -102,6 +104,15 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             var cfg = new IgniteClientConfiguration("127.0.0.1:10800..10805");
 
             return new IgniteClient(cfg);
+        }
+
+        private static ICacheClient<int, int> CreateCache(IIgniteClient client)
+        {
+            return client.CreateCache<int, int>(new CacheClientConfiguration
+            {
+                Name = TestUtils.TestName,
+                CacheMode = CacheMode.Replicated
+            });
         }
     }
 }
