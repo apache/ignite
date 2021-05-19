@@ -71,31 +71,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
         }
 
-        public Task FlushAllAsync(bool close)
+        public Task FlushAllAsync()
         {
-            DataStreamerClientBuffer<TK, TV> buffer;
-
-            if (close)
-            {
-                while (true)
-                {
-                    buffer = _buffer;
-
-                    if (buffer == null)
-                    {
-                        return null;
-                    }
-
-                    if (Interlocked.CompareExchange(ref _buffer, null, buffer) == buffer)
-                    {
-                        buffer.ScheduleFlush(userRequested: true);
-
-                        return buffer.GetChainFlushTask();
-                    }
-                }
-            }
-
-            buffer = GetBuffer();
+            var buffer = GetBuffer();
             buffer.ScheduleFlush(userRequested: true);
 
             return buffer.GetChainFlushTask();
