@@ -5672,7 +5672,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class TestClass1 {
+    public static class TestClass1 {
         /** */
         private int intVal = 33;
 
