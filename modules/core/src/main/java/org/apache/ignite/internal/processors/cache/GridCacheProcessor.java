@@ -2297,6 +2297,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             dataRegion = ctx.config().getDataStorageConfiguration().getDefaultDataRegionConfiguration().getName();
 
         if (log.isInfoEnabled()) {
+            String expPlcInfo = buildExpirePolicyInfo(cacheCtx);
+
             log.info("Started cache [name=" + cfg.getName() +
                 ", id=" + cacheCtx.cacheId() +
                 (cfg.getGroupName() != null ? ", group=" + cfg.getGroupName() : "") +
@@ -2305,7 +2307,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 ", atomicity=" + cfg.getAtomicityMode() +
                 ", backups=" + cfg.getBackups() +
                 ", mvcc=" + cacheCtx.mvccEnabled() +
-                (cacheCtx.expiry() != null ? ", " + buildExpirePolicyInfo(cacheCtx) : "") + ']');
+                (expPlcInfo != null ? ", " + expPlcInfo : "") + ']');
         }
 
         grp.onCacheStarted(cacheCtx);
@@ -2378,6 +2380,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             desc.schema() != null ? desc.schema() : new QuerySchema(), desc.sql());
 
         if (log.isInfoEnabled()) {
+            String expPlcInfo = buildExpirePolicyInfo(cacheCtx);
+
             log.info("Started cache in recovery mode [name=" + cfg.getName() +
                 ", id=" + cacheCtx.cacheId() +
                 (cfg.getGroupName() != null ? ", group=" + cfg.getGroupName() : "") +
@@ -2386,7 +2390,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 ", atomicity=" + cfg.getAtomicityMode() +
                 ", backups=" + cfg.getBackups() +
                 ", mvcc=" + cacheCtx.mvccEnabled() +
-                (cacheCtx.expiry() != null ? ", " + buildExpirePolicyInfo(cacheCtx) : "") + ']');
+                (expPlcInfo != null ? ", " + expPlcInfo : "") + ']');
         }
 
         return cacheCtx;
@@ -2401,12 +2405,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private String buildExpirePolicyInfo(GridCacheContext cacheCtx) {
         ExpiryPolicy expPlc = cacheCtx.expiry();
 
+        if (expPlc == null) return null;
+
         Duration dur = expPlc.getExpiryForCreation() != null ? expPlc.getExpiryForCreation() :
                 expPlc.getExpiryForUpdate() != null ? expPlc.getExpiryForUpdate() : expPlc.getExpiryForAccess();
 
-        return "expirePolicy=[durationAmount=" + dur.getDurationAmount() +
-                ", timeUnit=" + dur.getTimeUnit() +
-                ", isEagerTtl=" + cacheCtx.config().isEagerTtl() + ']';
+        if (dur == null) return null;
+
+        return "expirePolicy=[duration=" + dur.getTimeUnit().toMillis(dur.getDurationAmount()) +
+                "ms, isEagerTtl=" + cacheCtx.config().isEagerTtl() + ']';
     }
 
     /**
