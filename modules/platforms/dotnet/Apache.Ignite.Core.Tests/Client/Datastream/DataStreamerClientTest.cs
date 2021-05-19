@@ -218,6 +218,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         [Category(TestUtils.CategoryIntensive)]
         public void TestStreamParallelFor()
         {
+            // TODO: This test is very slow on the laptop - check this.
             var cache = GetClientCache<int>();
             const int count = 250000;
 

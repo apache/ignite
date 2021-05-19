@@ -293,42 +293,50 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 .ContinueWith(t =>
                 {
                     // TODO: We are on socket thread here! Looks like this affects perf.
-                    if (t.Exception == null)
-                    {
-                        tcs.SetResult(null);
-                        return;
-                    }
-
-                    if (!socket.IsDisposed)
-                    {
-                        // Socket is still connected: this error does not need to be retried.
-                        tcs.SetException(t.Exception);
-                        return;
-                    }
-
-                    // Connection failed. Remove disconnected socket from the map.
-                    _buffers.TryRemove(socket, out _);
-
-                    // Re-add entries to other buffers.
                     var entries = buffer.Entries;
 
-                    for (var i = 0; i < entries.Length; i++)
+                    try
                     {
-                        var entry = entries[i];
-
-                        if (!entry.IsEmpty)
+                        if (t.Exception == null)
                         {
-                            AddNoLock(entry);
+                            tcs.SetResult(null);
+                            return;
+                        }
+
+                        if (!socket.IsDisposed)
+                        {
+                            // Socket is still connected: this error does not need to be retried.
+                            tcs.SetException(t.Exception);
+                            return;
+                        }
+
+                        // Connection failed. Remove disconnected socket from the map.
+                        _buffers.TryRemove(socket, out _);
+
+                        // Re-add entries to other buffers.
+
+                        for (var i = 0; i < entries.Length; i++)
+                        {
+                            var entry = entries[i];
+
+                            if (!entry.IsEmpty)
+                            {
+                                AddNoLock(entry);
+                            }
+                        }
+
+                        // TODO: Flush only when requested by the user!
+                        // TODO: What if we are in Close mode?
+                        if (userRequested)
+                        {
+                            // When flush is initiated by the user, we should retry flushing immediately.
+                            // Otherwise re-adding entries to other buffers is enough. 
+                            FlushInternalAsync(close: false).ContinueWith(flushTask => flushTask.SetAsResult(tcs));
                         }
                     }
-                    
-                    // TODO: Flush only when requested by the user!
-                    // TODO: What if we are in Close mode?
-                    if (userRequested)
+                    finally
                     {
-                        // When flush is initiated by the user, we should retry flushing immediately.
-                        // Otherwise re-adding entries to other buffers is enough. 
-                        FlushInternalAsync(close: false).ContinueWith(flushTask => flushTask.SetAsResult(tcs));
+                        ReturnArray(entries);
                     }
                 }, TaskContinuationOptions.ExecuteSynchronously);
         }
@@ -417,8 +425,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                     w.WriteObjectDetached(entry.Val);
                 }
             }
-
-            ReturnArray(entries);
         }
 
         private Flags GetFlags()
