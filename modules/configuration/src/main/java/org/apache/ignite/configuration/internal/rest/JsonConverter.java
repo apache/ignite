@@ -204,7 +204,7 @@ public class JsonConverter {
                     }
                     else {
                         throw new IllegalArgumentException(
-                            "'" + join(path) + "' configuration doesn't have '" + key + "' subconfiguration"
+                            "'" + join(path) + "' configuration doesn't expects '" + key + "' subconfiguration"
                         );
                     }
                 }

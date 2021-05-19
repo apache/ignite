@@ -23,7 +23,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Marshaller interface.
+ * Tuple marshaller interface.
  *
  * @apiNote For key tuple marshalling, a {@code marshal(key, null)} method call must be used.
  * A {@code marshal(key} may return the same result, but it validates value columns even if not specified.

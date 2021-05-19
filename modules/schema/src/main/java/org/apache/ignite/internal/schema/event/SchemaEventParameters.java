@@ -15,38 +15,46 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.table;
+package org.apache.ignite.internal.schema.event;
 
 import java.util.UUID;
-import org.apache.ignite.internal.schema.SchemaDescriptor;
-import org.apache.ignite.internal.schema.SchemaManager;
+import org.apache.ignite.internal.manager.EventParameters;
+import org.apache.ignite.internal.schema.SchemaRegistry;
 
 /**
- * Schema view implementation.
+ * Schema event parameters. There are properties which associate with a concrete schema.
  */
-public class TableSchemaViewImpl implements TableSchemaView {
+public class SchemaEventParameters implements EventParameters {
     /** Table identifier. */
     private final UUID tableId;
 
-    /** Schema manager. */
-    private final SchemaManager schemaManager;
+    /** Schema registry. */
+    private final SchemaRegistry reg;
 
     /**
      * @param tableId Table identifier.
-     * @param schemaManager Schema manager.
+     * @param reg Schema registry for the table.
      */
-    public TableSchemaViewImpl(UUID tableId, SchemaManager schemaManager) {
+    public SchemaEventParameters(UUID tableId, SchemaRegistry reg) {
         this.tableId = tableId;
-        this.schemaManager = schemaManager;
+        this.reg = reg;
     }
 
-    /** {@inheritDoc} */
-    @Override public SchemaDescriptor schema() {
-        return schemaManager.schema(tableId);
+    /**
+     * Get the table identifier.
+     *
+     * @return Table id.
+     */
+    public UUID tableId() {
+        return tableId;
     }
 
-    /** {@inheritDoc} */
-    @Override public SchemaDescriptor schema(int ver) {
-        return schemaManager.schema(tableId, ver);
+    /**
+     * Get schema registry for the table.
+     *
+     * @return Schema registry.
+     */
+    public SchemaRegistry schemaRegistry() {
+        return reg;
     }
 }

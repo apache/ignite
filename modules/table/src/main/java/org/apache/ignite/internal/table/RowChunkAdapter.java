@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.table;
 
+import java.util.BitSet;
+import java.util.UUID;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjects;
 import org.apache.ignite.internal.schema.Column;
@@ -100,5 +102,19 @@ public abstract class RowChunkAdapter implements Tuple {
         Column col = columnByName(colName);
 
         return row().stringValue(col.schemaIndex());
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID uuidValue(String colName) {
+        Column col = columnByName(colName);
+
+        return row().uuidValue(col.schemaIndex());
+    }
+
+    /** {@inheritDoc} */
+    @Override public BitSet bitmaskValue(String colName) {
+        Column col = columnByName(colName);
+
+        return row().bitmaskValue(col.schemaIndex());
     }
 }

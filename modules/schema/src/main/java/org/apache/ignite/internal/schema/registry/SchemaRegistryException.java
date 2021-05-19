@@ -15,11 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.manager;
+package org.apache.ignite.internal.schema.registry;
+
+import org.apache.ignite.lang.IgniteInternalException;
 
 /**
- * The event cas whcih is produced by event producer component.
- * @see Producer#onEvent(Event, EventParameters, Throwable)
+ * Schema registration exception.
  */
-public interface Event {
+public class SchemaRegistryException extends IgniteInternalException {
+    /**
+     * Constructor with error message.
+     *
+     * @param msg Message.
+     */
+    public SchemaRegistryException(String msg) {
+        super(msg);
+    }
+
+    /**
+     * Constructor with error message and cause.
+     *
+     * @param cause Cause.
+     */
+    public SchemaRegistryException(String msg, Throwable cause) {
+        super(msg, cause);
+    }
 }

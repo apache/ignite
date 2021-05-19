@@ -26,6 +26,7 @@ import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.internal.schema.Row;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.schema.marshaller.TupleMarshaller;
+import org.apache.ignite.internal.schema.SchemaRegistry;
 import org.apache.ignite.table.InvokeProcessor;
 import org.apache.ignite.table.KeyValueBinaryView;
 import org.apache.ignite.table.KeyValueView;
@@ -49,12 +50,12 @@ public class TableImpl extends AbstractTableView implements Table {
      * Constructor.
      *
      * @param tbl Table.
-     * @param schemaMgr Table schema manager.
+     * @param schemaReg Table schema registry.
      */
-    public TableImpl(InternalTable tbl, TableSchemaView schemaMgr) {
-        super(tbl, schemaMgr);
+    public TableImpl(InternalTable tbl, SchemaRegistry schemaReg) {
+        super(tbl, schemaReg);
 
-        marsh = new TupleMarshallerImpl(schemaMgr);
+        marsh = new TupleMarshallerImpl(schemaReg);
     }
 
     /**
@@ -71,23 +72,23 @@ public class TableImpl extends AbstractTableView implements Table {
      *
      * @return Schema view.
      */
-    public TableSchemaView schemaView() {
-        return schemaMgr;
+    public SchemaRegistry schemaView() {
+        return schemaReg;
     }
 
     /** {@inheritDoc} */
     @Override public <R> RecordView<R> recordView(RecordMapper<R> recMapper) {
-        return new RecordViewImpl<>(tbl, schemaMgr, recMapper);
+        return new RecordViewImpl<>(tbl, schemaReg, recMapper);
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> KeyValueView<K, V> kvView(KeyMapper<K> keyMapper, ValueMapper<V> valMapper) {
-        return new KVViewImpl<>(tbl, schemaMgr, keyMapper, valMapper);
+        return new KVViewImpl<>(tbl, schemaReg, keyMapper, valMapper);
     }
 
     /** {@inheritDoc} */
     @Override public KeyValueBinaryView kvView() {
-        return new KVBinaryViewImpl(tbl, schemaMgr);
+        return new KVBinaryViewImpl(tbl, schemaReg);
     }
 
     /** {@inheritDoc} */
@@ -327,7 +328,7 @@ public class TableImpl extends AbstractTableView implements Table {
         if (row == null)
             return null;
 
-        final SchemaDescriptor schema = schemaMgr.schema(row.schemaVersion());
+        final SchemaDescriptor schema = schemaReg.schema(row.schemaVersion());
 
         return new TableRow(schema, new Row(schema, row));
     }

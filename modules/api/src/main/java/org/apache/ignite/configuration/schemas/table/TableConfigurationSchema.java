@@ -43,7 +43,7 @@ public class TableConfigurationSchema {
     /** Count of table partition replicas. */
     @Min(1)
     @Value(hasDefault = true)
-    public int replicas = 0;
+    public int replicas = 1;
 
     /** Columns configuration. */
     @NamedConfigValue

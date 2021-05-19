@@ -15,11 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.manager;
-
 /**
- * The event cas whcih is produced by event producer component.
- * @see Producer#onEvent(Event, EventParameters, Throwable)
+ * Schema registry responsible for maintaining versioned schema history.
  */
-public interface Event {
-}
+package org.apache.ignite.internal.schema.registry;

@@ -26,6 +26,7 @@ import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.internal.schema.Row;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.schema.marshaller.RecordSerializer;
+import org.apache.ignite.internal.schema.SchemaRegistry;
 import org.apache.ignite.table.InvokeProcessor;
 import org.apache.ignite.table.RecordView;
 import org.apache.ignite.table.mapper.RecordMapper;
@@ -39,11 +40,11 @@ public class RecordViewImpl<R> extends AbstractTableView implements RecordView<R
      * Constructor.
      *
      * @param tbl Table.
-     * @param schemaMgr Schema manager.
+     * @param schemaReg Schema registry.
      * @param mapper Record class mapper.
      */
-    public RecordViewImpl(InternalTable tbl, TableSchemaView schemaMgr, RecordMapper<R> mapper) {
-        super(tbl, schemaMgr);
+    public RecordViewImpl(InternalTable tbl, SchemaRegistry schemaReg, RecordMapper<R> mapper) {
+        super(tbl, schemaReg);
     }
 
     /** {@inheritDoc} */
@@ -264,7 +265,7 @@ public class RecordViewImpl<R> extends AbstractTableView implements RecordView<R
         if (row == null)
             return null;
 
-        final SchemaDescriptor rowSchema = schemaMgr.schema(row.schemaVersion()); // Get a schema for row.
+        final SchemaDescriptor rowSchema = schemaReg.schema(row.schemaVersion()); // Get a schema for row.
 
         return new Row(rowSchema, row);
     }

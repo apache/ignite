@@ -20,7 +20,7 @@ package org.apache.ignite.internal.manager;
 /**
  * Event parameters.
  * This type passed to the event listener.
- * @see Producer#onEvent(Event, EventParameters, Exception)
+ * @see Producer#onEvent(Event, EventParameters, Throwable)
  */
 public interface EventParameters {
 }

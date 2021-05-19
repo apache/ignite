@@ -27,7 +27,7 @@ import java.util.function.BiPredicate;
  */
 public abstract class Producer<T extends Event, P extends EventParameters> {
     /** All listeners. */
-    private ConcurrentHashMap<T, ConcurrentLinkedQueue<BiPredicate<P, Exception>>> listeners = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<T, ConcurrentLinkedQueue<BiPredicate<P, Throwable>>> listeners = new ConcurrentHashMap<>();
 
     /**
      * Registers an event listener.
@@ -37,7 +37,7 @@ public abstract class Producer<T extends Event, P extends EventParameters> {
      * @param evt Event.
      * @param closure Closure.
      */
-    public void listen(T evt, BiPredicate<P, Exception> closure) {
+    public void listen(T evt, BiPredicate<P, Throwable> closure) {
         listeners.computeIfAbsent(evt, evtKey -> new ConcurrentLinkedQueue<>())
             .offer(closure);
     }
@@ -49,15 +49,15 @@ public abstract class Producer<T extends Event, P extends EventParameters> {
      * @param params Event parameters.
      * @param err Exception when it was happened, or {@code null} otherwise.
      */
-    protected void onEvent(T evt, P params, Exception err) {
-        ConcurrentLinkedQueue<BiPredicate<P, Exception>> queue = listeners.get(evt);
+    protected void onEvent(T evt, P params, Throwable err) {
+        ConcurrentLinkedQueue<BiPredicate<P, Throwable>> queue = listeners.get(evt);
 
         if (queue == null)
             return;
 
-        BiPredicate<P, Exception> closure;
+        BiPredicate<P, Throwable> closure;
 
-        Iterator<BiPredicate<P, Exception>> iter = queue.iterator();
+        Iterator<BiPredicate<P, Throwable>> iter = queue.iterator();
 
         while (iter.hasNext()) {
             closure = iter.next();

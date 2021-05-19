@@ -15,11 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.manager;
+package org.apache.ignite.internal.schema.registry;
+
+import org.apache.ignite.lang.IgniteInternalException;
 
 /**
- * The event cas whcih is produced by event producer component.
- * @see Producer#onEvent(Event, EventParameters, Throwable)
+ * Schema registration conflict exception is thown if
+ * registering schema's number was alredy registered earlier.
  */
-public interface Event {
+public class SchemaRegistrationConflictException extends IgniteInternalException {
+    /**
+     * Constructor.
+     *
+     * @param msg Message.
+     */
+    public SchemaRegistrationConflictException(String msg) {
+        super(msg);
+    }
 }

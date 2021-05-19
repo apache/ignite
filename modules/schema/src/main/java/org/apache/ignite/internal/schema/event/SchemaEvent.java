@@ -15,11 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.manager;
+package org.apache.ignite.internal.schema.event;
+
+import org.apache.ignite.internal.manager.Event;
 
 /**
- * The event cas whcih is produced by event producer component.
- * @see Producer#onEvent(Event, EventParameters, Throwable)
+ * Schema management events.
  */
-public interface Event {
+public enum SchemaEvent implements Event {
+    /** This event is fired when a schema was initialized. */
+    INITIALIZED,
+
+    /** This event is fired when a schema was dropped. */
+    DROPPED
 }
+

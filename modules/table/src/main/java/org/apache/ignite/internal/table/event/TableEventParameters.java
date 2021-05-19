@@ -20,7 +20,7 @@ package org.apache.ignite.internal.table.event;
 import java.util.UUID;
 import org.apache.ignite.internal.manager.EventParameters;
 import org.apache.ignite.internal.table.InternalTable;
-import org.apache.ignite.internal.table.TableSchemaView;
+import org.apache.ignite.internal.schema.SchemaRegistry;
 
 /**
  * Table event parameters.
@@ -34,7 +34,7 @@ public class TableEventParameters implements EventParameters {
     private final String tableName;
 
     /** Table schema view. */
-    private final TableSchemaView tableSchemaView;
+    private final SchemaRegistry schemaRegistry;
 
     /** Internal table. */
     private final InternalTable internalTable;
@@ -42,18 +42,18 @@ public class TableEventParameters implements EventParameters {
     /**
      * @param tableId Table identifier.
      * @param tableName Table name.
-     * @param tableSchemaView Table schema view.
+     * @param schemaRegistry Table schema view.
      * @param internalTable Internal table.
      */
     public TableEventParameters(
         UUID tableId,
         String tableName,
-        TableSchemaView tableSchemaView,
+        SchemaRegistry schemaRegistry,
         InternalTable internalTable
     ) {
         this.tableId = tableId;
         this.tableName = tableName;
-        this.tableSchemaView = tableSchemaView;
+        this.schemaRegistry = schemaRegistry;
         this.internalTable = internalTable;
     }
 
@@ -80,8 +80,8 @@ public class TableEventParameters implements EventParameters {
      *
      * @return Schema descriptor.
      */
-    public TableSchemaView tableSchemaView() {
-        return tableSchemaView;
+    public SchemaRegistry tableSchemaView() {
+        return schemaRegistry;
     }
 
     /**

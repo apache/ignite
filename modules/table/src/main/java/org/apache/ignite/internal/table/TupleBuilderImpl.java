@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.table;
 
+import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjects;
 import org.apache.ignite.table.Tuple;
@@ -93,6 +95,16 @@ public class TupleBuilderImpl implements TupleBuilder, Tuple {
 
     /** {@inheritDoc} */
     @Override public String stringValue(String colName) {
+        return value(colName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID uuidValue(String colName) {
+        return value(colName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public BitSet bitmaskValue(String colName) {
         return value(colName);
     }
 }

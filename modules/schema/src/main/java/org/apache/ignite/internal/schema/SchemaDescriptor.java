@@ -46,6 +46,19 @@ public class SchemaDescriptor {
      * @param valCols Value columns.
      */
     public SchemaDescriptor(int ver, Column[] keyCols, Column[] valCols) {
+        this(ver, keyCols, null, valCols);
+    }
+
+    /**
+     * @param ver Schema version.
+     * @param keyCols Key columns.
+     * @param affCols Affinity column names.
+     * @param valCols Value columns.
+     */
+    public SchemaDescriptor(int ver, Column[] keyCols, @Nullable String[] affCols, Column[] valCols) {
+        assert keyCols.length > 0 : "No key columns are conigured.";
+        assert valCols.length > 0 : "No value columns are conigured.";
+
         this.ver = ver;
         this.keyCols = new Columns(0, keyCols);
         this.valCols = new Columns(keyCols.length, valCols);
@@ -54,6 +67,8 @@ public class SchemaDescriptor {
 
         Arrays.stream(this.keyCols.columns()).forEach(c -> colMap.put(c.name(), c));
         Arrays.stream(this.valCols.columns()).forEach(c -> colMap.put(c.name(), c));
+
+        //TODO: https://issues.apache.org/jira/browse/IGNITE-14388 Add affinity columns support.
     }
 
     /**
