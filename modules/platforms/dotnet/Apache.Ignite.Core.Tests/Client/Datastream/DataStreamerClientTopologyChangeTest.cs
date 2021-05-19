@@ -17,9 +17,13 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Datastream
 {
+    using System.Collections.Generic;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
+    using Apache.Ignite.Core.Client.Datastream;
     using Apache.Ignite.Core.Impl.Client;
     using NUnit.Framework;
 
@@ -42,7 +46,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         }
 
         [Test]
-        public void TestStreamerDoesNotLoseDataWhenNewNodeEntersAndOriginalNodeLeaves()
+        public void TestStreamerDoesNotLoseDataOnFlushWhenNewNodeEntersAndOriginalNodeLeaves()
         {
             var server = StartServer();
             var client = StartClient();
@@ -91,6 +95,59 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             
             Assert.AreEqual(1, cache[1]);
             Assert.AreEqual(2, cache[2]);
+        }
+
+        [Test]
+        public void TestStreamerDoesNotLoseDataOnRandomTopologyChanges()
+        {
+            StartServer();
+            var client = StartClient();
+
+            var id = 0;
+            var cache = CreateCache(client);
+
+            using (var streamer = client.GetDataStreamer<int, int>(cache.Name))
+            {
+                var cancel = false;
+                
+                var adderTask = Task.Factory.StartNew(() =>
+                {
+                    // ReSharper disable once AccessToModifiedClosure
+                    while (!cancel)
+                    {
+                        id++;
+                        
+                        // ReSharper disable once AccessToDisposedClosure
+                        streamer.Add(id, id);
+
+                        if (id % 512 == 0)
+                        {
+                            // Sleep once in a while to reduce streamed data size.
+                            Thread.Sleep(100);
+                        }
+                    }
+                });
+                
+                var nodes = new Stack<IIgnite>();
+                
+                for (int i = 0; i < 20; i++)
+                {
+                    if (nodes.Count == 0 || TestUtils.Random.Next(2) == 0)
+                    {
+                        nodes.Push(StartServer());
+                    }
+                    else
+                    {
+                        nodes.Pop().Dispose();
+                    }
+                }
+
+                cancel = true;
+                adderTask.Wait();
+            }
+            
+            Assert.AreEqual(1, cache[1]);
+            Assert.AreEqual(id, cache.GetSize());
         }
 
         [TearDown]
