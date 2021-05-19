@@ -249,7 +249,11 @@ public final class ANNClassificationModel extends NNClassificationModel implemen
         ObjectMapper mapper = new ObjectMapper().configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
 
         try {
-            ANNJSONExportModel exportModel = new ANNJSONExportModel(System.currentTimeMillis(), "ann_" + UUID.randomUUID().toString(), ANNClassificationModel.class.getSimpleName());
+            ANNJSONExportModel exportModel = new ANNJSONExportModel(
+                System.currentTimeMillis(),
+                "ann_" + UUID.randomUUID(),
+                ANNClassificationModel.class.getSimpleName()
+            );
             List<double[]> listOfCandidates = new ArrayList<>();
             ProbableLabel[] labels = new ProbableLabel[candidates.rowSize()];
             for (int i = 0; i < candidates.rowSize(); i++) {

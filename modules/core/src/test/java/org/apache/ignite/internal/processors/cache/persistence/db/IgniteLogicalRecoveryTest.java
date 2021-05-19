@@ -149,7 +149,12 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
      * @param cacheMode Cache mode.
      * @param atomicityMode Atomicity mode.
      */
-    protected CacheConfiguration<Object, Object> cacheConfiguration(String name, @Nullable String groupName, CacheMode cacheMode, CacheAtomicityMode atomicityMode) {
+    protected CacheConfiguration<Object, Object> cacheConfiguration(
+        String name,
+        @Nullable String groupName,
+        CacheMode cacheMode,
+        CacheAtomicityMode atomicityMode
+    ) {
         CacheConfiguration<Object, Object> cfg = new CacheConfiguration<>(name)
             .setGroupName(groupName)
             .setCacheMode(cacheMode)

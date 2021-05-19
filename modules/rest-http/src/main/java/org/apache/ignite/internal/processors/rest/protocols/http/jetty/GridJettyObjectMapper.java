@@ -247,19 +247,20 @@ public class GridJettyObjectMapper extends ObjectMapper {
     };
 
     /** Custom serializer for {@link GridCacheSqlIndexMetadata} */
-    private static final JsonSerializer<GridCacheSqlIndexMetadata> IGNITE_SQL_INDEX_METADATA_SERIALIZER = new JsonSerializer<GridCacheSqlIndexMetadata>() {
-        /** {@inheritDoc} */
-        @Override public void serialize(GridCacheSqlIndexMetadata idx, JsonGenerator gen, SerializerProvider ser) throws IOException {
-            gen.writeStartObject();
+    private static final JsonSerializer<GridCacheSqlIndexMetadata> IGNITE_SQL_INDEX_METADATA_SERIALIZER =
+        new JsonSerializer<GridCacheSqlIndexMetadata>() {
+            /** {@inheritDoc} */
+            @Override public void serialize(GridCacheSqlIndexMetadata idx, JsonGenerator gen, SerializerProvider ser) throws IOException {
+                gen.writeStartObject();
 
-            gen.writeStringField("name", idx.name());
-            gen.writeObjectField("fields", idx.fields());
-            gen.writeObjectField("descendings", idx.descendings());
-            gen.writeBooleanField("unique", idx.unique());
+                gen.writeStringField("name", idx.name());
+                gen.writeObjectField("fields", idx.fields());
+                gen.writeObjectField("descendings", idx.descendings());
+                gen.writeBooleanField("unique", idx.unique());
 
-            gen.writeEndObject();
-        }
-    };
+                gen.writeEndObject();
+            }
+        };
 
     /** Custom serializer for {@link GridCacheSqlIndexMetadata} */
     private static final JsonSerializer<BinaryObjectImpl> IGNITE_BINARY_OBJECT_SERIALIZER = new JsonSerializer<BinaryObjectImpl>() {

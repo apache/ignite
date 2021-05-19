@@ -60,13 +60,24 @@ public abstract class IgniteCachedDomainDataAccess extends HibernateRegion imple
     }
 
     /** {@inheritDoc} */
-    @Override public boolean putFromLoad(SharedSessionContractImplementor ses, Object key, Object value, Object version) throws CacheException {
+    @Override public boolean putFromLoad(
+        SharedSessionContractImplementor ses,
+        Object key,
+        Object value,
+        Object version
+    ) throws CacheException {
         stgy.putFromLoad(key, value);
         return true;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean putFromLoad(SharedSessionContractImplementor ses, Object key, Object value, Object version, boolean minimalPutOverride) throws CacheException {
+    @Override public boolean putFromLoad(
+        SharedSessionContractImplementor ses,
+        Object key,
+        Object value,
+        Object version,
+        boolean minimalPutOverride
+    ) throws CacheException {
         stgy.putFromLoad(key, value);
         return true;
     }

@@ -867,7 +867,8 @@ cfg.socketSendBuffer(sockSndBuf);
             Map<String, Object> res = new HashMap<>(5);
 
             boolean setEmptyHostNamesAttr = !getBoolean(IGNITE_TCP_COMM_SET_ATTR_HOST_NAMES, false) &&
-                (!F.isEmpty(cfg.localAddress()) && cfg.localHost().getHostAddress().equals(cfg.localAddress())) && !cfg.localHost().isAnyLocalAddress() &&
+                (!F.isEmpty(cfg.localAddress()) && cfg.localHost().getHostAddress().equals(cfg.localAddress())) &&
+                !cfg.localHost().isAnyLocalAddress() &&
                 !cfg.localHost().isLoopbackAddress();
 
             res.put(createSpiAttributeName(ATTR_ADDRS), addrs.get1());

@@ -306,16 +306,20 @@ public class IgniteWalConverterArguments {
             out.println("Print WAL log data in human-readable form.");
             out.println("You need to provide:");
             out.println("    walDir                           Path to dir with wal files.");
-            out.println("    walArchiveDir                    Path to dir with archive wal files. walDir or walArchiveDir must be specified.");
-            out.println("    pageSize                         Size of pages, which was selected for file store (1024, 2048, 4096, etc). Default 4096.");
+            out.println("    walArchiveDir                    " +
+                "Path to dir with archive wal files. walDir or walArchiveDir must be specified.");
+            out.println("    pageSize                         " +
+                "Size of pages, which was selected for file store (1024, 2048, 4096, etc). Default 4096.");
             out.println("    binaryMetadataFileStoreDir       (Optional) Path to binary meta.");
             out.println("    marshallerMappingFileStoreDir    (Optional) Path to marshaller dir.");
             out.println("    keepBinary                       Keep binary flag. Default true.");
-            out.println("    recordTypes                      (Optional) Comma-separated WAL record types (TX_RECORD, DATA_RECORD, etc). Default all.");
+            out.println("    recordTypes                      " +
+                "(Optional) Comma-separated WAL record types (TX_RECORD, DATA_RECORD, etc). Default all.");
             out.println("    walTimeFromMillis                (Optional) The start time interval for the record time in milliseconds.");
             out.println("    walTimeToMillis                  (Optional) The end time interval for the record time in milliseconds.");
             out.println("    recordContainsText               (Optional) Filter by substring in the WAL record.");
-            out.println("    processSensitiveData             (Optional) Strategy for the processing of sensitive data (SHOW, HIDE, HASH, MD5). Default SHOW.");
+            out.println("    processSensitiveData             " +
+                "(Optional) Strategy for the processing of sensitive data (SHOW, HIDE, HASH, MD5). Default SHOW.");
             out.println("    printStat                        Write summary statistics for WAL. Default false.");
             out.println("    skipCrc                          Skip CRC calculation/check flag. Default false.");
             out.println("    pages                            (Optional) Comma-separated pages or path to file with " +

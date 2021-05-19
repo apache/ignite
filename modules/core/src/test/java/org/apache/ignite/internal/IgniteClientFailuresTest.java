@@ -111,7 +111,8 @@ public class IgniteClientFailuresTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test verifies that when client node failed but not yet cleaned up from topology (because {@link IgniteConfiguration#clientFailureDetectionTimeout} has not been reached yet)
+     * Test verifies that when client node failed but not yet cleaned up from topology
+     * (because {@link IgniteConfiguration#clientFailureDetectionTimeout} has not been reached yet)
      * it doesn't affect new client connected from the same address.
      *
      * @throws Exception If failed.

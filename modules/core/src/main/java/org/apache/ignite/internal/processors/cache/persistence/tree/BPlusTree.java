@@ -3751,7 +3751,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                         if (idx == cnt && !io.isLeaf()) {
                             inner(io).setLeft(fwdPageAddr, 0, rightId);
 
-                            if (needWalDeltaRecord(fwdId, fwdPage, fwdPageWalPlc)) // Rare case, we can afford separate WAL record to avoid complexity.
+                            // Rare case, we can afford separate WAL record to avoid complexity.
+                            if (needWalDeltaRecord(fwdId, fwdPage, fwdPageWalPlc))
                                 wal.log(new FixLeftmostChildRecord(grpId, fwdId, rightId));
                         }
                     }

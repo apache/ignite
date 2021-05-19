@@ -195,7 +195,11 @@ public final class KMeansModel implements ClusterizationModel<Vector, Integer>, 
             ObjectMapper mapper = new ObjectMapper();
 
             try {
-                KMeansJSONExportModel exportModel = new KMeansJSONExportModel(System.currentTimeMillis(), "ann_" + UUID.randomUUID().toString(), KMeansModel.class.getSimpleName());
+                KMeansJSONExportModel exportModel = new KMeansJSONExportModel(
+                    System.currentTimeMillis(),
+                    "ann_" + UUID.randomUUID().toString(),
+                    KMeansModel.class.getSimpleName()
+                );
                 List<double[]> listOfCenters = new ArrayList<>();
                 for (int i = 0; i < centers.length; i++) {
                     listOfCenters.add(centers[i].asArray());

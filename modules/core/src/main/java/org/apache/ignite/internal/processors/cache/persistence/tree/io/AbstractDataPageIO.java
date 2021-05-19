@@ -884,7 +884,8 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO impl
 
             // Increase free space.
             setRealFreeSpace(pageAddr,
-                getRealFreeSpace(pageAddr) + rmvEntrySize + ITEM_SIZE * (directCnt - getDirectCount(pageAddr) + indirectCnt - getIndirectCount(pageAddr)),
+                getRealFreeSpace(pageAddr) + rmvEntrySize +
+                    ITEM_SIZE * (directCnt - getDirectCount(pageAddr) + indirectCnt - getIndirectCount(pageAddr)),
                 pageSize);
         }
 

@@ -143,7 +143,13 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
      * @param maxCursors Max active cursors.
      * @param thinCfg Thin-client configuration.
      */
-    public ClientConnectionContext(GridKernalContext ctx, GridNioSession ses, long connId, int maxCursors, ThinClientConfiguration thinCfg) {
+    public ClientConnectionContext(
+        GridKernalContext ctx,
+        GridNioSession ses,
+        long connId,
+        int maxCursors,
+        ThinClientConfiguration thinCfg
+    ) {
         super(ctx, ses, connId);
 
         this.maxCursors = maxCursors;
