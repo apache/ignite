@@ -64,6 +64,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         private readonly ConcurrentStack<DataStreamerClientEntry<TK, TV>[]> _arrayPool
             = new ConcurrentStack<DataStreamerClientEntry<TK, TV>[]>();
 
+        /** */
+        private readonly ReaderWriterLockSlim _rwLock = new ReaderWriterLockSlim();
+
         /** Exception. When set, the streamer is closed. */
         private volatile Exception _exception;
 
@@ -162,7 +165,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         public Task FlushAsync()
         {
-            return FlushAsync(close: false);
+            ThrowIfClosed();
+            
+            return FlushInternalAsync(close: false);
         }
 
         public void Close(bool cancel)
@@ -172,44 +177,63 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         public Task CloseAsync(bool cancel)
         {
-            if (_exception != null)
+            _rwLock.EnterWriteLock();
+
+            try
             {
-                // TODO: ??
-                return Task.CompletedTask;
+                if (_exception != null)
+                {
+                    // TODO: ??
+                    return Task.CompletedTask;
+                }
+
+                _exception = new ObjectDisposedException("DataStreamerClient", "Data streamer has been disposed");
+
+                if (cancel)
+                {
+                    // Disregard current buffers, but wait for active flushes.
+                    // TODO: Implement!
+                    return Task.CompletedTask;
+                }
+
+                return FlushInternalAsync(close: true);
             }
-
-            _exception = new ObjectDisposedException("DataStreamerClient", "Data streamer has been disposed");
-
-            if (cancel)
+            finally
             {
-                // Disregard current buffers, but wait for active flushes.
-                // TODO: Implement!
-                return Task.CompletedTask;
+                _rwLock.ExitWriteLock();
             }
-
-            return FlushAsync(close: true);
         }
 
         private void Add(DataStreamerClientEntry<TK, TV> entry)
         {
-            // TODO: There is no backpressure - it is possible to have a lot of pending buffers
-            // See perNodeParallelOperations and timeout in thick streamer - this blocks Add methods!
-            // ClientFailoverSocket is responsible for maintaining connections and affinity logic.
-            // We simply get the socket for the key.
-            // TODO: Some buffers may become abandoned when a socket for them is disconnected
-            // or server node leaves the cluster.
-            // We should track such topology changes by subscribing to topology update events.
+            if (!_rwLock.TryEnterReadLock(0))
+            {
+                throw new ObjectDisposedException("DataStreamerClient", "Data streamer has been disposed");
+            }
+
+            try
+            {
+                ThrowIfClosed();
+
+                // TODO: Some buffers may become abandoned when a socket for them is disconnected
+                // or server node leaves the cluster.
+                // We should track such topology changes by subscribing to topology update events.
+                AddNoLock(entry);
+            }
+            finally
+            {
+                _rwLock.ExitReadLock();
+            }
+        }
+
+        private void AddNoLock(DataStreamerClientEntry<TK, TV> entry)
+        {
             var socket = _socket.GetAffinitySocket(_cacheId, entry.Key) ?? _socket.GetSocket();
             var buffer = GetOrAddBuffer(socket);
             buffer.Add(entry);
-
-            // Check in the end: we guarantee that if Add completes without errors, then the data won't be lost.
-            // TODO: This provides unclear message - current entry may be loaded successfully.
-            // The only way to fix this properly is an RW lock - use benchmarks to check how this performs.
-            ThrowIfClosed();
         }
 
-        private Task FlushAsync(bool close)
+        private Task FlushInternalAsync(bool close)
         {
             if (_buffers.IsEmpty)
             {
@@ -294,7 +318,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
                         if (!entry.IsEmpty)
                         {
-                            Add(entry);
+                            AddNoLock(entry);
                         }
                     }
                     
@@ -304,7 +328,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                     {
                         // When flush is initiated by the user, we should retry flushing immediately.
                         // Otherwise re-adding entries to other buffers is enough. 
-                        FlushAsync().ContinueWith(flushTask => flushTask.SetAsResult(tcs));
+                        FlushInternalAsync(close: false).ContinueWith(flushTask => flushTask.SetAsResult(tcs));
                     }
                 }, TaskContinuationOptions.ExecuteSynchronously);
         }
