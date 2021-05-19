@@ -776,6 +776,33 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     }
 
     /**
+     * @param val Array wrapper.
+     * @throws BinaryObjectException In case of error.
+     */
+    void doWriteBinaryArrayWrapper(BinaryArrayWrapper val) throws BinaryObjectException {
+        if (val.array() == null)
+            out.writeByte(GridBinaryMarshaller.NULL);
+        else {
+            if (tryWriteAsHandle(val))
+                return;
+
+            out.unsafeEnsure(1 + 4);
+            out.unsafeWriteByte(BinaryMarshaller.USE_ARRAY_BINARY_WRAPPER
+                ? GridBinaryMarshaller.OBJ_ARR
+                : GridBinaryMarshaller.OBJ_ARR_WRAPPER);
+            out.unsafeWriteInt(val.componentTypeId());
+
+            if (val.componentTypeId() == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
+                doWriteString(val.componentClassName());
+
+            out.writeInt(val.array().length);
+
+            for (Object obj : val.array())
+                doWriteObject(obj);
+        }
+    }
+
+    /**
      * @param col Collection.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */

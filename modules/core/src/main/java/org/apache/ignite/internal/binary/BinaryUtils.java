@@ -75,6 +75,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
+import static org.apache.ignite.internal.binary.BinaryMarshaller.USE_ARRAY_BINARY_WRAPPER;
 
 /**
  * Binary utils.
@@ -1158,6 +1159,8 @@ public class BinaryUtils {
             return BinaryWriteMode.TIME_ARR;
         else if (cls.isArray())
             return cls.getComponentType().isEnum() ? BinaryWriteMode.ENUM_ARR : BinaryWriteMode.OBJECT_ARR;
+        else if (cls == BinaryArrayWrapper.class)
+            return BinaryWriteMode.OBJECT_ARR_WRAPPER;
         else if (cls == BinaryObjectImpl.class)
             return BinaryWriteMode.BINARY_OBJ;
         else if (Binarylizable.class.isAssignableFrom(cls))
@@ -2001,7 +2004,13 @@ public class BinaryUtils {
                 return doReadTimeArray(in);
 
             case GridBinaryMarshaller.OBJ_ARR:
-                return doReadObjectArray(in, ctx, ldr, handles, detach, deserialize);
+                if (USE_ARRAY_BINARY_WRAPPER)
+                    return doReadObjectArrayWrapper(in, ctx, ldr, handles, detach, deserialize);
+                else
+                    return doReadObjectArray(in, ctx, ldr, handles, detach, deserialize);
+
+            case GridBinaryMarshaller.OBJ_ARR_WRAPPER:
+                return doReadObjectArrayWrapper(in, ctx, ldr, handles, detach, deserialize);
 
             case GridBinaryMarshaller.COL:
                 return doReadCollection(in, ctx, ldr, handles, detach, deserialize, null);
@@ -2061,6 +2070,39 @@ public class BinaryUtils {
             arr[i] = deserializeOrUnmarshal(in, ctx, ldr, handles, detach, deserialize);
 
         return arr;
+    }
+
+    /**
+     * @param in Binary input stream.
+     * @param ctx Binary context.
+     * @param ldr Class loader.
+     * @param handles Holder for handles.
+     * @param detach Detach flag.
+     * @param deserialize Deep flag.
+     * @return Value.
+     * @throws BinaryObjectException In case of error.
+     */
+    public static BinaryArrayWrapper doReadObjectArrayWrapper(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
+        BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize) {
+        int hPos = positionForHandle(in);
+
+        int compTypeId = in.readInt();
+
+        String compClsName = null;
+
+        if (compTypeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
+            compClsName = doReadClassName(in);
+
+        int len = in.readInt();
+
+        Object[] arr = new Object[len];
+
+        handles.setHandle(arr, hPos);
+
+        for (int i = 0; i < len; i++)
+            arr[i] = deserializeOrUnmarshal(in, ctx, ldr, handles, detach, deserialize);
+
+        return new BinaryArrayWrapper(ctx, compTypeId, compClsName, arr, in.position() - hPos);
     }
 
     /**

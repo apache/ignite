@@ -60,6 +60,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
+import org.apache.ignite.internal.binary.BinaryArrayWrapper;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
@@ -126,6 +127,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAIT_SCHEMA_UPDATE;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.BINARY_PROC;
+import static org.apache.ignite.internal.binary.BinaryMarshaller.USE_ARRAY_BINARY_WRAPPER;
 import static org.apache.ignite.internal.binary.BinaryUtils.mergeMetadata;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
@@ -491,13 +493,19 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         if (BinaryUtils.isBinaryType(obj.getClass()))
             return obj;
 
-        if (obj instanceof Object[]) {
+        if (obj.getClass().isArray()) {
             Object[] arr = (Object[])obj;
 
             Object[] pArr = new Object[arr.length];
 
             for (int i = 0; i < arr.length; i++)
                 pArr[i] = marshalToBinary(arr[i], failIfUnregistered);
+
+            if (USE_ARRAY_BINARY_WRAPPER) {
+                binaryMarsh.context().typeId(); //TODO: FIXME
+
+                return new BinaryArrayWrapper(binaryMarsh.context(), -1, null, pArr, arr.length); // TODO: FIXME
+            }
 
             return pArr;
         }
