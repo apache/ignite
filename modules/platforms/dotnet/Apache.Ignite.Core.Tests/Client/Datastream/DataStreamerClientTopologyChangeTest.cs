@@ -28,6 +28,19 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
     /// </summary>
     public class DataStreamerClientTopologyChangeTest
     {
+        /** */
+        private readonly bool _enablePartitionAwareness;
+
+        public DataStreamerClientTopologyChangeTest() : this(false)
+        {
+            // No-op.
+        }
+
+        public DataStreamerClientTopologyChangeTest(bool enablePartitionAwareness)
+        {
+            _enablePartitionAwareness = enablePartitionAwareness;
+        }
+
         [Test]
         public void TestStreamerDoesNotLoseDataWhenNewNodeEntersAndOriginalNodeLeaves()
         {
@@ -99,13 +112,6 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             return Ignition.Start(GetServerConfiguration());
         }
 
-        private static IIgniteClient StartClient()
-        {
-            var cfg = new IgniteClientConfiguration("127.0.0.1:10800..10805");
-
-            return new IgniteClient(cfg);
-        }
-
         private static ICacheClient<int, int> CreateCache(IIgniteClient client)
         {
             return client.CreateCache<int, int>(new CacheClientConfiguration
@@ -113,6 +119,16 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 Name = TestUtils.TestName,
                 CacheMode = CacheMode.Replicated
             });
+        }
+
+        private IIgniteClient StartClient()
+        {
+            var cfg = new IgniteClientConfiguration("127.0.0.1:10800..10805")
+            {
+                EnablePartitionAwareness = _enablePartitionAwareness
+            };
+
+            return new IgniteClient(cfg);
         }
     }
 }
