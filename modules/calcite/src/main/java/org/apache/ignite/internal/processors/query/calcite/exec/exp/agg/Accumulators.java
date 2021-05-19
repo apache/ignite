@@ -155,14 +155,19 @@ public class Accumulators {
         private Object holder;
 
         /** */
+        private boolean touched;
+
+        /** */
         public static final Supplier<Accumulator> FACTORY = SingleVal::new;
 
         /** */
         @Override public void add(Object... args) {
             assert args.length == 1 : args.length;
 
-            if (holder != null)
+            if (touched)
                 throw new IllegalArgumentException("Input for single_value function has more than one row.");
+
+            touched = true;
 
             holder = args[0];
         }

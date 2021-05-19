@@ -162,5 +162,13 @@ public class ProjectScanMergeRuleTest extends GridCommonAbstractTest {
         GridTestUtils.assertThrowsWithCause(
             () -> checkQuery("SELECT NAME FROM products WHERE CAT_ID = (SELECT CAT_ID FROM products WHERE SUBCAT_ID = 11)")
                 .check(), IllegalArgumentException.class);
+
+        GridTestUtils.assertThrowsWithCause(
+            () -> checkQuery("SELECT NAME FROM products WHERE CAT_ID = (SELECT 2 UNION ALL SELECT 1)")
+                .check(), IllegalArgumentException.class);
+
+        GridTestUtils.assertThrowsWithCause(
+            () -> checkQuery("SELECT NAME FROM products WHERE CAT_ID = (SELECT null UNION ALL SELECT 1)")
+                .check(), IllegalArgumentException.class);
     }
 }
