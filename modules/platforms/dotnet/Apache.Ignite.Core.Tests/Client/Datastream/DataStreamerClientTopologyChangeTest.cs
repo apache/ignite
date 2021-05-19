@@ -30,6 +30,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
     /// <summary>
     /// Tests thin client data streamer with topology changes.
     /// </summary>
+    [Category(TestUtils.CategoryIntensive)]
     public class DataStreamerClientTopologyChangeTest
     {
         /** */

@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
     /// Tests thin client data streamer with topology changes.
     /// </summary>
     [TestFixture]
+    [Category(TestUtils.CategoryIntensive)]
     public class DataStreamerClientTopologyChangeTestPartitionAware : DataStreamerClientTopologyChangeTest
     {
         public DataStreamerClientTopologyChangeTestPartitionAware() : base(true)
