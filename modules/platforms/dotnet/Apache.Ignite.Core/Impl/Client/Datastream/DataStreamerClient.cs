@@ -314,8 +314,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                         _buffers.TryRemove(socket, out _);
 
                         // Re-add entries to other buffers.
+                        var count = buffer.Count;
 
-                        for (var i = 0; i < entries.Length; i++)
+                        for (var i = 0; i < count; i++)
                         {
                             var entry = entries[i];
 

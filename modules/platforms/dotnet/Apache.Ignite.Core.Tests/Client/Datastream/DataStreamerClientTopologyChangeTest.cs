@@ -23,7 +23,6 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
-    using Apache.Ignite.Core.Client.Datastream;
     using Apache.Ignite.Core.Impl.Client;
     using NUnit.Framework;
 
