@@ -18,6 +18,8 @@ This module contains smoke tests that checks that ducktape works as expected
 """
 import os
 
+from ducktape.mark import matrix
+
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.ignite_execution_exception import IgniteExecutionException
@@ -109,7 +111,7 @@ class SelfTest(IgniteTest):
 
         def get_logs_count(service):
             node = service.nodes[0]
-            return list(node.account.ssh_capture(f'ls {service.log_dir}/console.log* | wc -l', callback=int))[0]
+            return list(node.account.ssh_capture(f'ls {service.log_dir}/ignite.log* | wc -l', callback=int))[0]
 
         ignites = IgniteService(self.test_context, IgniteConfiguration(version=IgniteVersion(ignite_version)),
                                 num_nodes=1)
@@ -120,15 +122,43 @@ class SelfTest(IgniteTest):
         for i in range(num_restarts - 1):
             ignites.stop()
 
-            old_cnt = get_log_lines_count(ignites, "console.log")
+            old_cnt = get_log_lines_count(ignites, "ignite.log")
             assert old_cnt > 0
 
             ignites.start(clean=False)
 
-            new_cnt = get_log_lines_count(ignites, "console.log")
+            new_cnt = get_log_lines_count(ignites, "ignite.log")
             assert new_cnt > 0
 
             # check that there is no new entry in rotated file
-            assert old_cnt == get_log_lines_count(ignites, f"console.log.{i + 1}")
+            assert old_cnt == get_log_lines_count(ignites, f"ignite.log.{i + 1}")
 
         assert get_logs_count(ignites) == num_restarts
+
+    @cluster(num_nodes=1)
+    @ignite_versions(str(DEV_BRANCH))
+    @matrix(is_ignite_service=[True, False])
+    def test_config_add_to_result(self, ignite_version, is_ignite_service):
+        """
+        Test that the config file is in config directory
+        and Service.logs contains the config directory to add to the result.
+        """
+        ignite_cfg = IgniteConfiguration(version=IgniteVersion(ignite_version))
+
+        if is_ignite_service:
+            ignite = IgniteService(self.test_context, ignite_cfg, num_nodes=1)
+        else:
+            ignite = IgniteApplicationService(
+                self.test_context, ignite_cfg,
+                java_class_name="org.apache.ignite.internal.ducktest.tests.self_test.TestKillableApplication")
+
+        ignite.start()
+
+        assert ignite.logs.get('config').get('path') == ignite.config_dir
+
+        assert ignite.config_file.startswith(ignite.config_dir)
+
+        ignite.nodes[0].account.ssh(f'ls {ignite.config_dir} | grep {os.path.basename(ignite.config_file)}')
+        ignite.nodes[0].account.ssh(f'ls {ignite.config_dir} | grep {os.path.basename(ignite.log_config_file)}')
+
+        ignite.stop()

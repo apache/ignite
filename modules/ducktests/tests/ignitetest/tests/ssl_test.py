@@ -20,6 +20,7 @@ from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
+from ignitetest.services.utils.path import get_shared_root_path
 from ignitetest.services.utils.ssl.connector_configuration import ConnectorConfiguration
 from ignitetest.services.utils.ssl.ssl_params import SslParams, DEFAULT_SERVER_KEYSTORE, DEFAULT_CLIENT_KEYSTORE, \
     DEFAULT_ADMIN_KEYSTORE
@@ -41,9 +42,9 @@ class SslTest(IgniteTest):
         Test that IgniteService, IgniteApplicationService correctly start and stop with ssl configurations.
         And check ControlUtility with ssl arguments.
         """
-        root_dir = self.test_context.globals.get("install_root", "/opt")
+        shared_root = get_shared_root_path(self.test_context.globals)
 
-        server_ssl = SslParams(root_dir=root_dir, key_store_jks=DEFAULT_SERVER_KEYSTORE)
+        server_ssl = SslParams(shared_root, key_store_jks=DEFAULT_SERVER_KEYSTORE)
 
         server_configuration = IgniteConfiguration(
             version=IgniteVersion(ignite_version), ssl_params=server_ssl,
@@ -54,7 +55,7 @@ class SslTest(IgniteTest):
 
         client_configuration = server_configuration._replace(
             client_mode=True,
-            ssl_params=SslParams(root_dir=root_dir, key_store_jks=DEFAULT_CLIENT_KEYSTORE),
+            ssl_params=SslParams(shared_root, key_store_jks=DEFAULT_CLIENT_KEYSTORE),
             connector_configuration=None)
 
         app = IgniteApplicationService(
@@ -63,7 +64,7 @@ class SslTest(IgniteTest):
             java_class_name="org.apache.ignite.internal.ducktest.tests.smoke_test.SimpleApplication",
             startup_timeout_sec=180)
 
-        admin_ssl = SslParams(root_dir=root_dir, key_store_jks=DEFAULT_ADMIN_KEYSTORE)
+        admin_ssl = SslParams(shared_root, key_store_jks=DEFAULT_ADMIN_KEYSTORE)
         control_utility = ControlUtility(cluster=ignite, ssl_params=admin_ssl)
 
         ignite.start()

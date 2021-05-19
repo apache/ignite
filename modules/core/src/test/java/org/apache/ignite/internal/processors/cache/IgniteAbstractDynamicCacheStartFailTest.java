@@ -148,7 +148,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
 
             fail("Expected exception was not thrown.");
         }
-        catch (CacheException e) {
+        catch (CacheException ignore) {
         }
 
         stopGrid(clientName);
@@ -173,7 +173,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
 
             fail("Expected exception was not thrown.");
         }
-        catch (CacheException e) {
+        catch (CacheException ignore) {
         }
 
         stopGrid(clientName);
@@ -446,7 +446,7 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
 
                 fail("Expected exception was not thrown");
             }
-            catch (CacheException e) {
+            catch (CacheException ignore) {
             }
         }
     }

@@ -22,3 +22,25 @@
         <property name="activeOnStart" value="{{ 'false' if state == 'INACTIVE' else 'true'}}"/>
     {% endif %}
 {% endmacro %}
+
+{% macro plugins(config) %}
+    {% if config.plugins %}
+        <property name="pluginProviders">
+            <list>
+            {% for plugin in config.plugins %}
+                {% import plugin[0] as plugin_template -%}
+                {{ plugin_template.apply(config, plugin[1]) }}
+            {% endfor %}
+            </list>
+        </property>
+    {% endif %}
+{% endmacro %}
+
+{% macro ext_beans(config) %}
+    {% if config.ext_beans %}
+        {% for ext_bean in config.ext_beans %}
+            {% import ext_bean[0] as bean_template -%}
+            {{ bean_template.apply(config, ext_bean[1]) }}
+        {% endfor %}
+    {% endif %}
+{% endmacro %}

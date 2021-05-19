@@ -29,7 +29,7 @@ from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, 
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster, from_zookeeper_cluster, \
     TcpDiscoverySpi
 from ignitetest.services.zk.zookeeper import ZookeeperSettings, ZookeeperService
-from ignitetest.utils import ignite_versions, cluster, ignore_if
+from ignitetest.utils import ignite_versions, cluster
 from ignitetest.utils.enum import constructible
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, IgniteVersion, LATEST
@@ -52,6 +52,16 @@ class DiscoreryType(IntEnum):
     """
     ZooKeeper = 0
     TCP = 1
+
+
+@constructible
+class TxPrepType(IntEnum):
+    """
+    Transaction preparation type.
+    """
+    CELL_COLOCATED = 0
+    CELL_NONCOLOCATED = 1
+    MULTIKEY = 2
 
 
 # pylint: disable=W0223
@@ -104,7 +114,6 @@ class CellularAffinity(IgniteTest):
             cacheName=CellularAffinity.CACHE_NAME)
 
     @cluster(num_nodes=NODES_PER_CELL * 3 + 1)
-    @ignore_if(lambda version, globals: version < DEV_BRANCH)
     @ignite_versions(str(DEV_BRANCH))
     def test_distribution(self, ignite_version):
         """
@@ -136,11 +145,13 @@ class CellularAffinity(IgniteTest):
     # pylint: disable=R0912
     # pylint: disable=R0914
     # pylint: disable=no-member
+    # pylint: disable=too-many-statements
     @cluster(num_nodes=2 * (NODES_PER_CELL + 1) + 3)  # cell_cnt * (srv_per_cell + cell_streamer) + zookeper_cluster
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @matrix(stop_type=[StopType.DROP_NETWORK, StopType.SIGKILL, StopType.SIGTERM],
-            discovery_type=[DiscoreryType.ZooKeeper, DiscoreryType.TCP])
-    def test_latency(self, ignite_version, stop_type, discovery_type):
+            discovery_type=[DiscoreryType.ZooKeeper, DiscoreryType.TCP],
+            prep_type=[TxPrepType.CELL_COLOCATED])
+    def test_latency(self, ignite_version, stop_type, discovery_type, prep_type):
         """
         Tests Cellular switch tx latency.
         """
@@ -170,7 +181,8 @@ class CellularAffinity(IgniteTest):
 
             discovery_spi = from_zookeeper_cluster(zk_quorum)
 
-        cell0, prepared_tx_loader1 = self.start_cell_with_prepared_txs(ignite_version, "C0", discovery_spi, modules)
+        cell0, prepared_tx_loader1 = \
+            self.start_cell_with_prepared_txs(ignite_version, f'C{0}', discovery_spi, modules)
 
         if d_type is DiscoreryType.TCP:
             discovery_spi = from_ignite_cluster(cell0)
@@ -180,14 +192,30 @@ class CellularAffinity(IgniteTest):
         loaders = [prepared_tx_loader1]
         nodes = [cell0]
 
-        for cell in range(1, cells_amount):
+        failed_cell_id = 1
+
+        for cell_id in range(1, cells_amount):
+            # per cell
+            coll_cnt = self.PREPARED_TX_CNT if prep_type == TxPrepType.CELL_COLOCATED else 0
+
+            # should not affect switch speed dramatically, cause recovery but not waiting
+            # avoiding C0 (as not affected) & C1
+            noncoll_cnt = self.PREPARED_TX_CNT * (cells_amount - 2) \
+                if cell_id == failed_cell_id and prep_type == TxPrepType.CELL_NONCOLOCATED else 0
+
+            # cause waiting for txs with failed primary (~ 3/(cells-1) of prepared tx amount)
+            # avoiding C0 (as not affected)
+            multi_cnt = self.PREPARED_TX_CNT * (cells_amount - 1) \
+                if cell_id == failed_cell_id and prep_type == TxPrepType.MULTIKEY else 0
+
             node, prepared_tx_loader = \
-                self.start_cell_with_prepared_txs(ignite_version, "C%d" % cell, discovery_spi, modules)
+                self.start_cell_with_prepared_txs(
+                    ignite_version, f'C{cell_id}', discovery_spi, modules, coll_cnt, noncoll_cnt, multi_cnt)
 
             loaders.append(prepared_tx_loader)
             nodes.append(node)
 
-        failed_loader = loaders[1]
+        failed_loader = loaders[failed_cell_id]
 
         for node in [*nodes, *loaders]:
             node.await_started()
@@ -260,7 +288,9 @@ class CellularAffinity(IgniteTest):
                     "warmup": 10000},
             modules=modules, startup_timeout_sec=180)
 
-    def start_cell_with_prepared_txs(self, version, cell_id, discovery_spi, modules):
+    # pylint: disable=too-many-arguments
+    def start_cell_with_prepared_txs(
+            self, version, cell_id, discovery_spi, modules, col_cnt=0, noncol_cnt=0, multi_cnt=0):
         """
         Starts cell with prepared transactions.
         """
@@ -277,14 +307,16 @@ class CellularAffinity(IgniteTest):
             params={"cacheName": CellularAffinity.CACHE_NAME,
                     "attr": CellularAffinity.ATTRIBUTE,
                     "cell": cell_id,
-                    "txCnt": CellularAffinity.PREPARED_TX_CNT},
+                    "colocatedTxCnt": col_cnt,
+                    "multiTxCnt": multi_cnt,
+                    "noncolocatedTxCnt": noncol_cnt},
             jvm_opts=['-D' + CellularAffinity.ATTRIBUTE + '=' + cell_id], modules=modules, startup_timeout_sec=180)
 
         prepared_tx_streamer.start_async()  # starts last server node and creates prepared txs on it.
 
         return nodes, prepared_tx_streamer
 
-    # pylint: disable=R0913
+    # pylint: disable=too-many-arguments
     def start_cell(self, version, jvm_opts, discovery_spi=None, modules=None, nodes_cnt=NODES_PER_CELL):
         """
         Starts cell.

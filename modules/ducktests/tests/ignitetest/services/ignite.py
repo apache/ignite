@@ -17,10 +17,6 @@
 This module contains class to start ignite cluster node.
 """
 
-import signal
-
-from ducktape.cluster.remoteaccount import RemoteCommandError
-
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
 
 
@@ -32,50 +28,6 @@ class IgniteService(IgniteAwareService):
 
     # pylint: disable=R0913
     def __init__(self, context, config, num_nodes, jvm_opts=None, full_jvm_opts=None, startup_timeout_sec=60,
-                 shutdown_timeout_sec=10, modules=None):
-        super().__init__(context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, modules=modules,
-                         jvm_opts=jvm_opts, full_jvm_opts=full_jvm_opts)
-
-    def clean_node(self, node, **kwargs):
-        node.account.kill_java_processes(self.APP_SERVICE_CLASS, clean_shutdown=False, allow_fail=True)
-        node.account.ssh("rm -rf -- %s" % self.persistent_root, allow_fail=False)
-
-    def thread_dump(self, node):
-        """
-        Generate thread dump on node.
-        :param node: Ignite service node.
-        """
-        for pid in self.pids(node):
-            try:
-                node.account.signal(pid, signal.SIGQUIT, allow_fail=True)
-            except RemoteCommandError:
-                self.logger.warn("Could not dump threads on node")
-
-    def pids(self, node):
-        try:
-            cmd = "jcmd | grep -e %s | awk '{print $1}'" % self.APP_SERVICE_CLASS
-            pid_arr = list(node.account.ssh_capture(cmd, allow_fail=True, callback=int))
-            return pid_arr
-        except (RemoteCommandError, ValueError):
-            return []
-
-
-def node_failed_event_pattern(failed_node_id=None):
-    """Failed node pattern in log."""
-    return "Node FAILED: .\\{1,\\}Node \\[id=" + (failed_node_id if failed_node_id else "") + \
-           ".\\{1,\\}\\(isClient\\|client\\)=false"
-
-
-def get_event_time(service, log_node, log_pattern, from_the_beginning=True, timeout=15):
-    """
-    Extracts event time from ignite log by pattern .
-    :param service: ducktape service (ignite service) responsible to search log.
-    :param log_node: ducktape node to search ignite log on.
-    :param log_pattern: pattern to search ignite log for.
-    :param from_the_beginning: switches searching log from its beginning.
-    :param timeout: timeout to wait for the patters in the log.
-    """
-    service.await_event_on_node(log_pattern, log_node, timeout, from_the_beginning=from_the_beginning,
-                                backoff_sec=0.3)
-
-    return IgniteAwareService.event_time(log_pattern, log_node)
+                 shutdown_timeout_sec=60, modules=None):
+        super().__init__(context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, self.APP_SERVICE_CLASS,
+                         modules, jvm_opts=jvm_opts, full_jvm_opts=full_jvm_opts)

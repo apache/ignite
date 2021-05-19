@@ -57,73 +57,49 @@ class SnapshotTest(IgniteTest):
             metric_exporter='org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi'
         )
 
-        service = IgniteService(self.test_context, ignite_config, num_nodes=len(self.test_context.cluster) - 1)
-        service.start()
+        nodes = IgniteService(self.test_context, ignite_config, num_nodes=len(self.test_context.cluster) - 1)
+        nodes.start()
 
-        control_utility = ControlUtility(service)
+        control_utility = ControlUtility(nodes)
         control_utility.activate()
 
-        client_config = IgniteConfiguration(
-            client_mode=True,
-            version=version,
-            discovery_spi=from_ignite_cluster(service)
-        )
+        loader_config = IgniteConfiguration(client_mode=True, version=version, discovery_spi=from_ignite_cluster(nodes))
 
         loader = IgniteApplicationService(
             self.test_context,
-            client_config,
+            loader_config,
             java_class_name="org.apache.ignite.internal.ducktest.tests.snapshot_test.DataLoaderApplication",
-            params={
-                "start": 0,
-                "cacheName": self.CACHE_NAME,
-                "interval": 500_000,
-                "valueSizeKb": 1
-            }
+            params={"start": 0, "cacheName": self.CACHE_NAME, "interval": 500_000, "valueSizeKb": 1}
         )
 
         loader.run()
-        loader.free()
 
         control_utility.validate_indexes()
         control_utility.idle_verify()
-        node = service.nodes[0]
+
+        node = nodes.nodes[0]
 
         dump_1 = control_utility.idle_verify_dump(node)
 
         control_utility.snapshot_create(self.SNAPSHOT_NAME)
 
-        loader = IgniteApplicationService(
-            self.test_context,
-            client_config,
-            java_class_name="org.apache.ignite.internal.ducktest.tests.snapshot_test.DataLoaderApplication",
-            params={
-                "start": 500_000,
-                "cacheName": self.CACHE_NAME,
-                "interval": 100_000,
-                "valueSizeKb": 1
-            }
-        )
-
-        loader.start(clean=False)
-        loader.wait()
+        loader.params = {"start": 500_000, "cacheName": self.CACHE_NAME, "interval": 100_000, "valueSizeKb": 1}
+        loader.run()
 
         dump_2 = control_utility.idle_verify_dump(node)
 
         diff = node.account.ssh_output(f'diff {dump_1} {dump_2}', allow_fail=True)
-        assert len(diff) != 0
+        assert diff
 
-        service.stop()
-
-        service.restore_from_snapshot(self.SNAPSHOT_NAME)
-
-        service.start(clean=False)
+        nodes.stop()
+        nodes.restore_from_snapshot(self.SNAPSHOT_NAME)
+        nodes.start()
 
         control_utility.activate()
-
         control_utility.validate_indexes()
         control_utility.idle_verify()
 
         dump_3 = control_utility.idle_verify_dump(node)
 
         diff = node.account.ssh_output(f'diff {dump_1} {dump_3}', allow_fail=True)
-        assert len(diff) == 0, diff
+        assert not diff, diff

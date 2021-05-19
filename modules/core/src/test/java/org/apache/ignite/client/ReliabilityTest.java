@@ -40,8 +40,6 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.client.thin.AbstractThinClientTest;
 import org.apache.ignite.internal.client.thin.ClientServerError;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
-import org.apache.ignite.mxbean.ClientProcessorMXBean;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -383,18 +381,6 @@ public class ReliabilityTest extends AbstractThinClientTest {
      */
     protected <K, V> void cachePut(ClientCache<K, V> cache, K key, V val) {
         cache.put(key, val);
-    }
-
-    /**
-     * Drop all thin client connections on given Ignite instance.
-     *
-     * @param ignite Ignite.
-     */
-    private void dropAllThinClientConnections(Ignite ignite) {
-        ClientProcessorMXBean mxBean = getMxBean(ignite.name(), "Clients",
-            ClientListenerProcessor.class, ClientProcessorMXBean.class);
-
-        mxBean.dropAllConnections();
     }
 
     /**

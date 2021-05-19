@@ -29,14 +29,15 @@ import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
  */
 public class DataGenerationApplication extends IgniteAwareApplication {
     /** Max streamer data size. */
-    private static final long MAX_STREAMER_DATA_SIZE = 100_000_000;
+    private static final int MAX_STREAMER_DATA_SIZE = 100_000_000;
 
     /** {@inheritDoc} */
     @Override protected void run(JsonNode jsonNode) throws Exception {
         int backups = jsonNode.get("backups").asInt();
         int cacheCnt = jsonNode.get("cacheCount").asInt();
-        int entryCnt = jsonNode.get("entryCount").asInt();
         int entrySize = jsonNode.get("entrySize").asInt();
+        int from = jsonNode.get("from").asInt();
+        int to = jsonNode.get("to").asInt();
 
         markInitialized();
 
@@ -46,7 +47,7 @@ public class DataGenerationApplication extends IgniteAwareApplication {
                 new CacheConfiguration<Integer, DataModel>("test-cache-" + i)
                     .setBackups(backups));
 
-            generateCacheData(cache.getName(), entryCnt, entrySize);
+            generateCacheData(cache.getName(), entrySize, from, to);
         }
 
         markFinished();
@@ -54,35 +55,27 @@ public class DataGenerationApplication extends IgniteAwareApplication {
 
     /**
      * @param cacheName Cache name.
-     * @param entryCnt Entry count.
      * @param entrySize Entry size.
+     * @param from From key.
+     * @param to To key.
      */
-    private void generateCacheData(String cacheName, int entryCnt, int entrySize) {
-        int logStreamedEntriesQuant = (int)Math.pow(10, (int)Math.log10(entryCnt) - 1);
+    private void generateCacheData(String cacheName, int entrySize, int from, int to) {
+        int flushEach = MAX_STREAMER_DATA_SIZE / entrySize + (MAX_STREAMER_DATA_SIZE % entrySize == 0 ? 0 : 1);
+        int logEach = (to - from) / 10;
 
         try (IgniteDataStreamer<Integer, DataModel> stmr = ignite.dataStreamer(cacheName)) {
-            for (int i = 0, n = 0; i < entryCnt; i++) {
+            for (int i = from; i < to; i++) {
                 stmr.addData(i, new DataModel(entrySize));
 
-                int streamed = i + 1;
+                if ((i - from + 1) % logEach == 0 && log.isDebugEnabled())
+                    log.debug("Streamed " + (i - from + 1) + " entries into " + cacheName);
 
-                if (streamed % logStreamedEntriesQuant == 0)
-                    log.info("Streamed " + streamed + " entries into " + cacheName);
-
-                n += entrySize;
-
-                if (n >= MAX_STREAMER_DATA_SIZE) {
-                    n = 0;
-
+                if (i % flushEach == 0)
                     stmr.flush();
-                }
             }
         }
 
-        if (entryCnt % logStreamedEntriesQuant != 0)
-            log.info("Streamed " + entryCnt + " entries into " + cacheName);
-
-        log.info(cacheName + " data generated.");
+        log.info(cacheName + " data generated [entryCnt=" + (from - to) + ", from=" + from + ", to=" + to + "]");
     }
 
     /**

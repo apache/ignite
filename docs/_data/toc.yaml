@@ -491,6 +491,8 @@
           url: extensions-and-integrations/spring/spring-data
         - title: Spring Caching
           url: extensions-and-integrations/spring/spring-caching
+        - title: Spring Transactions
+          url: extensions-and-integrations/spring/spring-tx
     - title: Ignite for Spark
       items:
         - title: Overview
@@ -543,6 +545,8 @@
           url: extensions-and-integrations/cassandra/ddl-generator
     - title: PHP PDO
       url: extensions-and-integrations/php-pdo
+    - title: Performance Statistics
+      url: extensions-and-integrations/performance-statistics
 - title: Plugins
   url: plugins
 - title: Performance and Troubleshooting

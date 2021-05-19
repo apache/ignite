@@ -19,31 +19,30 @@ This module contains the base class to build services aware of Ignite.
 import os
 import re
 import signal
-import socket
 import sys
 import time
-from abc import abstractmethod, ABCMeta
+import tempfile
+from abc import ABCMeta
 from datetime import datetime, timedelta
 from enum import IntEnum
+from pathlib import Path
 from threading import Thread
+from filelock import FileLock
 
+from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.utils.util import wait_until
 
+from ignitetest.services.utils import IgniteServiceType
 from ignitetest.services.utils.background_thread import BackgroundThreadService
 from ignitetest.services.utils.concurrent import CountDownLatch, AtomicValue
-from ignitetest.services.utils.path import IgnitePathAware
-from ignitetest.services.utils.ignite_spec import resolve_spec
+from ignitetest.services.utils.ignite_spec import resolve_spec, SHARED_PREPARED_FILE
 from ignitetest.services.utils.jmx_utils import ignite_jmx_mixin, JmxClient
 from ignitetest.services.utils.log_utils import monitor_log
+from ignitetest.services.utils.path import IgnitePathAware
 from ignitetest.utils.enum import constructible
 
 
-# pylint: disable=too-many-public-methods
-from ignitetest.services.utils.ssl.connector_configuration import ConnectorConfiguration
-from ignitetest.services.utils.ssl.ssl_params import get_ssl_params, is_ssl_enabled, IGNITE_SERVER_ALIAS, \
-    IGNITE_CLIENT_ALIAS
-
-
+# pylint: disable=R0902,too-many-public-methods
 class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABCMeta):
     """
     The base class to build services aware of Ignite.
@@ -58,7 +57,8 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         ALL = 2
 
     # pylint: disable=R0913
-    def __init__(self, context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, **kwargs):
+    def __init__(self, context, config, num_nodes, startup_timeout_sec, shutdown_timeout_sec, main_java_class, modules,
+                 **kwargs):
         """
         **kwargs are params that passed to IgniteSpec
         """
@@ -69,22 +69,19 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         self.log_level = "DEBUG"
 
         self.config = config
+        self.main_java_class = main_java_class
         self.startup_timeout_sec = startup_timeout_sec
         self.shutdown_timeout_sec = shutdown_timeout_sec
+        self.modules = modules
 
-        self.spec = resolve_spec(self, context, config, **kwargs)
+        self.spec = resolve_spec(self, **kwargs)
         self.init_logs_attribute()
 
         self.disconnected_nodes = []
-        self.killed = False
 
     @property
-    def version(self):
-        return self.config.version
-
-    @property
-    def project(self):
-        return self.spec.project
+    def product(self):
+        return str(self.config.version)
 
     @property
     def globals(self):
@@ -94,37 +91,25 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
         Starts in async way.
         """
-        self.update_ssl_config_with_globals()
         super().start(**kwargs)
 
     def start(self, **kwargs):
         self.start_async(**kwargs)
         self.await_started()
 
-    def update_ssl_config_with_globals(self):
-        """
-        Update ssl configuration from globals.
-        """
-        ssl_params = None
-        if self.config.ssl_params is None and is_ssl_enabled(self.globals):
-            ssl_params = get_ssl_params(
-                self.globals,
-                IGNITE_CLIENT_ALIAS if self.config.client_mode else IGNITE_SERVER_ALIAS
-            )
-        if ssl_params:
-            self.config = self.config._replace(ssl_params=ssl_params,
-                                               connector_configuration=ConnectorConfiguration(
-                                                   ssl_enabled=True, ssl_params=ssl_params))
-
     def await_started(self):
         """
         Awaits start finished.
         """
+        if self.config.service_type in (IgniteServiceType.NONE, IgniteServiceType.THIN_CLIENT):
+            return
+
         self.logger.info("Waiting for IgniteAware(s) to start ...")
 
         self.await_event("Topology snapshot", self.startup_timeout_sec, from_the_beginning=True)
 
     def start_node(self, node, **kwargs):
+        self.init_shared(node)
         self.init_persistent(node)
 
         self.__update_node_log_file(node)
@@ -133,20 +118,21 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
         wait_until(lambda: self.alive(node), timeout_sec=10)
 
-        ignite_jmx_mixin(node, self.spec, self.pids(node))
+        ignite_jmx_mixin(node, self)
 
-    def stop_async(self, **kwargs):
+    def stop_async(self, force_stop=False, **kwargs):
         """
         Stop in async way.
         """
-        super().stop(**kwargs)
+        super().stop(force_stop, **kwargs)
 
-    def stop(self, **kwargs):
-        if not self.killed:
-            self.stop_async(**kwargs)
+    def stop(self, force_stop=False, **kwargs):
+        self.stop_async(force_stop, **kwargs)
+
+        # Making this async on FORCE_STOP to eliminate waiting on killing services on tear down.
+        # Waiting will happen on plain stop() call made by ducktape during same step.
+        if not force_stop:
             self.await_stopped()
-        else:
-            self.logger.debug("Skipping node stop since it already killed.")
 
     def await_stopped(self):
         """
@@ -164,35 +150,21 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
                        err_msg="Node %s's remote processes failed to stop in %d seconds" %
                                (str(node.account), self.shutdown_timeout_sec))
 
-    def stop_node(self, node, **kwargs):
+    def stop_node(self, node, force_stop=False, **kwargs):
         pids = self.pids(node)
 
         for pid in pids:
-            node.account.signal(pid, signal.SIGTERM, allow_fail=False)
-
-    def kill(self):
-        """
-        Kills nodes.
-        """
-        self.logger.info("Killing IgniteAware(s) ...")
-
-        for node in self.nodes:
-            pids = self.pids(node)
-
-            for pid in pids:
-                node.account.signal(pid, signal.SIGKILL, allow_fail=False)
-
-        for node in self.nodes:
-            wait_until(lambda: not self.alive(node), timeout_sec=self.shutdown_timeout_sec,
-                       err_msg="Node %s's remote processes failed to be killed in %d seconds" %
-                               (str(node.account), self.shutdown_timeout_sec))
-
-        self.killed = True
+            node.account.signal(pid, signal.SIGKILL if force_stop else signal.SIGTERM, allow_fail=False)
 
     def clean(self, **kwargs):
         self.__restore_iptables()
 
         super().clean(**kwargs)
+
+    def clean_node(self, node, **kwargs):
+        super().clean_node(node, **kwargs)
+
+        node.account.ssh("rm -rf -- %s" % self.persistent_root, allow_fail=False)
 
     def init_persistent(self, node):
         """
@@ -201,36 +173,61 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
         super().init_persistent(node)
 
-        node_config = self._prepare_config(node)
+        self._prepare_configs(node)
 
-        node.account.create_file(self.config_file, node_config)
+    def init_shared(self, node):
+        """
+        Init shared directory. Content of shared directory must be equal on all test nodes.
+        :param node: Ignite service node.
+        """
+        local_shared_dir = self._init_local_shared()
 
-    def _prepare_config(self, node):
-        if not self.config.consistent_id:
-            config = self.config._replace(consistent_id=node.account.externally_routable_ip)
-        else:
-            config = self.config
+        if not os.path.isdir(local_shared_dir):
+            self.logger.debug("Local shared dir not exists. Nothing to copy. " + str(local_shared_dir))
+            return
 
-        config = config._replace(local_host=socket.gethostbyname(node.account.hostname))
+        node.account.mkdirs(f"{self.persistent_root} {self.shared_root}")
 
-        config.discovery_spi.prepare_on_start(cluster=self)
+        for file in os.listdir(local_shared_dir):
+            self.logger.debug("Copying shared file to node. " + str(file))
+            node.account.copy_to(os.path.join(local_shared_dir, file), self.shared_root)
 
-        node_config = self.spec.config_template.render(config_dir=self.persistent_root, work_dir=self.work_dir,
-                                                       config=config)
+    def _init_local_shared(self):
+        """
+        :return: path to local share folder. Files should be copied on all nodes in `shared_root` folder.
+        """
+        local_dir = os.path.join(tempfile.gettempdir(), str(self.context.session_context.session_id))
+
+        if not self.spec.is_prepare_shared_files(local_dir):
+            return local_dir
+
+        with FileLock("init_shared.lock", timeout=120):
+            if self.spec.is_prepare_shared_files(local_dir):
+                self.spec.prepare_shared_files(local_dir)
+                Path(os.path.join(local_dir, SHARED_PREPARED_FILE)).touch()
+
+        return local_dir
+
+    def _prepare_configs(self, node):
+        config = self.spec \
+            .extend_config(self.config) \
+            .prepare_for_env(self, node)
+
+        for name, template in self.spec.config_templates():
+            config_txt = template.render(service=self, config=config)
+
+            node.account.create_file(os.path.join(self.config_dir, name), config_txt)
+
+            self.logger.debug("Config %s for node %s: %s" % (name, node.account.hostname, config_txt))
 
         setattr(node, "consistent_id", node.account.externally_routable_ip)
 
-        self.logger.debug("Config for node %s: %s" % (node.account.hostname, node_config))
-
-        return node_config
-
-    @abstractmethod
     def pids(self, node):
         """
         :param node: Ignite service node.
         :return: List of service's pids.
         """
-        raise NotImplementedError
+        return node.account.java_pids(self.main_java_class)
 
     # pylint: disable=W0613
     def worker(self, idx, node, **kwargs):
@@ -248,7 +245,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         return len(self.pids(node)) > 0
 
     @staticmethod
-    def await_event_on_node(evt_message, node, timeout_sec, from_the_beginning=False, backoff_sec=5):
+    def await_event_on_node(evt_message, node, timeout_sec, from_the_beginning=False, backoff_sec=.1):
         """
         Await for specific event message in a node's log file.
         :param evt_message: Event message.
@@ -263,7 +260,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
                                err_msg="Event [%s] was not triggered on '%s' in %d seconds" % (evt_message, node.name,
                                                                                                timeout_sec))
 
-    def await_event(self, evt_message, timeout_sec, from_the_beginning=False, backoff_sec=5):
+    def await_event(self, evt_message, timeout_sec, from_the_beginning=False, backoff_sec=.1):
         """
         Await for specific event messages on all nodes.
         :param evt_message: Event message.
@@ -284,12 +281,23 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         :param node: Ducktape node to searching log.
         :return: Time of found log message matched to pattern or None if not found.
         """
-        _, stdout, _ = node.account.ssh_client.exec_command(
-            "grep '%s' %s" % (evt_message, node.log_file))
+        stdout = IgniteAwareService.exec_command(node, "grep '%s' %s" % (evt_message, node.log_file))
 
-        match = re.match("^\\[[^\\[]+\\]", stdout.read().decode("utf-8"))
+        match = re.match("^\\[[^\\[]+\\]", stdout)
 
         return datetime.strptime(match.group(), "[%Y-%m-%d %H:%M:%S,%f]") if match else None
+
+    def get_event_time_on_node(self, node, log_pattern, from_the_beginning=True, timeout=15):
+        """
+        Extracts event time from ignite log by pattern .
+        :param node: ducktape node to search ignite log on.
+        :param log_pattern: pattern to search ignite log for.
+        :param from_the_beginning: switches searching log from its beginning.
+        :param timeout: timeout to wait for the patters in the log.
+        """
+        self.await_event_on_node(log_pattern, node, timeout, from_the_beginning=from_the_beginning, backoff_sec=0)
+
+        return self.event_time(log_pattern, node)
 
     def get_event_time(self, evt_message, selector=max):
         """
@@ -380,27 +388,50 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         dsc_ports = str(dsc_spi.port) if not hasattr(dsc_spi, 'port_range') or dsc_spi.port_range < 1 else str(
             dsc_spi.port) + ':' + str(dsc_spi.port + dsc_spi.port_range)
 
+        settings = ""
+
         if net_part in (IgniteAwareService.NetPart.ALL, IgniteAwareService.NetPart.INPUT):
-            node.account.ssh_client.exec_command(
+            settings = self.__apply_iptables_settings(
+                node,
                 f"sudo iptables -I INPUT 1 -p tcp -m multiport --dport {dsc_ports},{cm_ports} -j DROP")
 
         if net_part in (IgniteAwareService.NetPart.ALL, IgniteAwareService.NetPart.OUTPUT):
-            node.account.ssh_client.exec_command(
+            settings = self.__apply_iptables_settings(
+                node,
                 f"sudo iptables -I OUTPUT 1 -p tcp -m multiport --dport {dsc_ports},{cm_ports} -j DROP")
 
-        self.logger.debug("Activated netfilter on '%s': %s" % (node.name, self.__dump_netfilter_settings(node)))
+        self.logger.debug("Activated netfilter on '%s':\n%s" % (node.name, settings))
+
+    def __apply_iptables_settings(self, node, cmd):
+        # Sets given iptables settings and ensures they were applied.
+        settings_before = self.__dump_netfilter_settings(node)
+
+        out, err = IgniteAwareService.exec_command_ex(node, cmd)
+
+        assert len(out) == 0, \
+            "Unexpected iptables output on '" + node.name + "': '" + out + "'\n   Command: '" + cmd + "'."
+        assert len(err) == 0, \
+            "Unexpected iptables output on '" + node.name + "': '" + err + "'.\n   Command: '" + cmd + "'."
+
+        settings = self.__dump_netfilter_settings(node)
+
+        assert settings_before != settings, \
+            "iptables settings not set on '" + node.name + "'\n   Command: '" + cmd + "'\n   ---iptables before---\n" \
+            + settings_before + "\n   ---iptables after---\n" + settings
+
+        return settings
 
     def __backup_iptables(self, nodes):
         # Store current network filter settings.
         for node in nodes:
             cmd = f"sudo iptables-save | tee {self.netfilter_store_path}"
 
-            exec_error = str(node.account.ssh_client.exec_command(cmd)[2].read(), sys.getdefaultencoding())
+            _, exec_error = IgniteAwareService.exec_command_ex(node, cmd)
 
             if "Warning: iptables-legacy tables present" in exec_error:
                 cmd = f"sudo iptables-legacy-save | tee {self.netfilter_store_path}"
 
-                exec_error = str(node.account.ssh_client.exec_command(cmd)[2].read(), sys.getdefaultencoding())
+                _, exec_error = IgniteAwareService.exec_command_ex(node, cmd)
 
             assert len(exec_error) == 0, "Failed to store iptables rules on '%s': %s" % (node.name, exec_error)
 
@@ -417,13 +448,19 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         errors = []
 
         for node in self.disconnected_nodes:
-            exec_error = str(node.account.ssh_client.exec_command(cmd)[2].read(), sys.getdefaultencoding())
+            settings_before = self.__dump_netfilter_settings(node)
+
+            _, exec_error = IgniteAwareService.exec_command_ex(node, cmd)
+
+            settings_after = self.__dump_netfilter_settings(node)
 
             if len(exec_error) > 0:
                 errors.append("Failed to restore iptables rules on '%s': %s" % (node.name, exec_error))
+            elif settings_before == settings_after:
+                errors.append("iptables settings not restored on '" + node.name + "':\n" + settings_after)
             else:
                 self.logger.debug(
-                    "Netfilter after launch on '%s': %s" % (node.name, self.__dump_netfilter_settings(node)))
+                    "Netfilter after launch on '%s':\n%s" % (node.name, self.__dump_netfilter_settings(node)))
 
         if len(errors) > 0:
             self.logger.error("Failed restoring actions:" + os.linesep + os.linesep.join(errors))
@@ -435,27 +472,50 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
         Reads current netfilter settings on the node for debugging purposes.
         """
-        return str(node.account.ssh_client.exec_command("sudo iptables -L -n")[1].read(), sys.getdefaultencoding())
+        return IgniteAwareService.exec_command(node, "sudo iptables -L -n")
 
     def __update_node_log_file(self, node):
         """
         Update the node log file.
         """
         if not hasattr(node, 'log_file'):
-            node.log_file = os.path.join(self.log_dir, "console.log")
+            node.log_file = os.path.join(self.log_dir, "ignite.log")
 
         cnt = list(node.account.ssh_capture(f'ls {self.log_dir} | '
-                                            f'grep -E "^console.log(.[0-9]+)?$" | '
+                                            f'grep -E "^ignite.log(.[0-9]+)?$" | '
                                             f'wc -l', callback=int))[0]
         if cnt > 0:
-            rotated_log = os.path.join(self.log_dir, f"console.log.{cnt}")
+            rotated_log = os.path.join(self.log_dir, f"ignite.log.{cnt}")
             self.logger.debug(f"rotating {node.log_file} to {rotated_log} on {node.name}")
             node.account.ssh(f"mv {node.log_file} {rotated_log}")
 
     @staticmethod
-    def exec_command(node, cmd):
-        """Executes the command passed on the given node and returns result as string."""
-        return str(node.account.ssh_client.exec_command(cmd)[1].read(), sys.getdefaultencoding())
+    def exec_command_ex(node, cmd):
+        """Executes the command passed on the given node and returns out and error results as string."""
+        _, out, err = node.account.ssh_client.exec_command(cmd)
+
+        return str(out.read(), sys.getdefaultencoding()), str(err.read(), sys.getdefaultencoding())
+
+    @staticmethod
+    def exec_command(node, cmd, check_error=True):
+        """Executes the command passed on the given node and returns out result as string."""
+        out, err = IgniteAwareService.exec_command_ex(node, cmd)
+
+        if check_error:
+            assert len(err) == 0, f"Command failed: '{cmd}'.\nError: '{err}'"
+
+        return out
+
+    def thread_dump(self, node):
+        """
+        Generate thread dump on node.
+        :param node: Ignite service node.
+        """
+        for pid in self.pids(node):
+            try:
+                node.account.signal(pid, signal.SIGQUIT, allow_fail=True)
+            except RemoteCommandError:
+                self.logger.warn("Could not dump threads on node")
 
     @staticmethod
     def node_id(node):
@@ -504,3 +564,9 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
             return
 
         raise TimeoutError(f'Rebalancing was not completed within the time: {timeout_sec} seconds.')
+
+
+def node_failed_event_pattern(failed_node_id=None):
+    """Failed node pattern in log."""
+    return "Node FAILED: .\\{1,\\}Node \\[id=" + (failed_node_id if failed_node_id else "") + \
+           ".\\{1,\\}\\(isClient\\|client\\)=false"
