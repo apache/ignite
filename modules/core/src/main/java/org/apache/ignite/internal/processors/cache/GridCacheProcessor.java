@@ -2410,7 +2410,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         Duration dur = expPlc.getExpiryForCreation() != null ? expPlc.getExpiryForCreation() :
                 expPlc.getExpiryForUpdate() != null ? expPlc.getExpiryForUpdate() : expPlc.getExpiryForAccess();
 
-        if (dur == null) return null;
+        if (dur == null || dur.getTimeUnit() == null) return null;
 
         return "expirePolicy=[duration=" + dur.getTimeUnit().toMillis(dur.getDurationAmount()) +
                 "ms, isEagerTtl=" + cacheCtx.config().isEagerTtl() + ']';
