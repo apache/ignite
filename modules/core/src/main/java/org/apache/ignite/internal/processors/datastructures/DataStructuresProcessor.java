@@ -622,7 +622,11 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         final long initVal,
         final boolean create) throws IgniteCheckedException {
         return getAtomic(new AtomicAccessor<GridCacheAtomicLongEx>() {
-            @Override public T2<GridCacheAtomicLongEx, AtomicDataStructureValue> get(GridCacheInternalKey key, AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException {
+            @Override public T2<GridCacheAtomicLongEx, AtomicDataStructureValue> get(
+                GridCacheInternalKey key,
+                AtomicDataStructureValue val,
+                IgniteInternalCache cache
+            ) throws IgniteCheckedException {
                 // Check that atomic long hasn't been created in other thread yet.
                 GridCacheAtomicLongEx a = cast(dsMap.get(key), GridCacheAtomicLongEx.class);
 
@@ -925,7 +929,11 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         throws IgniteCheckedException
     {
         return getAtomic(new AtomicAccessor<GridCacheAtomicReferenceEx>() {
-            @Override public T2<GridCacheAtomicReferenceEx, AtomicDataStructureValue> get(GridCacheInternalKey key, AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException {
+            @Override public T2<GridCacheAtomicReferenceEx, AtomicDataStructureValue> get(
+                GridCacheInternalKey key,
+                AtomicDataStructureValue val,
+                IgniteInternalCache cache
+            ) throws IgniteCheckedException {
                 // Check that atomic reference hasn't been created in other thread yet.
                 GridCacheAtomicReferenceEx ref = cast(dsMap.get(key),
                     GridCacheAtomicReferenceEx.class);
@@ -976,7 +984,11 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     public final <T, S> IgniteAtomicStamped<T, S> atomicStamped(final String name, @Nullable AtomicConfiguration cfg,
         final T initVal, final S initStamp, final boolean create) throws IgniteCheckedException {
         return getAtomic(new AtomicAccessor<GridCacheAtomicStampedEx>() {
-            @Override public T2<GridCacheAtomicStampedEx, AtomicDataStructureValue> get(GridCacheInternalKey key, AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException {
+            @Override public T2<GridCacheAtomicStampedEx, AtomicDataStructureValue> get(
+                GridCacheInternalKey key,
+                AtomicDataStructureValue val,
+                IgniteInternalCache cache
+            ) throws IgniteCheckedException {
                 // Check that atomic stamped hasn't been created in other thread yet.
                 GridCacheAtomicStampedEx stmp = cast(dsMap.get(key),
                     GridCacheAtomicStampedEx.class);
@@ -1368,7 +1380,11 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             A.ensure(cnt >= 0, "count can not be negative");
 
         return getAtomic(new AtomicAccessor<GridCacheCountDownLatchEx>() {
-            @Override public T2<GridCacheCountDownLatchEx, AtomicDataStructureValue> get(GridCacheInternalKey key, AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException {
+            @Override public T2<GridCacheCountDownLatchEx, AtomicDataStructureValue> get(
+                GridCacheInternalKey key,
+                AtomicDataStructureValue val,
+                IgniteInternalCache cache
+            ) throws IgniteCheckedException {
                 // Check that count down hasn't been created in other thread yet.
                 GridCacheCountDownLatchEx latch = cast(dsMap.get(key), GridCacheCountDownLatchEx.class);
 
@@ -1440,7 +1456,11 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         final boolean failoverSafe, final boolean create)
         throws IgniteCheckedException {
         return getAtomic(new AtomicAccessor<GridCacheSemaphoreEx>() {
-            @Override public T2<GridCacheSemaphoreEx, AtomicDataStructureValue> get(GridCacheInternalKey key, AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException {
+            @Override public T2<GridCacheSemaphoreEx, AtomicDataStructureValue> get(
+                GridCacheInternalKey key,
+                AtomicDataStructureValue val,
+                IgniteInternalCache cache
+            ) throws IgniteCheckedException {
                 // Check that semaphore hasn't been created in other thread yet.
                 GridCacheSemaphoreEx sem = cast(dsMap.get(key), GridCacheSemaphoreEx.class);
 
@@ -1532,7 +1552,11 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     public IgniteLock reentrantLock(final String name, @Nullable AtomicConfiguration cfg, final boolean failoverSafe,
         final boolean fair, final boolean create) throws IgniteCheckedException {
         return getAtomic(new AtomicAccessor<GridCacheLockEx>() {
-            @Override public T2<GridCacheLockEx, AtomicDataStructureValue> get(GridCacheInternalKey key, AtomicDataStructureValue val, IgniteInternalCache cache) throws IgniteCheckedException {
+            @Override public T2<GridCacheLockEx, AtomicDataStructureValue> get(
+                GridCacheInternalKey key,
+                AtomicDataStructureValue val,
+                IgniteInternalCache cache
+            ) throws IgniteCheckedException {
                 // Check that reentrant lock hasn't been created in other thread yet.
                 GridCacheLockEx reentrantLock = cast(dsMap.get(key), GridCacheLockEx.class);
 

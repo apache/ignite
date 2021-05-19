@@ -274,7 +274,8 @@ public class BinaryClassLoaderMultiJvmTest extends GridCommonAbstractTest {
 
         Constructor personConstructor = testClsLdr.loadClass(PERSON_CLASS_NAME).getConstructor(String.class);
         Constructor addrConstructor = testClsLdr.loadClass(ADDRESS_CLASS_NAME).getConstructor(String.class, Integer.TYPE);
-        Constructor organizationConstructor = testClsLdr.loadClass(ORGANIZATION_CLASS_NAME).getConstructor(String.class, personCls, addrCls);
+        Constructor organizationConstructor =
+            testClsLdr.loadClass(ORGANIZATION_CLASS_NAME).getConstructor(String.class, personCls, addrCls);
 
         IgniteCache<Integer, Object> cache = ignite.cache("OrganizationCache");
 

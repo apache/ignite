@@ -1622,7 +1622,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                             0,
                                             0,
                                             needVer,
-                                            U.deploymentClassLoader(ctx.kernalContext(), U.contextDeploymentClassLoaderId(ctx.kernalContext())));
+                                            U.deploymentClassLoader(
+                                                ctx.kernalContext(),
+                                                U.contextDeploymentClassLoaderId(ctx.kernalContext())
+                                            )
+                                        );
                                     }
                                 }
                                 else

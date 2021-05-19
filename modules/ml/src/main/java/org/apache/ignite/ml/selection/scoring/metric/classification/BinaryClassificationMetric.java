@@ -24,7 +24,8 @@ import org.apache.ignite.ml.selection.scoring.metric.Metric;
 /**
  * Common abstract class for all binary classification metrics.
  */
-public abstract class BinaryClassificationMetric<L extends Serializable> implements Metric<L, BinaryClassificationEvaluationContext<L>, BinaryClassificationPointwiseMetricStatsAggregator<L>> {
+public abstract class BinaryClassificationMetric<L extends Serializable>
+    implements Metric<L, BinaryClassificationEvaluationContext<L>, BinaryClassificationPointwiseMetricStatsAggregator<L>> {
     /**
      * Serial version uid.
      */

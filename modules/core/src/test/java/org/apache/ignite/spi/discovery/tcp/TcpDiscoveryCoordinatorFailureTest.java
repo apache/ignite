@@ -206,14 +206,21 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
         private volatile CountDownLatch stallLatch;
 
         /** {@inheritDoc} */
-        @Override protected Socket openSocket(InetSocketAddress sockAddr, IgniteSpiOperationTimeoutHelper timeoutHelper) throws IOException, IgniteSpiOperationTimeoutException {
+        @Override protected Socket openSocket(
+            InetSocketAddress sockAddr,
+            IgniteSpiOperationTimeoutHelper timeoutHelper
+        ) throws IOException, IgniteSpiOperationTimeoutException {
             checkStall();
 
             return super.openSocket(sockAddr, timeoutHelper);
         }
 
         /** {@inheritDoc} */
-        @Override protected Socket openSocket(Socket sock, InetSocketAddress remAddr, IgniteSpiOperationTimeoutHelper timeoutHelper) throws IOException, IgniteSpiOperationTimeoutException {
+        @Override protected Socket openSocket(
+            Socket sock,
+            InetSocketAddress remAddr,
+            IgniteSpiOperationTimeoutHelper timeoutHelper
+        ) throws IOException, IgniteSpiOperationTimeoutException {
             checkStall();
 
             return super.openSocket(sock, remAddr, timeoutHelper);

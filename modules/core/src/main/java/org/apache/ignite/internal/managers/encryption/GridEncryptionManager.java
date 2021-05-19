@@ -103,7 +103,8 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
  *     <li>Joining node:
  *     <ul>
  *         <li>1. Collects and send all stored group keys to coordinator.</li>
- *         <li>2. Generate(but doesn't store locally!) and send keys for all statically configured groups in case the not presented in metastore.</li>
+ *         <li>2. Generate(but doesn't store locally!)
+ *         and send keys for all statically configured groups in case the not presented in metastore.</li>
  *         <li>3. Store all keys received from coordinator to local store.</li>
  *     </ul>
  *     </li>
