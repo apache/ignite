@@ -3110,6 +3110,73 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertContains(log, sb.toString(), "The check procedure has finished, no conflicts have been found");
     }
 
+    @Test
+    public void testRestoreSnapshot() throws Exception {
+        int keysCnt = 100;
+        String snpName = "snapshot_02052020";
+        String cacheName1 = "cache1";
+        String cacheName2 = "cache2";
+
+        IgniteEx ig = startGrids(2);
+
+        ig.cluster().state(ACTIVE);
+
+        injectTestSystemOut();
+
+        createCacheAndPreload(ig, cacheName1, keysCnt, 32, null);
+        createCacheAndPreload(ig, cacheName2, keysCnt, 32, null);
+
+        ig.snapshot().createSnapshot(snpName).get(getTestTimeout());
+
+        IgniteCache cache1 = ig.cache(cacheName1);
+        IgniteCache cache2 = ig.cache(cacheName2);
+
+        cache1.destroy();
+        cache2.destroy();
+
+        awaitPartitionMapExchange();
+
+        assertNull(ig.cache(cacheName1));
+        assertNull(ig.cache(cacheName2));
+
+        CommandHandler h = new CommandHandler();
+
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--group", cacheName1));
+        assertContains(log, testOut.toString(),
+            "Snapshot cache group restore operation started [snapshot=" + snpName + ", group=" + cacheName1 + ']');
+
+        waitForCondition(() -> ig.cache(cacheName1) != null, getTestTimeout());
+
+        cache1 = ig.cache(cacheName1);
+
+        assertNotNull(cache1);
+
+        for (int i = 0; i < keysCnt; i++)
+            assertEquals(cacheName1, i, cache1.get(i));
+
+        cache1.destroy();
+
+        awaitPartitionMapExchange();
+
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName));
+        assertContains(log, testOut.toString(),
+            "Snapshot cache group restore operation started [snapshot=" + snpName + ']');
+
+        waitForCondition(() -> ig.cache(cacheName1) != null, getTestTimeout());
+        waitForCondition(() -> ig.cache(cacheName2) != null, getTestTimeout());
+
+        cache1 = ig.cache(cacheName1);
+        cache2 = ig.cache(cacheName1);
+
+        assertNotNull(cache1);
+        assertNotNull(cache2);
+
+        for (int i = 0; i < keysCnt; i++) {
+            assertEquals(cacheName1, i, cache1.get(i));
+            assertEquals(cacheName2, i, cache2.get(i));
+        }
+    }
+
     /**
      * @throws Exception If failed.
      */

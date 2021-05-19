@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.commandline.snapshot;
 
+import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCancelTask;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCheckTask;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCreateTask;
@@ -29,24 +30,25 @@ import org.jetbrains.annotations.Nullable;
  */
 public enum SnapshotSubcommand {
     /** Sub-command to create a cluster snapshot. */
-    CREATE("create", VisorSnapshotCreateTask.class.getName()),
+    CREATE(new SnapshotBasicSubCommand("create", "Create cluster snapshot", VisorSnapshotCreateTask.class)),
 
     /** Sub-command to cancel running snapshot. */
-    CANCEL("cancel", VisorSnapshotCancelTask.class.getName()),
+    CANCEL(new SnapshotBasicSubCommand("cancel", "Cancel running snapshot", VisorSnapshotCancelTask.class)),
 
     /** Sub-command to check snapshot. */
-    CHECK("check", VisorSnapshotCheckTask.class.getName());
+    CHECK(new SnapshotBasicSubCommand("check", "Check snapshot", VisorSnapshotCheckTask.class)),
 
-    /** Sub-command name. */
-    private final String name;
+    /** Sub-command to restore cache group from snapshot. */
+    RESTORE(new SnapshotRestoreSubCommand("restore"));
 
-    /** Task class name to execute. */
-    private final String taskName;
+    /** Command. */
+    private final Command<?> cmd;
 
-    /** @param name Snapshot sub-command name. */
-    SnapshotSubcommand(String name, String taskName) {
-        this.name = name;
-        this.taskName = taskName;
+    /**
+     * @param cmd Command.
+     */
+    SnapshotSubcommand(Command<?> cmd) {
+        this.cmd = cmd;
     }
 
     /**
@@ -55,22 +57,20 @@ public enum SnapshotSubcommand {
      */
      @Nullable public static SnapshotSubcommand of(String text) {
         for (SnapshotSubcommand cmd : values()) {
-            if (cmd.name.equalsIgnoreCase(text))
+            if (cmd.subcommand().name().equalsIgnoreCase(text))
                 return cmd;
         }
 
         throw new IllegalArgumentException("Expected correct action: " + text);
     }
 
-    /**
-     * @return Task class name to execute.
-     */
-    public String taskName() {
-        return taskName;
+    /** @return sub-command. */
+    public Command<?> subcommand() {
+        return cmd;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return name;
+        return subcommand().name();
     }
 }
