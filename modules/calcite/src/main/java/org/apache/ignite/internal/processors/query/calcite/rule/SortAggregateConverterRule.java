@@ -66,7 +66,7 @@ public class SortAggregateConverterRule {
             if (F.isEmpty(agg.getGroupSet()) || agg.getGroupSets().size() > 1)
                 return null;
 
-            if (HintUtils.isExpandDistinctAggregate(agg) && agg.getAggCallList().stream().anyMatch(AggregateCall::isDistinct))
+            if (HintUtils.isExpandDistinctAggregate(agg))
                 return null;
 
             RelOptCluster cluster = agg.getCluster();
@@ -107,7 +107,7 @@ public class SortAggregateConverterRule {
             if (F.isEmpty(agg.getGroupSet()) || agg.getGroupSets().size() > 1)
                 return null;
 
-            if (HintUtils.isExpandDistinctAggregate(agg) && agg.getAggCallList().stream().anyMatch(AggregateCall::isDistinct))
+            if (HintUtils.isExpandDistinctAggregate(agg))
                 return null;
 
             RelOptCluster cluster = agg.getCluster();
