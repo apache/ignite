@@ -80,8 +80,8 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             Assert.AreEqual(2, cache[2]);
         }
 
-        [TestFixtureTearDown]
-        public void FixtureTearDown()
+        [TearDown]
+        public void TearDown()
         {
             Ignition.StopAll(true);
         }
