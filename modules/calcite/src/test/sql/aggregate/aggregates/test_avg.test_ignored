@@ -1,7 +1,6 @@
 # name: test/sql/aggregate/aggregates/test_avg.test
 # description: Test AVG operator
 # group: [aggregates]
-# Ignored: https://issues.apache.org/jira/browse/IGNITE-14543
 
 # scalar average
 query RR

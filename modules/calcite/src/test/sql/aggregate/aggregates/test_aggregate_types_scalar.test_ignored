@@ -2,7 +2,6 @@
 # description: Test scalar aggregates with many different types
 # group: [aggregates]
 # Ignore: https://issues.apache.org/jira/browse/IGNITE-14597
-# Ignored: https://issues.apache.org/jira/browse/IGNITE-14543
 # Ignore: https://issues.apache.org/jira/browse/IGNITE-14636
 
 query IIIII
