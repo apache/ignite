@@ -860,8 +860,8 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
      * @param node Node.
      * @param sql Statement.
      */
-    protected List<List<?>> execute(IgniteEx node, String sql) {
-        return node.context().query().querySqlFields(new SqlFieldsQuery(sql).setSchema("PUBLIC"), true).getAll();
+    protected List<List<?>> execute(IgniteEx node, String sql, Object... args) {
+        return node.context().query().querySqlFields(new SqlFieldsQuery(sql).setSchema("PUBLIC").setArgs(args), true).getAll();
     }
 
     /** */
@@ -1202,6 +1202,17 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         assertEquals(ImmutableIntList.of(3), tblMap.get("MY_TBL_2").descriptor().distribution().getKeys());
     }
 
+    /** */
+    @Test
+    public void testSequentialInserts() throws Exception {
+        sql("CREATE TABLE t(x INTEGER)", true);
+
+        for (int i = 0; i < 10_000; i++)
+            sql("INSERT INTO t VALUES (?)", true, i);
+
+        assertEquals(10_000L, sql("SELECT count(*) FROM t").get(0).get(0));
+    }
+
     /**
      * Verifies that table modification events are passed to a calcite schema modification listener.
      */
@@ -1384,14 +1395,14 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private List<List<?>> sql(String sql, boolean noCheck) throws IgniteInterruptedCheckedException {
+    private List<List<?>> sql(String sql, boolean noCheck, Object...args) throws IgniteInterruptedCheckedException {
         QueryEngine engineSrv = Commons.lookupComponent(grid(0).context(), QueryEngine.class);
 
         assertTrue(client.configuration().isClientMode());
 
         QueryEngine engineCli = Commons.lookupComponent(client.context(), QueryEngine.class);
 
-        List<FieldsQueryCursor<List<?>>> cursorsCli = engineCli.query(null, "PUBLIC", sql);
+        List<FieldsQueryCursor<List<?>>> cursorsCli = engineCli.query(null, "PUBLIC", sql, args);
 
         List<List<?>> allSrv;
 

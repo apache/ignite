@@ -166,7 +166,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
                     else if (obj2 == null)
                         return -nullComparison;
                     else
-                        return GridH2ValueCacheObject.compareHashOrBytes(obj1, obj2, null);
+                        return GridH2ValueCacheObject.compareHashOrBytes(obj1, obj2);
                 }
             };
         }
