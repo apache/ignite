@@ -151,6 +151,12 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             Assert.AreEqual(id, cache.GetSize());
         }
 
+        [Test]
+        public void TestAbandonedBuffersGetFlushedOnTopologyChange()
+        {
+            Assert.Fail("TODO");
+        }
+
         [TearDown]
         public void TearDown()
         {
