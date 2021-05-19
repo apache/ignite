@@ -167,7 +167,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         {
             ThrowIfClosed();
             
-            return FlushInternalAsync(close: false);
+            return FlushInternalAsync();
         }
 
         public void Close(bool cancel)
@@ -196,7 +196,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                     return Task.CompletedTask;
                 }
 
-                return FlushInternalAsync(close: true);
+                return FlushInternalAsync();
             }
             finally
             {
@@ -233,7 +233,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             buffer.Add(entry);
         }
 
-        private Task FlushInternalAsync(bool close)
+        private Task FlushInternalAsync()
         {
             if (_buffers.IsEmpty)
             {
@@ -332,7 +332,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                         {
                             // When flush is initiated by the user, we should retry flushing immediately.
                             // Otherwise re-adding entries to other buffers is enough. 
-                            FlushInternalAsync(close: false).ContinueWith(flushTask => flushTask.SetAsResult(tcs));
+                            FlushInternalAsync().ContinueWith(flushTask => flushTask.SetAsResult(tcs));
                         }
                     }
                     finally
