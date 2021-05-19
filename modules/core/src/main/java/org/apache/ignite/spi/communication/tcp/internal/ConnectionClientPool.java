@@ -681,9 +681,8 @@ public class ConnectionClientPool {
 
             if (curClients == null
                 || rmvClient.connectionIndex() >= curClients.length
-                || curClients[rmvClient.connectionIndex()] != rmvClient) {
+                || curClients[rmvClient.connectionIndex()] != rmvClient)
                 return false;
-            }
 
             GridCommunicationClient[] newClients = Arrays.copyOf(curClients, curClients.length);
 
