@@ -225,6 +225,7 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
      * Validates that distributed property has specified value across all nodes.
      * @param propName Distributed property name.
      * @param expected Expected property value.
+     * @param onlyServerMode Ignore client nodes.
      * @param <T> Property type.
      */
     private <T extends Serializable> void assertDistributedPropertyEquals(String propName, T expected, boolean onlyServerMode) {

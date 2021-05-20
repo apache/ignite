@@ -3755,7 +3755,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         cctx.kernalContext().internalSubscriptionProcessor().registerDistributedConfigurationListener(
             new DistributedConfigurationLifecycleListener() {
                 @Override public void onReadyToRegister(DistributedPropertyDispatcher dispatcher) {
-                    String logMsgFmt = "Historical rebalance WAL threshold [property=%s] changed[oldVal=%s, newVal=%s]";
+                    String logMsgFmt = "Historical rebalance WAL threshold changed [property=%s, oldVal=%s, newVal=%s]";
+
                     walRebalanceThreshold.addListener(makeUpdateListener(logMsgFmt, log));
 
                     dispatcher.registerProperties(walRebalanceThreshold);
