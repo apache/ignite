@@ -382,9 +382,11 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
 
                             TransactionSerializationException txEx = X.cause(e, TransactionSerializationException.class);
 
-                            if (txEx == null ||
-                                ccfg.getAtomicityMode() != TRANSACTIONAL_SNAPSHOT ||
-                                !txEx.getMessage().contains("Cannot serialize transaction due to write conflict (transaction is marked for rollback)"))
+                            boolean notContains = !txEx.getMessage().contains(
+                                "Cannot serialize transaction due to write conflict (transaction is marked for rollback)"
+                            );
+
+                            if (txEx == null || ccfg.getAtomicityMode() != TRANSACTIONAL_SNAPSHOT || notContains)
                                 fail("Assert violated because exception was thrown [e=" + e.getMessage() + ']');
                         }
                     }

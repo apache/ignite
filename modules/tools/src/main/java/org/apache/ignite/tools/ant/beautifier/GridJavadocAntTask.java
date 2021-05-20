@@ -177,7 +177,8 @@ public class GridJavadocAntTask extends MatchingTask {
                         doc.html());
                     throw new IllegalArgumentException("'Other Packages' section should not be present, " +
                         "all packages should have corresponding documentation groups: " + file + ";" +
-                        "Please add packages description to parent/pom.xml into <plugin>(maven-javadoc-plugin) / <configuration> / <groups>");
+                        "Please add packages description to parent/pom.xml into <plugin>(maven-javadoc-plugin) / " +
+                        "<configuration> / <groups>");
                 }
             }
             else if (!isViewHtml(file)) {

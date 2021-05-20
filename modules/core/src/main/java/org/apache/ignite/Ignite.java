@@ -56,8 +56,10 @@ import org.jetbrains.annotations.Nullable;
  * <li>{@link IgniteDataStreamer} - functionality for streaming large amounts of data into cache.</li>
  * <li>{@link IgniteCompute} - functionality for executing tasks and closures on all grid nodes (inherited form {@link ClusterGroup}).</li>
  * <li>{@link IgniteServices} - distributed service grid functionality (e.g. singletons on the cluster).</li>
- * <li>{@link IgniteMessaging} - functionality for topic-based message exchange on all grid nodes (inherited form {@link ClusterGroup}).</li>
- * <li>{@link IgniteEvents} - functionality for querying and listening to events on all grid nodes  (inherited form {@link ClusterGroup}).</li>
+ * <li>{@link IgniteMessaging} -
+ * functionality for topic-based message exchange on all grid nodes (inherited form {@link ClusterGroup}).</li>
+ * <li>{@link IgniteEvents} -
+ * functionality for querying and listening to events on all grid nodes  (inherited form {@link ClusterGroup}).</li>
  * <li>{@link ExecutorService} - distributed thread pools.</li>
  * <li>{@link IgniteAtomicLong} - distributed atomic long.</li>
  * <li>{@link IgniteAtomicReference} - distributed atomic reference.</li>

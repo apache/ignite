@@ -378,7 +378,11 @@ public class TcpDiscoveryIpFinderFailureTest extends GridCommonAbstractTest {
     /**
      * Gets node configuration with dynamic IP finder.
      */
-    private IgniteConfiguration getConfigurationDynamicIpFinder(String instanceName, boolean clientMode, TcpDiscoverySpi discoverySpi) throws Exception {
+    private IgniteConfiguration getConfigurationDynamicIpFinder(
+        String instanceName,
+        boolean clientMode,
+        TcpDiscoverySpi discoverySpi
+    ) throws Exception {
         IgniteConfiguration cfg = getConfiguration();
         cfg.setNodeId(null);
         cfg.setLocalHost("127.0.0.1");

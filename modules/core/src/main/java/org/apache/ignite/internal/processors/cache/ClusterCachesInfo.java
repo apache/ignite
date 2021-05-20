@@ -385,7 +385,8 @@ public class ClusterCachesInfo {
     private void checkCache(CacheJoinNodeDiscoveryData.CacheInfo locInfo, CacheData rmtData, UUID rmt)
         throws IgniteCheckedException {
         GridCacheAttributes rmtAttr = new GridCacheAttributes(rmtData.cacheConfiguration(), rmtData.cacheConfigurationEnrichment());
-        GridCacheAttributes locAttr = new GridCacheAttributes(locInfo.cacheData().config(), locInfo.cacheData().cacheConfigurationEnrichment());
+        GridCacheAttributes locAttr =
+            new GridCacheAttributes(locInfo.cacheData().config(), locInfo.cacheData().cacheConfigurationEnrichment());
 
         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "cacheMode", "Cache mode",
             locAttr.cacheMode(), rmtAttr.cacheMode(), true);
@@ -1422,7 +1423,9 @@ public class ClusterCachesInfo {
             if (!cachesToDestroy.isEmpty()) {
                 ctx.cache().dynamicDestroyCaches(cachesToDestroy, false);
 
-                throw new IllegalStateException("Node can't join to cluster in compatibility mode with newly configured caches: " + cachesToDestroy);
+                throw new IllegalStateException(
+                    "Node can't join to cluster in compatibility mode with newly configured caches: " + cachesToDestroy
+                );
             }
         }
     }

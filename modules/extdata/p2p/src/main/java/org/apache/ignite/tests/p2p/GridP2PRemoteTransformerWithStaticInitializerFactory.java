@@ -24,7 +24,8 @@ import org.apache.ignite.lang.IgniteClosure;
 /**
  * Remote transformer with static initializer factory.
  */
-public class GridP2PRemoteTransformerWithStaticInitializerFactory implements Factory<IgniteClosure<CacheEntryEvent<Integer, Integer>, String>> {
+public class GridP2PRemoteTransformerWithStaticInitializerFactory
+    implements Factory<IgniteClosure<CacheEntryEvent<Integer, Integer>, String>> {
     /** {@inheritDoc} */
     @Override public IgniteClosure<CacheEntryEvent<Integer, Integer>, String> create() {
         return new GridP2PRemoteTransformerWithStaticInitializer();

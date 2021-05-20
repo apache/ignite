@@ -720,7 +720,13 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public PageStore write(int grpId, long pageId, ByteBuffer pageBuf, int tag, boolean calculateCrc) throws IgniteCheckedException {
+        @Override public PageStore write(
+            int grpId,
+            long pageId,
+            ByteBuffer pageBuf,
+            int tag,
+            boolean calculateCrc
+        ) throws IgniteCheckedException {
             byte[] data = new byte[PAGE_SIZE];
 
             pageBuf.get(data);

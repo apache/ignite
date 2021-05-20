@@ -103,7 +103,8 @@ public class TcpDiscoveryNodeJoinAndFailureTest extends GridCommonAbstractTest {
      * If whole ring fails but two server nodes both in CONNECTING state remain alive they should not hang
      * indefinitely sending join requests to each other.
      *
-     * @see <a href="https://issues.apache.org/jira/browse/IGNITE-11621">IGNITE-11621</a> with comments provides detailed description of this corner case.
+     * @see <a href="https://issues.apache.org/jira/browse/IGNITE-11621">IGNITE-11621</a>
+     * with comments provides detailed description of this corner case.
      *
      * @throws Exception If failed.
      */
@@ -240,7 +241,10 @@ public class TcpDiscoveryNodeJoinAndFailureTest extends GridCommonAbstractTest {
 
             String errorMsg = cause1.getMessage();
 
-            assertTrue("Expected error message was not found: " + errorMsg, errorMsg.contains("Failed to connect to any address from IP finder"));
+            assertTrue(
+                "Expected error message was not found: " + errorMsg,
+                errorMsg.contains("Failed to connect to any address from IP finder")
+            );
 
             expectedExceptionThrown = true;
         }

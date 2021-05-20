@@ -127,7 +127,9 @@ public class CheckIndexInlineSizes extends AbstractCommand<Void> {
         log.info("");
 
         log.info("Recommendations:");
-        log.info(INDENT + "Check that value of property " + IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE + " are the same on all nodes.");
+        log.info(
+            INDENT + "Check that value of property " + IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE + " are the same on all nodes."
+        );
         log.info(INDENT + "Recreate indexes (execute DROP INDEX, CREATE INDEX commands) with different inline size.");
     }
 

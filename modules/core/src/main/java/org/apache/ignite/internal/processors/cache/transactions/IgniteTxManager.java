@@ -958,7 +958,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         for (IgniteInternalTx tx : activeTransactions()) {
             if (tx.transactionNodes() != null && tx.transactionNodes().containsKey(node.id()) // One of tx primaries failed.
                 && (tx.dht() // Local node is a primary (not on originating) or backup.
-                || (tx.near() && tx.local() && ((GridNearTxLocal)tx).colocatedLocallyMapped()))) { // Local node is a primary (on originating).
+                // Local node is a primary (on originating).
+                || (tx.near() && tx.local() && ((GridNearTxLocal)tx).colocatedLocallyMapped()))) {
                 assert needWaitTransaction(tx, topVer);
 
                 res.add(tx.finishFuture());
@@ -975,7 +976,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      *
      * NOTE:
      * As we send finish request to backup nodes after transaction successfully completed on primary node
-     * it's important to ensure that all updates from primary to backup are finished or at least remote transaction has created on backup node.
+     * it's important to ensure that all updates from primary to backup are finished or at least remote transaction has created
+     * on backup node.
      *
      * @param finishLocalTxsFuture Local transactions finish future.
      * @param topVer Topology version.

@@ -1663,7 +1663,8 @@ public abstract class IgniteUtils {
      *
      * @param cls Class.
      * @param dflt Default class to return.
-     * @param includePrimitiveTypes Whether class resolution should include primitive types (i.e. "int" will resolve to int.class if flag is set)
+     * @param includePrimitiveTypes Whether class resolution should include primitive types
+     *                              (i.e. "int" will resolve to int.class if flag is set)
      * @return Class or default given class if it can't be found.
      */
     @Nullable public static Class<?> classForName(
@@ -8993,7 +8994,11 @@ public abstract class IgniteUtils {
      * @return Class.
      * @throws ClassNotFoundException If class not found.
      */
-    public static Class<?> forName(String clsName, @Nullable ClassLoader ldr, IgnitePredicate<String> clsFilter) throws ClassNotFoundException {
+    public static Class<?> forName(
+        String clsName,
+        @Nullable ClassLoader ldr,
+        IgnitePredicate<String> clsFilter
+    ) throws ClassNotFoundException {
         return forName(clsName, ldr, clsFilter, GridBinaryMarshaller.USE_CACHE.get());
     }
 
@@ -9002,11 +9007,16 @@ public abstract class IgniteUtils {
      *
      * @param clsName Class name.
      * @param ldr Class loader.
-    * @param useCache If true class loader and result should be cached internally, false otherwise.
+     * @param useCache If true class loader and result should be cached internally, false otherwise.
      * @return Class.
      * @throws ClassNotFoundException If class not found.
      */
-    public static Class<?> forName(String clsName, @Nullable ClassLoader ldr, IgnitePredicate<String> clsFilter, boolean useCache) throws ClassNotFoundException {
+    public static Class<?> forName(
+        String clsName,
+        @Nullable ClassLoader ldr,
+        IgnitePredicate<String> clsFilter,
+        boolean useCache
+    ) throws ClassNotFoundException {
         assert clsName != null;
 
         Class<?> cls = primitiveMap.get(clsName);
@@ -9331,8 +9341,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * For each object provided by the given {@link Iterable} checks if it implements
-     * {@link org.apache.ignite.lifecycle.LifecycleAware} interface and executes {@link org.apache.ignite.lifecycle.LifecycleAware#stop} method.
+     * For each object provided by the given {@link Iterable} checks if it implements {@link org.apache.ignite.lifecycle.LifecycleAware}
+     * interface and executes {@link org.apache.ignite.lifecycle.LifecycleAware#stop} method.
      *
      * @param log Logger used to log error message in case of stop failure.
      * @param objs Object passed to Ignite configuration.

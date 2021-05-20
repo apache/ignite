@@ -19,7 +19,10 @@ package org.apache.ignite.ml.preprocessing.imputing;
 
 /** This enum contains settings for imputing preprocessor. */
 public enum ImputingStrategy {
-    /** The default strategy. If this strategy is chosen, then replace missing values using the mean for the numeric features along the axis. */
+    /**
+     * The default strategy. If this strategy is chosen, then replace missing values using the mean for the numeric features along the
+     * axis.
+     */
     MEAN,
 
     /** If this strategy is chosen, then replace missing using the most frequent value along the axis. */
