@@ -60,7 +60,8 @@ class MatrixStorageFixtures {
         private final Integer[] cols = new Integer[] {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 1024, 512, null};
 
         /** */
-        private final Integer[] randomAccess = new Integer[] {StorageConstants.SEQUENTIAL_ACCESS_MODE, StorageConstants.RANDOM_ACCESS_MODE, null};
+        private final Integer[] randomAccess =
+            new Integer[] {StorageConstants.SEQUENTIAL_ACCESS_MODE, StorageConstants.RANDOM_ACCESS_MODE, null};
 
         /** */
         private final Integer[] rowStorage = new Integer[] {StorageConstants.ROW_STORAGE_MODE, StorageConstants.COLUMN_STORAGE_MODE, null};

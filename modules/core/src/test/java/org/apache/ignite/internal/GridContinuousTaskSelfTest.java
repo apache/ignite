@@ -201,9 +201,9 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
     @Test
     public void testClosureWithNestedInternalTask() throws Exception {
         try {
-            IgniteEx ignite = startGrid(0);
+            IgniteEx ign = startGrid(0);
 
-            ComputeTaskInternalFuture<String> fut = ignite.context().closure().callAsync(GridClosureCallMode.BALANCE, new Callable<String>() {
+            ComputeTaskInternalFuture<String> fut = ign.context().closure().callAsync(GridClosureCallMode.BALANCE, new Callable<String>() {
                 /** */
                 @IgniteInstanceResource
                 private IgniteEx g;
@@ -211,7 +211,7 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
                 @Override public String call() throws Exception {
                     return g.compute(g.cluster()).execute(NestedHoldccTask.class, null);
                 }
-            }, ignite.cluster().nodes());
+            }, ign.cluster().nodes());
 
             assertEquals("DONE", fut.get(3000));
         }

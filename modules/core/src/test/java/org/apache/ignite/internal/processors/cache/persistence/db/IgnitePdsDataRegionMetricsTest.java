@@ -51,10 +51,10 @@ import static java.nio.file.Files.newDirectoryStream;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LOG_CACHE_NAME;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.META_STORAGE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.partId;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
+import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_DIR_NAME;
 
 /**
  *
@@ -336,7 +336,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
         boolean metaStore = METASTORAGE_CACHE_NAME.equals(cacheName);
         boolean txLog = TX_LOG_CACHE_NAME.equals(cacheName);
 
-        File cacheWorkDir = metaStore ? new File(pageStoreMgr.workDir(), META_STORAGE_NAME) :
+        File cacheWorkDir = metaStore ? new File(pageStoreMgr.workDir(), METASTORAGE_DIR_NAME) :
             txLog ? new File(pageStoreMgr.workDir(), TX_LOG_CACHE_NAME) :
             pageStoreMgr.cacheWorkDir(node.cachex(cacheName).configuration());
 

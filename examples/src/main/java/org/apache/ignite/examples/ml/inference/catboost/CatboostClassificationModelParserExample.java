@@ -53,7 +53,8 @@ public class CatboostClassificationModelParserExample {
     /**
      * Test expected results.
      */
-    private static final String TEST_ER_RES = "examples/src/main/resources/datasets/amazon-employee-access-challenge-sample-catboost-expected-results.csv";
+    private static final String TEST_ER_RES =
+        "examples/src/main/resources/datasets/amazon-employee-access-challenge-sample-catboost-expected-results.csv";
 
     /**
      * Parser.

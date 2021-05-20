@@ -63,7 +63,12 @@ public class CacheStartOnJoinTest extends GridCommonAbstractTest {
             /** */
             private boolean delay = true;
 
-            @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg, long timeout) throws IOException, IgniteCheckedException {
+            @Override protected void writeToSocket(
+                Socket sock,
+                OutputStream out,
+                TcpDiscoveryAbstractMessage msg,
+                long timeout
+            ) throws IOException, IgniteCheckedException {
                 super.writeToSocket(sock, out, msg, timeout);
             }
 
