@@ -153,6 +153,12 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         }
 
         [Test]
+        public void TestFlushFailsWhenAllServersStop()
+        {
+            Assert.Fail("TODO");
+        }
+
+        [Test]
         public void TestAbandonedBuffersGetFlushedOnCloseAndExplicitFlush()
         {
             var server = StartServer();
