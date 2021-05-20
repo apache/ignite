@@ -154,10 +154,17 @@ public class TxDeadlockCauseTest extends GridCommonAbstractTest {
      * @param timeout Timeout.
      * @param isolation TransactionIsolation.
      * @param oneOp Determines whether {@link IgniteCache#getAndPut(java.lang.Object, java.lang.Object)}
-     *              instead of {@link IgniteCache#get(java.lang.Object)} and {@link IgniteCache#put(java.lang.Object, java.lang.Object)} operations sequence.
+     *              instead of {@link IgniteCache#get(java.lang.Object)} and {@link IgniteCache#put(java.lang.Object, java.lang.Object)}
+     *              operations sequence.
      * @throws Exception If failed.
      */
-    private void checkCauseObject(int nodes, final int keysCnt, final long timeout, final TransactionIsolation isolation, final boolean oneOp) throws Exception {
+    private void checkCauseObject(
+        int nodes,
+        final int keysCnt,
+        final long timeout,
+        final TransactionIsolation isolation,
+        final boolean oneOp
+    ) throws Exception {
         final Ignite ignite = grid(new Random().nextInt(nodes));
 
         final IgniteCache<Integer, Account> cache = ignite.cache(DEFAULT_CACHE_NAME);

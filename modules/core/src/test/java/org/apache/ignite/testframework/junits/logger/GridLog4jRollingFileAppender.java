@@ -80,7 +80,7 @@ public class GridLog4jRollingFileAppender extends RollingFileAppender implements
     }
 
     /** {@inheritDoc} */
-    @Override public void setApplicationAndNode(@Nullable String application, UUID nodeId) {
+    @Override public synchronized void setApplicationAndNode(@Nullable String application, UUID nodeId) {
         A.notNull(nodeId, "nodeId");
 
         this.nodeId = nodeId;

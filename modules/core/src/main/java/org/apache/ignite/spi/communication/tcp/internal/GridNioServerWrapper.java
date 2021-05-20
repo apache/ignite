@@ -540,7 +540,8 @@ public class GridNioServerWrapper {
                         ses = null;
                     }
 
-                    eRegistrySupplier.get().onException("Handshake timed out (will retry with increased timeout) [connTimeoutStrategy=" + connTimeoutStgy +
+                    eRegistrySupplier.get().onException(
+                        "Handshake timed out (will retry with increased timeout) [connTimeoutStrategy=" + connTimeoutStgy +
                         ", addr=" + addr + ']', e);
 
                     if (log.isDebugEnabled())

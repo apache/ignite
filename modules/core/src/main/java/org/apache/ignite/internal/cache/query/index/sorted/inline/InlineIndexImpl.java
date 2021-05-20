@@ -89,7 +89,12 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCursor<IndexRow> find(IndexRow lower, IndexRow upper, int segment, IndexQueryContext qryCtx) throws IgniteCheckedException {
+    @Override public GridCursor<IndexRow> find(
+        IndexRow lower,
+        IndexRow upper,
+        int segment,
+        IndexQueryContext qryCtx
+    ) throws IgniteCheckedException {
         InlineTreeFilterClosure closure = filterClosure(qryCtx);
 
         // If it is known that only one row will be returned an optimization is employed
@@ -449,7 +454,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
                     treeName
                 );
 
-                cctx.kernalContext().durableBackgroundTasksProcessor().executeAsync(task, cctx.config());
+                cctx.kernalContext().durableBackgroundTask().executeAsync(task, cctx.config());
             }
         }
         catch (IgniteCheckedException e) {

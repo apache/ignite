@@ -78,7 +78,13 @@ public class PageReadWriteManagerImpl implements PageReadWriteManager {
     }
 
     /** {@inheritDoc} */
-    @Override public PageStore write(int grpId, long pageId, ByteBuffer pageBuf, int tag, boolean calculateCrc) throws IgniteCheckedException {
+    @Override public PageStore write(
+        int grpId,
+        long pageId,
+        ByteBuffer pageBuf,
+        int tag,
+        boolean calculateCrc
+    ) throws IgniteCheckedException {
         int partId = PageIdUtils.partId(pageId);
 
         PageStore store = pageStores.getStore(grpId, partId);

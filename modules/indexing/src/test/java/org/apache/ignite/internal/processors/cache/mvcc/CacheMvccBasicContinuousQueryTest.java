@@ -105,7 +105,8 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest {
             assertEquals(0, ((Map)U.field(proc, "stopFuts")).size());
             assertEquals(0, ((Map)U.field(proc, "bufCheckThreads")).size());
 
-            CacheContinuousQueryManager mgr = ((IgniteEx)node).context().cache().internalCache(DEFAULT_CACHE_NAME).context().continuousQueries();
+            CacheContinuousQueryManager mgr =
+                ((IgniteEx)node).context().cache().internalCache(DEFAULT_CACHE_NAME).context().continuousQueries();
 
             assertEquals(0, ((Map)U.field(mgr, "lsnrs")).size());
 
@@ -376,7 +377,8 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest {
                 boolean allRolledBack = true;
 
                 for (int i = 1; i < srvCnt; i++) {
-                    boolean rolledBack = grid(i).context().cache().context().tm().activeTransactions().stream().allMatch(tx -> tx.state() == ROLLED_BACK);
+                    boolean rolledBack =
+                        grid(i).context().cache().context().tm().activeTransactions().stream().allMatch(tx -> tx.state() == ROLLED_BACK);
 
                     allRolledBack &= rolledBack;
                 }
@@ -539,7 +541,8 @@ public class CacheMvccBasicContinuousQueryTest extends CacheMvccAbstractTest {
                 boolean allRolledBack = true;
 
                 for (int i = 1; i < srvCnt; i++) {
-                    boolean rolledBack = grid(i).context().cache().context().tm().activeTransactions().stream().allMatch(tx -> tx.state() == ROLLED_BACK);
+                    boolean rolledBack =
+                        grid(i).context().cache().context().tm().activeTransactions().stream().allMatch(tx -> tx.state() == ROLLED_BACK);
 
                     allRolledBack &= rolledBack;
                 }

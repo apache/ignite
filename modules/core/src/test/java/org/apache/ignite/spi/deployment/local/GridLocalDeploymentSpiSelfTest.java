@@ -25,16 +25,19 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.compute.ComputeTaskName;
 import org.apache.ignite.compute.ComputeTaskSplitAdapter;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.deployment.DeploymentListener;
 import org.apache.ignite.spi.deployment.DeploymentResource;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.jsr166.ConcurrentLinkedHashMap;
 import org.junit.Test;
 
 /**
@@ -96,20 +99,34 @@ public class GridLocalDeploymentSpiSelfTest extends GridSpiAbstractTest<LocalDep
 
         deploy(task);
 
+        checkResourceRegisteredInSpi(task.getClassLoader(), taskName, getSpi(), true);
+
+        Map<String, String> rcsMap = new HashMap<>(2);
+        rcsMap.put(taskName, task.getName());
+        rcsMap.put(task.getName(), task.getName());
+
         // Note we use task name instead of class name.
-        DeploymentResource t1 = getSpi().findResource(taskName);
+        DeploymentResource t1 = U.invoke(
+            getSpi().getClass(),
+            getSpi(),
+            "findResource0",
+            rcsMap,
+            taskName,
+            task.getClassLoader()
+        );
 
-        assert t1 != null;
+        assertNotNull(t1);
 
-        assert t1.getResourceClass().equals(task);
-        assert t1.getName().equals(taskName);
+        assertSame(t1.getResourceClass(), task);
+
+        assertEquals(t1.getName(), taskName);
 
         getSpi().unregister(taskName);
 
         checkUndeployed(task);
 
-        assert getSpi().findResource(taskName) == null;
-        assert getSpi().findResource(task.getName()) == null;
+        checkResourceRegisteredInSpi(task.getClassLoader(), taskName, getSpi(), false);
+        checkResourceRegisteredInSpi(task.getClassLoader(), task.getName(), getSpi(), false);
     }
 
     /**
@@ -139,7 +156,7 @@ public class GridLocalDeploymentSpiSelfTest extends GridSpiAbstractTest<LocalDep
 
         checkUndeployed(t1);
 
-        assert getSpi().findResource("GridDeploymentTestTask") == null;
+        checkResourceRegisteredInSpi(t1.getClassLoader(), "GridDeploymentTestTask", getSpi(), false);
 
         tasks.clear();
 
@@ -158,8 +175,27 @@ public class GridLocalDeploymentSpiSelfTest extends GridSpiAbstractTest<LocalDep
 
         checkUndeployed(t1);
 
-        assert getSpi().findResource(taskName) == null;
-        assert getSpi().findResource(t1.getName()) == null;
+        checkResourceRegisteredInSpi(t1.getClassLoader(), taskName, getSpi(), false);
+        checkResourceRegisteredInSpi(t1.getClassLoader(), t1.getName(), getSpi(), false);
+    }
+
+    /**
+     * Checks the resource is registered in SPI.
+     *
+     * @param tstClsLdr Class loader.
+     * @param taskName Name of resource.
+     * @param spi Deployment SPI.
+     * @param registered True id the resource registered, false otherwise.
+     */
+    private void checkResourceRegisteredInSpi(ClassLoader tstClsLdr, String taskName, LocalDeploymentSpi spi, boolean registered) {
+        ConcurrentLinkedHashMap<ClassLoader, ConcurrentMap<String, String>> ldrRsrcs = U.field(spi, "ldrRsrcs");
+
+        ConcurrentMap<String, String> rcsAliasMap = ldrRsrcs.get(tstClsLdr);
+
+        if (registered)
+            assertNotNull(rcsAliasMap.get(taskName));
+        else
+            assertTrue(rcsAliasMap == null || rcsAliasMap.get(taskName) == null);
     }
 
     /**

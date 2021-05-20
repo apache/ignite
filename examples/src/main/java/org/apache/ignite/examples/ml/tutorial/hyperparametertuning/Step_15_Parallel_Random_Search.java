@@ -136,7 +136,11 @@ public class Step_15_Parallel_Random_Search {
                     )
                     .addHyperParam("p", normalizationTrainer::withP, new Double[] {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0})
                     .addHyperParam("maxDeep", trainerCV::withMaxDeep, new Double[] {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0})
-                    .addHyperParam("minImpurityDecrease", trainerCV::withMinImpurityDecrease, new Double[] {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0});
+                    .addHyperParam(
+                        "minImpurityDecrease",
+                        trainerCV::withMinImpurityDecrease,
+                        new Double[] {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0}
+                    );
 
                 scoreCalculator
                     .withIgnite(ignite)

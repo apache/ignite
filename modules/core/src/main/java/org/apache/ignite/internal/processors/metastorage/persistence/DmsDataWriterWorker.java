@@ -20,32 +20,42 @@ package org.apache.ignite.internal.processors.metastorage.persistence;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RunnableFuture;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
+import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.TestOnly;
 
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.COMMON_KEY_PREFIX;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.cleanupGuardKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.historyItemKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.localKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.versionKey;
-import static org.apache.ignite.internal.processors.metastorage.persistence.DmsWorkerStatus.CANCEL;
-import static org.apache.ignite.internal.processors.metastorage.persistence.DmsWorkerStatus.CONTINUE;
-import static org.apache.ignite.internal.processors.metastorage.persistence.DmsWorkerStatus.HALT;
 
 /** */
-class DmsDataWriterWorker extends GridWorker {
+public class DmsDataWriterWorker extends GridWorker {
     /** */
     public static final byte[] DUMMY_VALUE = {};
 
     /** */
-    private final LinkedBlockingQueue<Object> updateQueue = new LinkedBlockingQueue<>();
+    private static final Object STOP = new Object();
+
+    /** */
+    private static final Object AWAIT = new Object();
+
+    /** */
+    private final LinkedBlockingQueue<RunnableFuture<?>> updateQueue = new LinkedBlockingQueue<>();
 
     /** */
     private final DmsLocalMetaStorageLock lock;
@@ -54,22 +64,19 @@ class DmsDataWriterWorker extends GridWorker {
     private final Consumer<Throwable> errorHnd;
 
     /** */
-    @TestOnly
-    public DmsWorkerStatus status() {
-        return status;
-    }
-
-    /** */
-    private volatile DmsWorkerStatus status = CONTINUE;
-
-    /** */
     private DistributedMetaStorageVersion workerDmsVer;
 
     /** */
     private volatile ReadWriteMetastorage metastorage;
 
     /** */
-    private volatile boolean firstStart = true;
+    private volatile CountDownLatch latch = new CountDownLatch(0);
+
+    /**
+     * This task is used to pause processing of the {@code updateQueue}. If this task completed it means that all the updates
+     * prior to it already flushed to the local metastorage.
+     */
+    private volatile Future<?> suspendFut = CompletableFuture.completedFuture(AWAIT);
 
     /** */
     public DmsDataWriterWorker(
@@ -81,6 +88,9 @@ class DmsDataWriterWorker extends GridWorker {
         super(igniteInstanceName, "dms-writer", log);
         this.lock = lock;
         this.errorHnd = errorHnd;
+
+        // Put restore task to the queue, so it will be executed on worker start.
+        updateQueue.offer(newDmsTask(this::restore));
     }
 
     /** */
@@ -88,9 +98,47 @@ class DmsDataWriterWorker extends GridWorker {
         this.metastorage = metastorage;
     }
 
+    /** Start new distributed metastorage worker thread. */
+    public void start() {
+        isCancelled = false;
+
+        new IgniteThread(igniteInstanceName(), "dms-writer-thread", this).start();
+    }
+
+    /**
+     * @return Future which will be completed when all tasks prior to the pause task are finished.
+     */
+    public Future<?> flush() {
+        return suspendFut;
+    }
+
+    /**
+     * @param compFut Future which should be completed when worker may proceed with updates.
+     */
+    public void suspend(IgniteInternalFuture<?> compFut) {
+        if (isCancelled())
+            suspendFut = CompletableFuture.completedFuture(AWAIT);
+        else {
+            latch = new CountDownLatch(1);
+
+            updateQueue.offer((RunnableFuture<?>)(suspendFut = new FutureTask<>(() -> AWAIT)));
+
+            compFut.listen(f -> latch.countDown());
+        }
+    }
+
     /** */
     public void update(DistributedMetaStorageHistoryItem histItem) {
-        updateQueue.offer(histItem);
+        updateQueue.offer(newDmsTask(() -> {
+            metastorage.write(historyItemKey(workerDmsVer.id() + 1), histItem);
+
+            workerDmsVer = workerDmsVer.nextVersion(histItem);
+
+            metastorage.write(versionKey(), workerDmsVer);
+
+            for (int i = 0, len = histItem.keys().length; i < len; i++)
+                write(histItem.keys()[i], histItem.valuesBytesArray()[i]);
+        }));
     }
 
     /** */
@@ -98,22 +146,48 @@ class DmsDataWriterWorker extends GridWorker {
         assert fullNodeData.fullData != null;
         assert fullNodeData.hist != null;
 
-        updateQueue.clear();
+        updateQueue.offer(newDmsTask(() -> {
+            metastorage.writeRaw(cleanupGuardKey(), DUMMY_VALUE);
 
-        updateQueue.offer(fullNodeData);
+            doCleanup();
+
+            for (DistributedMetaStorageKeyValuePair item : fullNodeData.fullData)
+                metastorage.writeRaw(localKey(item.key), item.valBytes);
+
+            for (int i = 0, len = fullNodeData.hist.length; i < len; i++) {
+                DistributedMetaStorageHistoryItem histItem = fullNodeData.hist[i];
+
+                long histItemVer = fullNodeData.ver.id() + i - (len - 1);
+
+                metastorage.write(historyItemKey(histItemVer), histItem);
+            }
+
+            metastorage.write(versionKey(), fullNodeData.ver);
+
+            workerDmsVer = fullNodeData.ver;
+
+            metastorage.remove(cleanupGuardKey());
+        }));
     }
 
     /** */
     public void removeHistItem(long ver) {
-        updateQueue.offer(ver);
+        updateQueue.offer(newDmsTask(() -> metastorage.remove(historyItemKey(ver))));
     }
 
     /** */
     public void cancel(boolean halt) throws InterruptedException {
-        if (halt)
+        if (halt) {
             updateQueue.clear();
 
-        updateQueue.offer(status = halt ? HALT : CANCEL);
+            if (suspendFut instanceof RunnableFuture)
+                ((Runnable)suspendFut).run();
+        }
+
+        updateQueue.offer(new FutureTask<>(() -> STOP));
+        latch.countDown();
+
+        isCancelled = true;
 
         Thread runner = runner();
 
@@ -122,93 +196,30 @@ class DmsDataWriterWorker extends GridWorker {
     }
 
     /** {@inheritDoc} */
-    @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
-        status = CONTINUE;
+    @Override protected void body() {
+        while (true) {
+            try {
+                RunnableFuture<?> curTask = updateQueue.take();
 
-        try {
-            if (firstStart) {
-                firstStart = false;
+                curTask.run();
 
-                lock.lock();
+                // Result will be null for any runnable executed tasks over metastorage and non-null for system DMS tasks.
+                Object res = U.get(curTask);
 
-                try {
-                    restore();
-                }
-                finally {
-                    lock.unlock();
-                }
+                if (res == STOP)
+                    break;
+
+                if (res == AWAIT)
+                    latch.await();
             }
+            catch (InterruptedException ignore) {
+            }
+            catch (Throwable t) {
+                errorHnd.accept(t);
 
-            while (true) {
-                Object update = updateQueue.peek();
-
-                try {
-                    update = updateQueue.take();
-                }
-                catch (InterruptedException ignore) {
-                }
-
-                lock.lock();
-
-                try {
-                    // process update
-                    if (update instanceof DistributedMetaStorageHistoryItem)
-                        applyUpdate((DistributedMetaStorageHistoryItem)update);
-                    else if (update instanceof DistributedMetaStorageClusterNodeData) {
-                        DistributedMetaStorageClusterNodeData fullNodeData = (DistributedMetaStorageClusterNodeData)update;
-
-                        metastorage.writeRaw(cleanupGuardKey(), DUMMY_VALUE);
-
-                        doCleanup();
-
-                        for (DistributedMetaStorageKeyValuePair item : fullNodeData.fullData)
-                            metastorage.writeRaw(localKey(item.key), item.valBytes);
-
-                        for (int i = 0, len = fullNodeData.hist.length; i < len; i++) {
-                            DistributedMetaStorageHistoryItem histItem = fullNodeData.hist[i];
-
-                            long histItemVer = fullNodeData.ver.id() + i - (len - 1);
-
-                            metastorage.write(historyItemKey(histItemVer), histItem);
-                        }
-
-                        metastorage.write(versionKey(), fullNodeData.ver);
-
-                        workerDmsVer = fullNodeData.ver;
-
-                        metastorage.remove(cleanupGuardKey());
-                    }
-                    else if (update instanceof Long) {
-                        long ver = (Long)update;
-
-                        metastorage.remove(historyItemKey(ver));
-                    }
-                    else {
-                        assert update instanceof DmsWorkerStatus : update;
-
-                        break;
-                    }
-                }
-                finally {
-                    lock.unlock();
-                }
+                break;
             }
         }
-        catch (Throwable t) {
-            errorHnd.accept(t);
-        }
-    }
-
-    /** */
-    private void applyUpdate(DistributedMetaStorageHistoryItem histItem) throws IgniteCheckedException {
-        metastorage.write(historyItemKey(workerDmsVer.id() + 1), histItem);
-
-        workerDmsVer = workerDmsVer.nextVersion(histItem);
-
-        metastorage.write(versionKey(), workerDmsVer);
-
-        for (int i = 0, len = histItem.keys().length; i < len; i++)
-            write(histItem.keys()[i], histItem.valuesBytesArray()[i]);
     }
 
     /** */
@@ -284,5 +295,25 @@ class DmsDataWriterWorker extends GridWorker {
             metastorage.remove(localKey(key));
         else
             metastorage.writeRaw(localKey(key), valBytes);
+    }
+
+    /**
+     * @param task Task to execute on local metastorage.
+     * @return Future will be completed when task has been finished.
+     */
+    private RunnableFuture<Void> newDmsTask(IgniteThrowableRunner task) {
+        return new FutureTask<>(() -> {
+            lock.lock();
+
+            try {
+                task.run();
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
+            finally {
+                lock.unlock();
+            }
+        }, null);
     }
 }
