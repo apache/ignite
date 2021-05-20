@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     /// * Receiver tests
     /// * keepBinary tests
     /// * skipStore tests
-    /// * allowOverwrite tests 
+    /// * allowOverwrite tests
     /// </summary>
     internal sealed class DataStreamerClient<TK, TV> : IDataStreamerClient<TK, TV>
     {
@@ -173,7 +173,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         public Task FlushAsync()
         {
             ThrowIfClosed();
-            
+
             return FlushInternalAsync();
         }
 
@@ -274,7 +274,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
             // TODO: Flush in a loop until succeeded.
             var tcs = new TaskCompletionSource<object>();
-            
+
             FlushBuffer(buffer, socket, tcs, userRequested);
 
             return tcs.Task.ContinueWith(t =>
@@ -284,12 +284,12 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 _exception = _exception ?? t.Exception;
 
                 return t.Result;
-            });
+            }, TaskContinuationOptions.ExecuteSynchronously);
         }
 
         private void FlushBuffer(DataStreamerClientBuffer<TK, TV> buffer,
             ClientSocket socket,
-            TaskCompletionSource<object> tcs, 
+            TaskCompletionSource<object> tcs,
             bool userRequested)
         {
             socket.DoOutInOpAsync(
@@ -338,7 +338,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                         if (userRequested)
                         {
                             // When flush is initiated by the user, we should retry flushing immediately.
-                            // Otherwise re-adding entries to other buffers is enough. 
+                            // Otherwise re-adding entries to other buffers is enough.
                             FlushInternalAsync().ContinueWith(flushTask => flushTask.SetAsResult(tcs));
                         }
                     }
