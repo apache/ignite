@@ -302,24 +302,21 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                     // NOTE: We are on socket receiver thread here - don't perform any heavy operations.
                     var entries = buffer.Entries;
 
-                    try
-                    {
-                        if (t.Exception == null)
-                        {
-                            tcs.SetResult(null);
-                            return;
-                        }
-
-                        if (!socket.IsDisposed)
-                        {
-                            // Socket is still connected: this error does not need to be retried.
-                            tcs.SetException(t.Exception);
-                            return;
-                        }
-                    }
-                    finally
+                    if (t.Exception == null)
                     {
                         ReturnArray(entries);
+                        tcs.SetResult(null);
+
+                        return;
+                    }
+
+                    if (!socket.IsDisposed)
+                    {
+                        // Socket is still connected: this error does not need to be retried.
+                        ReturnArray(entries);
+                        tcs.SetException(t.Exception);
+
+                        return;
                     }
 
                     // Release receiver thread, perform retry on a separate thread.
