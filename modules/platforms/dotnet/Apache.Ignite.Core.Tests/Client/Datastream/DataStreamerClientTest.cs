@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Client.Datastream
 {
     using System;
+    using System.Diagnostics;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
@@ -347,7 +348,18 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         [Test]
         public void TestFlushAsyncContinuationDoesNotRunOnSocketReceiverThread()
         {
-            Assert.Fail("TODO: Check stack trace");
+            var cache = GetClientCache<int>();
+
+            using (var streamer = Client.GetDataStreamer<int, int>(cache.Name))
+            {
+                streamer.Add(1, 1);
+                streamer.FlushAsync().ContinueWith(t =>
+                {
+                    var trace = new StackTrace().ToString();
+
+                    StringAssert.DoesNotContain("ClientSocket", trace);
+                }, TaskContinuationOptions.ExecuteSynchronously).Wait();
+            }
         }
 
 #if NETCOREAPP
