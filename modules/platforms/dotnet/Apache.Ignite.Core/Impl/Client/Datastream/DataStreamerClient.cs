@@ -299,7 +299,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                     syncCallback: true)
                 .ContinueWith(t =>
                 {
-                    // TODO: We are on socket thread here! Looks like this affects perf.
+                    // NOTE: We are on socket receiver thread here - don't perform any heavy operations.
                     var entries = buffer.Entries;
 
                     try
@@ -316,21 +316,38 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                             tcs.SetException(t.Exception);
                             return;
                         }
+                    }
+                    finally
+                    {
+                        ReturnArray(entries);
+                    }
 
-                        // Connection failed. Remove disconnected socket from the map.
-                        _buffers.TryRemove(socket, out _);
-
-                        // Re-add entries to other buffers.
-                        var count = buffer.Count;
-
-                        for (var i = 0; i < count; i++)
+                    // Release receiver thread, perform retry on a separate thread.
+                    // TODO: Retry count limit.
+                    ThreadPool.QueueUserWorkItem(_ =>
+                    {
+                        try
                         {
-                            var entry = entries[i];
+                            // Connection failed. Remove disconnected socket from the map.
+                            DataStreamerClientPerNodeBuffer<TK,TV> unused;
+                            _buffers.TryRemove(socket, out unused);
 
-                            if (!entry.IsEmpty)
+                            // Re-add entries to other buffers.
+                            var count = buffer.Count;
+
+                            for (var i = 0; i < count; i++)
                             {
-                                AddNoLock(entry);
+                                var entry = entries[i];
+
+                                if (!entry.IsEmpty)
+                                {
+                                    AddNoLock(entry);
+                                }
                             }
+                        }
+                        finally
+                        {
+                            ReturnArray(entries);
                         }
 
                         // TODO: Flush only when requested by the user!
@@ -341,41 +358,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                             // Otherwise re-adding entries to other buffers is enough.
                             FlushInternalAsync().ContinueWith(flushTask => flushTask.SetAsResult(tcs));
                         }
-                    }
-                    finally
-                    {
-                        ReturnArray(entries);
-                    }
+                    });
                 }, TaskContinuationOptions.ExecuteSynchronously);
         }
-
-        // private void FlushBuffer(
-        //     DataStreamerClientBuffer<TK, TV> buffer,
-        //     long? streamerId,
-        //     ClientSocket socket,
-        //     TaskCompletionSource<long> tcs,
-        //     bool flush,
-        //     bool close)
-        // {
-        //     socket.DoOutInOpAsync(
-        //             streamerId == null ? ClientOp.DataStreamerStart : ClientOp.DataStreamerAddData,
-        //             ctx => WriteBuffer(buffer, streamerId, ctx.Writer, flush, close),
-        //             ctx => streamerId == null ? ctx.Stream.ReadLong() : 0,
-        //             syncCallback: true)
-        //         .ContinueWith(t =>
-        //         {
-        //             // TODO: Retry when socket disconnected.
-        //             // TODO: What if server fails with some buffered data there??? This is a huge problem for perf!
-        //             if (t.Exception != null)
-        //             {
-        //                 tcs.TrySetException(t.Exception);
-        //             }
-        //             else
-        //             {
-        //                 tcs.TrySetResult(t.Result);
-        //             }
-        //         }, TaskContinuationOptions.ExecuteSynchronously);
-        // }
 
         internal DataStreamerClientEntry<TK, TV>[] GetArray()
         {
