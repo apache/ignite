@@ -80,15 +80,6 @@ public final class JavaLoggerFileHandler extends StreamHandler {
      * @param nodeId Node id.
      */
     public void nodeId(UUID nodeId, String workDir) throws IgniteCheckedException, IOException {
-        postfix(U.id8(nodeId), workDir);
-    }
-
-    /**
-     * Sets Postfix and instantiates {@link FileHandler} delegate.
-     *
-     * @param postfix Postfix.
-     */
-    public void postfix(String postfix, String workDir) throws IgniteCheckedException, IOException {
         if (delegate != null)
             return;
 
@@ -99,7 +90,7 @@ public final class JavaLoggerFileHandler extends StreamHandler {
         if (ptrn == null)
             ptrn = "ignite-%{id8}.%g.log";
 
-        ptrn = new File(logDirectory(workDir), ptrn.replace("%{id8}", postfix)).getAbsolutePath();
+        ptrn = new File(logDirectory(workDir), ptrn.replace("%{id8}", U.id8(nodeId))).getAbsolutePath();
 
         int limit = getIntProperty(clsName + ".limit", 0);
 
