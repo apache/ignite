@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Client.Datastream
 {
+    using System;
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
@@ -169,8 +170,8 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
             streamer.Add(2, 2);
 
-            var ex = Assert.Throws<IgniteClientException>(() => streamer.Flush());
-            Assert.AreEqual("todo", ex.Message);
+            var ex = Assert.Throws<AggregateException>(() => streamer.Flush()).GetBaseException();
+            StringAssert.StartsWith("Failed to establish Ignite thin client connection", ex.Message);
         }
 
         [Test]

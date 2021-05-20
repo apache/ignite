@@ -326,7 +326,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                         try
                         {
                             // Connection failed. Remove disconnected socket from the map.
-                            DataStreamerClientPerNodeBuffer<TK,TV> unused;
+                            DataStreamerClientPerNodeBuffer<TK, TV> unused;
                             _buffers.TryRemove(socket, out unused);
 
                             // Re-add entries to other buffers.
@@ -341,19 +341,23 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                                     AddNoLock(entry);
                                 }
                             }
+
+                            // TODO: Flush only when requested by the user!
+                            // TODO: What if we are in Close mode?
+                            if (userRequested)
+                            {
+                                // When flush is initiated by the user, we should retry flushing immediately.
+                                // Otherwise re-adding entries to other buffers is enough.
+                                FlushInternalAsync().ContinueWith(flushTask => flushTask.SetAsResult(tcs));
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            tcs.SetException(e);
                         }
                         finally
                         {
                             ReturnArray(entries);
-                        }
-
-                        // TODO: Flush only when requested by the user!
-                        // TODO: What if we are in Close mode?
-                        if (userRequested)
-                        {
-                            // When flush is initiated by the user, we should retry flushing immediately.
-                            // Otherwise re-adding entries to other buffers is enough.
-                            FlushInternalAsync().ContinueWith(flushTask => flushTask.SetAsResult(tcs));
                         }
                     });
                 }, TaskContinuationOptions.ExecuteSynchronously);
