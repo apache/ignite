@@ -787,7 +787,21 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return {@code True} if the snapshot restore operation is in progress.
      */
     public boolean isRestoring() {
-        return restoreCacheGrpProc.isRestoring();
+        return restoreCacheGrpProc.snapshotName() != null;
+    }
+
+    public IgniteFuture<Boolean> restoreStatus(String snpName) {
+        return restoreCacheGrpProc.restoreStatus(snpName);
+    }
+
+    /**
+     * Check if snapshot restore process is currently running.
+     *
+     * @param snpName Snapshot name.
+     * @return {@code True} if the snapshot restore operation from specified snapshot is in progress.
+     */
+    public boolean isRestoringLocal(String snpName) {
+        return snpName.equals(restoreCacheGrpProc.snapshotName());
     }
 
     /**
@@ -885,6 +899,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             else
                 throw new IgniteException(e);
         }
+    }
+
+    public IgniteFuture<Boolean> cancelRestore(String name) {
+        return restoreCacheGrpProc.cancel(name);
+    }
+
+    public boolean cancelRestoreLocal(String name) throws IgniteCheckedException {
+        restoreCacheGrpProc.interrupt(new IgniteException("Operation has been interrupted by the user.")).get();
+
+        // todo
+        return true;
     }
 
     /**
@@ -1994,6 +2019,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         /** Snapshot finish time. */
         volatile long endTime;
+
+        /** Interrupted exception. */
+        volatile Exception interruptEx;
 
         /**
          * Default constructor.

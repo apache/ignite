@@ -1,7 +1,9 @@
 package org.apache.ignite.internal.commandline.snapshot;
 
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
@@ -11,6 +13,8 @@ import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.commandline.argument.CommandArg;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
+import org.apache.ignite.internal.visor.snapshot.VisorSnapshotRestoreCancelTask;
+import org.apache.ignite.internal.visor.snapshot.VisorSnapshotRestoreStatusTask;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotRestoreTask;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotRestoreTaskArg;
 
@@ -29,6 +33,9 @@ public class SnapshotRestoreSubCommand extends AbstractCommand<VisorSnapshotRest
     /** Task argument. */
     private VisorSnapshotRestoreTaskArg taskArg;
 
+    /** Command action. */
+    private SnapshotRestoreAction cmdAction;
+
     /**
      * @param cmdName Command name.
      */
@@ -41,7 +48,7 @@ public class SnapshotRestoreSubCommand extends AbstractCommand<VisorSnapshotRest
         try (GridClient client = Command.startClient(clientCfg)) {
             Object res = executeTaskByNameOnNode(
                 client,
-                VisorSnapshotRestoreTask.class.getName(),
+                cmdAction.taskCls.getName(),
                 arg(),
                 null,
                 clientCfg
@@ -52,8 +59,8 @@ public class SnapshotRestoreSubCommand extends AbstractCommand<VisorSnapshotRest
             return null;
         }
         catch (Throwable e) {
-            log.severe("Failed to restore snapshot [snapshot=" + taskArg.snapshotName() +
-                    (taskArg.groupName() == null ? "" : ", grp=" + taskArg.groupName()) + ']');
+            log.severe("Failed to execute snapshot restore command [snapshot=" + taskArg.snapshotName() +
+                    (taskArg.groupNames() == null ? "" : ", grp=" + taskArg.groupNames()) + ']');
 
             log.severe(CommandLogger.errorMessage(e));
 
@@ -68,33 +75,32 @@ public class SnapshotRestoreSubCommand extends AbstractCommand<VisorSnapshotRest
 
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
-        String snpName = null;
-        String grpName = null;
+        String snpName = argIter.nextArg("Snapshot name expected");
+        String arg = argIter.nextArg("Restore action expected.");
+        Set<String> grpNames = null;
 
-        while (argIter.hasNextSubArg()) {
-            String arg = argIter.nextArg("Failed to read command argument.");
+        cmdAction = CommandArgUtils.of(arg, SnapshotRestoreAction.class);
 
-            SnapshotRestoreCommandArg cmdArg = CommandArgUtils.of(arg, SnapshotRestoreCommandArg.class);
-
-            if (cmdArg == SnapshotRestoreCommandArg.GROUP_NAME)
-                grpName = argIter.nextArg("Expected cache group name.");
-            else {
-                if (snpName != null)
-                    throw new IllegalArgumentException("Multiple snapshot names are not supported.");
-
-                snpName = arg;
-            }
+        if (cmdAction == null) {
+            throw new IllegalArgumentException("Invalid argument \"" + arg + "\" one of " +
+                Arrays.toString(SnapshotRestoreAction.values()) + " is expected.");
         }
 
-        if (snpName == null)
-            throw new IllegalArgumentException("Expected snapshot name.");
+        if (argIter.hasNextSubArg()) {
+            arg = argIter.nextArg("");
 
-        taskArg = new VisorSnapshotRestoreTaskArg(snpName, grpName);
+            if (cmdAction != SnapshotRestoreAction.START)
+                throw new IllegalArgumentException("Invalid argument \"" + arg + "\", no more arguments expected.");
+
+            grpNames = argIter.parseStringSet(arg);
+        }
+
+        taskArg = new VisorSnapshotRestoreTaskArg(snpName, grpNames);
     }
 
     /** {@inheritDoc} */
     @Override public String confirmationPrompt() {
-        return taskArg.groupName() != null ? null :
+        return taskArg.groupNames() != null ? null :
             "Warning: command will restore ALL PUBLIC CACHE GROUPS from the snapshot " + taskArg.snapshotName() + '.';
     }
 
@@ -106,7 +112,7 @@ public class SnapshotRestoreSubCommand extends AbstractCommand<VisorSnapshotRest
         restoreParams.put("group_name", "Cache group name.");
 
         Command.usage(log, "Restore snapshot:", SNAPSHOT, restoreParams, RESTORE.toString(),
-            optional(SnapshotRestoreCommandArg.GROUP_NAME, "group_name"));
+            optional(SnapshotRestoreAction.START, "group_name"));
     }
 
     /** {@inheritDoc} */
@@ -114,17 +120,26 @@ public class SnapshotRestoreSubCommand extends AbstractCommand<VisorSnapshotRest
         return cmdName;
     }
 
-    /** */
-    private enum SnapshotRestoreCommandArg implements CommandArg {
-        /** Id of the node to get metric values from. */
-        GROUP_NAME("--group");
+    private enum SnapshotRestoreAction implements CommandArg {
+        START("--start", VisorSnapshotRestoreTask.class),
+
+        STOP("--stop", VisorSnapshotRestoreCancelTask.class),
+
+        STATUS("--status", VisorSnapshotRestoreStatusTask.class);
 
         /** Name of the argument. */
         private final String name;
 
-        /** @param name Name of the argument. */
-        SnapshotRestoreCommandArg(String name) {
+        /** Visro task class. */
+        private final Class<?> taskCls;
+
+        /**
+         * @param taskCls
+         * @param name Name of the argument.
+         */
+        SnapshotRestoreAction(String name, Class<?> taskCls) {
             this.name = name;
+            this.taskCls = taskCls;
         }
 
         /** {@inheritDoc} */

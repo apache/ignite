@@ -43,6 +43,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -55,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.ClusterSnapshotFuture;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
+import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -63,10 +65,13 @@ import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
 import static org.apache.ignite.internal.IgniteFeatures.SNAPSHOT_RESTORE_CACHE_GROUP;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
@@ -75,6 +80,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_ROLLBACK;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_START;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_SNAPSHOT;
 
 /**
  * Distributed process to restore cache group from the snapshot.
@@ -172,7 +178,7 @@ public class SnapshotRestoreProcess {
                 throw new IgniteException(OP_REJECT_MSG + "A cluster snapshot operation is in progress.");
 
             synchronized (this) {
-                if (isRestoring() || fut != null)
+                if (snapshotName() != null)
                     throw new IgniteException(OP_REJECT_MSG + "The previous snapshot restore operation was not completed.");
 
                 fut = new ClusterSnapshotFuture(UUID.randomUUID(), snpName);
@@ -193,6 +199,12 @@ public class SnapshotRestoreProcess {
 
             if (!F.isEmpty(f.result().exceptions())) {
                 finishProcess(fut0.rqId, F.first(f.result().exceptions().values()));
+
+                return;
+            }
+
+            if (fut0.interruptEx != null) {
+                finishProcess(fut0.rqId, fut0.interruptEx);
 
                 return;
             }
@@ -269,10 +281,17 @@ public class SnapshotRestoreProcess {
     /**
      * Check if snapshot restore process is currently running.
      *
-     * @return {@code True} if the snapshot restore operation is in progress.
+     * @return Name of the snapshot currently being restored or {@code null} if the restore process is not running.
      */
-    public boolean isRestoring() {
-        return isRestoring(null, null);
+    public String snapshotName() {
+        SnapshotRestoreContext opCtx0 = opCtx;
+
+        if (opCtx0 != null)
+            return opCtx0.snpName;
+
+        ClusterSnapshotFuture fut0 = fut;
+
+        return fut0 != null ? fut0.name : null;
     }
 
     /**
@@ -282,14 +301,13 @@ public class SnapshotRestoreProcess {
      * @param grpName Cache group name.
      * @return {@code True} if the cache or group with the specified name is currently being restored.
      */
-    public boolean isRestoring(@Nullable String cacheName, @Nullable String grpName) {
+    public boolean isRestoring(String cacheName, @Nullable String grpName) {
+        assert cacheName != null;
+
         SnapshotRestoreContext opCtx0 = opCtx;
 
         if (opCtx0 == null)
             return false;
-
-        if (cacheName == null)
-            return true;
 
         Map<Integer, StoredCacheData> cacheCfgs = opCtx0.cfgs;
 
@@ -313,6 +331,21 @@ public class SnapshotRestoreProcess {
         }
 
         return false;
+    }
+
+    public IgniteFuture<Boolean> restoreStatus(String name) {
+        ctx.security().authorize(ADMIN_SNAPSHOT);
+
+        // todo use normal reducer (not T7)
+        IgniteInternalFuture<Boolean> fut0 = ctx.closure()
+            .callAsyncNoFailover(BROADCAST,
+                new RestoreStatusCallable(name),
+                ctx.discovery().aliveServerNodes(),
+                false,
+                0,
+                true);
+
+        return new IgniteFutureImpl<>(fut0);
     }
 
     /**
@@ -385,11 +418,18 @@ public class SnapshotRestoreProcess {
      *
      * @param reason Interruption reason.
      */
-    public void interrupt(Exception reason) {
+    public IgniteInternalFuture<Void> interrupt(Exception reason) {
         SnapshotRestoreContext opCtx0 = opCtx;
+        ClusterSnapshotFuture fut0 = fut;
 
-        if (opCtx0 == null)
-            return;
+        if (opCtx0 == null) {
+            if (fut0 == null)
+                return new GridFinishedFuture<>();
+
+            fut0.interruptEx = reason;
+
+            return fut0.chain(f -> null);
+        }
 
         opCtx0.err.compareAndSet(null, reason);
 
@@ -401,6 +441,29 @@ public class SnapshotRestoreProcess {
 
         if (stopFut != null)
             stopFut.get();
+
+        return fut0 != null ? fut0.chain(f -> null) : new GridFinishedFuture<>();
+    }
+
+    /**
+     * Cancel restore operation cluster-wide.
+     *
+     * @param name Snapshot name.
+     * @return Future that will be finished when process the process is complete on all nodes.
+     */
+    public IgniteFuture<Boolean> cancel(String name) {
+        ctx.security().authorize(ADMIN_SNAPSHOT);
+
+        // todo use normal reducer (not T7)
+        IgniteInternalFuture<Boolean> fut0 = ctx.closure()
+            .callAsyncNoFailover(BROADCAST,
+                new CancelRestoreCallable(name),
+                ctx.discovery().aliveServerNodes(),
+                false,
+                0,
+                true);
+
+        return new IgniteFutureImpl<>(fut0);
     }
 
     /**
@@ -443,9 +506,14 @@ public class SnapshotRestoreProcess {
                 }
             }
 
-            opCtx = prepareContext(req);
+            SnapshotRestoreContext opCtx0 = prepareContext(req);
 
-            SnapshotRestoreContext opCtx0 = opCtx;
+            ClusterSnapshotFuture fut0 = fut;
+
+            if (fut0 != null && fut0.interruptEx != null)
+                throw new IgniteCheckedException(fut0.interruptEx);
+
+            opCtx = opCtx0;
 
             if (opCtx0.dirs.isEmpty())
                 return new GridFinishedFuture<>();
@@ -924,6 +992,58 @@ public class SnapshotRestoreProcess {
 
             this.dirs = dirs;
             this.cfgs = cfgs;
+        }
+    }
+
+    /** Cancel snapshot restore operation closure. */
+    @GridInternal
+    private static class CancelRestoreCallable implements IgniteCallable<Boolean> {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
+        /** Snapshot name. */
+        private final String snpName;
+
+        /** Auto-injected grid instance. */
+        @IgniteInstanceResource
+        private transient IgniteEx ignite;
+
+        /**
+         * @param name Snapshot name.
+         */
+        private CancelRestoreCallable(String name) {
+            snpName = name;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Boolean call() throws Exception {
+            return ignite.context().cache().context().snapshotMgr().cancelRestoreLocal(snpName);
+        }
+    }
+
+    /** Restore snapshot operation status closure. */
+    @GridInternal
+    private static class RestoreStatusCallable implements IgniteCallable<Boolean> {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
+
+        /** Snapshot name. */
+        private final String snpName;
+
+        /** Auto-injected grid instance. */
+        @IgniteInstanceResource
+        private transient IgniteEx ignite;
+
+        /**
+         * @param name Snapshot name.
+         */
+        private RestoreStatusCallable(String name) {
+            snpName = name;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Boolean call() throws Exception {
+            return ignite.context().cache().context().snapshotMgr().isRestoringLocal(snpName);
         }
     }
 }

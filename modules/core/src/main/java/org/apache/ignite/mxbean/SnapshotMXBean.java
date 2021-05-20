@@ -52,10 +52,10 @@ public interface SnapshotMXBean {
      * they must be destroyed by the user (eg with {@link IgniteCache#destroy()}) before starting this operation.
      *
      * @param snpName Snapshot name.
-     * @param grpName Cache groups to be restored or {@code null} to restore all cache groups from the snapshot.
+     * @param grpNames Comma separated cache group names.
      */
     public void restoreSnapshot(
         @MXBeanParameter(name = "snpName", description = "Snapshot name.") String snpName,
-        @MXBeanParameter(name = "grpName", description = "Cache group name.") @Nullable String grpName
+        @MXBeanParameter(name = "grpNames", description = "Comma separated cache group names.") @Nullable String grpNames
     );
 }

@@ -3111,11 +3111,12 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     @Test
-    public void testRestoreSnapshot() throws Exception {
+    public void testSnapshotRestore() throws Exception {
         int keysCnt = 100;
         String snpName = "snapshot_02052020";
         String cacheName1 = "cache1";
         String cacheName2 = "cache2";
+        String cacheName3 = "cache3";
 
         IgniteEx ig = startGrids(2);
 
@@ -3125,25 +3126,30 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         createCacheAndPreload(ig, cacheName1, keysCnt, 32, null);
         createCacheAndPreload(ig, cacheName2, keysCnt, 32, null);
+        createCacheAndPreload(ig, cacheName3, keysCnt, 32, null);
 
         ig.snapshot().createSnapshot(snpName).get(getTestTimeout());
 
-        IgniteCache cache1 = ig.cache(cacheName1);
-        IgniteCache cache2 = ig.cache(cacheName2);
+        IgniteCache<Integer, Integer> cache1 = ig.cache(cacheName1);
+        IgniteCache<Integer, Integer> cache2 = ig.cache(cacheName2);
+        IgniteCache<Integer, Integer> cache3 = ig.cache(cacheName3);
 
         cache1.destroy();
         cache2.destroy();
+        cache3.destroy();
 
         awaitPartitionMapExchange();
 
         assertNull(ig.cache(cacheName1));
         assertNull(ig.cache(cacheName2));
+        assertNull(ig.cache(cacheName3));
 
         CommandHandler h = new CommandHandler();
 
-        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--group", cacheName1));
+        // Restore single cache group.
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--start", cacheName1));
         assertContains(log, testOut.toString(),
-            "Snapshot cache group restore operation started [snapshot=" + snpName + ", group=" + cacheName1 + ']');
+            "Snapshot cache group restore operation started [snapshot=" + snpName + ", group(s)=" + cacheName1 + ']');
 
         waitForCondition(() -> ig.cache(cacheName1) != null, getTestTimeout());
 
@@ -3152,29 +3158,116 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertNotNull(cache1);
 
         for (int i = 0; i < keysCnt; i++)
-            assertEquals(cacheName1, i, cache1.get(i));
+            assertEquals(cacheName1, Integer.valueOf(i), cache1.get(i));
 
         cache1.destroy();
 
         awaitPartitionMapExchange();
 
-        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName));
+        assertNull(ig.cache(cacheName1));
+        assertNull(ig.cache(cacheName2));
+        assertNull(ig.cache(cacheName3));
+
+        // Restore two (of three) groups of caches.
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--start", cacheName1 + ',' + cacheName2));
         assertContains(log, testOut.toString(),
-            "Snapshot cache group restore operation started [snapshot=" + snpName + ']');
+            "Snapshot cache group restore operation started [snapshot=" + snpName + ", group(s)=");
 
         waitForCondition(() -> ig.cache(cacheName1) != null, getTestTimeout());
         waitForCondition(() -> ig.cache(cacheName2) != null, getTestTimeout());
 
         cache1 = ig.cache(cacheName1);
-        cache2 = ig.cache(cacheName1);
+        cache2 = ig.cache(cacheName2);
 
         assertNotNull(cache1);
         assertNotNull(cache2);
 
         for (int i = 0; i < keysCnt; i++) {
-            assertEquals(cacheName1, i, cache1.get(i));
-            assertEquals(cacheName2, i, cache2.get(i));
+            assertEquals(cacheName1, Integer.valueOf(i), cache1.get(i));
+            assertEquals(cacheName2, Integer.valueOf(i), cache2.get(i));
         }
+
+        cache1.destroy();
+        cache2.destroy();
+
+        awaitPartitionMapExchange();
+
+        assertNull(ig.cache(cacheName1));
+        assertNull(ig.cache(cacheName2));
+        assertNull(ig.cache(cacheName3));
+
+        // Restore all public cache groups.
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore",  snpName, "--start"));
+        assertContains(log, testOut.toString(),
+            "Snapshot cache group restore operation started [snapshot=" + snpName + ']');
+
+        waitForCondition(() -> ig.cache(cacheName1) != null, getTestTimeout());
+        waitForCondition(() -> ig.cache(cacheName2) != null, getTestTimeout());
+        waitForCondition(() -> ig.cache(cacheName3) != null, getTestTimeout());
+
+        cache1 = ig.cache(cacheName1);
+        cache2 = ig.cache(cacheName2);
+        cache3 = ig.cache(cacheName3);
+
+        assertNotNull(cache1);
+        assertNotNull(cache2);
+        assertNotNull(cache3);
+
+        for (int i = 0; i < keysCnt; i++) {
+            assertEquals(cacheName1, Integer.valueOf(i), cache1.get(i));
+            assertEquals(cacheName2, Integer.valueOf(i), cache2.get(i));
+            assertEquals(cacheName3, Integer.valueOf(i), cache2.get(i));
+        }
+    }
+
+    @Test
+    public void testSnapshotRestoreCancel() throws Exception {
+        int keysCnt = 10_000;
+        String snpName = "snapshot_02052020";
+
+        IgniteEx ig = startGrids(2);
+
+        ig.cluster().state(ACTIVE);
+
+        injectTestSystemOut();
+
+        createCacheAndPreload(ig, keysCnt);
+
+        ig.snapshot().createSnapshot(snpName).get(getTestTimeout());
+
+        IgniteCache<Integer, Integer> cache1 = ig.cache(DEFAULT_CACHE_NAME);
+
+        cache1.destroy();
+
+        CommandHandler h = new CommandHandler();
+
+        // Restore single cache group.
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--start", DEFAULT_CACHE_NAME));
+        assertContains(log, testOut.toString(),
+            "Snapshot cache group restore operation started [snapshot=" + snpName + ", group(s)=" + DEFAULT_CACHE_NAME + ']');
+
+        assertTrue(grid(0).context().cache().context().snapshotMgr().isRestoringLocal(snpName));
+
+        // todo flaky fails - bad reducer?
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--status"));
+        assertContains(log, testOut.toString(),
+            "Snapshot cache group restore operation is running [snapshot=" + snpName + ']');
+
+        // Check wrong snapshot name.
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", "snapX", "--status"));
+        assertContains(log, testOut.toString(),
+            "Snapshot cache group restore operation is stopped [snapshot=snapX]");
+
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--stop"));
+        assertContains(log, testOut.toString(),
+            "Snapshot cache group restore operation canceled [snapshot=" + snpName + ']');
+
+        assertFalse(grid(0).context().cache().context().snapshotMgr().isRestoring());
+        assertFalse(grid(1).context().cache().context().snapshotMgr().isRestoring());
+
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--status"));
+        assertContains(log, testOut.toString(),
+            "Snapshot cache group restore operation is stopped [snapshot=" + snpName + ']');
     }
 
     /**

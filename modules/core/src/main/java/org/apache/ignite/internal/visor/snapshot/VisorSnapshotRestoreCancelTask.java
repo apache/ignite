@@ -17,30 +17,26 @@
 
 package org.apache.ignite.internal.visor.snapshot;
 
-import java.util.Collection;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSnapshot;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMXBeanImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 
 /**
- * @see IgniteSnapshot#restoreSnapshot(String, Collection)
+ * Visro task to cancel restore cache group process.
  */
 @GridInternal
-public class VisorSnapshotRestoreTask extends VisorOneNodeTask<VisorSnapshotRestoreTaskArg, String> {
+public class VisorSnapshotRestoreCancelTask extends VisorOneNodeTask<VisorSnapshotRestoreTaskArg, String> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
     @Override protected VisorJob<VisorSnapshotRestoreTaskArg, String> job(VisorSnapshotRestoreTaskArg arg) {
-        return new VisorSnapshotRestoreJob(arg, debug);
+        return new VisorSnapshotRestoreCancelJob(arg, debug);
     }
 
     /** */
-    private static class VisorSnapshotRestoreJob extends VisorJob<VisorSnapshotRestoreTaskArg, String> {
+    private static class VisorSnapshotRestoreCancelJob extends VisorJob<VisorSnapshotRestoreTaskArg, String> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -48,18 +44,15 @@ public class VisorSnapshotRestoreTask extends VisorOneNodeTask<VisorSnapshotRest
          * @param arg Restore task argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorSnapshotRestoreJob(VisorSnapshotRestoreTaskArg arg, boolean debug) {
+        protected VisorSnapshotRestoreCancelJob(VisorSnapshotRestoreTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
         @Override protected String run(VisorSnapshotRestoreTaskArg arg) throws IgniteException {
-            String grps = F.isEmpty(arg.groupNames()) ? null : String.join(",", arg.groupNames());
+            ignite.context().cache().context().snapshotMgr().cancelRestore(arg.snapshotName()).get();
 
-            new SnapshotMXBeanImpl(ignite.context()).restoreSnapshot(arg.snapshotName(), grps);
-
-            return "Snapshot cache group restore operation started [snapshot=" + arg.snapshotName() +
-                (grps == null ? "" : ", group(s)=" + grps) + ']';
+            return "Snapshot cache group restore operation canceled [snapshot=" + arg.snapshotName() + ']';
         }
     }
 }

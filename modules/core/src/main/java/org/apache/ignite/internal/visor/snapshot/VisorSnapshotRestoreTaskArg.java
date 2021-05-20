@@ -3,6 +3,8 @@ package org.apache.ignite.internal.visor.snapshot;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Collection;
+import java.util.Set;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -22,7 +24,7 @@ public class VisorSnapshotRestoreTaskArg extends IgniteDataTransferObject {
     /**
      * Cache group name.
      */
-    private String grpName;
+    private Collection<String> grpNames;
 
     /**
      * Default constructor.
@@ -33,11 +35,11 @@ public class VisorSnapshotRestoreTaskArg extends IgniteDataTransferObject {
 
     /**
      * @param snpName Snapshot name.
-     * @param grpName Cache group name.
+     * @param grpNames Cache group names separated by commas.
      */
-    public VisorSnapshotRestoreTaskArg(String snpName, @Nullable String grpName) {
+    public VisorSnapshotRestoreTaskArg(String snpName, @Nullable Collection<String> grpNames) {
         this.snpName = snpName;
-        this.grpName = grpName;
+        this.grpNames = grpNames;
     }
 
     /**
@@ -50,8 +52,8 @@ public class VisorSnapshotRestoreTaskArg extends IgniteDataTransferObject {
     /**
      * @return Cache group name.
      */
-    public String groupName() {
-        return grpName;
+    public Collection<String> groupNames() {
+        return grpNames;
     }
 
     /**
@@ -59,7 +61,7 @@ public class VisorSnapshotRestoreTaskArg extends IgniteDataTransferObject {
      */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, snpName);
-        U.writeString(out, grpName);
+        U.writeCollection(out, grpNames);
     }
 
     /**
@@ -67,7 +69,7 @@ public class VisorSnapshotRestoreTaskArg extends IgniteDataTransferObject {
      */
     @Override protected void readExternalData(byte ver, ObjectInput in) throws IOException, ClassNotFoundException {
         snpName = U.readString(in);
-        grpName = U.readString(in);
+        grpNames = U.readCollection(in);
     }
 
     /**
