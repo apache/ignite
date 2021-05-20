@@ -24,11 +24,14 @@ import java.util.LinkedHashMap;
  * Collection of utility methods used throughout the system.
  */
 public class IgniteUtils {
+    /** Byte bit-mask. */
+    private static final int MASK = 0xf;
+
     /** Version of the JDK. */
     private static String jdkVer;
 
-    /**
-     * Initializes enterprise check.
+    /*
+      Initializes enterprise check.
      */
     static {
         IgniteUtils.jdkVer = System.getProperty("java.specification.version");
@@ -166,5 +169,45 @@ public class IgniteUtils {
         int val = (int)(key ^ (key >>> 32));
 
         return hash(val);
+    }
+
+    /**
+     * Converts byte array to hex string.
+     *
+     * @param arr Array of bytes.
+     * @return Hex string.
+     */
+    public static String toHexString(byte[] arr) {
+        return toHexString(arr, Integer.MAX_VALUE);
+    }
+
+    /**
+     * Converts byte array to hex string.
+     *
+     * @param arr Array of bytes.
+     * @param maxLen Maximum length of result string. Rounds down to a power of two.
+     * @return Hex string.
+     */
+    public static String toHexString(byte[] arr, int maxLen) {
+        assert maxLen >= 0 : "maxLem must be not negative.";
+
+        int capacity = Math.min(arr.length << 1, maxLen);
+
+        int lim = capacity >> 1;
+
+        StringBuilder sb = new StringBuilder(capacity);
+
+        for (int i = 0; i < lim; i++)
+            addByteAsHex(sb, arr[i]);
+
+        return sb.toString().toUpperCase();
+    }
+
+    /**
+     * @param sb String builder.
+     * @param b Byte to add in hexadecimal format.
+     */
+    private static void addByteAsHex(StringBuilder sb, byte b) {
+        sb.append(Integer.toHexString(MASK & b >>> 4)).append(Integer.toHexString(MASK & b));
     }
 }

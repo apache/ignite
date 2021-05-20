@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.metastorage.server;
 
-import java.util.Objects;
 import org.apache.ignite.internal.metastorage.common.OperationType;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -63,8 +63,9 @@ public final class Operation {
         assert (type == OperationType.NO_OP && key == null && val == null)
                 || (type == OperationType.PUT && key != null && val != null)
                 || (type == OperationType.REMOVE && key != null && val == null)
-                : "Invalid operation parameters: [type=" + type + ", key=" + Objects.toString(key,"null") +
-                ", val=" + Objects.toString(key,"null") + ']';
+                : "Invalid operation parameters: [type=" + type +
+                        ", key=" + (key == null ? "null" : IgniteUtils.toHexString(key, 256)) +
+                        ", val=" + (val == null ? "null" : IgniteUtils.toHexString(val, 256)) + ']';
 
         this.key = key;
         this.val = val;
