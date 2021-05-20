@@ -1702,8 +1702,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             int p = partMap.partitionAt(i);
 
                             if (!doneParts.contains(p)) {
-                                log.warning("Some partition entries were missed during historical rebalance [grp=" + grp + ", part=" + p + ", missed=" +
-                                    (partMap.updateCounterAt(i) - rebalancedCntrs[i]) + ']');
+                                log.warning("Some partition entries were missed during historical rebalance " +
+                                    "[grp=" + grp + ", part=" + p + ", missed=" + (partMap.updateCounterAt(i) - rebalancedCntrs[i]) + ']');
 
                                 doneParts.add(p);
                             }
@@ -2341,8 +2341,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                                 + U.hexLong(partMetaStoreReuseListRoot) + ", part=" + partId + ", grpId=" + grpId);
                     }
 
-                    if ((allocated || pageUpgraded || pendingTreeAllocated || partMetastoreReuseListAllocated || updateLogTreeRootAllocated) &&
-                        isWalDeltaRecordNeeded(pageMem, grpId, partMetaId, partMetaPage, wal, null)) {
+                    if ((allocated || pageUpgraded || pendingTreeAllocated || partMetastoreReuseListAllocated || updateLogTreeRootAllocated)
+                        && isWalDeltaRecordNeeded(pageMem, grpId, partMetaId, partMetaPage, wal, null)) {
                         wal.log(new PageSnapshot(new FullPageId(partMetaId, grpId), pageAddr,
                             pageMem.pageSize(), pageMem.realPageSize(grpId)));
                     }

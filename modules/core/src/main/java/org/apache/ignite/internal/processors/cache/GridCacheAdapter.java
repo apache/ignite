@@ -2885,7 +2885,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                 assert ret != null;
 
-                return ret.value() != null ? ret.<Map<K, EntryProcessorResult<T>>>value() : Collections.<K, EntryProcessorResult<T>>emptyMap();
+                return ret.value() != null ? ret.value() : Collections.emptyMap();
             }
         });
     }
@@ -2933,7 +2933,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                 assert ret != null;
 
-                return ret.value() != null ? ret.<Map<K, EntryProcessorResult<T>>>value() : Collections.<K, EntryProcessorResult<T>>emptyMap();
+                return ret.value() != null
+                    ? ret.<Map<K, EntryProcessorResult<T>>>value()
+                    : Collections.<K, EntryProcessorResult<T>>emptyMap();
             }
         });
     }

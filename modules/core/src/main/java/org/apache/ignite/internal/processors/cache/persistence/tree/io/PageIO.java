@@ -156,7 +156,8 @@ public abstract class PageIO {
     private static final int RESERVED_3_OFF = RESERVED_2_OFF + 8;
 
     /** */
-    public static final int COMMON_HEADER_END = RESERVED_3_OFF + 8; // 40=type(2)+ver(2)+crc(4)+pageId(8)+rotatedIdPart(1)+reserved(1+2+4+2*8)
+    // 40=type(2)+ver(2)+crc(4)+pageId(8)+rotatedIdPart(1)+reserved(1+2+4+2*8)
+    public static final int COMMON_HEADER_END = RESERVED_3_OFF + 8;
 
     /* All the page types. */
 

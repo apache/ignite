@@ -893,7 +893,8 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     public void testEnumArrayModification() {
         GridBinaryTestClasses.TestObjectAllTypes obj = new GridBinaryTestClasses.TestObjectAllTypes();
 
-        obj.enumArr = new GridBinaryTestClasses.TestObjectEnum[] {GridBinaryTestClasses.TestObjectEnum.A, GridBinaryTestClasses.TestObjectEnum.B};
+        obj.enumArr =
+            new GridBinaryTestClasses.TestObjectEnum[] {GridBinaryTestClasses.TestObjectEnum.A, GridBinaryTestClasses.TestObjectEnum.B};
 
         BinaryObjectBuilderImpl mutObj = wrap(obj);
 
@@ -902,7 +903,10 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         GridBinaryTestClasses.TestObjectAllTypes res = mutObj.build().deserialize();
 
-        Assert.assertArrayEquals(new GridBinaryTestClasses.TestObjectEnum[] {GridBinaryTestClasses.TestObjectEnum.A, GridBinaryTestClasses.TestObjectEnum.B}, res.enumArr);
+        Assert.assertArrayEquals(
+            new GridBinaryTestClasses.TestObjectEnum[] {GridBinaryTestClasses.TestObjectEnum.A, GridBinaryTestClasses.TestObjectEnum.B},
+            res.enumArr
+        );
     }
 
     /**
@@ -1324,7 +1328,8 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
      */
     @Test
     public void testBinaryObjectField() {
-        GridBinaryTestClasses.TestObjectContainer container = new GridBinaryTestClasses.TestObjectContainer(toBinary(new GridBinaryTestClasses.TestObjectArrayList()));
+        GridBinaryTestClasses.TestObjectContainer container =
+            new GridBinaryTestClasses.TestObjectContainer(toBinary(new GridBinaryTestClasses.TestObjectArrayList()));
 
         BinaryObjectBuilderImpl wrapper = wrap(container);
 

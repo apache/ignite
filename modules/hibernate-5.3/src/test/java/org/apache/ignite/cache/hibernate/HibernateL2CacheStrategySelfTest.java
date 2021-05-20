@@ -294,8 +294,14 @@ public class HibernateL2CacheStrategySelfTest extends GridCommonAbstractTest {
         builder.applySetting(USE_STRUCTURED_CACHE, "true");
         builder.applySetting(REGION_CACHE_PROPERTY + ENTITY1_NAME, "cache1");
         builder.applySetting(REGION_CACHE_PROPERTY + ENTITY2_NAME, "cache2");
-        builder.applySetting(REGION_CACHE_PROPERTY + DEFAULT_UPDATE_TIMESTAMPS_REGION_UNQUALIFIED_NAME, DEFAULT_UPDATE_TIMESTAMPS_REGION_UNQUALIFIED_NAME);
-        builder.applySetting(REGION_CACHE_PROPERTY + DEFAULT_QUERY_RESULTS_REGION_UNQUALIFIED_NAME, DEFAULT_QUERY_RESULTS_REGION_UNQUALIFIED_NAME);
+        builder.applySetting(
+            REGION_CACHE_PROPERTY + DEFAULT_UPDATE_TIMESTAMPS_REGION_UNQUALIFIED_NAME,
+            DEFAULT_UPDATE_TIMESTAMPS_REGION_UNQUALIFIED_NAME
+        );
+        builder.applySetting(
+            REGION_CACHE_PROPERTY + DEFAULT_QUERY_RESULTS_REGION_UNQUALIFIED_NAME,
+            DEFAULT_QUERY_RESULTS_REGION_UNQUALIFIED_NAME
+        );
 
         MetadataSources metadataSources = new MetadataSources(builder.build());
 

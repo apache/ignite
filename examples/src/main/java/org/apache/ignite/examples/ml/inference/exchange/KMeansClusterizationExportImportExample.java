@@ -62,7 +62,8 @@ public class KMeansClusterizationExportImportExample {
             try {
                 dataCache = new SandboxMLCache(ignite).fillCacheWith(MLSandboxDatasets.TWO_CLASSED_IRIS);
 
-                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
+                Vectorizer<Integer, Vector, Integer, Double> vectorizer =
+                    new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
 
                 KMeansTrainer trainer = new KMeansTrainer()
                     .withDistance(new WeightedMinkowskiDistance(2, new double[] {5.9360, 2.7700, 4.2600, 1.3260}));

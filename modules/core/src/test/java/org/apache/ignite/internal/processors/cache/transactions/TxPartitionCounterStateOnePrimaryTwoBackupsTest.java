@@ -493,7 +493,8 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsTest extends TxPartition
                                 assertEquals(SIZES[BACKUP_COMMIT_ORDER[0]], upd[1]);
 
                                 runAsync(() -> {
-                                    stopGrid(skipCheckpointOnNodeStop, backup.name()); // Will stop backup node before all commits are applied.
+                                    // Will stop backup node before all commits are applied.
+                                    stopGrid(skipCheckpointOnNodeStop, backup.name());
                                 });
 
                                 return true;

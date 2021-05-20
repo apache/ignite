@@ -343,7 +343,9 @@ public class EncoderTrainer<K, V> implements PreprocessingTrainer<K, V> {
     private Map<String, Integer> transformFrequenciesToEncodingValues(Map<String, Integer> frequencies) {
         Comparator<Map.Entry<String, Integer>> comp;
 
-        comp = encoderSortingStgy == EncoderSortingStrategy.FREQUENCY_DESC ? Map.Entry.comparingByValue() : Collections.reverseOrder(Map.Entry.comparingByValue());
+        comp = encoderSortingStgy == EncoderSortingStrategy.FREQUENCY_DESC
+            ? Map.Entry.comparingByValue()
+            : Collections.reverseOrder(Map.Entry.comparingByValue());
 
         final HashMap<String, Integer> resMap = frequencies.entrySet()
             .stream()

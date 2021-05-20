@@ -228,7 +228,8 @@ public class QueryEntityValidationSelfTest extends AbstractIndexingCommonTest {
      */
     @Test
     public void testUniqueNameInAnnotation() {
-        final CacheConfiguration<TestKeyWithUniqueName, TestValueWithUniqueName> ccfg = new CacheConfiguration<TestKeyWithUniqueName, TestValueWithUniqueName>().setName(CACHE_NAME);
+        final CacheConfiguration<TestKeyWithUniqueName, TestValueWithUniqueName> ccfg =
+            new CacheConfiguration<TestKeyWithUniqueName, TestValueWithUniqueName>().setName(CACHE_NAME);
 
         assertNotNull(ccfg.setIndexedTypes(TestKeyWithUniqueName.class, TestValueWithUniqueName.class));
     }
@@ -260,7 +261,8 @@ public class QueryEntityValidationSelfTest extends AbstractIndexingCommonTest {
      */
     @Test
     public void testNotUniqueNameInAnnotation() {
-        final CacheConfiguration<TestKeyWithNotUniqueName, TestValueWithNotUniqueName> ccfg = new CacheConfiguration<TestKeyWithNotUniqueName, TestValueWithNotUniqueName>().setName(CACHE_NAME);
+        final CacheConfiguration<TestKeyWithNotUniqueName, TestValueWithNotUniqueName> ccfg =
+            new CacheConfiguration<TestKeyWithNotUniqueName, TestValueWithNotUniqueName>().setName(CACHE_NAME);
 
         GridTestUtils.assertThrows(log, (Callable<Void>)() -> {
             ccfg.setIndexedTypes(TestKeyWithNotUniqueName.class, TestValueWithNotUniqueName.class);

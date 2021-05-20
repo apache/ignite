@@ -196,6 +196,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         SnapshotFutureTask snpFutTask = mgr.registerSnapshotTask(SNAPSHOT_NAME,
             cctx.localNodeId(),
             F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
+            false,
             new DelegateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSenderFactory().apply(SNAPSHOT_NAME)) {
                 @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
                     try {
@@ -243,7 +244,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
             // right after current will be completed.
             cctx.database().forceCheckpoint(String.format(CP_SNAPSHOT_REASON, SNAPSHOT_NAME));
 
-            snpFutTask.awaitStarted();
+            snpFutTask.started().get();
 
             db.forceCheckpoint("snapshot is ready to be created")
                 .futureFor(CheckpointState.MARKER_STORED_TO_DISK)
@@ -555,7 +556,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         Map<Integer, Set<Integer>> parts,
         SnapshotSender snpSndr
     ) throws IgniteCheckedException {
-        SnapshotFutureTask snpFutTask = cctx.snapshotMgr().registerSnapshotTask(snpName, cctx.localNodeId(), parts, snpSndr);
+        SnapshotFutureTask snpFutTask = cctx.snapshotMgr().registerSnapshotTask(snpName, cctx.localNodeId(), parts, false, snpSndr);
 
         snpFutTask.start();
 
@@ -564,7 +565,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         // right after current will be completed.
         cctx.database().forceCheckpoint(String.format(CP_SNAPSHOT_REASON, snpName));
 
-        snpFutTask.awaitStarted();
+        snpFutTask.started().get();
 
         return snpFutTask;
     }

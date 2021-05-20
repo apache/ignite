@@ -36,7 +36,8 @@ import org.apache.ignite.ml.structures.LabeledVector;
  * in range [0.0, amountOfCategories), where the most popular value will be presented as 0.0 and
  * the least popular value presented with amountOfCategories-1 value.
  * <p>
- * This preprocessor can transform multiple columns which indices are handled during training process. These indexes could be defined via .withEncodedFeature(featureIndex) call.
+ * This preprocessor can transform multiple columns which indices are handled during training process.
+ * These indexes could be defined via .withEncodedFeature(featureIndex) call.
  * </p>
  * <p>
  * NOTE: it does not add new column but change data in-place.

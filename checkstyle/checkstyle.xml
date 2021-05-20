@@ -135,4 +135,12 @@
         -->
         <module name="GenericWhitespace"/>
     </module>
+
+    <!--
+        Checks that the line length not exceeds 140 chars.
+        See: https://checkstyle.org/config_sizes.html#LineLength
+    -->
+    <module name="LineLength">
+        <property name="max" value="140"/>
+    </module>
 </module>

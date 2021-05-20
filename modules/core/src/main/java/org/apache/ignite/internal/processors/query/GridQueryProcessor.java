@@ -156,7 +156,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private static final String INLINE_SIZES_DISCO_BAG_KEY = "inline_sizes";
 
     /** Warn message if some indexes have different inline sizes on the nodes. */
-    public static final String INLINE_SIZES_DIFFER_WARN_MSG_FORMAT = "Inline sizes on local node and node %s are different. Please drop and create again these indexes to avoid performance problems with SQL queries. Problem indexes: %s";
+    public static final String INLINE_SIZES_DIFFER_WARN_MSG_FORMAT = "Inline sizes on local node and node %s are different. " +
+        "Please drop and create again these indexes to avoid performance problems with SQL queries. Problem indexes: %s";
 
     /** Queries detail metrics eviction frequency. */
     private static final int QRY_DETAIL_METRICS_EVICTION_FREQ = 3_000;
@@ -2481,7 +2482,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     LT.warn(log, "Key-value pair is not inserted into any SQL table [cacheName=" + cacheName +
                         ", " + describeTypeMismatch(cacheName, val) + "]");
 
-                    LT.warn(log, "  ^-- Value type(s) are specified via CacheConfiguration.indexedTypes or CacheConfiguration.queryEntities");
+                    LT.warn(
+                        log,
+                        "  ^-- Value type(s) are specified via CacheConfiguration.indexedTypes or CacheConfiguration.queryEntities"
+                    );
                     LT.warn(log, "  ^-- Make sure that same type(s) used when adding Object or BinaryObject to cache");
                     LT.warn(log, "  ^-- Otherwise, entries will be stored in cache, but not appear as SQL Table rows");
                 }
