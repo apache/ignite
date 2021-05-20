@@ -60,7 +60,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
-import org.apache.ignite.internal.binary.BinaryArrayWrapper;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
@@ -493,19 +492,13 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         if (BinaryUtils.isBinaryType(obj.getClass()))
             return obj;
 
-        if (obj.getClass().isArray()) {
+        if (obj.getClass().isArray() && !USE_ARRAY_BINARY_WRAPPER) {
             Object[] arr = (Object[])obj;
 
             Object[] pArr = new Object[arr.length];
 
             for (int i = 0; i < arr.length; i++)
                 pArr[i] = marshalToBinary(arr[i], failIfUnregistered);
-
-            if (USE_ARRAY_BINARY_WRAPPER) {
-                binaryMarsh.context().typeId(); //TODO: FIXME
-
-                return new BinaryArrayWrapper(binaryMarsh.context(), -1, null, pArr, arr.length); // TODO: FIXME
-            }
 
             return pArr;
         }

@@ -101,12 +101,7 @@ public class BinaryArrayWrapper implements BinaryObjectEx, Externalizable {
         try {
             Class compType = BinaryUtils.resolveClass(ctx, compTypeId, compClsName, resolveLdr, false);
 
-            Object[] res = (Object[])Array.newInstance(compType, arr.length);
-
-            for (int i = 0; i < arr.length; i++)
-                res[i] = PlatformUtils.unwrapBinary(arr[i]); //TODO: FIXME
-
-            return (T)res;
+            return (T)PlatformUtils.unwrapBinariesInArray(arr, compType);
         }
         finally {
             GridBinaryMarshaller.USE_CACHE.set(Boolean.TRUE);

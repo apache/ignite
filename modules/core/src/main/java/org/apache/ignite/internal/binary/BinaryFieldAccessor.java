@@ -647,6 +647,7 @@ public abstract class BinaryFieldAccessor {
                     break;
 
                 case OBJECT_ARR:
+                case OBJECT_ARR_WRAPPER:
                     writer.writeObjectArrayField((Object[])val);
 
                     break;

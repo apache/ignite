@@ -19,13 +19,16 @@ package org.apache.ignite.internal.binary;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.binary.BinaryMarshallerSelfTest.TestClass1;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-public class BinaryObjectTest extends GridCommonAbstractTest {
+public class BinaryArrayWrapperSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_USE_ARRAY_BINARY_WRAPPER, value = "true")
     public void testArray() throws Exception {
         Ignite ign = startGrid();
 

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.utils;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
@@ -46,7 +47,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.MarshallerContextImpl;
-import org.apache.ignite.internal.binary.BinaryArrayWrapper;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -923,9 +923,7 @@ public class PlatformUtils {
         else if (BinaryUtils.knownMap(o))
             return unwrapBinariesIfNeeded((Map<Object, Object>)o);
         else if (o instanceof Object[])
-            return unwrapBinariesInArray((Object[])o);
-        else if (o instanceof BinaryArrayWrapper)
-            return unwrapBinariesInArray(((BinaryArrayWrapper)o).array());
+            return unwrapBinariesInArray((Object[])o, null);
         else if (o instanceof BinaryObject)
             return ((BinaryObject)o).deserialize();
 
@@ -991,11 +989,11 @@ public class PlatformUtils {
      * @param arr Array.
      * @return Result.
      */
-    public static Object[] unwrapBinariesInArray(Object[] arr) {
+    public static Object[] unwrapBinariesInArray(Object[] arr, @Nullable Class<?> compType) {
         if (arr.getClass().getComponentType() != Object.class)
             return arr;
 
-        Object[] res = new Object[arr.length];
+        Object[] res = compType == null ? new Object[arr.length] : (Object[])Array.newInstance(compType, arr.length);
 
         for (int i = 0; i < arr.length; i++)
             res[i] = unwrapBinary(arr[i]);

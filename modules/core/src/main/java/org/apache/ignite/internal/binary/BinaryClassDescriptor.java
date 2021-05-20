@@ -762,12 +762,8 @@ public class BinaryClassDescriptor {
                     break;
 
                 case OBJECT_ARR:
-                    writer.doWriteObjectArray((Object[])obj);
-
-                    break;
-
                 case OBJECT_ARR_WRAPPER:
-                    writer.doWriteBinaryArrayWrapper((BinaryArrayWrapper)obj);
+                    writer.doWriteObjectArray((Object[])obj);
 
                     break;
 

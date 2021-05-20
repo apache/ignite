@@ -3059,7 +3059,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
             assertTrue(args[0] instanceof Value[]);
 
-            args = PlatformUtils.unwrapBinariesInArray(args);
+            args = PlatformUtils.unwrapBinariesInArray(args, null);
 
             assertTrue(args[0] instanceof Value[]);
             assertArrayEquals(arr, (Value[])args[0]);
@@ -3077,7 +3077,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
             assertTrue(args[0] instanceof Collection[]);
 
-            args = PlatformUtils.unwrapBinariesInArray(args);
+            args = PlatformUtils.unwrapBinariesInArray(args, null);
 
             assertTrue(args[0] instanceof Collection[]);
             assertArrayEquals(arr, (Collection[])args[0]);
@@ -3091,7 +3091,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         Collection[] arr = new Collection[] { new ArrayList<>(Arrays.asList(new Value(1), new Value(2), new Value(3))) };
 
         testReadDetachObjectProperly(arr, obj -> {
-            Object[] args = PlatformUtils.unwrapBinariesInArray(new Object[] {obj});
+            Object[] args = PlatformUtils.unwrapBinariesInArray(new Object[] {obj}, null);
 
             Collection deserVals = (Collection)((Object[])args[0])[0];
 
