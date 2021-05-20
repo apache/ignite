@@ -426,14 +426,14 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         for node in nodes:
             cmd = f"sudo iptables-save | tee {self.netfilter_store_path}"
 
-            _, exec_error = IgniteAwareService.exec_command_ex(node, cmd)
+            _, err = IgniteAwareService.exec_command_ex(node, cmd)
 
-            if "Warning: iptables-legacy tables present" in exec_error:
+            if "Warning: iptables-legacy tables present" in err:
                 cmd = f"sudo iptables-legacy-save | tee {self.netfilter_store_path}"
 
-                _, exec_error = IgniteAwareService.exec_command_ex(node, cmd)
+                _, err = IgniteAwareService.exec_command_ex(node, cmd)
 
-            assert len(exec_error) == 0, "Failed to store iptables rules on '%s': %s" % (node.name, exec_error)
+            assert len(err) == 0, "Failed to store iptables rules on '%s': %s" % (node.name, err)
 
             self.logger.debug("Netfilter before launch on '%s': %s" % (node.name, self.__dump_netfilter_settings(node)))
 
@@ -450,12 +450,12 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         for node in self.disconnected_nodes:
             settings_before = self.__dump_netfilter_settings(node)
 
-            _, exec_error = IgniteAwareService.exec_command_ex(node, cmd)
+            _, err = IgniteAwareService.exec_command_ex(node, cmd)
 
             settings_after = self.__dump_netfilter_settings(node)
 
-            if len(exec_error) > 0:
-                errors.append("Failed to restore iptables rules on '%s': %s" % (node.name, exec_error))
+            if len(err) > 0:
+                errors.append("Failed to restore iptables rules on '%s': %s" % (node.name, err))
             elif settings_before == settings_after:
                 errors.append("iptables settings not restored on '" + node.name + "':\n" + settings_after)
             else:
@@ -472,7 +472,14 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         """
         Reads current netfilter settings on the node for debugging purposes.
         """
-        return IgniteAwareService.exec_command(node, "sudo iptables -L -n")
+        out, err = IgniteAwareService.exec_command_ex(node, "sudo iptables -L -n")
+
+        if "Warning: iptables-legacy tables present" in err:
+            out, err = IgniteAwareService.exec_command_ex(node, "sudo iptables-legacy -L -n")
+
+        assert len(err) == 0, "Failed to dump iptables rules on '%s': %s" % (node.name, err)
+
+        return out
 
     def __update_node_log_file(self, node):
         """
