@@ -633,7 +633,7 @@ public class IgniteIndexReaderTest extends GridCommonAbstractTest {
         List<String> idxList = isNull(idxs) ? null : asList(idxs);
 
         try (IgniteIndexReader reader = new IgniteIndexReader(
-            isNull(idxList) ? null : idx -> idxList.stream().anyMatch(s -> s.endsWith(idx)),
+            isNull(idxList) ? null : idx -> idxList.stream().anyMatch(idx::endsWith),
             checkParts,
             new PrintStream(destStream),
             createFilePageStoreFactory(dir)
@@ -812,7 +812,7 @@ public class IgniteIndexReaderTest extends GridCommonAbstractTest {
         try {
             for (File dir : workDirs) {
                 corruptFile(dir, INDEX_PARTITION, 5);
-                corruptFile(dir, 0, 10);
+                corruptFile(dir, 0, 8);
             }
 
             String output = runIndexReader(workDirs.get(0), CACHE_GROUP_NAME, null, false);
@@ -820,7 +820,7 @@ public class IgniteIndexReaderTest extends GridCommonAbstractTest {
             boolean idxReadingErr = isReportIdxAndPartFilesReadingErr();
             boolean partReadingErr = isReportIdxAndPartFilesReadingErr();
 
-            checkOutput(output, 19, 23, 0, 2, idxReadingErr, partReadingErr, false);
+            checkOutput(output, 19, 22, 0, 2, idxReadingErr, partReadingErr, false);
 
             for (int i = 0; i < CREATED_TABLES_CNT; i++)
                 checkIdxs(output, TableInfo.generate(i), true);
@@ -846,13 +846,13 @@ public class IgniteIndexReaderTest extends GridCommonAbstractTest {
 
         try {
             for (File dir : workDirs)
-                corruptFile(dir, 0, 10);
+                corruptFile(dir, 0, 8);
 
             String output = runIndexReader(workDirs.get(0), CACHE_GROUP_NAME, null, false);
 
             boolean partReadingErr = isReportIdxAndPartFilesReadingErr();
 
-            checkOutput(output, 19, 23, 0, 0, false, partReadingErr, true);
+            checkOutput(output, 19, 22, 0, 0, false, partReadingErr, true);
 
             for (int i = 0; i < CREATED_TABLES_CNT; i++)
                 checkIdxs(output, TableInfo.generate(i), true);
