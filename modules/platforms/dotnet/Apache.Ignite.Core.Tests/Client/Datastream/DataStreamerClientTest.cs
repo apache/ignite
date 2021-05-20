@@ -265,9 +265,6 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             }
 
             Assert.AreEqual(0, cache.GetSize());
-
-            // TODO
-            // Assert.Fail("TODO: Check streamers on server side - do this in TearDown");
         }
 
         [Test]
@@ -346,6 +343,32 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             var ex = Assert.Throws<AggregateException>(() => streamer.Dispose());
             StringAssert.StartsWith("Cache does not exist", ex.GetBaseException().Message);
         }
+
+#if NETCOREAPP
+
+        [Test]
+        public async Task TestStreamingAsyncAwait()
+        {
+            var cache = GetClientCache<int>();
+
+            using (var streamer = Client.GetDataStreamer<int, int>(cache.Name))
+            {
+                streamer.Add(1, 1);
+                await streamer.FlushAsync();
+                Assert.AreEqual(1, await cache.GetAsync(1));
+
+                streamer.Add(2, 2);
+                await streamer.FlushAsync();
+                Assert.AreEqual(2, await cache.GetAsync(2));
+
+                streamer.Add(3, 3);
+            }
+
+            Assert.AreEqual(3, await cache.GetSizeAsync());
+            Assert.AreEqual(3, await cache.GetAsync(3));
+        }
+
+#endif
 
         protected override IgniteConfiguration GetIgniteConfiguration()
         {
