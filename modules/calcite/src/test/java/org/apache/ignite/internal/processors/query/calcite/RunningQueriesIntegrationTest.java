@@ -206,6 +206,8 @@ public class RunningQueriesIntegrationTest extends GridCommonCalciteAbstractTest
         List<RunningFragmentInfo> fragments = serverEngine.runningFragments();
         RunningQueryInfo run = fragments.get(0);
 
+        Assert.assertTrue(clientEngine.runningFragments().isEmpty());
+
         clientEngine.cancelQuery(run.qryId());
 
         Assert.assertTrue(GridTestUtils.waitForCondition(
