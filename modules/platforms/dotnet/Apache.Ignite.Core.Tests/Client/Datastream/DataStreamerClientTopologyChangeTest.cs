@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
+    using Apache.Ignite.Core.Client.Datastream;
     using Apache.Ignite.Core.Impl.Client;
     using NUnit.Framework;
 
@@ -61,16 +62,16 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 // Start new server, stop old one.
                 StartServer();
                 server.Dispose();
-                
+
                 streamer.Add(2, 2);
                 streamer.Flush();
-                
+
                 Assert.AreEqual(1, cache[1]);
                 Assert.AreEqual(2, cache[2]);
 
                 streamer.Add(3, 3);
                 streamer.Flush();
-                
+
                 Assert.AreEqual(3, cache[3]);
             }
         }
@@ -89,10 +90,10 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
                 StartServer();
                 server.Dispose();
-                
+
                 streamer.Add(2, 2);
             }
-            
+
             Assert.AreEqual(1, cache[1]);
             Assert.AreEqual(2, cache[2]);
         }
@@ -109,14 +110,14 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             using (var streamer = client.GetDataStreamer<int, int>(cache.Name))
             {
                 var cancel = false;
-                
+
                 var adderTask = Task.Factory.StartNew(() =>
                 {
                     // ReSharper disable once AccessToModifiedClosure
                     while (!cancel)
                     {
                         id++;
-                        
+
                         // ReSharper disable once AccessToDisposedClosure
                         streamer.Add(id, id);
 
@@ -127,9 +128,9 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                         }
                     }
                 });
-                
+
                 var nodes = new Stack<IIgnite>();
-                
+
                 for (int i = 0; i < 20; i++)
                 {
                     if (nodes.Count == 0 || TestUtils.Random.Next(2) == 0)
@@ -145,15 +146,49 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 cancel = true;
                 adderTask.Wait();
             }
-            
+
             Assert.AreEqual(1, cache[1]);
             Assert.AreEqual(id, cache.GetSize());
             Assert.Greater(id, 10000);
         }
 
         [Test]
-        public void TestAbandonedBuffersGetFlushedOnTopologyChange()
+        public void TestAbandonedBuffersGetFlushedOnCloseAndExplicitFlush()
         {
+            var server = StartServer();
+            var client = StartClient();
+
+            var cache = CreateCache(client);
+
+            var options = new DataStreamerClientOptions
+            {
+                ClientPerNodeBufferSize = 3
+            };
+
+            using (var streamer = client.GetDataStreamer<int, int>(cache.Name, options))
+            {
+                streamer.Add(-1, -1);
+                streamer.Add(-2, -2);
+
+                StartServer();
+                server.Dispose();
+
+                // Perform cache operation to detect connection failure.
+                cache[0] = 0;
+
+                // Fill the buffer to force flush.
+                streamer.Add(1, 1);
+                streamer.Add(2, 2);
+                streamer.Add(3, 3);
+
+                TestUtils.WaitForTrueCondition(() => cache.ContainsKey(1));
+                Assert.AreEqual(3, cache.GetSize());
+            }
+
+            Assert.AreEqual(1, cache[1]);
+            Assert.AreEqual(2, cache[2]);
+
+
             Assert.Fail("TODO");
         }
 
