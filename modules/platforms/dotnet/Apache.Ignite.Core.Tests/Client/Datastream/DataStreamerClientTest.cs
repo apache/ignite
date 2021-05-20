@@ -344,6 +344,12 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             StringAssert.StartsWith("Cache does not exist", ex.GetBaseException().Message);
         }
 
+        [Test]
+        public void TestFlushAsyncContinuationDoesNotRunOnSocketReceiverThread()
+        {
+            Assert.Fail("TODO: Check stack trace");
+        }
+
 #if NETCOREAPP
 
         [Test]
@@ -362,6 +368,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 Assert.AreEqual(2, await cache.GetAsync(2));
 
                 streamer.Add(3, 3);
+                await streamer.CloseAsync(false);
             }
 
             Assert.AreEqual(3, await cache.GetSizeAsync());
