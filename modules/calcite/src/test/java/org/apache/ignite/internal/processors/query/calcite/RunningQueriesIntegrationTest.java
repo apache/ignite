@@ -80,10 +80,10 @@ public class RunningQueriesIntegrationTest extends GridCommonCalciteAbstractTest
             executeSql(client, "CREATE TABLE person" + i + " (id int, val varchar)");
 
         String bigJoin = IntStream.range(0, cnt).mapToObj((i) -> "person" + i + " p" + i).collect(joining(", "));
-        String sql = "SELECT * FROM " + bigJoin + " WHERE id>0 ORDER BY id DESC";
+        String sql = "SELECT * FROM " + bigJoin;
         ;
 
-        IgniteInternalFuture<List<List<?>>> fut = GridTestUtils.runAsync(() -> executeSql(client, sql));
+        IgniteInternalFuture<List<List<?>>> fut = GridTestUtils.runAsync(() -> executeSql(engine, sql));
 
         Assert.assertTrue(GridTestUtils.waitForCondition(
             () -> !engine.runningQueries().isEmpty() || fut.isDone(), TIMEOUT_IN_MS));
@@ -109,17 +109,17 @@ public class RunningQueriesIntegrationTest extends GridCommonCalciteAbstractTest
         QueryEngine engine = queryProcessor(client);
         int cnt = 6;
 
-        executeSql(client, "CREATE TABLE person (id int, val varchar)");
+        executeSql(engine, "CREATE TABLE person (id int, val varchar)");
 
         String data = IntStream.range(0, 1000).mapToObj((i) -> "(" + i + "," + i + ")").collect(joining(", "));
         String insertSql = "INSERT INTO person (id, val) VALUES " + data;
 
-        executeSql(client, insertSql);
+        executeSql(engine, insertSql);
 
         String bigJoin = IntStream.range(0, cnt).mapToObj((i) -> "person p" + i).collect(joining(", "));
         String sql = "SELECT * FROM " + bigJoin;
 
-        IgniteInternalFuture<List<List<?>>> fut = GridTestUtils.runAsync(() -> executeSql(client, sql));
+        IgniteInternalFuture<List<List<?>>> fut = GridTestUtils.runAsync(() -> executeSql(engine, sql));
 
         Assert.assertTrue(GridTestUtils.waitForCondition(
             () -> {
