@@ -185,8 +185,14 @@ public class SnapshotRestoreProcess {
         }
 
         ctx.cache().context().snapshotMgr().checkSnapshot(snpName, cacheGrpNames).listen(f -> {
-            if (f.error() != null || f.result().exceptions() != null) {
+            if (f.error() != null) {
                 finishProcess(fut0.rqId, f.error());
+
+                return;
+            }
+
+            if (!F.isEmpty(f.result().exceptions())) {
+                finishProcess(fut0.rqId, F.firstEntry(f.result().exceptions()).getValue());
 
                 return;
             }
