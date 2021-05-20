@@ -2381,7 +2381,8 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
         private boolean actualize(GridCacheContext cctx, MvccDataRow row,
             MvccSnapshot snapshot) throws IgniteCheckedException {
             return isVisible(cctx, snapshot, row.mvccCoordinatorVersion(), row.mvccCounter(), row.mvccOperationCounter(), false)
-                && (row.mvccTxState() == TxState.NA || (row.newMvccCoordinatorVersion() != MVCC_CRD_COUNTER_NA && row.newMvccTxState() == TxState.NA));
+                && (row.mvccTxState() == TxState.NA ||
+                    (row.newMvccCoordinatorVersion() != MVCC_CRD_COUNTER_NA && row.newMvccTxState() == TxState.NA));
         }
 
         /**

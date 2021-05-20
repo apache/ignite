@@ -130,7 +130,9 @@ public interface DataRegionMetricsMXBean extends DataRegionMetrics {
     @Override public int getPageSize();
 
     /** {@inheritDoc} */
-    @MXBeanDescription("The total size of pages loaded to the RAM. When persistence is disabled, this metric is equal to TotalAllocatedSize.")
+    @MXBeanDescription(
+        "The total size of pages loaded to the RAM. When persistence is disabled, this metric is equal to TotalAllocatedSize."
+    )
     @Override public long getPhysicalMemorySize();
 
     /** {@inheritDoc} */

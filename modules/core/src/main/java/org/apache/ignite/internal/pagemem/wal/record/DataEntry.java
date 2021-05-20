@@ -126,7 +126,10 @@ public class DataEntry {
         this.flags = flags;
 
         // Only READ, CREATE, UPDATE and DELETE operations should be stored in WAL.
-        assert op == GridCacheOperation.READ || op == GridCacheOperation.CREATE || op == GridCacheOperation.UPDATE || op == GridCacheOperation.DELETE : op;
+        assert op == GridCacheOperation.READ
+            || op == GridCacheOperation.CREATE
+            || op == GridCacheOperation.UPDATE
+            || op == GridCacheOperation.DELETE : op;
     }
 
     /**

@@ -76,6 +76,8 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Before;
 import org.junit.Test;
 
+import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
@@ -475,15 +477,15 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
 
         IdleVerifyResultV2 idleVerifyRes = ignite.compute().execute(new TestVisorBackupPartitionsTask(),
-            new VisorIdleVerifyTaskArg(new HashSet<>(Collections.singletonList(ccfg.getName())),
+            new VisorIdleVerifyTaskArg(new HashSet<>(singletonList(ccfg.getName())),
             new HashSet<>(),
             false,
             CacheFilterEnum.USER,
             true));
 
         IdleVerifyResultV2 snpVerifyRes = ignite.compute().execute(new TestSnapshotPartitionsVerifyTask(),
-            Collections.singletonMap(ignite.cluster().localNode(),
-                Collections.singletonList(snp(ignite).readSnapshotMetadata(SNAPSHOT_NAME, (String)ignite.configuration().getConsistentId()))));
+            singletonMap(ignite.cluster().localNode(),
+                singletonList(snp(ignite).readSnapshotMetadata(SNAPSHOT_NAME, (String)ignite.configuration().getConsistentId()))));
 
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> idleVerifyHashes = jobResults.get(TestVisorBackupPartitionsTask.class);
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> snpCheckHashes = jobResults.get(TestVisorBackupPartitionsTask.class);

@@ -749,7 +749,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                                 "transaction [timeout=" + tx.timeout() + ", tx=" + CU.txString(tx) + ']',
                                 deadlock != null ? new TransactionDeadlockException(deadlock.toString(cctx)) : null);
 
-                            if (!ERR_UPD.compareAndSet(GridNearOptimisticTxPrepareFuture.this, null, e) && err instanceof IgniteTxTimeoutCheckedException) {
+                            if (!ERR_UPD.compareAndSet(GridNearOptimisticTxPrepareFuture.this, null, e)
+                                && err instanceof IgniteTxTimeoutCheckedException) {
                                 err = e;
                             }
                         }

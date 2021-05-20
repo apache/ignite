@@ -51,7 +51,8 @@ import org.apache.ignite.spi.IgniteSpi;
  */
 public interface FailoverSpi extends IgniteSpi {
     /**
-     * This method is called when method {@link org.apache.ignite.compute.ComputeTask#result(org.apache.ignite.compute.ComputeJobResult, List)} returns
+     * This method is called when method
+     * {@link org.apache.ignite.compute.ComputeTask#result(org.apache.ignite.compute.ComputeJobResult, List)} returns
      * value {@link org.apache.ignite.compute.ComputeJobResultPolicy#FAILOVER} policy indicating that the result of
      * job execution must be failed over. Implementation of this method should examine failover
      * context and choose one of the grid nodes from supplied {@code topology} to retry job execution

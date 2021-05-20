@@ -1627,7 +1627,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         checkpointReadLock();
 
         try {
-            CheckpointHistoryResult checkpointHistoryResult = checkpointHistory().searchAndReserveCheckpoints(applicableGroupsAndPartitions);
+            CheckpointHistoryResult checkpointHistoryResult =
+                checkpointHistory().searchAndReserveCheckpoints(applicableGroupsAndPartitions);
 
             earliestValidCheckpoints = checkpointHistoryResult.earliestValidCheckpoints();
 
@@ -1640,7 +1641,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         Map</*grpId*/Integer, Map</*partId*/Integer, /*updCntr*/Long>> grpPartsWithCnts = new HashMap<>();
 
-        for (Map.Entry<Integer, T2</*reason*/ReservationReason, Map</*partId*/Integer, CheckpointEntry>>> e : earliestValidCheckpoints.entrySet()) {
+        for (Map.Entry<Integer, T2</*reason*/ReservationReason, Map</*partId*/Integer, CheckpointEntry>>> e :
+            earliestValidCheckpoints.entrySet()) {
             int grpId = e.getKey();
 
             if (e.getValue().get2() == null)

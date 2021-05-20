@@ -140,11 +140,8 @@ public class GridToStringBuilder {
      * have to keep a map of this objects pointed to the position of previous occurrence
      * and remove/add them in each {@code toString()} apply.
      */
-    private static ThreadLocal<IdentityHashMap<Object, EntryReference>> savedObjects = new ThreadLocal<IdentityHashMap<Object, EntryReference>>() {
-        @Override protected IdentityHashMap<Object, EntryReference> initialValue() {
-            return new IdentityHashMap<>();
-        }
-    };
+    private static ThreadLocal<IdentityHashMap<Object, EntryReference>> savedObjects =
+        ThreadLocal.withInitial(() -> new IdentityHashMap<>());
 
     /**
      * Implementation of the <a href=

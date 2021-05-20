@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendi
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask.DurableBackgroundTaskResult;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
+import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -74,6 +75,9 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
     /** Prohibiting the execution of tasks. */
     private volatile boolean prohibitionExecTasks = true;
 
+    /** Node stop lock. */
+    private final GridBusyLock stopLock = new GridBusyLock();
+
     /**
      * Constructor.
      *
@@ -91,23 +95,33 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
         cancelTasks();
+
+        stopLock.block();
     }
 
     /** {@inheritDoc} */
     @Override public void onReadyForRead(ReadOnlyMetastorage metastorage) {
-        metaStorageOperation(metaStorage -> {
-            assert metaStorage != null;
+        if (!stopLock.enterBusy())
+            return;
 
-            metaStorage.iterate(
-                TASK_PREFIX,
-                (k, v) -> {
-                    DurableBackgroundTask t = (DurableBackgroundTask)v;
+        try {
+            metaStorageOperation(metaStorage -> {
+                assert metaStorage != null;
 
-                    tasks.put(t.name(), new DurableBackgroundTaskState(t, null, true));
-                },
-                true
-            );
-        });
+                metaStorage.iterate(
+                    TASK_PREFIX,
+                    (k, v) -> {
+                        DurableBackgroundTask t = (DurableBackgroundTask)v;
+
+                        tasks.put(t.name(), new DurableBackgroundTaskState(t, null, true));
+                    },
+                    true
+                );
+            });
+        }
+        finally {
+            stopLock.leaveBusy();
+        }
     }
 
     /** {@inheritDoc} */
@@ -144,15 +158,25 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
 
     /** {@inheritDoc} */
     @Override public void afterCheckpointEnd(Context ctx) {
-        for (Iterator<DurableBackgroundTask> it = toRmv.values().iterator(); it.hasNext(); ) {
-            DurableBackgroundTask t = it.next();
+        if (!stopLock.enterBusy())
+            return;
 
-            metaStorageOperation(metaStorage -> {
-                if (metaStorage != null && toRmv.containsKey(t.name()))
-                    metaStorage.remove(metaStorageKey(t));
-            });
+        try {
+            for (Iterator<DurableBackgroundTask> it = toRmv.values().iterator(); it.hasNext(); ) {
+                DurableBackgroundTask t = it.next();
 
-            it.remove();
+                metaStorageOperation(metaStorage -> {
+                    if (metaStorage != null) {
+                        if (!tasks.containsKey(t.name()))
+                            metaStorage.remove(metaStorageKey(t));
+
+                        it.remove();
+                    }
+                });
+            }
+        }
+        finally {
+            stopLock.leaveBusy();
         }
     }
 
@@ -200,27 +224,34 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
      * @return Futures that will complete when the task is completed.
      */
     public IgniteInternalFuture<Void> executeAsync(DurableBackgroundTask task, boolean save) {
-        DurableBackgroundTaskState taskState = tasks.compute(task.name(), (taskName, prev) -> {
-            if (prev != null && prev.state() != COMPLETED)
-                throw new IllegalArgumentException("Task is already present and has not been completed: " + taskName);
+        if (!stopLock.enterBusy())
+            throw new IgniteException("Node is stopping.");
 
-            if (save)
-                toRmv.remove(taskName);
+        try {
+            DurableBackgroundTaskState taskState = tasks.compute(task.name(), (taskName, prev) -> {
+                if (prev != null && prev.state() != COMPLETED) {
+                    throw new IllegalArgumentException("Task is already present and has not been completed: " +
+                        taskName);
+                }
 
-            return new DurableBackgroundTaskState(task, new GridFutureAdapter<>(), save);
-        });
-
-        if (save) {
-            metaStorageOperation(metaStorage -> {
-                if (metaStorage != null)
-                    metaStorage.write(metaStorageKey(task), task);
+                return new DurableBackgroundTaskState(task, new GridFutureAdapter<>(), save);
             });
+
+            if (save) {
+                metaStorageOperation(metaStorage -> {
+                    if (metaStorage != null)
+                        metaStorage.write(metaStorageKey(task), task);
+                });
+            }
+
+            if (!prohibitionExecTasks)
+                executeAsync0(task);
+
+            return taskState.outFuture();
         }
-
-        if (!prohibitionExecTasks)
-            executeAsync0(task);
-
-        return taskState.outFuture();
+        finally {
+            stopLock.leaveBusy();
+        }
     }
 
     /**

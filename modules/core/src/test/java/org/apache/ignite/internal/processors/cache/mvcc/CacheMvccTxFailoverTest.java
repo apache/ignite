@@ -159,7 +159,8 @@ public class CacheMvccTxFailoverTest extends GridCommonAbstractTest {
             ((GridCacheDatabaseSharedManager)node.context().cache().context().database()).enableCheckpoints(false).get();
         }
 
-        GridTimeoutProcessor.CancelableTask flushTask = GridTestUtils.getFieldValue(wal, FileWriteAheadLogManager.class, "backgroundFlushSchedule");
+        GridTimeoutProcessor.CancelableTask flushTask =
+            GridTestUtils.getFieldValue(wal, FileWriteAheadLogManager.class, "backgroundFlushSchedule");
         WalStateManager.WALDisableContext wctx = GridTestUtils.getFieldValue(wal, FileWriteAheadLogManager.class, "walDisableContext");
 
         // Disable checkpoint and WAL flusher.

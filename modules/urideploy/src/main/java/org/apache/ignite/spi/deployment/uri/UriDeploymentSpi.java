@@ -136,8 +136,8 @@ import org.jetbrains.annotations.Nullable;
  * This SPI uses a hierarchical URI definition. For more information about standard URI
  * syntax refer to {@link URI java.net.URI} documentation.
  * <blockquote class="snippet">
- * [<i>scheme</i><tt><b>:</b></tt>][<tt><b>//</b></tt><i>authority</i>][<i>path</i>][<tt><b>?</b></tt><i>query</i>][<tt><b>#</b></tt><i>fragment</i>]
- * </blockquote>
+ * [<i>scheme</i><tt><b>:</b></tt>][<tt><b>//</b></tt><i>authority</i>][<i>path</i>][<tt><b>?</b></tt><i>query</i>]
+ * [<tt><b>#</b></tt><i>fragment</i>]</blockquote>
  * <p>
  * Every URI defines its own deployment repository which will be scanned for any changes.
  * URI itself has all information about protocol, connectivity, scan intervals and other

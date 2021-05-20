@@ -2330,11 +2330,11 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                     Collection<ClusterNode> nodes = updateTopologyHistory(topVer, msg);
 
-                    notifyDiscovery(EVT_NODE_JOINED, topVer, locNode, nodes, msg.spanContainer());
-
                     boolean disconnected = disconnected();
 
                     state = CONNECTED;
+
+                    notifyDiscovery(EVT_NODE_JOINED, topVer, locNode, nodes, msg.spanContainer());
 
                     if (disconnected) {
                         notifyDiscovery(EVT_CLIENT_NODE_RECONNECTED, topVer, locNode, nodes, null);
