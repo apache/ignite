@@ -50,3 +50,15 @@ SELECT COUNT(DISTINCT i), MIN(i), MAX(i), SUM(i) / COUNT(i) FROM (SELECT t::TINY
 ----
 255	-127	127	0
 
+# now do the same with a single smallint column
+statement ok
+CREATE TABLE smallints (t SMALLINT)
+
+statement ok
+INSERT INTO smallints SELECT x::SMALLINT::VARCHAR AS t FROM table(system_range(-32767, 32767));
+
+query IIII
+SELECT COUNT(DISTINCT i), MIN(i), MAX(i), SUM(i) / COUNT(i) FROM (SELECT t::SMALLINT i FROM smallints GROUP BY t)
+----
+65535	-32767	32767	0
+

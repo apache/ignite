@@ -43,6 +43,7 @@ import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
@@ -176,7 +177,7 @@ public class TraitUtils {
         RelTraitSet traits = rel.getTraitSet()
             .replace(toTrait);
 
-        return new IgniteTableSpool(rel.getCluster(), traits, rel);
+        return new IgniteTableSpool(rel.getCluster(), traits, Spool.Type.LAZY, rel);
     }
 
     /** */

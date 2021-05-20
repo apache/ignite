@@ -22,7 +22,6 @@ import java.util.List;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
@@ -30,12 +29,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
-import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
-import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
-import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
-import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.junit.Test;
 
@@ -51,12 +45,6 @@ import static org.junit.Assert.assertThat;
  * Test suite to verify join colocation.
  */
 public class JoinColocationPlannerTest extends AbstractPlannerTest {
-    /** */
-    private static final IgniteTypeFactory TYPE_FACTORY = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
-
-    /** */
-    private static final int DEFAULT_TBL_SIZE = 500_000;
-
     /**
      * Join of the same tables with a simple affinity is expected to be colocated.
      */
@@ -212,61 +200,5 @@ public class JoinColocationPlannerTest extends AbstractPlannerTest {
         String invalidPlanMsg = "Invalid plan:\n" + RelOptUtil.toString(phys);
 
         assertThat(invalidPlanMsg, exchange, nullValue());
-    }
-
-    /**
-     * Creates test table with given params.
-     *
-     * @param name Name of the table.
-     * @param distr Distribution of the table.
-     * @param fields List of the required fields. Every odd item should be a string
-     *               representing a column name, every even item should be a class representing column's type.
-     *               E.g. {@code createTable("MY_TABLE", distribution, "ID", Integer.class, "VAL", String.class)}.
-     * @return Instance of the {@link TestTable}.
-     */
-    private static TestTable createTable(String name, IgniteDistribution distr, Object... fields) {
-        return createTable(name, DEFAULT_TBL_SIZE, distr, fields);
-    }
-
-    /**
-     * Creates test table with given params.
-     *
-     * @param name Name of the table.
-     * @param size Required size of the table.
-     * @param distr Distribution of the table.
-     * @param fields List of the required fields. Every odd item should be a string
-     *               representing a column name, every even item should be a class representing column's type.
-     *               E.g. {@code createTable("MY_TABLE", 500, distribution, "ID", Integer.class, "VAL", String.class)}.
-     * @return Instance of the {@link TestTable}.
-     */
-    private static TestTable createTable(String name, int size, IgniteDistribution distr, Object... fields) {
-        if (F.isEmpty(fields) || fields.length % 2 != 0)
-            throw new IllegalArgumentException("'fields' should be non-null array with even number of elements");
-
-        RelDataTypeFactory.Builder b = new RelDataTypeFactory.Builder(TYPE_FACTORY);
-
-        for (int i = 0; i < fields.length; i += 2)
-            b.add((String)fields[i], TYPE_FACTORY.createJavaType((Class<?>)fields[i + 1]));
-
-        return new TestTable(name, b.build(), RewindabilityTrait.REWINDABLE, size) {
-            @Override public IgniteDistribution distribution() {
-                return distr;
-            }
-        };
-    }
-
-    /**
-     * Creates public schema from provided tables.
-     *
-     * @param tbls Tables to create schema for.
-     * @return Public schema.
-     */
-    private static IgniteSchema createSchema(TestTable... tbls) {
-        IgniteSchema schema = new IgniteSchema("PUBLIC");
-
-        for (TestTable tbl : tbls)
-            schema.addTable(tbl.name(), tbl);
-
-        return schema;
     }
 }
