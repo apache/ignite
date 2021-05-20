@@ -155,7 +155,22 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         [Test]
         public void TestFlushFailsWhenAllServersStop()
         {
-            Assert.Fail("TODO");
+            var server = StartServer();
+            var client = StartClient();
+
+            var cache = CreateCache(client);
+
+            var streamer = client.GetDataStreamer<int, int>(cache.Name);
+
+            streamer.Add(1, 1);
+            streamer.Flush();
+
+            server.Dispose();
+
+            streamer.Add(2, 2);
+
+            var ex = Assert.Throws<IgniteClientException>(() => streamer.Flush());
+            Assert.AreEqual("todo", ex.Message);
         }
 
         [Test]
