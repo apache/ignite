@@ -27,9 +27,7 @@ import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rex.RexNode;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
-/**
- *
- */
+/** */
 public class IgniteTableModify extends TableModify implements IgniteRel {
     /**
      * Creates a {@code TableModify}.
@@ -38,28 +36,34 @@ public class IgniteTableModify extends TableModify implements IgniteRel {
      * <blockquote>
      * <pre>UPDATE table SET iden1 = exp1, ident2 = exp2  WHERE condition</pre>
      * </blockquote>
-     *  @param cluster              Cluster this relational expression belongs to
-     * @param traitSet             Traits of this relational expression
-     * @param table                Target table to modify
-     * @param input                Sub-query or filter condition
-     * @param operation            Modify operation (INSERT, UPDATE, DELETE)
-     * @param updateColumnList     List of column identifiers to be updated
-     *                             (e.g. ident1, ident2); null if not UPDATE
-     * @param sourceExpressionList List of value expressions to be set
-     *                             (e.g. exp1, exp2); null if not UPDATE
-     * @param flattened            Whether set flattens the input row type
+     *
+     * @param cluster Cluster this relational expression belongs to.
+     * @param traitSet Traits of this relational expression.
+     * @param table Target table to modify.
+     * @param input Sub-query or filter condition.
+     * @param operation Modify operation (INSERT, UPDATE, DELETE).
+     * @param updateColumnList List of column identifiers to be updated (e.g. ident1, ident2); null if not UPDATE.
+     * @param sourceExpressionList List of value expressions to be set (e.g. exp1, exp2); null if not UPDATE.
+     * @param flattened Whether set flattens the input row type.
      */
-    public IgniteTableModify(RelOptCluster cluster,
+    public IgniteTableModify(
+        RelOptCluster cluster,
         RelTraitSet traitSet,
         RelOptTable table,
         RelNode input,
         Operation operation,
         List<String> updateColumnList,
         List<RexNode> sourceExpressionList,
-        boolean flattened) {
+        boolean flattened
+    ) {
         super(cluster, traitSet, table, Commons.context(cluster).catalogReader(), input, operation, updateColumnList, sourceExpressionList, flattened);
     }
 
+    /**
+     * Creates a {@code TableModify} from serialized {@link RelInput input}.
+     *
+     * @param input The input to create node from.
+     */
     public IgniteTableModify(RelInput input) {
         this(
             input.getCluster(),

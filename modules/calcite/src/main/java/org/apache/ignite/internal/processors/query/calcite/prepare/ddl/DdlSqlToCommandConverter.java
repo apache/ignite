@@ -166,7 +166,7 @@ public class DdlSqlToCommandConverter {
                     "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.PARSING);
 
             String name = col.name.getSimple();
-            RelDataType type = planner.conver(col.dataType);
+            RelDataType type = planner.convert(col.dataType);
 
             Object dflt = null;
             if (col.expression != null)

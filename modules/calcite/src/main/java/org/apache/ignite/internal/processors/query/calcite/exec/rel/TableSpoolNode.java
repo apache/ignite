@@ -40,6 +40,12 @@ public class TableSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
     private final List<Row> rows;
 
     /**
+     * If {@code true} this spool should emit rows as soon as it stored.
+     * If {@code false} the spool have to collect all rows from underlying input.
+     */
+    private final boolean lazyRead;
+
+    /**
      * Flag indicates that spool pushes row to downstream.
      * Need to check a case when a downstream produces requests on push.
      */
@@ -48,8 +54,10 @@ public class TableSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
     /**
      * @param ctx Execution context.
      */
-    public TableSpoolNode(ExecutionContext<Row> ctx, RelDataType rowType) {
+    public TableSpoolNode(ExecutionContext<Row> ctx, RelDataType rowType, boolean lazyRead) {
         super(ctx, rowType);
+
+        this.lazyRead = lazyRead;
 
         rows = new ArrayList<>();
     }
@@ -90,29 +98,32 @@ public class TableSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
 
     /** */
     private void doPush() throws Exception {
-        if (rowIdx >= rows.size() && waiting == -1 && requested > 0) {
-            downstream().end();
-
+        if (isClosed())
             return;
+
+        if (!lazyRead && waiting != -1)
+            return;
+
+        int processed = 0;
+        inLoop = true;
+        try {
+            while (requested > 0 && rowIdx < rows.size() && processed++ < IN_BUFFER_SIZE) {
+                downstream().push(rows.get(rowIdx));
+
+                rowIdx++;
+                requested--;
+            }
+        }
+        finally {
+            inLoop = false;
         }
 
-        while (requested > 0 && rowIdx < rows.size())
-            pushToDownstream();
-    }
-
-    /** */
-    private void pushToDownstream() throws Exception {
-        inLoop = true;
-
-        downstream().push(rows.get(rowIdx));
-
-        inLoop = false;
-
-        rowIdx++;
-        requested--;
-
-        if (rowIdx >= rows.size() && waiting == -1 && requested > 0)
+        if (rowIdx >= rows.size() && waiting == -1 && requested > 0) {
+            requested = 0;
             downstream().end();
+        }
+        else if (requested > 0 && processed >= IN_BUFFER_SIZE)
+            context().execute(this::doPush, this::onError);
     }
 
     /** {@inheritDoc} */
@@ -130,7 +141,7 @@ public class TableSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
             source().request(waiting = IN_BUFFER_SIZE);
 
         if (requested > 0 && rowIdx < rows.size())
-            pushToDownstream();
+            doPush();
     }
 
     /** {@inheritDoc} */
@@ -142,7 +153,6 @@ public class TableSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
 
         waiting = -1;
 
-        if (rowIdx >= rows.size() && requested > 0)
-            downstream().end();
+        context().execute(this::doPush, this::onError);
     }
 }
