@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.schema;
 
+import java.util.function.Supplier;
 import org.apache.ignite.internal.tostring.S;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Column description for a type schema. Column contains a column name, a column type and a nullability flag.
@@ -26,6 +28,9 @@ import org.apache.ignite.internal.tostring.S;
  * flag is not taken into account when columns are compared.
  */
 public class Column implements Comparable<Column> {
+    /** {@code Null} value supplier. */
+    private static final Supplier<Object> NULL_DEFAULT_SUPPLIER = () -> null;
+
     /** Absolute index in schema descriptor. */
     private final int schemaIndex;
 
@@ -45,6 +50,11 @@ public class Column implements Comparable<Column> {
     private final boolean nullable;
 
     /**
+     * Default value supplier.
+     */
+    private final Supplier<Object> defValSup;
+
+    /**
      * @param name Column name.
      * @param type An instance of column data type.
      * @param nullable If {@code false}, null values will not be allowed for this column.
@@ -54,7 +64,22 @@ public class Column implements Comparable<Column> {
         NativeType type,
         boolean nullable
     ) {
-        this(-1, name, type, nullable);
+        this(-1, name, type, nullable, NULL_DEFAULT_SUPPLIER);
+    }
+
+    /**
+     * @param name Column name.
+     * @param type An instance of column data type.
+     * @param nullable If {@code false}, null values will not be allowed for this column.
+     * @param defValSup Default value supplier.
+     */
+    public Column(
+        String name,
+        NativeType type,
+        boolean nullable,
+        @NotNull Supplier<Object> defValSup
+    ) {
+        this(-1, name, type, nullable, defValSup);
     }
 
     /**
@@ -67,12 +92,14 @@ public class Column implements Comparable<Column> {
         int schemaIndex,
         String name,
         NativeType type,
-        boolean nullable
+        boolean nullable,
+        @NotNull Supplier<Object> defValSup
     ) {
         this.schemaIndex = schemaIndex;
         this.name = name;
         this.type = type;
         this.nullable = nullable;
+        this.defValSup = defValSup;
     }
 
     /**
@@ -103,6 +130,19 @@ public class Column implements Comparable<Column> {
         return nullable;
     }
 
+    /**
+     * Get default value for the column.
+     *
+     * @return Default value.
+     */
+    public Object defaultValue() {
+        Object val = defValSup.get();
+
+        assert nullable || val != null : "Null value is not accepted for not nullable column: [col=" + this + ']';
+
+        return val;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
@@ -130,6 +170,36 @@ public class Column implements Comparable<Column> {
             return cmp;
 
         return name.compareTo(o.name);
+    }
+
+    /**
+     * Validate the object by column's constraint.
+     */
+    public void validate(Object val) {
+        if (val == null && !nullable) {
+            throw new IllegalArgumentException("Failed to set column (null was passed, but column is not nullable): " +
+                "[col=" + this + ']');
+        }
+
+        NativeType objType = NativeTypes.fromObject(val);
+
+        if (objType != null && type.mismatch(objType)) {
+            throw new InvalidTypeException("Column's type mismatch [" +
+                "column=" + this +
+                ", expectedType=" + type +
+                ", actualType=" + objType +
+                ", val=" + val + ']');
+        }
+    }
+
+    /**
+     * Copy column with new schema index.
+     *
+     * @param schemaIndex Column index in the schema.
+     * @return Column.
+     */
+    public Column copy(int schemaIndex) {
+        return new Column(schemaIndex, name, type, nullable, defValSup);
     }
 
     /** {@inheritDoc} */

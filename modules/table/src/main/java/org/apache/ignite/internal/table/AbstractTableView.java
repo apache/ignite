@@ -29,7 +29,7 @@ abstract class AbstractTableView {
     /** Internal table. */
     protected final InternalTable tbl;
 
-    /** Schema manager. */
+    /** Schema registry. */
     protected final SchemaRegistry schemaReg;
 
     /**

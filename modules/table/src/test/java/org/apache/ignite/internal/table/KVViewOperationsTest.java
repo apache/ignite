@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.table;
 
 import org.apache.ignite.internal.schema.Column;
-import org.apache.ignite.internal.schema.NativeType;
+import org.apache.ignite.internal.schema.NativeTypes;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.table.impl.DummyInternalTableImpl;
 import org.apache.ignite.internal.table.impl.DummySchemaManagerImpl;
@@ -41,15 +41,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * TODO: IGNITE-14487 Check key fields in Tuple is ignored for value or exception is thrown?
  */
 public class KVViewOperationsTest {
+    /** Table ID test value. */
+    public final java.util.UUID tableId = java.util.UUID.randomUUID();
+
     /**
      *
      */
     @Test
-    public void testPut() {
+    public void put() {
         SchemaDescriptor schema = new SchemaDescriptor(
+            tableId,
             1,
-            new Column[] {new Column("id", NativeType.LONG, false)},
-            new Column[] {new Column("val", NativeType.LONG, false)}
+            new Column[] {new Column("id", NativeTypes.LONG, false)},
+            new Column[] {new Column("val", NativeTypes.LONG, false)}
         );
 
         KeyValueBinaryView tbl = new KVBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));
@@ -87,11 +91,12 @@ public class KVViewOperationsTest {
      *
      */
     @Test
-    public void testPutIfAbsent() {
+    public void putIfAbsent() {
         SchemaDescriptor schema = new SchemaDescriptor(
+            tableId,
             1,
-            new Column[] {new Column("id", NativeType.LONG, false)},
-            new Column[] {new Column("val", NativeType.LONG, false)}
+            new Column[] {new Column("id", NativeTypes.LONG, false)},
+            new Column[] {new Column("val", NativeTypes.LONG, false)}
         );
 
         KeyValueBinaryView tbl = new KVBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));
@@ -119,11 +124,12 @@ public class KVViewOperationsTest {
      *
      */
     @Test
-    public void testGetAndPut() {
+    public void getAndPut() {
         SchemaDescriptor schema = new SchemaDescriptor(
+            tableId,
             1,
-            new Column[] {new Column("id", NativeType.LONG, false)},
-            new Column[] {new Column("val", NativeType.LONG, false)}
+            new Column[] {new Column("id", NativeTypes.LONG, false)},
+            new Column[] {new Column("val", NativeTypes.LONG, false)}
         );
 
         KeyValueBinaryView tbl = new KVBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));
@@ -153,11 +159,12 @@ public class KVViewOperationsTest {
      *
      */
     @Test
-    public void testRemove() {
+    public void remove() {
         SchemaDescriptor schema = new SchemaDescriptor(
+            tableId,
             1,
-            new Column[] {new Column("id", NativeType.LONG, false)},
-            new Column[] {new Column("val", NativeType.LONG, false)}
+            new Column[] {new Column("id", NativeTypes.LONG, false)},
+            new Column[] {new Column("val", NativeTypes.LONG, false)}
         );
 
         KeyValueBinaryView tbl = new KVBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));
@@ -195,11 +202,12 @@ public class KVViewOperationsTest {
      *
      */
     @Test
-    public void testRemoveExact() {
+    public void removeExact() {
         SchemaDescriptor schema = new SchemaDescriptor(
+            tableId,
             1,
-            new Column[] {new Column("id", NativeType.LONG, false)},
-            new Column[] {new Column("val", NativeType.LONG, false)}
+            new Column[] {new Column("id", NativeTypes.LONG, false)},
+            new Column[] {new Column("val", NativeTypes.LONG, false)}
         );
 
         KeyValueBinaryView tbl = new KVBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));
@@ -251,11 +259,12 @@ public class KVViewOperationsTest {
      *
      */
     @Test
-    public void testReplace() {
+    public void replace() {
         SchemaDescriptor schema = new SchemaDescriptor(
+            tableId,
             1,
-            new Column[] {new Column("id", NativeType.LONG, false)},
-            new Column[] {new Column("val", NativeType.LONG, false)}
+            new Column[] {new Column("id", NativeTypes.LONG, false)},
+            new Column[] {new Column("val", NativeTypes.LONG, false)}
         );
 
         KeyValueBinaryView tbl = new KVBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));
@@ -296,11 +305,12 @@ public class KVViewOperationsTest {
      *
      */
     @Test
-    public void testReplaceExact() {
+    public void replaceExact() {
         SchemaDescriptor schema = new SchemaDescriptor(
+            tableId,
             1,
-            new Column[] {new Column("id", NativeType.LONG, false)},
-            new Column[] {new Column("val", NativeType.LONG, false)}
+            new Column[] {new Column("id", NativeTypes.LONG, false)},
+            new Column[] {new Column("val", NativeTypes.LONG, false)}
         );
 
         KeyValueBinaryView tbl = new KVBinaryViewImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));

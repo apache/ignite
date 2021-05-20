@@ -81,6 +81,11 @@ public class TableRow extends RowChunkAdapter {
         return row;
     }
 
+    /** */
+    @Override public boolean contains(String colName) {
+        return schema.column(colName) != null;
+    }
+
     /** Key column chunk. */
     private class KeyRowChunk extends RowChunkAdapter {
         /** {@inheritDoc} */
@@ -98,6 +103,11 @@ public class TableRow extends RowChunkAdapter {
                 throw new IllegalArgumentException("Invalid key column name: columnName=" + colName + ", schemaVersion=" + schema.version());
 
             return col;
+        }
+
+        /** */
+        @Override public boolean contains(String colName) {
+            return schema.column(colName) != null;
         }
     }
 
@@ -118,6 +128,11 @@ public class TableRow extends RowChunkAdapter {
                 throw new IllegalArgumentException("Invalid key column name: columnName=" + colName + ", schemaVersion=" + schema.version());
 
             return col;
+        }
+
+        /** */
+        @Override public boolean contains(String colName) {
+            return schema.column(colName) != null;
         }
     }
 }

@@ -28,6 +28,13 @@ import org.apache.ignite.binary.BinaryObject;
  */
 public interface Tuple {
     /**
+     * Returns {@code true} if this tuple contains a column with the specified name.
+     *
+     * @return {@code true} if this tuple contains a column with the specified name. Otherwise returns {@code false}.
+     */
+    boolean contains(String colName);
+
+    /**
      * Gets column value for given column name.
      *
      * @param colName Column name.

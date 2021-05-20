@@ -18,10 +18,12 @@
 package org.apache.ignite.internal.table;
 
 import org.apache.ignite.internal.schema.Column;
-import org.apache.ignite.internal.schema.NativeType;
+import org.apache.ignite.internal.schema.InvalidTypeException;
+import org.apache.ignite.internal.schema.NativeTypes;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.table.impl.DummyInternalTableImpl;
 import org.apache.ignite.internal.table.impl.DummySchemaManagerImpl;
+import org.apache.ignite.internal.table.impl.TestTupleBuilder;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;
 import org.junit.jupiter.api.Assertions;
@@ -29,6 +31,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -39,15 +42,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * TODO: IGNITE-14486 Add tests for async operations.
  */
 public class TableBinaryViewOperationsTest {
+    /** Table ID test value. */
+    public final java.util.UUID tableId = java.util.UUID.randomUUID();
+
     /**
      *
      */
     @Test
-    public void testInsert() {
+    public void insert() {
         SchemaDescriptor schema = new SchemaDescriptor(
+            tableId,
             1,
-            new Column[] {new Column("id", NativeType.LONG, false)},
-            new Column[] {new Column("val", NativeType.LONG, false)}
+            new Column[] {new Column("id", NativeTypes.LONG, false)},
+            new Column[] {new Column("val", NativeTypes.LONG, false)}
         );
 
         Table tbl = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));
@@ -62,13 +69,13 @@ public class TableBinaryViewOperationsTest {
         assertTrue(tbl.insert(tuple));
 
         assertEqualsRows(schema, tuple, tbl.get(tuple));
-        assertEqualsRows(schema, tuple, tbl.get(tbl.tupleBuilder().set("id", 1L).set("val", -1).build()));
+        assertEqualsRows(schema, tuple, tbl.get(tbl.tupleBuilder().set("id", 1L).set("val", -1L).build()));
 
         // Ignore insert operation for exited row.
         assertFalse(tbl.insert(newTuple));
 
         assertEqualsRows(schema, tuple, tbl.get(newTuple));
-        assertEqualsRows(schema, tuple, tbl.get(tbl.tupleBuilder().set("id", 1L).set("val", -1).build()));
+        assertEqualsRows(schema, tuple, tbl.get(tbl.tupleBuilder().set("id", 1L).set("val", -1L).build()));
 
         assertNull(tbl.get(nonExistedTuple));
     }
@@ -77,11 +84,12 @@ public class TableBinaryViewOperationsTest {
      *
      */
     @Test
-    public void testUpsert() {
+    public void upsert() {
         SchemaDescriptor schema = new SchemaDescriptor(
+            tableId,
             1,
-            new Column[] {new Column("id", NativeType.LONG, false)},
-            new Column[] {new Column("val", NativeType.LONG, false)}
+            new Column[] {new Column("id", NativeTypes.LONG, false)},
+            new Column[] {new Column("val", NativeTypes.LONG, false)}
         );
 
         Table tbl = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));
@@ -97,13 +105,13 @@ public class TableBinaryViewOperationsTest {
         tbl.upsert(tuple);
 
         assertEqualsRows(schema, tuple, tbl.get(tuple));
-        assertEqualsRows(schema, tuple, tbl.get(tbl.tupleBuilder().set("id", 1L).set("val", -1).build()));
+        assertEqualsRows(schema, tuple, tbl.get(tbl.tupleBuilder().set("id", 1L).set("val", -1L).build()));
 
         // Update exited row.
         tbl.upsert(newTuple);
 
         assertEqualsRows(schema, newTuple, tbl.get(tuple));
-        assertEqualsRows(schema, newTuple, tbl.get(tbl.tupleBuilder().set("id", 1L).set("val", -1).build()));
+        assertEqualsRows(schema, newTuple, tbl.get(tbl.tupleBuilder().set("id", 1L).set("val", -1L).build()));
 
         assertNull(tbl.get(nonExistedTuple));
     }
@@ -112,11 +120,12 @@ public class TableBinaryViewOperationsTest {
      *
      */
     @Test
-    public void testGetAndUpsert() {
+    public void getAndUpsert() {
         SchemaDescriptor schema = new SchemaDescriptor(
+            tableId,
             1,
-            new Column[] {new Column("id", NativeType.LONG, false)},
-            new Column[] {new Column("val", NativeType.LONG, false)}
+            new Column[] {new Column("id", NativeTypes.LONG, false)},
+            new Column[] {new Column("val", NativeTypes.LONG, false)}
         );
 
         Table tbl = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));
@@ -131,24 +140,25 @@ public class TableBinaryViewOperationsTest {
         assertNull(tbl.getAndUpsert(tuple));
 
         assertEqualsRows(schema, tuple, tbl.get(tuple));
-        assertEqualsRows(schema, tuple, tbl.get(tbl.tupleBuilder().set("id", 1L).set("val", -1).build()));
+        assertEqualsRows(schema, tuple, tbl.get(tbl.tupleBuilder().set("id", 1L).set("val", -1L).build()));
 
         // Update exited row.
         assertEqualsRows(schema, tuple, tbl.getAndUpsert(newTuple));
 
         assertEqualsRows(schema, newTuple, tbl.get(tuple));
-        assertEqualsRows(schema, newTuple, tbl.get(tbl.tupleBuilder().set("id", 1L).set("val", -1).build()));
+        assertEqualsRows(schema, newTuple, tbl.get(tbl.tupleBuilder().set("id", 1L).set("val", -1L).build()));
     }
 
     /**
      *
      */
     @Test
-    public void testRemove() {
+    public void remove() {
         SchemaDescriptor schema = new SchemaDescriptor(
+            tableId,
             1,
-            new Column[] {new Column("id", NativeType.LONG, false)},
-            new Column[] {new Column("val", NativeType.LONG, false)}
+            new Column[] {new Column("id", NativeTypes.LONG, false)},
+            new Column[] {new Column("val", NativeTypes.LONG, false)}
         );
 
         Table tbl = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));
@@ -174,11 +184,12 @@ public class TableBinaryViewOperationsTest {
      *
      */
     @Test
-    public void testRemoveExact() {
+    public void removeExact() {
         SchemaDescriptor schema = new SchemaDescriptor(
+            tableId,
             1,
-            new Column[] {new Column("id", NativeType.LONG, false)},
-            new Column[] {new Column("val", NativeType.LONG, false)}
+            new Column[] {new Column("id", NativeTypes.LONG, false)},
+            new Column[] {new Column("val", NativeTypes.LONG, false)}
         );
 
         Table tbl = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));
@@ -225,11 +236,12 @@ public class TableBinaryViewOperationsTest {
      *
      */
     @Test
-    public void testReplace() {
+    public void replace() {
         SchemaDescriptor schema = new SchemaDescriptor(
+            tableId,
             1,
-            new Column[] {new Column("id", NativeType.LONG, false)},
-            new Column[] {new Column("val", NativeType.LONG, false)}
+            new Column[] {new Column("id", NativeTypes.LONG, false)},
+            new Column[] {new Column("val", NativeTypes.LONG, false)}
         );
 
         Table tbl = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));
@@ -244,7 +256,7 @@ public class TableBinaryViewOperationsTest {
         assertFalse(tbl.replace(tuple));
 
         assertNull(tbl.get(keyTuple));
-        assertNull(tbl.get(tbl.tupleBuilder().set("id", 1L).set("val", -1).build()));
+        assertNull(tbl.get(tbl.tupleBuilder().set("id", 1L).set("val", -1L).build()));
 
         // Insert row.
         tbl.insert(tuple);
@@ -253,18 +265,19 @@ public class TableBinaryViewOperationsTest {
         assertTrue(tbl.replace(tuple2));
 
         assertEqualsRows(schema, tuple2, tbl.get(keyTuple));
-        assertEqualsRows(schema, tuple2, tbl.get(tbl.tupleBuilder().set("id", 1L).set("val", -1).build()));
+        assertEqualsRows(schema, tuple2, tbl.get(tbl.tupleBuilder().set("id", 1L).set("val", -1L).build()));
     }
 
     /**
      *
      */
     @Test
-    public void testReplaceExact() {
+    public void replaceExact() {
         SchemaDescriptor schema = new SchemaDescriptor(
+            tableId,
             1,
-            new Column[] {new Column("id", NativeType.LONG, false)},
-            new Column[] {new Column("val", NativeType.LONG, false)}
+            new Column[] {new Column("id", NativeTypes.LONG, false)},
+            new Column[] {new Column("val", NativeTypes.LONG, false)}
         );
 
         Table tbl = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));
@@ -289,7 +302,75 @@ public class TableBinaryViewOperationsTest {
         assertTrue(tbl.replace(tuple, tuple2));
 
         assertEqualsRows(schema, tuple2, tbl.get(keyTuple));
-        assertEqualsRows(schema, tuple2, tbl.get(tbl.tupleBuilder().set("id", 1L).set("val", -1).build()));
+        assertEqualsRows(schema, tuple2, tbl.get(tbl.tupleBuilder().set("id", 1L).set("val", -1L).build()));
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void validateSchema() {
+        SchemaDescriptor schema = new SchemaDescriptor(
+            tableId,
+            1,
+            new Column[] {new Column("id", NativeTypes.LONG, false)},
+            new Column[] {
+                new Column("val", NativeTypes.LONG, true),
+                new Column("str", NativeTypes.stringOf(3), true),
+                new Column("blob", NativeTypes.blobOf(3), true)
+            }
+        );
+
+        Table tbl = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));
+
+        final Tuple keyTuple0 = new TestTupleBuilder().set("id", 0).set("id1", 0).build();
+        final Tuple keyTuple1 = new TestTupleBuilder().set("id1", 0).build();
+        final Tuple tuple0 = new TestTupleBuilder().set("id", 1L).set("str", "qweqweqwe").set("val", 11L).build();
+        final Tuple tuple1 = new TestTupleBuilder().set("id", 1L).set("blob", new byte[] {0, 1, 2, 3}).set("val", 22L).build();
+
+        assertThrows(InvalidTypeException.class, () -> tbl.get(keyTuple0));
+        assertThrows(IllegalArgumentException.class, () -> tbl.get(keyTuple1));
+
+        assertThrows(InvalidTypeException.class, () -> tbl.replace(tuple0));
+        assertThrows(InvalidTypeException.class, () -> tbl.replace(tuple1));
+
+        assertThrows(InvalidTypeException.class, () -> tbl.insert(tuple0));
+        assertThrows(InvalidTypeException.class, () -> tbl.insert(tuple1));
+
+        assertThrows(InvalidTypeException.class, () -> tbl.replace(tuple0));
+        assertThrows(InvalidTypeException.class, () -> tbl.replace(tuple1));
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void defaultValues() {
+        SchemaDescriptor schema = new SchemaDescriptor(
+            tableId,
+            1,
+            new Column[] {new Column("id", NativeTypes.LONG, false)},
+            new Column[] {
+                new Column("val", NativeTypes.LONG, true, () -> 28L),
+                new Column("str", NativeTypes.stringOf(3), true, () -> "ABC"),
+                new Column("blob", NativeTypes.blobOf(3), true, () -> new byte[] {0, 1, 2})
+            }
+        );
+
+        Table tbl = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));
+
+        final Tuple keyTuple0 = tbl.tupleBuilder().set("id", 0L).build();
+        final Tuple keyTuple1 = tbl.tupleBuilder().set("id", 1L).build();
+
+        final Tuple tuple0 = tbl.tupleBuilder().set("id", 0L).build();
+        final Tuple tupleExpected0 = tbl.tupleBuilder().set("id", 0L).set("val", 28L).set("str", "ABC").set("blob", new byte[] {0, 1, 2}).build();
+        final Tuple tuple1 = tbl.tupleBuilder().set("id", 1L).set("val", null).set("str", null).set("blob", null).build();
+
+        tbl.insert(tuple0);
+        tbl.insert(tuple1);
+
+        assertEqualsRows(schema, tupleExpected0, tbl.get(keyTuple0));
+        assertEqualsRows(schema, tuple1, tbl.get(keyTuple1));
     }
 
     /**
@@ -343,7 +424,10 @@ public class TableBinaryViewOperationsTest {
             final Object val1 = expected.value(col.name());
             final Object val2 = actual.value(col.name());
 
-            Assertions.assertEquals(val1, val2, "Key columns equality check failed: colIdx=" + col.schemaIndex());
+            if (val1 instanceof byte[] && val2 instanceof byte[])
+                Assertions.assertArrayEquals((byte[])val1, (byte[])val2, "Equality check failed: colIdx=" + col.schemaIndex());
+            else
+               Assertions.assertEquals(val1, val2, "Equality check failed: colIdx=" + col.schemaIndex());
         }
     }
 }

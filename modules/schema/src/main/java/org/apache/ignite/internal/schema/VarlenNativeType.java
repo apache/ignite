@@ -17,35 +17,32 @@
 
 package org.apache.ignite.internal.schema;
 
-import java.util.Arrays;
-import org.junit.jupiter.api.Test;
-
-import static org.apache.ignite.internal.schema.NativeTypes.BYTES;
-import static org.apache.ignite.internal.schema.NativeTypes.INTEGER;
-import static org.apache.ignite.internal.schema.NativeTypes.STRING;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.apache.ignite.internal.tostring.S;
 
 /**
- *
+ * Variable-length native type.
  */
-public class ColumnTest {
+public class VarlenNativeType extends NativeType {
+    /** Length of the type. */
+    private final int len;
+
     /**
-     *
+     * @param typeSpec Type spec.
+     * @param len Type length.
      */
-    @Test
-    public void compareColumns() {
-        Column[] cols = new Column[] {
-            new Column("C", BYTES, false),
-            new Column("B", INTEGER, false),
-            new Column("AD", STRING, false),
-            new Column("AA", STRING, false),
-        };
+    protected VarlenNativeType(NativeTypeSpec typeSpec, int len) {
+        super(typeSpec);
 
-        Arrays.sort(cols);
+        this.len = len;
+    }
 
-        assertEquals("B", cols[0].name());
-        assertEquals("C", cols[1].name());
-        assertEquals("AA", cols[2].name());
-        assertEquals("AD", cols[3].name());
+    /** {@inheritDoc} */
+    @Override public boolean mismatch(NativeType type) {
+        return super.mismatch(type) || len < ((VarlenNativeType)type).len;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VarlenNativeType.class.getSimpleName(), "name", spec(), "len", len);
     }
 }

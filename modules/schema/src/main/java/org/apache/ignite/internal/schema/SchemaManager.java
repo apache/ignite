@@ -88,7 +88,7 @@ public class SchemaManager extends Producer<SchemaEvent, SchemaEventParameters> 
     /** Vault manager. */
     private final VaultManager vaultMgr;
 
-    /** Schema registries. */
+    /** Schema registries (tableId -> SchemaRegistry). */
     private final Map<UUID, SchemaRegistryImpl> schemaRegs = new ConcurrentHashMap<>();
 
     /**
@@ -180,7 +180,7 @@ public class SchemaManager extends Producer<SchemaEvent, SchemaEventParameters> 
                 final ByteArray lastVerKey = new ByteArray(INTERNAL_PREFIX + tblId);
                 final ByteArray schemaKey = new ByteArray(INTERNAL_PREFIX + tblId + INTERNAL_VER_SUFFIX + schemaVer);
 
-                final SchemaDescriptor desc = createSchemaDescriptor(schemaVer, tblConfig);
+                final SchemaDescriptor desc = createSchemaDescriptor(tblId, schemaVer, tblConfig);
 
                 return metaStorageMgr.invoke(
                     Conditions.value(lastVerKey).eq(entry.value()), // Won't to rewrite if the version goes ahead.
@@ -213,11 +213,12 @@ public class SchemaManager extends Producer<SchemaEvent, SchemaEventParameters> 
     /**
      * Creates schema descriptor from configuration.
      *
+     * @param tblId Table ID.
      * @param ver Schema version.
      * @param tblConfig Table config.
      * @return Schema descriptor.
      */
-    private SchemaDescriptor createSchemaDescriptor(int ver, TableConfiguration tblConfig) {
+    private SchemaDescriptor createSchemaDescriptor(UUID tblId, int ver, TableConfiguration tblConfig) {
         final TableIndexConfiguration pkCfg = tblConfig.indices().get(PrimaryIndex.PRIMARY_KEY_INDEX_NAME);
 
         assert pkCfg != null;
@@ -235,6 +236,7 @@ public class SchemaManager extends Producer<SchemaEvent, SchemaEventParameters> 
             .forEach(c -> (keyColNames.contains(c.name()) ? keyCols : valCols).add(c));
 
         return new SchemaDescriptor(
+            tblId,
             ver,
             keyCols.toArray(Column[]::new),
             pkCfg.affinityColumns().value(),
@@ -253,25 +255,25 @@ public class SchemaManager extends Producer<SchemaEvent, SchemaEventParameters> 
     private NativeType createType(ColumnTypeView type) {
         switch (type.type().toLowerCase()) {
             case "byte":
-                return NativeType.BYTE;
+                return NativeTypes.BYTE;
             case "short":
-                return NativeType.SHORT;
+                return NativeTypes.SHORT;
             case "int":
-                return NativeType.INTEGER;
+                return NativeTypes.INTEGER;
             case "long":
-                return NativeType.LONG;
+                return NativeTypes.LONG;
             case "float":
-                return NativeType.FLOAT;
+                return NativeTypes.FLOAT;
             case "double":
-                return NativeType.DOUBLE;
+                return NativeTypes.DOUBLE;
             case "uuid":
-                return NativeType.UUID;
+                return NativeTypes.UUID;
             case "bitmask":
-                return Bitmask.of(type.length());
+                return NativeTypes.bitmaskOf(type.length());
             case "string":
-                return NativeType.STRING;
+                return NativeTypes.stringOf(type.length());
             case "bytes":
-                return NativeType.BYTES;
+                return NativeTypes.blobOf(type.length());
 
             default:
                 throw new IllegalStateException("Unsupported column type: " + type.type());

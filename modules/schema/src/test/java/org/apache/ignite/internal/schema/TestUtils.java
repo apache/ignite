@@ -61,7 +61,7 @@ public final class TestUtils {
                 return randomBytes(rnd, rnd.nextInt(255));
 
             case BITMASK: {
-                Bitmask maskType = (Bitmask)type;
+                BitmaskNativeType maskType = (BitmaskNativeType)type;
 
                 return randomBitSet(rnd, maskType.bits());
             }

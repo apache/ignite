@@ -23,8 +23,8 @@ import java.util.BitSet;
 import java.util.Objects;
 import java.util.Random;
 import java.util.UUID;
-import org.apache.ignite.internal.schema.Bitmask;
 import org.apache.ignite.internal.schema.Column;
+import org.apache.ignite.internal.schema.NativeTypes;
 import org.apache.ignite.internal.schema.Row;
 import org.apache.ignite.internal.schema.RowAssembler;
 import org.apache.ignite.internal.schema.TestUtils;
@@ -37,15 +37,15 @@ import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import static org.apache.ignite.internal.schema.NativeType.BYTE;
-import static org.apache.ignite.internal.schema.NativeType.BYTES;
-import static org.apache.ignite.internal.schema.NativeType.DOUBLE;
-import static org.apache.ignite.internal.schema.NativeType.FLOAT;
-import static org.apache.ignite.internal.schema.NativeType.INTEGER;
-import static org.apache.ignite.internal.schema.NativeType.LONG;
-import static org.apache.ignite.internal.schema.NativeType.SHORT;
-import static org.apache.ignite.internal.schema.NativeType.STRING;
-import static org.apache.ignite.internal.schema.NativeType.UUID;
+import static org.apache.ignite.internal.schema.NativeTypes.BYTE;
+import static org.apache.ignite.internal.schema.NativeTypes.DOUBLE;
+import static org.apache.ignite.internal.schema.NativeTypes.FLOAT;
+import static org.apache.ignite.internal.schema.NativeTypes.INTEGER;
+import static org.apache.ignite.internal.schema.NativeTypes.LONG;
+import static org.apache.ignite.internal.schema.NativeTypes.SHORT;
+import static org.apache.ignite.internal.schema.NativeTypes.UUID;
+import static org.apache.ignite.internal.schema.NativeTypes.BYTES;
+import static org.apache.ignite.internal.schema.NativeTypes.STRING;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -73,7 +73,7 @@ public class FieldAccessorTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testFieldAccessor() throws Exception {
+    public void fieldAccessor() throws Exception {
         Column[] cols = new Column[] {
             new Column("pByteCol", BYTE, false),
             new Column("pShortCol", SHORT, false),
@@ -90,7 +90,7 @@ public class FieldAccessorTest {
             new Column("doubleCol", DOUBLE, false),
 
             new Column("uuidCol", UUID, false),
-            new Column("bitmaskCol", Bitmask.of(9), false),
+            new Column("bitmaskCol", NativeTypes.bitmaskOf(9), false),
             new Column("stringCol", STRING, false),
             new Column("bytesCol", BYTES, false),
         };
@@ -140,7 +140,7 @@ public class FieldAccessorTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testNullableFieldsAccessor() throws Exception {
+    public void nullableFieldsAccessor() throws Exception {
         Column[] cols = new Column[] {
             new Column("intCol", INTEGER, true),
             new Column("longCol", LONG, true),
@@ -183,7 +183,7 @@ public class FieldAccessorTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testIdentityAccessor() throws Exception {
+    public void identityAccessor() throws Exception {
         final FieldAccessor accessor = FieldAccessor.createIdentityAccessor(
             new Column("col0", STRING, true),
             0,
@@ -201,7 +201,7 @@ public class FieldAccessorTest {
      *
      */
     @Test
-    public void testWrongIdentityAccessor() {
+    public void wrongIdentityAccessor() {
         final FieldAccessor accessor = FieldAccessor.createIdentityAccessor(
             new Column("col0", STRING, true),
             42,

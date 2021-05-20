@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.schema;
 
+import java.util.BitSet;
 import org.apache.ignite.internal.tostring.S;
 
 /**
@@ -85,6 +86,16 @@ public enum NativeTypeSpec {
         /** {@inheritDoc} */
         @Override public Object objectValue(Row tup, int colIdx) {
             return tup.doubleValueBoxed(colIdx);
+        }
+    },
+
+    /**
+     * Native type representing an eight-bytes floating-point value.
+     */
+    DECIMAL("decimal", false) {
+        /** {@inheritDoc} */
+        @Override public Object objectValue(Row tup, int colIdx) {
+            return tup.decimalValue(colIdx);
         }
     },
 
@@ -172,6 +183,56 @@ public enum NativeTypeSpec {
      * @throws InvalidTypeException If this native type differs from the actual type of {@code colIdx}.
      */
     public abstract Object objectValue(Row row, int colIdx) throws InvalidTypeException;
+
+    /** */
+    public static NativeTypeSpec fromClass(Class<?> cls) {
+        assert cls != null;
+
+        // Primitives.
+        if (cls == byte.class)
+            return NativeTypeSpec.BYTE;
+        else if (cls == short.class)
+            return NativeTypeSpec.SHORT;
+        else if (cls == int.class)
+            return NativeTypeSpec.INTEGER;
+        else if (cls == long.class)
+            return NativeTypeSpec.LONG;
+        else if (cls == float.class)
+            return NativeTypeSpec.FLOAT;
+        else if (cls == double.class)
+            return NativeTypeSpec.DOUBLE;
+
+        // Boxed primitives.
+        else if (cls == Byte.class)
+            return NativeTypeSpec.BYTE;
+        else if (cls == Short.class)
+            return NativeTypeSpec.SHORT;
+        else if (cls == Integer.class)
+            return NativeTypeSpec.INTEGER;
+        else if (cls == Long.class)
+            return NativeTypeSpec.LONG;
+        else if (cls == Float.class)
+            return NativeTypeSpec.FLOAT;
+        else if (cls == Double.class)
+            return NativeTypeSpec.DOUBLE;
+
+        // Other types
+        else if (cls == byte[].class)
+            return NativeTypeSpec.BYTES;
+        else if (cls == String.class)
+            return NativeTypeSpec.STRING;
+        else if (cls == java.util.UUID.class)
+            return NativeTypeSpec.UUID;
+        else if (cls == BitSet.class)
+            return NativeTypeSpec.BITMASK;
+
+        return null;
+    }
+
+    /** */
+    public static NativeTypeSpec fromObject(Object val) {
+        return val != null ? fromClass(val.getClass()) : null;
+    }
 
     /** {@inheritDoc} */
     @Override public String toString() {

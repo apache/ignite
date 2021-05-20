@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.schema;
 
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -29,17 +30,17 @@ public class SchemaDescriptorTest {
      *
      */
     @Test
-    public void testColumnIndexedAccess() {
-        SchemaDescriptor desc = new SchemaDescriptor(1,
+    public void columnIndexedAccess() {
+        SchemaDescriptor desc = new SchemaDescriptor(UUID.randomUUID(), 1,
             new Column[] {
-                new Column("columnA", NativeType.BYTE, false),
-                new Column("columnB", NativeType.UUID, false),
-                new Column("columnC", NativeType.INTEGER, false),
+                new Column("columnA", NativeTypes.BYTE, false),
+                new Column("columnB", NativeTypes.UUID, false),
+                new Column("columnC", NativeTypes.INTEGER, false),
             },
             new Column[] {
-                new Column("columnD", NativeType.BYTE, false),
-                new Column("columnE", NativeType.UUID, false),
-                new Column("columnF", NativeType.INTEGER, false),
+                new Column("columnD", NativeTypes.BYTE, false),
+                new Column("columnE", NativeTypes.UUID, false),
+                new Column("columnF", NativeTypes.INTEGER, false),
             }
         );
 

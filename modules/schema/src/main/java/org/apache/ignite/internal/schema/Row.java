@@ -19,6 +19,7 @@ package org.apache.ignite.internal.schema;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.UUID;
@@ -228,6 +229,11 @@ public class Row implements BinaryRow {
         return off < 0 ? null : readDouble(offset(off));
     }
 
+    public BigDecimal decimalValue(int idx) {
+        // TODO: IGNITE-13668 decimal support
+        return null;
+    }
+
     /**
      * Reads value for specified column.
      *
@@ -372,7 +378,7 @@ public class Row implements BinaryRow {
     private int columnLength(int colIdx) {
         Column col = schema.column(colIdx);
 
-        return col.type().length();
+        return col.type().sizeInBytes();
     }
 
     /**

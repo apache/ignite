@@ -24,15 +24,15 @@ import java.util.Random;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.apache.ignite.internal.schema.NativeType.BYTE;
-import static org.apache.ignite.internal.schema.NativeType.BYTES;
-import static org.apache.ignite.internal.schema.NativeType.DOUBLE;
-import static org.apache.ignite.internal.schema.NativeType.FLOAT;
-import static org.apache.ignite.internal.schema.NativeType.INTEGER;
-import static org.apache.ignite.internal.schema.NativeType.LONG;
-import static org.apache.ignite.internal.schema.NativeType.SHORT;
-import static org.apache.ignite.internal.schema.NativeType.STRING;
-import static org.apache.ignite.internal.schema.NativeType.UUID;
+import static org.apache.ignite.internal.schema.NativeTypes.BYTE;
+import static org.apache.ignite.internal.schema.NativeTypes.DOUBLE;
+import static org.apache.ignite.internal.schema.NativeTypes.FLOAT;
+import static org.apache.ignite.internal.schema.NativeTypes.INTEGER;
+import static org.apache.ignite.internal.schema.NativeTypes.LONG;
+import static org.apache.ignite.internal.schema.NativeTypes.SHORT;
+import static org.apache.ignite.internal.schema.NativeTypes.UUID;
+import static org.apache.ignite.internal.schema.NativeTypes.BYTES;
+import static org.apache.ignite.internal.schema.NativeTypes.STRING;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -59,7 +59,7 @@ public class RowTest {
      *
      */
     @Test
-    public void testFixedSizes() {
+    public void fixedSizes() {
         Column[] keyCols = new Column[] {
             new Column("keyByteCol", BYTE, true),
             new Column("keyShortCol", SHORT, true),
@@ -68,8 +68,8 @@ public class RowTest {
             new Column("keyFloatCol", FLOAT, true),
             new Column("keyDoubleCol", DOUBLE, true),
             new Column("keyUuidCol", UUID, true),
-            new Column("keyBitmask1Col", Bitmask.of(4), true),
-            new Column("keyBitmask2Col", Bitmask.of(22), true)
+            new Column("keyBitmask1Col", NativeTypes.bitmaskOf(4), true),
+            new Column("keyBitmask2Col", NativeTypes.bitmaskOf(22), true)
         };
 
         Column[] valCols = new Column[] {
@@ -80,8 +80,8 @@ public class RowTest {
             new Column("valFloatCol", FLOAT, true),
             new Column("valDoubleCol", DOUBLE, true),
             new Column("valUuidCol", UUID, true),
-            new Column("valBitmask1Col", Bitmask.of(4), true),
-            new Column("valBitmask2Col", Bitmask.of(22), true)
+            new Column("valBitmask1Col", NativeTypes.bitmaskOf(4), true),
+            new Column("valBitmask2Col", NativeTypes.bitmaskOf(22), true)
         };
 
         checkSchema(keyCols, valCols);
@@ -91,7 +91,7 @@ public class RowTest {
      *
      */
     @Test
-    public void testVariableSizes() {
+    public void variableSizes() {
         Column[] keyCols = new Column[] {
             new Column("keyByteCol", BYTE, true),
             new Column("keyShortCol", SHORT, true),
@@ -117,7 +117,7 @@ public class RowTest {
      *
      */
     @Test
-    public void testMixedSizes() {
+    public void mixedSizes() {
         Column[] keyCols = new Column[] {
             new Column("keyBytesCol", BYTES, true),
             new Column("keyStringCol", STRING, true),
@@ -147,7 +147,7 @@ public class RowTest {
      *
      */
     private void checkSchemaShuffled(Column[] keyCols, Column[] valCols) {
-        SchemaDescriptor sch = new SchemaDescriptor(1, keyCols, valCols);
+        SchemaDescriptor sch = new SchemaDescriptor(java.util.UUID.randomUUID(), 1, keyCols, valCols);
 
         Object[] checkArr = sequence(sch);
 

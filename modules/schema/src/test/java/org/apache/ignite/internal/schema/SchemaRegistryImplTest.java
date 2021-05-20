@@ -19,15 +19,16 @@ package org.apache.ignite.internal.schema;
 
 import java.util.Arrays;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.schema.registry.SchemaRegistrationConflictException;
 import org.apache.ignite.internal.schema.registry.SchemaRegistryException;
 import org.apache.ignite.internal.schema.registry.SchemaRegistryImpl;
 import org.junit.jupiter.api.Test;
 
-import static org.apache.ignite.internal.schema.NativeType.BYTES;
-import static org.apache.ignite.internal.schema.NativeType.LONG;
-import static org.apache.ignite.internal.schema.NativeType.STRING;
+import static org.apache.ignite.internal.schema.NativeTypes.BYTES;
+import static org.apache.ignite.internal.schema.NativeTypes.LONG;
+import static org.apache.ignite.internal.schema.NativeTypes.STRING;
 import static org.apache.ignite.internal.schema.registry.SchemaRegistryImpl.INITIAL_SCHEMA_VERSION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -44,15 +45,17 @@ public class SchemaRegistryImplTest {
      */
     @Test
     public void testWrongSchemaVersionRegistration() {
-        final SchemaDescriptor schemaV0 = new SchemaDescriptor(INITIAL_SCHEMA_VERSION,
+        UUID tableId = UUID.randomUUID();
+
+        final SchemaDescriptor schemaV0 = new SchemaDescriptor(tableId, INITIAL_SCHEMA_VERSION,
             new Column[] {new Column("keyLongCol", LONG, true)},
             new Column[] {new Column("valBytesCol", BYTES, true)});
 
-        final SchemaDescriptor schemaV1 = new SchemaDescriptor(0,
+        final SchemaDescriptor schemaV1 = new SchemaDescriptor(tableId, 0,
             new Column[] {new Column("keyLongCol", LONG, true)},
             new Column[] {new Column("valBytesCol", BYTES, true)});
 
-        final SchemaDescriptor schemaV2 = new SchemaDescriptor(2,
+        final SchemaDescriptor schemaV2 = new SchemaDescriptor(tableId, 2,
             new Column[] {new Column("keyLongCol", LONG, true)},
             new Column[] {new Column("valBytesCol", BYTES, true)});
 
@@ -90,18 +93,20 @@ public class SchemaRegistryImplTest {
      */
     @Test
     public void testSchemaRegistration() {
-        final SchemaDescriptor schemaV1 = new SchemaDescriptor(1,
+        UUID tableId = UUID.randomUUID();
+
+        final SchemaDescriptor schemaV1 = new SchemaDescriptor(tableId, 1,
             new Column[] {new Column("keyLongCol", LONG, true)},
             new Column[] {new Column("valBytesCol", BYTES, true)});
 
-        final SchemaDescriptor schemaV2 = new SchemaDescriptor(2,
+        final SchemaDescriptor schemaV2 = new SchemaDescriptor(tableId, 2,
             new Column[] {new Column("keyLongCol", LONG, true)},
             new Column[] {
                 new Column("valBytesCol", BYTES, true),
                 new Column("valStringCol", STRING, true)
             });
 
-        final SchemaDescriptor schemaV4 = new SchemaDescriptor(4,
+        final SchemaDescriptor schemaV4 = new SchemaDescriptor(tableId, 4,
             new Column[] {new Column("keyLongCol", LONG, true)},
             new Column[] {
                 new Column("valBytesCol", BYTES, true),
@@ -143,19 +148,21 @@ public class SchemaRegistryImplTest {
      * Check schema registration.
      */
     @Test
-    public void testDuplucateSchemaRegistration() {
-        final SchemaDescriptor schemaV1 = new SchemaDescriptor(1,
+    public void testDuplicateSchemaRegistration() {
+        UUID tableId = UUID.randomUUID();
+
+        final SchemaDescriptor schemaV1 = new SchemaDescriptor(tableId, 1,
             new Column[] {new Column("keyLongCol", LONG, true)},
             new Column[] {new Column("valBytesCol", BYTES, true)});
 
-        final SchemaDescriptor wrongSchema = new SchemaDescriptor(1,
+        final SchemaDescriptor wrongSchema = new SchemaDescriptor(tableId, 1,
             new Column[] {new Column("keyLongCol", LONG, true)},
             new Column[] {
                 new Column("valBytesCol", BYTES, true),
                 new Column("valStringCol", STRING, true)
             });
 
-        final SchemaDescriptor schemaV2 = new SchemaDescriptor(2,
+        final SchemaDescriptor schemaV2 = new SchemaDescriptor(tableId, 2,
             new Column[] {new Column("keyLongCol", LONG, true)},
             new Column[] {
                 new Column("valBytesCol", BYTES, true),
@@ -206,24 +213,26 @@ public class SchemaRegistryImplTest {
      */
     @Test
     public void testSchemaCleanup() {
-        final SchemaDescriptor schemaV1 = new SchemaDescriptor(1,
+        UUID tableId = UUID.randomUUID();
+
+        final SchemaDescriptor schemaV1 = new SchemaDescriptor(tableId, 1,
             new Column[] {new Column("keyLongCol", LONG, true)},
             new Column[] {new Column("valBytesCol", BYTES, true)});
 
-        final SchemaDescriptor schemaV2 = new SchemaDescriptor(2,
+        final SchemaDescriptor schemaV2 = new SchemaDescriptor(tableId, 2,
             new Column[] {new Column("keyLongCol", LONG, true)},
             new Column[] {
                 new Column("valBytesCol", BYTES, true),
                 new Column("valStringCol", STRING, true)
             });
 
-        final SchemaDescriptor schemaV3 = new SchemaDescriptor(3,
+        final SchemaDescriptor schemaV3 = new SchemaDescriptor(tableId, 3,
             new Column[] {new Column("keyLongCol", LONG, true)},
             new Column[] {
                 new Column("valStringCol", STRING, true)
             });
 
-        final SchemaDescriptor schemaV4 = new SchemaDescriptor(4,
+        final SchemaDescriptor schemaV4 = new SchemaDescriptor(tableId, 4,
             new Column[] {new Column("keyLongCol", LONG, true)},
             new Column[] {
                 new Column("valBytesCol", BYTES, true),
@@ -320,24 +329,26 @@ public class SchemaRegistryImplTest {
      */
     @Test
     public void testInitialSchemaWithFullHistory() {
-        final SchemaDescriptor schemaV1 = new SchemaDescriptor(1,
+        UUID tableId = UUID.randomUUID();
+
+        final SchemaDescriptor schemaV1 = new SchemaDescriptor(tableId, 1,
             new Column[] {new Column("keyLongCol", LONG, true)},
             new Column[] {new Column("valBytesCol", BYTES, true)});
 
-        final SchemaDescriptor schemaV2 = new SchemaDescriptor(2,
+        final SchemaDescriptor schemaV2 = new SchemaDescriptor(tableId, 2,
             new Column[] {new Column("keyLongCol", LONG, true)},
             new Column[] {
                 new Column("valBytesCol", BYTES, true),
                 new Column("valStringCol", STRING, true)
             });
 
-        final SchemaDescriptor schemaV3 = new SchemaDescriptor(3,
+        final SchemaDescriptor schemaV3 = new SchemaDescriptor(tableId, 3,
             new Column[] {new Column("keyLongCol", LONG, true)},
             new Column[] {
                 new Column("valStringCol", STRING, true)
             });
 
-        final SchemaDescriptor schemaV4 = new SchemaDescriptor(4,
+        final SchemaDescriptor schemaV4 = new SchemaDescriptor(tableId, 4,
             new Column[] {new Column("keyLongCol", LONG, true)},
             new Column[] {
                 new Column("valBytesCol", BYTES, true),
@@ -384,29 +395,31 @@ public class SchemaRegistryImplTest {
      */
     @Test
     public void testInitialSchemaWithTailHistory() {
-        final SchemaDescriptor schemaV1 = new SchemaDescriptor(1,
+        UUID tableId = UUID.randomUUID();
+
+        final SchemaDescriptor schemaV1 = new SchemaDescriptor(tableId, 1,
             new Column[] {new Column("keyLongCol", LONG, true)},
             new Column[] {new Column("valBytesCol", BYTES, true)});
 
-        final SchemaDescriptor schemaV2 = new SchemaDescriptor(2,
+        final SchemaDescriptor schemaV2 = new SchemaDescriptor(tableId, 2,
             new Column[] {new Column("keyLongCol", LONG, true)},
             new Column[] {
                 new Column("valBytesCol", BYTES, true),
                 new Column("valStringCol", STRING, true)
             });
 
-        final SchemaDescriptor schemaV3 = new SchemaDescriptor(3,
+        final SchemaDescriptor schemaV3 = new SchemaDescriptor(tableId, 3,
             new Column[] {new Column("keyLongCol", LONG, true)},
             new Column[] {new Column("valStringCol", STRING, true)});
 
-        final SchemaDescriptor schemaV4 = new SchemaDescriptor(4,
+        final SchemaDescriptor schemaV4 = new SchemaDescriptor(tableId, 4,
             new Column[] {new Column("keyLongCol", LONG, true)},
             new Column[] {
                 new Column("valBytesCol", BYTES, true),
                 new Column("valStringCol", STRING, true)
             });
 
-        final SchemaDescriptor schemaV5 = new SchemaDescriptor(5,
+        final SchemaDescriptor schemaV5 = new SchemaDescriptor(tableId, 5,
             new Column[] {new Column("keyLongCol", LONG, true)},
             new Column[] {new Column("valStringCol", STRING, true)});
 
@@ -456,20 +469,22 @@ public class SchemaRegistryImplTest {
      */
     @Test
     public void testSchemaWithHistoryCleanup() {
-        final SchemaDescriptor schemaV2 = new SchemaDescriptor(2,
+        UUID tableId = UUID.randomUUID();
+
+        final SchemaDescriptor schemaV2 = new SchemaDescriptor(tableId, 2,
             new Column[] {new Column("keyLongCol", LONG, true)},
             new Column[] {
                 new Column("valBytesCol", BYTES, true),
                 new Column("valStringCol", STRING, true)
             });
 
-        final SchemaDescriptor schemaV3 = new SchemaDescriptor(3,
+        final SchemaDescriptor schemaV3 = new SchemaDescriptor(tableId, 3,
             new Column[] {new Column("keyLongCol", LONG, true)},
             new Column[] {
                 new Column("valStringCol", STRING, true)
             });
 
-        final SchemaDescriptor schemaV4 = new SchemaDescriptor(4,
+        final SchemaDescriptor schemaV4 = new SchemaDescriptor(tableId, 4,
             new Column[] {new Column("keyLongCol", LONG, true)},
             new Column[] {
                 new Column("valBytesCol", BYTES, true),

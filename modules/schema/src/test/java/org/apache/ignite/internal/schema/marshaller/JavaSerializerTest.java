@@ -35,10 +35,10 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.stream.Stream;
 import javax.annotation.processing.Generated;
-import org.apache.ignite.internal.schema.Bitmask;
 import org.apache.ignite.internal.schema.Column;
 import org.apache.ignite.internal.schema.NativeType;
 import org.apache.ignite.internal.schema.NativeTypeSpec;
+import org.apache.ignite.internal.schema.NativeTypes;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
 import org.apache.ignite.internal.schema.TestUtils;
 import org.apache.ignite.internal.schema.marshaller.asm.AsmSerializerGenerator;
@@ -51,15 +51,15 @@ import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.apache.ignite.internal.schema.NativeType.BYTE;
-import static org.apache.ignite.internal.schema.NativeType.BYTES;
-import static org.apache.ignite.internal.schema.NativeType.DOUBLE;
-import static org.apache.ignite.internal.schema.NativeType.FLOAT;
-import static org.apache.ignite.internal.schema.NativeType.INTEGER;
-import static org.apache.ignite.internal.schema.NativeType.LONG;
-import static org.apache.ignite.internal.schema.NativeType.SHORT;
-import static org.apache.ignite.internal.schema.NativeType.STRING;
-import static org.apache.ignite.internal.schema.NativeType.UUID;
+import static org.apache.ignite.internal.schema.NativeTypes.BYTE;
+import static org.apache.ignite.internal.schema.NativeTypes.DOUBLE;
+import static org.apache.ignite.internal.schema.NativeTypes.FLOAT;
+import static org.apache.ignite.internal.schema.NativeTypes.INTEGER;
+import static org.apache.ignite.internal.schema.NativeTypes.LONG;
+import static org.apache.ignite.internal.schema.NativeTypes.SHORT;
+import static org.apache.ignite.internal.schema.NativeTypes.UUID;
+import static org.apache.ignite.internal.schema.NativeTypes.BYTES;
+import static org.apache.ignite.internal.schema.NativeTypes.STRING;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -71,6 +71,9 @@ import static org.junit.jupiter.api.DynamicTest.dynamicTest;
  * Serializer test.
  */
 public class JavaSerializerTest {
+    /** Table ID test value. */
+    public final java.util.UUID tableId = java.util.UUID.randomUUID();
+
     /**
      * @return List of serializers for test.
      */
@@ -101,7 +104,7 @@ public class JavaSerializerTest {
      */
     @TestFactory
     public Stream<DynamicNode> testBasicTypes() {
-        NativeType[] types = new NativeType[] {BYTE, SHORT, INTEGER, LONG, FLOAT, DOUBLE, UUID, STRING, BYTES, Bitmask.of(5)};
+        NativeType[] types = new NativeType[] {BYTE, SHORT, INTEGER, LONG, FLOAT, DOUBLE, UUID, STRING, BYTES, NativeTypes.bitmaskOf(5)};
 
         return serializerFactoryProvider().stream().map(factory ->
             dynamicContainer(
@@ -118,7 +121,7 @@ public class JavaSerializerTest {
                         dynamicTest("testMixTypes 1", () -> checkBasicType(factory, FLOAT, DOUBLE)),
                         dynamicTest("testMixTypes 1", () -> checkBasicType(factory, INTEGER, BYTES)),
                         dynamicTest("testMixTypes 1", () -> checkBasicType(factory, STRING, LONG)),
-                        dynamicTest("testMixTypes 1", () -> checkBasicType(factory, Bitmask.of(9), BYTES))
+                        dynamicTest("testMixTypes 1", () -> checkBasicType(factory, NativeTypes.bitmaskOf(9), BYTES))
                     )
                 )
             ));
@@ -129,7 +132,7 @@ public class JavaSerializerTest {
      */
     @ParameterizedTest
     @MethodSource("serializerFactoryProvider")
-    public void testComplexType(SerializerFactory factory) throws SerializationException {
+    public void complexType(SerializerFactory factory) throws SerializationException {
         Column[] cols = new Column[] {
             new Column("pByteCol", BYTE, false),
             new Column("pShortCol", SHORT, false),
@@ -147,13 +150,13 @@ public class JavaSerializerTest {
             new Column("doubleCol", DOUBLE, true),
 
             new Column("uuidCol", UUID, true),
-            new Column("bitmaskCol", Bitmask.of(42), true),
+            new Column("bitmaskCol", NativeTypes.bitmaskOf(42), true),
             new Column("stringCol", STRING, true),
             new Column("nullBytesCol", BYTES, true),
             new Column("bytesCol", BYTES, true),
         };
 
-        SchemaDescriptor schema = new SchemaDescriptor(1, cols, cols);
+        SchemaDescriptor schema = new SchemaDescriptor(tableId, 1, cols, cols);
 
         final Object key = TestObject.randomObject(rnd);
         final Object val = TestObject.randomObject(rnd);
@@ -178,38 +181,13 @@ public class JavaSerializerTest {
      */
     @ParameterizedTest
     @MethodSource("serializerFactoryProvider")
-    public void testClassWithIncorrectBitmaskSize(SerializerFactory factory) {
+    public void classWithWrongFieldType(SerializerFactory factory) {
         Column[] cols = new Column[] {
-            new Column("pLongCol", LONG, false),
-            new Column("bitmaskCol", Bitmask.of(9), true),
-        };
-
-        SchemaDescriptor schema = new SchemaDescriptor(1, cols, cols);
-
-        final Object key = TestObject.randomObject(rnd);
-        final Object val = TestObject.randomObject(rnd);
-
-        Serializer serializer = factory.create(schema, key.getClass(), val.getClass());
-
-        assertThrows(
-            SerializationException.class,
-            () -> serializer.serialize(key, val),
-            "Failed to write field [name=bitmaskCol]"
-        );
-    }
-
-    /**
-     *
-     */
-    @ParameterizedTest
-    @MethodSource("serializerFactoryProvider")
-    public void testClassWithWrongFieldType(SerializerFactory factory) {
-        Column[] cols = new Column[] {
-            new Column("bitmaskCol", Bitmask.of(42), true),
+            new Column("bitmaskCol", NativeTypes.bitmaskOf(42), true),
             new Column("shortCol", UUID, true)
         };
 
-        SchemaDescriptor schema = new SchemaDescriptor(1, cols, cols);
+        SchemaDescriptor schema = new SchemaDescriptor(tableId, 1, cols, cols);
 
         final Object key = TestObject.randomObject(rnd);
         final Object val = TestObject.randomObject(rnd);
@@ -228,12 +206,37 @@ public class JavaSerializerTest {
      */
     @ParameterizedTest
     @MethodSource("serializerFactoryProvider")
-    public void testClassWithPrivateConstructor(SerializerFactory factory) throws SerializationException {
+    public void classWithIncorrectBitmaskSize(SerializerFactory factory) {
+        Column[] cols = new Column[] {
+            new Column("pLongCol", LONG, false),
+            new Column("bitmaskCol", NativeTypes.bitmaskOf(9), true),
+        };
+
+        SchemaDescriptor schema = new SchemaDescriptor(tableId, 1, cols, cols);
+
+        final Object key = TestObject.randomObject(rnd);
+        final Object val = TestObject.randomObject(rnd);
+
+        Serializer serializer = factory.create(schema, key.getClass(), val.getClass());
+
+        assertThrows(
+            SerializationException.class,
+            () -> serializer.serialize(key, val),
+            "Failed to write field [name=bitmaskCol]"
+        );
+    }
+
+    /**
+     *
+     */
+    @ParameterizedTest
+    @MethodSource("serializerFactoryProvider")
+    public void classWithPrivateConstructor(SerializerFactory factory) throws SerializationException {
         Column[] cols = new Column[] {
             new Column("pLongCol", LONG, false),
         };
 
-        SchemaDescriptor schema = new SchemaDescriptor(1, cols, cols);
+        SchemaDescriptor schema = new SchemaDescriptor(tableId, 1, cols, cols);
 
         final Object key = TestObjectWithPrivateConstructor.randomObject(rnd);
         final Object val = TestObjectWithPrivateConstructor.randomObject(rnd);
@@ -257,12 +260,12 @@ public class JavaSerializerTest {
      */
     @ParameterizedTest
     @MethodSource("serializerFactoryProvider")
-    public void testClassWithNoDefaultConstructor(SerializerFactory factory) {
+    public void classWithNoDefaultConstructor(SerializerFactory factory) {
         Column[] cols = new Column[] {
             new Column("pLongCol", LONG, false),
         };
 
-        SchemaDescriptor schema = new SchemaDescriptor(1, cols, cols);
+        SchemaDescriptor schema = new SchemaDescriptor(tableId, 1, cols, cols);
 
         final Object key = WrongTestObject.randomObject(rnd);
         final Object val = WrongTestObject.randomObject(rnd);
@@ -275,12 +278,12 @@ public class JavaSerializerTest {
      */
     @ParameterizedTest
     @MethodSource("serializerFactoryProvider")
-    public void testPrivateClass(SerializerFactory factory) throws SerializationException {
+    public void privateClass(SerializerFactory factory) throws SerializationException {
         Column[] cols = new Column[] {
             new Column("pLongCol", LONG, false),
         };
 
-        SchemaDescriptor schema = new SchemaDescriptor(1, cols, cols);
+        SchemaDescriptor schema = new SchemaDescriptor(tableId, 1, cols, cols);
 
         final Object key = PrivateTestObject.randomObject(rnd);
         final Object val = PrivateTestObject.randomObject(rnd);
@@ -301,7 +304,7 @@ public class JavaSerializerTest {
      */
     @ParameterizedTest
     @MethodSource("serializerFactoryProvider")
-    public void testClassLoader(SerializerFactory factory) throws SerializationException {
+    public void classLoader(SerializerFactory factory) throws SerializationException {
         final ClassLoader loader = Thread.currentThread().getContextClassLoader();
         try {
             Thread.currentThread().setContextClassLoader(new DynamicClassLoader(getClass().getClassLoader()));
@@ -316,7 +319,7 @@ public class JavaSerializerTest {
                 new Column("col2", LONG, false),
             };
 
-            SchemaDescriptor schema = new SchemaDescriptor(1, keyCols, valCols);
+            SchemaDescriptor schema = new SchemaDescriptor(tableId, 1, keyCols, valCols);
 
             final Class<?> valClass = createGeneratedObjectClass(long.class);
             final ObjectFactory<?> objFactory = new ObjectFactory<>(valClass);
@@ -355,7 +358,7 @@ public class JavaSerializerTest {
         Column[] keyCols = new Column[] {new Column("key", keyType, false)};
         Column[] valCols = new Column[] {new Column("val", valType, false)};
 
-        SchemaDescriptor schema = new SchemaDescriptor(1, keyCols, valCols);
+        SchemaDescriptor schema = new SchemaDescriptor(tableId, 1, keyCols, valCols);
 
         Serializer serializer = factory.create(schema, key.getClass(), val.getClass());
 
