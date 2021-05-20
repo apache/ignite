@@ -565,7 +565,7 @@ public class SimpleInMemoryKeyValueStorage implements KeyValueStorage {
 
         /** {@inheritDoc} */
         @Override public void close() throws Exception {
-            // TODO: implement.
+            // No-op.
         }
 
         /** {@inheritDoc} */
@@ -686,7 +686,7 @@ public class SimpleInMemoryKeyValueStorage implements KeyValueStorage {
 
         /** {@inheritDoc} */
         @Override public void close() throws Exception {
-            // TODO: implement.
+            // No-op.
         }
 
         /** {@inheritDoc} */
