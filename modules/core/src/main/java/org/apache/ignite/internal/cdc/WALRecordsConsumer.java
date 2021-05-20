@@ -20,8 +20,8 @@ package org.apache.ignite.internal.cdc;
 import java.util.EnumSet;
 import java.util.Iterator;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cdc.CaptureDataChangeConsumer;
-import org.apache.ignite.cdc.ChangeEvent;
+import org.apache.ignite.cdc.ChangeDataCaptureConsumer;
+import org.apache.ignite.cdc.ChangeDataCaptureEvent;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.UnwrappedDataEntry;
@@ -38,17 +38,17 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 
 /**
- * Transform {@link DataEntry} to {@link ChangeEvent} and sends it to {@link CaptureDataChangeConsumer}.
+ * Transform {@link DataEntry} to {@link ChangeDataCaptureEvent} and sends it to {@link ChangeDataCaptureConsumer}.
  *
  * @see IgniteCDC
- * @see CaptureDataChangeConsumer
+ * @see ChangeDataCaptureConsumer
  */
 public class WALRecordsConsumer<K, V> {
     /** Ignite logger. */
     private IgniteLogger log;
 
     /** Data change events consumer. */
-    private final CaptureDataChangeConsumer dataConsumer;
+    private final ChangeDataCaptureConsumer dataConsumer;
 
     /** Operations types we interested in. */
     private static final EnumSet<GridCacheOperation> OPS_TYPES = EnumSet.of(CREATE, UPDATE, DELETE, TRANSFORM);
@@ -68,7 +68,7 @@ public class WALRecordsConsumer<K, V> {
     /**
      * @param dataConsumer User provided CDC consumer.
      */
-    public WALRecordsConsumer(CaptureDataChangeConsumer dataConsumer) {
+    public WALRecordsConsumer(ChangeDataCaptureConsumer dataConsumer) {
         this.dataConsumer = dataConsumer;
     }
 
@@ -99,7 +99,7 @@ public class WALRecordsConsumer<K, V> {
                     replicaVer.topologyVersion(), replicaVer.nodeOrderAndDrIdRaw(), replicaVer.order()));
             }
 
-            return new ChangeEventImpl(
+            return new ChangeDataCaptureEventImpl(
                 ue.unwrappedKey(),
                 ue.unwrappedValue(),
                 (e.flags() & DataEntry.PRIMARY_FLAG) != 0,

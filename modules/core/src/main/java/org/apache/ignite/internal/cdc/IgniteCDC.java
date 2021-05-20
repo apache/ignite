@@ -35,9 +35,9 @@ import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cdc.CaptureDataChangeConfiguration;
-import org.apache.ignite.cdc.CaptureDataChangeConsumer;
-import org.apache.ignite.cdc.ChangeEvent;
+import org.apache.ignite.cdc.ChangeDataCaptureConfiguration;
+import org.apache.ignite.cdc.ChangeDataCaptureConsumer;
+import org.apache.ignite.cdc.ChangeDataCaptureEvent;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -53,30 +53,35 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.startup.cmdline.CDCCommandLineStartup;
 
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_NAME_PATTERN;
 
 /**
- * CDC(Capture Data Change) application.
- * Application run independently of Ignite node process and provide ability for the {@link CaptureDataChangeConsumer} to consume events({@link ChangeEvent}) from WAL segments.
- * User should responsible {@link CaptureDataChangeConsumer} implementation with custom consumption logic.
+ * CDC(Change Data Capture) application.
+ * Application run independently of Ignite node process and provide ability for the {@link ChangeDataCaptureConsumer}
+ * to consume events({@link ChangeDataCaptureEvent}) from WAL segments.
+ * User should responsible {@link ChangeDataCaptureConsumer} implementation with custom consumption logic.
  *
  * Ignite node should be explicitly configured for using {@link IgniteCDC}.
  * <ol>
  *     <li>Set {@link DataStorageConfiguration#setCdcEnabled(boolean)} to true.</li>
- *     <li>Optional: Set {@link DataStorageConfiguration#setCdcPath(String)} to path to the directory to store WAL segments for CDC.</li>
- *     <li>Optional: Set {@link DataStorageConfiguration#setWalForceArchiveTimeout(long)} to configure timeout for force WAL rollover,
- *     so new events will be available for consumptions with the predicted time.</li>
+ *     <li>Optional: Set {@link DataStorageConfiguration#setCdcPath(String)} to path to the directory to store
+ *     WAL segments for CDC.</li>
+ *     <li>Optional: Set {@link DataStorageConfiguration#setWalForceArchiveTimeout(long)} to configure timeout for
+ *     force WAL rollover, so new events will be available for consumptions with the predicted time.</li>
  * </ol>
  *
- * When {@link DataStorageConfiguration#getCdcPath()} is true then Ignite node on each WAL segment rollover creates hard link
- * to archive WAL segment in {@link DataStorageConfiguration#getCdcPath()} directory.
- * {@link IgniteCDC} application takes segment file and consumes events from it. After successful consumption (see {@link CaptureDataChangeConsumer#onChange(Iterator)})
+ * When {@link DataStorageConfiguration#getCdcPath()} is true then Ignite node on each WAL segment rollover creates
+ * hard link to archive WAL segment in {@link DataStorageConfiguration#getCdcPath()} directory.
+ * {@link IgniteCDC} application takes segment file and consumes events from it.
+ * After successful consumption (see {@link ChangeDataCaptureConsumer#onChange(Iterator)})
  * WAL segment will be deleted from directory.
  *
  * Several Ignite nodes can be started on the same host.
- * If your deployment done with custom consistent id then you should specify it via {@link IgniteConfiguration#setConsistentId(Serializable)} in provided {@link IgniteConfiguration}.
+ * If your deployment done with custom consistent id then you should specify it via
+ * {@link IgniteConfiguration#setConsistentId(Serializable)} in provided {@link IgniteConfiguration}.
  *
  * Application works as follows:
  * <ol>
@@ -90,8 +95,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWr
  * @see DataStorageConfiguration#setCdcEnabled(boolean)
  * @see DataStorageConfiguration#setCdcPath(String)
  * @see DataStorageConfiguration#setWalForceArchiveTimeout(long)
- * @see CommandLineStartup
- * @see CaptureDataChangeConsumer
+ * @see CDCCommandLineStartup
+ * @see ChangeDataCaptureConsumer
  * @see DataStorageConfiguration#DFLT_CDC_PATH
  */
 public class IgniteCDC implements Runnable {
@@ -106,7 +111,7 @@ public class IgniteCDC implements Runnable {
     private final IgniteConfiguration cfg;
 
     /** CDC configuration. */
-    private final CaptureDataChangeConfiguration cdcCfg;
+    private final ChangeDataCaptureConfiguration cdcCfg;
 
     /** WAL iterator factory. */
     private final IgniteWalIteratorFactory factory;
@@ -142,7 +147,7 @@ public class IgniteCDC implements Runnable {
      * @param cfg Ignite configuration.
      * @param cdcCfg CDC configuration.
      */
-    public IgniteCDC(IgniteConfiguration cfg, CaptureDataChangeConfiguration cdcCfg) {
+    public IgniteCDC(IgniteConfiguration cfg, ChangeDataCaptureConfiguration cdcCfg) {
         this.cfg = new IgniteConfiguration(cfg);
         this.cdcCfg = cdcCfg;
 
@@ -282,7 +287,7 @@ public class IgniteCDC implements Runnable {
                 }
 
                 if (!stoped)
-                    U.sleep(cdcCfg.getSleepBeforeCheckNewSegmentsTimeout());
+                    U.sleep(cdcCfg.getCheckFrequency());
             }
         }
         catch (IOException | IgniteInterruptedCheckedException e) {

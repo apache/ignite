@@ -27,34 +27,43 @@ import org.apache.ignite.lang.IgniteExperimental;
  * It defines all configuration
  */
 @IgniteExperimental
-public class CaptureDataChangeConfiguration {
-    /** Capture Data Change consumer. */
-    private CaptureDataChangeConsumer consumer;
+public class ChangeDataCaptureConfiguration {
+    /** */
+    private static final int DFLT_LOCK_TIMEOUT = 1000;
+
+    /** */
+    private static final long DFLT_CHECK_FREQ = 1000L;
+
+    /** */
+    private static final boolean DFLT_KEEP_BINARY = true;
+
+    /** Change Data Capture consumer. */
+    private ChangeDataCaptureConsumer consumer;
 
     /** Keep binary flag.<br>Default value {@code true}. */
-    private boolean keepBinary = true;
+    private boolean keepBinary = DFLT_KEEP_BINARY;
 
     /**
      * {@link IgniteCDC} acquire file lock on startup to ensure exclusive consumption.
      * This property specifies amount of time to wait for lock acquisition.<br>
      * Default is {@code 1000 ms}.
      */
-    private long lockTimeout = 1000;
+    private long lockTimeout = DFLT_LOCK_TIMEOUT;
 
     /**
      * CDC application periodically scans {@link DataStorageConfiguration#getCdcPath()} folder to find new WAL segments.
-     * This timeout specify amount of time application sleeps between subsequent checks when no new files available.<br>
+     * This frequency specify amount of time application sleeps between subsequent checks when no new files available.
      * Default is {@code 1000 ms}.
      */
-    private long sleepBeforeCheckNewSegmentsTimeout = 1000;
+    private long checkFrequency = DFLT_CHECK_FREQ;
 
     /** @return CDC consumer. */
-    public CaptureDataChangeConsumer getConsumer() {
+    public ChangeDataCaptureConsumer getConsumer() {
         return consumer;
     }
 
     /** @param consumer CDC consumer. */
-    public void setConsumer(CaptureDataChangeConsumer consumer) {
+    public void setConsumer(ChangeDataCaptureConsumer consumer) {
         this.consumer = consumer;
     }
 
@@ -79,15 +88,15 @@ public class CaptureDataChangeConfiguration {
     }
 
     /** @return Amount of time application sleeps between subsequent checks when no new files available. */
-    public long getSleepBeforeCheckNewSegmentsTimeout() {
-        return sleepBeforeCheckNewSegmentsTimeout;
+    public long getCheckFrequency() {
+        return checkFrequency;
     }
 
     /**
-     * @param sleepBeforeCheckNewSegmentsTimeout Amount of time application sleeps between subsequent checks when no new
+     * @param checkFrequency Amount of time application sleeps between subsequent checks when no new
      *                                           files available.
      */
-    public void setSleepBeforeCheckNewSegmentsTimeout(long sleepBeforeCheckNewSegmentsTimeout) {
-        this.sleepBeforeCheckNewSegmentsTimeout = sleepBeforeCheckNewSegmentsTimeout;
+    public void setCheckFrequency(long checkFrequency) {
+        this.checkFrequency = checkFrequency;
     }
 }

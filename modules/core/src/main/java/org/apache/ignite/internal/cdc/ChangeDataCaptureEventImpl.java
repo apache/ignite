@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.cdc;
 
-import org.apache.ignite.cdc.CaptureDataChangeConsumer;
-import org.apache.ignite.cdc.ChangeEvent;
+import org.apache.ignite.cdc.ChangeDataCaptureConsumer;
+import org.apache.ignite.cdc.ChangeDataCaptureEvent;
 import org.apache.ignite.cdc.ChangeEventOrder;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -27,9 +27,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * Instance presents new value of modified entry.
  *
  * @see IgniteCDC
- * @see CaptureDataChangeConsumer
+ * @see ChangeDataCaptureConsumer
  */
-public class ChangeEventImpl implements ChangeEvent {
+public class ChangeDataCaptureEventImpl implements ChangeDataCaptureEvent {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -59,7 +59,7 @@ public class ChangeEventImpl implements ChangeEvent {
      * @param ord Order of the entry change.
      * @param cacheId Cache id.
      */
-    public ChangeEventImpl(Object key, Object val, boolean primary, int part,
+    public ChangeDataCaptureEventImpl(Object key, Object val, boolean primary, int part,
         ChangeEventOrder ord, int cacheId) {
         this.key = key;
         this.val = val;
@@ -101,6 +101,6 @@ public class ChangeEventImpl implements ChangeEvent {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(ChangeEventImpl.class, this);
+        return S.toString(ChangeDataCaptureEventImpl.class, this);
     }
 }

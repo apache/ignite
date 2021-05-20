@@ -25,8 +25,8 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Iterator;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cdc.CaptureDataChangeConsumer;
-import org.apache.ignite.cdc.ChangeEvent;
+import org.apache.ignite.cdc.ChangeDataCaptureConsumer;
+import org.apache.ignite.cdc.ChangeDataCaptureEvent;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
@@ -38,10 +38,10 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.WALPoi
 /**
  * CDC Consumer state.
  *
- * Each time {@link CaptureDataChangeConsumer#onChange(Iterator)} returns {@code true} current offset in WAL segment saved to file.
- * This allows to the {@link CaptureDataChangeConsumer} to continue consumption of the {@link ChangeEvent} from the last saved offset in case of fail or restart.
+ * Each time {@link ChangeDataCaptureConsumer#onChange(Iterator)} returns {@code true} current offset in WAL segment saved to file.
+ * This allows to the {@link ChangeDataCaptureConsumer} to continue consumption of the {@link ChangeDataCaptureEvent} from the last saved offset in case of fail or restart.
  *
- * @see CaptureDataChangeConsumer#onChange(Iterator)
+ * @see ChangeDataCaptureConsumer#onChange(Iterator)
  * @see IgniteCDC
  */
 public class CDCConsumerState {

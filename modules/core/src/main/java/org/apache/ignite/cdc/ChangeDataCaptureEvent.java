@@ -27,10 +27,10 @@ import org.jetbrains.annotations.Nullable;
  * Instance presents new value of modified entry.
  *
  * @see IgniteCDC
- * @see CaptureDataChangeConsumer
+ * @see ChangeDataCaptureConsumer
  */
 @IgniteExperimental
-public interface ChangeEvent extends Serializable {
+public interface ChangeDataCaptureEvent extends Serializable {
     /**
      * @return Key for the changed entry.
      */

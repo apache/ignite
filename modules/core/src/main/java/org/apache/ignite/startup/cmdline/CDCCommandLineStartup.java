@@ -15,15 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.cdc;
+package org.apache.ignite.startup.cmdline;
 
 import java.net.URL;
 import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.cdc.CaptureDataChangeConfiguration;
+import org.apache.ignite.cdc.ChangeDataCaptureConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.cdc.IgniteCDC;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
 import org.apache.ignite.internal.util.typedef.X;
@@ -51,7 +52,7 @@ import static org.apache.ignite.startup.cmdline.CommandLineStartup.isHelp;
  *
  * @see IgniteCDC
  */
-public class CommandLineStartup {
+public class CDCCommandLineStartup {
     /** Quite log flag. */
     private static final boolean QUITE = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_QUIET);
 
@@ -126,13 +127,13 @@ public class CommandLineStartup {
      * @return CDC consumer defined in spring configuration.
      * @throws IgniteCheckedException
      */
-    private static CaptureDataChangeConfiguration consumerConfig(URL cfgUrl, IgniteSpringHelper spring) throws IgniteCheckedException {
-        Map<Class<?>, Object> cdcCfgs = spring.loadBeans(cfgUrl, CaptureDataChangeConfiguration.class);
+    private static ChangeDataCaptureConfiguration consumerConfig(URL cfgUrl, IgniteSpringHelper spring) throws IgniteCheckedException {
+        Map<Class<?>, Object> cdcCfgs = spring.loadBeans(cfgUrl, ChangeDataCaptureConfiguration.class);
 
         if (cdcCfgs == null || cdcCfgs.size() != 1)
             exit("Exact 1 CaptureDataChangeConfiguration configuration should be defined", false, 1);
 
-        return (CaptureDataChangeConfiguration)cdcCfgs.values().iterator().next();
+        return (ChangeDataCaptureConfiguration)cdcCfgs.values().iterator().next();
     }
 
     /**

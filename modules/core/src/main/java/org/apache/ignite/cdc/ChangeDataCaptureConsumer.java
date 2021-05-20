@@ -32,21 +32,21 @@ import org.apache.ignite.lang.IgniteExperimental;
  *     <li>Stop of the consumer {@link #stop()}.</li>
  * </ul>
  *
- * Note, consumption of the {@link ChangeEvent} will started from the last saved offset.
+ * Note, consumption of the {@link ChangeDataCaptureEvent} will started from the last saved offset.
  * Offset of consumptions is saved on the disk every time {@link #onChange(Iterator)} returns {@code true}.
  *
  * @see IgniteCDC
- * @see ChangeEvent
+ * @see ChangeDataCaptureEvent
  * @see ChangeEventOrder
  */
 @IgniteExperimental
-public interface CaptureDataChangeConsumer {
+public interface ChangeDataCaptureConsumer {
     /**
      * Starts the consumer.
      *
      * @param log Logger.
      */
-    void start(IgniteLogger log);
+    public void start(IgniteLogger log);
 
     /**
      * Handles entry changes events.
@@ -56,11 +56,11 @@ public interface CaptureDataChangeConsumer {
      * @param events Entry change events.
      * @return {@code True} if current offset should be saved on the disk to continue from it in case any failures or restart.
      */
-    boolean onChange(Iterator<ChangeEvent> events);
+    public boolean onChange(Iterator<ChangeDataCaptureEvent> events);
 
     /**
      * Stops the consumer.
      * This methods can be invoked only after {@link #start(IgniteLogger)}.
      */
-    void stop();
+    public void stop();
 }

@@ -134,7 +134,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
         ign.cluster().state(ACTIVE);
 
-        TestCDCConsumer cnsmr = new TestCDCConsumer();
+        TestCDCDataCaptureConsumer cnsmr = new TestCDCDataCaptureConsumer();
 
         IgniteCDC cdc = new IgniteCDC(cfg, cdcConfig(cnsmr));
 
@@ -184,7 +184,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         CountDownLatch onChangeLatch1 = new CountDownLatch(1);
         CountDownLatch onChangeLatch2 = new CountDownLatch(1);
 
-        TestCDCConsumer cnsmr = new TestCDCConsumer() {
+        TestCDCDataCaptureConsumer cnsmr = new TestCDCDataCaptureConsumer() {
             @Override public void start(IgniteLogger log) {
                 try {
                     startLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS);
@@ -196,7 +196,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
                 super.start(log);
             }
 
-            @Override public boolean onChange(Iterator<ChangeEvent> events) {
+            @Override public boolean onChange(Iterator<ChangeDataCaptureEvent> events) {
                 onChangeLatch1.countDown();
 
                 try {
@@ -248,7 +248,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
         AtomicInteger cnt = new AtomicInteger();
 
-        TestCDCConsumer cnsmr = new TestCDCConsumer();
+        TestCDCDataCaptureConsumer cnsmr = new TestCDCDataCaptureConsumer();
 
         // Restart node several time to make sure we can continue after gracefull shutdown.
         for (int restarts = 0; restarts < 2; restarts++) {
@@ -312,7 +312,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
         ign.cluster().state(ACTIVE);
 
-        TestCDCConsumer cnsmr = new TestCDCConsumer();
+        TestCDCDataCaptureConsumer cnsmr = new TestCDCDataCaptureConsumer();
 
         IgniteCDC cdc = new IgniteCDC(cfg, cdcConfig(cnsmr));
 
@@ -380,8 +380,8 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> addDataFut = runAsync(() -> addData(cache, 0, KEYS_CNT));
 
-        TestCDCConsumer cnsmr1 = new TestCDCConsumer();
-        TestCDCConsumer cnsmr2 = new TestCDCConsumer();
+        TestCDCDataCaptureConsumer cnsmr1 = new TestCDCDataCaptureConsumer();
+        TestCDCDataCaptureConsumer cnsmr2 = new TestCDCDataCaptureConsumer();
 
         IgniteConfiguration cfg1 = ign1.configuration();
         IgniteConfiguration cfg2 = ign2.configuration();
@@ -429,8 +429,8 @@ public class CDCSelfTest extends GridCommonAbstractTest {
     public void testOneOfConcurrentRunsFail() throws Exception {
         IgniteEx ign = startGrid(0);
 
-        TestCDCConsumer cnsmr1 = new TestCDCConsumer();
-        TestCDCConsumer cnsmr2 = new TestCDCConsumer();
+        TestCDCDataCaptureConsumer cnsmr1 = new TestCDCDataCaptureConsumer();
+        TestCDCDataCaptureConsumer cnsmr2 = new TestCDCDataCaptureConsumer();
 
         IgniteInternalFuture<?> fut1 = runAsync(new IgniteCDC(ign.configuration(), cdcConfig(cnsmr1)));
         IgniteInternalFuture<?> fut2 = runAsync(new IgniteCDC(ign.configuration(), cdcConfig(cnsmr2)));
@@ -471,7 +471,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         addData(cache, 0, KEYS_CNT);
 
         for (int i = 0; i < 3; i++) {
-            TestCDCConsumer cnsmr = new TestCDCConsumer() {
+            TestCDCDataCaptureConsumer cnsmr = new TestCDCDataCaptureConsumer() {
                 @Override protected boolean commit() {
                     return false;
                 }
@@ -490,7 +490,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
 
         final int[] expSz = {KEYS_CNT};
 
-        TestCDCConsumer cnsmr = new TestCDCConsumer() {
+        TestCDCDataCaptureConsumer cnsmr = new TestCDCDataCaptureConsumer() {
             @Override protected boolean commit() {
                 // Commiting on the half of the data.
                 List<Integer> keys = keys(UPDATE, cacheId(DEFAULT_CACHE_NAME));
@@ -533,7 +533,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private boolean waitForSize(int expSz, String cacheName, ChangeEventType evtType, TestCDCConsumer... cnsmrs)
+    private boolean waitForSize(int expSz, String cacheName, ChangeEventType evtType, TestCDCDataCaptureConsumer... cnsmrs)
         throws IgniteInterruptedCheckedException {
         return waitForCondition(
             () -> {
@@ -561,7 +561,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class TestCDCConsumer implements CaptureDataChangeConsumer {
+    private static class TestCDCDataCaptureConsumer implements ChangeDataCaptureConsumer {
         /** Keys */
         private final ConcurrentMap<IgniteBiTuple<ChangeEventType, Integer>, List<Integer>> cacheKeys = new ConcurrentHashMap<>();
 
@@ -579,7 +579,7 @@ public class CDCSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onChange(Iterator<ChangeEvent> events) {
+        @Override public boolean onChange(Iterator<ChangeDataCaptureEvent> events) {
             events.forEachRemaining(evt -> {
                 if (!evt.primary())
                     return;
@@ -642,8 +642,8 @@ public class CDCSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private CaptureDataChangeConfiguration cdcConfig(CaptureDataChangeConsumer cnsmr) {
-        CaptureDataChangeConfiguration cdcCfg = new CaptureDataChangeConfiguration();
+    private ChangeDataCaptureConfiguration cdcConfig(ChangeDataCaptureConsumer cnsmr) {
+        ChangeDataCaptureConfiguration cdcCfg = new ChangeDataCaptureConfiguration();
 
         cdcCfg.setConsumer(cnsmr);
         cdcCfg.setKeepBinary(false);
