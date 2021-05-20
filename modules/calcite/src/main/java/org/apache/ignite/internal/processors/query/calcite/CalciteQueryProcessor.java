@@ -137,6 +137,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     /** */
     private final ExecutionService executionSvc;
 
+    /** */
     private final RunningQueryService runningQryScv;
 
     /**

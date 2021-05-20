@@ -22,8 +22,6 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
@@ -32,7 +30,6 @@ import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutor;
@@ -56,9 +53,6 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
 
     /** */
     private GridIoManager ioManager;
-
-    /** */
-    private GridDiscoveryManager discovery;
 
     /** */
     private ClassLoader classLoader;
@@ -108,20 +102,6 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
      */
     public GridIoManager ioManager() {
         return ioManager;
-    }
-
-    /**
-     * @return Discovery manager.
-     */
-    public GridDiscoveryManager discovery() {
-        return discovery;
-    }
-
-    /**
-     * @param discovery Discovery manager.
-     */
-    public void discovery(GridDiscoveryManager discovery) {
-        this.discovery = discovery;
     }
 
     /**
@@ -181,7 +161,6 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
         localNodeId(ctx.localNodeId());
         classLoader(U.resolveClassLoader(ctx.config()));
         ioManager(ctx.io());
-        discovery(ctx.discovery());
 
         @SuppressWarnings("deprecation")
         Marshaller marsh0 = ctx.config().getMarshaller();
@@ -222,32 +201,6 @@ public class MessageServiceImpl extends AbstractService implements MessageServic
 
             ioManager().sendToGridTopic(nodeId, GridTopic.TOPIC_QUERY, msg, plc);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void send(CalciteMessage msg) throws IgniteCheckedException {
-        byte plc = msg instanceof ExecutionContextAware ?
-            ((ExecutionContextAware)msg).ioPolicy() : GridIoPolicy.QUERY_POOL;
-
-        prepareMarshal(msg);
-
-        IgniteException err = null;
-
-        for (ClusterNode node : discovery.aliveServerNodes()) {
-            UUID id = node.id();
-            try {
-                ioManager().sendToGridTopic(id, GridTopic.TOPIC_QUERY, msg, plc);
-            }
-            catch (IgniteCheckedException ex) {
-                if (err == null)
-                    err = new IgniteException("Can't send broadcast message " + msg.type());
-
-                err.addSuppressed(ex);
-            }
-        }
-
-        if (err != null)
-            throw err;
     }
 
     /** {@inheritDoc} */

@@ -22,16 +22,22 @@ import java.util.List;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 public class CalciteTestUtils {
     /** */
-    public static List<List<?>> executeSql(IgniteEx ign, String sql) {
-        List<FieldsQueryCursor<List<?>>> cur = queryProcessor(ign).query(null, "PUBLIC", sql);
+    public static List<List<?>> executeSql(QueryEngine engine, String sql) {
+        List<FieldsQueryCursor<List<?>>> cur = engine.query(null, "PUBLIC", sql);
 
         try (QueryCursor<List<?>> srvCursor = cur.get(0)) {
             return srvCursor.getAll();
         }
+    }
+
+    /** */
+    public static List<List<?>> executeSql(IgniteEx ign, String sql) {
+        return executeSql(queryProcessor(ign), sql);
     }
 
     /** */

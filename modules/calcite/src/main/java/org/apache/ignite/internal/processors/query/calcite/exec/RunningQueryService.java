@@ -150,10 +150,10 @@ public class RunningQueryService implements Service {
             return true;
         }
 
-        List<RunningFragmentInfo> frs = new ArrayList<>(fragments.get(qryId));
+        List<RunningFragmentInfo> frs = fragments.get(qryId);
 
         if (frs != null) {
-            frs.forEach(RunningFragmentInfo::cancel);
+            new ArrayList<>(frs).forEach(RunningFragmentInfo::cancel);
 
             return true;
         }

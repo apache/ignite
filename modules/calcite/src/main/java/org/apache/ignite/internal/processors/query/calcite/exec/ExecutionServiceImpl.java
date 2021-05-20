@@ -57,9 +57,11 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCancelledException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -180,6 +182,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
     /** */
     private ExchangeService exchangeSvc;
+
+    /** */
+    private GridDiscoveryManager discovery;
 
     /** */
     private ClosableIteratorsHolder iteratorsHolder;
@@ -411,6 +416,13 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         return iteratorsHolder;
     }
 
+    /**
+     * @param discovery Discovery manager.
+     */
+    public void discovery(GridDiscoveryManager discovery) {
+        this.discovery = discovery;
+    }
+
     /** {@inheritDoc} */
     @Override public void cancelQuery(UUID qryId) {
         boolean cancelled = runningQrySvc.cancelQuery(qryId);
@@ -419,12 +431,24 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             return;
 
         //Send broadcast cancel message in case we don't have information on local node.
-        try {
-            messageService().send(new QueryCancelRequest(qryId));
+        //It could be overkill as the request is possible finished or never existed.
+        QueryCancelRequest msg = new QueryCancelRequest(qryId);
+
+        IgniteSQLException err = null;
+        for (ClusterNode node : discovery.aliveServerNodes()) {
+            try {
+                messageService().send(node.id(), msg);
+            }
+            catch (IgniteCheckedException ex) {
+                if (err == null)
+                    err = new IgniteSQLException("Can't send broadcast message " + msg.type(), IgniteQueryErrorCode.UNKNOWN);
+
+                err.addSuppressed(ex);
+            }
         }
-        catch (IgniteCheckedException e) {
-            throw new IgniteSQLException("Failed to plan query.", IgniteQueryErrorCode.UNKNOWN, e);
-        }
+
+        if (err != null)
+            throw err;
     }
 
     /** {@inheritDoc} */
@@ -472,6 +496,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
     /** {@inheritDoc} */
     @Override public void onStart(GridKernalContext ctx) {
+        discovery(ctx.discovery());
         localNodeId(ctx.localNodeId());
         exchangeManager(ctx.cache().context().exchange());
         eventManager(ctx.event());
