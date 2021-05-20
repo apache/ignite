@@ -91,7 +91,7 @@ if (WIN32)
 
     remove_definitions(-DUNICODE=1)
 
-    add_definitions(-DTARGET_MODULE_FULL_NAME="${TARGET}")
+    add_definitions(-DTARGET_MODULE_FULL_NAME="$<TARGET_FILE_NAME:${TARGET}>")
 
     if (MSVC_VERSION GREATER_EQUAL 1900)
         target_link_libraries(${TARGET} legacy_stdio_definitions)
