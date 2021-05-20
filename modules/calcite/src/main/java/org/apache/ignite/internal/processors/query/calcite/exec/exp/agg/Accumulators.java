@@ -165,7 +165,7 @@ public class Accumulators {
             assert args.length == 1 : args.length;
 
             if (touched)
-                throw new IllegalArgumentException("Input for single_value function has more than one row.");
+                throw new IllegalArgumentException("Subquery returned more than 1 value.");
 
             touched = true;
 

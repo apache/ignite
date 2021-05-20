@@ -100,9 +100,6 @@ public class FunctionsTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        GridTestUtils.assertThrowsWithCause(() -> checkQuery("SELECT t._key, (SELECT x FROM TABLE(system_range(1, 5))) FROM \"test\".Integer t").check(),
-            IllegalArgumentException.class);
-
         // Correlated INNER join.
         checkQuery("SELECT t._val FROM \"test\".Integer t WHERE t._val < 5 AND " +
             "t._key in (SELECT x FROM table(system_range(t._val, t._val))) ")
