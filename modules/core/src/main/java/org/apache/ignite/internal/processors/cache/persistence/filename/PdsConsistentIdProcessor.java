@@ -192,9 +192,14 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
 
         if (oldStyleFolders != null && oldStyleFolders.length != 0) {
             for (File folder : oldStyleFolders) {
-                final String path = getPathDisplayableInfo(folder);
+                if (folder.isDirectory()) {
+                    final String path = getPathDisplayableInfo(folder);
 
-                U.warn(log, "There is other non-empty storage folder under storage base directory [" + path + "]");
+                    U.warn(log, "There is other non-empty storage folder under storage base directory [" + path + "]");
+                }
+                else {
+                    U.warn(log, "There is an unexpected file under the storage base directory [" + folder.getName() + "]");
+                }
             }
         }
 
@@ -243,6 +248,7 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
      * @param params input/output.
      */
     private static void visitFolder(final File dir, final FolderParams params) {
+        A.ensure(dir.isDirectory(), "dir should be a directory");
         for (File file : dir.listFiles()) {
             if (file.isDirectory())
                 visitFolder(file, params);
