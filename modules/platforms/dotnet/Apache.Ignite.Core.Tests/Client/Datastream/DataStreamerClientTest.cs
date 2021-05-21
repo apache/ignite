@@ -308,6 +308,19 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         }
 
         [Test]
+        public void TestOptionsDefaults()
+        {
+            using (var streamer = Client.GetDataStreamer<int, int>(CacheName))
+            {
+                var opts = streamer.Options;
+
+                Assert.AreEqual(DataStreamerClientOptions.DefaultPerNodeBufferSize, opts.PerNodeBufferSize);
+                Assert.AreEqual(DataStreamerClientOptions.DefaultPerNodeParallelOperations, opts.PerNodeParallelOperations);
+                Assert.AreEqual(Environment.ProcessorCount * 4, opts.PerNodeParallelOperations);
+            }
+        }
+
+        [Test]
         public void TestOptionsValidation()
         {
             var opts = new DataStreamerClientOptions();
@@ -334,9 +347,11 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         {
             var streamer = Client.GetDataStreamer<int, int>("bad-cache-name");
             streamer.Add(1, 1);
+            Assert.IsFalse(streamer.IsClosed);
 
             var ex = Assert.Throws<AggregateException>(() => streamer.Dispose());
             StringAssert.StartsWith("Cache does not exist", ex.GetBaseException().Message);
+            Assert.IsTrue(streamer.IsClosed);
         }
 
         [Test]
