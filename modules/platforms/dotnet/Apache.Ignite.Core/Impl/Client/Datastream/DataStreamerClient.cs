@@ -30,11 +30,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
     /// <summary>
     /// TODO:
-    /// * Simplify server-side part since we don't do stateful? Or keep as is?
     /// * Tune server-side buffer sizes for stateless mode - always match the count
     /// * Receiver tests
     /// * keepBinary tests
-    /// * allowOverwrite tests
     /// </summary>
     internal sealed class DataStreamerClient<TK, TV> : IDataStreamerClient<TK, TV>
     {

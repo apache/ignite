@@ -219,6 +219,35 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             }
         }
 
+        [Test]
+        public void TestAbandonedBuffersGetFlushedOnClose()
+        {
+            var server = StartServer();
+            var client = StartClient();
+            var cache = CreateCache(client);
+
+            using (var streamer = client.GetDataStreamer<int, int>(cache.Name))
+            {
+                // Fill the buffer for the initial server node.
+                streamer.Add(-1, -1);
+                streamer.Add(-2, -2);
+
+                StartServer();
+                server.Dispose();
+
+                // Perform cache operation to detect connection failure.
+                Assert.Throws<IgniteClientException>(() => cache.Put(1, 3));
+
+                // Fill the buffer for a new node.
+                streamer.Add(1, 1);
+                streamer.Add(2, 2);
+            }
+
+            // Close/Dispose flushes all buffers, including the buffer for the old node that was disconnected.
+            Assert.AreEqual(4, cache.GetSize());
+            Assert.IsTrue(cache.ContainsKeys(new[]{-1, -2, 1, 2}));
+        }
+
         [TearDown]
         public void TearDown()
         {
