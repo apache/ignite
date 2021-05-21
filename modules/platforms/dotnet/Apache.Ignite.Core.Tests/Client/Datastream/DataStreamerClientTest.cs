@@ -267,7 +267,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         }
 
         [Test]
-        public void TestBackPressure()
+        public void TestExceedingPerNodeParallelOperationsBlocksAddMethod()
         {
             var serverCache = Ignition.GetIgnite().CreateCache<int, int>(new CacheConfiguration
             {
