@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Client
 {
     using Apache.Ignite.Core.Client;
+    using Apache.Ignite.Core.Client.Datastream;
     using NUnit.Framework;
 
     /// <summary>
@@ -31,17 +32,20 @@ namespace Apache.Ignite.Core.Tests.Client
         /** */
         private const string AllowAllLogin = "CLIENT_";
 
+        /** */
+        private const string ForbiddenCache = "FORBIDDEN_CACHE";
+
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
             TestUtils.EnsureJvmCreated();
-            TestUtilsJni.StartIgnite("s");
+            TestUtilsJni.StartIgnite("server");
         }
 
         [TestFixtureTearDown]
         public void FixtureTearDown()
         {
-            TestUtilsJni.StopIgnite("s");
+            TestUtilsJni.StopIgnite("server");
         }
 
         [Test]
@@ -49,8 +53,35 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             using (var client = StartClient())
             {
-                var ex = Assert.Throws<IgniteClientException>(() => client.CreateCache<int, int>("FORBIDDEN_CACHE"));
+                var ex = Assert.Throws<IgniteClientException>(() => client.CreateCache<int, int>(ForbiddenCache));
 
+                Assert.AreEqual(ClientStatusCode.SecurityViolation, ex.StatusCode);
+            }
+        }
+
+        [Test]
+        public void TestDataStreamerNoPermissionThrowsSecurityViolationClientException([Values(true, false)] bool add)
+        {
+            using (var client = StartClient(AllowAllLogin))
+            {
+                client.CreateCache<int, int>(ForbiddenCache);
+            }
+
+            using (var client = StartClient())
+            {
+                var options = new DataStreamerClientOptions {AllowOverwrite = true};
+                var streamer = client.GetDataStreamer<int, int>(ForbiddenCache, options);
+
+                if (add)
+                {
+                    streamer.Add(1, 1);
+                }
+                else
+                {
+                    streamer.Remove(1);
+                }
+
+                var ex = Assert.Throws<IgniteClientException>(() => streamer.Flush());
                 Assert.AreEqual(ClientStatusCode.SecurityViolation, ex.StatusCode);
             }
         }
