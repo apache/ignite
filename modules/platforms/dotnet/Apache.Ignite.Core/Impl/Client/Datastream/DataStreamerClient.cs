@@ -288,80 +288,106 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }, TaskContinuationOptions.ExecuteSynchronously);
         }
 
-        private void FlushBuffer(DataStreamerClientBuffer<TK, TV> buffer,
+        private void FlushBuffer(
+            DataStreamerClientBuffer<TK, TV> buffer,
             ClientSocket socket,
             TaskCompletionSource<object> tcs,
             bool userRequested)
         {
-            socket.DoOutInOpAsync(
-                    ClientOp.DataStreamerStart,
-                    ctx => WriteBuffer(buffer, ctx.Writer),
-                    ctx => (object)null,
-                    syncCallback: true)
-                .ContinueWith(t =>
+            try
+            {
+                socket.DoOutInOpAsync(
+                        ClientOp.DataStreamerStart,
+                        ctx => WriteBuffer(buffer, ctx.Writer),
+                        ctx => (object)null,
+                        syncCallback: true)
+                    .ContinueWith(
+                        t => FlushBufferCompleteOrRetry(buffer, socket, tcs, userRequested, t.Exception, onSocketThread: true),
+                        TaskContinuationOptions.ExecuteSynchronously);
+            }
+            catch (Exception exception)
+            {
+                FlushBufferCompleteOrRetry(buffer, socket, tcs, userRequested, exception);
+            }
+        }
+
+        private void FlushBufferCompleteOrRetry(
+            DataStreamerClientBuffer<TK, TV> buffer,
+            ClientSocket socket,
+            TaskCompletionSource<object> tcs,
+            bool userRequested,
+            Exception exception,
+            bool onSocketThread = false)
+        {
+            // NOTE: We are on socket receiver thread here - don't perform any heavy operations.
+            var entries = buffer.Entries;
+
+            if (exception == null)
+            {
+                ReturnArray(entries);
+                tcs.SetResult(null);
+
+                return;
+            }
+
+            if (!socket.IsDisposed)
+            {
+                // Socket is still connected: this error does not need to be retried.
+                ReturnArray(entries);
+                tcs.SetException(exception);
+
+                return;
+            }
+
+            // TODO: Retry count limit.
+            if (onSocketThread)
+            {
+                // Release receiver thread, perform retry on a separate thread.
+                ThreadPool.QueueUserWorkItem(_ => FlushBufferRetry(buffer, socket, tcs, userRequested, entries));
+            }
+            else
+            {
+                FlushBufferRetry(buffer, socket, tcs, userRequested, entries);
+            }
+        }
+
+        private void FlushBufferRetry(DataStreamerClientBuffer<TK, TV> buffer, ClientSocket socket, TaskCompletionSource<object> tcs,
+            bool userRequested, DataStreamerClientEntry<TK, TV>[] entries)
+        {
+            try
+            {
+                // Connection failed. Remove disconnected socket from the map.
+                DataStreamerClientPerNodeBuffer<TK, TV> unused;
+                _buffers.TryRemove(socket, out unused);
+
+                // Re-add entries to other buffers.
+                var count = buffer.Count;
+
+                for (var i = 0; i < count; i++)
                 {
-                    // NOTE: We are on socket receiver thread here - don't perform any heavy operations.
-                    var entries = buffer.Entries;
+                    var entry = entries[i];
 
-                    if (t.Exception == null)
+                    if (!entry.IsEmpty)
                     {
-                        ReturnArray(entries);
-                        tcs.SetResult(null);
-
-                        return;
+                        AddNoLock(entry);
                     }
+                }
 
-                    if (!socket.IsDisposed)
-                    {
-                        // Socket is still connected: this error does not need to be retried.
-                        ReturnArray(entries);
-                        tcs.SetException(t.Exception);
-
-                        return;
-                    }
-
-                    // Release receiver thread, perform retry on a separate thread.
-                    // TODO: Retry count limit.
-                    ThreadPool.QueueUserWorkItem(_ =>
-                    {
-                        try
-                        {
-                            // Connection failed. Remove disconnected socket from the map.
-                            DataStreamerClientPerNodeBuffer<TK, TV> unused;
-                            _buffers.TryRemove(socket, out unused);
-
-                            // Re-add entries to other buffers.
-                            var count = buffer.Count;
-
-                            for (var i = 0; i < count; i++)
-                            {
-                                var entry = entries[i];
-
-                                if (!entry.IsEmpty)
-                                {
-                                    AddNoLock(entry);
-                                }
-                            }
-
-                            // TODO: Flush only when requested by the user!
-                            // TODO: What if we are in Close mode?
-                            if (userRequested)
-                            {
-                                // When flush is initiated by the user, we should retry flushing immediately.
-                                // Otherwise re-adding entries to other buffers is enough.
-                                FlushInternalAsync().ContinueWith(flushTask => flushTask.SetAsResult(tcs));
-                            }
-                        }
-                        catch (Exception e)
-                        {
-                            tcs.SetException(e);
-                        }
-                        finally
-                        {
-                            ReturnArray(entries);
-                        }
-                    });
-                }, TaskContinuationOptions.ExecuteSynchronously);
+                if (userRequested)
+                {
+                    // When flush is initiated by the user, we should retry flushing immediately.
+                    // Otherwise re-adding entries to other buffers is enough.
+                    FlushInternalAsync().ContinueWith(flushTask => flushTask.SetAsResult(tcs));
+                }
+            }
+            catch (Exception e)
+            {
+                tcs.SetException(e);
+            }
+            finally
+            {
+                ReturnArray(entries);
+            }
         }
 
         internal DataStreamerClientEntry<TK, TV>[] GetArray()
