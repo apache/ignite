@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Client
 {
+    using System;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Datastream;
     using NUnit.Framework;
@@ -64,7 +65,7 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             using (var client = StartClient(AllowAllLogin))
             {
-                client.CreateCache<int, int>(ForbiddenCache);
+                client.GetOrCreateCache<int, int>(ForbiddenCache);
             }
 
             using (var client = StartClient())
@@ -81,8 +82,11 @@ namespace Apache.Ignite.Core.Tests.Client
                     streamer.Remove(1);
                 }
 
-                var ex = Assert.Throws<IgniteClientException>(() => streamer.Flush());
-                Assert.AreEqual(ClientStatusCode.SecurityViolation, ex.StatusCode);
+                var ex = Assert.Throws<AggregateException>(() => streamer.Flush());
+                var clientEx = (IgniteClientException)ex.GetBaseException();
+
+                Assert.AreEqual(ClientStatusCode.SecurityViolation, clientEx.StatusCode);
+                Assert.AreEqual("Client is not authorized to perform this operation", clientEx.Message);
             }
         }
 
