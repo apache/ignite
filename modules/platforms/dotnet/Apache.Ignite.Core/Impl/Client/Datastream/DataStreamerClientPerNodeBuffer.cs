@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
             _client = client;
             _socket = socket;
-            _semaphore = new SemaphoreSlim(client.Options.ClientPerNodeParallelOperations);
+            _semaphore = new SemaphoreSlim(client.Options.PerNodeParallelOperations);
 
             _buffer = new DataStreamerClientBuffer<TK, TV>(_client.GetArray(), this, null);
         }

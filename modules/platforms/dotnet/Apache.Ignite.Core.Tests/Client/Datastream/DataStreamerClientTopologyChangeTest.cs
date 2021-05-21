@@ -185,7 +185,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
             var options = new DataStreamerClientOptions
             {
-                ClientPerNodeBufferSize = 3
+                PerNodeBufferSize = 3
             };
 
             using (var streamer = client.GetDataStreamer<int, int>(cache.Name, options))

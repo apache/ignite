@@ -52,6 +52,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         }
 
         /** */
+        private const int ServerBufferSizeAuto = -1;
+
+        /** */
         private readonly ClientFailoverSocket _socket;
 
         /** */
@@ -378,7 +381,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 return res;
             }
 
-            res = new DataStreamerClientEntry<TK, TV>[_options.ClientPerNodeBufferSize];
+            res = new DataStreamerClientEntry<TK, TV>[_options.PerNodeBufferSize];
             return res;
         }
 
@@ -391,8 +394,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         {
             w.WriteInt(_cacheId);
             w.WriteByte((byte) GetFlags());
-            w.WriteInt(_options.ServerPerNodeBufferSize);
-            w.WriteInt(_options.ServerPerThreadBufferSize);
+            w.WriteInt(ServerBufferSizeAuto); // Server per-node buffer size.
+            w.WriteInt(ServerBufferSizeAuto); // Server per-thread buffer size.
             w.WriteObject(_options.Receiver);
 
             var count = buffer.Count;

@@ -103,9 +103,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             // Set server buffers to 1 so that server always flushes the data.
             var options = new DataStreamerClientOptions<int, int>
             {
-                ClientPerNodeBufferSize = 3,
-                ServerPerNodeBufferSize = 1,
-                ServerPerThreadBufferSize = 1
+                PerNodeBufferSize = 3
             };
 
             using (var streamer = Client.GetDataStreamer(
@@ -280,10 +278,8 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
             var options = new DataStreamerClientOptions
             {
-                ClientPerNodeParallelOperations = 2,
-                ClientPerNodeBufferSize = 1,
-                ServerPerNodeBufferSize = 1,
-                ServerPerThreadBufferSize = 1,
+                PerNodeParallelOperations = 2,
+                PerNodeBufferSize = 1,
                 AllowOverwrite = true // Required for cache store to be invoked.
             };
 
@@ -316,10 +312,8 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         {
             var opts = new DataStreamerClientOptions();
 
-            Assert.Throws<ArgumentException>(() => opts.ClientPerNodeBufferSize = -1);
-            Assert.Throws<ArgumentException>(() => opts.ClientPerNodeParallelOperations = -1);
-            Assert.Throws<ArgumentException>(() => opts.ServerPerNodeBufferSize = -1);
-            Assert.Throws<ArgumentException>(() => opts.ServerPerThreadBufferSize = -1);
+            Assert.Throws<ArgumentException>(() => opts.PerNodeBufferSize = -1);
+            Assert.Throws<ArgumentException>(() => opts.PerNodeParallelOperations = -1);
         }
 
         [Test]
