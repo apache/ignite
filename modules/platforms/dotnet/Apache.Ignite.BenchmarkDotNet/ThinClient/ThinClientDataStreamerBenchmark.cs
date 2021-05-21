@@ -63,6 +63,8 @@ namespace Apache.Ignite.BenchmarkDotNet.ThinClient
     /// |------------------ |----------:|---------:|---------:|----------:|------:|--------:|----------:|------:|------:|----------:|
     /// |  StreamThinClient |  77.71 ms | 1.543 ms | 2.821 ms |  77.65 ms |  0.70 |    0.04 | 2000.0000 |     - |     - |  16.51 MB |
     /// | StreamThickClient | 110.82 ms | 2.200 ms | 4.688 ms | 108.83 ms |  1.00 |    0.00 | 2000.0000 |     - |     - |  13.61 MB |
+    /// Back to stateless, disable server-side thread buffer:
+    /// | StreamThinClient | 102.7 ms | 3.16 ms | 9.21 ms | 2000.0000 | 1000.0000 |     - |  17.13 MB |
     /// </summary>
     [MemoryDiagnoser]
     public class ThinClientDataStreamerBenchmark : ThinClientBenchmarkBase

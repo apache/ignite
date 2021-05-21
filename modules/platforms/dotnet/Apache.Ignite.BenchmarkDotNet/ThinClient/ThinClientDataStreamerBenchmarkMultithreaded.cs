@@ -40,6 +40,8 @@ namespace Apache.Ignite.BenchmarkDotNet.ThinClient
     /// |------------------ |----------:|---------:|----------:|------:|--------:|----------:|----------:|------:|----------:|
     /// |  StreamThinClient | 109.93 ms | 3.420 ms | 10.030 ms |  1.39 |    0.15 | 3000.0000 | 1000.0000 |     - |  17.35 MB |
     /// | StreamThickClient |  79.36 ms | 2.333 ms |  6.731 ms |  1.00 |    0.00 | 2000.0000 | 1000.0000 |     - |  13.83 MB |
+    /// Server-side: disable thread buffer, reduce collection alloc:
+    /// | StreamThinClient | 105.2 ms | 3.09 ms | 9.02 ms | 2000.0000 | 1000.0000 |     - |  17.34 MB |
     /// </summary>
     [MemoryDiagnoser]
     public class ThinClientDataStreamerBenchmarkMultithreaded : ThinClientBenchmarkBase
