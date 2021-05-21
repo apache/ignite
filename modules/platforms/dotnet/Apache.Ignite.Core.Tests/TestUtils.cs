@@ -40,6 +40,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Unmanaged.Jni;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
@@ -616,6 +617,19 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
+        /// Creates the JVM if necessary.
+        /// </summary>
+        public static void EnsureJvmCreated()
+        {
+            if (Jvm.Get(true) == null)
+            {
+                var logger = new TestContextLogger();
+                JvmDll.Load(null, logger);
+                IgniteManager.CreateJvm(GetTestConfiguration(), logger);
+            }
+        }
+
+        /// <summary>
         /// Runs the test in new process.
         /// </summary>
         [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
@@ -649,17 +663,17 @@ namespace Apache.Ignite.Core.Tests
                 }
             }
         }
-        
+
         /// <summary>
         /// Deploys the Java service.
         /// </summary>
         public static string DeployJavaService(IIgnite ignite)
         {
             const string serviceName = "javaService";
-            
+
             ignite.GetCompute()
                 .ExecuteJavaTask<object>("org.apache.ignite.platform.PlatformDeployServiceTask", serviceName);
-            
+
             var services = ignite.GetServices();
 
             WaitForCondition(() => services.GetServiceDescriptors().Any(x => x.Name == serviceName), 1000);
