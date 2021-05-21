@@ -176,7 +176,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         }
 
         [Test]
-        public void TestAbandonedBuffersGetFlushedOnCloseAndExplicitFlush()
+        public void TestAbandonedBuffersGetFlushedOnExplicitFlush()
         {
             var server = StartServer();
             var client = StartClient();
@@ -190,6 +190,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
             using (var streamer = client.GetDataStreamer<int, int>(cache.Name, options))
             {
+                // Fill the buffer for the initial server node.
                 streamer.Add(-1, -1);
                 streamer.Add(-2, -2);
 
@@ -197,22 +198,25 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 server.Dispose();
 
                 // Perform cache operation to detect connection failure.
-                cache[0] = 0;
+                Assert.Throws<IgniteClientException>(() => cache.Put(1, 3));
 
                 // Fill the buffer to force flush.
                 streamer.Add(1, 1);
                 streamer.Add(2, 2);
                 streamer.Add(3, 3);
 
+                // Automatic flush does not involve old buffer.
                 TestUtils.WaitForTrueCondition(() => cache.ContainsKey(1));
                 Assert.AreEqual(3, cache.GetSize());
+                Assert.IsTrue(cache.ContainsKeys(new[]{1, 2, 3}));
+
+                // Explicit flush includes old buffer.
+                streamer.Add(4, 4);
+                streamer.Flush();
+
+                Assert.AreEqual(6, cache.GetSize());
+                Assert.IsTrue(cache.ContainsKeys(new[]{-1, -2, 4}));
             }
-
-            Assert.AreEqual(1, cache[1]);
-            Assert.AreEqual(2, cache[2]);
-
-
-            Assert.Fail("TODO");
         }
 
         [TearDown]
