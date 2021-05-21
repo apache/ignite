@@ -212,6 +212,30 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
         }
 
+        internal DataStreamerClientEntry<TK, TV>[] GetArray()
+        {
+            DataStreamerClientEntry<TK,TV>[] res;
+
+            if (_arrayPool.TryPop(out res))
+            {
+                // Reset buffer and return.
+                for (int i = 0; i < res.Length; i++)
+                {
+                    res[i] = new DataStreamerClientEntry<TK, TV>();
+                }
+
+                return res;
+            }
+
+            res = new DataStreamerClientEntry<TK, TV>[_options.PerNodeBufferSize];
+            return res;
+        }
+
+        internal void ReturnArray(DataStreamerClientEntry<TK, TV>[] buffer)
+        {
+            _arrayPool.Push(buffer);
+        }
+
         private void Add(DataStreamerClientEntry<TK, TV> entry)
         {
             if (!_rwLock.TryEnterReadLock(0))
@@ -319,7 +343,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             Exception exception,
             bool onSocketThread = false)
         {
-            // NOTE: We are on socket receiver thread here - don't perform any heavy operations.
+            // NOTE: when onSocketThread is true, we are on socket receiver thread - don't perform any heavy operations.
             var entries = buffer.Entries;
 
             if (exception == null)
@@ -388,30 +412,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             {
                 ReturnArray(entries);
             }
-        }
-
-        internal DataStreamerClientEntry<TK, TV>[] GetArray()
-        {
-            DataStreamerClientEntry<TK,TV>[] res;
-
-            if (_arrayPool.TryPop(out res))
-            {
-                // Reset buffer and return.
-                for (int i = 0; i < res.Length; i++)
-                {
-                    res[i] = new DataStreamerClientEntry<TK, TV>();
-                }
-
-                return res;
-            }
-
-            res = new DataStreamerClientEntry<TK, TV>[_options.PerNodeBufferSize];
-            return res;
-        }
-
-        internal void ReturnArray(DataStreamerClientEntry<TK, TV>[] buffer)
-        {
-            _arrayPool.Push(buffer);
         }
 
         private void WriteBuffer(DataStreamerClientBuffer<TK, TV> buffer, BinaryWriter w)
