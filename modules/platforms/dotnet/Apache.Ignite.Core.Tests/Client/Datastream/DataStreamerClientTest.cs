@@ -267,6 +267,33 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         }
 
         [Test]
+        public void TestSkipStore()
+        {
+            var serverCache = Ignition.GetIgnite().CreateCache<int, int>(new CacheConfiguration
+            {
+                Name = TestUtils.TestName,
+                CacheStoreFactory = new BlockingCacheStore(),
+                WriteThrough = true
+            });
+
+            var options = new DataStreamerClientOptions
+            {
+                SkipStore = true,
+                AllowOverwrite = true // Required for cache store to be invoked.
+            };
+
+            BlockingCacheStore.Block();
+
+            using (var streamer = Client.GetDataStreamer<int, int>(serverCache.Name, options))
+            {
+                streamer.Add(Enumerable.Range(1, 300).ToDictionary(x => x, x => -x));
+            }
+
+            Assert.AreEqual(300, serverCache.GetSize());
+            Assert.AreEqual(-100, serverCache[100]);
+        }
+
+        [Test]
         public void TestExceedingPerNodeParallelOperationsBlocksAddMethod()
         {
             var serverCache = Ignition.GetIgnite().CreateCache<int, int>(new CacheConfiguration
@@ -289,7 +316,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             using (var streamer = Client.GetDataStreamer<int, int>(serverCache.Name, options))
             {
                 // Block writes and add data.
-                BlockingCacheStore.Gate.Reset();
+                BlockingCacheStore.Block();
                 streamer.Add(keys[1], 1);
                 streamer.Add(keys[2], 2);
 
@@ -298,7 +325,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
                 // Task is blocked because two streamer operations are already in progress.
                 Assert.IsFalse(TestUtils.WaitForCondition(() => task.IsCompleted, 500));
-                BlockingCacheStore.Gate.Set();
+                BlockingCacheStore.Unblock();
                 TestUtils.WaitForTrueCondition(() => task.IsCompleted, 500);
             }
 
@@ -406,7 +433,17 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
         private class BlockingCacheStore : CacheStoreAdapter<int, int>, IFactory<ICacheStore>
         {
-            public static ManualResetEventSlim Gate = new ManualResetEventSlim();
+            private static readonly ManualResetEventSlim Gate = new ManualResetEventSlim();
+
+            public static void Block()
+            {
+                Gate.Reset();
+            }
+
+            public static void Unblock()
+            {
+                Gate.Set();
+            }
 
             public override int Load(int key)
             {
