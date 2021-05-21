@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.metastorage.client;
+package org.apache.ignite.internal.metastorage.client;
 
 import java.util.Collection;
 import java.util.Map;
@@ -301,7 +301,7 @@ public interface MetaStorageService {
     /**
      * Subscribes on meta storage updates for given keys.
      *
-     * @param keys Set of target keys. Could be {@code null}.
+     * @param keys Set of target keys. Couldn't be {@code null} or empty.
      * @param revision Start revision inclusive. {@code 0} - all revision,
      * {@code -1} - latest revision (accordingly to current meta storage state).
      * @param lsnr Listener which will be notified for each update.

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.metastorage.client;
+package org.apache.ignite.internal.metastorage.client;
 
 import org.apache.ignite.internal.metastorage.common.OperationType;
 import org.jetbrains.annotations.NotNull;

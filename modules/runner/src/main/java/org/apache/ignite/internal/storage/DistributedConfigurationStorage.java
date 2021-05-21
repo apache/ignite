@@ -35,13 +35,13 @@ import org.apache.ignite.internal.util.ByteUtils;
 import org.apache.ignite.internal.util.Cursor;
 import org.apache.ignite.lang.ByteArray;
 import org.apache.ignite.lang.IgniteLogger;
-import org.apache.ignite.metastorage.client.Conditions;
-import org.apache.ignite.metastorage.client.Entry;
-import org.apache.ignite.metastorage.client.EntryEvent;
-import org.apache.ignite.metastorage.client.Operation;
-import org.apache.ignite.metastorage.client.Operations;
-import org.apache.ignite.metastorage.client.WatchEvent;
-import org.apache.ignite.metastorage.client.WatchListener;
+import org.apache.ignite.internal.metastorage.client.Conditions;
+import org.apache.ignite.internal.metastorage.client.Entry;
+import org.apache.ignite.internal.metastorage.client.EntryEvent;
+import org.apache.ignite.internal.metastorage.client.Operation;
+import org.apache.ignite.internal.metastorage.client.Operations;
+import org.apache.ignite.internal.metastorage.client.WatchEvent;
+import org.apache.ignite.internal.metastorage.client.WatchListener;
 import org.jetbrains.annotations.NotNull;
 
 /**

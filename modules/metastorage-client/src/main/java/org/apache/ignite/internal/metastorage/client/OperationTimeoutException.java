@@ -15,17 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.metastorage.client;
+package org.apache.ignite.internal.metastorage.client;
 
 /**
- * Thrown when a requested operation on meta storage could not be performed because target revisions were removed
- * from storage due to a compaction procedure. In such case the operation should be retried with actual revision.
+ * Thrown when an operation is not executed within a specified time period. Usually in such cases the operation
+ * should be retried.
  */
-public class CompactedException extends RuntimeException {
+public class OperationTimeoutException extends RuntimeException {
     /**
      * Constructs an exception.
      */
-    public CompactedException() {
+    public OperationTimeoutException() {
         super();
     }
 
@@ -34,7 +34,7 @@ public class CompactedException extends RuntimeException {
      *
      * @param message Detail message.
      */
-    public CompactedException(String message) {
+    public OperationTimeoutException(String message) {
         super(message);
     }
 
@@ -44,7 +44,7 @@ public class CompactedException extends RuntimeException {
      * @param message Detail message.
      * @param cause Cause.
      */
-    public CompactedException(String message, Throwable cause) {
+    public OperationTimeoutException(String message, Throwable cause) {
         super(message, cause);
     }
 
@@ -53,7 +53,7 @@ public class CompactedException extends RuntimeException {
      *
      * @param cause Cause.
      */
-    public CompactedException(Throwable cause) {
+    public OperationTimeoutException(Throwable cause) {
         super(cause);
     }
 }

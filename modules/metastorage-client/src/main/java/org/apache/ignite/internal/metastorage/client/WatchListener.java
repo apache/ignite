@@ -15,7 +15,28 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.internal.metastorage.client;
+
+import org.jetbrains.annotations.NotNull;
+
 /**
- * Defines client interface for access to a meta storage server.
+ * The listener which receives and handles watch updates.
  */
-package org.apache.ignite.metastorage.client;
+public interface WatchListener {
+    /**
+     * The method will be called on each meta storage update.
+     *
+     * @param evt A single event or a batch. The batch always contains updates for specific revision.
+     * @return {@code True} if listener must continue event handling. If returns {@code false} then the listener and
+     * corresponding watch will be unregistered.
+     */
+    boolean onUpdate(@NotNull WatchEvent evt);
+
+    /**
+     * The method will be called in case of an error occurred. The listener and corresponding watch will be
+     * unregistered.
+     *
+     * @param e Exception.
+     */
+    void onError(@NotNull Throwable e);
+}

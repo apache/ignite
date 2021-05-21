@@ -19,7 +19,6 @@ package org.apache.ignite.internal.metastorage.client;
 
 import java.util.Arrays;
 import org.apache.ignite.lang.ByteArray;
-import org.apache.ignite.metastorage.client.Entry;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

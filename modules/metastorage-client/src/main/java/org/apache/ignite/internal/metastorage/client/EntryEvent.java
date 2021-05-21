@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.metastorage.client;
+package org.apache.ignite.internal.metastorage.client;
 
 import java.io.Serializable;
 import org.jetbrains.annotations.NotNull;
