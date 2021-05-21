@@ -285,8 +285,8 @@ public class SimpleInMemoryKeyValueStorage implements KeyValueStorage {
 
     /** {@inheritDoc} */
     @Override public Cursor<WatchEvent> watch(byte[] keyFrom, byte[] keyTo, long rev) {
-        assert keyFrom != null;
-        assert rev > 0;
+        assert keyFrom != null : "keyFrom couldn't be null.";
+        assert rev > 0 : "rev must be positive.";
 
         return new WatchCursor(rev, k ->
             CMP.compare(keyFrom, k) <= 0 && (keyTo == null || CMP.compare(k, keyTo) < 0)
@@ -295,16 +295,16 @@ public class SimpleInMemoryKeyValueStorage implements KeyValueStorage {
 
     /** {@inheritDoc} */
     @Override public Cursor<WatchEvent> watch(byte[] key, long rev) {
-        assert key != null;
-        assert rev > 0;
+        assert key != null : "key couldn't be null.";
+        assert rev > 0 : "rev must be positive.";
 
         return new WatchCursor(rev, k -> CMP.compare(k, key) == 0);
     }
 
     /** {@inheritDoc} */
     @Override public Cursor<WatchEvent> watch(Collection<byte[]> keys, long rev) {
-        assert keys != null && !keys.isEmpty();
-        assert rev > 0;
+        assert keys != null && !keys.isEmpty() : "keys couldn't be null or empty: " + keys;
+        assert rev > 0 : "rev must be positive.";
 
         TreeSet<byte[]> keySet = new TreeSet<>(CMP);
 
@@ -370,7 +370,7 @@ public class SimpleInMemoryKeyValueStorage implements KeyValueStorage {
     private Collection<Entry> doGetAll(List<byte[]> keys, long rev) {
         assert keys != null : "keys list can't be null.";
         assert !keys.isEmpty() : "keys list can't be empty.";
-        assert rev > 0 || rev == LATEST_REV : "Revision must be positive.";
+        assert rev > 0 || rev == LATEST_REV : "Revision must be positive or " + LATEST_REV + '.';
 
         Collection<Entry> res = new ArrayList<>(keys.size());
 
@@ -610,7 +610,7 @@ public class SimpleInMemoryKeyValueStorage implements KeyValueStorage {
                                 List<Long> revs = e.getValue();
 
                                 assert revs != null && !revs.isEmpty() :
-                                        "Revisions should not be empty: [revs=" + revs + ']';
+                                        "Revisions should not be empty or null: [revs=" + revs + ']';
 
                                 long lastRev = maxRevision(revs, rev);
 
