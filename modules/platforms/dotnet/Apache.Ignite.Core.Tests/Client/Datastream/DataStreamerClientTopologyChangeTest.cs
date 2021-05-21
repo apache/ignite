@@ -150,7 +150,14 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             }
 
             Assert.AreEqual(1, cache[1]);
-            Assert.AreEqual(id, cache.GetSize());
+
+            if (id != cache.GetSize())
+            {
+                Thread.Sleep(2000);
+                Assert.AreEqual(id, cache.GetSize()); // TODO: This fails sometimes - do we lose data?
+                Assert.Fail("Cache size became correct after a delay.");
+            }
+
             Assert.Greater(id, 10000);
         }
 
