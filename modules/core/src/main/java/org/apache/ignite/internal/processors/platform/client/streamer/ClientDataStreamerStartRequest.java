@@ -100,7 +100,6 @@ public class ClientDataStreamerStartRequest extends ClientRequest {
         if (receiver != null)
             dataStreamer.receiver(receiver);
 
-        // TODO: addDataInternal does not check security permissions! Check them in Reader. Add a test.
         if (entries != null)
             dataStreamer.addDataInternal(entries, useThreadBuffer);
 
