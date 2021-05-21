@@ -1,0 +1,256 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.cache.query;
+
+import java.util.Iterator;
+import java.util.Objects;
+import javax.cache.Cache;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterTopologyException;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.cache.query.index.IndexName;
+import org.apache.ignite.internal.processors.cache.GatewayProtectedCacheProxy;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+
+/** */
+public class IndexQueryFailoverTest extends GridCommonAbstractTest {
+    /** */
+    private static final String CACHE = "TEST_CACHE";
+
+    /** */
+    private static final String IDX = "TEST_IDX";
+
+    /** */
+    private static final int CNT = 10_000;
+
+    /** */
+    private IgniteCache<Long, Person> cache;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        Ignite crd = startGrids(4);
+
+        cache = crd.cache(CACHE);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() {
+        stopAllGrids();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        CacheConfiguration<Long, Person> ccfg = new CacheConfiguration<Long, Person>()
+            .setName(CACHE)
+            .setIndexedTypes(Long.class, Person.class);
+
+        cfg.setCacheConfiguration(ccfg);
+
+        return cfg;
+    }
+
+    /** */
+    @Test
+    public void testQueryWithWrongCondition() {
+        GridTestUtils.assertThrowsAnyCause(null, () -> {
+                IndexQuery<Long, Person> qryNoCond = IndexQuery.forType(Person.class);
+
+                return cache.query(qryNoCond);
+            },
+            NullPointerException.class, "Ouch! Argument cannot be null: idxCond");
+
+        GridTestUtils.assertThrowsAnyCause(null, () -> {
+                IndexQuery<Long, Person> qryNullCond = IndexQuery
+                    .<Long, Person>forType(Person.class)
+                    .lt(null, 12);
+
+                return cache.query(qryNullCond);
+            },
+            NullPointerException.class, "Ouch! Argument cannot be null: field");
+
+        GridTestUtils.assertThrowsAnyCause(null, () -> {
+                IndexQuery<Long, Person> qryWrongNumberOfVals = IndexQuery
+                    .<Long, Person>forType(Person.class)
+                    .lt("id", 12, "id");
+
+                return cache.query(qryWrongNumberOfVals);
+            },
+            IllegalArgumentException.class, "Ouch! Argument is invalid: vals must not be empty.");
+
+        GridTestUtils.assertThrowsAnyCause(null, () -> {
+                IndexQuery<Long, Person> qryDuplicateField = IndexQuery
+                    .<Long, Person>forType(Person.class)
+                    .lt("id", 12, "id", 32);
+
+                return cache.query(qryDuplicateField);
+            },
+            IllegalArgumentException.class, "Ouch! Argument is invalid");
+    }
+
+    /** */
+    @Test
+    public void testQueryWrongType() {
+        GridTestUtils.assertThrows(null, () -> IndexQuery.<Long, Integer>forType(null),
+            NullPointerException.class, "Ouch! Argument cannot be null: valCls");
+
+        GridTestUtils.assertThrowsAnyCause(null, () -> {
+                IndexQuery<Long, Integer> qry = IndexQuery
+                    .<Long, Integer>forType(Integer.class)
+                    .lt("id", Integer.MAX_VALUE);
+
+                return cache.query(qry).getAll();
+            },
+            IgniteCheckedException.class, "No index matches index query.");
+    }
+
+    /** */
+    @Test
+    public void testRangeQueries() {
+        insertData(0, CNT);
+
+        IndexQuery<Long, Person> qry = IndexQuery
+            .<Long, Person>forType(Person.class)
+            .lt("id", CNT);
+
+        QueryCursor<Cache.Entry<Long, Person>> cursor = cache.query(qry);
+
+        stopGrid(1);
+
+        GridTestUtils.assertThrows(null,
+            () -> cursor.getAll(), ClusterTopologyException.class,
+            null);
+    }
+
+    /** */
+    @Test
+    public void testDestroyIndex() {
+        insertData(0, CNT);
+
+        IndexQuery<Long, Person> qry = IndexQuery
+            .<Long, Person>forType(Person.class)
+            .lt("id", CNT);
+
+        Iterator<Cache.Entry<Long, Person>> cursor = cache.query(qry).iterator();
+
+        for (int i = 0; i < 10; i++)
+            cursor.next();
+
+        destroyIndex();
+
+        // SQL doesn't lock index for querying. SQL is eager and fetch all data from index before return it to user by pages.
+        // IndexQuery doesn't lock to, but IndexQuery is lazy and concurrent index operations will affect result of this query.
+        GridTestUtils.assertThrows(null,
+            () -> {
+                while (cursor.hasNext())
+                    cursor.next();
+
+            }, IgniteException.class, null);
+    }
+
+    /** */
+    @Test
+    public void testConcurrentUpdateIndex() {
+        insertData(0, CNT);
+
+        IndexQuery<Long, Person> qry = IndexQuery
+            .<Long, Person>forType(Person.class)
+            .between("id", CNT / 2, CNT + CNT / 2);
+
+        Iterator<Cache.Entry<Long, Person>> cursor = cache.query(qry).iterator();
+
+        for (int i = 0; i < CNT / 10; i++)
+            cursor.next();
+
+        insertData(CNT, CNT * 2);
+
+        int size = CNT / 10;
+
+        while (cursor.hasNext()) {
+            cursor.next();
+            size++;
+        }
+
+        assertEquals(CNT + 1, size);
+    }
+
+    /** */
+    private void destroyIndex() {
+        IndexName idxName = new IndexName(CACHE, CACHE, Person.class.getSimpleName().toUpperCase(), IDX);
+
+        GridCacheContext cctx = ((GatewayProtectedCacheProxy) cache).context();
+
+        cctx.kernalContext().indexProcessor()
+            .removeIndex(cctx, idxName, false);
+    }
+
+    /** */
+    private void insertData(int from, int to) {
+        for (int i = from; i < to; i++)
+            cache.put((long) i, new Person(i));
+    }
+
+    /** */
+    private static class Person {
+        /** */
+        @QuerySqlField(orderedGroups = @QuerySqlField.Group(name = IDX, order = 0))
+        final int id;
+
+        /** */
+        @QuerySqlField
+        final int descId;
+
+        /** */
+        Person(int id) {
+            this.id = id;
+            this.descId = id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "Person[id=" + id + "]";
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            Person person = (Person) o;
+
+            return Objects.equals(id, person.id)
+                && Objects.equals(descId, person.descId);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(id, descId);
+        }
+    }
+}

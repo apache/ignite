@@ -15,20 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.cache.query.index;
+package org.apache.ignite.cache.query;
 
-import java.util.List;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
- * Basic interface for index description required to create or destroy index.
+ * Suite with tests for {@link IndexQuery}.
  */
-public interface IndexDefinition {
-    /**
-     * @return Index name.
-     */
-    public IndexName idxName();
-
-    /** List of index key definitions. */
-    public List<IndexKeyDefinition> indexKeyDefinitions();
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+    IndexQueryAllTypesTest.class,
+    IndexQueryFailoverTest.class,
+    IndexQueryKeepBinaryTest.class,
+    IndexQueryLocalTest.class,
+    IndexQueryQueryEntityTest.class,
+    IndexQuerySqlIndexTest.class,
+    IndexQueryRangeTest.class,
+    MultifieldIndexQueryTest.class,
+    MultiTableIndexQuery.class
+})
+public class IndexQueryTestSuite {
 }

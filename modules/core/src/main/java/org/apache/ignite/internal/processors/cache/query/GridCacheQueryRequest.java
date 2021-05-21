@@ -41,6 +41,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.INDEX;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SCAN;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SET;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SPI;
@@ -79,6 +80,13 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     /** */
     @GridToStringInclude(sensitive = true)
     private String clause;
+
+    /** */
+    @GridDirectTransient
+    private IndexQueryDesc idxQryDesc;
+
+    /** */
+    private byte[] idxQryDescBytes;
 
     /** */
     private int limit;
@@ -231,6 +239,8 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
     }
 
     /**
+     * Request to start query.
+     *
      * @param cacheId Cache ID.
      * @param id Request id.
      * @param cacheName Cache name.
@@ -261,6 +271,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         GridCacheQueryType type,
         boolean fields,
         String clause,
+        IndexQueryDesc idxQryDesc,
         int limit,
         String clsName,
         IgniteBiPredicate<Object, Object> keyValFilter,
@@ -280,7 +291,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         Boolean dataPageScanEnabled
     ) {
         assert type != null || fields;
-        assert clause != null || (type == SCAN || type == SET || type == SPI);
+        assert clause != null || (type == SCAN || type == SET || type == SPI || type == INDEX);
         assert clsName != null || fields || type == SCAN || type == SET || type == SPI;
 
         this.cacheId = cacheId;
@@ -289,6 +300,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         this.type = type;
         this.fields = fields;
         this.clause = clause;
+        this.idxQryDesc = idxQryDesc;
         this.limit = limit;
         this.clsName = clsName;
         this.keyValFilter = keyValFilter;
@@ -371,6 +383,13 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
             argsBytes = CU.marshal(cctx, args);
         }
+
+        if (idxQryDesc != null && idxQryDescBytes == null) {
+            if (addDepInfo)
+                prepareObject(idxQryDesc, cctx);
+
+            idxQryDescBytes = CU.marshal(cctx, idxQryDesc);
+        }
     }
 
     /** {@inheritDoc} */
@@ -390,6 +409,9 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
         if (argsBytes != null && args == null)
             args = U.unmarshal(mrsh, argsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+
+        if (idxQryDescBytes != null && idxQryDesc == null)
+            idxQryDesc = U.unmarshal(mrsh, idxQryDescBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
     }
 
     /** {@inheritDoc} */
@@ -407,6 +429,8 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         rdc = rdc != null ? U.<IgniteReducer<Object, Object>>unmarshal(marsh, U.marshal(marsh, rdc),
             U.resolveClassLoader(ctx.gridConfig())) : null;
         trans = trans != null ? U.<IgniteClosure<Object, Object>>unmarshal(marsh, U.marshal(marsh, trans),
+            U.resolveClassLoader(ctx.gridConfig())) : null;
+        idxQryDesc = idxQryDesc != null ? U.<IndexQueryDesc>unmarshal(marsh, U.marshal(marsh, idxQryDesc),
             U.resolveClassLoader(ctx.gridConfig())) : null;
     }
 
@@ -450,6 +474,13 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      */
     public String clause() {
         return clause;
+    }
+
+    /**
+     * @return Index query description.
+     */
+    public IndexQueryDesc idxQryDesc() {
+        return idxQryDesc;
     }
 
     /**
@@ -718,6 +749,11 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
                 writer.incrementState();
 
+            case 27:
+                if (!writer.writeByteArray("idxQryDescBytes", idxQryDescBytes))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -922,6 +958,13 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
 
                 reader.incrementState();
 
+            case 27:
+                idxQryDescBytes = reader.readByteArray("idxQryDescBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridCacheQueryRequest.class);

@@ -41,6 +41,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cache.query.index.IndexDefinition;
 import org.apache.ignite.internal.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
@@ -726,6 +727,11 @@ public class GridH2Table extends TableBase {
                 /** {@inheritDoc} */
                 @Override public IndexName idxName() {
                     return new IndexName(cacheName(), getSchema().getName(), tableName, idx.getName());
+                }
+
+                /** {@inheritDoc} */
+                @Override public List<IndexKeyDefinition> indexKeyDefinitions() {
+                    throw new UnsupportedOperationException("Hasn't be invoked for destroyed index.");
                 }
             };
 
