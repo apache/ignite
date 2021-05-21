@@ -77,9 +77,9 @@ public class RunningQueriesIntegrationTest extends GridCommonCalciteAbstractTest
         int cnt = 9;
 
         for (int i = 0; i < cnt; i++)
-            executeSql(client, "CREATE TABLE person" + i + " (id int, val varchar)");
+            executeSql(client, "CREATE TABLE test_tbl" + i + " (id int, val varchar)");
 
-        String bigJoin = IntStream.range(0, cnt).mapToObj((i) -> "person" + i + " p" + i).collect(joining(", "));
+        String bigJoin = IntStream.range(0, cnt).mapToObj((i) -> "test_tbl" + i + " p" + i).collect(joining(", "));
         String sql = "SELECT * FROM " + bigJoin;
         ;
 

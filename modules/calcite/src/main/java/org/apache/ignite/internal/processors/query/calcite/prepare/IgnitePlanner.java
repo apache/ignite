@@ -394,6 +394,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
             setTopDownOpt(true);
         }
 
+        /** */
         public void registerCancelHook(PlanningContext externalCtx) {
             try {
                 GridQueryCancel cancel = externalCtx.queryCancel();
@@ -404,7 +405,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
                     });
             }
             catch (QueryCancelledException e) {
-                throw new IgniteSQLException(e.getMessage(), IgniteQueryErrorCode.QUERY_CANCELED);
+                throw new IgniteSQLException("The query was cancelled while planning.", IgniteQueryErrorCode.QUERY_CANCELED);
             }
         }
 

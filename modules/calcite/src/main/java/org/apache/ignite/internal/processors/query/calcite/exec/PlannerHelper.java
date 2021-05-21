@@ -33,6 +33,7 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteRelShuttle;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerPhase;
@@ -100,6 +101,9 @@ public class PlannerHelper {
                 igniteRel = new FixDependentModifyNodeShuttle().visit(igniteRel);
 
             return igniteRel;
+        }
+        catch (IgniteSQLException sqlEx) {
+            throw sqlEx;
         }
         catch (Throwable ex) {
             log.error("Unexpected error at query optimizer.", ex);
