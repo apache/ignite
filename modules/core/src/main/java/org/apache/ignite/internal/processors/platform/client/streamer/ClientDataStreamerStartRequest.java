@@ -97,8 +97,12 @@ public class ClientDataStreamerStartRequest extends ClientRequest {
         if (receiver != null)
             dataStreamer.receiver(receiver);
 
-        if (entries != null)
-            dataStreamer.addDataInternal(entries, false);
+        if (entries != null) {
+            // Don't use thread buffer for a one-off streamer operation.
+            boolean useThreadBuffer = !close();
+
+            dataStreamer.addDataInternal(entries, useThreadBuffer);
+        }
 
         if (close()) {
             dataStreamer.close();
