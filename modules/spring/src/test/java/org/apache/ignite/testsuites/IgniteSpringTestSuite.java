@@ -39,7 +39,6 @@ import org.apache.ignite.spring.IgniteStartFromStreamConfigurationTest;
 import org.apache.ignite.spring.injection.GridServiceInjectionSpringResourceTest;
 import org.apache.ignite.spring.injection.IgniteSpringBeanSpringResourceInjectionTest;
 import org.apache.ignite.startup.cmdline.GridCommandLineLoaderTest;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
