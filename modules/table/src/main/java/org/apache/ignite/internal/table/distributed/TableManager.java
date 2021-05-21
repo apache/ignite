@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import org.apache.ignite.configuration.internal.ConfigurationManager;
@@ -331,9 +332,16 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
             return true;
         });
 
-        configurationMgr.configurationRegistry()
-            .getConfiguration(TablesConfiguration.KEY).tables().change(change ->
-            change.create(name, tableInitChange));
+        try {
+            configurationMgr.configurationRegistry()
+                .getConfiguration(TablesConfiguration.KEY).tables().change(change ->
+                change.create(name, tableInitChange)).get();
+        }
+        catch (InterruptedException | ExecutionException e) {
+            LOG.error("Table wasn't created [name=" + name + ']', e);
+
+            tblFut.completeExceptionally(e);
+        }
 
         return tblFut.join();
     }
@@ -363,11 +371,18 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
             }
         });
 
-        configurationMgr
-            .configurationRegistry()
-            .getConfiguration(TablesConfiguration.KEY)
-            .tables()
-            .change(change -> change.delete(name));
+        try {
+            configurationMgr
+                .configurationRegistry()
+                .getConfiguration(TablesConfiguration.KEY)
+                .tables()
+                .change(change -> change.delete(name)).get();
+        }
+        catch (InterruptedException | ExecutionException e) {
+            LOG.error("Table wasn't dropped [name=" + name + ']', e);
+
+            dropTblFut.completeExceptionally(e);
+        }
 
         dropTblFut.join();
     }

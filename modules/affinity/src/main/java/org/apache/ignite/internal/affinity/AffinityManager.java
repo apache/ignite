@@ -88,7 +88,9 @@ public class AffinityManager extends Producer<AffinityEvent, AffinityEventParame
         metaStorageMgr.registerWatchByPrefix(new ByteArray(INTERNAL_PREFIX), new WatchListener() {
             @Override public boolean onUpdate(@NotNull WatchEvent watchEvt) {
                 for (EntryEvent evt : watchEvt.entryEvents()) {
-                    String tabIdVal = evt.newEntry().key().toString().substring(INTERNAL_PREFIX.length());
+                    String keyAsString = new ByteArray(evt.newEntry().key().bytes()).toString();
+
+                    String tabIdVal = keyAsString.substring(INTERNAL_PREFIX.length());
 
                     UUID tblId = UUID.fromString(tabIdVal);
 
@@ -127,9 +129,8 @@ public class AffinityManager extends Producer<AffinityEvent, AffinityEventParame
         return vaultMgr
             .get(ByteArray.fromString(INTERNAL_PREFIX + tblId))
             .thenCompose(entry -> {
-
-                            TableConfiguration tblConfig = configurationMgr.configurationRegistry()
-                                    .getConfiguration(TablesConfiguration.KEY).tables().get(new String(entry.value(), StandardCharsets.UTF_8));
+                TableConfiguration tblConfig = configurationMgr.configurationRegistry()
+                    .getConfiguration(TablesConfiguration.KEY).tables().get(new String(entry.value(), StandardCharsets.UTF_8));
 
                 var key = new ByteArray(INTERNAL_PREFIX + tblId);
 

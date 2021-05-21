@@ -22,6 +22,7 @@ import com.google.gson.JsonParser;
 import java.lang.annotation.Annotation;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -29,6 +30,7 @@ import org.apache.ignite.configuration.ConfigurationRegistry;
 import org.apache.ignite.configuration.RootKey;
 import org.apache.ignite.configuration.internal.rest.JsonConverter;
 import org.apache.ignite.configuration.storage.ConfigurationStorage;
+import org.apache.ignite.configuration.storage.ConfigurationType;
 import org.apache.ignite.configuration.validation.Validator;
 
 /**
@@ -39,8 +41,8 @@ import org.apache.ignite.configuration.validation.Validator;
     /** Configuration registry. */
     private final ConfigurationRegistry confRegistry;
 
-    /** Set of configuration storages. */
-    private final Set<ConfigurationStorage> configurationStorages;
+    /** Type mapped to configuration storage. */
+    private final Map<ConfigurationType, ConfigurationStorage> configurationStorages;
 
     /**
      * The constructor.
@@ -54,7 +56,15 @@ import org.apache.ignite.configuration.validation.Validator;
         Map<Class<? extends Annotation>, Set<Validator<? extends Annotation, ?>>> validators,
         Collection<ConfigurationStorage> configurationStorages
     ) {
-        this.configurationStorages = Set.copyOf(configurationStorages);
+        HashMap<ConfigurationType, ConfigurationStorage> storageByType = new HashMap<>();
+
+        for (ConfigurationStorage storage : configurationStorages) {
+            assert !storageByType.containsKey(storage.type()) : "Two or more storage have the same configuration type [type=" + storage.type() + ']';
+
+            storageByType.put(storage.type(), storage);
+        }
+
+        this.configurationStorages = Map.copyOf(storageByType);
 
         confRegistry = new ConfigurationRegistry(rootKeys, validators, configurationStorages);
     }
@@ -78,11 +88,10 @@ import org.apache.ignite.configuration.validation.Validator;
      * @throws InterruptedException If thread is interrupted during bootstrap.
      * @throws ExecutionException If configuration update failed for some reason.
      */
-    public void bootstrap(String jsonStr) throws InterruptedException, ExecutionException {
+    public void bootstrap(String jsonStr, ConfigurationType type) throws InterruptedException, ExecutionException {
         JsonObject jsonCfg = JsonParser.parseString(jsonStr).getAsJsonObject();
 
-        for (ConfigurationStorage configurationStorage : configurationStorages)
-            confRegistry.change(JsonConverter.jsonSource(jsonCfg), configurationStorage).get();
+        confRegistry.change(JsonConverter.jsonSource(jsonCfg), configurationStorages.get(type)).get();
     }
 
     /**
