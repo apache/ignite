@@ -32,7 +32,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     /// TODO:
     /// * Simplify server-side part since we don't do stateful? Or keep as is?
     /// * Tune server-side buffer sizes for stateless mode - always match the count
-    /// * Remove server-side buffer sizes from the options (does not make sense for stateless)
     /// * Receiver tests
     /// * keepBinary tests
     /// * skipStore tests

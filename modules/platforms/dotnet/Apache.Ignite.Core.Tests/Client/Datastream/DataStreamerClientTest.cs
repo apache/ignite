@@ -297,8 +297,6 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 var task = Task.Factory.StartNew(() => streamer.Add(keys[3], 3));
 
                 // Task is blocked because two streamer operations are already in progress.
-                // TODO: This does not work because adding data does not flush server-side
-                // and does not block there when the store blocks.
                 Assert.IsFalse(TestUtils.WaitForCondition(() => task.IsCompleted, 500));
                 BlockingCacheStore.Gate.Set();
                 TestUtils.WaitForTrueCondition(() => task.IsCompleted, 500);
