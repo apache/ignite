@@ -22,7 +22,7 @@ import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cdc.ChangeDataCaptureConfiguration;
-import org.apache.ignite.cdc.ChangeDataCaptureStarter;
+import org.apache.ignite.cdc.ChangeDataCaptureLoader;
 import org.apache.ignite.internal.cdc.ChangeDataCapture;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
 import org.apache.ignite.internal.util.typedef.X;
@@ -76,7 +76,7 @@ public class ChangeDataCaptureCommandLineStartup {
             exit("Invalid arguments: " + args[0], true, -1);
 
         try {
-            ChangeDataCapture cdc = ChangeDataCaptureStarter.loadChangeDataCapture(args[0]);
+            ChangeDataCapture cdc = ChangeDataCaptureLoader.loadChangeDataCapture(args[0]);
 
             if (!IgniteSystemProperties.getBoolean(IGNITE_NO_SHUTDOWN_HOOK, false)) {
                 Runtime.getRuntime().addShutdownHook(new Thread("cdc-shutdown-hook") {

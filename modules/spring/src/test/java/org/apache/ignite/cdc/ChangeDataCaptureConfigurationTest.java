@@ -23,7 +23,7 @@ import org.apache.ignite.internal.cdc.ChangeDataCapture;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.cdc.ChangeDataCaptureStarter.loadChangeDataCapture;
+import static org.apache.ignite.cdc.ChangeDataCaptureLoader.loadChangeDataCapture;
 import static org.apache.ignite.internal.cdc.ChangeDataCapture.ERR_MSG;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 

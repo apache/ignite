@@ -30,9 +30,9 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
 
 /**
- *
+ * Utility class to load {@link ChangeDataCapture} from Spring XML configuration.
  */
-public class ChangeDataCaptureStarter {
+public class ChangeDataCaptureLoader {
     /**
      * Loads {@link ChangeDataCapture} from XML configuration file and possible error message.
      * If load fails then error message wouldn't be null.
