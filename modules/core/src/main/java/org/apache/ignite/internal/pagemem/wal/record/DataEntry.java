@@ -100,7 +100,10 @@ public class DataEntry {
         this.partCnt = partCnt;
 
         // Only READ, CREATE, UPDATE and DELETE operations should be stored in WAL.
-        assert op == GridCacheOperation.READ || op == GridCacheOperation.CREATE || op == GridCacheOperation.UPDATE || op == GridCacheOperation.DELETE : op;
+        assert op == GridCacheOperation.READ
+            || op == GridCacheOperation.CREATE
+            || op == GridCacheOperation.UPDATE
+            || op == GridCacheOperation.DELETE : op;
     }
 
     /**

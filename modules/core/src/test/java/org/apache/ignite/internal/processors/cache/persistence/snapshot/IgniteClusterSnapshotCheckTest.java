@@ -80,6 +80,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Before;
 import org.junit.Test;
 
+import static java.util.Collections.singletonList;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
@@ -462,7 +463,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
 
         IdleVerifyResultV2 idleVerifyRes = ignite.compute().execute(new TestVisorBackupPartitionsTask(),
-            new VisorIdleVerifyTaskArg(new HashSet<>(Collections.singletonList(ccfg.getName())),
+            new VisorIdleVerifyTaskArg(new HashSet<>(singletonList(ccfg.getName())),
             new HashSet<>(),
             false,
             CacheFilterEnum.USER,
@@ -553,7 +554,9 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
      * @return Check result.
      * @throws Exception If fails.
      */
-    private SnapshotPartitionsVerifyTaskResult checkSnapshotWithTwoCachesWhenOneIsCorrupted(Collection<String> cachesToCheck) throws Exception {
+    private SnapshotPartitionsVerifyTaskResult checkSnapshotWithTwoCachesWhenOneIsCorrupted(
+        Collection<String> cachesToCheck
+    ) throws Exception {
         Random rnd = new Random();
         CacheConfiguration<Integer, Value> ccfg1 = txCacheConfig(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
         CacheConfiguration<Integer, Value> ccfg2 = txCacheConfig(new CacheConfiguration<>(OPTIONAL_CACHE_NAME));

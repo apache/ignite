@@ -461,8 +461,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         GridDhtPartitionsExchangeFuture currentExchange = lastTopologyFuture();
 
                         if (currentExchange != null && currentExchange.addOrMergeDelayedFullMessage(node, msg)) {
-                            if (log.isInfoEnabled())
-                                log.info("Delay process full message without exchange id (there is exchange in progress) [nodeId=" + node.id() + "]");
+                            if (log.isInfoEnabled()) {
+                                log.info("Delay process full message without exchange id (there is exchange in progress) " +
+                                    "[nodeId=" + node.id() + "]");
+                            }
 
                             return;
                         }
@@ -625,7 +627,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                         baselineChanging = exchActions.changedBaseline()
                             // Or it is the first activation.
-                            || state.state() != ClusterState.INACTIVE && !state.previouslyActive() && state.previousBaselineTopology() == null;
+                            || state.state() != ClusterState.INACTIVE
+                                && !state.previouslyActive()
+                                && state.previousBaselineTopology() == null;
                     }
 
                     exchFut.listen(f -> onClusterStateChangeFinish(f, exchActions, baselineChanging));
