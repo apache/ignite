@@ -49,7 +49,7 @@ public class LocalConfigurationStorage implements ConfigurationStorage {
     private List<ConfigurationStorageListener> listeners = new CopyOnWriteArrayList<>();
 
     /** Storage version. */
-    private AtomicLong ver = new AtomicLong(0);
+    private AtomicLong ver = new AtomicLong(0L);
 
     /** Start key in range for searching local configuration keys. */
     private static final ByteArray LOC_KEYS_START_RANGE = ByteArray.fromString(LOC_PREFIX);

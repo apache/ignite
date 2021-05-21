@@ -35,6 +35,7 @@ public class SchemaRegistryException extends IgniteInternalException {
     /**
      * Constructor with error message and cause.
      *
+     * @param msg Message.
      * @param cause Cause.
      */
     public SchemaRegistryException(String msg, Throwable cause) {

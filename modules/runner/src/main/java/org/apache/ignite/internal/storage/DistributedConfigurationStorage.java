@@ -155,10 +155,18 @@ public class DistributedConfigurationStorage implements ConfigurationStorage {
 
         operations.add(Operations.put(MASTER_KEY, ByteUtils.longToBytes(sentVersion)));
 
-        return metaStorageMgr.invoke(
-            Conditions.revision(MASTER_KEY).eq(ver.get()),
-            operations,
-            Collections.singleton(Operations.noop()));
+        if (sentVersion == 0) {
+            return metaStorageMgr.invoke(
+                Conditions.notExists(MASTER_KEY),
+                operations,
+                Collections.singleton(Operations.noop()));
+        }
+        else {
+            return metaStorageMgr.invoke(
+                Conditions.revision(MASTER_KEY).eq(ver.get()),
+                operations,
+                Collections.singleton(Operations.noop()));
+        }
     }
 
     /** {@inheritDoc} */

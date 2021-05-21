@@ -129,8 +129,7 @@ public class MetaStorageManager {
         Predicate<ClusterNode> metaStorageNodesContainsLocPred =
             clusterNode -> Arrays.asList(metastorageNodes).contains(clusterNode.name());
 
-        if (hasMetastorage(locNodeName, metastorageNodes)) {
-
+        if (metastorageNodes.length > 0) {
             this.metaStorageSvcFut = CompletableFuture.completedFuture(new MetaStorageServiceImpl(
                     raftMgr.startRaftGroup(
                         METASTORAGE_RAFT_GROUP_NAME,
@@ -138,18 +137,6 @@ public class MetaStorageManager {
                             metaStorageNodesContainsLocPred).
                             collect(Collectors.toList()),
                         new MetaStorageCommandListener(new SimpleInMemoryKeyValueStorage())
-                    )
-                )
-            );
-
-        }
-        else if (metastorageNodes.length > 0) {
-            this.metaStorageSvcFut = CompletableFuture.completedFuture(new MetaStorageServiceImpl(
-                    raftMgr.startRaftService(
-                        METASTORAGE_RAFT_GROUP_NAME,
-                        clusterNetSvc.topologyService().allMembers().stream().filter(
-                            metaStorageNodesContainsLocPred).
-                            collect(Collectors.toList())
                     )
                 )
             );
@@ -175,7 +162,7 @@ public class MetaStorageManager {
     public synchronized void deployWatches() {
         try {
             var watch = watchAggregator.watch(
-                vaultMgr.appliedRevision(),
+                vaultMgr.appliedRevision() + 1,
                 this::storeEntries
             );
         if (watch.isEmpty())
@@ -439,7 +426,7 @@ public class MetaStorageManager {
     private CompletableFuture<Optional<IgniteUuid>> updateWatches() {
         Long revision;
         try {
-            revision = vaultMgr.appliedRevision();
+            revision = vaultMgr.appliedRevision() + 1;
         }
         catch (IgniteInternalCheckedException e) {
             throw new IgniteInternalException("Couldn't receive applied revision during watch redeploy", e);

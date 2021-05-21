@@ -142,11 +142,15 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
             ));
         }
 
+        InternalTableImpl internalTable = new InternalTableImpl(tblId, partitionMap, partitions);
+
+        tables.put(name, new TableImpl(internalTable, schemaReg));
+
         onEvent(TableEvent.CREATE, new TableEventParameters(
             tblId,
             name,
             schemaReg,
-            new InternalTableImpl(tblId, partitionMap, partitions)
+            internalTable
         ), null);
     }
 
@@ -215,7 +219,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
                         Operations.put(key, tableView.name().getBytes(StandardCharsets.UTF_8)),
                         Operations.noop())
                         .thenCompose(res -> schemaMgr.initSchemaForTable(tblId, tableView.name()))
-                        .thenCompose(res -> affMgr.calculateAssignments(tblId)));
+                        .thenCompose(res -> affMgr.calculateAssignments(tblId, tableView.name())));
                 }
 
                 final CompletableFuture<AffinityEventParameters> affinityReadyFut = new CompletableFuture<>();
@@ -323,8 +327,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
                 return false;
 
             if (e == null) {
-                tblFut.complete(tables.compute(tableName, (key, val) ->
-                    new TableImpl(params.internalTable(), params.tableSchemaView())));
+                tblFut.complete(tables.get(name));
             }
             else
                 tblFut.completeExceptionally(e);

@@ -17,13 +17,14 @@
 
 package org.apache.ignite.internal.schema;
 
+import java.io.Serializable;
 import org.apache.ignite.internal.tostring.S;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * A thin wrapper over {@link NativeTypeSpec} to instantiate parameterized constrained types.
  */
-public class NativeType implements Comparable<NativeType> {
+public class NativeType implements Comparable<NativeType>, Serializable {
     /** */
     private final NativeTypeSpec typeSpec;
 
@@ -78,7 +79,12 @@ public class NativeType implements Comparable<NativeType> {
         return typeSpec;
     }
 
-    /** */
+    /**
+     * Checks type mismatch.
+     *
+     * @param type Native type.
+     * @return {@code true} if type or typeSpec doesn't match given one, {@code false} otherwise.
+     */
     public boolean mismatch(@NotNull NativeType type) {
         return this != type && typeSpec != type.typeSpec;
     }

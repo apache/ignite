@@ -311,7 +311,7 @@ public class TableManagerTest {
             return null;
         }).when(sm).listen(same(SchemaEvent.INITIALIZED), any());
 
-        when(am.calculateAssignments(any())).thenReturn(CompletableFuture.completedFuture(true));
+        when(am.calculateAssignments(any(), eq(tableName))).thenReturn(CompletableFuture.completedFuture(true));
 
         doAnswer(invokation -> {
             BiPredicate<AffinityEventParameters, Exception> affinityClaculatedDelegate = (BiPredicate)invokation.getArgument(1);

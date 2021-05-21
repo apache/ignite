@@ -184,7 +184,12 @@ public enum NativeTypeSpec {
      */
     public abstract Object objectValue(Row row, int colIdx) throws InvalidTypeException;
 
-    /** */
+    /**
+     * Maps class to native type.
+     *
+     * @param cls Class to map to native type.
+     * @return Native type.
+     */
     public static NativeTypeSpec fromClass(Class<?> cls) {
         assert cls != null;
 
@@ -229,7 +234,12 @@ public enum NativeTypeSpec {
         return null;
     }
 
-    /** */
+    /**
+     * Maps object to native type.
+     *
+     * @param val Object to map.
+     * @return Native type.
+     */
     public static NativeTypeSpec fromObject(Object val) {
         return val != null ? fromClass(val.getClass()) : null;
     }

@@ -52,6 +52,7 @@ public class SchemaRegistryImpl implements SchemaRegistry {
     /**
      * Constructor.
      *
+     * @param initialVer Initial version.
      * @param history Schema history.
      */
     public SchemaRegistryImpl(int initialVer, Function<Integer, SchemaDescriptor> history) {

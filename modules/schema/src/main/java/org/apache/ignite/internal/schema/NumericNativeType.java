@@ -30,7 +30,12 @@ public class NumericNativeType extends NativeType {
     /** Scale. */
     private final int scale;
 
-    /** Constructor. */
+    /**
+     * The constructor.
+     *
+     * @param precision Precision.
+     * @param scale Scale.
+     */
     NumericNativeType(int precision, int scale) {
         super(NativeTypeSpec.DECIMAL);
 

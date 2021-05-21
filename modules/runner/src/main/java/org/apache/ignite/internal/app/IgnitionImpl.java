@@ -158,7 +158,7 @@ public class IgnitionImpl implements Ignition {
         BaselineManager baselineMgr = new BaselineManager(configurationMgr, metaStorageMgr, clusterNetSvc);
 
         // Affinity manager startup.
-        AffinityManager affinityMgr = new AffinityManager(configurationMgr, metaStorageMgr, baselineMgr, vaultMgr);
+        AffinityManager affinityMgr = new AffinityManager(configurationMgr, metaStorageMgr, baselineMgr);
 
         SchemaManager schemaMgr = new SchemaManager(configurationMgr, metaStorageMgr, vaultMgr);
 

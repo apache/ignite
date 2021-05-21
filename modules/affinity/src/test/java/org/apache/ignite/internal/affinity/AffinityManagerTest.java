@@ -182,13 +182,13 @@ public class AffinityManagerTest {
             return CompletableFuture.completedFuture(true);
         });
 
-        AffinityManager affinityManager = new AffinityManager(cfrMgr, mm, bm, vm);
+        AffinityManager affinityManager = new AffinityManager(cfrMgr, mm, bm);
 
         CompletableFuture<Boolean> assignmentCalculated = new CompletableFuture<>();
 
         affinityManager.listen(AffinityEvent.CALCULATED, (parameters, e) -> assignmentCalculated.complete(e == null));
 
-        affinityManager.calculateAssignments(tblId);
+        affinityManager.calculateAssignments(tblId, STATIC_TABLE_NAME);
 
         assertTrue(assignmentCalculated.join());
     }
@@ -238,7 +238,7 @@ public class AffinityManagerTest {
             return CompletableFuture.completedFuture(true);
         });
 
-        AffinityManager affinityManager = new AffinityManager(cfrMgr, mm, bm, vm);
+        AffinityManager affinityManager = new AffinityManager(cfrMgr, mm, bm);
 
         CompletableFuture<Boolean> assignmentRemoved = new CompletableFuture<>();
 

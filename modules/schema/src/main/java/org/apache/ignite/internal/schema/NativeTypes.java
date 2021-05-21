@@ -59,6 +59,7 @@ public class NativeTypes {
      * Creates a bitmask type of size <code>bits</code>. In row will round up to the closest full byte.
      *
      * @param bits The number of bits in the bitmask.
+     * @return Native type.
      */
     public static NativeType bitmaskOf(int bits) {
         return new BitmaskNativeType(bits);
@@ -68,6 +69,7 @@ public class NativeTypes {
      * Creates a STRING type with maximal length is <code>len</code>.
      *
      * @param len Maximum length of the string.
+     * @return Native type.
      */
     public static NativeType stringOf(int len) {
         return new VarlenNativeType(NativeTypeSpec.STRING, len);
@@ -77,6 +79,7 @@ public class NativeTypes {
      * Creates a BYTES type with maximal length is <code>len</code>.
      *
      * @param len Maximum length of the byte array.
+     * @return Native type.
      */
     public static NativeType blobOf(int len) {
         return new VarlenNativeType(NativeTypeSpec.BYTES, len);
@@ -85,6 +88,7 @@ public class NativeTypes {
     /**
      * Return the native type for specified object.
      *
+     * @param val Object to map to native type.
      * @return {@code null} for {@code null} value. Otherwise returns NativeType according to the value's type.
      */
     public static NativeType fromObject(Object val) {
@@ -131,7 +135,12 @@ public class NativeTypes {
         }
     }
 
-    /** */
+    /**
+     * Maps column type to native type.
+     *
+     * @param type Column type.
+     * @return Native type.
+     */
     public static NativeType from(ColumnType type) {
         switch (type.typeSpec()) {
             case INT8:

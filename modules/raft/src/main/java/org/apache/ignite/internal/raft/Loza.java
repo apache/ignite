@@ -19,7 +19,6 @@ package org.apache.ignite.internal.raft;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.raft.client.Peer;
@@ -82,7 +81,7 @@ public class Loza {
             clusterNetSvc,
             FACTORY,
             TIMEOUT,
-            peers.stream().map(Peer::new).collect(Collectors.toList()),
+            List.of(new Peer(peers.get(0))),
             true,
             DELAY
         );
@@ -101,17 +100,5 @@ public class Loza {
         //TODO: IGNITE-13885 Investigate jraft implementation for replication framework based on RAFT protocol.
         if (peers.get(0).name().equals(clusterNetSvc.topologyService().localMember().name()))
             raftServer.clearListener(groupId);
-    }
-
-    public RaftGroupService startRaftService(String groupId, List<ClusterNode> peers) {
-        return new RaftGroupServiceImpl(
-            groupId,
-            clusterNetSvc,
-            FACTORY,
-            TIMEOUT,
-            peers.stream().map(Peer::new).collect(Collectors.toList()),
-            true,
-            DELAY
-        );
     }
 }

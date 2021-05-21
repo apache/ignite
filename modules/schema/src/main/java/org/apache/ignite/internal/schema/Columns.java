@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.schema;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
 import org.apache.ignite.internal.tostring.S;
@@ -25,7 +26,7 @@ import org.apache.ignite.internal.tostring.S;
  * A set of columns representing a key or a value chunk in a row.
  * Provides necessary machinery to locate a column value in a concrete row.
  */
-public class Columns {
+public class Columns implements Serializable {
     /** */
     public static final int[][] EMPTY_FOLDING_TABLE = new int[0][];
 
