@@ -73,9 +73,9 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             var cache = GetClientCache<int>();
             cache.PutAll(Enumerable.Range(1, 10).ToDictionary(x => x, x => x + 1));
 
-            using (var streamer = Client.GetDataStreamer<int, int>(
-                cache.Name,
-                new DataStreamerClientOptions {AllowOverwrite = true}))
+            var options = new DataStreamerClientOptions {AllowOverwrite = true};
+
+            using (var streamer = Client.GetDataStreamer<int, int>(cache.Name, options))
             {
                 streamer.Add(1, 11);
                 streamer.Add(20, 20);

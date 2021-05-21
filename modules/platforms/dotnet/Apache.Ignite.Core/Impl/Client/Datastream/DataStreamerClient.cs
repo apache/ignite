@@ -34,7 +34,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     /// * Tune server-side buffer sizes for stateless mode - always match the count
     /// * Receiver tests
     /// * keepBinary tests
-    /// * skipStore tests
     /// * allowOverwrite tests
     /// </summary>
     internal sealed class DataStreamerClient<TK, TV> : IDataStreamerClient<TK, TV>
