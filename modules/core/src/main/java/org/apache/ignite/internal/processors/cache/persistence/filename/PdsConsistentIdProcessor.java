@@ -248,13 +248,15 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
      * @param params input/output.
      */
     private static void visitFolder(final File dir, final FolderParams params) {
-        A.ensure(dir.isDirectory(), "dir should be a directory");
-        for (File file : dir.listFiles()) {
-            if (file.isDirectory())
-                visitFolder(file, params);
-            else {
-                params.size += file.length();
-                params.lastModified = Math.max(params.lastModified, dir.lastModified());
+        File[] files = dir.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                if (file.isDirectory())
+                    visitFolder(file, params);
+                else {
+                    params.size += file.length();
+                    params.lastModified = Math.max(params.lastModified, dir.lastModified());
+                }
             }
         }
     }
