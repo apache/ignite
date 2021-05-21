@@ -18,7 +18,7 @@
 package org.apache.ignite.cdc;
 
 import java.io.Serializable;
-import org.apache.ignite.internal.cdc.IgniteCDC;
+import org.apache.ignite.internal.cdc.ChangeDataCapture;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.jetbrains.annotations.Nullable;
 
@@ -26,7 +26,7 @@ import org.jetbrains.annotations.Nullable;
  * Event of single entry change.
  * Instance presents new value of modified entry.
  *
- * @see IgniteCDC
+ * @see ChangeDataCapture
  * @see ChangeDataCaptureConsumer
  */
 @IgniteExperimental

@@ -25,10 +25,10 @@ import org.apache.ignite.internal.processors.cache.persistence.FileLockHolder;
 /**
  * Lock file holder for CDC application.
  *
- * @see IgniteCDC
- * @see CDCConsumerState
+ * @see ChangeDataCapture
+ * @see ChangeDataCaptureConsumerState
  */
-public class CDCFileLockHolder extends FileLockHolder {
+public class ChangeDataCaptureFileLockHolder extends FileLockHolder {
     /** Consumer ID. */
     private final Supplier<String> consumerId;
 
@@ -36,7 +36,7 @@ public class CDCFileLockHolder extends FileLockHolder {
      * @param rootDir Root directory for lock file.
      * @param log Log.
      */
-    public CDCFileLockHolder(String rootDir, Supplier<String> consumerId, IgniteLogger log) {
+    public ChangeDataCaptureFileLockHolder(String rootDir, Supplier<String> consumerId, IgniteLogger log) {
         super(rootDir, log);
 
         this.consumerId = consumerId;

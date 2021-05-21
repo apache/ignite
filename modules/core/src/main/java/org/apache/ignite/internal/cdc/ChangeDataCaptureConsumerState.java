@@ -44,9 +44,9 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.WALPoi
  * from the last saved offset in case of fail or restart.
  *
  * @see ChangeDataCaptureConsumer#onChange(Iterator)
- * @see IgniteCDC
+ * @see ChangeDataCapture
  */
-public class CDCConsumerState {
+public class ChangeDataCaptureConsumerState {
     /** State file. */
     private final Path state;
 
@@ -56,7 +56,7 @@ public class CDCConsumerState {
     /**
      * @param stateDir State directory.
      */
-    public CDCConsumerState(Path stateDir) {
+    public ChangeDataCaptureConsumerState(Path stateDir) {
         String fileName = "cdc-state" + FILE_SUFFIX;
 
         state = stateDir.resolve(fileName);

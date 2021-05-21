@@ -26,7 +26,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * Event of single entry change.
  * Instance presents new value of modified entry.
  *
- * @see IgniteCDC
+ * @see ChangeDataCapture
  * @see ChangeDataCaptureConsumer
  */
 public class ChangeDataCaptureEventImpl implements ChangeDataCaptureEvent {

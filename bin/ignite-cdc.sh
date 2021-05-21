@@ -17,7 +17,7 @@
 # limitations under the License.
 #
 
-export MAIN_CLASS="org.apache.ignite.startup.cmdline.CDCCommandLineStartup"
+export MAIN_CLASS="org.apache.ignite.startup.cmdline.ChangeDataCaptureCommandLineStartup"
 
 if [ "${IGNITE_HOME:-}" = "" ];
     then IGNITE_HOME_TMP="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";

@@ -18,23 +18,18 @@
 package org.apache.ignite.startup.cmdline;
 
 import java.net.URL;
-import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cdc.ChangeDataCaptureConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.cdc.IgniteCDC;
-import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
+import org.apache.ignite.cdc.ChangeDataCaptureStarter;
+import org.apache.ignite.internal.cdc.ChangeDataCapture;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_SHUTDOWN_HOOK;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PROG_NAME;
-import static org.apache.ignite.internal.IgniteComponentType.SPRING;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.startup.cmdline.CommandLineStartup.isHelp;
@@ -50,9 +45,9 @@ import static org.apache.ignite.startup.cmdline.CommandLineStartup.isHelp;
  * this startup and you can use them as an example.
  * <p>
  *
- * @see IgniteCDC
+ * @see ChangeDataCapture
  */
-public class CDCCommandLineStartup {
+public class ChangeDataCaptureCommandLineStartup {
     /** Quite log flag. */
     private static final boolean QUITE = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_QUIET);
 
@@ -81,19 +76,7 @@ public class CDCCommandLineStartup {
             exit("Invalid arguments: " + args[0], true, -1);
 
         try {
-            URL cfgUrl = U.resolveSpringUrl(args[0]);
-
-            IgniteSpringHelper spring = SPRING.create(false);
-
-            IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> cfgTuple =
-                spring.loadConfigurations(cfgUrl);
-
-            if (cfgTuple.get1().size() > 1)
-                exit("Found " + cfgTuple.get1().size() + " configurations. Can use only 1", false, 1);
-
-            IgniteConfiguration cfg = cfgTuple.get1().iterator().next();
-
-            IgniteCDC cdc = new IgniteCDC(cfg, consumerConfig(cfgUrl, spring));
+            ChangeDataCapture cdc = ChangeDataCaptureStarter.loadChangeDataCapture(args[0]);
 
             if (!IgniteSystemProperties.getBoolean(IGNITE_NO_SHUTDOWN_HOOK, false)) {
                 Runtime.getRuntime().addShutdownHook(new Thread("cdc-shutdown-hook") {
@@ -127,7 +110,10 @@ public class CDCCommandLineStartup {
      * @return CDC consumer defined in spring configuration.
      * @throws IgniteCheckedException
      */
-    private static ChangeDataCaptureConfiguration consumerConfig(URL cfgUrl, IgniteSpringHelper spring) throws IgniteCheckedException {
+    private static ChangeDataCaptureConfiguration consumerConfig(
+        URL cfgUrl,
+        IgniteSpringHelper spring
+    ) throws IgniteCheckedException {
         Map<Class<?>, Object> cdcCfgs = spring.loadBeans(cfgUrl, ChangeDataCaptureConfiguration.class);
 
         if (cdcCfgs == null || cdcCfgs.size() != 1)

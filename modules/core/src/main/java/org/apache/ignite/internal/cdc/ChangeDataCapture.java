@@ -53,7 +53,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.startup.cmdline.CDCCommandLineStartup;
+import org.apache.ignite.startup.cmdline.ChangeDataCaptureCommandLineStartup;
 
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_NAME_PATTERN;
@@ -64,7 +64,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWr
  * to consume events({@link ChangeDataCaptureEvent}) from WAL segments.
  * User should responsible {@link ChangeDataCaptureConsumer} implementation with custom consumption logic.
  *
- * Ignite node should be explicitly configured for using {@link IgniteCDC}.
+ * Ignite node should be explicitly configured for using {@link ChangeDataCapture}.
  * <ol>
  *     <li>Set {@link DataStorageConfiguration#setCdcEnabled(boolean)} to true.</li>
  *     <li>Optional: Set {@link DataStorageConfiguration#setCdcPath(String)} to path to the directory to store
@@ -75,7 +75,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWr
  *
  * When {@link DataStorageConfiguration#getCdcPath()} is true then Ignite node on each WAL segment rollover creates
  * hard link to archive WAL segment in {@link DataStorageConfiguration#getCdcPath()} directory.
- * {@link IgniteCDC} application takes segment file and consumes events from it.
+ * {@link ChangeDataCapture} application takes segment file and consumes events from it.
  * After successful consumption (see {@link ChangeDataCaptureConsumer#onChange(Iterator)})
  * WAL segment will be deleted from directory.
  *
@@ -95,11 +95,14 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWr
  * @see DataStorageConfiguration#setCdcEnabled(boolean)
  * @see DataStorageConfiguration#setCdcPath(String)
  * @see DataStorageConfiguration#setWalForceArchiveTimeout(long)
- * @see CDCCommandLineStartup
+ * @see ChangeDataCaptureCommandLineStartup
  * @see ChangeDataCaptureConsumer
  * @see DataStorageConfiguration#DFLT_CDC_PATH
  */
-public class IgniteCDC implements Runnable {
+public class ChangeDataCapture implements Runnable {
+    /** */
+    public static final String ERR_MSG = "Persistence disabled. IgniteCDC can't run!";
+
     /** State dir. */
     public static final String STATE_DIR = "state";
 
@@ -132,13 +135,13 @@ public class IgniteCDC implements Runnable {
     private File marshaller;
 
     /** CDC state. */
-    private CDCConsumerState state;
+    private ChangeDataCaptureConsumerState state;
 
     /** Save state to start from. */
     private WALPointer initState;
 
-    /** Stoped flag. */
-    private volatile boolean stoped;
+    /** Stopped flag. */
+    private volatile boolean stopped;
 
     /** Previous segments. */
     private final List<Path> prevSegments = new ArrayList<>();
@@ -147,7 +150,7 @@ public class IgniteCDC implements Runnable {
      * @param cfg Ignite configuration.
      * @param cdcCfg CDC configuration.
      */
-    public IgniteCDC(IgniteConfiguration cfg, ChangeDataCaptureConfiguration cdcCfg) {
+    public ChangeDataCapture(IgniteConfiguration cfg, ChangeDataCaptureConfiguration cdcCfg) {
         this.cfg = new IgniteConfiguration(cfg);
         this.cdcCfg = cdcCfg;
 
@@ -158,18 +161,12 @@ public class IgniteCDC implements Runnable {
         log = logger(this.cfg);
 
         factory = new IgniteWalIteratorFactory(log);
-
-        if (!CU.isPersistenceEnabled(cfg)) {
-            log.error("Persistence disabled. IgniteCDC can't run!");
-
-            throw new IllegalArgumentException("Persistence disabled. IgniteCDC can't run!");
-        }
     }
 
     /** Runs CDC. */
     @Override public void run() {
         synchronized (this) {
-            if (stoped)
+            if (stopped)
                 return;
         }
 
@@ -185,19 +182,25 @@ public class IgniteCDC implements Runnable {
 
     /** Runs CDC application with possible exception. */
     public void runX() throws Exception {
+        if (!CU.isPersistenceEnabled(cfg)) {
+            log.error(ERR_MSG);
+
+            throw new IllegalArgumentException(ERR_MSG);
+        }
+
         if (log.isInfoEnabled()) {
             log.info("Starting Ignite CDC Application.");
             log.info("Consumer     -\t" + consumer.toString());
             log.info("ConsistentId -\t" + cfg.getConsistentId());
         }
 
-        PdsFolderSettings<CDCFileLockHolder> settings =
+        PdsFolderSettings<ChangeDataCaptureFileLockHolder> settings =
             new PdsFolderResolver<>(cfg, log, null, this::tryLock).resolve();
 
         if (settings == null)
             throw new RuntimeException("Can't find PDS folder!");
 
-        CDCFileLockHolder lock = settings.getLockedFileLockHolder();
+        ChangeDataCaptureFileLockHolder lock = settings.getLockedFileLockHolder();
 
         if (lock == null) {
             File consIdDir = new File(settings.persistentStoreRootPath(), settings.folderName());
@@ -218,7 +221,7 @@ public class IgniteCDC implements Runnable {
                 log.info("--------------------------------");
             }
 
-            state = new CDCConsumerState(cdcDir.resolve(STATE_DIR));
+            state = new ChangeDataCaptureConsumerState(cdcDir.resolve(STATE_DIR));
 
             initState = state.load();
 
@@ -228,7 +231,7 @@ public class IgniteCDC implements Runnable {
             consumer.start(log);
 
             try {
-                consumeWalSegmentsUntilStoped();
+                consumeWalSegmentsUntilStopped();
             }
             finally {
                 consumer.stop();
@@ -259,13 +262,13 @@ public class IgniteCDC implements Runnable {
     }
 
     /** Waits and consumes new WAL segments until stoped. */
-    public void consumeWalSegmentsUntilStoped() {
+    public void consumeWalSegmentsUntilStopped() {
         try {
             Set<Path> seen = new HashSet<>();
 
             long[] lastSgmnt = new long[] {-1};
 
-            while (!stoped) {
+            while (!stopped) {
                 try (Stream<Path> cdcFiles = Files.walk(cdcDir, 1)) {
                     Set<Path> exists = new HashSet<>();
 
@@ -286,7 +289,7 @@ public class IgniteCDC implements Runnable {
                     seen.removeIf(p -> !exists.contains(p)); // Clean up seen set.
                 }
 
-                if (!stoped)
+                if (!stopped)
                     U.sleep(cdcCfg.getCheckFrequency());
             }
         }
@@ -376,7 +379,7 @@ public class IgniteCDC implements Runnable {
      * @param dbStoreDirWithSubdirectory Root PDS directory.
      * @return Lock or null if lock failed.
      */
-    private CDCFileLockHolder tryLock(File dbStoreDirWithSubdirectory) {
+    private ChangeDataCaptureFileLockHolder tryLock(File dbStoreDirWithSubdirectory) {
         if (!dbStoreDirWithSubdirectory.exists()) {
             log.warning(dbStoreDirWithSubdirectory + " not exists.");
 
@@ -404,7 +407,7 @@ public class IgniteCDC implements Runnable {
 
         this.cdcDir = cdcDir;
 
-        CDCFileLockHolder lock = new CDCFileLockHolder(cdcDir.toString(), () -> "cdc.lock", log);
+        ChangeDataCaptureFileLockHolder lock = new ChangeDataCaptureFileLockHolder(cdcDir.toString(), () -> "cdc.lock", log);
 
         try {
             lock.tryLock(cdcCfg.getLockTimeout());
@@ -475,7 +478,7 @@ public class IgniteCDC implements Runnable {
             if (log.isInfoEnabled())
                 log.info("Stopping CDC");
 
-            stoped = true;
+            stopped = true;
         }
     }
 }

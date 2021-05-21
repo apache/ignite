@@ -40,7 +40,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPD
 /**
  * Transform {@link DataEntry} to {@link ChangeDataCaptureEvent} and sends it to {@link ChangeDataCaptureConsumer}.
  *
- * @see IgniteCDC
+ * @see ChangeDataCapture
  * @see ChangeDataCaptureConsumer
  */
 public class WALRecordsConsumer<K, V> {
@@ -118,7 +118,7 @@ public class WALRecordsConsumer<K, V> {
     public void start(IgniteLogger log) {
         this.log = log;
 
-        dataConsumer.start(log);
+        dataConsumer.start();
 
         if (log.isInfoEnabled())
             log.info("WalRecordsConsumer started[consumer=" + dataConsumer.getClass() + ']');

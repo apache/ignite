@@ -18,12 +18,12 @@
 package org.apache.ignite.cdc;
 
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.internal.cdc.IgniteCDC;
+import org.apache.ignite.internal.cdc.ChangeDataCapture;
 import org.apache.ignite.lang.IgniteExperimental;
 
 /**
- * This class defines {@link IgniteCDC} runtime configuration.
- * This configuration is passed to {@link IgniteCDC} constructor.
+ * This class defines {@link ChangeDataCapture} runtime configuration.
+ * This configuration is passed to {@link ChangeDataCapture} constructor.
  * It defines all configuration
  */
 @IgniteExperimental
@@ -44,7 +44,7 @@ public class ChangeDataCaptureConfiguration {
     private boolean keepBinary = DFLT_KEEP_BINARY;
 
     /**
-     * {@link IgniteCDC} acquire file lock on startup to ensure exclusive consumption.
+     * {@link ChangeDataCapture} acquire file lock on startup to ensure exclusive consumption.
      * This property specifies amount of time to wait for lock acquisition.<br>
      * Default is {@code 1000 ms}.
      */

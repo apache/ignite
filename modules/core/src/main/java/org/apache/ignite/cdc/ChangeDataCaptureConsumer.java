@@ -19,23 +19,34 @@ package org.apache.ignite.cdc;
 
 import java.util.Iterator;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.cdc.IgniteCDC;
+import org.apache.ignite.internal.cdc.ChangeDataCapture;
 import org.apache.ignite.lang.IgniteExperimental;
+import org.apache.ignite.resources.LoggerResource;
 
 /**
  * Consumer of WAL data change events.
- * This consumer will receive event of data changes during {@link IgniteCDC} application invocation.
+ * This consumer will receive event of data changes during {@link ChangeDataCapture} application invocation.
  * Lifecycle of consumer is the following:
  * <ul>
- *     <li>Start of the consumer {@link #start(IgniteLogger)}.</li>
+ *     <li>Start of the consumer {@link #start()}.</li>
  *     <li>Notification of the consumer by the {@link #onChange(Iterator)} call.</li>
  *     <li>Stop of the consumer {@link #stop()}.</li>
  * </ul>
  *
+ * In case consumer implementation wants to user {@link IgniteLogger}, please, use, {@link LoggerResource} annotation:
+ * <pre> {@code
+ * public class ChangeDataCaptureConsumer implements ChangeDataCaptureConsumer {
+ *     @LoggerReource
+ *     private IgniteLogger log;
+ *
+ *     ...
+ * }
+ * }</pre>
+ *
  * Note, consumption of the {@link ChangeDataCaptureEvent} will started from the last saved offset.
  * Offset of consumptions is saved on the disk every time {@link #onChange(Iterator)} returns {@code true}.
  *
- * @see IgniteCDC
+ * @see ChangeDataCapture
  * @see ChangeDataCaptureEvent
  * @see ChangeEventOrder
  */
@@ -43,10 +54,8 @@ import org.apache.ignite.lang.IgniteExperimental;
 public interface ChangeDataCaptureConsumer {
     /**
      * Starts the consumer.
-     *
-     * @param log Logger.
      */
-    public void start(IgniteLogger log);
+    public void start();
 
     /**
      * Handles entry changes events.
@@ -60,7 +69,7 @@ public interface ChangeDataCaptureConsumer {
 
     /**
      * Stops the consumer.
-     * This methods can be invoked only after {@link #start(IgniteLogger)}.
+     * This methods can be invoked only after {@link #start()}.
      */
     public void stop();
 }
