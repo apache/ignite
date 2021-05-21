@@ -363,7 +363,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 return;
             }
 
-            // TODO: Retry count limit.
+            // TODO: Retry count limit (see DataStreamerImpl#DFLT_MAX_REMAP_CNT).
             if (onSocketThread)
             {
                 // Release receiver thread, perform retry on a separate thread.

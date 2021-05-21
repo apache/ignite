@@ -368,6 +368,31 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         }
 
         [Test]
+        public void TestFlushThrowsOnCacheStoreException()
+        {
+            var serverCache = Ignition.GetIgnite().CreateCache<int, int>(new CacheConfiguration
+            {
+                Name = TestUtils.TestName,
+                CacheStoreFactory = new BlockingCacheStore(),
+                WriteThrough = true
+            });
+
+            var options = new DataStreamerClientOptions
+            {
+                AllowOverwrite = true // Required for cache store to be invoked.
+            };
+
+            var streamer = Client.GetDataStreamer<int, int>(serverCache.Name, options);
+            streamer.Remove(1);
+
+            var ex = Assert.Throws<AggregateException>(() => streamer.Flush());
+            StringAssert.Contains("Failed to finish operation (too many remaps)", ex.GetBaseException().Message);
+
+            // Streamer is closed because of the flush failure.
+            Assert.IsTrue(streamer.IsClosed);
+        }
+
+        [Test]
         public void TestDisposeThrowsWhenCacheDoesNotExist()
         {
             var streamer = Client.GetDataStreamer<int, int>("bad-cache-name");
