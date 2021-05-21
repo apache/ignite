@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.platform.client.streamer;
 
-import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
+import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientLongResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
@@ -79,35 +79,58 @@ public class ClientDataStreamerStartRequest extends ClientRequest {
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         String cacheName = ClientCacheRequest.cacheDescriptor(ctx, cacheId).cacheName();
-        IgniteDataStreamer<KeyCacheObject, CacheObject> dataStreamer = ctx.kernalContext().grid().dataStreamer(cacheName);
+        DataStreamerImpl<KeyCacheObject, CacheObject> dataStreamer = (DataStreamerImpl<KeyCacheObject, CacheObject>)
+                ctx.kernalContext().grid().<KeyCacheObject, CacheObject>dataStreamer(cacheName);
 
         if (perNodeBufferSize >= 0)
             dataStreamer.perNodeBufferSize(perNodeBufferSize);
+        else if (entries != null && !entries.isEmpty() && close())
+            dataStreamer.perNodeBufferSize(entries.size());
 
         if (perThreadBufferSize >= 0)
             dataStreamer.perThreadBufferSize(perThreadBufferSize);
 
-        dataStreamer.allowOverwrite((flags & ALLOW_OVERWRITE) != 0);
-        dataStreamer.skipStore((flags & SKIP_STORE) != 0);
-        dataStreamer.keepBinary((flags & KEEP_BINARY) != 0);
+        dataStreamer.allowOverwrite(allowOverwrite());
+        dataStreamer.skipStore(skipStore());
+        dataStreamer.keepBinary(keepBinary());
 
         if (receiver != null)
             dataStreamer.receiver(receiver);
 
         if (entries != null)
-            dataStreamer.addData(entries);
+            dataStreamer.addDataInternal(entries, false);
 
-        if ((flags & CLOSE) != 0) {
+        if (close()) {
             dataStreamer.close();
 
             return new ClientLongResponse(requestId(), 0);
         } else {
-            if ((flags & FLUSH) != 0)
+            if (flush())
                 dataStreamer.flush();
 
             long rsrcId = ctx.resources().put(new ClientDataStreamerHandle(dataStreamer));
 
             return new ClientLongResponse(requestId(), rsrcId);
         }
+    }
+
+    private boolean close() {
+        return (flags & CLOSE) != 0;
+    }
+
+    private boolean flush() {
+        return (flags & FLUSH) != 0;
+    }
+
+    private boolean allowOverwrite() {
+        return (flags & ALLOW_OVERWRITE) != 0;
+    }
+
+    private boolean skipStore() {
+        return (flags & SKIP_STORE) != 0;
+    }
+
+    private boolean keepBinary() {
+        return (flags & KEEP_BINARY) != 0;
     }
 }
