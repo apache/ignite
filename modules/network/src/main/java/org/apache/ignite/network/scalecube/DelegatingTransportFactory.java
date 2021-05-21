@@ -17,12 +17,13 @@
 
 package org.apache.ignite.network.scalecube;
 
+import java.util.Objects;
 import io.scalecube.cluster.transport.api.Message;
 import io.scalecube.cluster.transport.api.Transport;
 import io.scalecube.cluster.transport.api.TransportConfig;
 import io.scalecube.cluster.transport.api.TransportFactory;
 import io.scalecube.net.Address;
-import java.util.Objects;
+import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -98,16 +99,23 @@ class DelegatingTransportFactory implements TransportFactory {
                 Objects.requireNonNull(request, "request must be not null");
                 Objects.requireNonNull(request.correlationId(), "correlationId must be not null");
 
-                Mono<Message> result = listen()
-                    .filter(resp -> resp.correlationId() != null)
-                    .filter(resp -> resp.correlationId().equals(request.correlationId()))
-                    .next();
+                return Mono.create(sink -> {
+                    // listen() returns a lazy Flux, so we need to subscribe to it first, using a sink.
+                    // Otherwise, message handlers can execute faster than the consumer will be able to start listening
+                    // to incoming messages.
+                    Disposable disposable = listen()
+                        .filter(resp -> resp.correlationId() != null)
+                        .filter(resp -> resp.correlationId().equals(request.correlationId()))
+                        .take(1)
+                        .subscribe(sink::success, sink::error, sink::success);
 
-                // manually fire the message event instead of sending it, because otherwise it will be received
-                // immediately, replacing the response that might have been sent by the event handlers.
-                messagingService.fireEvent(request);
+                    // cancel the nested subscription if the client cancels the outer Mono
+                    sink.onDispose(disposable);
 
-                return result;
+                    // manually fire the message event instead of sending it, because otherwise it will be received
+                    // immediately, replacing the response that might have been sent by the event handlers.
+                    messagingService.fireEvent(request);
+                });
             }
         };
     }
