@@ -82,12 +82,15 @@ public class ClientDataStreamerStartRequest extends ClientRequest {
         DataStreamerImpl<KeyCacheObject, CacheObject> dataStreamer = (DataStreamerImpl<KeyCacheObject, CacheObject>)
                 ctx.kernalContext().grid().<KeyCacheObject, CacheObject>dataStreamer(cacheName);
 
+        // Don't use thread buffer for a one-off streamer operation.
+        boolean useThreadBuffer = !close();
+
         if (perNodeBufferSize >= 0)
             dataStreamer.perNodeBufferSize(perNodeBufferSize);
         else if (entries != null && !entries.isEmpty() && close())
             dataStreamer.perNodeBufferSize(entries.size());
 
-        if (perThreadBufferSize >= 0)
+        if (perThreadBufferSize >= 0 && useThreadBuffer)
             dataStreamer.perThreadBufferSize(perThreadBufferSize);
 
         dataStreamer.allowOverwrite(allowOverwrite());
@@ -97,12 +100,8 @@ public class ClientDataStreamerStartRequest extends ClientRequest {
         if (receiver != null)
             dataStreamer.receiver(receiver);
 
-        if (entries != null) {
-            // Don't use thread buffer for a one-off streamer operation.
-            boolean useThreadBuffer = !close();
-
+        if (entries != null)
             dataStreamer.addDataInternal(entries, useThreadBuffer);
-        }
 
         if (close()) {
             dataStreamer.close();
