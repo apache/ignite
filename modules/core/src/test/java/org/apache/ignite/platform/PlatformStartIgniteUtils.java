@@ -27,6 +27,8 @@ import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 
+import java.security.Permissions;
+
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_PUT;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_REMOVE;
@@ -42,11 +44,11 @@ public class PlatformStartIgniteUtils {
                 "pass1",
                 ALLOW_ALL,
                 false,
-                new TestSecurityData("CLIENT",
+                new TestSecurityData("CLIENT", "pass1",
                         SecurityPermissionSetBuilder.create().defaultAllowAll(false)
                                 .appendCachePermissions("DEFAULT_CACHE", CACHE_READ, CACHE_PUT, CACHE_REMOVE)
                                 .appendCachePermissions("FORBIDDEN_CACHE")
-                                .build())
+                                .build(), new Permissions())
         );
 
         IgniteConfiguration cfg = new IgniteConfiguration()

@@ -25,6 +25,12 @@ namespace Apache.Ignite.Core.Tests.Client
     /// </summary>
     public class ClientSecurityPermissionsTest
     {
+        /** */
+        private const string Login = "CLIENT";
+
+        /** */
+        private const string AllowAllLogin = "CLIENT_";
+
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
@@ -39,12 +45,28 @@ namespace Apache.Ignite.Core.Tests.Client
         }
 
         [Test]
-        public void TestTodo()
+        public void TestCreateCacheNoPermissionThrowsSecurityViolationClientException()
         {
-            using (var client = Ignition.StartClient(new IgniteClientConfiguration("127.0.0.1")))
+            using (var client = StartClient())
             {
-                client.GetCacheNames();
+                var ex = Assert.Throws<IgniteClientException>(() => client.CreateCache<int, int>("FORBIDDEN_CACHE"));
+
+                Assert.AreEqual(ClientStatusCode.SecurityViolation, ex.StatusCode);
             }
+        }
+
+        private static IIgniteClient StartClient(string login = Login)
+        {
+            return Ignition.StartClient(GetClientConfiguration(login));
+        }
+
+        private static IgniteClientConfiguration GetClientConfiguration(string login)
+        {
+            return new IgniteClientConfiguration("127.0.0.1")
+            {
+                UserName = login,
+                Password = "pass1"
+            };
         }
     }
 }
