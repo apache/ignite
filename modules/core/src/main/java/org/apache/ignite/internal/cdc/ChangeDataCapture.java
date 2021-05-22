@@ -49,10 +49,16 @@ import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolde
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
+import org.apache.ignite.internal.processors.resource.GridResourceIoc;
+import org.apache.ignite.internal.processors.resource.GridResourceLoggerInjector;
+import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.resources.SpringApplicationContextResource;
+import org.apache.ignite.resources.SpringResource;
 import org.apache.ignite.startup.cmdline.ChangeDataCaptureCommandLineStartup;
 
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
@@ -113,6 +119,9 @@ public class ChangeDataCapture implements Runnable {
     /** Ignite configuration. */
     private final IgniteConfiguration cfg;
 
+    /** Spring resource context. */
+    private final GridSpringResourceContext ctx;
+
     /** CDC configuration. */
     private final ChangeDataCaptureConfiguration cdcCfg;
 
@@ -148,10 +157,15 @@ public class ChangeDataCapture implements Runnable {
 
     /**
      * @param cfg Ignite configuration.
+     * @param ctx Spring resource context.
      * @param cdcCfg CDC configuration.
      */
-    public ChangeDataCapture(IgniteConfiguration cfg, ChangeDataCaptureConfiguration cdcCfg) {
+    public ChangeDataCapture(
+        IgniteConfiguration cfg,
+        GridSpringResourceContext ctx,
+        ChangeDataCaptureConfiguration cdcCfg) {
         this.cfg = new IgniteConfiguration(cfg);
+        this.ctx = ctx;
         this.cdcCfg = cdcCfg;
 
         consumer = new WALRecordsConsumer<>(cdcCfg.getConsumer());
@@ -246,7 +260,7 @@ public class ChangeDataCapture implements Runnable {
     }
 
     /** Searches required directories. */
-    private void init() throws IOException {
+    private void init() throws IOException, IgniteCheckedException {
         String consIdDir = cdcDir.getName(cdcDir.getNameCount() - 1).toString();
 
         Files.createDirectories(cdcDir.resolve(STATE_DIR));
@@ -259,6 +273,8 @@ public class ChangeDataCapture implements Runnable {
             log.debug("Using BinaryMeta directory[dir=" + binaryMeta + ']');
             log.debug("Using Marshaller directory[dir=" + marshaller + ']');
         }
+
+        injectResources(consumer.getCdcConsumer());
     }
 
     /** Waits and consumes new WAL segments until stoped. */
@@ -479,6 +495,37 @@ public class ChangeDataCapture implements Runnable {
                 log.info("Stopping CDC");
 
             stopped = true;
+        }
+    }
+
+    /** */
+    private void injectResources(ChangeDataCaptureConsumer dataConsumer) throws IgniteCheckedException {
+        GridResourceIoc ioc = new GridResourceIoc();
+
+        ioc.inject(
+            dataConsumer,
+            LoggerResource.class,
+            new GridResourceLoggerInjector(log),
+            null,
+            null
+        );
+
+        if (ctx != null) {
+            ioc.inject(
+                dataConsumer,
+                SpringResource.class,
+                ctx.springBeanInjector(),
+                null,
+                null
+            );
+
+            ioc.inject(
+                dataConsumer,
+                SpringApplicationContextResource.class,
+                ctx.springContextInjector(),
+                null,
+                null
+            );
         }
     }
 }

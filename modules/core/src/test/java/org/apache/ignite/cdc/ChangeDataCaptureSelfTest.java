@@ -135,7 +135,7 @@ public class ChangeDataCaptureSelfTest extends GridCommonAbstractTest {
 
         TestCDCConsumer cnsmr = new TestCDCConsumer();
 
-        ChangeDataCapture cdc = new ChangeDataCapture(cfg, cdcConfig(cnsmr));
+        ChangeDataCapture cdc = new ChangeDataCapture(cfg, null, cdcConfig(cnsmr));
 
         IgniteInternalFuture<?> fut = runAsync(cdc);
 
@@ -209,7 +209,7 @@ public class ChangeDataCaptureSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        ChangeDataCapture cdc = new ChangeDataCapture(cfg, cdcConfig(cnsmr));
+        ChangeDataCapture cdc = new ChangeDataCapture(cfg, null, cdcConfig(cnsmr));
 
         runAsync(cdc);
 
@@ -284,7 +284,7 @@ public class ChangeDataCaptureSelfTest extends GridCommonAbstractTest {
 
             ign.close();
 
-            ChangeDataCapture cdc = new ChangeDataCapture(cfg, cdcConfig(cnsmr));
+            ChangeDataCapture cdc = new ChangeDataCapture(cfg, null, cdcConfig(cnsmr));
 
             IgniteInternalFuture<?> fut = runAsync(cdc);
 
@@ -313,7 +313,7 @@ public class ChangeDataCaptureSelfTest extends GridCommonAbstractTest {
 
         TestCDCConsumer cnsmr = new TestCDCConsumer();
 
-        ChangeDataCapture cdc = new ChangeDataCapture(cfg, cdcConfig(cnsmr));
+        ChangeDataCapture cdc = new ChangeDataCapture(cfg, null, cdcConfig(cnsmr));
 
         IgniteInternalFuture<?> runFut = runAsync(cdc);
 
@@ -385,8 +385,8 @@ public class ChangeDataCaptureSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg1 = ign1.configuration();
         IgniteConfiguration cfg2 = ign2.configuration();
 
-        ChangeDataCapture cdc1 = new ChangeDataCapture(cfg1, cdcConfig(cnsmr1));
-        ChangeDataCapture cdc2 = new ChangeDataCapture(cfg2, cdcConfig(cnsmr2));
+        ChangeDataCapture cdc1 = new ChangeDataCapture(cfg1, null, cdcConfig(cnsmr1));
+        ChangeDataCapture cdc2 = new ChangeDataCapture(cfg2, null, cdcConfig(cnsmr2));
 
         IgniteInternalFuture<?> fut1 = runAsync(cdc1);
 
@@ -431,8 +431,8 @@ public class ChangeDataCaptureSelfTest extends GridCommonAbstractTest {
         TestCDCConsumer cnsmr1 = new TestCDCConsumer();
         TestCDCConsumer cnsmr2 = new TestCDCConsumer();
 
-        IgniteInternalFuture<?> fut1 = runAsync(new ChangeDataCapture(ign.configuration(), cdcConfig(cnsmr1)));
-        IgniteInternalFuture<?> fut2 = runAsync(new ChangeDataCapture(ign.configuration(), cdcConfig(cnsmr2)));
+        IgniteInternalFuture<?> fut1 = runAsync(new ChangeDataCapture(ign.configuration(), null, cdcConfig(cnsmr1)));
+        IgniteInternalFuture<?> fut2 = runAsync(new ChangeDataCapture(ign.configuration(), null, cdcConfig(cnsmr2)));
 
         assertTrue(waitForCondition(() -> fut1.isDone() || fut2.isDone(), getTestTimeout()));
 
@@ -476,7 +476,7 @@ public class ChangeDataCaptureSelfTest extends GridCommonAbstractTest {
                 }
             };
 
-            ChangeDataCapture cdc = new ChangeDataCapture(cfg, cdcConfig(cnsmr));
+            ChangeDataCapture cdc = new ChangeDataCapture(cfg, null, cdcConfig(cnsmr));
 
             IgniteInternalFuture<?> fut = runAsync(cdc);
 
@@ -509,7 +509,7 @@ public class ChangeDataCaptureSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        ChangeDataCapture cdc = new ChangeDataCapture(cfg, cdcConfig(cnsmr));
+        ChangeDataCapture cdc = new ChangeDataCapture(cfg, null, cdcConfig(cnsmr));
 
         IgniteInternalFuture<?> fut = runAsync(cdc);
 

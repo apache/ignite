@@ -17,21 +17,33 @@
 
 package org.apache.ignite.cdc;
 
+import java.util.Iterator;
+import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cdc.ChangeDataCapture;
+import org.apache.ignite.internal.cdc.WALRecordsConsumer;
+import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.resources.SpringApplicationContextResource;
+import org.apache.ignite.resources.SpringResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+import org.springframework.context.ApplicationContext;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cdc.ChangeDataCaptureLoader.loadChangeDataCapture;
 import static org.apache.ignite.internal.cdc.ChangeDataCapture.ERR_MSG;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
+import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /** */
 public class ChangeDataCaptureConfigurationTest extends GridCommonAbstractTest {
     /** */
     @Test
-    public void testCorrectConfig() throws Exception {
+    public void testLoadConfig() throws Exception {
         assertThrows(
             null,
             () -> loadChangeDataCapture("modules/spring/src/test/config/cdc/double-ignite-config.xml"),
@@ -46,10 +58,68 @@ public class ChangeDataCaptureConfigurationTest extends GridCommonAbstractTest {
             "Exact 1 CaptureDataChangeConfiguration configuration should be defined. Found 2"
         );
 
-        ChangeDataCapture cdc = loadChangeDataCapture("modules/spring/src/test/config/cdc/correct-cdc-config.xml");
+        ChangeDataCapture cdc =
+            loadChangeDataCapture("modules/spring/src/test/config/cdc/cdc-config-without-persistence.xml");
 
         assertNotNull(cdc);
 
         assertThrows(null, cdc::run, IgniteException.class, ERR_MSG);
+    }
+
+    @Test
+    public void testInjectResources() throws Exception {
+        ChangeDataCapture cdc =
+            loadChangeDataCapture("modules/spring/src/test/config/cdc/correct-cdc-config.xml");
+
+        TestCDCConsumer cnsmr =
+            (TestCDCConsumer)((WALRecordsConsumer<?, ?>)getFieldValue(cdc, "consumer")).getCdcConsumer();
+
+        assertNotNull(cnsmr);
+
+        CountDownLatch startLatch = cnsmr.startLatch;
+
+        IgniteInternalFuture<?> fut = runAsync(cdc::run);
+
+        startLatch.await(getTestTimeout(), MILLISECONDS);
+
+        assertEquals("someString", cnsmr.springString);
+        assertEquals("someString2", cnsmr.springString2);
+        assertNotNull(cnsmr.log);
+        assertNotNull(cnsmr.ctx);
+
+        fut.cancel();
+    }
+
+    /** */
+    public static class TestCDCConsumer implements ChangeDataCaptureConsumer {
+        @LoggerResource
+        private IgniteLogger log;
+
+        @SpringResource(resourceName = "springString")
+        private String springString;
+
+        private String springString2;
+
+        @SpringApplicationContextResource
+        private ApplicationContext ctx;
+
+        public CountDownLatch startLatch = new CountDownLatch(1);
+
+        /** {@inheritDoc} */
+        @Override public void start() {
+            springString2 = ctx.getBean("springString2", String.class);
+
+            startLatch.countDown();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean onChange(Iterator<ChangeDataCaptureEvent> events) {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void stop() {
+            // No-Op.
+        }
     }
 }

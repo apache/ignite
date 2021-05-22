@@ -57,8 +57,6 @@ public class ChangeDataCaptureLoader {
             );
         }
 
-        IgniteConfiguration cfg = cfgTuple.get1().iterator().next();
-
         IgniteBiTuple<Collection<ChangeDataCaptureConfiguration>, ? extends GridSpringResourceContext> cdcCfgs =
             spring.loadConfigurations(cfgUrl, ChangeDataCaptureConfiguration.class);
 
@@ -69,6 +67,10 @@ public class ChangeDataCaptureLoader {
             );
         }
 
-        return new ChangeDataCapture(cfg, cdcCfgs.get1().iterator().next());
+        return new ChangeDataCapture(
+            cfgTuple.get1().iterator().next(),
+            cfgTuple.get2(),
+            cdcCfgs.get1().iterator().next()
+        );
     }
 }
