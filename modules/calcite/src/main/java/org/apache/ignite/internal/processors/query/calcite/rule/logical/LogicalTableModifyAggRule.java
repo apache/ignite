@@ -8,6 +8,7 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalTableModify;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
@@ -36,11 +37,10 @@ public class LogicalTableModifyAggRule extends RelRule<LogicalTableModifyAggRule
         final RelBuilder relBuilder = relBuilderFactory.create(cluster, null);
 
         RelTraitSet traits = cluster.traitSetOf(IgniteConvention.INSTANCE);
-        List<RelNode> inputs = Commons.transform(rel.getInputs(), input -> convert(input, traits));
 
-        relBuilder
-                .push(rel)
-                .aggregate(relBuilder.groupKey(ImmutableBitSet.range(rel.getRowType().getFieldCount())));
+        relBuilder.push(rel);
+
+        relBuilder.aggregateCall(SqlStdOperatorTable.SUM0, relBuilder.field(0)).as("ROWCOUNT");
 
         RelNode res = convert(relBuilder.build(), rel.getTraitSet());
 
