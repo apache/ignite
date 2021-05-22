@@ -41,11 +41,9 @@ public class LogicalTableModifyAggRule extends RelRule<LogicalTableModifyAggRule
         relBuilder.push(rel);
 
         relBuilder.aggregate(relBuilder.groupKey(),
-                relBuilder.aggregateCall(SqlStdOperatorTable.SUM0, relBuilder.field(0)).as("ROWCOUNT"));
+                relBuilder.aggregateCall(SqlStdOperatorTable.SUM0, relBuilder.field(0)).as("ROWCOUNT"));g
 
-        RelNode res = convert(relBuilder.build(), rel.getTraitSet());
-
-        call.transformTo(res);
+        call.transformTo(relBuilder.build());
     }
 
     /** */
