@@ -1,20 +1,17 @@
 package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 
-import com.google.common.collect.ImmutableMap;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
-import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelRule;
+import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.RelFactories;
-import org.apache.calcite.rel.logical.LogicalAggregate;
-import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.logical.LogicalTableModify;
-import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.rex.RexUtil;
-import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.tools.RelBuilder;
+import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 import java.util.List;
 
@@ -36,10 +33,18 @@ public class LogicalTableModifyAggRule extends RelRule<LogicalTableModifyAggRule
     @Override public void onMatch(RelOptRuleCall call) {
         final LogicalTableModify rel = call.rel(0);
         final RelOptCluster cluster = rel.getCluster();
+        final RelBuilder relBuilder = relBuilderFactory.create(cluster, null);
 
-        RelNode input = rel.getInput(0);
+        RelTraitSet traits = cluster.traitSetOf(IgniteConvention.INSTANCE);
+        List<RelNode> inputs = Commons.transform(rel.getInputs(), input -> convert(input, traits));
 
-        call.transformTo(rel, new LogicalAggregate(input.));
+        relBuilder
+                .push(rel)
+                .aggregate(relBuilder.groupKey(ImmutableBitSet.range(rel.getRowType().getFieldCount())));
+
+        RelNode res = convert(relBuilder.build(), rel.getTraitSet());
+
+        call.transformTo(res);
     }
 
     /** */
