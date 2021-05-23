@@ -288,7 +288,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
             catch (RuntimeException e) {
                 logError(logger(), "Failed to execute compound future reducer: " + this, e);
 
-                onCancelled();
+                onDone(e);
             }
             catch (AssertionError e) {
                 logError(logger(), "Failed to execute compound future reducer: " + this, e);
