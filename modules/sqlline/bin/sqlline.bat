@@ -141,6 +141,6 @@ if %MAJOR_JAVA_VER% GEQ 11 (
 set CP=%IGNITE_LIBS%
 set CP=%CP%;%IGNITE_HOME%\bin\include\sqlline\*
 
-"%JAVA_HOME%\bin\java.exe" %JVM_OPTS% -cp "%CP%" sqlline.SqlLine -d org.apache.ignite.IgniteJdbcThinDriver %*
+"%JAVA_HOME%\bin\java.exe" %JVM_OPTS% -cp "%CP%" sqlline.SqlLine --connectInteractionMode=notAskCredentials -d org.apache.ignite.IgniteJdbcThinDriver %*
 
 :error_finish
