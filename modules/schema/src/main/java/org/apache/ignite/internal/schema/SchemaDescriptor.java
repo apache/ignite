@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.tostring.S;
+import org.apache.ignite.internal.util.ArrayUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -43,7 +44,10 @@ public class SchemaDescriptor implements Serializable {
     /** Value columns in serialization order. */
     private final Columns valCols;
 
-    /** Mapping 'Column name' to Column. */
+    /** Affinity columns. */
+    private final Column[] affCols;
+
+    /** Mapping 'Column name' -&gt; Column. */
     private final Map<String, Column> colMap;
 
     /**
@@ -77,7 +81,10 @@ public class SchemaDescriptor implements Serializable {
         Arrays.stream(this.keyCols.columns()).forEach(c -> colMap.put(c.name(), c));
         Arrays.stream(this.valCols.columns()).forEach(c -> colMap.put(c.name(), c));
 
-        //TODO: https://issues.apache.org/jira/browse/IGNITE-14388 Add affinity columns support.
+        // Preserving key chunk column order is not actually required.
+        // It is sufficient to has same column order for all nodes.
+        this.affCols = (ArrayUtils.nullOrEmpty(affCols)) ? keyCols :
+            Arrays.stream(affCols).map(colMap::get).toArray(Column[]::new);
     }
 
     /**
@@ -95,8 +102,8 @@ public class SchemaDescriptor implements Serializable {
     }
 
     /**
-     * @param idx Index to check.
-     * @return {@code true} if the column belongs to the key chunk.
+     * @param idx Column index to check.
+     * @return {@code true} if the column belongs to the key chunk, {@code false} otherwise.
      */
     public boolean isKeyColumn(int idx) {
         return idx < keyCols.length();
@@ -124,6 +131,13 @@ public class SchemaDescriptor implements Serializable {
      */
     public Columns keyColumns() {
         return keyCols;
+    }
+
+    /**
+     * @return Key affinity columns chunk.
+     */
+    public Column[] affinityColumns() {
+        return affCols;
     }
 
     /**

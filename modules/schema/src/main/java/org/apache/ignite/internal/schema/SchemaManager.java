@@ -185,6 +185,7 @@ public class SchemaManager extends Producer<SchemaEvent, SchemaEventParameters> 
                 return metaStorageMgr.invoke(Conditions.notExists(schemaKey),
                     Operations.put(schemaKey, ByteUtils.toBytes(desc)),
                     Operations.noop())
+                    //TODO: IGNITE-14679 Serialize schema.
                     .thenCompose(res -> metaStorageMgr.invoke(Conditions.notExists(lastVerKey),
                         Operations.put(lastVerKey, ByteUtils.longToBytes(schemaVer)),
                         Operations.noop()));

@@ -20,10 +20,13 @@ package org.apache.ignite.internal.schema;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.UUID;
 import org.apache.ignite.internal.schema.BinaryRow.RowFlags;
 
+import static org.apache.ignite.internal.schema.BinaryRow.RowFlags.OMIT_KEY_VARTBL_FLAG;
+import static org.apache.ignite.internal.schema.BinaryRow.RowFlags.OMIT_VAL_VARTBL_FLAG;
 import static org.apache.ignite.internal.schema.BinaryRow.VARLEN_COLUMN_OFFSET_FIELD_SIZE;
 import static org.apache.ignite.internal.schema.BinaryRow.VARLEN_TABLE_SIZE_FIELD_SIZE;
 
@@ -68,6 +71,9 @@ public class RowAssembler {
 
     /** Offset of the varlen table for current chunk. */
     private int varlenTblChunkOff;
+
+    /** Row hashcode. */
+    private int keyHash;
 
     /** Flags. */
     private short flags;
@@ -168,6 +174,7 @@ public class RowAssembler {
 
         curCols = schema.keyColumns();
         flags = 0;
+        keyHash = 0;
         strEncoder = null;
 
         initOffsets(BinaryRow.KEY_CHUNK_OFFSET, nonNullVarlenKeyCols);
@@ -183,7 +190,7 @@ public class RowAssembler {
         buf.putShort(0, (short)schema.version());
 
         if (nonNullVarlenKeyCols == 0)
-            flags |= RowFlags.OMIT_KEY_VARTBL_FLAG;
+            flags |= OMIT_KEY_VARTBL_FLAG;
         else
             buf.putShort(varlenTblChunkOff, (short)nonNullVarlenKeyCols);
     }
@@ -200,6 +207,9 @@ public class RowAssembler {
 
         setNull(curCol);
 
+        if (isKeyColumn())
+            keyHash *= 31;
+
         shiftColumn(0, false);
     }
 
@@ -212,6 +222,9 @@ public class RowAssembler {
         checkType(NativeTypes.BYTE);
 
         buf.put(curOff, val);
+
+        if (isKeyColumn())
+            keyHash = 31 * keyHash + Byte.hashCode(val);
 
         shiftColumn(NativeTypes.BYTE);
     }
@@ -226,6 +239,9 @@ public class RowAssembler {
 
         buf.putShort(curOff, val);
 
+        if (isKeyColumn())
+            keyHash = 31 * keyHash + Short.hashCode(val);
+
         shiftColumn(NativeTypes.SHORT);
     }
 
@@ -238,6 +254,9 @@ public class RowAssembler {
         checkType(NativeTypes.INTEGER);
 
         buf.putInt(curOff, val);
+
+        if (isKeyColumn())
+            keyHash = 31 * keyHash + Integer.hashCode(val);
 
         shiftColumn(NativeTypes.INTEGER);
     }
@@ -252,6 +271,9 @@ public class RowAssembler {
 
         buf.putLong(curOff, val);
 
+        if (isKeyColumn())
+            keyHash += 31 * keyHash + Long.hashCode(val);
+
         shiftColumn(NativeTypes.LONG);
     }
 
@@ -264,6 +286,9 @@ public class RowAssembler {
         checkType(NativeTypes.FLOAT);
 
         buf.putFloat(curOff, val);
+
+        if (isKeyColumn())
+            keyHash += 31 * keyHash + Float.hashCode(val);
 
         shiftColumn(NativeTypes.FLOAT);
     }
@@ -278,6 +303,9 @@ public class RowAssembler {
 
         buf.putDouble(curOff, val);
 
+        if (isKeyColumn())
+            keyHash += 31 * keyHash + Double.hashCode(val);
+
         shiftColumn(NativeTypes.DOUBLE);
     }
 
@@ -291,6 +319,9 @@ public class RowAssembler {
 
         buf.putLong(curOff, uuid.getLeastSignificantBits());
         buf.putLong(curOff + 8, uuid.getMostSignificantBits());
+
+        if (isKeyColumn())
+            keyHash += 31 * keyHash + uuid.hashCode();
 
         shiftColumn(NativeTypes.UUID);
     }
@@ -308,6 +339,9 @@ public class RowAssembler {
 
             writeOffset(curVarlenTblEntry, curOff - baseOff);
 
+            if (isKeyColumn())
+                keyHash += 31 * keyHash + val.hashCode();
+
             shiftColumn(written, true);
         }
         catch (CharacterCodingException e) {
@@ -324,6 +358,9 @@ public class RowAssembler {
         checkType(NativeTypes.BYTES);
 
         buf.putBytes(curOff, val);
+
+        if (isKeyColumn())
+            keyHash += 31 * keyHash + Arrays.hashCode(val);
 
         writeOffset(curVarlenTblEntry, curOff - baseOff);
 
@@ -353,6 +390,9 @@ public class RowAssembler {
         for (int i = 0; i < maskType.sizeInBytes() - arr.length; i++)
             buf.put(curOff + arr.length + i, (byte)0);
 
+        if (isKeyColumn())
+            keyHash += 31 * keyHash + Arrays.hashCode(arr);
+
         shiftColumn(maskType);
     }
 
@@ -370,6 +410,7 @@ public class RowAssembler {
         }
 
         buf.putShort(BinaryRow.FLAGS_FIELD_OFFSET, flags);
+        buf.putInt(BinaryRow.KEY_HASH_FIELD_OFFSET, keyHash);
 
         return buf.toArray();
     }
@@ -391,7 +432,8 @@ public class RowAssembler {
      * @param off Offset to write.
      */
     private void writeOffset(int tblEntryIdx, int off) {
-        assert (flags & (baseOff == BinaryRow.KEY_CHUNK_OFFSET ? RowFlags.OMIT_KEY_VARTBL_FLAG : RowFlags.OMIT_VAL_VARTBL_FLAG)) == 0;
+        assert (flags & (baseOff == BinaryRow.KEY_CHUNK_OFFSET ? OMIT_KEY_VARTBL_FLAG : OMIT_VAL_VARTBL_FLAG)) == 0 :
+            "Illegal writing of varlen when 'omit vartable' flag is set for a chunk.";
 
         buf.putShort(varlenTblChunkOff + Row.varlenItemOffset(tblEntryIdx), (short)off);
     }
@@ -424,7 +466,8 @@ public class RowAssembler {
      * @param colIdx Column index.
      */
     private void setNull(int colIdx) {
-        assert (flags & (baseOff == BinaryRow.KEY_CHUNK_OFFSET ? RowFlags.OMIT_KEY_NULL_MAP_FLAG : RowFlags.OMIT_VAL_NULL_MAP_FLAG)) == 0;
+        assert (flags & (baseOff == BinaryRow.KEY_CHUNK_OFFSET ? RowFlags.OMIT_KEY_NULL_MAP_FLAG : RowFlags.OMIT_VAL_NULL_MAP_FLAG)) == 0 :
+            "Illegal writing 'null' value when 'omit null-map' flag is set for a chunk.";
 
         int byteInMap = colIdx / 8;
         int bitInByte = colIdx % 8;
@@ -472,7 +515,7 @@ public class RowAssembler {
             initOffsets(baseOff + chunkLen, nonNullVarlenValCols);
 
             if (nonNullVarlenValCols == 0)
-                flags |= RowFlags.OMIT_VAL_VARTBL_FLAG;
+                flags |= OMIT_VAL_VARTBL_FLAG;
             else
                 buf.putShort(varlenTblChunkOff, (short)nonNullVarlenValCols);
         }
@@ -492,5 +535,12 @@ public class RowAssembler {
         varlenTblChunkOff = nullMapOff + curCols.nullMapSize();
 
         curOff = varlenTblChunkOff + varlenTableChunkSize(nonNullVarlenCols);
+    }
+
+    /**
+     * @return {@code true} if current column is a key column, {@code false} otherwise.
+     */
+    private boolean isKeyColumn() {
+        return schema.keyColumns() == curCols;
     }
 }

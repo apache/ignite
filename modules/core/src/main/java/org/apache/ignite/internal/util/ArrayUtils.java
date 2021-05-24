@@ -180,10 +180,18 @@ public final class ArrayUtils {
     };
 
     /**
+     * @param arr Array to check.
+     * @param <T> Array element type.
+     * @return {@code true} if {@code null} or an empty array is provided, {@code false} otherwise.
+     */
+    public static <T> boolean nullOrEmpty(T[] arr) {
+        return arr == null || arr.length == 0;
+    }
+
+    /**
      * Stub.
      */
     private ArrayUtils() {
         // No op.
     }
-
 }
