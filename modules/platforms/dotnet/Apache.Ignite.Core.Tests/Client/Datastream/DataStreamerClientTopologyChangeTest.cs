@@ -103,12 +103,12 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         [Test]
         public void TestStreamerDoesNotLoseDataOnRandomTopologyChanges()
         {
-            const int maxNodes = 5;
+            const int maxNodes = 6;
 
             var nodes = new Stack<IIgnite>();
             nodes.Push(StartServer());
 
-            var client = StartClient();
+            var client = StartClient(maxPort: 10809);
 
             var id = 0;
             var cache = CreateCache(client);
@@ -138,7 +138,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 // TODO: Run this test for multiple minutes.
                 for (int i = 0; i < 20; i++)
                 {
-                    if (nodes.Count == 0 || (nodes.Count < maxNodes && TestUtils.Random.Next(2) == 0))
+                    if (nodes.Count == 1 || (nodes.Count < maxNodes && TestUtils.Random.Next(2) == 0))
                     {
                         nodes.Push(StartServer());
                     }
@@ -294,9 +294,9 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             });
         }
 
-        private IIgniteClient StartClient()
+        private IIgniteClient StartClient(int maxPort = 10805)
         {
-            var cfg = new IgniteClientConfiguration("127.0.0.1:10800..10805")
+            var cfg = new IgniteClientConfiguration("127.0.0.1:10800.." + maxPort)
             {
                 EnablePartitionAwareness = _enablePartitionAwareness
             };
