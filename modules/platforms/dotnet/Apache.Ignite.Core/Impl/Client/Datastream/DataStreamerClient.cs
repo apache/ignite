@@ -385,15 +385,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
 
             // TODO: Retry count limit (see DataStreamerImpl#DFLT_MAX_REMAP_CNT).
-            if (onSocketThread)
-            {
-                // Release receiver thread, perform retry on a separate thread.
-                ThreadPool.QueueUserWorkItem(_ => FlushBufferRetry(buffer, socket, tcs, userRequested));
-            }
-            else
-            {
-                FlushBufferRetry(buffer, socket, tcs, userRequested);
-            }
+            // Release receiver thread, perform retry on a separate thread.
+            ThreadPool.QueueUserWorkItem(_ => FlushBufferRetry(buffer, socket, tcs, userRequested));
         }
 
         private static bool ShouldRetry(Exception exception)
@@ -443,7 +436,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             try
             {
                 // Connection failed. Remove disconnected socket from the map.
-                // TODO: This possibly removes a buffer that was never flushed.
                 DataStreamerClientPerNodeBuffer<TK, TV> removed;
                 _buffers.TryRemove(failedSocket, out removed);
 
@@ -464,20 +456,11 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
                 ReturnArray(entries);
 
-                //if (userRequested)
-                {
-                    // When flush is initiated by the user, we should retry flushing immediately.
-                    // Otherwise re-adding entries to other buffers is enough.
+                removed?.Close();
 
-                    ThreadPool.QueueUserWorkItem(_ =>
-                    {
-                        // TODO: Flush removed!
-                        removed?.Close();
-
-                        FlushInternalAsync()
-                            .ContinueWith(flushTask => flushTask.SetAsResult(tcs));
-                    });
-                }
+                // TODO: Flush removed
+                FlushInternalAsync(additionalBuffer: null)
+                    .ContinueWith(flushTask => flushTask.SetAsResult(tcs));
             }
             catch (Exception e)
             {
