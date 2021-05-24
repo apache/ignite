@@ -3701,8 +3701,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 cacheMsg.onClassError(new IgniteCheckedException(e));
             }
             catch (Error e) {
-                if (cacheMsg.ignoreClassErrors() &&
-                    X.hasCause(e, NoClassDefFoundError.class, UnsupportedClassVersionError.class)) {
+                if (X.hasCause(e, NoClassDefFoundError.class, UnsupportedClassVersionError.class)) {
                     cacheMsg.onClassError(
                         new IgniteCheckedException("Failed to load class during unmarshalling: " + e, e)
                     );

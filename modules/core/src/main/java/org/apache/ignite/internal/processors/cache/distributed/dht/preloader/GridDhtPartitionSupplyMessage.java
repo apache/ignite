@@ -110,11 +110,6 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
         // No-op.
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean ignoreClassErrors() {
-        return true;
-    }
-
     /**
      * @return Rebalance id.
      */

@@ -122,13 +122,6 @@ public abstract class GridCacheMessage implements Message {
     }
 
     /**
-     * @return {@code True} if class loading errors should be ignored, false otherwise.
-     */
-    public boolean ignoreClassErrors() {
-        return false;
-    }
-
-    /**
      * Gets message lookup index. All messages that does not return -1 in this method must return a unique
      * number in range from 0 to {@link #MAX_CACHE_MSG_LOOKUP_INDEX}.
      *
@@ -146,8 +139,7 @@ public abstract class GridCacheMessage implements Message {
     }
 
     /**
-     * If class loading error occurred during unmarshalling and {@link #ignoreClassErrors()} is
-     * set to {@code true}, then the error will be passed into this method.
+     * If class loading error occurred during unmarshalling, then the error will be passed into this method.
      *
      * @param err Error.
      */

@@ -512,10 +512,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                             msg.getClass().getName() + ". Most likely GridCommunicationSpi is being used directly, " +
                             "which is illegal - make sure to send messages only via GridProjection API.");
                 }
-                catch (UnsupportedClassVersionError err) {
-                    U.error(log, "Communication manager received message of unsupported java version (will ignore): " +
-                        err.getMessage());
-                }
             }
 
             @Override public void onDisconnected(UUID nodeId) {
