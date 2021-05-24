@@ -17,9 +17,15 @@
 
 package org.apache.ignite.network.scalecube;
 
-import io.scalecube.cluster.ClusterConfig;
+import java.lang.management.ManagementFactory;
 import java.util.List;
 import java.util.stream.Collectors;
+import javax.management.InstanceNotFoundException;
+import javax.management.MBeanRegistrationException;
+import javax.management.MBeanServer;
+import javax.management.MalformedObjectNameException;
+import javax.management.ObjectName;
+import io.scalecube.cluster.ClusterConfig;
 import io.scalecube.cluster.ClusterImpl;
 import io.scalecube.cluster.ClusterMessageHandler;
 import io.scalecube.cluster.membership.MembershipEvent;
@@ -81,9 +87,28 @@ public class ScaleCubeClusterServiceFactory implements ClusterServiceFactory {
 
             /** {@inheritDoc} */
             @Override public void shutdown() {
+                stopJmxMonitor();
+
                 cluster.shutdown();
                 cluster.onShutdown().block();
                 connectionManager.stop();
+            }
+
+            /**
+             * Removes the JMX MBean registered by the "io.scalecube.cluster.ClusterImpl#startJmxMonitor()" method.
+             * Current ScaleCube implementation does not do that which leads to memory leaks.
+             */
+            private void stopJmxMonitor() {
+                MBeanServer server = ManagementFactory.getPlatformMBeanServer();
+
+                try {
+                    var pattern = new ObjectName("io.scalecube.cluster", "name", cluster.member().id() + "@*");
+
+                    for (ObjectName name : server.queryNames(pattern, null))
+                        server.unregisterMBean(name);
+                }
+                catch (MalformedObjectNameException | InstanceNotFoundException | MBeanRegistrationException ignore) {
+                }
             }
         };
     }
