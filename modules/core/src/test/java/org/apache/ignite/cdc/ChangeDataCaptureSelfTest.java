@@ -66,6 +66,9 @@ public class ChangeDataCaptureSelfTest extends GridCommonAbstractTest {
     /** */
     public static final int WAL_ARCHIVE_TIMEOUT = 5_000;
 
+    /** Keys count. */
+    public static final int KEYS_CNT = 50;
+
     /** */
     @Parameterized.Parameter
     public boolean specificConsistentId;
@@ -87,9 +90,6 @@ public class ChangeDataCaptureSelfTest extends GridCommonAbstractTest {
 
     /** Consistent id. */
     private UUID consistentId = UUID.randomUUID();
-
-    /** Keys count. */
-    private static final int KEYS_CNT = 50;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -532,8 +532,12 @@ public class ChangeDataCaptureSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private boolean waitForSize(int expSz, String cacheName, ChangeEventType evtType, TestCDCConsumer... cnsmrs)
-        throws IgniteInterruptedCheckedException {
+    private boolean waitForSize(
+        int expSz,
+        String cacheName,
+        ChangeEventType evtType,
+        TestCDCConsumer... cnsmrs
+    ) throws IgniteInterruptedCheckedException {
         return waitForCondition(
             () -> {
                 int sum = Arrays.stream(cnsmrs).mapToInt(c -> F.size(c.keys(evtType, cacheId(cacheName)))).sum();
@@ -560,9 +564,10 @@ public class ChangeDataCaptureSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class TestCDCConsumer implements ChangeDataCaptureConsumer {
+    public static class TestCDCConsumer implements ChangeDataCaptureConsumer {
         /** Keys */
-        private final ConcurrentMap<IgniteBiTuple<ChangeEventType, Integer>, List<Integer>> cacheKeys = new ConcurrentHashMap<>();
+        private final ConcurrentMap<IgniteBiTuple<ChangeEventType, Integer>, List<Integer>> cacheKeys =
+            new ConcurrentHashMap<>();
 
         /** */
         public volatile boolean stopped;
@@ -583,8 +588,10 @@ public class ChangeDataCaptureSelfTest extends GridCommonAbstractTest {
                 if (!evt.primary())
                     return;
 
-                cacheKeys.computeIfAbsent(F.t(evt.value() == null ? DELETE : UPDATE, evt.cacheId()),
-                    k -> new ArrayList<>()).add((Integer)evt.key());
+                cacheKeys.computeIfAbsent(
+                    F.t(evt.value() == null ? DELETE : UPDATE, evt.cacheId()),
+                    k -> new ArrayList<>()).add((Integer)evt.key()
+                );
 
                 if (evt.value() != null) {
                     assertTrue(((User)evt.value()).getName().startsWith("John Connor"));

@@ -2566,8 +2566,12 @@ public class IgnitionEx {
          * @throws IgniteCheckedException If failed.
          */
         @SuppressWarnings("ErrorNotRethrown")
-        public static IgniteLogger initLogger(@Nullable IgniteLogger cfgLog, @Nullable String app, UUID nodeId, String workDir)
-            throws IgniteCheckedException {
+        public static IgniteLogger initLogger(
+            @Nullable IgniteLogger cfgLog,
+            @Nullable String app,
+            UUID nodeId,
+            String workDir
+        ) throws IgniteCheckedException {
             try {
                 Exception log4jInitErr = null;
 
