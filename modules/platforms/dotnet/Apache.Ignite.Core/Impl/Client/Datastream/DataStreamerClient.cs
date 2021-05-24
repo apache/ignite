@@ -404,6 +404,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             try
             {
                 // Connection failed. Remove disconnected socket from the map.
+                // TODO: This possibly removes a buffer that was never flushed.
                 DataStreamerClientPerNodeBuffer<TK, TV> unused;
                 _buffers.TryRemove(socket, out unused);
 
