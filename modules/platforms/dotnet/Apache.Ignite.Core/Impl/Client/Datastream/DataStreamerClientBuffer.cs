@@ -143,7 +143,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
             if (newSize == _entries.Length)
             {
-                TryRunFlushAction(userRequested: false);
+                TryRunFlushAction();
             }
 
             return true;
@@ -152,7 +152,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /// <summary>
         /// Returns true if flushing has started as a result of this call or before that.
         /// </summary>
-        public bool ScheduleFlush(bool userRequested)
+        public bool ScheduleFlush()
         {
             if (Interlocked.CompareExchange(ref _size, -1, -1) == 0)
             {
@@ -160,7 +160,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 return false;
             }
 
-            TryRunFlushAction(userRequested);
+            TryRunFlushAction();
 
             return true;
         }
@@ -185,7 +185,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
         }
 
-        private void TryRunFlushAction(bool userRequested)
+        private void TryRunFlushAction()
         {
             _rwLock.EnterWriteLock();
 
@@ -200,7 +200,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
                 if (Count > 0)
                 {
-                    RunFlushAction(userRequested);
+                    RunFlushAction();
                 }
                 else
                 {
@@ -213,13 +213,13 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
         }
 
-        private void RunFlushAction(bool userRequested)
+        private void RunFlushAction()
         {
             // TODO: This is not necessary during normal operation - can we get rid of this if no one listens
             // for completions?
 
             // NOTE: Continuation runs on socket thread - set result on thread pool.
-            _parent.FlushAsync(this, userRequested).ContinueWith(
+            _parent.FlushAsync(this).ContinueWith(
                 t => ThreadPool.QueueUserWorkItem(buf =>
                     ((DataStreamerClientBuffer<TK, TV>)buf).OnFlushed(t.Exception), this),
                 TaskContinuationOptions.ExecuteSynchronously);

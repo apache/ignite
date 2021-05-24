@@ -120,15 +120,15 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         public Task FlushAllAsync()
         {
             var buffer = _buffer;
-            buffer.ScheduleFlush(userRequested: true);
+            buffer.ScheduleFlush();
 
             return buffer.GetChainFlushTask();
         }
 
-        internal Task FlushAsync(DataStreamerClientBuffer<TK, TV> buffer, bool userRequested)
+        internal Task FlushAsync(DataStreamerClientBuffer<TK, TV> buffer)
         {
             // Stateless mode: every client client-side buffer creates a one-off streamer on the server.
-            return _client.FlushBufferAsync(buffer, _socket, _semaphore, userRequested);
+            return _client.FlushBufferAsync(buffer, _socket, _semaphore);
         }
     }
 }

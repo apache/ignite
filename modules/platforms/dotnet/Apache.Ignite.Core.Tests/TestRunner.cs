@@ -163,6 +163,7 @@ namespace Apache.Ignite.Core.Tests
             //     t.TestStreamParallelFor();
             //     Console.WriteLine("{0}: {1}", i, sw.Elapsed);
             // }
+            // ReSharper disable once FunctionNeverReturns
         }
     }
 }

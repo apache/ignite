@@ -297,9 +297,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             return TaskRunner.WhenAll(tasks.ToArray());
         }
 
-        internal Task FlushBufferAsync(DataStreamerClientBuffer<TK, TV> buffer,
-            ClientSocket socket,
-            SemaphoreSlim semaphore, bool userRequested)
+        internal Task FlushBufferAsync(DataStreamerClientBuffer<TK, TV> buffer, ClientSocket socket,
+            SemaphoreSlim semaphore)
         {
             // TODO: WaitAsync is not available on .NET 4, but is available on .NET 4.5 and later
             // Use reflection to get it.
@@ -309,7 +308,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             // TODO: Flush in a loop until succeeded.
             var tcs = new TaskCompletionSource<object>();
 
-            FlushBuffer(buffer, socket, tcs, userRequested);
+            FlushBuffer(buffer, socket, tcs);
 
             return tcs.Task.ContinueWith(t =>
             {
@@ -324,8 +323,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         private void FlushBuffer(
             DataStreamerClientBuffer<TK, TV> buffer,
             ClientSocket socket,
-            TaskCompletionSource<object> tcs,
-            bool userRequested)
+            TaskCompletionSource<object> tcs)
         {
             try
             {
