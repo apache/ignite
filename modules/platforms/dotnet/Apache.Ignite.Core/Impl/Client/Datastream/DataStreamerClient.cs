@@ -418,8 +418,13 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
                 if (removed != null)
                 {
-                    // TODO: Flush remaining data somehow. Another rw lock in PerNodeBuffer?
-                    removed.Close();
+                    // Flush buffered data for the failed connection.
+                    // TODO: Wait for this flush to complete somehow.
+                    ThreadPool.QueueUserWorkItem(_ =>
+                    {
+                        removed.Close();
+                        removed.FlushAllAsync();
+                    });
                 }
 
                 // Re-add entries to other buffers.
