@@ -154,10 +154,14 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
             if (id != cache.GetSize())
             {
+                // TODO: This test is not partition aware, we don't have any retries or failures at all!
+                // There is a single connection to the first node, why do we get data loss?
                 var expectedKeys = Enumerable.Range(1, id).ToArray();
-                var actualKeys = cache.GetAll(expectedKeys).Select(kv => kv.Key);
+                var actualKeys = cache.GetAll(expectedKeys).Select(kv => kv.Key).ToArray();
                 var missingKeys = expectedKeys.Except(actualKeys);
-                var missingKeysStr = string.Join(", ", missingKeys);
+                var missingKeysStr = "Missing keys: " + string.Join(", ", missingKeys);
+                Console.WriteLine(">>>> Expected keys count: " + expectedKeys.Length);
+                Console.WriteLine(">>>> Actual keys count: " + actualKeys.Length);
                 Assert.AreEqual(id, cache.GetSize(), missingKeysStr);
             }
 
@@ -282,7 +286,8 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             return client.CreateCache<int, int>(new CacheClientConfiguration
             {
                 Name = TestUtils.TestName,
-                CacheMode = CacheMode.Replicated
+                CacheMode = CacheMode.Replicated,
+                WriteSynchronizationMode = CacheWriteSynchronizationMode.FullSync
             });
         }
 
