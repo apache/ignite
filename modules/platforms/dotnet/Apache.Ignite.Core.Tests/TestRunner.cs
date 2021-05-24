@@ -136,6 +136,7 @@ namespace Apache.Ignite.Core.Tests
 #else
 namespace Apache.Ignite.Core.Tests
 {
+    using System;
     using Apache.Ignite.Core.Tests.Client.Datastream;
 
     /// <summary>
@@ -149,9 +150,12 @@ namespace Apache.Ignite.Core.Tests
         private static void Main()
         {
             var t = new DataStreamerClientTopologyChangeTest();
+            int i = 0;
 
             while (true)
             {
+                Console.WriteLine(">>>>>>> " + i++);
+
                 t.TestStreamerDoesNotLoseDataOnRandomTopologyChanges();
                 Ignition.StopAll(true);
             }
