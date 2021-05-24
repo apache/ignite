@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Impl.Client.Datastream
 {
-    using System;
     using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;

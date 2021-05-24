@@ -29,7 +29,6 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
     using Apache.Ignite.Core.Client.Datastream;
     using Apache.Ignite.Core.Impl.Client;
     using NUnit.Framework;
-    using NUnit.Framework.Internal;
 
     /// <summary>
     /// Tests thin client data streamer with topology changes.
@@ -153,7 +152,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 }
 
                 cancel = true;
-                adderTask.Wait();
+                adderTask.Wait(TimeSpan.FromSeconds(15));
             }
 
             Assert.AreEqual(1, cache[1]);

@@ -335,21 +335,19 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                         ctx => (object)null,
                         syncCallback: true)
                     .ContinueWith(
-                        t => FlushBufferCompleteOrRetry(buffer, socket, tcs, userRequested, t.Exception, onSocketThread: true, t),
+                        t => FlushBufferCompleteOrRetry(buffer, socket, tcs, t.Exception, t),
                         TaskContinuationOptions.ExecuteSynchronously);
             }
             catch (Exception exception)
             {
-                FlushBufferCompleteOrRetry(buffer, socket, tcs, userRequested, exception);
+                FlushBufferCompleteOrRetry(buffer, socket, tcs, exception);
             }
         }
 
         private void FlushBufferCompleteOrRetry(DataStreamerClientBuffer<TK, TV> buffer,
             ClientSocket socket,
             TaskCompletionSource<object> tcs,
-            bool userRequested,
             Exception exception,
-            bool onSocketThread = false,
             Task prevTask = null)
         {
             // NOTE: when onSocketThread is true, we are on socket receiver thread - don't perform any heavy operations.
@@ -376,7 +374,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
             // TODO: Retry count limit (see DataStreamerImpl#DFLT_MAX_REMAP_CNT).
             // Release receiver thread, perform retry on a separate thread.
-            ThreadPool.QueueUserWorkItem(_ => FlushBufferRetry(buffer, socket, tcs, userRequested));
+            ThreadPool.QueueUserWorkItem(_ => FlushBufferRetry(buffer, socket, tcs));
         }
 
         private static bool ShouldRetry(Exception exception)
@@ -418,8 +416,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         private void FlushBufferRetry(
             DataStreamerClientBuffer<TK, TV> buffer,
             ClientSocket failedSocket,
-            TaskCompletionSource<object> tcs,
-            bool userRequested)
+            TaskCompletionSource<object> tcs)
         {
             Console.WriteLine(">>>> RETRY");
 
