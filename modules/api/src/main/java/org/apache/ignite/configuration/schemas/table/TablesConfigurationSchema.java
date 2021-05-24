@@ -21,12 +21,14 @@ import org.apache.ignite.configuration.annotation.ConfigurationRoot;
 import org.apache.ignite.configuration.annotation.NamedConfigValue;
 import org.apache.ignite.configuration.storage.ConfigurationType;
 
-/** Tables configuration schema. */
+/**
+ * Tables configuration schema.
+ */
 @SuppressWarnings("PMD.UnusedPrivateField")
 @ConfigurationRoot(rootName = "table", type = ConfigurationType.DISTRIBUTED)
 public class TablesConfigurationSchema {
-
     /** List of configured tables. */
     @NamedConfigValue
+    @TableValidator
     TableConfigurationSchema tables;
 }

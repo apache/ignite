@@ -15,29 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration.schemas.table;
+package org.apache.ignite.internal.schema.builder;
 
-import org.apache.ignite.configuration.annotation.Config;
-import org.apache.ignite.configuration.annotation.Value;
+import org.apache.ignite.schema.PartialIndex;
+import org.apache.ignite.schema.SchemaBuilders;
+import org.apache.ignite.schema.builder.PartialIndexBuilder;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
- * Configuration for SQL table column type.
+ * Tests for partial index builder.
  */
-@Config
-public class ColumnTypeConfigurationSchema {
-    /** Type name. */
-    @Value
-    String type;
+public class PartialIndexBuilderTest {
+    /**
+     * Test partial index parameters.
+     */
+    @Test
+    public void testPartialIndexCreate() {
+        PartialIndexBuilder builder = SchemaBuilders.partialIndex("TEST");
 
-    /** Length. */
-    @Value(hasDefault = true)
-    int length = 0;
+        builder.addIndexColumn("A").done();
+        builder.withExpression("WHERE A > 0");
 
-    /** Precision. */
-    @Value(hasDefault = true)
-    int precision = 0;
+        PartialIndex idx = builder.build();
 
-    /** Scale. */
-    @Value(hasDefault = true)
-    int scale = 0;
+        assertEquals(1, idx.columns().size());
+        assertEquals("WHERE A > 0", idx.expr());
+    }
 }

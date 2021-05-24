@@ -17,27 +17,20 @@
 
 package org.apache.ignite.configuration.schemas.table;
 
-import org.apache.ignite.configuration.annotation.Config;
-import org.apache.ignite.configuration.annotation.Value;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * Configuration for SQL table column type.
+ * Annotation to validate whole table configuration.
+ *
+ * Activate SchemaTableValidatorImpl in configuration engine for {@link TablesConfigurationSchema#tables}.
  */
-@Config
-public class ColumnTypeConfigurationSchema {
-    /** Type name. */
-    @Value
-    String type;
+@Target({ FIELD, PARAMETER })
+@Retention(RUNTIME)
+public @interface TableValidator {
 
-    /** Length. */
-    @Value(hasDefault = true)
-    int length = 0;
-
-    /** Precision. */
-    @Value(hasDefault = true)
-    int precision = 0;
-
-    /** Scale. */
-    @Value(hasDefault = true)
-    int scale = 0;
 }

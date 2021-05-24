@@ -86,6 +86,16 @@ public class NativeTypes {
     }
 
     /**
+     * Creates a DECIMAL type with maximal precision and scale.
+     *
+     * @param precision Precision.
+     * @param scale Scale.
+     */
+    public static NativeType decimalOf(int precision, int scale) {
+        return new NumericNativeType(precision, scale);
+    }
+
+    /**
      * Return the native type for specified object.
      *
      * @param val Object to map to native type.
@@ -120,13 +130,13 @@ public class NativeTypes {
                 return UUID;
 
             case STRING:
-                return NativeTypes.stringOf(((CharSequence)val).length());
+                return stringOf(((CharSequence)val).length());
 
             case BYTES:
-                return NativeTypes.blobOf(((byte[])val).length);
+                return blobOf(((byte[])val).length);
 
             case BITMASK:
-                return NativeTypes.bitmaskOf(((BitSet)val).length());
+                return bitmaskOf(((BitSet)val).length());
 
             default:
                 assert false : "Unexpected type: " + spec;

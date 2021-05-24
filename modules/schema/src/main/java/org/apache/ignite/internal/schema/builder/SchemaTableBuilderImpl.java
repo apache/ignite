@@ -17,10 +17,14 @@
 
 package org.apache.ignite.internal.schema.builder;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.apache.ignite.internal.schema.SchemaTableImpl;
 import org.apache.ignite.schema.Column;
 import org.apache.ignite.schema.ColumnarIndex;
@@ -28,6 +32,7 @@ import org.apache.ignite.schema.IndexColumn;
 import org.apache.ignite.schema.PrimaryIndex;
 import org.apache.ignite.schema.SchemaBuilders;
 import org.apache.ignite.schema.SchemaTable;
+import org.apache.ignite.schema.SortedIndex;
 import org.apache.ignite.schema.TableIndex;
 import org.apache.ignite.schema.builder.SchemaTableBuilder;
 
@@ -87,7 +92,7 @@ public class SchemaTableBuilderImpl implements SchemaTableBuilder {
 
     /** {@inheritDoc} */
     @Override public SchemaTableBuilder withPrimaryKey(String colName) {
-        withIndex(SchemaBuilders.pkIndex().addIndexColumn(colName).done().build());
+        withIndex(SchemaBuilders.pkIndex().addIndexColumn(colName).done().withAffinityColumns(colName).build());
 
         return this;
     }
@@ -101,9 +106,10 @@ public class SchemaTableBuilderImpl implements SchemaTableBuilder {
     /** {@inheritDoc} */
     @Override public SchemaTable build() {
         assert schemaName != null : "Table name was not specified.";
-        assert columns.size() >= 2 : "Key or/and value columns was not defined.";
 
-        validateIndices();
+        validateIndices(indices.values(), columns.values());
+
+        assert columns.size() > ((SortedIndex)indices.get(PRIMARY_KEY_INDEX_NAME)).columns().size() : "Key or/and value columns was not defined.";
 
         return new SchemaTableImpl(
             schemaName,
@@ -116,18 +122,22 @@ public class SchemaTableBuilderImpl implements SchemaTableBuilder {
     /**
      * Validate indices.
      */
-    private void validateIndices() {
-        assert indices.values().stream()
+    public static void validateIndices(Collection<TableIndex> indices, Collection<Column> columns) {
+        Set<String> colNames = columns.stream().map(Column::name).collect(Collectors.toSet());
+
+        assert indices.stream()
             .filter(ColumnarIndex.class::isInstance)
             .map(ColumnarIndex.class::cast)
             .flatMap(idx -> idx.columns().stream())
             .map(IndexColumn::name)
-            .allMatch(columns::containsKey) : "Index column doesn't exists in schema.";
+            .allMatch(colNames::contains) : "Index column doesn't exists in schema.";
 
-        assert indices.containsKey(PRIMARY_KEY_INDEX_NAME) : "Primary key index is not configured.";
-        assert !((PrimaryIndex)indices.get(PRIMARY_KEY_INDEX_NAME)).affinityColumns().isEmpty() : "Primary key must have one affinity column at least.";
+        TableIndex pkIdx = indices.stream().filter(idx -> PRIMARY_KEY_INDEX_NAME.equals(idx.name())).findAny().orElse(null);
+
+        assert pkIdx != null : "Primary key index is not configured.";
+        assert !((PrimaryIndex)pkIdx).affinityColumns().isEmpty() : "Primary key must have one affinity column at least.";
 
         // Note: E.g. functional index is not columnar index as it index an expression result only.
-        assert indices.values().stream().allMatch(ColumnarIndex.class::isInstance) : "Columnar indices are supported only.";
+        assert indices.stream().allMatch(ColumnarIndex.class::isInstance) : "Columnar indices are supported only.";
     }
 }

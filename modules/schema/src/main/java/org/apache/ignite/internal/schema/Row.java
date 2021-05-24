@@ -229,7 +229,14 @@ public class Row implements BinaryRow {
         return off < 0 ? null : readDouble(offset(off));
     }
 
-    public BigDecimal decimalValue(int idx) {
+    /**
+     * Reads value from specified column.
+     *
+     * @param col Column index.
+     * @return Column value.
+     * @throws InvalidTypeException If actual column type does not match the requested column type.
+     */
+    public BigDecimal decimalValue(int col) throws InvalidTypeException {
         // TODO: IGNITE-13668 decimal support
         return null;
     }

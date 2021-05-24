@@ -22,7 +22,9 @@ import org.apache.ignite.configuration.annotation.NamedConfigValue;
 import org.apache.ignite.configuration.annotation.Value;
 import org.apache.ignite.configuration.validation.Immutable;
 
-/** SQL index configuration. */
+/**
+ * SQL index configuration.
+ */
 @Config
 public class TableIndexConfigurationSchema {
     /** Index name. */

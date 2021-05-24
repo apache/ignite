@@ -22,7 +22,9 @@ import org.apache.ignite.configuration.annotation.ConfigValue;
 import org.apache.ignite.configuration.annotation.Value;
 import org.apache.ignite.configuration.validation.Immutable;
 
-/** Configuration for single column in SQL table. */
+/**
+ * Configuration for single column in SQL table.
+ */
 @Config
 public class ColumnConfigurationSchema {
     /** Column name. */
