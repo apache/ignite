@@ -393,6 +393,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
                     if (!entry.IsEmpty)
                     {
+                        Console.WriteLine(">>>> RETRY " + entry.Key);
                         AddNoLock(entry);
                     }
                 }
