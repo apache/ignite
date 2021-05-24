@@ -355,7 +355,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
             if (exception == null)
             {
-                PrintEntries(buffer.Entries, $"SENT (disposed={socket.IsDisposed}, task={prevTask?.Status})");
+                PrintEntries(buffer.Entries, $"SENT (disposed={socket.IsDisposed}, task={prevTask?.Status}, socket={socket.RemoteEndPoint})");
 
                 ReturnArray(buffer.Entries);
                 tcs.SetResult(null);

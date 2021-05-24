@@ -115,7 +115,9 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             var id = 0;
             var cache = CreateCache(client);
 
-            using (var streamer = client.GetDataStreamer<int, int>(cache.Name))
+            var options = new DataStreamerClientOptions {AllowOverwrite = true};
+
+            using (var streamer = client.GetDataStreamer<int, int>(cache.Name, options))
             {
                 var cancel = false;
 
