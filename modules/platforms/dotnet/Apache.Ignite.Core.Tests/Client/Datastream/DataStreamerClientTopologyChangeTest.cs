@@ -287,7 +287,8 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             {
                 Name = TestUtils.TestName,
                 CacheMode = CacheMode.Replicated,
-                WriteSynchronizationMode = CacheWriteSynchronizationMode.FullSync
+                WriteSynchronizationMode = CacheWriteSynchronizationMode.FullSync,
+                RebalanceMode = CacheRebalanceMode.Sync
             });
         }
 
