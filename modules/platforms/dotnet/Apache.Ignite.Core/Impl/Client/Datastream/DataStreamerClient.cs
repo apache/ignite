@@ -30,7 +30,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
     /// <summary>
     /// TODO:
-    /// * Tune server-side buffer sizes for stateless mode - always match the count
     /// * Receiver tests
     /// * keepBinary tests
     /// * Unwrap ugly AggregateExceptions. Too much nesting.
