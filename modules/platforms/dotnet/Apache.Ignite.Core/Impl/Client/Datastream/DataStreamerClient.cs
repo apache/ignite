@@ -33,6 +33,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     /// * Receiver tests
     /// * keepBinary tests
     /// * Unwrap ugly AggregateExceptions. Too much nesting.
+    /// * Remove diagnostic output
     /// </summary>
     internal sealed class DataStreamerClient<TK, TV> : IDataStreamerClient<TK, TV>
     {
@@ -355,6 +356,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             if (!socket.IsDisposed)
             {
                 // Socket is still connected: this error does not need to be retried.
+                Console.WriteLine(">>>> NON_RETRY_ERROR: " + exception); // TODO
                 ReturnArray(entries);
                 tcs.SetException(exception);
 
@@ -404,10 +406,13 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
             catch (Exception e)
             {
+                Console.WriteLine(">>>> Failed to retry flush: " + e);  // TODO
+
                 tcs.SetException(e);
             }
             finally
             {
+                // TODO: This may lose entries?
                 ReturnArray(entries);
             }
         }

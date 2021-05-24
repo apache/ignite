@@ -148,11 +148,13 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private static void Main()
         {
-            var t = new DataStreamerClientTest();
-            t.FixtureSetUp();
-            t.TestSetUp();
+            var t = new DataStreamerClientTopologyChangeTest();
 
-            t.TestStreamLongList();
+            while (true)
+            {
+                t.TestStreamerDoesNotLoseDataOnRandomTopologyChanges();
+                Ignition.StopAll(true);
+            }
 
             // for (int i = 0; i < 20; i++)
             // {
