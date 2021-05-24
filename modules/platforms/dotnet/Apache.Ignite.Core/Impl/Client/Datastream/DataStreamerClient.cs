@@ -334,7 +334,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                         ctx => (object)null,
                         syncCallback: true)
                     .ContinueWith(
-                        t => FlushBufferCompleteOrRetry(buffer, socket, tcs, userRequested, t.Exception, onSocketThread: true),
+                        t => FlushBufferCompleteOrRetry(buffer, socket, tcs, userRequested, t.Exception, onSocketThread: true, t),
                         TaskContinuationOptions.ExecuteSynchronously);
             }
             catch (Exception exception)
@@ -343,19 +343,19 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
         }
 
-        private void FlushBufferCompleteOrRetry(
-            DataStreamerClientBuffer<TK, TV> buffer,
+        private void FlushBufferCompleteOrRetry(DataStreamerClientBuffer<TK, TV> buffer,
             ClientSocket socket,
             TaskCompletionSource<object> tcs,
             bool userRequested,
             Exception exception,
-            bool onSocketThread = false)
+            bool onSocketThread = false,
+            Task prevTask = null)
         {
             // NOTE: when onSocketThread is true, we are on socket receiver thread - don't perform any heavy operations.
 
             if (exception == null)
             {
-                PrintEntries(buffer.Entries, "SENT " + socket.IsDisposed);
+                PrintEntries(buffer.Entries, $"SENT (disposed={socket.IsDisposed}, task={prevTask?.Status})");
 
                 ReturnArray(buffer.Entries);
                 tcs.SetResult(null);
@@ -477,8 +477,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
             finally
             {
-                // TODO: This may lose entries in case of exception.
-                ReturnArray(buffer.Entries);
+                // TODO: This loses entries in case of exception!
+                // ReturnArray(buffer.Entries);
             }
         }
 

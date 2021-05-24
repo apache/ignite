@@ -29,6 +29,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
     using Apache.Ignite.Core.Client.Datastream;
     using Apache.Ignite.Core.Impl.Client;
     using NUnit.Framework;
+    using NUnit.Framework.Internal;
 
     /// <summary>
     /// Tests thin client data streamer with topology changes.
@@ -155,7 +156,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
             Assert.AreEqual(1, cache[1]);
 
-            if (id != cache.GetSize())
+            if (!TestUtils.WaitForCondition(() => id == cache.GetSize(), 1000))
             {
                 // TODO: Some buffers never get sent - confirmed.
                 var expectedKeys = Enumerable.Range(1, id).ToArray();
