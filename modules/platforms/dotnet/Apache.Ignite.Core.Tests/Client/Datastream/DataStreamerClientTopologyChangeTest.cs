@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
     using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Client.Datastream;
@@ -156,10 +157,11 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
             if (id != cache.GetSize())
             {
+                Thread.Sleep(3000);
                 // TODO: This test is not partition aware, we don't have any retries or failures at all!
                 // There is a single connection to the first node, why do we get data loss?
                 var expectedKeys = Enumerable.Range(1, id).ToArray();
-                var actualKeys = cache.GetAll(expectedKeys).Select(kv => kv.Key).ToArray();
+                var actualKeys = cache.Query(new ScanQuery<int, int>()).GetAll().Select(x => x.Key).ToArray();
                 var missingKeys = expectedKeys.Except(actualKeys);
                 var missingKeysStr = "Missing keys: " + string.Join(", ", missingKeys);
                 Console.WriteLine(">>>> Expected keys count: " + expectedKeys.Length);
