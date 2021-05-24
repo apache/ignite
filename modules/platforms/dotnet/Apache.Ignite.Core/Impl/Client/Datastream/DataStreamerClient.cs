@@ -363,8 +363,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 return;
             }
 
-            // TODO: Handle "Failed to create data streamer (grid is stopping)" errors.
-            if (!socket.IsDisposed)
+            if (!socket.IsDisposed && !ShouldRetry(exception))
             {
                 // Socket is still connected: this error does not need to be retried.
                 Console.WriteLine(">>>> NON_RETRY_ERROR: " + exception); // TODO
@@ -384,6 +383,25 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             {
                 FlushBufferRetry(buffer, socket, tcs, userRequested);
             }
+        }
+
+        private static bool ShouldRetry(Exception exception)
+        {
+            var aggregate = exception as AggregateException;
+
+            if (aggregate != null)
+            {
+                exception = aggregate.GetBaseException();
+            }
+
+            var clientEx = exception as IgniteClientException;
+
+            if (clientEx != null && clientEx.StatusCode == ClientStatusCode.InvalidNodeState)
+            {
+                return true;
+            }
+
+            return false;
         }
 
         private static void PrintEntries(DataStreamerClientEntry<TK, TV>[] entries, string prefix)
