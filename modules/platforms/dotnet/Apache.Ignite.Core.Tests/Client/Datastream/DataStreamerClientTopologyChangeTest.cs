@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -153,9 +154,11 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
             if (id != cache.GetSize())
             {
-                Thread.Sleep(2000);
-                Assert.AreEqual(id, cache.GetSize()); // TODO: This fails sometimes - do we lose data?
-                Assert.Fail("Cache size became correct after a delay.");
+                var expectedKeys = Enumerable.Range(1, id).ToArray();
+                var actualKeys = cache.GetAll(expectedKeys).Select(kv => kv.Key);
+                var missingKeys = expectedKeys.Except(actualKeys);
+                var missingKeysStr = string.Join(", ", missingKeys);
+                Assert.AreEqual(id, cache.GetSize(), missingKeysStr);
             }
 
             Assert.Greater(id, 10000);
