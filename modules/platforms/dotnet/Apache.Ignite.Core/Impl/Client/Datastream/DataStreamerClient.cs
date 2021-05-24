@@ -348,19 +348,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
             if (exception == null)
             {
-                var sb = new StringBuilder();
-
-                for (var i = 0; i < entries.Length; i++)
-                {
-                    var entry = entries[i];
-
-                    if (!entry.IsEmpty)
-                    {
-                        sb.Append(entry.Key).Append(", ");
-                    }
-                }
-
-                Console.WriteLine(">>>> SENT: " + sb);
+                PrintEntries(entries, "SENT");
 
                 ReturnArray(entries);
                 tcs.SetResult(null);
@@ -389,6 +377,23 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             {
                 FlushBufferRetry(buffer, socket, tcs, userRequested, entries);
             }
+        }
+
+        private static void PrintEntries(DataStreamerClientEntry<TK, TV>[] entries, string prefix)
+        {
+            var sb = new StringBuilder();
+
+            for (var i = 0; i < entries.Length; i++)
+            {
+                var entry = entries[i];
+
+                if (!entry.IsEmpty)
+                {
+                    sb.Append(entry.Key).Append(", ");
+                }
+            }
+
+            Console.WriteLine($">>>> {prefix}: {sb}");
         }
 
         private void FlushBufferRetry(DataStreamerClientBuffer<TK, TV> buffer, ClientSocket socket, TaskCompletionSource<object> tcs,
@@ -448,6 +453,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             w.WriteInt(count);
 
             var entries = buffer.Entries;
+
+            PrintEntries(entries, "SENDING ");
 
             for (var i = 0; i < count; i++)
             {

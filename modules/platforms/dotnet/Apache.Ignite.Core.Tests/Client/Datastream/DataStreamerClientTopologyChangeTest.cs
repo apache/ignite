@@ -163,9 +163,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
             if (id != cache.GetSize())
             {
-                Thread.Sleep(3000);
-                // TODO: This test is not partition aware, we don't have any retries or failures at all!
-                // There is a single connection to the first node, why do we get data loss?
+                // TODO: Some buffers never get sent - confirmed.
                 var expectedKeys = Enumerable.Range(1, id).ToArray();
                 var actualKeys = cache.Query(new ScanQuery<int, int>()).GetAll().Select(x => x.Key).ToArray();
                 var missingKeys = expectedKeys.Except(actualKeys);
