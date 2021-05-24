@@ -76,6 +76,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /** Exception. When set, the streamer is closed. */
         private volatile Exception _exception;
 
+        /** Cached flags. */
+        private readonly Flags _flags;
+
         public DataStreamerClient(
             ClientFailoverSocket socket,
             string cacheName,
@@ -84,13 +87,13 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             Debug.Assert(socket != null);
             Debug.Assert(!string.IsNullOrEmpty(cacheName));
 
-            // TODO: Validate options (non-zero buffer sizes).
             _socket = socket;
             _cacheName = cacheName;
             _cacheId = BinaryUtils.GetCacheId(cacheName);
 
             // Copy to prevent modification.
             _options = new DataStreamerClientOptions<TK, TV>(options);
+            _flags = GetFlags(_options);
         }
 
         public void Dispose()
@@ -245,9 +248,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             {
                 ThrowIfClosed();
 
-                // TODO: Some buffers may become abandoned when a socket for them is disconnected
-                // or server node leaves the cluster.
-                // We should track such topology changes by subscribing to topology update events.
                 AddNoLock(entry);
             }
             finally
@@ -415,7 +415,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         private void WriteBuffer(DataStreamerClientBuffer<TK, TV> buffer, BinaryWriter w)
         {
             w.WriteInt(_cacheId);
-            w.WriteByte((byte) GetFlags());
+            w.WriteByte((byte) _flags);
             w.WriteInt(ServerBufferSizeAuto); // Server per-node buffer size.
             w.WriteInt(ServerBufferSizeAuto); // Server per-thread buffer size.
             w.WriteObject(_options.Receiver);
@@ -447,22 +447,21 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
         }
 
-        private Flags GetFlags()
+        private static Flags GetFlags(DataStreamerClientOptions options)
         {
-            // TODO: Cache the flags once in ctor.
             var flags = Flags.Flush | Flags.Close;
 
-            if (_options.AllowOverwrite)
+            if (options.AllowOverwrite)
             {
                 flags |= Flags.AllowOverwrite;
             }
 
-            if (_options.SkipStore)
+            if (options.SkipStore)
             {
                 flags |= Flags.SkipStore;
             }
 
-            if (_options.KeepBinary)
+            if (options.KeepBinary)
             {
                 flags |= Flags.KeepBinary;
             }
