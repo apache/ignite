@@ -159,7 +159,9 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
             if (!TestUtils.WaitForCondition(() => id == cache.GetSize(), 1000))
             {
-                // TODO: Some buffers never get sent - confirmed.
+                // TODO: We find "SENT" keys as missing.
+                // 1. Server loses data
+                // 2. Buffer sharing issues (check this by disabling buffer pooling)
                 var expectedKeys = Enumerable.Range(1, id).ToArray();
                 var actualKeys = cache.Query(new ScanQuery<int, int>()).GetAll().Select(x => x.Key).ToArray();
                 var missingKeys = expectedKeys.Except(actualKeys);
