@@ -18,8 +18,6 @@
 
 == Overview
 
-WARNING: Experimental
-
 Ignite 2.8 introduced a new mechanism for collecting metrics, which is intended to replace the link:monitoring-metrics/metrics[legacy metrics system].
 This section explains the new system and how you can use it to monitor your cluster.
 //the types of metrics and how to export them, but first let's explore the basic concepts of the new metrics mechanism in Ignite.

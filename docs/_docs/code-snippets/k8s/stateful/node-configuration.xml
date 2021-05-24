@@ -16,8 +16,8 @@
   limitations under the License.
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-    xsi:schemaLocation="http://www.springframework.org/schema/beans         
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
     http://www.springframework.org/schema/beans/spring-beans.xsd">
 
     <!-- tag::config-block[] -->
@@ -43,8 +43,12 @@
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
                 <property name="ipFinder">
                     <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.kubernetes.TcpDiscoveryKubernetesIpFinder">
-                        <property name="namespace" value="ignite"/>
-                        <property name="serviceName" value="ignite-service"/>
+                        <constructor-arg>
+                            <bean class="org.apache.ignite.kubernetes.configuration.KubernetesConnectionConfiguration">
+                                <property name="namespace" value="default" />
+                                <property name="serviceName" value="ignite" />
+                            </bean>
+                        </constructor-arg>
                     </bean>
                 </property>
             </bean>

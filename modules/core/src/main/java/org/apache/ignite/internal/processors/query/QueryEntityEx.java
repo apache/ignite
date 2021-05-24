@@ -34,6 +34,9 @@ public class QueryEntityEx extends QueryEntity {
     /** Fields that must have non-null value. */
     private Set<String> notNullFields;
 
+    /** Whether to preserve order specified by {@link #getKeyFields()} or not. */
+    private boolean preserveKeysOrder;
+
     /** Whether a primary key should be autocreated or not. */
     private boolean implicitPk;
 
@@ -56,6 +59,9 @@ public class QueryEntityEx extends QueryEntity {
             QueryEntityEx other0 = (QueryEntityEx)other;
 
             notNullFields = other0.notNullFields != null ? new HashSet<>(other0.notNullFields) : null;
+
+            preserveKeysOrder = other0.preserveKeysOrder;
+
             implicitPk = other0.implicitPk;
         }
     }
@@ -68,6 +74,23 @@ public class QueryEntityEx extends QueryEntity {
     /** {@inheritDoc} */
     @Override public QueryEntity setNotNullFields(@Nullable Set<String> notNullFields) {
         this.notNullFields = notNullFields;
+
+        return this;
+    }
+
+    /**
+     * @return {@code true} if order should be preserved, {@code false} otherwise.
+     */
+    public boolean isPreserveKeysOrder() {
+        return preserveKeysOrder;
+    }
+
+    /**
+     * @param preserveKeysOrder Whether the order should be preserved or not.
+     * @return {@code this} for chaining.
+     */
+    public QueryEntity setPreserveKeysOrder(boolean preserveKeysOrder) {
+        this.preserveKeysOrder = preserveKeysOrder;
 
         return this;
     }
@@ -95,7 +118,7 @@ public class QueryEntityEx extends QueryEntity {
         QueryEntityEx entity = (QueryEntityEx)o;
 
         return super.equals(entity) && F.eq(notNullFields, entity.notNullFields)
-            && implicitPk == entity.implicitPk;
+            && preserveKeysOrder == entity.preserveKeysOrder && implicitPk == entity.implicitPk;
     }
 
     /** {@inheritDoc} */
@@ -103,6 +126,7 @@ public class QueryEntityEx extends QueryEntity {
         int res = super.hashCode();
 
         res = 31 * res + (notNullFields != null ? notNullFields.hashCode() : 0);
+        res = 31 * res + (preserveKeysOrder ? 1 : 0);
         res = 31 * res + (implicitPk ? 1 : 0);
 
         return res;

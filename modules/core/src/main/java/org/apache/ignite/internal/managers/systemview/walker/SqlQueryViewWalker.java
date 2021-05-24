@@ -38,6 +38,7 @@ public class SqlQueryViewWalker implements SystemViewRowAttributeWalker<SqlQuery
         v.accept(4, "duration", long.class);
         v.accept(5, "local", boolean.class);
         v.accept(6, "schemaName", String.class);
+        v.accept(7, "initiatorId", String.class);
     }
 
     /** {@inheritDoc} */
@@ -49,10 +50,11 @@ public class SqlQueryViewWalker implements SystemViewRowAttributeWalker<SqlQuery
         v.acceptLong(4, "duration", row.duration());
         v.acceptBoolean(5, "local", row.local());
         v.accept(6, "schemaName", String.class, row.schemaName());
+        v.accept(7, "initiatorId", String.class, row.initiatorId());
     }
 
     /** {@inheritDoc} */
     @Override public int count() {
-        return 7;
+        return 8;
     }
 }

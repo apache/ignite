@@ -65,7 +65,8 @@ public interface FieldsMetadata {
                 F.isEmpty(origin) ? field.getName() : origin.get(2),
                 fieldCls == null ? Void.class.getName() : fieldCls.getTypeName(),
                 fieldType.getPrecision(),
-                fieldType.getScale()
+                fieldType.getScale(),
+                fieldType.isNullable()
             ));
         }
 

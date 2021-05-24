@@ -152,7 +152,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
     @Override public GridCursor<CacheDataRow> find(
         CacheSearchRow lower,
         CacheSearchRow upper,
-        TreeRowClosure<CacheSearchRow,CacheDataRow> c,
+        TreeRowClosure<CacheSearchRow, CacheDataRow> c,
         Object x
     ) throws IgniteCheckedException {
         // If there is a group of caches, lower and upper bounds will not be null here.

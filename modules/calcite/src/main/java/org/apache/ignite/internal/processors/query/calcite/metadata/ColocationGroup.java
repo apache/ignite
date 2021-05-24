@@ -47,7 +47,8 @@ import org.jetbrains.annotations.NotNull;
 /** */
 public class ColocationGroup implements MarshalableMessage {
     /** */
-    private static final int SYNTHETIC_PARTITIONS_COUNT = IgniteSystemProperties.getInteger("IGNITE_CALCITE_SYNTHETIC_PARTITIONS_COUNT", 512);
+    private static final int SYNTHETIC_PARTITIONS_COUNT =
+        IgniteSystemProperties.getInteger("IGNITE_CALCITE_SYNTHETIC_PARTITIONS_COUNT", 512);
 
     /** */
     @GridDirectCollection(Long.class)
@@ -164,8 +165,10 @@ public class ColocationGroup implements MarshalableMessage {
                 for (int i = 0; i < assignments.size(); i++) {
                     List<UUID> assignment = Commons.intersect(filter, assignments.get(i));
 
-                    if (assignment.isEmpty()) // TODO check with partition filters
-                        throw new ColocationMappingException("Failed to map fragment to location. Partition mapping is empty [part=" + i + "]");
+                    if (assignment.isEmpty()) { // TODO check with partition filters
+                        throw new ColocationMappingException("Failed to map fragment to location. " +
+                            "Partition mapping is empty [part=" + i + "]");
+                    }
 
                     assignments0.add(assignment);
                 }

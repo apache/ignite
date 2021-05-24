@@ -1,3 +1,9 @@
+apache-ignite (2.9.1-1) unstable; urgency=low
+
+  * Updated Apache Ignite to version 2.9.1
+
+ -- Yaroslav Molochkov <y.n.molochkov@gmail.com>  Wed, 25 Nov 2020 15:12:31 +0300
+
 apache-ignite (2.9.0-1) unstable; urgency=low
 
   * Updated Apache Ignite to version 2.9.0

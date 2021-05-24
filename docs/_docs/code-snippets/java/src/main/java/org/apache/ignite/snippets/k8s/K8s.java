@@ -37,4 +37,25 @@ public class K8s {
         client.close();
         // end::connectThinClient[]
     }
+
+    public static void connectThinClientWithConfiguration() throws Exception {
+        // tag::connectThinClientWithKubernetesConfiguration[]
+        KubernetesConnectionConfiguration kcfg = new KubernetesConnectionConfiguration();
+        kcfg.setNamespace("ignite");
+        kcfg.setServiceName("ignite-service");
+
+        ClientConfiguration ccfg = new ClientConfiguration();
+        ccfg.setAddressesFinder(new ThinClientKubernetesAddressFinder(kcfg));
+
+        IgniteClient client = Ignition.startClient(cfg);
+
+        ClientCache<Integer, String> cache = client.getOrCreateCache("test_cache");
+
+        cache.put(1, "first test value");
+
+        System.out.println(cache.get(1));
+
+        client.close();
+        // end::connectThinClientWithKubernetesConfiguration[]
+    }
 }

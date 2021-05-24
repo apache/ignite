@@ -155,10 +155,7 @@ namespace ignite
 
             InteropUnpooledMemory::~InteropUnpooledMemory()
             {
-                if (owning) {
-                    free(Data());
-                    free(memPtr);
-                }
+                CleanUp();
             }
 
             void InteropUnpooledMemory::Reallocate(int32_t cap)
@@ -170,6 +167,29 @@ namespace ignite
 
                 Data(memPtr, realloc(Data(memPtr), cap));
                 Capacity(memPtr, cap);
+            }
+
+            bool InteropUnpooledMemory::TryGetOwnership(InteropUnpooledMemory &mem)
+            {
+                if (!owning)
+                    return false;
+
+                mem.CleanUp();
+                mem.owning = true;
+                mem.memPtr = memPtr;
+
+                owning = false;
+
+                return true;
+            }
+
+            void InteropUnpooledMemory::CleanUp()
+            {
+                if (owning)
+                {
+                    free(Data());
+                    free(memPtr);
+                }
             }
         }
     }

@@ -50,6 +50,8 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.resource.GridNoImplicitInjection;
+import org.apache.ignite.internal.processors.security.OperationSecurityContext;
+import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -960,9 +962,11 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             final GridWorkerFuture<R> fut = new GridWorkerFuture<>();
 
+            final SecurityContext secCtx = ctx.security().securityContext();
+
             GridWorker w = new GridWorker(ctx.igniteInstanceName(), "closure-proc-worker", log) {
                 @Override protected void body() {
-                    try {
+                    try (OperationSecurityContext s = ctx.security().withContext(secCtx)) {
                         if (ldr != null)
                             fut.onDone(U.wrapThreadLoader(ldr, c));
                         else

@@ -91,6 +91,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateAware;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -210,7 +211,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                         fut.listen(new CI1<IgniteInternalFuture<?>>() {
                             @Override public void apply(IgniteInternalFuture<?> fut) {
-                                cctx.kernalContext().closure().runLocalSafe(new Runnable() {
+                                cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
                                     @Override public void run() {
                                         handleMessage(nodeId, cacheMsg, plc);
                                     }
@@ -929,19 +930,27 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     req.classError(),
                     cctx.deploymentEnabled());
 
-                cctx.io().sendOrderedMessage(
-                    cctx.node(nodeId),
-                    TOPIC_CACHE.topic(QUERY_TOPIC_PREFIX, nodeId, req.id()),
-                    res,
-                    plc,
-                    Long.MAX_VALUE);
+                ClusterNode node = cctx.node(nodeId);
+
+                if (node == null) {
+                    U.error(log, "Failed to send message because node left grid [nodeId=" + nodeId +
+                        ", msg=" + msg + ']');
+                }
+                else {
+                    cctx.io().sendOrderedMessage(
+                        node,
+                        TOPIC_CACHE.topic(QUERY_TOPIC_PREFIX, nodeId, req.id()),
+                        res,
+                        plc,
+                        Long.MAX_VALUE);
+                }
             }
 
             break;
 
             case 114:
             case 120: {
-                processMessage(nodeId, msg, c);// Will be handled by Rebalance Demander.
+                processMessage(nodeId, msg, c); // Will be handled by Rebalance Demander.
             }
 
             break;
@@ -1545,7 +1554,11 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param topic Topic.
      * @param c Handler.
      */
-    public void addOrderedCacheGroupHandler(GridCacheSharedContext cctx, Object topic, IgniteBiInClosure<UUID, ? extends GridCacheGroupIdMessage> c) {
+    public void addOrderedCacheGroupHandler(
+        GridCacheSharedContext cctx,
+        Object topic,
+        IgniteBiInClosure<UUID, ? extends GridCacheGroupIdMessage> c
+    ) {
         addOrderedHandler(cctx, true, topic, c);
     }
 
@@ -1557,7 +1570,12 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param topic Topic.
      * @param c Handler.
      */
-    private void addOrderedHandler(GridCacheSharedContext cctx, boolean cacheGrp, Object topic, IgniteBiInClosure<UUID, ? extends GridCacheMessage> c) {
+    private void addOrderedHandler(
+        GridCacheSharedContext cctx,
+        boolean cacheGrp,
+        Object topic,
+        IgniteBiInClosure<UUID, ? extends GridCacheMessage> c
+    ) {
         MessageHandlers msgHandlers = cacheGrp ? grpHandlers : cacheHandlers;
 
         IgniteLogger log0 = log;

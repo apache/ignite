@@ -139,7 +139,7 @@ public class IgnitePdsCacheStartStopWithFreqCheckpointTest extends GridCommonAbs
 
                 try {
                     // Stop cache without destroy.
-                    crd.context().cache().dynamicDestroyCaches(cacheNames, false,false).get();
+                    crd.context().cache().dynamicDestroyCaches(cacheNames, false, false).get();
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException("Failed to destroy cache", e);

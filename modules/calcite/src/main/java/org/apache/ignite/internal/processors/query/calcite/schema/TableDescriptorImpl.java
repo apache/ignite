@@ -69,6 +69,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
+import org.h2.result.SortOrder;
+import org.h2.table.Column;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -182,10 +184,18 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
             affFields.add(descriptorsMap.get(typeDesc.affinityKey()).fieldIndex());
         else if (!F.isEmpty(typeDesc.keyFieldAlias()))
             affFields.add(descriptorsMap.get(typeDesc.keyFieldAlias()).fieldIndex());
-        else {
+        else if (!F.isEmpty(typeDesc.primaryKeyFields())) {
             affFields.addAll(
                 descriptors.stream()
                     .filter(desc -> typeDesc.primaryKeyFields().contains(desc.name()))
+                    .map(ColumnDescriptor::fieldIndex)
+                    .collect(Collectors.toList())
+            );
+        }
+        else {
+            affFields.addAll(
+                descriptors.stream()
+                    .filter(desc -> typeDesc.fields().containsKey(desc.name()) && typeDesc.property(desc.name()).key())
                     .map(ColumnDescriptor::fieldIndex)
                     .collect(Collectors.toList())
             );

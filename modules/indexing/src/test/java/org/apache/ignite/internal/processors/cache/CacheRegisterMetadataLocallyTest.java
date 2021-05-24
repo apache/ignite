@@ -229,7 +229,9 @@ public class CacheRegisterMetadataLocallyTest extends GridCommonAbstractTest {
     private void assertCustomMessages(int expMsgCnt) {
         assertEquals(customMessages.toString(), expMsgCnt, customMessages.size());
 
-        customMessages.forEach(cm -> assertTrue(cm.toString(), cm instanceof DynamicCacheChangeBatch || cm instanceof MetadataUpdateProposedMessage));
+        customMessages.forEach(
+            cm -> assertTrue(cm.toString(), cm instanceof DynamicCacheChangeBatch || cm instanceof MetadataUpdateProposedMessage)
+        );
     }
 
     /**

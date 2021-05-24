@@ -38,7 +38,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
@@ -69,6 +68,8 @@ import org.apache.ignite.transactions.TransactionMixedModeException;
 import org.apache.ignite.transactions.TransactionSerializationException;
 import org.apache.ignite.transactions.TransactionUnsupportedConcurrencyException;
 
+import static java.sql.ResultSetMetaData.columnNoNulls;
+import static java.sql.ResultSetMetaData.columnNullable;
 import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.META_COLS;
 import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.META_PARAMS;
 import static org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest.META_RESULTSET;
@@ -111,9 +112,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     /** Nested transaction behaviour. */
     private final NestedTxMode nestedTxMode;
 
-    /** Authentication context */
-    private final AuthorizationContext actx;
-
     /** Client version. */
     private ClientListenerProtocolVersion ver;
 
@@ -125,6 +123,9 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
     /** Response sender. */
     private final ClientListenerResponseSender sender;
+
+    /** Connection context. */
+    private final OdbcConnectionContext connCtx;
 
     /**
      * Constructor.
@@ -139,7 +140,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      * @param lazy Lazy flag.
      * @param skipReducerOnUpdate Skip reducer on update flag.
      * @param nestedTxMode Nested transaction mode.
-     * @param actx Authentication context.
      * @param ver Client protocol version.
      */
     public OdbcRequestHandler(
@@ -153,8 +153,11 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         boolean collocated,
         boolean lazy,
         boolean skipReducerOnUpdate,
-        AuthorizationContext actx, NestedTxMode nestedTxMode, ClientListenerProtocolVersion ver) {
+        NestedTxMode nestedTxMode,
+        ClientListenerProtocolVersion ver,
+        OdbcConnectionContext connCtx) {
         this.ctx = ctx;
+        this.connCtx = connCtx;
 
         Factory<GridWorker> orderedFactory = new Factory<GridWorker>() {
             @Override public GridWorker create() {
@@ -178,7 +181,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         this.busyLock = busyLock;
         this.sender = sender;
         this.maxCursors = maxCursors;
-        this.actx = actx;
         this.nestedTxMode = nestedTxMode;
         this.ver = ver;
 
@@ -228,9 +230,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             return new OdbcResponse(IgniteQueryErrorCode.UNKNOWN,
                 "Failed to handle ODBC request because node is stopping: " + req);
 
-        if (actx != null)
-            AuthorizationContext.context(actx);
-
         try {
             switch (req.command()) {
                 case QRY_EXEC:
@@ -267,8 +266,6 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             return new OdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Unsupported ODBC request: " + req);
         }
         finally {
-            AuthorizationContext.clear();
-
             busyLock.leaveBusy();
         }
     }
@@ -374,6 +371,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         qry.setSchema(OdbcUtils.prepareSchema(schema));
         qry.setSkipReducerOnUpdate(cliCtx.isSkipReducerOnUpdate());
         qry.setNestedTxMode(nestedTxMode);
+        qry.setQueryInitiatorId(connCtx.clientDescriptor());
 
         return qry;
     }
@@ -579,7 +577,8 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
                 OdbcUtils.prepareSchema(qry.getSchema()),
                 cliCtx,
                 qry.getSql(),
-                qry.batchedArguments()
+                qry.batchedArguments(),
+                connCtx.clientDescriptor()
             );
         }
         catch (Exception e) {
@@ -696,7 +695,8 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
                         GridQueryProperty prop = table.property(field.getKey());
 
                         OdbcColumnMeta columnMeta = new OdbcColumnMeta(table.schemaName(), table.tableName(),
-                            field.getKey(), field.getValue(), prop.precision(), prop.scale(), ver);
+                            field.getKey(), field.getValue(), prop.precision(), prop.scale(),
+                            prop.notNull() ? columnNoNulls : columnNullable);
 
                         if (!meta.contains(columnMeta))
                             meta.add(columnMeta);
@@ -802,7 +802,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             SqlFieldsQueryEx qry = makeQuery(schema, sql);
 
             List<GridQueryFieldMetadata> columns = ctx.query().getIndexing().resultMetaData(schema, qry);
-            Collection<OdbcColumnMeta> meta = OdbcUtils.convertMetadata(columns, ver);
+            Collection<OdbcColumnMeta> meta = OdbcUtils.convertMetadata(columns);
 
             OdbcQueryGetResultsetMetaResult res = new OdbcQueryGetResultsetMetaResult(meta);
 

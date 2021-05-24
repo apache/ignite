@@ -50,15 +50,18 @@ public class DecisionTreeRegressionFromSparkExample {
     public static final String SPARK_MDL_PATH = "examples/src/main/resources/models/spark/serialized/dtreg";
 
     /** Learning environment. */
-    public static final LearningEnvironment env = LearningEnvironmentBuilder.defaultBuilder().withParallelismStrategyTypeDependency(ParallelismStrategy.ON_DEFAULT_POOL)
-        .withLoggingFactoryDependency(ConsoleLogger.Factory.HIGH).buildForTrainer();
+    public static final LearningEnvironment env =
+        LearningEnvironmentBuilder.defaultBuilder().withParallelismStrategyTypeDependency(ParallelismStrategy.ON_DEFAULT_POOL)
+            .withLoggingFactoryDependency(ConsoleLogger.Factory.HIGH).buildForTrainer();
 
     /**
      * Run example.
      */
     public static void main(String[] args) throws FileNotFoundException {
         System.out.println();
-        System.out.println(">>> Decision tree regression model loaded from Spark through serialization over partitioned dataset usage example started.");
+        System.out.println(
+            ">>> Decision tree regression model loaded from Spark through serialization over partitioned dataset usage example started."
+        );
         // Start ignite grid.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");

@@ -65,6 +65,7 @@
     <ClCompile Include="..\..\src\cache_invoke_test.cpp" />
     <ClCompile Include="..\..\src\cluster_group_test.cpp" />
     <ClCompile Include="..\..\src\cluster_node_test.cpp" />
+    <ClCompile Include="..\..\src\cluster_test.cpp" />
     <ClCompile Include="..\..\src\compute_test.cpp" />
     <ClCompile Include="..\..\src\concurrent_test.cpp" />
     <ClCompile Include="..\..\src\date_time_test.cpp" />

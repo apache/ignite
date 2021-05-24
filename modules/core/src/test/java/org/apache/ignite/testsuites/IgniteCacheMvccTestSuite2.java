@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.List;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.rendezvous.ClusterNodeAttributeAffinityBackupFilterSelfTest;
+import org.apache.ignite.cache.affinity.rendezvous.ClusterNodeAttributeColocatedBackupFilterSelfTest;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionBackupFilterSelfTest;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionExcludeNeighborsSelfTest;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionFastPowerOfTwoHashSelfTest;
@@ -168,6 +169,7 @@ public class IgniteCacheMvccTestSuite2 {
         ignoredTests.add(GridCachePartitionedProjectionAffinitySelfTest.class);
         ignoredTests.add(RendezvousAffinityFunctionBackupFilterSelfTest.class);
         ignoredTests.add(ClusterNodeAttributeAffinityBackupFilterSelfTest.class);
+        ignoredTests.add(ClusterNodeAttributeColocatedBackupFilterSelfTest.class);
         ignoredTests.add(NonAffinityCoordinatorDynamicStartStopTest.class);
 
         ignoredTests.add(NoneRebalanceModeSelfTest.class);
@@ -201,7 +203,8 @@ public class IgniteCacheMvccTestSuite2 {
         ignoredTests.add(GridCachePartitionedTxSingleThreadedSelfTest.class); // See GridCachePartitionedMvccTxSingleThreadedSelfTest
         ignoredTests.add(GridCacheColocatedTxSingleThreadedSelfTest.class); // See GridCacheColocatedMvccTxSingleThreadedSelfTest
         ignoredTests.add(GridCachePartitionedTxMultiThreadedSelfTest.class); // See GridCachePartitionedMvccTxMultiThreadedSelfTest
-        ignoredTests.add(GridCachePartitionedNearDisabledTxMultiThreadedSelfTest.class); // See GridCachePartitionedNearDisabledMvccTxMultiThreadedSelfTest
+        // See GridCachePartitionedNearDisabledMvccTxMultiThreadedSelfTest
+        ignoredTests.add(GridCachePartitionedNearDisabledTxMultiThreadedSelfTest.class);
         ignoredTests.add(GridCachePartitionedTxTimeoutSelfTest.class); // See GridCachePartitionedMvccTxTimeoutSelfTest
 
         ignoredTests.add(GridCacheColocatedDebugTest.class);

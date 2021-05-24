@@ -18,6 +18,7 @@
 <beans xmlns="http://www.springframework.org/schema/beans" xmlns:util="http://www.springframework.org/schema/util" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="         http://www.springframework.org/schema/beans         http://www.springframework.org/schema/beans/spring-beans.xsd         http://www.springframework.org/schema/util         http://www.springframework.org/schema/util/spring-util.xsd">
     <!-- tag::ignite-config[] -->
     <bean class="org.apache.ignite.configuration.IgniteConfiguration">
+        <!-- tag::encryption[] -->
         <!-- We need to configure EncryptionSpi to enable encryption feature. -->
         <property name="encryptionSpi">
             <!-- Using EncryptionSpi implementation based on java keystore. -->
@@ -32,6 +33,7 @@
                 <property name="keySize" value="256"/>
             </bean>
         </property>
+        <!-- end::encryption[] -->
         <!-- tag::cache[] -->
         <property name="cacheConfiguration">
             <bean class="org.apache.ignite.configuration.CacheConfiguration">
@@ -40,7 +42,6 @@
             </bean>
         </property>
         <!-- end::cache[] -->
-
         <!-- tag::discovery[] -->
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
@@ -56,6 +57,18 @@
             </bean>
         </property>
         <!-- end::discovery[] -->
+        <!-- tag::reencryption[] -->
+        <property name="dataStorageConfiguration">
+            <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
+                <property name="encryptionConfiguration">
+                    <bean class="org.apache.ignite.configuration.EncryptionConfiguration">
+                        <!-- Set re-encryption rate limit to 10.3 MB/s. -->
+                        <property name="reencryptionRateLimit" value="10.3"/>
+                    </bean>
+                </property>
+            </bean>
+        </property>
+        <!-- end::reencryption[] -->
     </bean>
     <!-- end::ignite-config[] -->
 </beans>
