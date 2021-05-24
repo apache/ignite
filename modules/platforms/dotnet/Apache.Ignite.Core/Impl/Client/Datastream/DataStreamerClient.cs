@@ -352,13 +352,12 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             bool onSocketThread = false)
         {
             // NOTE: when onSocketThread is true, we are on socket receiver thread - don't perform any heavy operations.
-            var entries = buffer.Entries;
 
             if (exception == null)
             {
-                PrintEntries(entries, "SENT");
+                PrintEntries(buffer.Entries, "SENT");
 
-                ReturnArray(entries);
+                ReturnArray(buffer.Entries);
                 tcs.SetResult(null);
 
                 return;
@@ -369,7 +368,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             {
                 // Socket is still connected: this error does not need to be retried.
                 Console.WriteLine(">>>> NON_RETRY_ERROR: " + exception); // TODO
-                ReturnArray(entries);
+                ReturnArray(buffer.Entries);
                 tcs.SetException(exception);
 
                 return;
@@ -379,11 +378,11 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             if (onSocketThread)
             {
                 // Release receiver thread, perform retry on a separate thread.
-                ThreadPool.QueueUserWorkItem(_ => FlushBufferRetry(buffer, socket, tcs, userRequested, entries));
+                ThreadPool.QueueUserWorkItem(_ => FlushBufferRetry(buffer, socket, tcs, userRequested));
             }
             else
             {
-                FlushBufferRetry(buffer, socket, tcs, userRequested, entries);
+                FlushBufferRetry(buffer, socket, tcs, userRequested);
             }
         }
 
@@ -404,8 +403,11 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             Console.WriteLine($">>>> {prefix}: {sb}");
         }
 
-        private void FlushBufferRetry(DataStreamerClientBuffer<TK, TV> buffer, ClientSocket socket, TaskCompletionSource<object> tcs,
-            bool userRequested, DataStreamerClientEntry<TK, TV>[] entries)
+        private void FlushBufferRetry(
+            DataStreamerClientBuffer<TK, TV> buffer,
+            ClientSocket failedSocket,
+            TaskCompletionSource<object> tcs,
+            bool userRequested)
         {
             Console.WriteLine(">>>> RETRY");
 
@@ -414,7 +416,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 // Connection failed. Remove disconnected socket from the map.
                 // TODO: This possibly removes a buffer that was never flushed.
                 DataStreamerClientPerNodeBuffer<TK, TV> removed;
-                _buffers.TryRemove(socket, out removed);
+                _buffers.TryRemove(failedSocket, out removed);
 
                 if (removed != null)
                 {
@@ -429,6 +431,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
                 // Re-add entries to other buffers.
                 var count = buffer.Count;
+                var entries = buffer.Entries;
 
                 for (var i = 0; i < count; i++)
                 {
@@ -450,14 +453,14 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
             catch (Exception e)
             {
-                Console.WriteLine(">>>> Failed to retry flush: " + e);  // TODO
+                Console.WriteLine(">>>> Failed to retry flush: " + e);  // TODO: Retry again!
 
                 tcs.SetException(e);
             }
             finally
             {
-                // TODO: This may lose entries?
-                ReturnArray(entries);
+                // TODO: This may lose entries in case of exception.
+                ReturnArray(buffer.Entries);
             }
         }
 

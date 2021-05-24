@@ -104,7 +104,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         [Test]
         public void TestStreamerDoesNotLoseDataOnRandomTopologyChanges()
         {
-            const int maxNodes = 7;
+            const int maxNodes = 5;
 
             var nodes = new Queue<IIgnite>();
             nodes.Enqueue(StartServer());

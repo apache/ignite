@@ -43,7 +43,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         private volatile DataStreamerClientBuffer<TK, TV> _buffer;
 
         /** */
-        private volatile bool _closed = false;
+        private volatile bool _closed;
 
         public DataStreamerClientPerNodeBuffer(DataStreamerClient<TK, TV> client, ClientSocket socket)
         {
