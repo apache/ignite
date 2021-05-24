@@ -141,13 +141,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 {
                     if (nodes.Count <= 2 || (nodes.Count < maxNodes && TestUtils.Random.Next(2) == 0))
                     {
-                        // var size = cache.GetSize();
-                        var newServer = StartServer();
-                        nodes.Enqueue(newServer);
-
-                        // TestUtils.WaitForTrueCondition(() => newServer.GetCacheNames().Contains(cache.Name));
-                        // var serverCache = newServer.GetCache<int, int>(cache.Name);
-                        // TestUtils.WaitForTrueCondition(() => serverCache.GetSize() >= size);
+                        nodes.Enqueue(StartServer());
                     }
                     else
                     {
