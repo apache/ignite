@@ -492,33 +492,43 @@ public class Row implements BinaryRow {
      * @return Encoded offset (from the row start) of the requested fixlen column.
      */
     int fixlenColumnOffset(Columns cols, int baseOff, int idx, boolean hasVarTbl, boolean hasNullMap) {
-        int off = 0;
+        int colOff = 0;
 
         int payloadOff = baseOff + CHUNK_LEN_FIELD_SIZE;
 
-        if (hasNullMap) {
-            payloadOff += cols.nullMapSize();
-
-            int nullMapOff = nullMapOffset(baseOff);
-
-            int nullMapIdx = idx / 8;
-
-            // Fold offset based on the whole map bytes in the schema
-            for (int i = 0; i < nullMapIdx; i++)
-                off += cols.foldFixedLength(i, readByte(nullMapOff + i));
+        // Calculate fixlen column offset.
+        {
+            int colByteIdx = idx / 8;
 
             // Set bits starting from posInByte, inclusive, up to either the end of the byte or the last column index, inclusive
             int startBit = idx % 8;
-            int endBit = nullMapIdx == cols.nullMapSize() - 1 ? ((cols.numberOfFixsizeColumns() - 1) % 8) : 7;
+            int endBit = colByteIdx == (cols.length() + 7) / 8 - 1 ? ((cols.numberOfFixsizeColumns() - 1) % 8) : 7;
             int mask = (0xFF >> (7 - endBit)) & (0xFF << startBit);
 
-            off += cols.foldFixedLength(nullMapIdx, readByte(nullMapOff + nullMapIdx) | mask);
+            if (hasNullMap) {
+                payloadOff += cols.nullMapSize();
+
+                // Fold offset based on the whole map bytes in the schema
+                for (int i = 0; i < colByteIdx; i++)
+                    colOff += cols.foldFixedLength(i, readByte(nullMapOffset(baseOff) + i));
+
+                colOff += cols.foldFixedLength(colByteIdx, readByte(nullMapOffset(baseOff) + colByteIdx) | mask);
+            }
+            else {
+                for (int i = 0; i < colByteIdx; i++)
+                    colOff += cols.foldFixedLength(i, 0);
+
+                colOff += cols.foldFixedLength(colByteIdx, mask);
+            }
         }
 
-        if (hasVarTbl)
-            payloadOff += varlenItemOffset(readShort(payloadOff));
+        if (hasVarTbl) {
+            short verlenItems = readShort(payloadOff);
 
-        return payloadOff + off;
+            payloadOff += varlenItemOffset(verlenItems);
+        }
+
+        return payloadOff + colOff;
     }
 
     /**

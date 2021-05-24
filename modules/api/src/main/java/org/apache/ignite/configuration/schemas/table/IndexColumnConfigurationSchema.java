@@ -30,6 +30,6 @@ public class IndexColumnConfigurationSchema {
     String name;
 
     /** Ascending flag. */
-    @Value
-    boolean asc;
+    @Value(hasDefault = true)
+    boolean asc = true;
 }

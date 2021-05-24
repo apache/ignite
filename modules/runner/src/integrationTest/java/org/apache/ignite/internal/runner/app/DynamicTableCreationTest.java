@@ -24,6 +24,7 @@ import org.apache.ignite.app.Ignite;
 import org.apache.ignite.app.IgnitionManager;
 import org.apache.ignite.internal.schema.SchemaManager;
 import org.apache.ignite.lang.IgniteLogger;
+import org.apache.ignite.table.KeyValueBinaryView;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;
 import org.junit.jupiter.api.Disabled;
@@ -31,6 +32,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Ignition interface tests.
@@ -82,21 +84,21 @@ class DynamicTableCreationTest {
      */
     @Test
     void testDynamicSimpleTableCreation() {
-        List<Ignite> clusterNodex = new ArrayList<>();
+        List<Ignite> clusterNodes = new ArrayList<>();
 
         for (String nodeBootstrapCfg : nodesBootstrapCfg)
-            clusterNodex.add(IgnitionManager.start(nodeBootstrapCfg));
+            clusterNodes.add(IgnitionManager.start(nodeBootstrapCfg));
 
-        assertEquals(3, clusterNodex.size());
+        assertEquals(3, clusterNodes.size());
 
         // Create table on node 0.
-        clusterNodex.get(0).tables().createTable("tbl1", tbl -> tbl
+        clusterNodes.get(0).tables().createTable("tbl1", tbl -> tbl
             .changeName("tbl1")
             .changeReplicas(1)
             .changePartitions(10)
             .changeColumns(cols -> cols
-                .create("key", c -> c.changeName("key").changeNullable(false).changeType(t -> t.changeType("int")))
-                .create("val", c -> c.changeName("val").changeNullable(true).changeType(t -> t.changeType("int")))
+                .create("key", c -> c.changeName("key").changeNullable(false).changeType(t -> t.changeType("INT64")))
+                .create("val", c -> c.changeName("val").changeNullable(true).changeType(t -> t.changeType("INT32")))
             )
             .changeIndices(idxs -> idxs
                 .create("PK", idx -> idx
@@ -104,17 +106,33 @@ class DynamicTableCreationTest {
                     .changeType("PRIMARY")
                     .changeColNames(new String[] {"key"})
                     .changeColumns(c -> c
-                        .create("key", t -> t.changeName("key").changeAsc(true)))
+                        .create("key", t -> t.changeName("key")))
                     .changeAffinityColumns(new String[] {"key"}))
             ));
 
         // Put data on node 1.
-        Table tbl1 = waitForTable(clusterNodex.get(1));
-        tbl1.insert(tbl1.tupleBuilder().set("key", 1).set("val", 111).build());
+        Table tbl1 = waitForTable(clusterNodes.get(1));
+        KeyValueBinaryView kvView1 = tbl1.kvView();
+
+        tbl1.insert(tbl1.tupleBuilder().set("key", 1L).set("val", 111).build());
+        kvView1.put(tbl1.tupleBuilder().set("key", 2L).build(), tbl1.tupleBuilder().set("val", 222).build());
 
         // Get data on node 2.
-        Table tbl2 = waitForTable(clusterNodex.get(2));
-        assertEquals(111, (int)tbl2.get(tbl2.tupleBuilder().set("key", 1).build()).value("val"));
+        Table tbl2 = waitForTable(clusterNodes.get(2));
+        KeyValueBinaryView kvView2 = tbl2.kvView();
+
+        final Tuple keyTuple1 = tbl2.tupleBuilder().set("key", 1L).build();
+        final Tuple keyTuple2 = kvView2.tupleBuilder().set("key", 2L).build();
+
+        assertThrows(IllegalArgumentException.class, () -> kvView2.get(keyTuple1).value("key"));
+        assertThrows(IllegalArgumentException.class, () -> kvView2.get(keyTuple1).value("key"));
+        assertEquals(1, (Long)tbl2.get(keyTuple1).value("key"));
+        assertEquals(2, (Long)tbl2.get(keyTuple2).value("key"));
+
+        assertEquals(111, (Integer)tbl2.get(keyTuple1).value("val"));
+        assertEquals(111, (Integer)kvView2.get(keyTuple1).value("val"));
+        assertEquals(222, (Integer)tbl2.get(keyTuple2).value("val"));
+        assertEquals(222, (Integer)kvView2.get(keyTuple2).value("val"));
     }
 
     /**
@@ -154,11 +172,11 @@ class DynamicTableCreationTest {
             .changeReplicas(1)
             .changePartitions(10)
             .changeColumns(cols -> cols
-                .create("key", c -> c.changeName("key").changeNullable(false).changeType(t -> t.changeType("uuid")))
-                .create("affKey", c -> c.changeName("affKey").changeNullable(false).changeType(t -> t.changeType("int")))
-                .create("valStr", c -> c.changeName("valStr").changeNullable(true).changeType(t -> t.changeType("string")))
-                .create("valInt", c -> c.changeName("valInt").changeNullable(true).changeType(t -> t.changeType("int")))
-                .create("valNullable", c -> c.changeName("valNullable").changeNullable(true).changeType(t -> t.changeType("short")).changeNullable(true))
+                .create("key", c -> c.changeName("key").changeNullable(false).changeType(t -> t.changeType("UUID")))
+                .create("affKey", c -> c.changeName("affKey").changeNullable(false).changeType(t -> t.changeType("INT64")))
+                .create("valStr", c -> c.changeName("valStr").changeNullable(true).changeType(t -> t.changeType("STRING")))
+                .create("valInt", c -> c.changeName("valInt").changeNullable(true).changeType(t -> t.changeType("INT32")))
+                .create("valNull", c -> c.changeName("valNull").changeNullable(true).changeType(t -> t.changeType("INT16")).changeNullable(true))
             )
             .changeIndices(idxs -> idxs
                 .create("PK", idx -> idx
@@ -167,23 +185,56 @@ class DynamicTableCreationTest {
                     .changeColNames(new String[] {"key", "affKey"})
                     .changeColumns(c -> c
                         .create("key", t -> t.changeName("key").changeAsc(true))
-                        .create("affKey", t -> t.changeName("affKey").changeAsc(true)))
+                        .create("affKey", t -> t.changeName("affKey").changeAsc(false)))
                     .changeAffinityColumns(new String[] {"affKey"}))
             ));
 
         final UUID uuid = UUID.randomUUID();
+        final UUID uuid2 = UUID.randomUUID();
 
         // Put data on node 1.
         Table tbl1 = waitForTable(clusterNodes.get(1));
-        tbl1.insert(tbl1.tupleBuilder().set("key", uuid).set("affKey", 42)
-            .set("valStr", "String value").set("valInt", 73).set("valNullable", null).build());
+        KeyValueBinaryView kvView1 = tbl1.kvView();
+
+        tbl1.insert(tbl1.tupleBuilder().set("key", uuid).set("affKey", 42L)
+            .set("valStr", "String value").set("valInt", 73).set("valNull", null).build());
+
+        kvView1.put(kvView1.tupleBuilder().set("key", uuid2).set("affKey", 4242L).build(),
+            kvView1.tupleBuilder().set("valStr", "String value 2").set("valInt", 7373).set("valNull", null).build());
 
         // Get data on node 2.
         Table tbl2 = waitForTable(clusterNodes.get(2));
-        final Tuple val = tbl2.get(tbl2.tupleBuilder().set("key", uuid).set("affKey", 42).build());
+        KeyValueBinaryView kvView2 = tbl2.kvView();
 
-        assertEquals("String value", val.value("valStr"));
-        assertEquals(73, (int)val.value("valInt"));
-        assertNull(val.value("valNullable"));
+        final Tuple keyTuple1 = tbl2.tupleBuilder().set("key", uuid).set("affKey", 42L).build();
+        final Tuple keyTuple2 = tbl2.tupleBuilder().set("key", uuid2).set("affKey", 4242L).build();
+
+        // KV view must NOT return key columns in value.
+        assertThrows(IllegalArgumentException.class, () -> kvView2.get(keyTuple1).value("key"));
+        assertThrows(IllegalArgumentException.class, () -> kvView2.get(keyTuple1).value("affKey"));
+        assertThrows(IllegalArgumentException.class, () -> kvView2.get(keyTuple2).value("key"));
+        assertThrows(IllegalArgumentException.class, () -> kvView2.get(keyTuple2).value("affKey"));
+
+        // Record binary view MUST return key columns in value.
+        assertEquals(uuid, tbl2.get(keyTuple1).value("key"));
+        assertEquals(42L, (Long)tbl2.get(keyTuple1).value("affKey"));
+        assertEquals(uuid2, tbl2.get(keyTuple2).value("key"));
+        assertEquals(4242L, (Long)tbl2.get(keyTuple2).value("affKey"));
+
+        assertEquals("String value", tbl2.get(keyTuple1).value("valStr"));
+        assertEquals(73, (Integer)tbl2.get(keyTuple1).value("valInt"));
+        assertNull(tbl2.get(keyTuple1).value("valNull"));
+
+        assertEquals("String value 2", tbl2.get(keyTuple2).value("valStr"));
+        assertEquals(7373, (Integer)tbl2.get(keyTuple2).value("valInt"));
+        assertNull(tbl2.get(keyTuple2).value("valNull"));
+
+        assertEquals("String value", kvView2.get(keyTuple1).value("valStr"));
+        assertEquals(73, (Integer)kvView2.get(keyTuple1).value("valInt"));
+        assertNull(kvView2.get(keyTuple1).value("valNull"));
+
+        assertEquals("String value 2", kvView2.get(keyTuple2).value("valStr"));
+        assertEquals(7373, (Integer)kvView2.get(keyTuple2).value("valInt"));
+        assertNull(kvView2.get(keyTuple2).value("valNull"));
     }
 }

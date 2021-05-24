@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.app.Ignite;
 import org.apache.ignite.app.IgnitionManager;
+import org.apache.ignite.table.KeyValueBinaryView;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;
 import org.junit.jupiter.api.Assertions;
@@ -162,29 +163,58 @@ class TableCreationTest {
 
         clusterNodes.forEach(Assertions::assertNotNull);
 
-        { /* Table 1.*/
+        { /* Table 1. */
             Table tbl1 = clusterNodes.get(1).tables().table("tbl1");
-            tbl1.insert(tbl1.tupleBuilder().set("key", 1L).set("val", 111L).build());
+            KeyValueBinaryView kvView1 = tbl1.kvView();
+
+            tbl1.insert(tbl1.tupleBuilder().set("key", 1L).set("val", 111).build());
+            kvView1.put(tbl1.tupleBuilder().set("key", 2L).build(), tbl1.tupleBuilder().set("val", 222).build());
 
             Table tbl2 = clusterNodes.get(2).tables().table("tbl1");
-            assertEquals(111L, tbl2.get(tbl2.tupleBuilder().set("key", 1L).build()));
+            KeyValueBinaryView kvView2 = tbl2.kvView();
+
+            final Tuple keyTuple1 = tbl2.tupleBuilder().set("key", 1L).build();
+            final Tuple keyTuple2 = kvView2.tupleBuilder().set("key", 2L).build();
+
+            assertEquals(111, (Integer)tbl2.get(keyTuple1).value("val"));
+            assertEquals(111, (Integer)kvView1.get(keyTuple1).value("val"));
+            assertEquals(222, (Integer)tbl2.get(keyTuple2).value("val"));
+            assertEquals(222, (Integer)kvView1.get(keyTuple2).value("val"));
         }
 
         { /* Table 2. */
             final UUID uuid = UUID.randomUUID();
+            final UUID uuid2 = UUID.randomUUID();
 
             // Put data on node 1.
             Table tbl1 = clusterNodes.get(1).tables().table("tbl1");
+            KeyValueBinaryView kvView1 = tbl1.kvView();
+
             tbl1.insert(tbl1.tupleBuilder().set("key", uuid).set("affKey", 42L)
-                .set("valStr", "String value").set("valInt", 73L).set("valNullable", null).build());
+                .set("valStr", "String value").set("valInt", 73).set("valNullable", null).build());
+
+            kvView1.put(kvView1.tupleBuilder().set("key", uuid2).set("affKey", 4242L).build(),
+                kvView1.tupleBuilder().set("valStr", "String value 2").set("valInt", 7373).set("valNullable", null).build());
 
             // Get data on node 2.
             Table tbl2 = clusterNodes.get(2).tables().table("tbl1");
-            final Tuple val = tbl2.get(tbl1.tupleBuilder().set("key", uuid).set("affKey", 42L).build());
+            KeyValueBinaryView kvView2 = tbl2.kvView();
 
-            assertEquals("String value", val.value("valStr"));
-            assertEquals(73L, (Long)val.value("valInt"));
-            assertNull(val.value("valNullable"));
+            final Tuple keyTuple1 = tbl2.tupleBuilder().set("key", uuid).set("affKey", 42L).build();
+            final Tuple keyTuple2 = kvView2.tupleBuilder().set("key", uuid2).set("affKey", 4242L).build();
+
+            assertEquals("String value", tbl2.get(keyTuple1).value("valStr"));
+            assertEquals("String value", kvView2.get(keyTuple1).value("valStr"));
+            assertEquals("String value 2", tbl2.get(keyTuple2).value("valStr"));
+            assertEquals("String value 2", kvView2.get(keyTuple2).value("valStr"));
+            assertEquals(73, (Integer)tbl2.get(keyTuple1).value("valInt"));
+            assertEquals(73, (Integer)kvView2.get(keyTuple1).value("valInt"));
+            assertEquals(7373, (Integer)tbl2.get(keyTuple2).value("valInt"));
+            assertEquals(7373, (Integer)kvView2.get(keyTuple2).value("valInt"));
+            assertNull(tbl2.get(keyTuple1).value("valNullable"));
+            assertNull(kvView2.get(keyTuple1).value("valNullable"));
+            assertNull(tbl2.get(keyTuple2).value("valNullable"));
+            assertNull(kvView2.get(keyTuple2).value("valNullable"));
         }
     }
 }

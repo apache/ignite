@@ -40,11 +40,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * Tests row assembling and reading.
  */
 public class RowTest {
-    /** */
+    /** Random. */
     private Random rnd;
 
     /**
-     *
+     * Initialization.
      */
     @BeforeEach
     public void initRandom() {
@@ -56,10 +56,42 @@ public class RowTest {
     }
 
     /**
-     *
+     * Check row serialization for schema with nullable fix-sized columns only.
      */
     @Test
-    public void fixedSizes() {
+    public void nullableFixSizedColumns() {
+        Column[] keyCols = new Column[] {
+            new Column("keyByteCol", BYTE, false),
+            new Column("keyShortCol", SHORT, false),
+            new Column("keyIntCol", INTEGER, false),
+            new Column("keyLongCol", LONG, false),
+            new Column("keyFloatCol", FLOAT, false),
+            new Column("keyDoubleCol", DOUBLE, false),
+            new Column("keyUuidCol", UUID, false),
+            new Column("keyBitmask1Col", NativeTypes.bitmaskOf(4), false),
+            new Column("keyBitmask2Col", NativeTypes.bitmaskOf(22), false)
+        };
+
+        Column[] valCols = new Column[] {
+            new Column("valByteCol", BYTE, false),
+            new Column("valShortCol", SHORT, false),
+            new Column("valIntCol", INTEGER, false),
+            new Column("valLongCol", LONG, false),
+            new Column("valFloatCol", FLOAT, false),
+            new Column("valDoubleCol", DOUBLE, false),
+            new Column("valUuidCol", UUID, false),
+            new Column("valBitmask1Col", NativeTypes.bitmaskOf(4), false),
+            new Column("valBitmask2Col", NativeTypes.bitmaskOf(22), false)
+        };
+
+        checkSchema(keyCols, valCols);
+    }
+
+    /**
+     * Check row serialization for schema with non-nullable fix-sized columns only.
+     */
+    @Test
+    public void fixSizedColumns() {
         Column[] keyCols = new Column[] {
             new Column("keyByteCol", BYTE, true),
             new Column("keyShortCol", SHORT, true),
@@ -88,17 +120,17 @@ public class RowTest {
     }
 
     /**
-     *
+     * Check row serialization for schema with various columns.
      */
     @Test
-    public void variableSizes() {
+    public void mixedColumns() {
         Column[] keyCols = new Column[] {
-            new Column("keyByteCol", BYTE, true),
-            new Column("keyShortCol", SHORT, true),
-            new Column("keyIntCol", INTEGER, true),
-            new Column("keyLongCol", LONG, true),
-            new Column("keyBytesCol", BYTES, true),
-            new Column("keyStringCol", STRING, true),
+            new Column("keyByteCol", BYTE, false),
+            new Column("keyShortCol", SHORT, false),
+            new Column("keyIntCol", INTEGER, false),
+            new Column("keyLongCol", LONG, false),
+            new Column("keyBytesCol", BYTES, false),
+            new Column("keyStringCol", STRING, false),
         };
 
         Column[] valCols = new Column[] {
@@ -114,10 +146,28 @@ public class RowTest {
     }
 
     /**
-     *
+     * Check row serialization for schema with non-nullable varlen columns only.
      */
     @Test
-    public void mixedSizes() {
+    public void varlenColumns() {
+        Column[] keyCols = new Column[] {
+            new Column("keyBytesCol", BYTES, false),
+            new Column("keyStringCol", STRING, false),
+        };
+
+        Column[] valCols = new Column[] {
+            new Column("valBytesCol", BYTES, false),
+            new Column("valStringCol", STRING, false),
+        };
+
+        checkSchema(keyCols, valCols);
+    }
+
+    /**
+     * Check row serialization for schema with nullable varlen columns only.
+     */
+    @Test
+    public void nullableVarlenColumns() {
         Column[] keyCols = new Column[] {
             new Column("keyBytesCol", BYTES, true),
             new Column("keyStringCol", STRING, true),
@@ -132,7 +182,10 @@ public class RowTest {
     }
 
     /**
+     * Checks schema is independent from prodived column order.
      *
+     * @param keyCols Key columns.
+     * @param valCols Value columns.
      */
     private void checkSchema(Column[] keyCols, Column[] valCols) {
         checkSchemaShuffled(keyCols, valCols);
@@ -144,38 +197,38 @@ public class RowTest {
     }
 
     /**
+     * Checks schema for given columns.
      *
+     * @param keyCols Key columns.
+     * @param valCols Value columns.
      */
     private void checkSchemaShuffled(Column[] keyCols, Column[] valCols) {
         SchemaDescriptor sch = new SchemaDescriptor(java.util.UUID.randomUUID(), 1, keyCols, valCols);
 
-        Object[] checkArr = sequence(sch);
+        Object[] checkArr = generateRowValues(sch);
 
         checkValues(sch, checkArr);
 
-        while (checkArr[0] != null) {
-            int idx = 0;
+        for (int idx = 0; idx < checkArr.length; idx++) {
+            if (!sch.column(idx).nullable())
+                continue;
 
             Object prev = checkArr[idx];
             checkArr[idx] = null;
 
             checkValues(sch, checkArr);
 
-            while (idx < checkArr.length - 1 && checkArr[idx + 1] != null) {
-                checkArr[idx] = prev;
-                prev = checkArr[idx + 1];
-                checkArr[idx + 1] = null;
-                idx++;
-
-                checkValues(sch, checkArr);
-            }
+            checkArr[idx] = prev;
         }
     }
 
     /**
+     * Generate row values for given row schema.
      *
+     * @param schema Row schema.
+     * @return Row values.
      */
-    private Object[] sequence(SchemaDescriptor schema) {
+    private Object[] generateRowValues(SchemaDescriptor schema) {
         Object[] res = new Object[schema.length()];
 
         for (int i = 0; i < res.length; i++) {
@@ -188,14 +241,20 @@ public class RowTest {
     }
 
     /**
+     * Generates random value of a given type.
      *
+     * @param type Value type.
+     * @return Random value of requested type.
      */
     private Object generateRandomValue(NativeType type) {
         return TestUtils.generateRandomValue(rnd, type);
     }
 
     /**
+     * Validates row values after serialization-then-deserialization.
      *
+     * @param schema Row schema.
+     * @param vals Row values.
      */
     private void checkValues(SchemaDescriptor schema, Object... vals) {
         assertEquals(schema.keyColumns().length() + schema.valueColumns().length(), vals.length);
@@ -312,7 +371,7 @@ public class RowTest {
     }
 
     /**
-     *
+     * Shuffle columns.
      */
     private void shuffle(Column[] cols) {
         Collections.shuffle(Arrays.asList(cols));

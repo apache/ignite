@@ -252,13 +252,13 @@ public class SchemaManager extends Producer<SchemaEvent, SchemaEventParameters> 
      */
     private NativeType createType(ColumnTypeView type) {
         switch (type.type().toLowerCase()) {
-            case "byte":
+            case "int8":
                 return NativeTypes.BYTE;
-            case "short":
+            case "int16":
                 return NativeTypes.SHORT;
-            case "int":
+            case "int32":
                 return NativeTypes.INTEGER;
-            case "long":
+            case "int64":
                 return NativeTypes.LONG;
             case "float":
                 return NativeTypes.FLOAT;
@@ -267,11 +267,13 @@ public class SchemaManager extends Producer<SchemaEvent, SchemaEventParameters> 
             case "uuid":
                 return NativeTypes.UUID;
             case "bitmask":
+                assert type.length() > 0;
+
                 return NativeTypes.bitmaskOf(type.length());
             case "string":
                 return type.length() == 0 ? NativeTypes.STRING : NativeTypes.stringOf(type.length());
             case "bytes":
-                return NativeTypes.blobOf(type.length());
+                return type.length() == 0 ? NativeTypes.BYTES : NativeTypes.blobOf(type.length());
 
             default:
                 throw new IllegalStateException("Unsupported column type: " + type.type());

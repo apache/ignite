@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.schema;
 
+import org.apache.ignite.internal.schema.registry.SchemaRegistryException;
+import org.jetbrains.annotations.NotNull;
+
 /**
  * Table schema registry interface.
  */
@@ -29,6 +32,7 @@ public interface SchemaRegistry {
     /**
      * @param ver Schema version.
      * @return Schema of given version.
+     * @throws SchemaRegistryException If schema was not found.
      */
-    SchemaDescriptor schema(int ver);
+    @NotNull SchemaDescriptor schema(int ver) throws SchemaRegistryException;
 }
