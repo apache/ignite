@@ -72,7 +72,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
                 while (true)
                 {
-                    var buffer = GetBuffer();
+                    var buffer = _buffer;
 
                     if (buffer.Add(entry))
                     {
@@ -96,13 +96,21 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
         }
 
-        public void Close()
+        /// <summary>
+        /// Closes this instance and returns the remaining buffer, if any.
+        /// </summary>
+        public DataStreamerClientBuffer<TK, TV> Close()
         {
             _rwLock.EnterWriteLock();
 
             try
             {
                 _closed = true;
+
+                var buffer = _buffer;
+
+                // If the buffer was not yet flushed, we mark it as flushed and return.
+                return buffer.MarkFlushed() ? buffer : null;
             }
             finally
             {
@@ -112,7 +120,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         public Task FlushAllAsync()
         {
-            var buffer = GetBuffer();
+            var buffer = _buffer;
             buffer.ScheduleFlush(userRequested: true);
 
             return buffer.GetChainFlushTask();
@@ -122,18 +130,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         {
             // Stateless mode: every client client-side buffer creates a one-off streamer on the server.
             return _client.FlushBufferAsync(buffer, _socket, _semaphore, userRequested);
-        }
-
-        private DataStreamerClientBuffer<TK, TV> GetBuffer()
-        {
-            var buffer = _buffer;
-
-            if (buffer == null)
-            {
-                throw new ObjectDisposedException("DataStreamerClient", "Data streamer has been disposed");
-            }
-
-            return buffer;
         }
     }
 }

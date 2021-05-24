@@ -165,6 +165,26 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             return true;
         }
 
+        public bool MarkFlushed()
+        {
+            _rwLock.EnterWriteLock();
+
+            try
+            {
+                if (_flushing || _flushed)
+                {
+                    return false;
+                }
+
+                _flushed = true;
+                return true;
+            }
+            finally
+            {
+                _rwLock.ExitWriteLock();
+            }
+        }
+
         private void TryRunFlushAction(bool userRequested)
         {
             _rwLock.EnterWriteLock();

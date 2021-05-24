@@ -274,7 +274,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
         }
 
-        private Task FlushInternalAsync(DataStreamerClientPerNodeBuffer<TK, TV> additionalBuffer = null)
+        private Task FlushInternalAsync()
         {
             if (_buffers.IsEmpty)
             {
@@ -291,16 +291,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 if (task != null && !task.IsCompleted)
                 {
                     tasks.Add(task);
-                }
-            }
-
-            if (additionalBuffer != null)
-            {
-                var additionalTask = additionalBuffer.FlushAllAsync();
-
-                if (additionalTask != null && !additionalTask.IsCompleted)
-                {
-                    tasks.Add(additionalTask);
                 }
             }
 
@@ -440,27 +430,19 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 _buffers.TryRemove(failedSocket, out removed);
 
                 // Re-add entries to other buffers.
-                var count = buffer.Count;
-                var entries = buffer.Entries;
+                ReAddEntriesAndReturnBuffer(buffer);
 
-                for (var i = 0; i < count; i++)
+                if (removed != null)
                 {
-                    var entry = entries[i];
+                    var remaining = removed.Close();
 
-                    if (!entry.IsEmpty)
+                    if (remaining != null)
                     {
-                        Console.WriteLine(">>>> RETRY " + entry.Key);
-                        AddNoLock(entry);
+                        ReAddEntriesAndReturnBuffer(remaining);
                     }
                 }
 
-                ReturnArray(entries);
-
-                removed?.Close();
-
-                // TODO: Flush removed
-                FlushInternalAsync(additionalBuffer: null)
-                    .ContinueWith(flushTask => flushTask.SetAsResult(tcs));
+                FlushInternalAsync().ContinueWith(flushTask => flushTask.SetAsResult(tcs));
             }
             catch (Exception e)
             {
@@ -468,6 +450,25 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
                 tcs.SetException(e);
             }
+        }
+
+        private void ReAddEntriesAndReturnBuffer(DataStreamerClientBuffer<TK, TV> buffer)
+        {
+            var count = buffer.Count;
+            var entries = buffer.Entries;
+
+            for (var i = 0; i < count; i++)
+            {
+                var entry = entries[i];
+
+                if (!entry.IsEmpty)
+                {
+                    Console.WriteLine(">>>> RETRY " + entry.Key);
+                    AddNoLock(entry);
+                }
+            }
+
+            ReturnArray(entries);
         }
 
         private void WriteBuffer(DataStreamerClientBuffer<TK, TV> buffer, BinaryWriter w)
