@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Client;
@@ -347,12 +348,27 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
             if (exception == null)
             {
+                var sb = new StringBuilder();
+
+                for (var i = 0; i < entries.Length; i++)
+                {
+                    var entry = entries[i];
+
+                    if (!entry.IsEmpty)
+                    {
+                        sb.Append(entry.Key).Append(", ");
+                    }
+                }
+
+                Console.WriteLine(">>>> SENT: " + sb);
+
                 ReturnArray(entries);
                 tcs.SetResult(null);
 
                 return;
             }
 
+            // TODO: Handle "Failed to create data streamer (grid is stopping)" errors.
             if (!socket.IsDisposed)
             {
                 // Socket is still connected: this error does not need to be retried.

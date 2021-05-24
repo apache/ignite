@@ -106,8 +106,8 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         {
             const int maxNodes = 7;
 
-            var nodes = new Stack<IIgnite>();
-            nodes.Push(StartServer());
+            var nodes = new Queue<IIgnite>();
+            nodes.Enqueue(StartServer());
 
             var client = StartClient(maxPort: 10809);
 
@@ -141,11 +141,17 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 {
                     if (nodes.Count <= 2 || (nodes.Count < maxNodes && TestUtils.Random.Next(2) == 0))
                     {
-                        nodes.Push(StartServer());
+                        // var size = cache.GetSize();
+                        var newServer = StartServer();
+                        nodes.Enqueue(newServer);
+
+                        // TestUtils.WaitForTrueCondition(() => newServer.GetCacheNames().Contains(cache.Name));
+                        // var serverCache = newServer.GetCache<int, int>(cache.Name);
+                        // TestUtils.WaitForTrueCondition(() => serverCache.GetSize() >= size);
                     }
                     else
                     {
-                        nodes.Pop().Dispose();
+                        nodes.Dequeue().Dispose();
                     }
                 }
 
@@ -276,7 +282,8 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         {
             return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                AutoGenerateIgniteInstanceName = true
+                AutoGenerateIgniteInstanceName = true,
+                DiscoverySpi = TestUtils.GetStaticDiscovery(maxPort: 47509)
             };
         }
 
