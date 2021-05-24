@@ -144,13 +144,13 @@ public class IgniteLogicalRecoveryWithParamsTest extends GridCommonAbstractTest 
     /**Tests partially commited transactions with further recovery. */
     @Test
     @WithSystemProperty(key = IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, value = "true")
-    public void testPartiallyCommitedTx_TwoNode_WithCpOnNodeStop_MultiNodeTx_OneBackup() throws Exception {
+    public void testPartiallyCommitedTx_WithCpOnNodeStop() throws Exception {
         testPartiallyCommitedTx();
     }
 
     /**Tests partially commited transactions with further recovery. */
     @Test
-    public void testPartiallyCommitedTx_TwoNode_WithoutCpOnNodeStop_SingleNodeTx() throws Exception {
+    public void testPartiallyCommitedTx_WithoutCpOnNodeStop() throws Exception {
         testPartiallyCommitedTx();
     }
 
