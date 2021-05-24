@@ -263,6 +263,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             // TODO: Limit retry count?
             while (true)
             {
+                // TODO: Retry connection failures if GetSocket fails (needed for affinity awareness mode)
                 var socket = _socket.GetAffinitySocket(_cacheId, entry.Key) ?? _socket.GetSocket();
                 var buffer = GetOrAddBuffer(socket);
 
@@ -273,7 +274,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
         }
 
-        private Task FlushInternalAsync()
+        private Task FlushInternalAsync(DataStreamerClientPerNodeBuffer<TK, TV> additionalBuffer = null)
         {
             if (_buffers.IsEmpty)
             {
@@ -290,6 +291,16 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 if (task != null && !task.IsCompleted)
                 {
                     tasks.Add(task);
+                }
+            }
+
+            if (additionalBuffer != null)
+            {
+                var additionalTask = additionalBuffer.FlushAllAsync();
+
+                if (additionalTask != null && !additionalTask.IsCompleted)
+                {
+                    tasks.Add(additionalTask);
                 }
             }
 
@@ -436,17 +447,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 DataStreamerClientPerNodeBuffer<TK, TV> removed;
                 _buffers.TryRemove(failedSocket, out removed);
 
-                if (removed != null)
-                {
-                    // Flush buffered data for the failed connection.
-                    // TODO: Wait for this flush to complete somehow.
-                    ThreadPool.QueueUserWorkItem(_ =>
-                    {
-                        removed.Close();
-                        removed.FlushAllAsync();
-                    });
-                }
-
                 // Re-add entries to other buffers.
                 var count = buffer.Count;
                 var entries = buffer.Entries;
@@ -462,11 +462,21 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                     }
                 }
 
-                if (userRequested)
+                ReturnArray(entries);
+
+                //if (userRequested)
                 {
                     // When flush is initiated by the user, we should retry flushing immediately.
                     // Otherwise re-adding entries to other buffers is enough.
-                    FlushInternalAsync().ContinueWith(flushTask => flushTask.SetAsResult(tcs));
+
+                    ThreadPool.QueueUserWorkItem(_ =>
+                    {
+                        // TODO: Flush removed!
+                        removed?.Close();
+
+                        FlushInternalAsync()
+                            .ContinueWith(flushTask => flushTask.SetAsResult(tcs));
+                    });
                 }
             }
             catch (Exception e)
@@ -474,11 +484,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 Console.WriteLine(">>>> Failed to retry flush: " + e);  // TODO: Retry again!
 
                 tcs.SetException(e);
-            }
-            finally
-            {
-                // TODO: This loses entries in case of exception!
-                // ReturnArray(buffer.Entries);
             }
         }
 
