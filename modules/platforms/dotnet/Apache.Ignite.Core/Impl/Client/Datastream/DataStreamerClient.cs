@@ -260,9 +260,17 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         private void AddNoLock(DataStreamerClientEntry<TK, TV> entry)
         {
-            var socket = _socket.GetAffinitySocket(_cacheId, entry.Key) ?? _socket.GetSocket();
-            var buffer = GetOrAddBuffer(socket);
-            buffer.Add(entry);
+            // TODO: Limit retry count?
+            while (true)
+            {
+                var socket = _socket.GetAffinitySocket(_cacheId, entry.Key) ?? _socket.GetSocket();
+                var buffer = GetOrAddBuffer(socket);
+
+                if (buffer.Add(entry))
+                {
+                    return;
+                }
+            }
         }
 
         private Task FlushInternalAsync()
@@ -411,6 +419,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 if (removed != null)
                 {
                     // TODO: Flush remaining data somehow. Another rw lock in PerNodeBuffer?
+                    removed.Close();
                 }
 
                 // Re-add entries to other buffers.

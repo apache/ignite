@@ -36,8 +36,14 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /** */
         private readonly SemaphoreSlim _semaphore;
 
+        /** */
+        private readonly ReaderWriterLockSlim _rwLock = new ReaderWriterLockSlim();
+
         /** Only the thread that completes the previous buffer can set a new one to this field. */
         private volatile DataStreamerClientBuffer<TK, TV> _buffer;
+
+        /** */
+        private volatile bool _closed = false;
 
         public DataStreamerClientPerNodeBuffer(DataStreamerClient<TK, TV> client, ClientSocket socket)
         {
@@ -50,24 +56,57 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             _buffer = new DataStreamerClientBuffer<TK, TV>(_client.GetArray(), this, null);
         }
 
-        public void Add(DataStreamerClientEntry<TK,TV> entry)
+        public bool Add(DataStreamerClientEntry<TK,TV> entry)
         {
-            while (true)
+            if (!_rwLock.TryEnterReadLock(0))
             {
-                var buffer = GetBuffer();
+                return false;
+            }
 
-                if (buffer.Add(entry))
+            try
+            {
+                if (_closed)
                 {
-                    break;
+                    return false;
                 }
 
-                var entryArray = _client.GetArray();
-
-                if (Interlocked.CompareExchange(ref _buffer,
-                    new DataStreamerClientBuffer<TK, TV>(entryArray, this, buffer), buffer) != buffer)
+                while (true)
                 {
-                    _client.ReturnArray(entryArray);
+                    var buffer = GetBuffer();
+
+                    if (buffer.Add(entry))
+                    {
+                        break;
+                    }
+
+                    var entryArray = _client.GetArray();
+
+                    if (Interlocked.CompareExchange(ref _buffer,
+                        new DataStreamerClientBuffer<TK, TV>(entryArray, this, buffer), buffer) != buffer)
+                    {
+                        _client.ReturnArray(entryArray);
+                    }
                 }
+
+                return true;
+            }
+            finally
+            {
+                _rwLock.ExitReadLock();
+            }
+        }
+
+        public void Close()
+        {
+            _rwLock.EnterWriteLock();
+
+            try
+            {
+                _closed = true;
+            }
+            finally
+            {
+                _rwLock.ExitWriteLock();
             }
         }
 
@@ -81,7 +120,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         internal Task FlushAsync(DataStreamerClientBuffer<TK, TV> buffer, bool userRequested)
         {
-            // Stateless mode: every client client-side buffer creates a one-off streamer on the server. 
+            // Stateless mode: every client client-side buffer creates a one-off streamer on the server.
             return _client.FlushBufferAsync(buffer, _socket, _semaphore, userRequested);
         }
 
