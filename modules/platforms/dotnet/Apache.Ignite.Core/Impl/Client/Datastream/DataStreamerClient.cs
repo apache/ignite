@@ -378,6 +378,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         private void FlushBufferRetry(DataStreamerClientBuffer<TK, TV> buffer, ClientSocket socket, TaskCompletionSource<object> tcs,
             bool userRequested, DataStreamerClientEntry<TK, TV>[] entries)
         {
+            Console.WriteLine(">>>> RETRY");
+
             try
             {
                 // Connection failed. Remove disconnected socket from the map.

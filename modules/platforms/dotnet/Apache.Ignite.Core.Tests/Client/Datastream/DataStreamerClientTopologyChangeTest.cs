@@ -103,7 +103,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         [Test]
         public void TestStreamerDoesNotLoseDataOnRandomTopologyChanges()
         {
-            const int maxNodes = 6;
+            const int maxNodes = 7;
 
             var nodes = new Stack<IIgnite>();
             nodes.Push(StartServer());
@@ -138,7 +138,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 // TODO: Run this test for multiple minutes.
                 for (int i = 0; i < 20; i++)
                 {
-                    if (nodes.Count == 1 || (nodes.Count < maxNodes && TestUtils.Random.Next(2) == 0))
+                    if (nodes.Count <= 2 || (nodes.Count < maxNodes && TestUtils.Random.Next(2) == 0))
                     {
                         nodes.Push(StartServer());
                     }
