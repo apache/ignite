@@ -28,7 +28,6 @@ import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.UnwrappedDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -85,27 +84,15 @@ public class WALRecordsConsumer<K, V> {
     public <T extends WALRecord> boolean onRecords(Iterator<T> recs) {
         recs = F.iterator(recs, r -> r, true, r -> r.type() == WALRecord.RecordType.DATA_RECORD_V2);
 
-        return cdcConsumer.onChange(F.concat(F.iterator(recs, r -> F.iterator(((DataRecord)r).writeEntries(), e -> {
+        return cdcConsumer.onEvents(F.concat(F.iterator(recs, r -> F.iterator(((DataRecord)r).writeEntries(), e -> {
             UnwrappedDataEntry ue = (UnwrappedDataEntry)e;
-
-            GridCacheVersion ver = e.writeVersion();
-
-            ChangeEventOrderImpl ord =
-                new ChangeEventOrderImpl(ver.topologyVersion(), ver.nodeOrderAndDrIdRaw(), ver.order());
-
-            GridCacheVersion replicaVer = ver.conflictVersion();
-
-            if (replicaVer != ver) {
-                ord.otherDcOrder(new ChangeEventOrderImpl(
-                    replicaVer.topologyVersion(), replicaVer.nodeOrderAndDrIdRaw(), replicaVer.order()));
-            }
 
             return new ChangeDataCaptureEventImpl(
                 ue.unwrappedKey(),
                 ue.unwrappedValue(),
                 (e.flags() & DataEntry.PRIMARY_FLAG) != 0,
                 e.partitionId(),
-                ord,
+                e.writeVersion(),
                 e.cacheId()
             );
         }, true, OPS_FILTER), true)));

@@ -38,12 +38,12 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.WALPoi
 /**
  * CDC Consumer state.
  *
- * Each time {@link ChangeDataCaptureConsumer#onChange(Iterator)} returns {@code true}
+ * Each time {@link ChangeDataCaptureConsumer#onEvents(Iterator)} returns {@code true}
  * current offset in WAL segment saved to file.
  * This allows to the {@link ChangeDataCaptureConsumer} to continue consumption of the {@link ChangeDataCaptureEvent}
  * from the last saved offset in case of fail or restart.
  *
- * @see ChangeDataCaptureConsumer#onChange(Iterator)
+ * @see ChangeDataCaptureConsumer#onEvents(Iterator)
  * @see ChangeDataCapture
  */
 public class ChangeDataCaptureConsumerState {

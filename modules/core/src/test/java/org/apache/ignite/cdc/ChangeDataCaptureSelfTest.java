@@ -195,7 +195,7 @@ public class ChangeDataCaptureSelfTest extends GridCommonAbstractTest {
                 super.start();
             }
 
-            @Override public boolean onChange(Iterator<ChangeDataCaptureEvent> events) {
+            @Override public boolean onEvents(Iterator<ChangeDataCaptureEvent> evts) {
                 onChangeLatch1.countDown();
 
                 try {
@@ -205,7 +205,7 @@ public class ChangeDataCaptureSelfTest extends GridCommonAbstractTest {
                     throw new RuntimeException(e);
                 }
 
-                return super.onChange(events);
+                return super.onEvents(evts);
             }
         };
 
@@ -583,8 +583,8 @@ public class ChangeDataCaptureSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onChange(Iterator<ChangeDataCaptureEvent> events) {
-            events.forEachRemaining(evt -> {
+        @Override public boolean onEvents(Iterator<ChangeDataCaptureEvent> evts) {
+            evts.forEachRemaining(evt -> {
                 if (!evt.primary())
                     return;
 

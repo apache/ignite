@@ -29,7 +29,7 @@ import org.apache.ignite.resources.LoggerResource;
  * Lifecycle of consumer is the following:
  * <ul>
  *     <li>Start of the consumer {@link #start()}.</li>
- *     <li>Notification of the consumer by the {@link #onChange(Iterator)} call.</li>
+ *     <li>Notification of the consumer by the {@link #onEvents(Iterator)} call.</li>
  *     <li>Stop of the consumer {@link #stop()}.</li>
  * </ul>
  *
@@ -44,7 +44,7 @@ import org.apache.ignite.resources.LoggerResource;
  * }</pre>
  *
  * Note, consumption of the {@link ChangeDataCaptureEvent} will started from the last saved offset.
- * Offset of consumptions is saved on the disk every time {@link #onChange(Iterator)} returns {@code true}.
+ * Offset of consumptions is saved on the disk every time {@link #onEvents(Iterator)} returns {@code true}.
  *
  * @see ChangeDataCapture
  * @see ChangeDataCaptureEvent
@@ -65,7 +65,7 @@ public interface ChangeDataCaptureConsumer {
      * @param events Entry change events.
      * @return {@code True} if current offset should be saved on the disk to continue from it in case any failures or restart.
      */
-    public boolean onChange(Iterator<ChangeDataCaptureEvent> events);
+    public boolean onEvents(Iterator<ChangeDataCaptureEvent> events);
 
     /**
      * Stops the consumer.

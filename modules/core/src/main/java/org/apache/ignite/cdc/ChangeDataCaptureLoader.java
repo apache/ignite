@@ -41,9 +41,7 @@ public class ChangeDataCaptureLoader {
      * @return Tuple of {@code ChangeDataCapture} and error message.
      * @throws IgniteCheckedException If failed.
      */
-    public static ChangeDataCapture loadChangeDataCapture(
-        String springXmlPath
-    ) throws IgniteCheckedException {
+    public static ChangeDataCapture loadChangeDataCapture(String springXmlPath) throws IgniteCheckedException {
         URL cfgUrl = U.resolveSpringUrl(springXmlPath);
 
         IgniteSpringHelper spring = SPRING.create(false);

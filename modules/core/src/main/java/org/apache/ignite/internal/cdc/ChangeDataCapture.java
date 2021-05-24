@@ -82,7 +82,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWr
  * When {@link DataStorageConfiguration#getCdcPath()} is true then Ignite node on each WAL segment rollover creates
  * hard link to archive WAL segment in {@link DataStorageConfiguration#getCdcPath()} directory.
  * {@link ChangeDataCapture} application takes segment file and consumes events from it.
- * After successful consumption (see {@link ChangeDataCaptureConsumer#onChange(Iterator)})
+ * After successful consumption (see {@link ChangeDataCaptureConsumer#onEvents(Iterator)})
  * WAL segment will be deleted from directory.
  *
  * Several Ignite nodes can be started on the same host.

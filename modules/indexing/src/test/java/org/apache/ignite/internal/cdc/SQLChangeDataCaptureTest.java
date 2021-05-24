@@ -194,7 +194,7 @@ public class SQLChangeDataCaptureTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onChange(Iterator<ChangeDataCaptureEvent> events) {
+        @Override public boolean onEvents(Iterator<ChangeDataCaptureEvent> events) {
             events.forEachRemaining(evt -> {
                 if (!evt.primary())
                     return;

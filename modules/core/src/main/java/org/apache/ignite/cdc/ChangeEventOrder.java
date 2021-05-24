@@ -28,10 +28,10 @@ import org.apache.ignite.lang.IgniteExperimental;
 @IgniteExperimental
 public interface ChangeEventOrder extends Comparable<ChangeEventOrder>, Serializable {
     /** @return topVer Topology version plus number of seconds from the start time of the first grid node. */
-    public int topVer();
+    public int topologyVersion();
 
-    /** @return nodeOrderDrId Node order and DR ID. */
-    public int nodeOrderDrId();
+    /** @return Node order on which this version was assigned. */
+    public int nodeOrder();
 
     /** @return Data center id. */
     public byte dataCenterId();
