@@ -66,7 +66,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
     private static final long serialVersionUID = 0L;
 
     /** Default callback. */
-    private static final IgniteBiPredicate<UUID,Event> DFLT_CALLBACK = new P2<UUID, Event>() {
+    private static final IgniteBiPredicate<UUID, Event> DFLT_CALLBACK = new P2<UUID, Event>() {
         @Override public boolean apply(UUID uuid, Event e) {
             return true;
         }
@@ -425,6 +425,11 @@ class GridEventConsumeHandler implements GridContinuousHandler {
                 ((GridFutureAdapter)p2pUnmarshalFut).onDone(e);
 
                 throw e;
+            }
+            catch (ExceptionInInitializerError e) {
+                ((GridFutureAdapter)p2pUnmarshalFut).onDone(e);
+
+                throw new IgniteCheckedException("Failed to unmarshal deployable object.", e);
             }
         }
     }

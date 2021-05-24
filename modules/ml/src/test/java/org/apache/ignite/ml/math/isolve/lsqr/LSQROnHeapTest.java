@@ -55,7 +55,8 @@ public class LSQROnHeapTest extends TrainerTest {
         Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
             .labeled(Vectorizer.LabelCoordinate.LAST);
 
-        IgniteFunction<LabeledVector<Double>, LabeledVector<double[]>> func = lv -> new LabeledVector<>(lv.features(), new double[]{lv.label()});
+        IgniteFunction<LabeledVector<Double>, LabeledVector<double[]>> func =
+            lv -> new LabeledVector<>(lv.features(), new double[]{lv.label()});
 
         Preprocessor<Integer, Vector> prerocessor = new PatchedPreprocessor<>(func, vectorizer);
 
@@ -94,7 +95,8 @@ public class LSQROnHeapTest extends TrainerTest {
         Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
             .labeled(Vectorizer.LabelCoordinate.LAST);
 
-        IgniteFunction<LabeledVector<Double>, LabeledVector<double[]>> func = lv -> new LabeledVector<>(lv.features(), new double[]{lv.label()});
+        IgniteFunction<LabeledVector<Double>, LabeledVector<double[]>> func =
+            lv -> new LabeledVector<>(lv.features(), new double[]{lv.label()});
 
         Preprocessor<Integer, Vector> prerocessor = new PatchedPreprocessor<>(func, vectorizer);
 
@@ -133,7 +135,8 @@ public class LSQROnHeapTest extends TrainerTest {
         Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>()
             .labeled(Vectorizer.LabelCoordinate.LAST);
 
-        IgniteFunction<LabeledVector<Double>, LabeledVector<double[]>> func = lv -> new LabeledVector<>(lv.features(), new double[]{lv.label()});
+        IgniteFunction<LabeledVector<Double>, LabeledVector<double[]>> func =
+            lv -> new LabeledVector<>(lv.features(), new double[]{lv.label()});
 
         Preprocessor<Integer, Vector> prerocessor = new PatchedPreprocessor<>(func, vectorizer);
 

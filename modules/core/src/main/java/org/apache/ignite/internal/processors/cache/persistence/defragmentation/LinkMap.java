@@ -159,7 +159,21 @@ public class LinkMap {
            @Nullable PageLockListener lockLsnr,
            boolean initNew
         ) throws IgniteCheckedException {
-            super(name, cacheGrpId, cacheGrpName, pageMem, wal, globalRmvId, metaPageId, reuseList, innerIos, leafIos, FLAG_AUX, failureProcessor, lockLsnr);
+            super(
+                name,
+                cacheGrpId,
+                cacheGrpName,
+                pageMem,
+                wal,
+                globalRmvId,
+                metaPageId,
+                reuseList,
+                innerIos,
+                leafIos,
+                FLAG_AUX,
+                failureProcessor,
+                lockLsnr
+            );
 
             PageIO.registerTest(latestInnerIO(), latestLeafIO());
 

@@ -38,18 +38,18 @@ public class IgniteCacheFutureImpl<V> extends IgniteFutureImpl<V> {
      *
      * @param fut Internal future.
      */
-    public IgniteCacheFutureImpl(IgniteInternalFuture<V> fut) {
-        super(fut);
+    public IgniteCacheFutureImpl(IgniteInternalFuture<V> fut, Executor defaultExecutor) {
+        super(fut, defaultExecutor);
     }
 
     /** {@inheritDoc} */
     @Override public <T> IgniteFuture<T> chain(IgniteClosure<? super IgniteFuture<V>, T> doneCb) {
-        return new IgniteCacheFutureImpl<>(chainInternal(doneCb, null));
+        return new IgniteCacheFutureImpl<>(chainInternal(doneCb, null), defaultExecutor);
     }
 
     /** {@inheritDoc} */
     @Override public <T> IgniteFuture<T> chainAsync(IgniteClosure<? super IgniteFuture<V>, T> doneCb, Executor exec) {
-        return new IgniteCacheFutureImpl<>(chainInternal(doneCb, exec));
+        return new IgniteCacheFutureImpl<>(chainInternal(doneCb, exec), defaultExecutor);
     }
 
     /** {@inheritDoc} */

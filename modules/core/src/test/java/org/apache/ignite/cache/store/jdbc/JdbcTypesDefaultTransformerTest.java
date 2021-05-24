@@ -92,8 +92,8 @@ public class JdbcTypesDefaultTransformerTest extends GridCommonAbstractTest {
 
             // Create table in ORACLE.
 //                stmt.executeUpdate("CREATE TABLE TEST_TRANSFORMER(id INTEGER, " +
-//                    "c1 NUMBER(1), c2 INTEGER, c3 NUMBER(3), c4 NUMBER(4), c5 NUMBER(20), c6 NUMBER(20, 2), c7 NUMBER(20, 2), c8 NUMBER(10, 2), " +
-//                    "c9 TIMESTAMP, c10 DATE, c11 TIMESTAMP, c12 VARCHAR(100), c13 VARCHAR(36))");
+//                    "c1 NUMBER(1), c2 INTEGER, c3 NUMBER(3), c4 NUMBER(4), c5 NUMBER(20), c6 NUMBER(20, 2), c7 NUMBER(20, 2), " +
+//                    "c8 NUMBER(10, 2), c9 TIMESTAMP, c10 DATE, c11 TIMESTAMP, c12 VARCHAR(100), c13 VARCHAR(36))");
 
             // Create table in MS SQL.
 //            stmt.executeUpdate("CREATE TABLE TEST_TRANSFORMER(id INTEGER, " +
@@ -148,7 +148,8 @@ public class JdbcTypesDefaultTransformerTest extends GridCommonAbstractTest {
             stmt.executeUpdate("INSERT INTO TEST_TRANSFORMER(id, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13) " +
                 "VALUES (3, null, null, null, null, null, null, null, null, null, null, null, null, null)");
 
-            ResultSet rs = stmt.executeQuery("select c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13 from TEST_TRANSFORMER order by id");
+            ResultSet rs =
+                stmt.executeQuery("select c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13 from TEST_TRANSFORMER order by id");
 
             assertTrue(rs.next());
 

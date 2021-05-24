@@ -31,7 +31,7 @@ import java.util.Random;
  * @param <K> Type of a key.
  * @param <V> Type of a value.
  */
-public class SHA256UniformMapper<K, V> implements UniformMapper<K,V> {
+public class SHA256UniformMapper<K, V> implements UniformMapper<K, V> {
     /** */
     private static final long serialVersionUID = -8179630783617088803L;
 

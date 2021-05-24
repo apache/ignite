@@ -99,7 +99,7 @@ public abstract class GridCacheWriteBehindStoreAbstractSelfTest extends GridComm
         if (store.getWriteCoalescing())
             assertTrue("Store cache must be empty after shutdown", store.writeCache().isEmpty());
         else
-            for (Map<?,?> fMap : store.flusherMaps())
+            for (Map<?, ?> fMap : store.flusherMaps())
                 assertTrue("Store flusher cache must be empty after shutdown", fMap.isEmpty());
     }
 

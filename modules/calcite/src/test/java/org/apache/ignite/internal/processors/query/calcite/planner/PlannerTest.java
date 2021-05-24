@@ -708,7 +708,8 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(relRoot);
 
-        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(this::intermediateMapping, new Splitter().go((IgniteRel) relRoot.rel)), null);
+        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(this::intermediateMapping,
+            new Splitter().go((IgniteRel) relRoot.rel)), null);
 
         assertNotNull(plan);
 
@@ -850,7 +851,8 @@ public class PlannerTest extends AbstractPlannerTest {
 
             assertNotNull(phys);
 
-            MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(this::intermediateMapping, new Splitter().go((IgniteRel) phys)), null);
+            MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(this::intermediateMapping,
+                new Splitter().go((IgniteRel) phys)), null);
 
             assertNotNull(plan);
 
@@ -882,7 +884,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 kernal.config().getQueryThreadPoolSize(),
                 kernal.igniteInstanceName(),
                 "calciteQry",
-                (t,ex) -> {
+                (t, ex) -> {
                     log().error(ex.getMessage(), ex);
                     lastE = ex;
                 },
@@ -935,7 +937,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 kernal.config().getQueryThreadPoolSize(),
                 kernal.igniteInstanceName(),
                 "calciteQry",
-                (t,ex) -> {
+                (t, ex) -> {
                     log().error(ex.getMessage(), ex);
                     lastE = ex;
                 },
@@ -1111,7 +1113,8 @@ public class PlannerTest extends AbstractPlannerTest {
 
             assertNotNull(phys);
 
-            MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(this::intermediateMapping, new Splitter().go((IgniteRel) phys)), null);
+            MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(this::intermediateMapping,
+                new Splitter().go((IgniteRel) phys)), null);
 
             assertNotNull(plan);
 
@@ -1143,7 +1146,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 kernal.config().getQueryThreadPoolSize(),
                 kernal.igniteInstanceName(),
                 "calciteQry",
-                (t,ex) -> {
+                (t, ex) -> {
                     log().error(ex.getMessage(), ex);
                     lastE = ex;
                 },
@@ -1180,7 +1183,7 @@ public class PlannerTest extends AbstractPlannerTest {
             exec = new LogicalRelImplementor<>(ectx, c1 -> r1 -> 0, mailboxRegistry, exchangeSvc,
                 new TestFailureProcessor(kernal)).go(fragment.root());
 
-            RootNode<Object[]> consumer = new RootNode<>(ectx,exec.rowType());
+            RootNode<Object[]> consumer = new RootNode<>(ectx, exec.rowType());
             consumer.register(exec);
 
             //// Remote part
@@ -1196,7 +1199,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 kernal.config().getQueryThreadPoolSize(),
                 kernal.igniteInstanceName(),
                 "calciteQry",
-                (t,ex) -> {
+                (t, ex) -> {
                     log().error(ex.getMessage(), ex);
                     lastE = ex;
                 },
@@ -1278,7 +1281,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
             @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
-                return ColocationGroup.forNodes(select(nodes, 0,1,2,3));
+                return ColocationGroup.forNodes(select(nodes, 0, 1, 2, 3));
             }
 
             @Override public IgniteDistribution distribution() {
@@ -1293,7 +1296,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
             @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
-                return ColocationGroup.forNodes(select(nodes, 0,1,2,3));
+                return ColocationGroup.forNodes(select(nodes, 0, 1, 2, 3));
             }
 
             @Override public IgniteDistribution distribution() {
@@ -1373,7 +1376,8 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(relRoot);
 
-        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(this::intermediateMapping, new Splitter().go((IgniteRel) relRoot.rel)), null);
+        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(this::intermediateMapping,
+            new Splitter().go((IgniteRel) relRoot.rel)), null);
 
         assertNotNull(plan);
 
@@ -1414,10 +1418,10 @@ public class PlannerTest extends AbstractPlannerTest {
                 .build()) {
             @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
                 return ColocationGroup.forAssignments(Arrays.asList(
-                    select(nodes, 1,2),
-                    select(nodes, 2,3),
-                    select(nodes, 3,0),
-                    select(nodes, 0,1)
+                    select(nodes, 1, 2),
+                    select(nodes, 2, 3),
+                    select(nodes, 3, 0),
+                    select(nodes, 0, 1)
                 ));
             }
 
@@ -1498,7 +1502,8 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(relRoot);
 
-        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(this::intermediateMapping, new Splitter().go((IgniteRel) relRoot.rel)), null);
+        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(this::intermediateMapping,
+            new Splitter().go((IgniteRel) relRoot.rel)), null);
 
         assertNotNull(plan);
 
@@ -1521,7 +1526,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("PROJECTID", f.createJavaType(Integer.class))
                 .build()) {
             @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
-                return ColocationGroup.forNodes(select(nodes, 1,2,3));
+                return ColocationGroup.forNodes(select(nodes, 1, 2, 3));
             }
 
             @Override public IgniteDistribution distribution() {
@@ -1620,7 +1625,8 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(relRoot);
 
-        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(this::intermediateMapping, new Splitter().go((IgniteRel) relRoot.rel)), null);
+        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(this::intermediateMapping,
+            new Splitter().go((IgniteRel) relRoot.rel)), null);
 
         assertNotNull(plan);
 
@@ -1744,7 +1750,8 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(relRoot);
 
-        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(this::intermediateMapping, new Splitter().go((IgniteRel) relRoot.rel)), null);
+        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(this::intermediateMapping,
+            new Splitter().go((IgniteRel) relRoot.rel)), null);
 
         assertNotNull(plan);
 
@@ -1782,7 +1789,7 @@ public class PlannerTest extends AbstractPlannerTest {
                 .add("VER", f.createJavaType(Integer.class))
                 .build()) {
             @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
-                return ColocationGroup.forNodes(select(nodes, 0,1));
+                return ColocationGroup.forNodes(select(nodes, 0, 1));
             }
 
             @Override public IgniteDistribution distribution() {
@@ -1864,7 +1871,8 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(relRoot);
 
-        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(this::intermediateMapping, new Splitter().go((IgniteRel) relRoot.rel)), null);
+        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(this::intermediateMapping,
+            new Splitter().go((IgniteRel) relRoot.rel)), null);
 
         assertNotNull(plan);
 
@@ -2218,7 +2226,8 @@ public class PlannerTest extends AbstractPlannerTest {
             assertNotNull(phys);
             assertEquals(
                 "Invalid plan:\n" + RelOptUtil.toString(phys),
-                "IgniteCorrelatedNestedLoopJoin(condition=[=(CAST(+($0, $1)):INTEGER, 2)], joinType=[inner], correlationVariables=[[$cor1]])\n" +
+                "IgniteCorrelatedNestedLoopJoin(condition=[=(CAST(+($0, $1)):INTEGER, 2)], joinType=[inner], " +
+                    "correlationVariables=[[$cor1]])\n" +
                     "  IgniteTableScan(table=[[PUBLIC, DEPT]], requiredColumns=[{0}])\n" +
                     "  IgniteTableScan(table=[[PUBLIC, EMP]], filters=[=(CAST(+($cor1.DEPTNO, $t0)):INTEGER, 2)], requiredColumns=[{2}])\n",
                 RelOptUtil.toString(phys));
@@ -2273,7 +2282,8 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assertNotNull(phys);
         assertEquals("" +
-                "IgniteMergeJoin(condition=[AND(=($0, $4), =($3, $1))], joinType=[inner], leftCollation=[[0, 1]], rightCollation=[[2, 1]])\n" +
+                "IgniteMergeJoin(condition=[AND(=($0, $4), =($3, $1))], joinType=[inner], leftCollation=[[0, 1]], " +
+                "rightCollation=[[2, 1]])\n" +
                 "  IgniteIndexScan(table=[[PUBLIC, DEPT]], index=[dep_idx])\n" +
                 "  IgniteIndexScan(table=[[PUBLIC, EMP]], index=[emp_idx])\n",
             RelOptUtil.toString(phys));

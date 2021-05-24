@@ -36,7 +36,7 @@ Nodes save the master key name to the disk (local `MetaStorage`) on the first cl
 
 NOTE: Cache start and node join during the key change process is prohibited and will be rejected.
 
-Ignite provide the ability to change the master key from the following interfaces:
+Ignite provides the ability to change the master key from the following interfaces:
 
 - link:#command-line-tool[command line tool]
 - link:#jmx[JMX]

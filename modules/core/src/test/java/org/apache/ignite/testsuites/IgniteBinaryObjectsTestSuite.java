@@ -72,12 +72,17 @@ import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryStoreBi
 import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryStoreObjectsSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheClientNodeBinaryObjectMetadataMultinodeTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheClientNodeBinaryObjectMetadataTest;
+import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryObjectsAtomicNearDisabledOnheapSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryObjectsAtomicNearDisabledSelfTest;
+import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryObjectsAtomicOnheapSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryObjectsAtomicSelfTest;
+import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryObjectsPartitionedNearDisabledOnheapSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryObjectsPartitionedNearDisabledSelfTest;
+import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryObjectsPartitionedOnheapSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryObjectsPartitionedSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.replicated.GridCacheBinaryObjectsReplicatedSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.local.GridCacheBinaryObjectsAtomicLocalSelfTest;
+import org.apache.ignite.internal.processors.cache.binary.local.GridCacheBinaryObjectsLocalOnheapSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.local.GridCacheBinaryObjectsLocalSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteBinaryMetadataUpdateChangingTopologySelfTest;
 import org.junit.runner.RunWith;
@@ -134,17 +139,17 @@ import org.junit.runners.Suite;
     BinaryFooterOffsetsOffheapNonCompactSelfTest.class,
 
     GridCacheBinaryObjectsLocalSelfTest.class,
-    //GridCacheBinaryObjectsLocalOnheapSelfTest.class,
+    GridCacheBinaryObjectsLocalOnheapSelfTest.class,
     GridCacheBinaryObjectsAtomicLocalSelfTest.class,
     GridCacheBinaryObjectsReplicatedSelfTest.class,
     GridCacheBinaryObjectsPartitionedSelfTest.class,
     GridCacheBinaryObjectsPartitionedNearDisabledSelfTest.class,
-    //GridCacheBinaryObjectsPartitionedNearDisabledOnheapSelfTest.class,
-    //GridCacheBinaryObjectsPartitionedOnheapSelfTest.class,
+    GridCacheBinaryObjectsPartitionedNearDisabledOnheapSelfTest.class,
+    GridCacheBinaryObjectsPartitionedOnheapSelfTest.class,
     GridCacheBinaryObjectsAtomicSelfTest.class,
-    //GridCacheBinaryObjectsAtomicOnheapSelfTest.class,
+    GridCacheBinaryObjectsAtomicOnheapSelfTest.class,
     GridCacheBinaryObjectsAtomicNearDisabledSelfTest.class,
-    //GridCacheBinaryObjectsAtomicNearDisabledOnheapSelfTest.class,
+    GridCacheBinaryObjectsAtomicNearDisabledOnheapSelfTest.class,
 
     GridCacheBinaryStoreObjectsSelfTest.class,
     GridCacheBinaryStoreBinariesDefaultMappersSelfTest.class,

@@ -61,6 +61,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
@@ -100,7 +102,6 @@ import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_LOADED;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_VALIDATE_CACHE_REQUESTS;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
@@ -939,7 +940,9 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 res.completedVersions(versPair.get1(), versPair.get2());
             }
 
-            res.pending(localDhtPendingVersions(tx.writeEntries(), min));
+            // Pending versions are required for near caches only.
+            if (req.near())
+                res.pending(localDhtPendingVersions(tx.writeEntries(), min));
 
             tx.implicitSingleResult(ret);
         }
@@ -1030,7 +1033,13 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      * @return {@code True} if {@code done} flag was changed as a result of this call.
      */
     private boolean onComplete(@Nullable GridNearTxPrepareResponse res) {
-        if (!tx.onePhaseCommit() && ((last || tx.isSystemInvalidate()) && !(tx.near() && tx.local())))
+        if (res.error() != null) {
+            if (log.isDebugEnabled())
+                log.debug("Transaction marked for rollback because of error on dht prepare [tx=" + tx + ", error=" + res.error() + "]");
+
+            tx.setRollbackOnly();
+        }
+        else if (!tx.onePhaseCommit() && ((last || tx.isSystemInvalidate()) && !(tx.near() && tx.local())))
             tx.state(PREPARED);
 
         if (super.onDone(res, res == null ? err : null)) {
@@ -1076,12 +1085,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
             ClusterNode node = cctx.discovery().node(tx.topologyVersion(), tx.nearNodeId());
 
-            boolean validateCache = needCacheValidation(node);
-
-        boolean writesEmpty = isEmpty(req.writes());
-
-        if (validateCache) {
-            GridDhtTopologyFuture topFut = cctx.exchange().lastFinishedFuture();
+            if (node != null) {
+                GridDhtTopologyFuture topFut = cctx.exchange().lastFinishedFuture();
 
                 if (topFut != null) {
                     IgniteCheckedException err = tx.txState().validateTopology(cctx, isEmpty(req.writes()), topFut);
@@ -1093,8 +1098,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
             boolean ser = tx.serializable() && tx.optimistic();
 
-        if (!writesEmpty || (ser && !F.isEmpty(req.reads()))) {
-            Map<Integer, Collection<KeyCacheObject>> forceKeys = null;
+            if (!F.isEmpty(req.writes()) || (ser && !F.isEmpty(req.reads()))) {
+                Map<Integer, Collection<KeyCacheObject>> forceKeys = null;
 
                 for (IgniteTxEntry entry : req.writes())
                     forceKeys = checkNeedRebalanceKeys(entry, forceKeys);
@@ -1121,22 +1126,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
             mapIfLocked();
         }
-    }
-
-    /**
-     * Returns {@code true} if cache validation needed.
-     *
-     * @param node Originating node.
-     * @return {@code True} if cache should be validated, {@code false} - otherwise.
-     */
-    private boolean needCacheValidation(ClusterNode node) {
-        if (node == null) {
-            // The originating (aka near) node has left the topology
-            // and therefore the cache validation doesn't make sense.
-            return false;
-        }
-
-        return Boolean.TRUE.equals(node.attribute(ATTR_VALIDATE_CACHE_REQUESTS));
     }
 
     /**
@@ -1639,7 +1628,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     /**
      * @param entry Transaction entry.
      */
-    private void map(IgniteTxEntry entry) {
+    private void map(IgniteTxEntry entry) throws IgniteTxRollbackCheckedException {
         if (entry.cached().isLocal())
             return;
 
@@ -1660,6 +1649,21 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         while (true) {
             try {
                 List<ClusterNode> dhtNodes = dht.topology().nodes(cached.partition(), tx.topologyVersion());
+
+                GridDhtPartitionTopology top = cacheCtx.topology();
+
+                GridDhtLocalPartition part = top.localPartition(cached.partition());
+
+                if (part != null && !part.primary(top.readyTopologyVersion())) {
+                    log.warning("Failed to map a transaction on outdated topology, rolling back " +
+                        "[tx=" + CU.txString(tx) +
+                        ", readyTopVer=" + top.readyTopologyVersion() +
+                        ", lostParts=" + top.lostPartitions() +
+                        ", part=" + part.toString() + ']');
+
+                    throw new IgniteTxRollbackCheckedException("Failed to map a transaction on outdated " +
+                        "topology, please try again [timeout=" + tx.timeout() + ", tx=" + CU.txString(tx) + ']');
+                }
 
                 assert !dhtNodes.isEmpty() && dhtNodes.get(0).id().equals(cctx.localNodeId()) :
                     "cacheId=" + cacheCtx.cacheId() + ", localNode = " + cctx.localNodeId() + ", dhtNodes = " + dhtNodes;
@@ -1751,15 +1755,21 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      * @param baseVer Base version.
      * @return Collection of pending candidates versions.
      */
-    private Collection<GridCacheVersion> localDhtPendingVersions(Iterable<IgniteTxEntry> entries,
-        GridCacheVersion baseVer) {
-        Collection<GridCacheVersion> lessPending = new GridLeanSet<>(5);
+    private Collection<GridCacheVersion> localDhtPendingVersions(
+        Iterable<IgniteTxEntry> entries,
+        GridCacheVersion baseVer
+    ) {
+        Collection<GridCacheVersion> lessPending = null;
 
         for (IgniteTxEntry entry : entries) {
             try {
                 for (GridCacheMvccCandidate cand : entry.cached().localCandidates()) {
-                    if (cand.version().isLess(baseVer))
+                    if (cand.version().isLess(baseVer)) {
+                        if (lessPending == null)
+                            lessPending = new GridLeanSet<>(5);
+
                         lessPending.add(cand.version());
+                    }
                 }
             }
             catch (GridCacheEntryRemovedException ignored) {

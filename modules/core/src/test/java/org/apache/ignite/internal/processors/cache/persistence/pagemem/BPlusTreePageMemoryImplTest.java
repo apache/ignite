@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import java.util.Collections;
 import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
@@ -35,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkp
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgressImpl;
 import org.apache.ignite.internal.processors.database.BPlusTreeSelfTest;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.typedef.CIX3;
@@ -66,11 +68,13 @@ public class BPlusTreePageMemoryImplTest extends BPlusTreeSelfTest {
         cfg.setEncryptionSpi(new NoopEncryptionSpi());
         cfg.setMetricExporterSpi(new NoopMetricExporterSpi());
         cfg.setSystemViewExporterSpi(new JmxSystemViewExporterSpi());
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration());
 
         GridTestKernalContext cctx = new GridTestKernalContext(log, cfg);
 
         cctx.add(new IgnitePluginProcessor(cctx, cfg, Collections.emptyList()));
         cctx.add(new GridInternalSubscriptionProcessor(cctx));
+        cctx.add(new PerformanceStatisticsProcessor(cctx));
         cctx.add(new GridEncryptionManager(cctx));
         cctx.add(new GridMetricManager(cctx));
         cctx.add(new GridSystemViewManager(cctx));
@@ -118,7 +122,10 @@ public class BPlusTreePageMemoryImplTest extends BPlusTreeSelfTest {
                 }
             },
             () -> true,
-            new DataRegionMetricsImpl(new DataRegionConfiguration(), cctx.metric(), NO_OP_METRICS),
+            new DataRegionMetricsImpl(new DataRegionConfiguration(),
+                cctx.metric(),
+                cctx.performanceStatistics(),
+                NO_OP_METRICS),
             PageMemoryImpl.ThrottlingPolicy.DISABLED,
             clo
         );

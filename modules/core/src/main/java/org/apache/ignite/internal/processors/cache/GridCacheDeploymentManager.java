@@ -603,14 +603,15 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                 if (locDep0 != null) {
                     // Will copy sequence number to bean.
                     dep = new GridDeploymentInfoBean(locDep0);
+
+                    checkDeploymentIsCorrect(dep, deployable, false);
                 }
             }
+            else
+                checkDeploymentIsCorrect(dep, deployable, true);
 
-            if (dep != null) {
-                checkDeploymentIsCorrect(dep, deployable);
-
+            if (dep != null)
                 deployable.prepare(dep);
-            }
 
             if (log.isDebugEnabled())
                 log.debug("Prepared grid cache deployable [dep=" + dep + ", deployable=" + deployable + ']');
@@ -622,16 +623,22 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
      *
      * @param deployment Deployment.
      * @param deployable Deployable message.
+     * @param failIfNotCorrect Flag determining whether to throw exception or just warn.
      * @throws IgnitePeerToPeerClassLoadingException If deployment is incorrect.
      */
-    private void checkDeploymentIsCorrect(GridDeploymentInfoBean deployment, GridCacheDeployable deployable)
+    private void checkDeploymentIsCorrect(GridDeploymentInfoBean deployment, GridCacheDeployable deployable,
+        boolean failIfNotCorrect)
         throws IgnitePeerToPeerClassLoadingException {
         if (deployment.participants() == null
             && !cctx.localNode().id().equals(deployment.classLoaderId().globalId())) {
-            throw new IgnitePeerToPeerClassLoadingException("Failed to use deployment to prepare deployable, " +
-                "because local node id does not correspond with class loader id, and there are no more participants " +
-                "[localNodeId=" + cctx.localNode().id() + ", deployment=" + deployment + ", deployable=" + deployable +
-                ", locDep=" + locDep.get() + "]");
+            String msg = "Should not use deployment to prepare deployable, because local node id does not correspond " +
+                "with class loader id, and there are no more participants [locNodeId=" + cctx.localNode().id() +
+                ", deployment=" + deployment + ", deployable=" + deployable + ", locDep=" + locDep.get() + "]";
+
+            if (failIfNotCorrect)
+                throw new IgnitePeerToPeerClassLoadingException(msg);
+
+            log.warning(msg);
         }
     }
 

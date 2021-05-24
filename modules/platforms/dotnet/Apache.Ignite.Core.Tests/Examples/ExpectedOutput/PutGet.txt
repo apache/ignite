@@ -1,0 +1,13 @@
+>>> Cache put-get example started.
+
+>>> Retrieved organization instance from cache: Organization [name=Microsoft, address=Address [street=1096 Eddy Street, San Francisco, CA, zip=94109], type=Private, lastUpdated=*
+
+>>> Retrieved organization name from binary object: Microsoft
+
+>>> Retrieved organization instances from cache:
+>>>     Organization [name=Microsoft, address=Address [street=1096 Eddy Street, San Francisco, CA, zip=94109], type=Private, lastUpdated=*
+>>>     Organization [name=Red Cross, address=Address [street=184 Fidler Drive, San Antonio, TX, zip=78205], type=NonProfit, lastUpdated=*
+
+>>> Retrieved organization names from binary objects:
+>>>     Microsoft
+>>>     Red Cross

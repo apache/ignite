@@ -30,7 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public class AffinityServiceImpl extends AbstractService implements AffinityService {
     /** */
-    private GridCacheSharedContext<?,?> cacheSharedContext;
+    private GridCacheSharedContext<?, ?> cacheSharedContext;
 
     /**
      * @param ctx Kernal.
@@ -42,7 +42,7 @@ public class AffinityServiceImpl extends AbstractService implements AffinityServ
     /**
      * @param cacheSharedContext Cache shared context.
      */
-    public void cacheSharedContext(GridCacheSharedContext<?,?> cacheSharedContext) {
+    public void cacheSharedContext(GridCacheSharedContext<?, ?> cacheSharedContext) {
         this.cacheSharedContext = cacheSharedContext;
     }
 

@@ -239,6 +239,44 @@ public class PagePartitionMetaIO extends PageMetaIO {
             "this PagePartitionMetaIO version: ver=" + getVersion());
     }
 
+    /**
+     * @param pageAddr Page address.
+     */
+    public int getEncryptedPageIndex(long pageAddr) {
+        throw new UnsupportedOperationException("Gaps link is not supported by " +
+            "this PagePartitionMetaIO version: ver=" + getVersion());
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param pageIdx Page index.
+     *
+     * @return {@code true} if value has changed as a result of this method's invocation.
+     */
+    public boolean setEncryptedPageIndex(long pageAddr, int pageIdx) {
+        throw new UnsupportedOperationException("Encrypted page index is not supported by " +
+            "this PagePartitionMetaIO version: ver=" + getVersion());
+    }
+
+    /**
+     * @param pageAddr Page address.
+     */
+    public int getEncryptedPageCount(long pageAddr) {
+        throw new UnsupportedOperationException("Encrypted page count is not supported by " +
+            "this PagePartitionMetaIO version: ver=" + getVersion());
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param pagesCnt Pages count.
+     *
+     * @return {@code true} if value has changed as a result of this method's invocation.
+     */
+    public boolean setEncryptedPageCount(long pageAddr, int pagesCnt) {
+        throw new UnsupportedOperationException("Encrypted page count is not supported by " +
+            "this PagePartitionMetaIO version: ver=" + getVersion());
+    }
+
     /** {@inheritDoc} */
     @Override protected void printPage(long pageAddr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException {
         super.printPage(pageAddr, pageSize, sb);

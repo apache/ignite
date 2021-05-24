@@ -37,6 +37,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// This tests verifies that there are no exception on Java side during event delivery.
         /// </summary>
         [Test]
+        [Category(TestUtils.CategoryIntensive)]
         public void TestSameQueryMultipleNodes()
         {
             using (var ignite = StartIgnite())

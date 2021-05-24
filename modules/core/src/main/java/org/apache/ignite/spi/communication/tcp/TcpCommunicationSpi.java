@@ -47,7 +47,6 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
-import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
@@ -96,6 +95,7 @@ import org.apache.ignite.spi.communication.tcp.internal.TcpCommunicationConfigIn
 import org.apache.ignite.spi.communication.tcp.internal.TcpCommunicationConnectionCheckFuture;
 import org.apache.ignite.spi.communication.tcp.internal.TcpCommunicationSpiMBeanImpl;
 import org.apache.ignite.spi.communication.tcp.internal.TcpConnectionIndexAwareMessage;
+import org.apache.ignite.spi.communication.tcp.internal.TcpHandshakeExecutor;
 import org.apache.ignite.spi.communication.tcp.internal.shmem.ShmemAcceptWorker;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
@@ -638,7 +638,8 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         final Supplier<ClusterNode> locNodeSupplier = () -> getSpiContext().localNode();
         final Supplier<Ignite> igniteExSupplier = this::ignite;
         final Function<UUID, Boolean> pingNode = (nodeId) -> getSpiContext().pingNode(nodeId);
-        final Supplier<FailureProcessor> failureProcessorSupplier = () -> ignite instanceof IgniteEx ? ((IgniteEx)ignite).context().failure() : null;
+        final Supplier<FailureProcessor> failureProcessorSupplier =
+            () -> ignite instanceof IgniteEx ? ((IgniteEx)ignite).context().failure() : null;
         final Supplier<Boolean> isStopped = () -> getSpiContext().isStopping();
 
         this.igniteInstanceName = igniteInstanceName;
@@ -706,12 +707,15 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             }
         ));
 
-        GridTimeoutProcessor timeoutProcessor = ignite instanceof IgniteKernal ? ((IgniteKernal)ignite).context().timeout() : null;
+        TcpHandshakeExecutor tcpHandshakeExecutor = resolve(ignite, new TcpHandshakeExecutor(
+            log,
+            stateProvider,
+            cfg.directBuffer()
+        ));
 
         this.nioSrvWrapper = resolve(ignite, new GridNioServerWrapper(
             log,
             cfg,
-            timeoutProcessor,
             attributeNames,
             tracing,
             nodeGetter,
@@ -740,7 +744,8 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
                     if (lsnr instanceof CommunicationListenerEx)
                         ((CommunicationListenerEx<Message>)lsnr).onChannelOpened(rmtNodeId, initMsg, channel);
                 }
-            }
+            },
+            tcpHandshakeExecutor
         ));
 
         this.srvLsnr.setNioSrvWrapper(nioSrvWrapper);
@@ -755,9 +760,9 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             null,
             getWorkersRegistry(ignite),
             this,
-            timeoutProcessor,
             stateProvider,
-            nioSrvWrapper
+            nioSrvWrapper,
+            getName()
         ));
 
         this.srvLsnr.setClientPool(clientPool);
@@ -940,11 +945,13 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
 
         spiCtx.addLocalEventListener(discoLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
-        ctxInitLatch.countDown();
-
         metricsLsnr = new TcpCommunicationMetricsListener(ignite, spiCtx);
 
-        registerMBean(igniteInstanceName, new TcpCommunicationSpiMBeanImpl(this, metricsLsnr, cfg, stateProvider), TcpCommunicationSpiMBean.class);
+        registerMBean(
+            igniteInstanceName,
+            new TcpCommunicationSpiMBeanImpl(this, metricsLsnr, cfg, stateProvider),
+            TcpCommunicationSpiMBean.class
+        );
 
         srvLsnr.metricsListener(metricsLsnr);
         clientPool.metricsListener(metricsLsnr);
@@ -952,6 +959,8 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
 
         if (shmemAcceptWorker != null)
             shmemAcceptWorker.metricsListener(metricsLsnr);
+
+        ctxInitLatch.countDown();
     }
 
     /** {@inheritDoc} */

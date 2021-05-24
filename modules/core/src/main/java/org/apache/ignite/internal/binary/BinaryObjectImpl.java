@@ -936,6 +936,11 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     }
 
     /** {@inheritDoc} */
+    @Override public int size() {
+        return length();
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         if (arr == null || ctx == null)
             return "BinaryObjectImpl [arr= " + (arr != null) + ", ctx=" + (ctx != null) + ", start=" + start + "]";

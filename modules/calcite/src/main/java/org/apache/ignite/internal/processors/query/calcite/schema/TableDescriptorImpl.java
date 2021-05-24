@@ -27,7 +27,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.type.RelDataType;
@@ -182,10 +181,18 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
             affFields.add(descriptorsMap.get(typeDesc.affinityKey()).fieldIndex());
         else if (!F.isEmpty(typeDesc.keyFieldAlias()))
             affFields.add(descriptorsMap.get(typeDesc.keyFieldAlias()).fieldIndex());
-        else {
+        else if (!F.isEmpty(typeDesc.primaryKeyFields())) {
             affFields.addAll(
                 descriptors.stream()
                     .filter(desc -> typeDesc.primaryKeyFields().contains(desc.name()))
+                    .map(ColumnDescriptor::fieldIndex)
+                    .collect(Collectors.toList())
+            );
+        }
+        else {
+            affFields.addAll(
+                descriptors.stream()
+                    .filter(desc -> typeDesc.fields().containsKey(desc.name()) && typeDesc.property(desc.name()).key())
                     .map(ColumnDescriptor::fieldIndex)
                     .collect(Collectors.toList())
             );

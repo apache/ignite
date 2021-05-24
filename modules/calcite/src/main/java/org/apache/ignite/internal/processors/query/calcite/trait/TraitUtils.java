@@ -367,7 +367,8 @@ public class TraitUtils {
     }
 
     /** */
-    public static IgniteDistribution projectDistribution(IgniteDistribution distribution, List<RexNode> projects, RelDataType inputRowType) {
+    public static IgniteDistribution projectDistribution(IgniteDistribution distribution, List<RexNode> projects,
+        RelDataType inputRowType) {
         if (distribution.getType() != HASH_DISTRIBUTED)
             return distribution;
 
@@ -424,7 +425,7 @@ public class TraitUtils {
     /** */
     private static Set<Pair<RelTraitSet, List<RelTraitSet>>> combinations(RelTraitSet outTraits, List<List<RelTraitSet>> inTraits) {
         Set<Pair<RelTraitSet, List<RelTraitSet>>> out = new HashSet<>();
-        fillRecursive(outTraits, inTraits, out, new RelTraitSet[inTraits.size()],0);
+        fillRecursive(outTraits, inTraits, out, new RelTraitSet[inTraits.size()], 0);
         return out;
     }
 

@@ -59,7 +59,7 @@ public class JdbcThinComplexQuerySelfTest extends JdbcThinAbstractSelfTest {
      * @return Cache configuration.
      */
     protected CacheConfiguration cacheConfiguration() {
-        CacheConfiguration<?,?> cache = defaultCacheConfiguration();
+        CacheConfiguration<?, ?> cache = defaultCacheConfiguration();
 
         cache.setCacheMode(PARTITIONED);
         cache.setBackups(1);

@@ -21,7 +21,7 @@ matrix:
       install: skip
       jdk: openjdk8
       before_script:
-        - echo $JVM_EXTRA_ARGS
+        - echo $MAVEN_OPTS
       script: mvn test-compile -Pall-java,licenses,lgpl,checkstyle,examples,all-scala,scala,check-licenses -B -V
       before_cache: rm -rfv $HOME/.m2/repository/org/apache/ignite
       cache: {directories: [$HOME/.m2/repository]}
@@ -32,9 +32,9 @@ matrix:
       install: skip
       jdk: openjdk11
       before_script:
-        - echo $JVM_EXTRA_ARGS
+        - echo $MAVEN_OPTS
         - |
-          export JVM_EXTRA_ARGS='--illegal-access=permit
+          export MAVEN_OPTS='--illegal-access=permit
           --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED
           --add-exports=java.base/sun.nio.ch=ALL-UNNAMED
           --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
@@ -50,3 +50,13 @@ matrix:
       dotnet: 3.1.101
       script:
         - dotnet build modules/platforms/dotnet/Apache.Ignite.DotNetCore.sln
+
+    - language: java
+      name: "Check test suites"
+      os: linux
+      dist: trusty
+      install: skip
+      jdk: openjdk8
+      script: mvn test -Pcheck-test-suites,all-java,all-scala,scala -B -V
+      before_cache: rm -rfv $HOME/.m2/repository/org/apache/ignite
+      cache: { directories: [ $HOME/.m2/repository ] }

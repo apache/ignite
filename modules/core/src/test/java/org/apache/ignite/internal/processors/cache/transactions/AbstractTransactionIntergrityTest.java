@@ -256,7 +256,8 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Calculates total amount of coins for every thread for every node and checks that coins difference is zero (transaction integrity is saved).
+     * Calculates total amount of coins for every thread for every node and checks that coins difference is zero
+     * (transaction integrity is saved).
      */
     private void consistencyCheck(int[] initAmount) {
         for (Ignite node : G.allGrids()) {
@@ -273,7 +274,10 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
                     for (int i = 0; i < accountsCount(); i++) {
                         AccountState state = cache.get(i);
 
-                        Assert.assertNotNull("Account state has lost [node=" + node.name() + ", cache=" + cacheName + ", accNo=" + i + "]", state);
+                        Assert.assertNotNull(
+                            "Account state has lost [node=" + node.name() + ", cache=" + cacheName + ", accNo=" + i + "]",
+                            state
+                        );
 
                         totalCoins.addAll(state.coins);
 
@@ -299,7 +303,8 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
 
                     log.error("Transaction integrity failed for [node=" + node.name() + ", cache=" + cacheName + "]");
 
-                    log.error(String.format("Total amount of coins before and after transfers are not same. Lost coins: %s. Duplicate coins: %s.",
+                    log.error(
+                        String.format("Total amount of coins before and after transfers are not same. Lost coins: %s. Duplicate coins: %s.",
                         Objects.toString(lostCoins),
                         Objects.toString(duplicateCoins)));
 
@@ -441,7 +446,13 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
          * @param after2 After 2.
          * @param transferredCoins Transferred coins.
          */
-        public TxState(AccountState before1, AccountState before2, AccountState after1, AccountState after2, Set<Integer> transferredCoins) {
+        public TxState(
+            AccountState before1,
+            AccountState before2,
+            AccountState after1,
+            AccountState after2,
+            Set<Integer> transferredCoins
+        ) {
             this.before1 = before1;
             this.before2 = before2;
             this.after1 = after1;

@@ -25,8 +25,13 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.cache.Cache;
+import javax.cache.configuration.CacheEntryListenerConfiguration;
+import javax.cache.configuration.FactoryBuilder;
+import javax.cache.event.CacheEntryExpiredListener;
+import javax.cache.event.CacheEntryListener;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -35,12 +40,15 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
+import org.apache.ignite.client.ClientDisconnectListener;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.IgniteClientFuture;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.client.thin.TcpClientTransactions.TcpClientTransaction;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.EXPIRY_POLICY;
@@ -58,6 +66,9 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
 
     /** "With expiry policy" flag mask. */
     private static final byte WITH_EXPIRY_POLICY_FLAG_MASK = 0x04;
+
+    /** Platform type: Java platform. */
+    static final byte JAVA_PLATFORM = 1;
 
     /** Cache id. */
     private final int cacheId;
@@ -83,24 +94,34 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
     /** Expiry policy. */
     private final ExpiryPolicy expiryPlc;
 
+    /** Cache entry listeners registry. */
+    private final ClientCacheEntryListenersRegistry lsnrsRegistry;
+
+    /** JCache adapter. */
+    private final Cache<K, V> jCacheAdapter;
+
     /** Constructor. */
-    TcpClientCache(String name, ReliableChannel ch, ClientBinaryMarshaller marsh, TcpClientTransactions transactions) {
-        this(name, ch, marsh, transactions, false, null);
+    TcpClientCache(String name, ReliableChannel ch, ClientBinaryMarshaller marsh, TcpClientTransactions transactions,
+        ClientCacheEntryListenersRegistry lsnrsRegistry) {
+        this(name, ch, marsh, transactions, lsnrsRegistry, false, null);
     }
 
     /** Constructor. */
     TcpClientCache(String name, ReliableChannel ch, ClientBinaryMarshaller marsh, TcpClientTransactions transactions,
-        boolean keepBinary, ExpiryPolicy expiryPlc) {
+        ClientCacheEntryListenersRegistry lsnrsRegistry, boolean keepBinary, ExpiryPolicy expiryPlc) {
         this.name = name;
         this.cacheId = ClientUtils.cacheId(name);
         this.ch = ch;
         this.marsh = marsh;
         this.transactions = transactions;
+        this.lsnrsRegistry = lsnrsRegistry;
 
         serDes = new ClientUtils(marsh);
 
         this.keepBinary = keepBinary;
         this.expiryPlc = expiryPlc;
+
+        jCacheAdapter = new ClientJCacheAdapter<>(this);
     }
 
     /** {@inheritDoc} */
@@ -185,6 +206,34 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
                 null,
                 res -> res.in().readBoolean()
         );
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean containsKeys(Set<? extends K> keys) throws ClientException {
+        if (keys == null)
+            throw new NullPointerException("keys");
+
+        if (keys.isEmpty())
+            return true;
+
+        return ch.service(
+            ClientOperation.CACHE_CONTAINS_KEYS,
+            req -> writeKeys(keys, req),
+            res -> res.in().readBoolean());
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteClientFuture<Boolean> containsKeysAsync(Set<? extends K> keys) throws ClientException {
+        if (keys == null)
+            throw new NullPointerException("keys");
+
+        if (keys.isEmpty())
+            return IgniteClientFutureImpl.completedFuture(true);
+
+        return ch.serviceAsync(
+            ClientOperation.CACHE_CONTAINS_KEYS,
+            req -> writeKeys(keys, req),
+            res -> res.in().readBoolean());
     }
 
     /** {@inheritDoc} */
@@ -571,6 +620,38 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public V getAndPutIfAbsent(K key, V val) throws ClientException {
+        if (key == null)
+            throw new NullPointerException("key");
+
+        if (val == null)
+            throw new NullPointerException("val");
+
+        return cacheSingleKeyOperation(
+            key,
+            ClientOperation.CACHE_GET_AND_PUT_IF_ABSENT,
+            req -> writeObject(req, val),
+            this::readObject
+        );
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteClientFuture<V> getAndPutIfAbsentAsync(K key, V val) throws ClientException {
+        if (key == null)
+            throw new NullPointerException("key");
+
+        if (val == null)
+            throw new NullPointerException("val");
+
+        return cacheSingleKeyOperationAsync(
+            key,
+            ClientOperation.CACHE_GET_AND_PUT_IF_ABSENT,
+            req -> writeObject(req, val),
+            this::readObject
+        );
+    }
+
+    /** {@inheritDoc} */
     @Override public void clear() throws ClientException {
         ch.request(ClientOperation.CACHE_CLEAR, this::writeCacheInfo);
     }
@@ -581,14 +662,68 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public void clear(K key) throws ClientException {
+        if (key == null)
+            throw new NullPointerException("key");
+
+        cacheSingleKeyOperation(
+            key,
+            ClientOperation.CACHE_CLEAR_KEY,
+            null,
+            null
+        );
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteClientFuture<Void> clearAsync(K key) throws ClientException {
+        if (key == null)
+            throw new NullPointerException("key");
+
+        return cacheSingleKeyOperationAsync(
+            key,
+            ClientOperation.CACHE_CLEAR_KEY,
+            null,
+            null
+        );
+    }
+
+    /** {@inheritDoc} */
+    @Override public void clearAll(Set<? extends K> keys) throws ClientException {
+        if (keys == null)
+            throw new NullPointerException("keys");
+
+        if (keys.isEmpty())
+            return;
+
+        ch.request(
+            ClientOperation.CACHE_CLEAR_KEYS,
+            req -> writeKeys(keys, req)
+        );
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteClientFuture<Void> clearAllAsync(Set<? extends K> keys) throws ClientException {
+        if (keys == null)
+            throw new NullPointerException("keys");
+
+        if (keys.isEmpty())
+            return IgniteClientFutureImpl.completedFuture(null);
+
+        return ch.requestAsync(
+            ClientOperation.CACHE_CLEAR_KEYS,
+            req -> writeKeys(keys, req)
+        );
+    }
+
+    /** {@inheritDoc} */
     @Override public <K1, V1> ClientCache<K1, V1> withKeepBinary() {
         return keepBinary ? (ClientCache<K1, V1>)this :
-            new TcpClientCache<>(name, ch, marsh, transactions, true, expiryPlc);
+            new TcpClientCache<>(name, ch, marsh, transactions, lsnrsRegistry, true, expiryPlc);
     }
 
     /** {@inheritDoc} */
     @Override public <K1, V1> ClientCache<K1, V1> withExpirePolicy(ExpiryPolicy expirePlc) {
-        return new TcpClientCache<>(name, ch, marsh, transactions, keepBinary, expirePlc);
+        return new TcpClientCache<>(name, ch, marsh, transactions, lsnrsRegistry, keepBinary, expirePlc);
     }
 
     /** {@inheritDoc} */
@@ -605,6 +740,8 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
             res = (QueryCursor<R>)sqlQuery((SqlQuery)qry);
         else if (qry instanceof SqlFieldsQuery)
             res = (QueryCursor<R>)query((SqlFieldsQuery)qry);
+        else if (qry instanceof ContinuousQuery)
+            res = query((ContinuousQuery<K, V>)qry, null);
         else
             throw new IllegalArgumentException(
                 String.format("Query of type [%s] is not supported", qry.getClass().getSimpleName())
@@ -633,6 +770,99 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
         ));
     }
 
+    /** {@inheritDoc} */
+    @Override public <R> QueryCursor<R> query(ContinuousQuery<K, V> qry, ClientDisconnectListener disconnectLsnr) {
+        A.ensure(!(qry.getInitialQuery() instanceof ContinuousQuery), "Initial query for continuous query " +
+            "can't be an instance of another continuous query");
+        A.notNull(qry.getLocalListener(), "Local listener");
+        A.ensure(!qry.isLocal(), "Local query is not supported by thin client");
+        A.ensure(qry.isAutoUnsubscribe(), "AutoUnsubscribe flag is not supported by thin client");
+        A.ensure(qry.getRemoteFilterFactory() == null || qry.getRemoteFilter() == null,
+            "RemoteFilter and RemoteFilterFactory can't be used together");
+
+        ClientCacheEntryListenerHandler<K, V> hnd = new ClientCacheEntryListenerHandler<>(
+            jCacheAdapter,
+            ch,
+            marsh,
+            keepBinary
+        );
+
+        hnd.startListen(
+            qry.getLocalListener(),
+            disconnectLsnr,
+            qry.getRemoteFilterFactory() != null ? qry.getRemoteFilterFactory() : qry.getRemoteFilter() != null ?
+                FactoryBuilder.factoryOf(qry.getRemoteFilter()) : null,
+            qry.getPageSize(),
+            qry.getTimeInterval(),
+            qry.isIncludeExpired()
+        );
+
+        if (qry.getInitialQuery() != null) {
+            try {
+                QueryCursor<R> cur = (QueryCursor<R>)query(qry.getInitialQuery());
+
+                return new ClientContinuousQueryCursor<>(cur, hnd);
+            }
+            catch (Exception e) {
+                U.closeQuiet(hnd);
+
+                throw e;
+            }
+        }
+        else
+            return new ClientContinuousQueryCursor<>(null, hnd);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void registerCacheEntryListener(CacheEntryListenerConfiguration<K, V> cfg) {
+        registerCacheEntryListener(cfg, null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void registerCacheEntryListener(CacheEntryListenerConfiguration<K, V> cfg,
+        ClientDisconnectListener disconnectLsnr) {
+        A.ensure(!cfg.isSynchronous(),
+            "Unsupported cfg.isSynchronous() flag value");
+
+        A.notNull(cfg.getCacheEntryListenerFactory(), "cfg.getCacheEntryListenerFactory()");
+
+        ClientCacheEntryListenerHandler<K, V> hnd = new ClientCacheEntryListenerHandler<>(
+            jCacheAdapter,
+            ch,
+            marsh,
+            keepBinary
+        );
+
+        if (lsnrsRegistry.registerCacheEntryListener(name, cfg, hnd)) {
+            CacheEntryListener<? super K, ? super V> locLsnr = cfg.getCacheEntryListenerFactory().create();
+
+            ClientDisconnectListener disconnectLsnr0 = e -> {
+                if (disconnectLsnr != null)
+                    disconnectLsnr.onDisconnected(e);
+
+                lsnrsRegistry.deregisterCacheEntryListener(name, cfg);
+            };
+
+            hnd.startListen(
+                new ClientJCacheEntryListenerAdapter<>(locLsnr),
+                disconnectLsnr0,
+                cfg.getCacheEntryEventFilterFactory(),
+                ContinuousQuery.DFLT_PAGE_SIZE,
+                ContinuousQuery.DFLT_TIME_INTERVAL,
+                locLsnr instanceof CacheEntryExpiredListener
+            );
+        }
+        else
+            throw new IllegalStateException("Listener is already registered for configuration: " + cfg);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void deregisterCacheEntryListener(CacheEntryListenerConfiguration<K, V> cfg) {
+        ClientCacheEntryListenerHandler<?, ?> hnd = lsnrsRegistry.deregisterCacheEntryListener(name, cfg);
+
+        U.closeQuiet(hnd);
+    }
+
     /** Handle scan query. */
     private QueryCursor<Cache.Entry<K, V>> scanQuery(ScanQuery<K, V> qry) {
         Consumer<PayloadOutputChannel> qryWriter = payloadCh -> {
@@ -644,7 +874,7 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
                 out.writeByte(GridBinaryMarshaller.NULL);
             else {
                 serDes.writeObject(out, qry.getFilter());
-                out.writeByte((byte)1); // Java platform
+                out.writeByte(JAVA_PLATFORM);
             }
 
             out.writeInt(qry.getPageSize());

@@ -208,8 +208,8 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
     protected abstract void join() throws Exception;
 
     /** */
-    @NotNull public static <Row> NestedLoopJoinNode<Row> create(ExecutionContext<Row> ctx, RelDataType outputRowType, RelDataType leftRowType,
-        RelDataType rightRowType, JoinRelType joinType, Predicate<Row> cond) {
+    @NotNull public static <Row> NestedLoopJoinNode<Row> create(ExecutionContext<Row> ctx, RelDataType outputRowType,
+        RelDataType leftRowType, RelDataType rightRowType, JoinRelType joinType, Predicate<Row> cond) {
         switch (joinType) {
             case INNER:
                 return new InnerJoin<>(ctx, outputRowType, cond);

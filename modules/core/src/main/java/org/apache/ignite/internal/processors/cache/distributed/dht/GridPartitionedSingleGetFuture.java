@@ -918,7 +918,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
      * @param topVer Topology version.
      */
     private void remap(final AffinityTopologyVersion topVer) {
-        cctx.closures().runLocalSafe(new Runnable() {
+        cctx.closures().runLocalSafe(new GridPlainRunnable() {
             @Override public void run() {
                 // If topology changed reset collection of invalid nodes.
                 synchronized (this) {

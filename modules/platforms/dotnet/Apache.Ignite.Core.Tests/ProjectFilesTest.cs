@@ -37,7 +37,10 @@ namespace Apache.Ignite.Core.Tests
         {
             var projFiles = TestUtils.GetDotNetSourceDir()
                 .GetFiles("*.csproj", SearchOption.AllDirectories)
-                .Where(x => !x.FullName.ToLower().Contains("dotnetcore") && !x.FullName.Contains("Benchmark"))
+                .Where(x => !x.FullName.ToLower().Contains("dotnetcore") &&
+                            !x.FullName.Contains("Benchmark") &&
+                            !x.FullName.Contains("templates") &&
+                            !x.FullName.Contains("examples"))
                 .ToArray();
 
             Assert.GreaterOrEqual(projFiles.Length, 7);
@@ -84,6 +87,53 @@ namespace Apache.Ignite.Core.Tests
                 "Invalid optimize setting in release mode: ");
         }
 
+        /// <summary>
+        /// Tests that there are no public types in Apache.Ignite.Core.Impl namespace.
+        /// </summary>
+        [Test]
+        public void TestImplNamespaceHasNoPublicTypes()
+        {
+            var excluded = new[]
+            {
+                "ProjectFilesTest.cs",
+                "CopyOnWriteConcurrentDictionary.cs",
+                "IgniteArgumentCheck.cs",
+                "DelegateConverter.cs",
+                "IgniteHome.cs",
+                "TypeCaster.cs",
+                "FutureType.cs",
+                "CollectionExtensions.cs",
+                "IQueryEntityInternal.cs",
+                "ICacheInternal.cs",
+                "CacheEntry.cs",
+                "HandleRegistry.cs",
+                "BinaryObjectHeader.cs"
+            };
+
+            var csFiles = TestUtils.GetDotNetSourceDir().GetFiles("*.cs", SearchOption.AllDirectories);
+
+            foreach (var csFile in csFiles)
+            {
+                if (excluded.Contains(csFile.Name))
+                {
+                    continue;
+                }
+
+                var text = File.ReadAllText(csFile.FullName);
+
+                if (!text.Contains("namespace Apache.Ignite.Core.Impl"))
+                {
+                    continue;
+                }
+
+                StringAssert.DoesNotContain("public class", text, csFile.FullName);
+                StringAssert.DoesNotContain("public static class", text, csFile.FullName);
+                StringAssert.DoesNotContain("public interface", text, csFile.FullName);
+                StringAssert.DoesNotContain("public enum", text, csFile.FullName);
+                StringAssert.DoesNotContain("public struct", text, csFile.FullName);
+            }
+        }
+
 #if NETCOREAPP
         /// <summary>
         /// Tests that all .cs files are included in the project.
@@ -93,14 +143,19 @@ namespace Apache.Ignite.Core.Tests
         {
             var projFiles = TestUtils.GetDotNetSourceDir().GetFiles("*.csproj", SearchOption.AllDirectories)
                 .Where(x =>
-                    !x.Name.Contains("DotNetCore") && !x.Name.Contains("Benchmark") && !x.Name.Contains("Examples"));
+                    !x.Name.Contains("DotNetCore") &&
+                    !x.Name.Contains("Benchmark") &&
+                    !x.FullName.Contains("templates") &&
+                    !x.FullName.Contains("examples"));
 
             var excludedFiles = new[]
             {
                 "IgnitionStartTest.cs",
                 "Common\\TestFixtureSetUp.cs",
                 "Common\\TestFixtureTearDown.cs",
-                "Client\\Cache\\CacheTestAsyncAwait.cs"
+                "Client\\Cache\\CacheTestAsyncAwait.cs",
+                "Cache\\CacheTestAsyncAwait.cs",
+                "Compute\\ComputeTestAsyncAwait.cs"
             };
 
             Assert.Multiple(() =>
@@ -121,6 +176,7 @@ namespace Apache.Ignite.Core.Tests
                         if (csFileRelativePath.StartsWith("bin\\") ||
                             csFileRelativePath.StartsWith("obj\\") ||
                             csFileRelativePath.Contains("DotNetCore") ||
+                            csFileRelativePath.Contains("Examples") ||
                             excludedFiles.Contains(csFileRelativePath))
                         {
                             continue;
@@ -128,8 +184,7 @@ namespace Apache.Ignite.Core.Tests
 
                         Assert.IsTrue(
                             projFileText.Contains(csFileRelativePath),
-                            string.Format("Project file '{0}' should contain file '{1}'", projFile.Name,
-                                csFileRelativePath));
+                            string.Format("Project file '{0}' should contain file '{1}'", projFile.Name, csFile));
                     }
                 }
             });
@@ -144,7 +199,8 @@ namespace Apache.Ignite.Core.Tests
             return TestUtils.GetDotNetSourceDir().GetFiles("*.csproj", SearchOption.AllDirectories)
                 .Where(x => x.Name != "Apache.Ignite.csproj" &&
                             !x.Name.Contains("Test") &&
-                            !x.Name.Contains("Example") &&
+                            !x.FullName.Contains("examples") &&
+                            !x.FullName.Contains("templates") &&
                             !x.Name.Contains("DotNetCore") &&
                             !x.Name.Contains("Benchmark"));
         }
@@ -164,8 +220,10 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestSlnToolsVersion()
         {
-            var slnFiles = TestUtils.GetDotNetSourceDir().GetFiles("*.sln", SearchOption.AllDirectories)
-                .Where(x => !x.Name.Contains("DotNetCore")).ToArray();
+            var slnFiles = TestUtils.GetDotNetSourceDir()
+                .GetFiles("*.sln", SearchOption.AllDirectories)
+                .Where(x => !x.Name.Contains("DotNetCore") && !x.Name.Contains("Examples"))
+                .ToArray();
 
             Assert.GreaterOrEqual(slnFiles.Length, 2);
             CheckFiles(slnFiles, x => !x.Contains("# Visual Studio 2010") ||

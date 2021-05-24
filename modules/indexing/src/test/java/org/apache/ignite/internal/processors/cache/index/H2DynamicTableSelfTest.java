@@ -917,7 +917,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     @Test
     public void testDropTableFromClient() throws Exception {
-        execute(grid(0),"CREATE TABLE IF NOT EXISTS \"Person\" (\"id\" int, \"city\" varchar," +
+        execute(grid(0), "CREATE TABLE IF NOT EXISTS \"Person\" (\"id\" int, \"city\" varchar," +
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
             "\"template=cache\"");
 

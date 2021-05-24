@@ -1030,7 +1030,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC",
             "" +
                 "select * from DEVELOPER d, PROJECT p where d.projectId = p._key and d._key = ?;" +
-                "select * from DEVELOPER d, PROJECT p where d.projectId = p._key and d._key = ?", 0,1);
+                "select * from DEVELOPER d, PROJECT p where d.projectId = p._key and d._key = ?", 0, 1);
 
         assertEquals(2, query.size());
 
@@ -1266,13 +1266,15 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         // warmup
         for (int i = 0; i < numIterations; i++) {
-            List<FieldsQueryCursor<List<?>>> query = client.context().query().querySqlFields(new SqlFieldsQuery("select * from DEVELOPER").setSchema("PUBLIC"), false, false);
+            List<FieldsQueryCursor<List<?>>> query = client.context().query().querySqlFields(
+                new SqlFieldsQuery("select * from DEVELOPER").setSchema("PUBLIC"), false, false);
             query.get(0).getAll();
         }
 
         start = System.currentTimeMillis();
         for (int i = 0; i < numIterations; i++) {
-            List<FieldsQueryCursor<List<?>>> query = client.context().query().querySqlFields(new SqlFieldsQuery("select * from DEVELOPER").setSchema("PUBLIC"), false, false);
+            List<FieldsQueryCursor<List<?>>> query = client.context().query().querySqlFields(
+                new SqlFieldsQuery("select * from DEVELOPER").setSchema("PUBLIC"), false, false);
             query.get(0).getAll();
         }
         System.out.println("H2 duration = " + (System.currentTimeMillis() - start));

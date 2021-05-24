@@ -977,7 +977,7 @@ public abstract class CacheBlockOnReadAbstractTest extends GridCommonAbstractTes
         // On average every read operation was much faster then blocking timeout.
         double avgDuration = (double)timeout() / readOperation.readOperationsFinishedUnderBlock();
 
-        assertTrue("Avarage duration was too long.",avgDuration < timeout() * 0.25);
+        assertTrue("Avarage duration was too long.", avgDuration < timeout() * 0.25);
     }
 
     /**

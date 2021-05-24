@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeExecutionRejectedException;
 import org.apache.ignite.compute.ComputeJob;
@@ -536,6 +537,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         // Make sure flag is not set for current thread.
         HOLD.set(false);
 
+        SqlFieldsQuery.setThreadedQueryInitiatorId("task:" + ses.getTaskName() + ":" + getJobId());
+
         try {
             if (partsReservation != null) {
                 try {
@@ -672,6 +675,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
             }
         }
         finally {
+            SqlFieldsQuery.resetThreadedQueryInitiatorId();
+
             if (partsReservation != null)
                 partsReservation.release();
         }

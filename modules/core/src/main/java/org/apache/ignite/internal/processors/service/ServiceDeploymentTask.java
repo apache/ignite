@@ -38,6 +38,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -457,7 +458,7 @@ class ServiceDeploymentTask {
             if (isCompleted())
                 return;
 
-            ctx.closure().runLocalSafe(() -> {
+            ctx.closure().runLocalSafe((GridPlainRunnable)() -> {
                 try {
                     ServiceDeploymentActions depResults = msg.servicesDeploymentActions();
 

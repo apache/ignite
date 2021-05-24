@@ -94,7 +94,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridBusyLock;
@@ -1106,7 +1105,7 @@ public final class GridTestUtils {
      * @return Future with task result.
      */
     public static IgniteInternalFuture runAsync(final Runnable task) {
-        return runAsync(task,"async-runnable-runner");
+        return runAsync(task, "async-runnable-runner");
     }
 
     /**
@@ -1611,14 +1610,31 @@ public final class GridTestUtils {
     private static Object findField(Class<?> cls, Object obj,
         String fieldName) throws NoSuchFieldException, IllegalAccessException {
         // Resolve inner field.
-        Field field = cls.getDeclaredField(fieldName);
 
-        boolean accessible = field.isAccessible();
+        NoSuchFieldException ex = null;
 
-        if (!accessible)
-            field.setAccessible(true);
+        while (cls != null) {
+            try {
+                Field field = cls.getDeclaredField(fieldName);
 
-        return field.get(obj);
+                boolean accessible = field.isAccessible();
+
+                if (!accessible)
+                    field.setAccessible(true);
+
+                return field.get(obj);
+            }
+            catch (NoSuchFieldException ex0) {
+                if (ex == null)
+                    ex = ex0;
+                else
+                    ex.addSuppressed(ex0);
+
+                cls = cls.getSuperclass();
+            }
+        }
+
+        throw ex;
     }
 
     /**
@@ -2357,16 +2373,6 @@ public final class GridTestUtils {
             connStr += "/?" + params;
 
         return DriverManager.getConnection(connStr);
-    }
-
-    /**
-     * Removes idle_verify log files created in tests.
-     */
-    public static void cleanIdleVerifyLogFiles() {
-        File dir = new File(".");
-
-        for (File f : dir.listFiles(n -> n.getName().startsWith(IdleVerifyResultV2.IDLE_VERIFY_FILE_PREFIX)))
-            f.delete();
     }
 
     /**

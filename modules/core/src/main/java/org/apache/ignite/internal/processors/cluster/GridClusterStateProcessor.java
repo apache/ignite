@@ -68,13 +68,14 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.Metas
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
-import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.ChangeTopologyWatcher;
+import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineTopologyUpdater;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributePropertyListener;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -160,8 +161,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     /** */
     private final JdkMarshaller marsh = new JdkMarshaller();
 
-    /** Watcher of topology change for baseline auto-adjust. */
-    private ChangeTopologyWatcher changeTopologyWatcher;
+    /** Updater of baseline topology. */
+    private BaselineTopologyUpdater baselineTopologyUpdater;
 
     /** Distributed baseline configuration. */
     private DistributedBaselineConfiguration distributedBaselineConfiguration;
@@ -457,10 +458,26 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
     /** {@inheritDoc} */
     @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
+        baselineTopologyUpdater = new BaselineTopologyUpdater(ctx);
+
         ctx.event().addLocalEventListener(
-            changeTopologyWatcher = new ChangeTopologyWatcher(ctx),
+            event -> {
+                DiscoveryEvent discoEvt = (DiscoveryEvent) event;
+
+                if (discoEvt.eventNode().isClient() || discoEvt.eventNode().isDaemon())
+                    return;
+
+                baselineTopologyUpdater.triggerBaselineUpdate(discoEvt.topologyVersion());
+            },
             EVT_NODE_FAILED, EVT_NODE_LEFT, EVT_NODE_JOINED
         );
+
+        distributedBaselineConfiguration.listenAutoAdjustEnabled((name, oldVal, newVal) -> {
+           if (newVal != null && newVal) {
+               long topVer = ctx.discovery().topologyVersion();
+               baselineTopologyUpdater.triggerBaselineUpdate(topVer);
+           }
+        });
     }
 
     /** {@inheritDoc} */
@@ -571,7 +588,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
             ctx.cache().onStateChangeFinish(msg);
 
-            ctx.durableBackgroundTasksProcessor().onStateChangeFinish(msg);
+            ctx.durableBackgroundTask().onStateChangeFinish(msg);
 
             if (discoClusterState.lastState() == ACTIVE_READ_ONLY || globalState.state() == ACTIVE_READ_ONLY)
                 ctx.cache().context().readOnlyMode(globalState.state() == ACTIVE_READ_ONLY);
@@ -706,11 +723,15 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 DiscoveryDataClusterState newState = globalState = DiscoveryDataClusterState.createTransitionState(
                     msg.state(),
                     state,
-                    activate(state.state(), msg.state()) || msg.forceChangeBaselineTopology() ? msg.baselineTopology() : state.baselineTopology(),
+                    activate(state.state(), msg.state()) || msg.forceChangeBaselineTopology()
+                        ? msg.baselineTopology()
+                        : state.baselineTopology(),
                     msg.requestId(),
                     topVer,
                     nodeIds
                 );
+
+                ctx.durableBackgroundTask().onStateChangeStarted(msg);
 
                 if (msg.forceChangeBaselineTopology())
                     newState.setTransitionResult(msg.requestId(), msg.state());
@@ -1396,7 +1417,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         checkLocalNodeInBaseline(globalState.baselineTopology());
 
-        ctx.closure().runLocalSafe(new Runnable() {
+        ctx.closure().runLocalSafe(new GridPlainRunnable() {
             @Override public void run() {
                 boolean client = ctx.clientNode();
 
@@ -1742,7 +1763,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
      * @return Status of baseline auto-adjust.
      */
     public BaselineAutoAdjustStatus baselineAutoAdjustStatus() {
-        return changeTopologyWatcher.getStatus();
+        return baselineTopologyUpdater.getStatus();
     }
 
     /**
