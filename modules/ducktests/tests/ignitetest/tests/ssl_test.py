@@ -20,6 +20,7 @@ from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
+from ignitetest.services.utils.path import get_shared_root_path
 from ignitetest.services.utils.ssl.connector_configuration import ConnectorConfiguration
 from ignitetest.services.utils.ssl.ssl_params import SslParams, DEFAULT_SERVER_KEYSTORE, DEFAULT_CLIENT_KEYSTORE, \
     DEFAULT_ADMIN_KEYSTORE
@@ -41,7 +42,7 @@ class SslTest(IgniteTest):
         Test that IgniteService, IgniteApplicationService correctly start and stop with ssl configurations.
         And check ControlUtility with ssl arguments.
         """
-        shared_root = "/mnt/service/shared"
+        shared_root = get_shared_root_path(self.test_context.globals)
 
         server_ssl = SslParams(shared_root, key_store_jks=DEFAULT_SERVER_KEYSTORE)
 
