@@ -520,6 +520,49 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
     /** */
     @Test
+    public void testSortNullsDirection() throws Exception {
+        IgniteCache<Integer, Employer> orders = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
+            .setName("orders")
+            .setSqlSchema("PUBLIC")
+            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName("orders")))
+            .setBackups(1)
+        );
+
+        orders.put(1, new Employer("Igor", 10d));
+        orders.put(2, new Employer("Igor", 11d));
+        orders.put(3, new Employer("Igor", 12d));
+        orders.put(4, new Employer("Igor1", 13d));
+        orders.put(5, new Employer("Igor1", 13d));
+        orders.put(6, new Employer("Igor1", null));
+        orders.put(7, new Employer("Roman", null));
+
+        List<List<?>> rows = sql(
+            "SELECT salary FROM Orders ORDER BY salary", true);
+
+        List<List<?>> rows0 = sql(
+            "SELECT salary FROM Orders ORDER BY salary NULLS LAST", true);
+
+        assertEquals(7, rows.size());
+        assertEquals(rows, rows0);
+
+        rows = sql(
+            "SELECT _KEY FROM Orders ORDER BY salary", true);
+
+        rows0 = sql(
+            "SELECT _KEY FROM Orders ORDER BY salary NULLS LAST", true);
+
+        assertEquals(7, rows.size());
+        assertEquals(rows, rows0);
+
+        rows = sql(
+            "SELECT salary FROM Orders ORDER BY salary NULLS FIRST LIMIT 1", true);
+
+        assertEquals(1, rows.size());
+        assertEquals(null, rows.get(0).get(0));
+    }
+
+    /** */
+    @Test
     public void testEqConditionWithDistinctSubquery() throws Exception {
         populateTables();
 
