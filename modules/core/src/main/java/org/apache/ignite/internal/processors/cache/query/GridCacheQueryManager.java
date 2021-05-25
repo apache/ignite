@@ -2862,7 +2862,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             null,
             false,
             keepBinary,
-            null).limit(limit).pageSize(pageSize);
+            null)
+            .limit(limit)
+            .pageSize(pageSize);
     }
 
     /** @return Query iterators. */
