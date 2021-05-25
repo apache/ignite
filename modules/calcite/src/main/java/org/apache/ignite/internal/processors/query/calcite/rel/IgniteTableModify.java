@@ -166,6 +166,6 @@ public class IgniteTableModify extends TableModify implements TraitsAwareIgniteR
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
         //TODO: Implement
-        return null;
+        return super.computeSelfCost(planner, mq);
     }
 }

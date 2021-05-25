@@ -4,17 +4,11 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
-import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.logical.LogicalTableModify;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.RelBuilder;
-import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
-import java.util.List;
 
 public class LogicalTableModifyAggRule extends RelRule<LogicalTableModifyAggRule.Config> {
 
@@ -35,8 +29,6 @@ public class LogicalTableModifyAggRule extends RelRule<LogicalTableModifyAggRule
         final LogicalTableModify rel = call.rel(0);
         final RelOptCluster cluster = rel.getCluster();
         final RelBuilder relBuilder = relBuilderFactory.create(cluster, null);
-
-        RelTraitSet traits = cluster.traitSetOf(IgniteConvention.INSTANCE);
 
         relBuilder.push(rel);
 

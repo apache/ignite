@@ -539,15 +539,19 @@ public class RexUtils {
     public static Set<CorrelationId> extractCorrelationIds(List<RexNode> nodes) {
         final Set<CorrelationId> cors = new HashSet<>();
 
-        RexVisitor<Void> v = new RexVisitorImpl<Void>(true) {
-            @Override public Void visitCorrelVariable(RexCorrelVariable correlVariable) {
-                cors.add(correlVariable.id);
+        if (nodes != null) {
 
-                return null;
-            }
-        };
+            RexVisitor<Void> v = new RexVisitorImpl<Void>(true) {
+                @Override
+                public Void visitCorrelVariable(RexCorrelVariable correlVariable) {
+                    cors.add(correlVariable.id);
 
-        nodes.forEach(rex -> rex.accept(v));
+                    return null;
+                }
+            };
+
+            nodes.forEach(rex -> rex.accept(v));
+        }
 
         return cors;
     }
