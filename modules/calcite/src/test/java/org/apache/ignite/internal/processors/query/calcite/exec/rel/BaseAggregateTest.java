@@ -39,11 +39,13 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumulators;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Assert;
 import org.junit.Before;
@@ -288,6 +290,102 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
         Assert.assertArrayEquals(row(1, 800), root.next());
 
         assertFalse(root.hasNext());
+    }
+
+    /** */
+    @Test
+    public void single() {
+        Object[] res = {null, null};
+
+        List<Object[]> arr = Arrays.asList(
+            row(0, res[0]),
+            row(1, res[1])
+        );
+
+        singleAggr(arr, res, false);
+
+        res = new Object[]{1, 2};
+
+        arr = Arrays.asList(
+            row(0, res[0]),
+            row(1, res[1])
+        );
+
+        singleAggr(arr, res, false);
+
+        arr = Arrays.asList(
+            row(0, res[0]),
+            row(1, res[1]),
+            row(0, res[0]),
+            row(1, res[1])
+            );
+
+        singleAggr(arr, res, true);
+
+        arr = Arrays.asList(
+            row(0, null),
+            row(1, null),
+            row(0, null),
+            row(1, null)
+        );
+
+        singleAggr(arr, res, true);
+    }
+
+    /**
+     * Checks single aggregate and appropriate {@link Accumulators.SingleVal} implementation.
+     *
+     * @param scanInput Input data.
+     * @param output Expectation result.
+     * @param mustFail {@code true} If expression must throw exception.
+     **/
+    public void singleAggr(List<Object[]> scanInput, Object[] output, boolean mustFail) {
+        ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
+        IgniteTypeFactory tf = ctx.getTypeFactory();
+        RelDataType rowType = TypeUtils.createRowType(tf, int.class, int.class);
+        ScanNode<Object[]> scan = new ScanNode<>(ctx, rowType, scanInput);
+
+        AggregateCall call = AggregateCall.create(
+            SqlStdOperatorTable.SINGLE_VALUE,
+            false,
+            false,
+            false,
+            ImmutableIntList.of(1),
+            -1,
+            RelCollations.EMPTY,
+            tf.createJavaType(Integer.class),
+            null);
+
+        ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of(0));
+
+        RelDataType aggRowType = TypeUtils.createRowType(tf, int.class);
+
+        SingleNode<Object[]> aggChain = createAggregateNodesChain(
+            ctx,
+            grpSets,
+            call,
+            rowType,
+            aggRowType,
+            rowFactory(),
+            scan
+        );
+
+        RootNode<Object[]> root = new RootNode<>(ctx, aggRowType);
+        root.register(aggChain);
+
+        Runnable r = () -> {
+            assertTrue(root.hasNext());
+
+            Assert.assertArrayEquals(row(0, output[0]), root.next());
+            Assert.assertArrayEquals(row(1, output[1]), root.next());
+
+            assertFalse(root.hasNext());
+        };
+
+        if (mustFail)
+            GridTestUtils.assertThrowsWithCause(r, IllegalArgumentException.class);
+        else
+            r.run();
     }
 
     /** */
