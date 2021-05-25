@@ -3700,14 +3700,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             catch (BinaryObjectException e) {
                 cacheMsg.onClassError(new IgniteCheckedException(e));
             }
-            catch (Error e) {
-                if (X.hasCause(e, NoClassDefFoundError.class, UnsupportedClassVersionError.class)) {
-                    cacheMsg.onClassError(
-                        new IgniteCheckedException("Failed to load class during unmarshalling: " + e, e)
-                    );
-                }
-                else
-                    throw e;
+            catch (NoClassDefFoundError | UnsupportedClassVersionError e) {
+                cacheMsg.onClassError(new IgniteCheckedException("Failed to load class during unmarshalling: " + e, e);
             }
         }
     }
