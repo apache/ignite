@@ -17,138 +17,123 @@
 
 package org.apache.ignite.network.internal;
 
-import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.network.message.NetworkMessage;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.network.NetworkMessage;
+import org.apache.ignite.network.processor.annotations.AutoSerializable;
 
-/**
- * Message with all types supported by Direct Marshalling.
- */
-public class AllTypesMessage implements NetworkMessage {
-    /** */
-    @TestFieldType(MessageCollectionItemType.BYTE)
-    byte a;
+@AutoSerializable(messageFactory = AllTypesMessageFactory.class)
+public interface AllTypesMessage extends NetworkMessage {
+    /** Direct type. */
+    public static final short TYPE = 1;
 
-    /** */
-    @TestFieldType(MessageCollectionItemType.SHORT)
-    short b;
+    byte a();
 
-    /** */
-    @TestFieldType(MessageCollectionItemType.INT)
-    int c;
+    short b();
 
-    /** */
-    @TestFieldType(MessageCollectionItemType.LONG)
-    long d;
+    int c();
 
-    /** */
-    @TestFieldType(MessageCollectionItemType.FLOAT)
-    float e;
+    long d();
 
-    /** */
-    @TestFieldType(MessageCollectionItemType.DOUBLE)
-    double f;
+    float e();
 
-    /** */
-    @TestFieldType(MessageCollectionItemType.CHAR)
-    char g;
+    double f();
 
-    /** */
-    @TestFieldType(MessageCollectionItemType.BOOLEAN)
-    boolean h;
+    char g();
 
-    /** */
-    @TestFieldType(MessageCollectionItemType.BYTE_ARR)
-    byte[] i;
+    boolean h();
 
-    /** */
-    @TestFieldType(MessageCollectionItemType.SHORT_ARR)
-    short[] j;
+    byte[] i();
 
-    /** */
-    @TestFieldType(MessageCollectionItemType.INT_ARR)
-    int[] k;
+    short[] j();
 
-    /** */
-    @TestFieldType(MessageCollectionItemType.LONG_ARR)
-    long[] l;
+    int[] k();
 
-    /** */
-    @TestFieldType(MessageCollectionItemType.FLOAT_ARR)
-    float[] m;
+    long[] l();
 
-    /** */
-    @TestFieldType(MessageCollectionItemType.DOUBLE_ARR)
-    double[] n;
+    float[] m();
 
-    /** */
-    @TestFieldType(MessageCollectionItemType.CHAR_ARR)
-    char[] o;
+    double[] n();
 
-    /** */
-    @TestFieldType(MessageCollectionItemType.BOOLEAN_ARR)
-    boolean[] p;
+    char[] o();
 
-    /** */
-    @TestFieldType(MessageCollectionItemType.STRING)
-    String q;
+    boolean[] p();
 
-    /** */
-    @TestFieldType(MessageCollectionItemType.BIT_SET)
-    BitSet r;
+    String q();
 
-    /** */
-    @TestFieldType(MessageCollectionItemType.UUID)
-    UUID s;
+    BitSet r();
 
-    /** */
-    @TestFieldType(MessageCollectionItemType.IGNITE_UUID)
-    IgniteUuid t;
+    UUID s();
 
-    /** */
-    @TestFieldType(MessageCollectionItemType.MSG)
-    NetworkMessage u;
+    IgniteUuid t();
 
-    /** */
-    Object[] v;
+    NetworkMessage u();
 
-    /** */
-    Collection<?> w;
+    NetworkMessage[] v();
 
-    /** */
-    Map<?, ?> x;
+    Collection<NetworkMessage> w();
 
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 5555;
+    Map<String, NetworkMessage> x();
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override public default short directType() {
+        return TYPE;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o1) {
-        if (this == o1) return true;
-        if (o1 == null || getClass() != o1.getClass()) return false;
-        AllTypesMessage message = (AllTypesMessage) o1;
-        return a == message.a && b == message.b && c == message.c && d == message.d && Float.compare(message.e, e) == 0 && Double.compare(message.f, f) == 0 && g == message.g && h == message.h && Arrays.equals(i, message.i) && Arrays.equals(j, message.j) && Arrays.equals(k, message.k) && Arrays.equals(l, message.l) && Arrays.equals(m, message.m) && Arrays.equals(n, message.n) && Arrays.equals(o, message.o) && Arrays.equals(p, message.p) && Objects.equals(q, message.q) && Objects.equals(r, message.r) && Objects.equals(s, message.s) && Objects.equals(t, message.t) && Objects.equals(u, message.u) && Arrays.equals(v, message.v) && Objects.equals(w, message.w) && Objects.equals(x, message.x);
-    }
+    interface Builder {
+        AllTypesMessage build();
 
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        int result = Objects.hash(a, b, c, d, e, f, g, h, q, r, s, t, u, w, x);
-        result = 31 * result + Arrays.hashCode(i);
-        result = 31 * result + Arrays.hashCode(j);
-        result = 31 * result + Arrays.hashCode(k);
-        result = 31 * result + Arrays.hashCode(l);
-        result = 31 * result + Arrays.hashCode(m);
-        result = 31 * result + Arrays.hashCode(n);
-        result = 31 * result + Arrays.hashCode(o);
-        result = 31 * result + Arrays.hashCode(p);
-        result = 31 * result + Arrays.hashCode(v);
-        return result;
+        Builder a(byte a);
+
+        Builder b(short b);
+
+        Builder c(int c);
+
+        Builder d(long d);
+
+        Builder e(float e);
+
+        Builder f(double f);
+
+        Builder g(char g);
+
+        Builder h(boolean h);
+
+        Builder i(byte[] i);
+
+        Builder j(short[] j);
+
+        Builder k(int[] k);
+
+        Builder l(long[] l);
+
+        Builder m(float[] m);
+
+        Builder n(double[] n);
+
+        Builder o(char[] o);
+
+        Builder p(boolean[] p);
+
+        Builder q(String q);
+
+        Builder r(BitSet r);
+
+        Builder s(UUID s);
+
+        Builder t(IgniteUuid t);
+
+        Builder u(NetworkMessage u);
+
+        Builder v(NetworkMessage[] v);
+
+        Builder w(Collection<NetworkMessage> w);
+
+        Builder x(Map<String, NetworkMessage> x);
     }
 }

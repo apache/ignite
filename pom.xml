@@ -48,6 +48,8 @@
         <module>modules/metastorage-common</module>
         <module>modules/metastorage-server</module>
         <module>modules/network</module>
+        <module>modules/network-annotation-processor</module>
+        <module>modules/network-api</module>
         <module>modules/raft</module>
         <module>modules/raft-client</module>
         <module>modules/rest</module>

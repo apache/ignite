@@ -17,11 +17,11 @@
 
 package org.apache.ignite.network.internal.netty;
 
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
 import java.net.SocketAddress;
 import java.util.function.BiConsumer;
-import org.apache.ignite.network.message.NetworkMessage;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import org.apache.ignite.network.NetworkMessage;
 
 /**
  * Network message handler that delegates handling to {@link #messageListener}.

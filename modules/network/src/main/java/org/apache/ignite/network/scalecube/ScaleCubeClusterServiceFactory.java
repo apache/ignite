@@ -37,7 +37,7 @@ import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.ClusterServiceFactory;
 import org.apache.ignite.network.NetworkConfigurationException;
 import org.apache.ignite.network.internal.netty.ConnectionManager;
-import org.apache.ignite.network.message.MessageSerializationRegistry;
+import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 
 /**
  * {@link ClusterServiceFactory} implementation that uses ScaleCube for messaging and topology services.

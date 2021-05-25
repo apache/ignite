@@ -15,67 +15,30 @@
  * limitations under the License.
  */
 
-
 package org.apache.ignite.network;
 
-import java.io.Serializable;
-import java.util.Collections;
 import java.util.Map;
-import java.util.Objects;
-import org.apache.ignite.internal.tostring.IgniteToStringInclude;
-import org.apache.ignite.internal.tostring.S;
-import org.apache.ignite.network.message.NetworkMessage;
+import org.apache.ignite.network.processor.annotations.AutoSerializable;
 
-/** */
-public class TestMessage implements NetworkMessage, Serializable {
+@AutoSerializable(messageFactory = TestMessageFactory.class)
+public interface TestMessage extends NetworkMessage {
     /** Visible type for tests. */
     public static final short TYPE = 3;
 
-    /** */
-    private final String msg;
+    String msg();
 
-    /** */
-    @IgniteToStringInclude
-    private final Map<Integer, String> map;
-
-    /** */
-    public TestMessage(String msg, Map<Integer, String> map) {
-        this.msg = msg;
-        this.map = map;
-    }
-
-    public TestMessage(String msg) {
-        this(msg, Collections.emptyMap());
-    }
-
-    public String msg() {
-        return msg;
-    }
-
-    public Map<Integer, String> getMap() {
-        return map;
-    }
+    Map<Integer, String> map();
 
     /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        TestMessage message = (TestMessage) o;
-        return Objects.equals(msg, message.msg) && Objects.equals(map, message.map);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return Objects.hash(msg, map);
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
+    @Override public default short directType() {
         return TYPE;
     }
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(TestMessage.class, this);
+    interface Builder {
+        Builder msg(String msg);
+
+        Builder map(Map<Integer, String> map);
+
+        TestMessage build();
     }
 }

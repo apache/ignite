@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.app;
 
-import io.netty.util.internal.StringUtil;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import io.netty.util.internal.StringUtil;
 import org.apache.ignite.app.Ignite;
 import org.apache.ignite.app.Ignition;
 import org.apache.ignite.configuration.RootKey;
@@ -46,10 +46,9 @@ import org.apache.ignite.internal.vault.impl.VaultServiceImpl;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterService;
-import org.apache.ignite.network.message.MessageSerializationRegistry;
 import org.apache.ignite.network.scalecube.ScaleCubeClusterServiceFactory;
-import org.apache.ignite.network.scalecube.message.ScaleCubeMessage;
-import org.apache.ignite.network.scalecube.message.ScaleCubeMessageSerializationFactory;
+import org.apache.ignite.network.scalecube.message.MessageSerializationRegistryInitializer;
+import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 import org.apache.ignite.table.manager.IgniteTables;
 import org.apache.ignite.utils.IgniteProperties;
 
@@ -117,8 +116,9 @@ public class IgnitionImpl implements Ignition {
         NetworkView netConfigurationView =
             locConfigurationMgr.configurationRegistry().getConfiguration(NetworkConfiguration.KEY).value();
 
-        var serializationRegistry = new MessageSerializationRegistry()
-            .registerFactory(ScaleCubeMessage.TYPE, new ScaleCubeMessageSerializationFactory());
+        var serializationRegistry = new MessageSerializationRegistry();
+
+        MessageSerializationRegistryInitializer.initialize(serializationRegistry);
 
         String localNodeName = locConfigurationMgr.configurationRegistry().getConfiguration(NodeConfiguration.KEY)
             .name().value();

@@ -17,46 +17,34 @@
 
 package org.apache.ignite.network.scalecube.message;
 
-import io.scalecube.cluster.transport.api.Message;
 import java.util.Map;
-import org.apache.ignite.network.message.NetworkMessage;
+import io.scalecube.cluster.transport.api.Message;
+import org.apache.ignite.network.NetworkMessage;
+import org.apache.ignite.network.processor.annotations.AutoSerializable;
 
 /**
  * Wrapper for ScaleCube's {@link Message}.
  * {@link Message#data} is stored in {@link #array} and {@link Message#headers} are stored in {@link #headers}.
  */
-public class ScaleCubeMessage implements NetworkMessage {
+@AutoSerializable(messageFactory = ScaleCubeMessageFactory.class)
+public interface ScaleCubeMessage extends NetworkMessage {
     /** Direct type. */
     public static final short TYPE = 1;
 
-    /** Message's data. */
-    private final byte[] array;
+    byte[] array();
 
-    /** Message's headers. */
-    private final Map<String, String> headers;
+    Map<String, String> headers();
 
-    /** Constructor. */
-    public ScaleCubeMessage(byte[] array, Map<String, String> headers) {
-        this.array = array;
-        this.headers = headers;
-    }
+    interface Builder {
+        Builder array(byte[] array);
 
-    /**
-     * @return Message's data.
-     */
-    public byte[] getArray() {
-        return array;
-    }
+        Builder headers(Map<String, String> headers);
 
-    /**
-     * @return Message's headers.
-     */
-    public Map<String, String> getHeaders() {
-        return headers;
+        ScaleCubeMessage build();
     }
 
     /** {@inheritDoc} */
-    @Override public short directType() {
+    @Override public default short directType() {
         return TYPE;
     }
 }

@@ -17,9 +17,6 @@
 
 package org.apache.ignite.network.scalecube;
 
-import io.scalecube.cluster.transport.api.Message;
-import io.scalecube.cluster.transport.api.Transport;
-import io.scalecube.net.Address;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -30,11 +27,15 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Map;
 import java.util.Objects;
+import io.scalecube.cluster.transport.api.Message;
+import io.scalecube.cluster.transport.api.Transport;
+import io.scalecube.net.Address;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.lang.IgniteLogger;
+import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.internal.netty.ConnectionManager;
-import org.apache.ignite.network.message.NetworkMessage;
 import org.apache.ignite.network.scalecube.message.ScaleCubeMessage;
+import org.apache.ignite.network.scalecube.message.ScaleCubeMessageFactory;
 import org.jetbrains.annotations.Nullable;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
@@ -184,7 +185,10 @@ public class ScaleCubeDirectMarshallerTransport implements Transport {
             throw new IgniteInternalException(e);
         }
 
-        return new ScaleCubeMessage(stream.toByteArray(), message.headers());
+        return ScaleCubeMessageFactory.scaleCubeMessage()
+            .array(stream.toByteArray())
+            .headers(message.headers())
+            .build();
     }
 
     /**
@@ -199,11 +203,11 @@ public class ScaleCubeDirectMarshallerTransport implements Transport {
         if (networkMessage instanceof ScaleCubeMessage) {
             ScaleCubeMessage msg = (ScaleCubeMessage) networkMessage;
 
-            Map<String, String> headers = msg.getHeaders();
+            Map<String, String> headers = msg.headers();
 
             Object obj;
 
-            try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(msg.getArray()))) {
+            try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(msg.array()))) {
                 obj = ois.readObject();
             }
             catch (Exception e) {

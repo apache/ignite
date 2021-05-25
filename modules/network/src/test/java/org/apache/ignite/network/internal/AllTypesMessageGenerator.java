@@ -24,6 +24,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.lang.IgniteUuidGenerator;
+import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 
 /**
@@ -42,28 +43,31 @@ public class AllTypesMessageGenerator {
         try {
             var random = new Random(seed);
 
-            var message = new AllTypesMessage();
+            var message = new AllTypesMessageImpl();
 
-            Field[] fields = AllTypesMessage.class.getDeclaredFields();
+            Field[] fields = AllTypesMessageImpl.class.getDeclaredFields();
 
             for (Field field : fields) {
                 TestFieldType annotation = field.getAnnotation(TestFieldType.class);
 
                 if (annotation != null) {
+                    field.setAccessible(true);
                     field.set(message, randomValue(random, annotation.value(), nestedMsg));
                 }
             }
 
             if (nestedMsg) {
-                message.v = IntStream.range(0, 10).mapToObj(unused -> generate(seed, false)).toArray();
+                message.v(
+                    IntStream.range(0, 10).mapToObj(unused -> generate(seed, false)).toArray(NetworkMessage[]::new)
+                );
 
-                message.w = IntStream.range(0, 10)
+                message.w(IntStream.range(0, 10)
                     .mapToObj(unused -> generate(seed, false))
-                    .collect(Collectors.toList());
+                    .collect(Collectors.toList()));
 
-                message.x = IntStream.range(0, 10)
+                message.x(IntStream.range(0, 10)
                     .boxed()
-                    .collect(Collectors.toMap(String::valueOf, unused -> generate(seed, false)));
+                    .collect(Collectors.toMap(String::valueOf, unused -> generate(seed, false))));
             }
 
             return message;

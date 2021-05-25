@@ -26,8 +26,8 @@ import io.scalecube.net.Address;
 import org.apache.ignite.network.AbstractMessagingService;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.MessagingService;
+import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.NetworkMessageHandler;
-import org.apache.ignite.network.message.NetworkMessage;
 
 /**
  * Implementation of {@link MessagingService} based on ScaleCube.

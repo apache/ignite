@@ -17,15 +17,15 @@
 
 package org.apache.ignite.network.internal.netty;
 
-import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.Channel;
 import org.apache.ignite.lang.IgniteInternalException;
-import org.apache.ignite.network.message.MessageSerializationRegistry;
+import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 import org.jetbrains.annotations.Nullable;
 
 /**

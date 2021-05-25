@@ -23,9 +23,9 @@ import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.ClusterServiceFactory;
-import org.apache.ignite.network.message.MessageSerializationRegistry;
 import org.apache.ignite.network.scalecube.message.ScaleCubeMessage;
 import org.apache.ignite.network.scalecube.message.ScaleCubeMessageSerializationFactory;
+import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -125,7 +125,7 @@ class ITNodeRestartsTest {
     protected boolean waitForTopology(ClusterService service, int expected, long timeout) {
         long stop = System.currentTimeMillis() + timeout;
 
-        while(System.currentTimeMillis() < stop) {
+        while (System.currentTimeMillis() < stop) {
             if (service.topologyService().allMembers().size() == expected)
                 return true;
 

@@ -17,10 +17,6 @@
 
 package org.apache.ignite.network.internal.netty;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.UnpooledByteBufAllocator;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.embedded.EmbeddedChannel;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Random;
@@ -28,15 +24,20 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.UnpooledByteBufAllocator;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.embedded.EmbeddedChannel;
 import org.apache.ignite.network.TestMessage;
+import org.apache.ignite.network.TestMessageFactory;
 import org.apache.ignite.network.TestMessageSerializationFactory;
 import org.apache.ignite.network.internal.AllTypesMessage;
 import org.apache.ignite.network.internal.AllTypesMessageGenerator;
 import org.apache.ignite.network.internal.AllTypesMessageSerializationFactory;
 import org.apache.ignite.network.internal.direct.DirectMessageWriter;
-import org.apache.ignite.network.message.MessageSerializationRegistry;
-import org.apache.ignite.network.message.MessageSerializer;
-import org.apache.ignite.network.message.NetworkMessage;
+import org.apache.ignite.network.NetworkMessage;
+import org.apache.ignite.network.serialization.MessageSerializationRegistry;
+import org.apache.ignite.network.serialization.MessageSerializer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -57,11 +58,10 @@ public class InboundDecoderTest {
      * by direct marshalling.
      *
      * @param seed Random seed.
-     * @throws Exception If failed.
      */
     @ParameterizedTest
     @MethodSource("messageGenerationSeed")
-    public void testAllTypes(long seed) throws Exception {
+    public void testAllTypes(long seed) {
         var registry = new MessageSerializationRegistry();
 
         AllTypesMessage msg = AllTypesMessageGenerator.generate(seed, true);
@@ -143,11 +143,11 @@ public class InboundDecoderTest {
 
         var decoder = new InboundDecoder(registry);
 
-        var list = new ArrayList<Object>();
+        var list = new ArrayList<>();
 
         var writer = new DirectMessageWriter(registry, ConnectionManager.DIRECT_PROTOCOL_VERSION);
 
-        var msg = new TestMessage("abcdefghijklmn");
+        var msg = TestMessageFactory.testMessage().msg("abcdefghijklmn").build();
 
         MessageSerializer<NetworkMessage> serializer = registry.createSerializer(msg.directType());
 
@@ -190,10 +190,7 @@ public class InboundDecoderTest {
         decoder.decode(ctx, buffer, list);
 
         assertEquals(1, list.size());
-
-        TestMessage readMessage = (TestMessage) list.get(0);
-
-        assertEquals(msg, readMessage);
+        assertEquals(msg, list.get(0));
     }
 
     /**

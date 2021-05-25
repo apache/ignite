@@ -18,7 +18,7 @@
 package org.apache.ignite.raft.client.message;
 
 import java.io.Serializable;
-import org.apache.ignite.network.message.NetworkMessage;
+import org.apache.ignite.network.NetworkMessage;
 
 /**
  * Take a local snapshot on the peer.

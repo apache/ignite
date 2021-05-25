@@ -29,8 +29,8 @@ import org.apache.ignite.network.internal.netty.ConnectionManager;
 import org.apache.ignite.network.internal.netty.NettyClient;
 import org.apache.ignite.network.internal.netty.NettySender;
 import org.apache.ignite.network.internal.netty.NettyServer;
-import org.apache.ignite.network.message.MessageSerializationRegistry;
-import org.apache.ignite.network.message.NetworkMessage;
+import org.apache.ignite.network.NetworkMessage;
+import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -74,7 +74,7 @@ public class ConnectionManagerTest {
 
         NettySender sender = manager1.channel(new InetSocketAddress(port2)).get();
 
-        TestMessage testMessage = new TestMessage(msgText);
+        TestMessage testMessage = TestMessageFactory.testMessage().msg(msgText).build();
 
         sender.send(testMessage).join();
 
@@ -133,7 +133,7 @@ public class ConnectionManagerTest {
 
         NettySender sender = manager1.channel(new InetSocketAddress(port2)).get();
 
-        TestMessage testMessage = new TestMessage(msgText);
+        TestMessage testMessage = TestMessageFactory.testMessage().msg(msgText).build();
 
         manager2.stop();
 
