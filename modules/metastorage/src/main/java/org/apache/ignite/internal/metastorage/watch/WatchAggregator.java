@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
-
 import org.apache.ignite.lang.ByteArray;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.metastorage.client.EntryEvent;
@@ -70,7 +69,7 @@ public class WatchAggregator {
      * @return id of registered watch. Can be used for remove watch from later.
      */
     public long addPrefix(ByteArray key, WatchListener lsnr) {
-        var watch = new Watch(new KeyCriterion.PrefixCriterion(key), lsnr);
+        var watch = new Watch(KeyCriterion.RangeCriterion.fromPrefixKey(key), lsnr);
         var id = idCntr.incrementAndGet();
         watches.put(id, watch);
         return id;
@@ -147,12 +146,12 @@ public class WatchAggregator {
      *
      * @return aggregated criterion.
      */
-    // TODO: IGNITE-14667 We can do it better than infer range always
     private KeyCriterion inferGeneralCriteria() {
-        return new KeyCriterion.RangeCriterion(
-            watches.values().stream().map(w -> w.keyCriterion().toRange().getKey()).min(ByteArray::compareTo).get(),
-            watches.values().stream().map(w -> w.keyCriterion().toRange().getValue()).max(ByteArray::compareTo).get()
-        );
+        return
+            watches.values().stream()
+                .map(Watch::keyCriterion)
+                .reduce(KeyCriterion::union)
+                .get();
     }
 
     /**
