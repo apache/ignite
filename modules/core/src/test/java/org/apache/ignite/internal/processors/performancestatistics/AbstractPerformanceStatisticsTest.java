@@ -22,6 +22,7 @@ import java.lang.management.ThreadInfo;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.typedef.G;
@@ -226,7 +227,8 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
         }
 
         /** {@inheritDoc} */
-        @Override public void pme(UUID nodeId, long startTime, long duration, boolean rebalanced) {
+        @Override public void pme(UUID nodeId, long startTime, long duration, AffinityTopologyVersion initVer,
+            AffinityTopologyVersion resVer, boolean rebalanced) {
             // No-op.
         }
 

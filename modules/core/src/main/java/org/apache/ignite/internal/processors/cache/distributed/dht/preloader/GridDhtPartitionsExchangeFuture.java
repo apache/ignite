@@ -2418,6 +2418,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             cctx.kernalContext().performanceStatistics().pme(
                 startTime,
                 U.currentTimeMillis() - startTime,
+                initialVersion(),
+                res,
                 rebalanced);
 
         assert res != null || err != null;

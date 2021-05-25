@@ -28,6 +28,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -139,7 +140,9 @@ public class RebalanceTest extends AbstractPerformanceStatisticsTest {
                 cntCF.incrementAndGet();
             }
 
-            @Override public void pme(UUID nodeId, long startTime, long duration, boolean rebalanced) {
+            @Override public void pme(UUID nodeId, long startTime, long duration, AffinityTopologyVersion initVer,
+                AffinityTopologyVersion resVer, boolean rebalanced) {
+
                 assertTrue(startTime > beforeStart);
 
                 cntPME.incrementAndGet();

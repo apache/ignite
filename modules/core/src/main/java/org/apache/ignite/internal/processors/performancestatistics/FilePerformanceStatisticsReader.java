@@ -35,6 +35,7 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
@@ -467,10 +468,21 @@ public class FilePerformanceStatisticsReader {
 
             long startTime = buf.getLong();
             long duration = buf.getLong();
+            long initVerTop = buf.getLong();
+            int initVerMnr = buf.getInt();
+            long resVerTop = buf.getLong();
+            int resVerMnr = buf.getInt();
             boolean rebalanced = buf.get() != 0;
 
             for (PerformanceStatisticsHandler handler : curHnd)
-                handler.pme(nodeId, startTime, duration, rebalanced);
+                handler.pme(
+                    nodeId,
+                    startTime,
+                    duration,
+                    new AffinityTopologyVersion(initVerTop, initVerMnr),
+                    new AffinityTopologyVersion(resVerTop, resVerMnr),
+                    rebalanced
+                );
 
             return true;
         }

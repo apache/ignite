@@ -212,6 +212,6 @@ public enum OperationType {
 
     /** @return Rebalance record size. */
     public static int pmeRecordSize() {
-        return 8 + 8 + 1;
+        return 8 + 8 + 8 + 4 + 8 + 4 + 1;
     }
 }

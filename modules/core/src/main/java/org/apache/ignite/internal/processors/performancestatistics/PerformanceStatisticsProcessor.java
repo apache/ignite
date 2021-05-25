@@ -28,6 +28,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
@@ -263,10 +264,25 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     /**
      * @param startTime Time in milliseconds.
      * @param duratione Time in milliseconds.
+     * @param initVer Initial exchange version.
+     * @param resVer Result exchange version.
      * @param rebalanced {@code True} if cluster fully rebalanced.
      */
-    public void pme(long startTime, long duratione, boolean rebalanced) {
-        write(writer -> writer.pme(startTime, duratione, rebalanced));
+    public void pme(
+        long startTime,
+        long duratione,
+        AffinityTopologyVersion initVer,
+        AffinityTopologyVersion resVer,
+        boolean rebalanced
+    ) {
+        write(writer -> writer.pme(
+            startTime,
+            duratione,
+            initVer.topologyVersion(),
+            initVer.minorTopologyVersion(),
+            resVer.topologyVersion(),
+            resVer.minorTopologyVersion(),
+            rebalanced));
     }
 
     /**
