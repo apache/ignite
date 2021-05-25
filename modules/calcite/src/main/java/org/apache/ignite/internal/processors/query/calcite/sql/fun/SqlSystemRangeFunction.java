@@ -31,7 +31,7 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlMonotonicity;
 
 /**
- * Definition of the "SUBSTRING" builtin SQL function.
+ * Definition of the "SYSTEM_RANGE" builtin SQL function.
  */
 public class SqlSystemRangeFunction extends SqlFunction implements SqlTableFunction {
     /**
