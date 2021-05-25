@@ -192,7 +192,7 @@ public class SnapshotRestoreProcess {
             }
 
             if (!F.isEmpty(f.result().exceptions())) {
-                finishProcess(fut0.rqId, F.firstEntry(f.result().exceptions()).getValue());
+                finishProcess(fut0.rqId, F.first(f.result().exceptions().values()));
 
                 return;
             }

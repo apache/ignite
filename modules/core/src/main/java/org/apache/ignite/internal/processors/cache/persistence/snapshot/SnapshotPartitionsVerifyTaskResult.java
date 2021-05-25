@@ -28,6 +28,10 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+/**
+ * The result of execution snapshot partitions verify task which besides calculating partition hashes of
+ * {@link IdleVerifyResultV2} also contains the snapshot metadata distribution across the cluster.
+ */
 public class SnapshotPartitionsVerifyTaskResult extends IgniteDataTransferObject {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;

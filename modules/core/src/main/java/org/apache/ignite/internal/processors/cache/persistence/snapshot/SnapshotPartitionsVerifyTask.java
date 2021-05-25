@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -52,7 +53,6 @@ import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitions
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -80,12 +80,12 @@ import static org.apache.ignite.internal.processors.cache.verify.VerifyBackupPar
  */
 @GridInternal
 public class SnapshotPartitionsVerifyTask
-    extends ComputeTaskAdapter<T2<Map<ClusterNode, List<SnapshotMetadata>>, Collection<String>>, SnapshotPartitionsVerifyTaskResult> {
+    extends ComputeTaskAdapter<SnapshotPartitionsVerifyTaskArg, SnapshotPartitionsVerifyTaskResult> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** Task argument. */
-    private final Map<ClusterNode, List<SnapshotMetadata>> arg = new HashMap<>();
+    private final Map<ClusterNode, List<SnapshotMetadata>> metas = new HashMap<>();
 
     /** Ignite instance. */
     @IgniteInstanceResource
@@ -94,9 +94,9 @@ public class SnapshotPartitionsVerifyTask
     /** {@inheritDoc} */
     @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(
         List<ClusterNode> subgrid,
-        @Nullable T2<Map<ClusterNode, List<SnapshotMetadata>>, Collection<String>> in
+        @Nullable SnapshotPartitionsVerifyTaskArg arg
     ) throws IgniteException {
-        Map<ClusterNode, List<SnapshotMetadata>> clusterMetas = in.get1();
+        Map<ClusterNode, List<SnapshotMetadata>> clusterMetas = arg.clusterMetadata();
 
         if (!subgrid.containsAll(clusterMetas.keySet())) {
             throw new IgniteSnapshotVerifyException(F.asMap(ignite.localNode(),
@@ -126,7 +126,7 @@ public class SnapshotPartitionsVerifyTask
                 new IgniteException("Some metadata is missing from the snapshot: " + missed)));
         }
 
-        arg.putAll(clusterMetas);
+        metas.putAll(clusterMetas);
 
         while (!allMetas.isEmpty()) {
             for (Map.Entry<ClusterNode, List<SnapshotMetadata>> e : clusterMetas.entrySet()) {
@@ -135,7 +135,8 @@ public class SnapshotPartitionsVerifyTask
                 if (meta == null)
                     continue;
 
-                jobs.put(new VisorVerifySnapshotPartitionsJob(meta.snapshotName(), meta.consistentId(), in.get2()), e.getKey());
+                jobs.put(new VisorVerifySnapshotPartitionsJob(meta.snapshotName(), meta.consistentId(), arg.cacheGroupNames()),
+                    e.getKey());
 
                 if (allMetas.isEmpty())
                     break;
@@ -147,7 +148,7 @@ public class SnapshotPartitionsVerifyTask
 
     /** {@inheritDoc} */
     @Override public @Nullable SnapshotPartitionsVerifyTaskResult reduce(List<ComputeJobResult> results) throws IgniteException {
-        return new SnapshotPartitionsVerifyTaskResult(arg, reduce0(results));
+        return new SnapshotPartitionsVerifyTaskResult(metas, reduce0(results));
     }
 
     /** {@inheritDoc} */
@@ -176,18 +177,18 @@ public class SnapshotPartitionsVerifyTask
         private final String consId;
 
         /** Set of cache groups to be checked in the snapshot or {@code empty} to check everything. */
-        private final Set<String> rqGrps = new HashSet<>();
+        private final Set<String> rqGrps;
 
         /**
          * @param snpName Snapshot name to validate.
          * @param consId Consistent snapshot metadata file name.
+         * @param rqGrps Set of cache groups to be checked in the snapshot or {@code empty} to check everything.
          */
         public VisorVerifySnapshotPartitionsJob(String snpName, String consId, Collection<String> rqGrps) {
             this.snpName = snpName;
             this.consId = consId;
 
-            if (rqGrps != null)
-                this.rqGrps.addAll(rqGrps);
+            this.rqGrps = rqGrps == null ? Collections.emptySet() : new HashSet<>(rqGrps);
         }
 
         @Override public Map<PartitionKeyV2, PartitionHashRecordV2> execute() throws IgniteException {

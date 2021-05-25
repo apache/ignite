@@ -125,7 +125,6 @@ import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -957,7 +956,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 kctx0.task().setThreadContext(TC_SKIP_AUTH, true);
                 kctx0.task().setThreadContext(TC_SUBGRID, new ArrayList<>(metas.keySet()));
 
-                kctx0.task().execute(SnapshotPartitionsVerifyTask.class, new T2<>(metas, grps)).listen(f1 -> {
+                kctx0.task().execute(SnapshotPartitionsVerifyTask.class, new SnapshotPartitionsVerifyTaskArg(grps, metas))
+                    .listen(f1 -> {
                         if (f1.error() == null)
                             res.onDone(f1.result());
                         else if (f1.error() instanceof IgniteSnapshotVerifyException)
