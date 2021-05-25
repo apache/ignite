@@ -60,11 +60,13 @@ public class JoinInActiveNodeToActiveClusterWithPersistence extends JoinInActive
         return b;
     }
 
-    @Override public AbstractNodeJoinTemplate.JoinNodeTestPlanBuilder joinClientStaticCacheConfigurationInClusterTemplate() throws Exception {
+    @Override public AbstractNodeJoinTemplate.JoinNodeTestPlanBuilder joinClientStaticCacheConfigurationInClusterTemplate()
+        throws Exception {
         return persistent(super.joinClientStaticCacheConfigurationInClusterTemplate());
     }
 
-    @Override public AbstractNodeJoinTemplate.JoinNodeTestPlanBuilder joinClientStaticCacheConfigurationDifferentOnBothTemplate() throws Exception {
+    @Override public AbstractNodeJoinTemplate.JoinNodeTestPlanBuilder joinClientStaticCacheConfigurationDifferentOnBothTemplate()
+        throws Exception {
         return persistent(super.joinClientStaticCacheConfigurationDifferentOnBothTemplate());
     }
 

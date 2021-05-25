@@ -228,7 +228,9 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
                     max = Math.max(max, sum);
                     min = Math.min(min, sum);
 
-                    log.info("Operation count: " + sum + " min=" + min + " max=" + max + " avg=" + totalOperations / (periods - WARM_UP_PERIOD));
+                    log.info(
+                        "Operation count: " + sum + " min=" + min + " max=" + max + " avg=" + totalOperations / (periods - WARM_UP_PERIOD)
+                    );
                 }
             }
 

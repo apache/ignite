@@ -114,8 +114,8 @@ public class ValidationOnNodeJoinUtils {
     private static final IgniteProductVersion PRECISION_SCALE_SINCE_VER = IgniteProductVersion.fromString("2.7.0");
 
     /** Invalid region configuration message. */
-    private static final String INVALID_REGION_CONFIGURATION_MESSAGE = "Failed to join node " +
-        "(Incompatible data region configuration [region=%s, locNodeId=%s, isPersistenceEnabled=%s, rmtNodeId=%s, isPersistenceEnabled=%s])";
+    private static final String INVALID_REGION_CONFIGURATION_MESSAGE = "Failed to join node (Incompatible data region configuration " +
+        "[region=%s, locNodeId=%s, isPersistenceEnabled=%s, rmtNodeId=%s, isPersistenceEnabled=%s])";
 
     /**
      * Checks a joining node to configuration consistency.

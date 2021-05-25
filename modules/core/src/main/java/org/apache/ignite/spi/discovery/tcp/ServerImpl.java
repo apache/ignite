@@ -3540,7 +3540,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 if (log.isDebugEnabled())
                                     log.debug("Handshake response: " + res);
 
-                                // We should take previousNodeAlive flag into account only if we received the response from the correct node.
+                                // We should take previousNodeAlive flag into account
+                                // only if we received the response from the correct node.
                                 if (res.creatorNodeId().equals(next.id()) && res.previousNodeAlive() && sndState != null) {
                                     sndState.checkTimeout();
 

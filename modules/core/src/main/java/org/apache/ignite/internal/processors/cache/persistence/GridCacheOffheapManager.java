@@ -1702,8 +1702,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             int p = partMap.partitionAt(i);
 
                             if (!doneParts.contains(p)) {
-                                log.warning("Some partition entries were missed during historical rebalance [grp=" + grp + ", part=" + p + ", missed=" +
-                                    (partMap.updateCounterAt(i) - rebalancedCntrs[i]) + ']');
+                                log.warning("Some partition entries were missed during historical rebalance " +
+                                    "[grp=" + grp + ", part=" + p + ", missed=" + (partMap.updateCounterAt(i) - rebalancedCntrs[i]) + ']');
 
                                 doneParts.add(p);
                             }
@@ -2001,11 +2001,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
             AtomicLong pageListCacheLimit = ((GridCacheDatabaseSharedManager) ctx.database()).pageListCacheLimitHolder(grp.dataRegion());
 
+            IgniteCacheDatabaseSharedManager dbMgr = ctx.database();
+
+            dbMgr.checkpointReadLock();
+
             if (init.compareAndSet(false, true)) {
-                IgniteCacheDatabaseSharedManager dbMgr = ctx.database();
-
-                dbMgr.checkpointReadLock();
-
                 try {
                     Metas metas = getOrAllocatePartitionMetas();
 
@@ -2225,6 +2225,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 }
             }
             else {
+                dbMgr.checkpointReadUnlock();
+
                 U.await(latch);
 
                 delegate0 = delegate;
@@ -2341,8 +2343,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                                 + U.hexLong(partMetaStoreReuseListRoot) + ", part=" + partId + ", grpId=" + grpId);
                     }
 
-                    if ((allocated || pageUpgraded || pendingTreeAllocated || partMetastoreReuseListAllocated || updateLogTreeRootAllocated) &&
-                        isWalDeltaRecordNeeded(pageMem, grpId, partMetaId, partMetaPage, wal, null)) {
+                    if ((allocated || pageUpgraded || pendingTreeAllocated || partMetastoreReuseListAllocated || updateLogTreeRootAllocated)
+                        && isWalDeltaRecordNeeded(pageMem, grpId, partMetaId, partMetaPage, wal, null)) {
                         wal.log(new PageSnapshot(new FullPageId(partMetaId, grpId), pageAddr,
                             pageMem.pageSize(), pageMem.realPageSize(grpId)));
                     }

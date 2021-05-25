@@ -2066,7 +2066,8 @@ public abstract class PagesList extends DataStructure {
         @SystemProperty(value = "The threshold of flush calls on empty caches to allow GC of stripes " +
             "(the flush is triggered two times per checkpoint)", type = Long.class,
             defaults = "" + DFLT_PAGES_LIST_CACHING_EMPTY_FLUSH_GC_THRESHOLD)
-        public static final String IGNITE_PAGES_LIST_CACHING_EMPTY_FLUSH_GC_THRESHOLD = "IGNITE_PAGES_LIST_CACHING_EMPTY_FLUSH_GC_THRESHOLD";
+        public static final String IGNITE_PAGES_LIST_CACHING_EMPTY_FLUSH_GC_THRESHOLD =
+            "IGNITE_PAGES_LIST_CACHING_EMPTY_FLUSH_GC_THRESHOLD";
 
         /** Pages cache max size. */
         private static final int MAX_SIZE = IgniteSystemProperties.getInteger(IGNITE_PAGES_LIST_CACHING_MAX_CACHE_SIZE,

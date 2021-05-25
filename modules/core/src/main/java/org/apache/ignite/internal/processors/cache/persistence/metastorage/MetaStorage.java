@@ -201,8 +201,10 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
                         int partTag = ((PageMemoryEx)dataRegion.pageMemory()).invalidate(METASTORAGE_CACHE_ID, OLD_METASTORE_PARTITION);
                         cctx.pageStore().onPartitionDestroyed(METASTORAGE_CACHE_ID, OLD_METASTORE_PARTITION, partTag);
 
-                        int idxTag = ((PageMemoryEx)dataRegion.pageMemory()).invalidate(METASTORAGE_CACHE_ID, PageIdAllocator.INDEX_PARTITION);
-                        PageStore store = ((FilePageStoreManager)cctx.pageStore()).getStore(METASTORAGE_CACHE_ID, PageIdAllocator.INDEX_PARTITION);
+                        int idxTag =
+                            ((PageMemoryEx)dataRegion.pageMemory()).invalidate(METASTORAGE_CACHE_ID, PageIdAllocator.INDEX_PARTITION);
+                        PageStore store =
+                            ((FilePageStoreManager)cctx.pageStore()).getStore(METASTORAGE_CACHE_ID, PageIdAllocator.INDEX_PARTITION);
                         store.truncate(idxTag);
 
                         db.removeCheckpointListener(this);

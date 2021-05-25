@@ -46,7 +46,8 @@ import org.jetbrains.annotations.Nullable;
  *          listening to local grid events (events from remote nodes not included).
  *      </li>
  * </ul>
- * User can also wait for events using method {@link org.apache.ignite.IgniteEvents#waitForLocal(org.apache.ignite.lang.IgnitePredicate, int...)}.
+ * User can also wait for events using method
+ * {@link org.apache.ignite.IgniteEvents#waitForLocal(org.apache.ignite.lang.IgnitePredicate, int...)}.
  * <h1 class="header">Events and Performance</h1>
  * Note that by default all events in Ignite are enabled and therefore generated and stored
  * by whatever event storage SPI is configured. Ignite can and often does generate thousands events per seconds
@@ -54,8 +55,8 @@ import org.jetbrains.annotations.Nullable;
  * not needed by the application this load is unnecessary and leads to significant performance degradation.
  * <p>
  * It is <b>highly recommended</b> to enable only those events that your application logic requires
- * by using {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in Ignite configuration. Note that certain
- * events are required for Ignite's internal operations and such events will still be generated but not stored by
+ * by using {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in Ignite configuration.
+ * Note that certain events are required for Ignite's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in Ignite configuration.
  *
  * @see EventType#EVT_CACHE_QUERY_EXECUTED

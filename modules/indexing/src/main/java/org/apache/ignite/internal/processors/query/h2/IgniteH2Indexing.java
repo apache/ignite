@@ -3067,8 +3067,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         Map<String, Integer> map = new HashMap<>();
         for (GridH2Table table : schemaMgr.dataTables()) {
             for (Index index : table.getIndexes()) {
-                if (index instanceof H2TreeIndexBase && !index.getIndexType().isPrimaryKey())
-                    map.put(index.getSchema().getName() + "#" + index.getTable().getName() + "#" + index.getName(), ((H2TreeIndexBase)index).inlineSize());
+                if (index instanceof H2TreeIndexBase && !index.getIndexType().isPrimaryKey()) {
+                    map.put(
+                        index.getSchema().getName() + "#" + index.getTable().getName() + "#" + index.getName(),
+                        ((H2TreeIndexBase)index).inlineSize()
+                    );
+                }
             }
 
         }
