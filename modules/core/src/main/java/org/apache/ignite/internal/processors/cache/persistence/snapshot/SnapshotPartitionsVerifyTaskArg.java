@@ -31,7 +31,7 @@ import org.apache.ignite.internal.visor.VisorDataTransferObject;
  * Input parameters for checking snapshot partitions consistency task.
  */
 public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
-    /** */
+    /** Serial version UID. */
     private static final long serialVersionUID = 0L;
 
     /** Cache group names to be verified. */
@@ -55,22 +55,18 @@ public class SnapshotPartitionsVerifyTaskArg extends VisorDataTransferObject {
     }
 
     /**
-     * @return Caches.
+     * @return Cache group names to be verified.
      */
     public Collection<String> cacheGroupNames() {
         return grpNames;
     }
 
     /**
-     * @return Add user attribute in result
+     * @return The map of distribution of snapshot metadata pieces across the cluster.
      */
     public Map<ClusterNode, List<SnapshotMetadata>> clusterMetadata() {
         return clusterMetas;
     }
-
-    /**
-     * @param userAttrs New add user attribute in result
-     */
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
