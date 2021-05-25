@@ -18,19 +18,31 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
+import java.util.Set;
+
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.TableModify;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.util.Pair;
+import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
+import org.apache.ignite.internal.processors.query.calcite.trait.TraitsAwareIgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 
 /**
  *
  */
-public class IgniteTableModify extends TableModify implements IgniteRel {
+public class IgniteTableModify extends TableModify implements TraitsAwareIgniteRel {
     /**
      * Creates a {@code TableModify}.
      *
@@ -95,5 +107,65 @@ public class IgniteTableModify extends TableModify implements IgniteRel {
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteTableModify(cluster, getTraitSet(), getTable(), sole(inputs),
             getOperation(), getUpdateColumnList(), getSourceExpressionList(), isFlattened());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(RelTraitSet nodeTraits,
+                                                                          List<RelTraitSet> inTraits) {
+        return ImmutableList.of(Pair.of(nodeTraits.replace(TraitUtils.rewindability(inTraits.get(0))),
+                inTraits));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveDistribution(RelTraitSet nodeTraits,
+                                                                         List<RelTraitSet> inTraits) {
+        return ImmutableList.of(Pair.of(nodeTraits.replace(TraitUtils.distribution(inTraits.get(0))),
+                inTraits));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(RelTraitSet nodeTraits,
+                                                                      List<RelTraitSet> inTraits) {
+        return ImmutableList.of(Pair.of(nodeTraits.replace(TraitUtils.collation(inTraits.get(0))),
+                inTraits));
+    }
+
+    /**
+     *
+     */
+    @Override
+    public Pair<RelTraitSet, List<RelTraitSet>> passThroughCorrelation(RelTraitSet nodeTraits,
+                                                                       List<RelTraitSet> inTraits) {
+        CorrelationTrait correlation = TraitUtils.correlation(nodeTraits);
+
+        return Pair.of(nodeTraits, ImmutableList.of(inTraits.get(0).replace(correlation)));
+    }
+
+    /**
+     *
+     */
+    @Override
+    public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCorrelation(RelTraitSet nodeTraits,
+                                                                        List<RelTraitSet> inTraits) {
+        Set<CorrelationId> corrIds = RexUtils.extractCorrelationIds(getSourceExpressionList());
+
+        corrIds.addAll(TraitUtils.correlation(inTraits.get(0)).correlationIds());
+
+        return ImmutableList.of(Pair.of(nodeTraits.replace(CorrelationTrait.correlations(corrIds)), inTraits));
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+        //TODO: Implement
+        return null;
     }
 }
