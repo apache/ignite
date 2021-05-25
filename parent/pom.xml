@@ -983,6 +983,8 @@
                                         <exclude>modules/platforms/python/requirements/**/*.txt</exclude><!--plain text can not be commented-->
                                         <!--Packaging -->
                                         <exclude>packaging/**</exclude>
+                                        <!-- Calcite test scripts -->
+                                        <exclude>src/test/sql/**</exclude>
                                         <!-- Ignite Documentation-->
                                         <exclude>docs/_site/**</exclude>
                                         <exclude>docs/assets/images/**</exclude>

@@ -211,6 +211,11 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
     }
 
     /** {@inheritDoc} */
+    @Override public RelDataType selectForUpdateRowType(IgniteTypeFactory factory) {
+        return rowType(factory, ImmutableBitSet.of(keyField, valField));
+    }
+
+    /** {@inheritDoc} */
     @Override public GridCacheContext cacheContext() {
         return cacheInfo.cacheContext();
     }
