@@ -19,6 +19,7 @@ package org.apache.ignite.configuration.storage;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Common interface for configuration storage.
@@ -42,19 +43,9 @@ public interface ConfigurationStorage {
 
     /**
      * Add listener to the storage that notifies of data changes.
-     * @param lsnr Listener.
+     * @param lsnr Listener. Cannot be null.
      */
-    // TODO: seems that it's not needed to have an ability to set several listeners to storage, as far as only one is responsible
-    // TODO: for updating configuration and others are not needed. https://issues.apache.org/jira/browse/IGNITE-14689
-    void addListener(ConfigurationStorageListener lsnr);
-
-    /**
-     * Remove storage listener.
-     * @param lsnr Listener.
-     */
-    // TODO: seems that it's not needed to have an ability to set several listeners to storage, as far as only one is responsible
-    // TODO: for updating configuration and others are not needed. https://issues.apache.org/jira/browse/IGNITE-14689
-    void removeListener(ConfigurationStorageListener lsnr);
+    void registerConfigurationListener(@NotNull ConfigurationStorageListener lsnr);
 
     /**
      * Notify storage that this specific revision was successfully handled and it is not necessary to repeat the same

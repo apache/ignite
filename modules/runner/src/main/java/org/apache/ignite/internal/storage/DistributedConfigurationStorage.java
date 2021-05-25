@@ -22,11 +22,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.configuration.storage.ConfigurationStorage;
 import org.apache.ignite.configuration.storage.ConfigurationStorageListener;
@@ -71,14 +68,11 @@ public class DistributedConfigurationStorage implements ConfigurationStorage {
     private static final ByteArray DST_KEYS_END_RANGE =
             new ByteArray(DISTRIBUTED_PREFIX.substring(0, DISTRIBUTED_PREFIX.length() - 1) + (char)('.' + 1));
 
-    /** Id of watch that is responsible for configuration update. */
-    private CompletableFuture<Long> watchId;
-
     /** MetaStorage manager */
     private final MetaStorageManager metaStorageMgr;
 
-    /** Change listeners. */
-    private final List<ConfigurationStorageListener> listeners = new CopyOnWriteArrayList<>();
+    /** Configuration changes listener. */
+    private ConfigurationStorageListener lsnr;
 
     /** Storage version. It stores actual meta storage revision, that is applied to configuration manager. */
     private final AtomicLong ver = new AtomicLong(0L);
@@ -133,6 +127,7 @@ public class DistributedConfigurationStorage implements ConfigurationStorage {
     /** {@inheritDoc} */
     @Override public synchronized CompletableFuture<Boolean> write(Map<String, Serializable> newValues, long sentVersion) {
         assert sentVersion <= ver.get();
+        assert lsnr != null : "Configuration listener must be initialized before write.";
 
         if (sentVersion != ver.get())
             // This means that sentVersion is less than version and other node has already updated configuration and
@@ -170,13 +165,13 @@ public class DistributedConfigurationStorage implements ConfigurationStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized void addListener(ConfigurationStorageListener listener) {
-        listeners.add(listener);
+    @Override public synchronized void registerConfigurationListener(@NotNull ConfigurationStorageListener lsnr) {
+        if (this.lsnr == null) {
+            this.lsnr = lsnr;
 
-        if (watchId == null) {
             // TODO: registerWatchByPrefix could throw OperationTimeoutException and CompactedException and we should
             // TODO: properly handle such cases https://issues.apache.org/jira/browse/IGNITE-14604
-            watchId = metaStorageMgr.registerWatchByPrefix(MASTER_KEY, new WatchListener() {
+            metaStorageMgr.registerWatchByPrefix(MASTER_KEY, new WatchListener() {
                 @Override public boolean onUpdate(@NotNull WatchEvent events) {
                     HashMap<String, Serializable> data = new HashMap<>();
 
@@ -208,7 +203,7 @@ public class DistributedConfigurationStorage implements ConfigurationStorage {
 
                     long finalMaxRevision = maxRevision;
 
-                    listeners.forEach(listener -> listener.onEntriesChanged(new Data(data, finalMaxRevision)));
+                    DistributedConfigurationStorage.this.lsnr.onEntriesChanged(new Data(data, finalMaxRevision));
 
                     return true;
                 }
@@ -219,23 +214,8 @@ public class DistributedConfigurationStorage implements ConfigurationStorage {
                     LOG.error("Meta storage listener issue", e);
                 }
             });
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public synchronized void removeListener(ConfigurationStorageListener listener) {
-        listeners.remove(listener);
-
-        if (listeners.isEmpty()) {
-            try {
-                metaStorageMgr.unregisterWatch(watchId.get());
-            }
-            catch (InterruptedException | ExecutionException e) {
-                LOG.error("Failed to unregister watch in meta storage.", e);
-            }
-
-            watchId = null;
-        }
+        } else
+            LOG.warn("Configuration listener has already been set.");
     }
 
     /** {@inheritDoc} */

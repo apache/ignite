@@ -80,13 +80,8 @@ public class TestConfigurationStorage implements ConfigurationStorage {
     }
 
     /** {@inheritDoc} */
-    @Override public void addListener(ConfigurationStorageListener listener) {
+    @Override public void registerConfigurationListener(ConfigurationStorageListener listener) {
         listeners.add(listener);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void removeListener(ConfigurationStorageListener listener) {
-        listeners.remove(listener);
     }
 
     /** {@inheritDoc} */

@@ -20,10 +20,8 @@ package org.apache.ignite.internal.storage;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.configuration.storage.ConfigurationStorage;
 import org.apache.ignite.configuration.storage.ConfigurationStorageListener;
@@ -34,6 +32,8 @@ import org.apache.ignite.internal.util.ByteUtils;
 import org.apache.ignite.internal.vault.VaultManager;
 import org.apache.ignite.internal.vault.common.Entry;
 import org.apache.ignite.lang.ByteArray;
+import org.apache.ignite.lang.IgniteLogger;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Local configuration storage.
@@ -42,11 +42,14 @@ public class LocalConfigurationStorage implements ConfigurationStorage {
     /** Prefix that we add to configuration keys to distinguish them in metastorage. */
     private static final String LOC_PREFIX = "loc-cfg.";
 
+    /** Logger. */
+    private static final IgniteLogger LOG = IgniteLogger.forClass(LocalConfigurationStorage.class);
+
     /** Vault manager. */
     private final VaultManager vaultMgr;
 
-    /** Change listeners. */
-    private List<ConfigurationStorageListener> listeners = new CopyOnWriteArrayList<>();
+    /** Configuration changes listener. */
+    private ConfigurationStorageListener lsnr;
 
     /** Storage version. */
     private AtomicLong ver = new AtomicLong(0L);
@@ -87,6 +90,8 @@ public class LocalConfigurationStorage implements ConfigurationStorage {
 
     /** {@inheritDoc} */
     @Override public synchronized CompletableFuture<Boolean> write(Map<String, Serializable> newValues, long sentVersion) {
+        assert lsnr != null : "Configuration listener must be initialized before write.";
+
         if (sentVersion != ver.get())
             return CompletableFuture.completedFuture(false);
 
@@ -101,20 +106,18 @@ public class LocalConfigurationStorage implements ConfigurationStorage {
         Data entries = new Data(newValues, ver.incrementAndGet());
 
         return vaultMgr.putAll(data).thenApply(res -> {
-            listeners.forEach(listener -> listener.onEntriesChanged(entries));
+            lsnr.onEntriesChanged(entries);
 
             return true;
         });
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized void addListener(ConfigurationStorageListener lsnr) {
-        listeners.add(lsnr);
-    }
-
-    /** {@inheritDoc} */
-    @Override public synchronized void removeListener(ConfigurationStorageListener lsnr) {
-        listeners.remove(lsnr);
+    @Override public synchronized void registerConfigurationListener(@NotNull ConfigurationStorageListener lsnr) {
+        if (this.lsnr == null)
+            this.lsnr = lsnr;
+        else
+            LOG.warn("Configuration listener has already been set.");
     }
 
     /** {@inheritDoc} */
