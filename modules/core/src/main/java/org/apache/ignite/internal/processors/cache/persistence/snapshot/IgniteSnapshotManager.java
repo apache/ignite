@@ -66,6 +66,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.SnapshotEvent;
+import org.apache.ignite.internal.ComputeTaskInternalFuture;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteEx;
@@ -176,6 +177,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.io.Pa
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getPageIO;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getType;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getVersion;
+import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SKIP_AUTH;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
 import static org.apache.ignite.internal.util.GridUnsafe.bufferAddress;
@@ -435,7 +437,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         busyLock.block();
 
         try {
-            restoreCacheGrpProc.interrupt(new NodeStoppingException("Node is stopping."));
+            restoreCacheGrpProc.interrupt(new NodeStoppingException("Node is stopping."), null);
 
             // Try stop all snapshot processing if not yet.
             for (SnapshotFutureTask sctx : locSnpTasks.values())
@@ -471,7 +473,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
-        restoreCacheGrpProc.interrupt(new IgniteCheckedException("The cluster has been deactivated."));
+        restoreCacheGrpProc.interrupt(new IgniteCheckedException("The cluster has been deactivated."), null);
     }
 
     /**
@@ -790,18 +792,29 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         return restoreCacheGrpProc.snapshotName() != null;
     }
 
-    public IgniteFuture<Boolean> restoreStatus(String snpName) {
-        return restoreCacheGrpProc.restoreStatus(snpName);
-    }
-
     /**
      * Check if snapshot restore process is currently running.
      *
      * @param snpName Snapshot name.
-     * @return {@code True} if the snapshot restore operation from specified snapshot is in progress.
+     * @return {@code True} if the snapshot restore operation from specified snapshot is in progress locally.
      */
-    public boolean isRestoringLocal(String snpName) {
+    public boolean isRestoring(String snpName) {
         return snpName.equals(restoreCacheGrpProc.snapshotName());
+    }
+
+    /**
+     * Check if the cache or group with the specified name is currently being restored from the snapshot.
+     *
+     * @param cacheName Cache name.
+     * @param grpName Cache group name.
+     * @return {@code True} if the cache or group with the specified name is being restored.
+     */
+    public boolean isRestoring(String cacheName, @Nullable String grpName) {
+        return restoreCacheGrpProc.isRestoring(cacheName, grpName);
+    }
+
+    public IgniteFuture<Boolean> restoreStatus(String snpName) {
+        return executeRestoreManagementTask(new SnapshotRestoreManagementTask.RestoreStatus(snpName));
     }
 
     /**
@@ -814,17 +827,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return Collections.emptySet();
 
         return restoreCacheGrpProc.cacheStartRequiredAliveNodes(restoreId);
-    }
-
-    /**
-     * Check if the cache or group with the specified name is currently being restored from the snapshot.
-     *
-     * @param cacheName Cache name.
-     * @param grpName Cache group name.
-     * @return {@code True} if the cache or group with the specified name is being restored.
-     */
-    public boolean isRestoring(String cacheName, @Nullable String grpName) {
-        return restoreCacheGrpProc.isRestoring(cacheName, grpName);
     }
 
     /**
@@ -901,15 +903,38 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
     }
 
+    /**
+     * Cancel restore operation cluster-wide.
+     *
+     * @param name Snapshot name.
+     * @return Future that will be finished when process the process is complete on all nodes. The result of this
+     * feature will be {@code False} if the restore process if the restore process with the specified snapshot name is
+     * not running at all.
+     */
     public IgniteFuture<Boolean> cancelRestore(String name) {
-        return restoreCacheGrpProc.cancel(name);
+        return executeRestoreManagementTask(new SnapshotRestoreManagementTask.CancelRestore(name));
     }
 
-    public boolean cancelRestoreLocal(String name) throws IgniteCheckedException {
-        restoreCacheGrpProc.interrupt(new IgniteException("Operation has been interrupted by the user.")).get();
+    public boolean cancelLocalRestoreTask(String name) throws IgniteCheckedException {
+        return restoreCacheGrpProc
+            .interrupt(new IgniteException("Operation has been interrupted by the user."), name)
+            .get();
+    }
 
-        // todo
-        return true;
+    private IgniteFuture<Boolean> executeRestoreManagementTask(IgniteCallable<Boolean> job) {
+        cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
+
+        Collection<ClusterNode> bltNodes = F.view(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
+            (node) -> CU.baselineNode(node, cctx.kernalContext().state().clusterState()));
+
+        cctx.kernalContext().task().setThreadContext(TC_SKIP_AUTH, true);
+        cctx.kernalContext().task().setThreadContext(TC_SUBGRID, bltNodes);
+        cctx.kernalContext().task().setThreadContext(TC_NO_FAILOVER, true);
+
+        ComputeTaskInternalFuture<Boolean> fut0 =
+            cctx.kernalContext().task().execute(SnapshotRestoreManagementTask.class, job);
+
+        return new IgniteFutureImpl<>(fut0);
     }
 
     /**

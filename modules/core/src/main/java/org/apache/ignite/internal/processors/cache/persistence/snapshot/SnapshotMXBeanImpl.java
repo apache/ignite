@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.mxbean.SnapshotMXBean;

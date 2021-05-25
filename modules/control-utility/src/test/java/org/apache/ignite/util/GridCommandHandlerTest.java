@@ -103,6 +103,7 @@ import org.apache.ignite.internal.processors.cache.warmup.BlockedWarmUpConfigura
 import org.apache.ignite.internal.processors.cache.warmup.BlockedWarmUpStrategy;
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpTestPluginProvider;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
+import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.GridFunc;
@@ -161,6 +162,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -3220,10 +3222,12 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         }
     }
 
+    /** @throws Exception If fails. */
     @Test
     public void testSnapshotRestoreCancel() throws Exception {
         int keysCnt = 10_000;
-        String snpName = "snapshot_02052020";
+        String snpName = "snapshot_25052021";
+        String missingSnpName = "snapshot_MISSING";
 
         IgniteEx ig = startGrids(2);
 
@@ -3241,22 +3245,30 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         CommandHandler h = new CommandHandler();
 
+        TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(1));
+
+        spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage &&
+            ((SingleNodeMessage<?>)msg).type() == RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE.ordinal());
+
         // Restore single cache group.
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--start", DEFAULT_CACHE_NAME));
         assertContains(log, testOut.toString(),
             "Snapshot cache group restore operation started [snapshot=" + snpName + ", group(s)=" + DEFAULT_CACHE_NAME + ']');
 
-        assertTrue(grid(0).context().cache().context().snapshotMgr().isRestoringLocal(snpName));
-
-        // todo flaky fails - bad reducer?
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--status"));
         assertContains(log, testOut.toString(),
-            "Snapshot cache group restore operation is running [snapshot=" + snpName + ']');
+                "Snapshot cache group restore operation is running [snapshot=" + snpName + ']');
 
         // Check wrong snapshot name.
-        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", "snapX", "--status"));
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", missingSnpName, "--status"));
         assertContains(log, testOut.toString(),
-            "Snapshot cache group restore operation is stopped [snapshot=snapX]");
+            "Snapshot cache group restore operation is stopped [snapshot=" +  missingSnpName + ']');
+
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", missingSnpName, "--stop"));
+        assertContains(log, testOut.toString(),
+            "Snapshot cache group restore operation is not in progress [snapshot=" + missingSnpName + ']');
+
+        GridTestUtils.runAsync((Runnable)spi::stopBlock);
 
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--stop"));
         assertContains(log, testOut.toString(),
