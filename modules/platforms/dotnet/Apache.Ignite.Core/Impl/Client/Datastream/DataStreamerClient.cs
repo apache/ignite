@@ -34,7 +34,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     /// TODO:
     /// * Receiver tests
     /// * keepBinary tests
-    /// * Unwrap ugly AggregateExceptions. Too much nesting.
     /// * Remove diagnostic output
     /// </summary>
     internal sealed class DataStreamerClient<TK, TV> : IDataStreamerClient<TK, TV>
@@ -99,12 +98,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             _flags = GetFlags(_options);
         }
 
+        /** <inheritdoc /> */
         public void Dispose()
         {
-            // TODO: Dispose should not throw - how can we achieve that?
-            // Require Flush, like Transaction requires Commit?
-            // Log errors, but don't throw?
-
             // TODO: Lock?
             // TODO: ThrowIfDisposed everywhere.
             Close(cancel: false);
@@ -195,7 +191,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             {
                 if (_exception != null)
                 {
-                    // TODO: ??
+                    // Already closed.
                     return Task.CompletedTask;
                 }
 
@@ -557,7 +553,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
             if (ex != null)
             {
-                throw ex;
+                throw new ObjectDisposedException("Streamer is closed.", ex);
             }
         }
 
