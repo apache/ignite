@@ -67,10 +67,10 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /** */
 public class ChangeDataCaptureOrderTest extends GridCommonAbstractTest {
     /** */
-    public static final String FOR_OTHER_DC = "for-other-dc";
+    public static final String FOR_OTHER_DR_ID = "for-other-dr-id";
 
     /** */
-    public static final byte OTHER_DC_ID = 2;
+    public static final byte OTHER_DR_ID = 2;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -93,7 +93,7 @@ public class ChangeDataCaptureOrderTest extends GridCommonAbstractTest {
             }
 
             @Override public CachePluginProvider createCacheProvider(CachePluginContext ctx) {
-                if (!ctx.igniteCacheConfiguration().getName().equals(FOR_OTHER_DC))
+                if (!ctx.igniteCacheConfiguration().getName().equals(FOR_OTHER_DR_ID))
                     return null;
 
                 return new AbstractCachePluginProvider() {
@@ -136,10 +136,10 @@ public class ChangeDataCaptureOrderTest extends GridCommonAbstractTest {
 
         ChangeDataCapture cdc = new ChangeDataCapture(cfg, null, cdcConfig(cnsmr));
 
-        IgniteCache<Integer, User> cache = ign.getOrCreateCache(FOR_OTHER_DC);
+        IgniteCache<Integer, User> cache = ign.getOrCreateCache(FOR_OTHER_DR_ID);
 
         cnsmr.drId = 1;
-        cnsmr.otherDrId = OTHER_DC_ID;
+        cnsmr.otherDrId = OTHER_DR_ID;
 
         addAndWaitForConsumption(cnsmr, cdc, cache, null, this::addConflictData, 0, KEYS_CNT * 2, getTestTimeout());
     }
@@ -216,7 +216,7 @@ public class ChangeDataCaptureOrderTest extends GridCommonAbstractTest {
 
                 val.prepareMarshal(intCache.context().cacheObjectContext());
 
-                drMap.put(key, new GridCacheDrInfo(val, new GridCacheVersion(1, i, 1, OTHER_DC_ID)));
+                drMap.put(key, new GridCacheDrInfo(val, new GridCacheVersion(1, i, 1, OTHER_DR_ID)));
             }
 
             intCache.putAllConflict(drMap);
