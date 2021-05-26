@@ -327,23 +327,6 @@ public class SnapshotRestoreProcess {
         return false;
     }
 
-//    protected IgniteInternalFuture<Boolean> restoreStatus(String name) {
-//        return execRestoreBooleanCallable(new SnapshotRestoreManagementTask.RestoreStatusCallable(name));
-//    }
-//
-//    private IgniteInternalFuture<Boolean> execRestoreBooleanCallable(IgniteCallable<Boolean> job) {
-//        ctx.security().authorize(ADMIN_SNAPSHOT);
-//
-//        Collection<ClusterNode> bltNodes = F.view(ctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
-//            (node) -> CU.baselineNode(node, ctx.state().clusterState()));
-//
-//        ctx.task().setThreadContext(TC_SKIP_AUTH, true);
-//        ctx.task().setThreadContext(TC_SUBGRID, bltNodes);
-//        ctx.task().setThreadContext(TC_NO_FAILOVER, true);
-//
-//        return ctx.task().execute(SnapshotRestoreManagementTask.class, job);
-//    }
-
     /**
      * @param reqId Request ID.
      * @return Server nodes on which a successful start of the cache(s) is required, if any of these nodes fails when
@@ -482,14 +465,18 @@ public class SnapshotRestoreProcess {
                 }
             }
 
-            SnapshotRestoreContext opCtx0 = prepareContext(req);
-
+            SnapshotRestoreContext opCtx0 = opCtx = prepareContext(req);
             ClusterSnapshotFuture fut0 = fut;
 
-            if (fut0 != null && fut0.interruptEx != null)
-                throw new IgniteCheckedException(fut0.interruptEx);
+            if (fut0 != null) {
+                Exception err = fut0.interruptEx;
 
-            opCtx = opCtx0;
+                if (err != null) {
+                    opCtx0.err.set(err);
+
+                    throw new IgniteCheckedException(err);
+                }
+            }
 
             if (opCtx0.dirs.isEmpty())
                 return new GridFinishedFuture<>();

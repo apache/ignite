@@ -3265,13 +3265,13 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertContains(log, testOut.toString(),
             "Snapshot cache group restore operation is stopped [snapshot=" +  missingSnpName + ']');
 
-        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", missingSnpName, "--stop"));
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", missingSnpName, "--cancel"));
         assertContains(log, testOut.toString(),
             "Snapshot cache group restore operation is not in progress [snapshot=" + missingSnpName + ']');
 
         GridTestUtils.runAsync((Runnable)spi::stopBlock);
 
-        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--stop"));
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--cancel"));
         assertContains(log, testOut.toString(),
             "Snapshot cache group restore operation canceled [snapshot=" + snpName + ']');
 

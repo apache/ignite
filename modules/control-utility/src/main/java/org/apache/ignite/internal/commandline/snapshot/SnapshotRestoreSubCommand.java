@@ -1,6 +1,7 @@
 package org.apache.ignite.internal.commandline.snapshot;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -100,19 +101,25 @@ public class SnapshotRestoreSubCommand extends AbstractCommand<VisorSnapshotRest
 
     /** {@inheritDoc} */
     @Override public String confirmationPrompt() {
-        return taskArg.groupNames() != null ? null :
+        return cmdAction == SnapshotRestoreAction.START && taskArg.groupNames() != null ? null :
             "Warning: command will restore ALL PUBLIC CACHE GROUPS from the snapshot " + taskArg.snapshotName() + '.';
     }
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger log) {
-        Map<String, String> restoreParams = new LinkedHashMap<>();
+        Map<String, String> commonParams = Collections.singletonMap("snapshot_name", "Snapshot name.");
 
-        restoreParams.put("snapshot_name", "Snapshot name.");
-        restoreParams.put("group_name", "Cache group name.");
+        Map<String, String> startParams = new LinkedHashMap<>(commonParams);
+        startParams.put("groupName1,...groupNameN", "Cache group names.");
 
-        Command.usage(log, "Restore snapshot:", SNAPSHOT, restoreParams, RESTORE.toString(),
-            optional(SnapshotRestoreAction.START, "group_name"));
+        Command.usage(log, "Restore snapshot:", SNAPSHOT, startParams, RESTORE.toString(),
+            SnapshotRestoreAction.START.toString(), "snapshot_name", optional("group_name1,...group_nameN"));
+
+        Command.usage(log, "Snapshot restore operation status:", SNAPSHOT, commonParams, RESTORE.toString(),
+            SnapshotRestoreAction.STATUS.toString(), "snapshot_name");
+
+        Command.usage(log, "Cancel snapshot restore opeeration:", SNAPSHOT, commonParams, RESTORE.toString(),
+            SnapshotRestoreAction.CANCEL.toString(), "snapshot_name");
     }
 
     /** {@inheritDoc} */
@@ -120,11 +127,15 @@ public class SnapshotRestoreSubCommand extends AbstractCommand<VisorSnapshotRest
         return cmdName;
     }
 
+    /** Snapshot restore action. */
     private enum SnapshotRestoreAction implements CommandArg {
+        /** Start snapshot restore operation. */
         START("--start", VisorSnapshotRestoreTask.class),
 
-        STOP("--stop", VisorSnapshotRestoreCancelTask.class),
+        /** Cancel snapshot restore operation. */
+        CANCEL("--cancel", VisorSnapshotRestoreCancelTask.class),
 
+        /** Status of the snapshot restore operation. */
         STATUS("--status", VisorSnapshotRestoreStatusTask.class);
 
         /** Name of the argument. */
@@ -134,8 +145,8 @@ public class SnapshotRestoreSubCommand extends AbstractCommand<VisorSnapshotRest
         private final Class<?> taskCls;
 
         /**
-         * @param taskCls
          * @param name Name of the argument.
+         * @param taskCls Task class.
          */
         SnapshotRestoreAction(String name, Class<?> taskCls) {
             this.name = name;

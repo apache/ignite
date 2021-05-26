@@ -67,7 +67,6 @@ import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.SnapshotEvent;
-import org.apache.ignite.internal.ComputeTaskInternalFuture;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteEx;
@@ -797,7 +796,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * Check if snapshot restore process is currently running.
      *
      * @param snpName Snapshot name.
-     * @return {@code True} if the snapshot restore operation from specified snapshot is in progress locally.
+     * @return {@code True} if the snapshot restore operation from the specified snapshot is in progress locally.
      */
     public boolean isRestoring(String snpName) {
         return snpName.equals(restoreCacheGrpProc.snapshotName());
@@ -814,6 +813,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         return restoreCacheGrpProc.isRestoring(cacheName, grpName);
     }
 
+    /**
+     * Status of the restore operation cluster-wide.
+     *
+     * @param snpName Snapshot name.
+     * @return Future that will be completed when the status of the restore operation is received from all the server
+     * nodes. The result of this future will be {@code false} if the restore process with the specified snapshot name is
+     * not running on all nodes.
+     */
     public IgniteFuture<Boolean> restoreStatus(String snpName) {
         return executeRestoreManagementTask(SnapshotRestoreStatusTask.class, snpName);
     }
@@ -909,22 +916,30 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      *
      * @param name Snapshot name.
      * @return Future that will be finished when process the process is complete on all nodes. The result of this
-     * feature will be {@code False} if the restore process if the restore process with the specified snapshot name is
-     * not running at all.
+     * future will be {@code false} if the restore process with the specified snapshot name is not running at all.
      */
     public IgniteFuture<Boolean> cancelRestore(String name) {
         return executeRestoreManagementTask(SnapshotRestoreCancelTask.class, name);
     }
 
+    /**
+     * @param name Snapshot name.
+     *
+     * @return {@code True} if the local snapshot restore task was canceled.
+     */
     public boolean cancelLocalRestoreTask(String name) throws IgniteCheckedException {
         return restoreCacheGrpProc
             .interrupt(new IgniteException("Operation has been interrupted by the user."), name)
             .get();
     }
 
+    /**
+     * @param taskCls Snapshot restore operation management task class.
+     * @param snpName Snapshot name.
+     */
     private IgniteFuture<Boolean> executeRestoreManagementTask(
         Class<? extends ComputeTask<String, Boolean>> taskCls,
-        String jobArg
+        String snpName
     ) {
         cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
 
@@ -935,9 +950,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         cctx.kernalContext().task().setThreadContext(TC_SUBGRID, bltNodes);
         cctx.kernalContext().task().setThreadContext(TC_NO_FAILOVER, true);
 
-        ComputeTaskInternalFuture<Boolean> fut0 = cctx.kernalContext().task().execute(taskCls, jobArg);
-
-        return new IgniteFutureImpl<>(fut0);
+        return new IgniteFutureImpl<>(cctx.kernalContext().task().execute(taskCls, snpName));
     }
 
     /**
