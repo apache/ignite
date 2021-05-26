@@ -22,6 +22,7 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.spi.metric.HistogramMetric;
 
+import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX;
 import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
 
 /**
@@ -79,6 +80,14 @@ public class MetricUtils {
             return metricName(CACHE_METRICS, cacheName, "near");
 
         return metricName(CACHE_METRICS, cacheName);
+    }
+
+    /**
+     * @param cacheOrGroupName Cache or group name, depending whether group is implicit or not.
+     * @return Cache metrics registry name.
+     */
+    public static String cacheGroupMetricsRegistryName(String cacheOrGroupName) {
+        return metricName(CACHE_GROUP_METRICS_PREFIX, cacheOrGroupName);
     }
 
     /**
