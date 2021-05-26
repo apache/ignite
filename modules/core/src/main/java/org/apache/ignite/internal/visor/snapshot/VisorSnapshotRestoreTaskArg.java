@@ -24,6 +24,9 @@ public class VisorSnapshotRestoreTaskArg extends IgniteDataTransferObject {
     /** Cache group names. */
     private Collection<String> grpNames;
 
+    /** Snapshot restore operation management action. */
+    private RestoreJobAction action;
+
     /** Default constructor. */
     public VisorSnapshotRestoreTaskArg() {
         // No-op.
@@ -32,10 +35,12 @@ public class VisorSnapshotRestoreTaskArg extends IgniteDataTransferObject {
     /**
      * @param snpName Snapshot name.
      * @param grpNames Cache group names.
+     * @param action Snapshot restore operation management action.
      */
-    public VisorSnapshotRestoreTaskArg(String snpName, @Nullable Collection<String> grpNames) {
+    public VisorSnapshotRestoreTaskArg(String snpName, @Nullable Collection<String> grpNames, String action) {
         this.snpName = snpName;
         this.grpNames = grpNames;
+        this.action = RestoreJobAction.valueOf(action);
     }
 
     /** @return Snapshot name. */
@@ -48,14 +53,21 @@ public class VisorSnapshotRestoreTaskArg extends IgniteDataTransferObject {
         return grpNames;
     }
 
+    /** @return Snapshot restore operation management action. */
+    public RestoreJobAction jobAction() {
+        return action;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        U.writeEnum(out, action);
         U.writeString(out, snpName);
         U.writeCollection(out, grpNames);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte ver, ObjectInput in) throws IOException, ClassNotFoundException {
+        action = U.readEnum(in, RestoreJobAction.class);
         snpName = U.readString(in);
         grpNames = U.readCollection(in);
     }
@@ -63,5 +75,17 @@ public class VisorSnapshotRestoreTaskArg extends IgniteDataTransferObject {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(VisorSnapshotRestoreTaskArg.class, this);
+    }
+
+    /** Snapshot restore operation management action. */
+    protected enum RestoreJobAction {
+        /** Start snapshot restore operation. */
+        START,
+
+        /** Cancel snapshot restore operation. */
+        CANCEL,
+
+        /** Status of the snapshot restore operation. */
+        STATUS
     }
 }

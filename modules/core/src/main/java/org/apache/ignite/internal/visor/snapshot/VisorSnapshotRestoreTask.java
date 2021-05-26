@@ -19,7 +19,6 @@ package org.apache.ignite.internal.visor.snapshot;
 
 import java.util.Collection;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -27,7 +26,7 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.apache.ignite.lang.IgniteFuture;
 
 /**
- * @see IgniteSnapshot#restoreSnapshot(String, Collection)
+ * Snapshot restore management task.
  */
 @GridInternal
 public class VisorSnapshotRestoreTask extends VisorOneNodeTask<VisorSnapshotRestoreTaskArg, String> {
@@ -54,14 +53,57 @@ public class VisorSnapshotRestoreTask extends VisorOneNodeTask<VisorSnapshotRest
 
         /** {@inheritDoc} */
         @Override protected String run(VisorSnapshotRestoreTaskArg arg) throws IgniteException {
+            switch (arg.jobAction()) {
+                case START:
+                    return start(arg.snapshotName(), arg.groupNames());
+
+                case CANCEL:
+                    return cancel(arg.snapshotName());
+
+                case STATUS:
+                    return status(arg.snapshotName());
+
+                default:
+                    throw new IllegalArgumentException("Action is not implemented " + arg.jobAction());
+            }
+        }
+
+        /**
+         * @param snpName Snapshot name.
+         * @param grpNames Cache group names.
+         * @return User-friendly text result of command execution.
+         */
+        private String start(String snpName, Collection<String> grpNames) {
             IgniteFuture<Void> fut =
-                ignite.context().cache().context().snapshotMgr().restoreSnapshot(arg.snapshotName(), arg.groupNames());
+                ignite.context().cache().context().snapshotMgr().restoreSnapshot(snpName, grpNames);
 
             if (fut.isDone())
                 fut.get();
 
-            return "Snapshot cache group restore operation started [snapshot=" + arg.snapshotName() +
-                (arg.groupNames() == null ? "" : ", group(s)=" + F.concat(arg.groupNames(), ",")) + ']';
+            return "Snapshot cache group restore operation started [snapshot=" + snpName +
+                (grpNames == null ? "" : ", group(s)=" + F.concat(grpNames, ",")) + ']';
+        }
+
+        /**
+         * @param snpName Snapshot name.
+         * @return User-friendly text result of command execution.
+         */
+        private String cancel(String snpName) {
+            boolean stopped = ignite.context().cache().context().snapshotMgr().cancelRestore(snpName).get();
+
+            return "Snapshot cache group restore operation " +
+                (stopped ? "canceled" : "is not in progress") + " [snapshot=" + snpName + ']';
+        }
+
+        /**
+         * @param snpName Snapshot name.
+         * @return User-friendly text result of command execution.
+         */
+        private String status(String snpName) {
+            boolean started = ignite.context().cache().context().snapshotMgr().restoreStatus(snpName).get();
+
+            return "Snapshot cache group restore operation is " + (started ? "running" : "stopped") +
+                " [snapshot=" + snpName + ']';
         }
     }
 }

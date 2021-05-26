@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.commandline.snapshot;
 
-import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCancelTask;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCheckTask;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCreateTask;
+import org.apache.ignite.internal.visor.snapshot.VisorSnapshotRestoreTask;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -30,47 +30,51 @@ import org.jetbrains.annotations.Nullable;
  */
 public enum SnapshotSubcommand {
     /** Sub-command to create a cluster snapshot. */
-    CREATE(new SnapshotBasicSubCommand("create", "Create cluster snapshot", VisorSnapshotCreateTask.class)),
+    CREATE("create", VisorSnapshotCreateTask.class.getName()),
 
     /** Sub-command to cancel running snapshot. */
-    CANCEL(new SnapshotBasicSubCommand("cancel", "Cancel running snapshot", VisorSnapshotCancelTask.class)),
+    CANCEL("cancel", VisorSnapshotCancelTask.class.getName()),
 
     /** Sub-command to check snapshot. */
-    CHECK(new SnapshotBasicSubCommand("check", "Check snapshot", VisorSnapshotCheckTask.class)),
+    CHECK("check", VisorSnapshotCheckTask.class.getName()),
 
-    /** Sub-command to restore cache group from snapshot. */
-    RESTORE(new SnapshotRestoreSubCommand("restore"));
+    /** Sub-command to restore snapshot. */
+    RESTORE("restore", VisorSnapshotRestoreTask.class.getName());
 
-    /** Command. */
-    private final Command<?> cmd;
+    /** Sub-command name. */
+    private final String name;
 
-    /**
-     * @param cmd Command.
-     */
-    SnapshotSubcommand(Command<?> cmd) {
-        this.cmd = cmd;
+    /** Task class name to execute. */
+    private final String taskName;
+
+    /** @param name Snapshot sub-command name. */
+    SnapshotSubcommand(String name, String taskName) {
+        this.name = name;
+        this.taskName = taskName;
     }
 
     /**
      * @param text Command text (case insensitive).
      * @return Command for the text. {@code Null} if there is no such command.
      */
-     @Nullable public static SnapshotSubcommand of(String text) {
+    @Nullable public static SnapshotSubcommand of(String text) {
         for (SnapshotSubcommand cmd : values()) {
-            if (cmd.subcommand().name().equalsIgnoreCase(text))
+            if (cmd.name.equalsIgnoreCase(text))
                 return cmd;
         }
 
         throw new IllegalArgumentException("Expected correct action: " + text);
     }
 
-    /** @return sub-command. */
-    public Command<?> subcommand() {
-        return cmd;
+    /**
+     * @return Task class name to execute.
+     */
+    public String taskName() {
+        return taskName;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return subcommand().name();
+        return name;
     }
 }
