@@ -16,16 +16,14 @@ public class VisorSnapshotRestoreTaskArg extends IgniteDataTransferObject {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /**
-     * Snapshot name.
-     */
+    /** Snapshot name. */
     private String snpName;
 
     /** Cache group names. */
     private Collection<String> grpNames;
 
     /** Snapshot restore operation management action. */
-    private RestoreJobAction action;
+    private SnapshotRestoreAction action;
 
     /** Default constructor. */
     public VisorSnapshotRestoreTaskArg() {
@@ -33,14 +31,14 @@ public class VisorSnapshotRestoreTaskArg extends IgniteDataTransferObject {
     }
 
     /**
+     * @param action Snapshot restore operation management action.
      * @param snpName Snapshot name.
      * @param grpNames Cache group names.
-     * @param action Snapshot restore operation management action.
      */
-    public VisorSnapshotRestoreTaskArg(String snpName, @Nullable Collection<String> grpNames, String action) {
+    public VisorSnapshotRestoreTaskArg(String action, String snpName, @Nullable Collection<String> grpNames) {
         this.snpName = snpName;
         this.grpNames = grpNames;
-        this.action = RestoreJobAction.valueOf(action);
+        this.action = SnapshotRestoreAction.valueOf(action);
     }
 
     /** @return Snapshot name. */
@@ -54,7 +52,7 @@ public class VisorSnapshotRestoreTaskArg extends IgniteDataTransferObject {
     }
 
     /** @return Snapshot restore operation management action. */
-    public RestoreJobAction jobAction() {
+    public SnapshotRestoreAction jobAction() {
         return action;
     }
 
@@ -67,7 +65,7 @@ public class VisorSnapshotRestoreTaskArg extends IgniteDataTransferObject {
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte ver, ObjectInput in) throws IOException, ClassNotFoundException {
-        action = U.readEnum(in, RestoreJobAction.class);
+        action = U.readEnum(in, SnapshotRestoreAction.class);
         snpName = U.readString(in);
         grpNames = U.readCollection(in);
     }
@@ -78,7 +76,7 @@ public class VisorSnapshotRestoreTaskArg extends IgniteDataTransferObject {
     }
 
     /** Snapshot restore operation management action. */
-    protected enum RestoreJobAction {
+    protected enum SnapshotRestoreAction {
         /** Start snapshot restore operation. */
         START,
 

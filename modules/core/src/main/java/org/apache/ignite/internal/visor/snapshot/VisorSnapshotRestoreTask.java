@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.visor.snapshot;
 
-import java.util.Collection;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
@@ -35,11 +34,23 @@ public class VisorSnapshotRestoreTask extends VisorOneNodeTask<VisorSnapshotRest
 
     /** {@inheritDoc} */
     @Override protected VisorJob<VisorSnapshotRestoreTaskArg, String> job(VisorSnapshotRestoreTaskArg arg) {
-        return new VisorSnapshotRestoreJob(arg, debug);
+        switch (arg.jobAction()) {
+            case START:
+                return new VisorSnapshotStartRestoreJob(arg, debug);
+
+            case CANCEL:
+                return new VisorSnapshotRestoreCancelJob(arg, debug);
+
+            case STATUS:
+                return new VisorSnapshotRestoreStatusJob(arg, debug);
+
+            default:
+                throw new IllegalArgumentException("Action is not supported: " + arg.jobAction());
+        }
     }
 
     /** */
-    private static class VisorSnapshotRestoreJob extends VisorJob<VisorSnapshotRestoreTaskArg, String> {
+    private static class VisorSnapshotStartRestoreJob extends VisorJob<VisorSnapshotRestoreTaskArg, String> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -47,63 +58,64 @@ public class VisorSnapshotRestoreTask extends VisorOneNodeTask<VisorSnapshotRest
          * @param arg Restore task argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorSnapshotRestoreJob(VisorSnapshotRestoreTaskArg arg, boolean debug) {
+        protected VisorSnapshotStartRestoreJob(VisorSnapshotRestoreTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
         @Override protected String run(VisorSnapshotRestoreTaskArg arg) throws IgniteException {
-            switch (arg.jobAction()) {
-                case START:
-                    return start(arg.snapshotName(), arg.groupNames());
-
-                case CANCEL:
-                    return cancel(arg.snapshotName());
-
-                case STATUS:
-                    return status(arg.snapshotName());
-
-                default:
-                    throw new IllegalArgumentException("Action is not implemented " + arg.jobAction());
-            }
-        }
-
-        /**
-         * @param snpName Snapshot name.
-         * @param grpNames Cache group names.
-         * @return User-friendly text result of command execution.
-         */
-        private String start(String snpName, Collection<String> grpNames) {
             IgniteFuture<Void> fut =
-                ignite.context().cache().context().snapshotMgr().restoreSnapshot(snpName, grpNames);
+                ignite.context().cache().context().snapshotMgr().restoreSnapshot(arg.snapshotName(), arg.groupNames());
 
             if (fut.isDone())
                 fut.get();
 
-            return "Snapshot cache group restore operation started [snapshot=" + snpName +
-                (grpNames == null ? "" : ", group(s)=" + F.concat(grpNames, ",")) + ']';
+            return "Snapshot cache group restore operation started [snapshot=" + arg.snapshotName() +
+                (arg.groupNames() == null ? "" : ", group(s)=" + F.concat(arg.groupNames(), ",")) + ']';
         }
+    }
+
+    /** */
+    private static class VisorSnapshotRestoreCancelJob extends VisorJob<VisorSnapshotRestoreTaskArg, String> {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
 
         /**
-         * @param snpName Snapshot name.
-         * @return User-friendly text result of command execution.
+         * @param arg Restore task argument.
+         * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        private String cancel(String snpName) {
-            boolean stopped = ignite.context().cache().context().snapshotMgr().cancelRestore(snpName).get();
+        protected VisorSnapshotRestoreCancelJob(VisorSnapshotRestoreTaskArg arg, boolean debug) {
+            super(arg, debug);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected String run(VisorSnapshotRestoreTaskArg arg) throws IgniteException {
+            boolean stopped = ignite.context().cache().context().snapshotMgr().cancelRestore(arg.snapshotName()).get();
 
             return "Snapshot cache group restore operation " +
-                (stopped ? "canceled" : "is not in progress") + " [snapshot=" + snpName + ']';
+                (stopped ? "canceled" : "is not in progress") + " [snapshot=" + arg.snapshotName() + ']';
         }
+    }
+
+    /** */
+    private static class VisorSnapshotRestoreStatusJob extends VisorJob<VisorSnapshotRestoreTaskArg, String> {
+        /** Serial version uid. */
+        private static final long serialVersionUID = 0L;
 
         /**
-         * @param snpName Snapshot name.
-         * @return User-friendly text result of command execution.
+         * @param arg Restore task argument.
+         * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        private String status(String snpName) {
-            boolean started = ignite.context().cache().context().snapshotMgr().restoreStatus(snpName).get();
+        protected VisorSnapshotRestoreStatusJob(VisorSnapshotRestoreTaskArg arg, boolean debug) {
+            super(arg, debug);
+        }
 
-            return "Snapshot cache group restore operation is " + (started ? "running" : "stopped") +
-                " [snapshot=" + snpName + ']';
+        /** {@inheritDoc} */
+        @Override protected String run(VisorSnapshotRestoreTaskArg arg) throws IgniteException {
+            boolean state = ignite.context().cache().context().snapshotMgr().restoreStatus(arg.snapshotName()).get();
+
+            return "Snapshot cache group restore operation is " + (state ? "running" : "stopped") +
+                " [snapshot=" + arg.snapshotName() + ']';
         }
     }
 }

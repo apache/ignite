@@ -120,7 +120,7 @@ public class SnapshotCommand extends AbstractCommand<Object> {
             grpNames = argIter.parseStringSet(arg);
         }
 
-        cmdArg = new VisorSnapshotRestoreTaskArg(snpName, grpNames, cmdAction.name());
+        cmdArg = new VisorSnapshotRestoreTaskArg(cmdAction.name(), snpName, grpNames);
     }
 
     /** {@inheritDoc} */
