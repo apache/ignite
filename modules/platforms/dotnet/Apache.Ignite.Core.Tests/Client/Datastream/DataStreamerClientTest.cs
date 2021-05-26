@@ -429,7 +429,14 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         [Test]
         public void TestCloseCancelDiscardsBufferedData()
         {
-            Assert.Fail("TODO");
+            using (var streamer = Client.GetDataStreamer<int, int>(CacheName))
+            {
+                streamer.Add(1, 1);
+                streamer.Add(2, 2);
+                streamer.Close(cancel: true);
+            }
+            
+            Assert.AreEqual(0, GetCache<int>().GetSize());
         }
 
         [Test]
