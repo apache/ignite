@@ -33,7 +33,7 @@ public class UserModifyingApplication extends IgniteAwareApplication {
         String restKey = jsonNode.get("rest_key").asText();
 
         String name = jsonNode.get("username").asText();
-        
+
         String pwd = jsonNode.get("password").asText();
 
         markInitialized();

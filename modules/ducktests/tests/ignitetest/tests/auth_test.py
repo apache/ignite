@@ -50,7 +50,6 @@ class AuthenticationTests(IgniteTest):
 
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    # @ignore_if(is_auth_enabled(globals))
     def test_change_users(self, ignite_version):
         """
         Test add, update and remove user
