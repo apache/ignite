@@ -51,10 +51,10 @@ public class WALRecordsConsumer<K, V> {
     private final ChangeDataCaptureConsumer cdcConsumer;
 
     /** Operations types we interested in. */
-    private static final EnumSet<GridCacheOperation> OPS_TYPES = EnumSet.of(CREATE, UPDATE, DELETE, TRANSFORM);
+    private static final EnumSet<GridCacheOperation> OPERATIONS_TYPES = EnumSet.of(CREATE, UPDATE, DELETE, TRANSFORM);
 
     /** Operations filter. */
-    private static final IgnitePredicate<? super DataEntry> OPS_FILTER = e -> {
+    private static final IgnitePredicate<? super DataEntry> OPERATIONS_FILTER = e -> {
         if (!(e instanceof UnwrappedDataEntry))
             throw new IllegalStateException("Unexpected data entry type[" + e.getClass().getName());
 
@@ -62,7 +62,7 @@ public class WALRecordsConsumer<K, V> {
             (e.flags() & DataEntry.FROM_STORE_FLAG) != 0)
             return false;
 
-        return OPS_TYPES.contains(e.op());
+        return OPERATIONS_TYPES.contains(e.op());
     };
 
     /**
@@ -95,7 +95,7 @@ public class WALRecordsConsumer<K, V> {
                 e.writeVersion(),
                 e.cacheId()
             );
-        }, true, OPS_FILTER), true)));
+        }, true, OPERATIONS_FILTER), true)));
     }
 
     /**

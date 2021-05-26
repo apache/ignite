@@ -18,8 +18,10 @@
 package org.apache.ignite.cdc;
 
 import java.io.Serializable;
+import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.internal.cdc.ChangeDataCapture;
 import org.apache.ignite.lang.IgniteExperimental;
+import org.apache.ignite.spi.systemview.view.CacheView;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -50,18 +52,27 @@ public interface ChangeDataCaptureEvent extends Serializable {
     public boolean primary();
 
     /**
+     * Ignite split dataset into smaller chunks to distribute them across the cluster.
+     * {@link ChangeDataCaptureConsumer} implementations can use {@link #partition()} to split changes processing
+     * in the same way as it done for the cache.
+     *
      * @return Partition number.
+     * @see Affinity#partition(Object)
+     * @see Affinity#partitions()
+     * @see <a href="https://ignite.apache.org/docs/latest/data-modeling/data-partitioning">Data partitioning</a>
+     * @see <a href="https://ignite.apache.org/docs/latest/data-modeling/affinity-collocation">Affinity collocation</a>
      */
     public int partition();
 
     /**
-     * @return Order of the update operation.
+     * @return Version of the entry.
      */
-    public ChangeEventOrder order();
+    public CacheEntryVersion version();
 
     /**
      * @return Cache ID.
      * @see org.apache.ignite.internal.util.typedef.internal.CU#cacheId(String)
+     * @see CacheView#cacheId()
      */
     public int cacheId();
 }

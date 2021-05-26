@@ -30,7 +30,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -62,7 +61,7 @@ import org.apache.ignite.resources.SpringResource;
 import org.apache.ignite.startup.cmdline.ChangeDataCaptureCommandLineStartup;
 
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_NAME_PATTERN;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
 
 /**
  * CDC(Change Data Capture) application.
@@ -73,14 +72,14 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWr
  * Ignite node should be explicitly configured for using {@link ChangeDataCapture}.
  * <ol>
  *     <li>Set {@link DataStorageConfiguration#setCdcEnabled(boolean)} to true.</li>
- *     <li>Optional: Set {@link DataStorageConfiguration#setCdcPath(String)} to path to the directory to store
+ *     <li>Optional: Set {@link DataStorageConfiguration#setCdcWalPath(String)} to path to the directory to store
  *     WAL segments for CDC.</li>
  *     <li>Optional: Set {@link DataStorageConfiguration#setWalForceArchiveTimeout(long)} to configure timeout for
  *     force WAL rollover, so new events will be available for consumptions with the predicted time.</li>
  * </ol>
  *
- * When {@link DataStorageConfiguration#getCdcPath()} is true then Ignite node on each WAL segment rollover creates
- * hard link to archive WAL segment in {@link DataStorageConfiguration#getCdcPath()} directory.
+ * When {@link DataStorageConfiguration#getCdcWalPath()} is true then Ignite node on each WAL segment rollover creates
+ * hard link to archive WAL segment in {@link DataStorageConfiguration#getCdcWalPath()} directory.
  * {@link ChangeDataCapture} application takes segment file and consumes events from it.
  * After successful consumption (see {@link ChangeDataCaptureConsumer#onEvents(Iterator)})
  * WAL segment will be deleted from directory.
@@ -99,22 +98,18 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWr
  * </ol>
  *
  * @see DataStorageConfiguration#setCdcEnabled(boolean)
- * @see DataStorageConfiguration#setCdcPath(String)
+ * @see DataStorageConfiguration#setCdcWalPath(String)
  * @see DataStorageConfiguration#setWalForceArchiveTimeout(long)
  * @see ChangeDataCaptureCommandLineStartup
  * @see ChangeDataCaptureConsumer
- * @see DataStorageConfiguration#DFLT_CDC_PATH
+ * @see DataStorageConfiguration#DFLT_WAL_CDC_PATH
  */
 public class ChangeDataCapture implements Runnable {
     /** */
-    public static final String ERR_MSG = "Persistence disabled. IgniteCDC can't run!";
+    public static final String ERR_MSG = "Persistence disabled. Capture Data Change can't run!";
 
     /** State dir. */
     public static final String STATE_DIR = "state";
-
-    /** Wal segments filter. */
-    private static final Predicate<Path> WAL_SEGMENTS_FILTER =
-        p -> WAL_NAME_PATTERN.matcher(p.getFileName().toString()).matches();
 
     /** Ignite configuration. */
     private final IgniteConfiguration cfg;
@@ -290,7 +285,8 @@ public class ChangeDataCapture implements Runnable {
 
                     cdcFiles
                         .peek(exists::add) // Store files that exists in cdc dir.
-                        .filter(WAL_SEGMENTS_FILTER.and(p -> !seen.contains(p))) // Need unseend WAL segments only.
+                        // Need unseen WAL segments only.
+                        .filter(p -> WAL_SEGMENT_FILE_FILTER.accept(p.toFile()) && !seen.contains(p))
                         .peek(seen::add) // Adds to seen.
                         .sorted(Comparator.comparingLong(this::segmentIndex)) // Sort by segment index.
                         .peek(p -> {
@@ -319,13 +315,14 @@ public class ChangeDataCapture implements Runnable {
         if (log.isInfoEnabled())
             log.info("Processing WAL segment[segment=" + segment + ']');
 
-        IgniteWalIteratorFactory.IteratorParametersBuilder builder = new IgniteWalIteratorFactory.IteratorParametersBuilder()
-            .log(log)
-            .binaryMetadataFileStoreDir(binaryMeta)
-            .marshallerMappingFileStoreDir(marshaller)
-            .keepBinary(cdcCfg.isKeepBinary())
-            .filesOrDirs(segment.toFile())
-            .addFilter((type, ptr) -> type == DATA_RECORD_V2);
+        IgniteWalIteratorFactory.IteratorParametersBuilder builder =
+            new IgniteWalIteratorFactory.IteratorParametersBuilder()
+                .log(log)
+                .binaryMetadataFileStoreDir(binaryMeta)
+                .marshallerMappingFileStoreDir(marshaller)
+                .keepBinary(cdcCfg.isKeepBinary())
+                .filesOrDirs(segment.toFile())
+                .addFilter((type, ptr) -> type == DATA_RECORD_V2);
 
         if (initState != null) {
             long segmentIdx = segmentIndex(segment);
@@ -355,8 +352,6 @@ public class ChangeDataCapture implements Runnable {
                 }
             }
 
-            System.out.println("initState = " + initState);
-
             builder.from(initState);
 
             initState = null;
@@ -376,7 +371,7 @@ public class ChangeDataCapture implements Runnable {
                         // WAL segment is a hard link to a segment file in a specifal CDC folder.
                         // So we can safely delete it after success processing.
                         for (Path prevSegment : prevSegments)
-                            Files.deleteIfExists(prevSegment);
+                            Files.delete(prevSegment);
 
                         prevSegments.clear();
                     }
@@ -402,10 +397,10 @@ public class ChangeDataCapture implements Runnable {
             return null;
         }
 
-        File cdcRoot = new File(cfg.getDataStorageConfiguration().getCdcPath());
+        File cdcRoot = new File(cfg.getDataStorageConfiguration().getCdcWalPath());
 
         if (!cdcRoot.isAbsolute())
-            cdcRoot = new File(cfg.getWorkDirectory(), cfg.getDataStorageConfiguration().getCdcPath());
+            cdcRoot = new File(cfg.getWorkDirectory(), cfg.getDataStorageConfiguration().getCdcWalPath());
 
         if (!cdcRoot.exists()) {
             log.warning(cdcRoot + " not exists.");

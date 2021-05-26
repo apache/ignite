@@ -48,7 +48,7 @@ import org.apache.ignite.resources.LoggerResource;
  *
  * @see ChangeDataCapture
  * @see ChangeDataCaptureEvent
- * @see ChangeEventOrder
+ * @see CacheEntryVersion
  */
 @IgniteExperimental
 public interface ChangeDataCaptureConsumer {

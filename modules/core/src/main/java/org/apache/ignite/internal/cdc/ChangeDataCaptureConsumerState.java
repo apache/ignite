@@ -47,6 +47,9 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.WALPoi
  * @see ChangeDataCapture
  */
 public class ChangeDataCaptureConsumerState {
+    /** */
+    public static final String STATE_FILE_NAME = "cdc-state" + FILE_SUFFIX;
+
     /** State file. */
     private final Path state;
 
@@ -57,10 +60,8 @@ public class ChangeDataCaptureConsumerState {
      * @param stateDir State directory.
      */
     public ChangeDataCaptureConsumerState(Path stateDir) {
-        String fileName = "cdc-state" + FILE_SUFFIX;
-
-        state = stateDir.resolve(fileName);
-        tmp = stateDir.resolve(fileName + TMP_SUFFIX);
+        state = stateDir.resolve(STATE_FILE_NAME);
+        tmp = stateDir.resolve(STATE_FILE_NAME + TMP_SUFFIX);
     }
 
     /**

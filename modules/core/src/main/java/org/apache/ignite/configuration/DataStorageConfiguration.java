@@ -165,8 +165,8 @@ public class DataStorageConfiguration implements Serializable {
     /** Default wal archive directory. */
     public static final String DFLT_WAL_ARCHIVE_PATH = "db/wal/archive";
 
-    /** Default CDC directory. */
-    public static final String DFLT_CDC_PATH = "db/wal/cdc";
+    /** Default change data capture directory. */
+    public static final String DFLT_WAL_CDC_PATH = "db/wal/cdc";
 
     /** Default path (relative to working directory) of binary metadata folder */
     public static final String DFLT_BINARY_METADATA_PATH = "db/binary_meta";
@@ -247,7 +247,7 @@ public class DataStorageConfiguration implements Serializable {
 
     /** CDC path. */
     @IgniteExperimental
-    private String cdcPath = DFLT_CDC_PATH;
+    private String cdcWalPath = DFLT_WAL_CDC_PATH;
 
     /** CDC enabled flag. */
     @IgniteExperimental
@@ -745,20 +745,20 @@ public class DataStorageConfiguration implements Serializable {
      * @return CDC directory.
      */
     @IgniteExperimental
-    public String getCdcPath() {
-        return cdcPath;
+    public String getCdcWalPath() {
+        return cdcWalPath;
     }
 
     /**
      * Sets a path for the CDC directory.
      * Hard link to every WAL Archive segment will be created in it for CDC processing purpose.
      *
-     * @param cdcPath CDC directory.
+     * @param cdcWalPath CDC directory.
      * @return {@code this} for chaining.
      */
     @IgniteExperimental
-    public DataStorageConfiguration setCdcPath(String cdcPath) {
-        this.cdcPath = cdcPath;
+    public DataStorageConfiguration setCdcWalPath(String cdcWalPath) {
+        this.cdcWalPath = cdcWalPath;
 
         return this;
     }

@@ -42,6 +42,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cdc.ChangeDataCapture;
+import org.apache.ignite.internal.util.typedef.CI3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -73,6 +74,7 @@ public class ChangeDataCaptureSelfTest extends GridCommonAbstractTest {
     @Parameterized.Parameter
     public boolean specificConsistentId;
 
+    /** */
     @Parameterized.Parameter(1)
     public WALMode walMode;
 
@@ -102,7 +104,7 @@ public class ChangeDataCaptureSelfTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setCdcEnabled(true)
-            .setWalMode(WALMode.FSYNC)
+            .setWalMode(walMode)
             .setMaxWalArchiveSize(10 * segmentSz)
             .setWalSegmentSize(segmentSz)
             .setWalForceArchiveTimeout(WAL_ARCHIVE_TIMEOUT)
@@ -137,33 +139,16 @@ public class ChangeDataCaptureSelfTest extends GridCommonAbstractTest {
 
         ChangeDataCapture cdc = new ChangeDataCapture(cfg, null, cdcConfig(cnsmr));
 
-        IgniteInternalFuture<?> fut = runAsync(cdc);
-
         IgniteCache<Integer, User> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
         IgniteCache<Integer, User> txCache = ign.getOrCreateCache(TX_CACHE_NAME);
 
-        addData(cache, 0, KEYS_CNT * 2);
-        addData(txCache, 0, KEYS_CNT * 2);
-
-        assertTrue(waitForSize(KEYS_CNT * 2, DEFAULT_CACHE_NAME, UPDATE, cnsmr));
-        assertTrue(waitForSize(KEYS_CNT * 2, TX_CACHE_NAME, UPDATE, cnsmr));
-
-        fut.cancel();
-
-        List<Integer> keys = cnsmr.keys(UPDATE, cacheId(DEFAULT_CACHE_NAME));
-
-        assertEquals(KEYS_CNT * 2, keys.size());
-
-        for (int i = 0; i < KEYS_CNT * 2; i++)
-            assertTrue(keys.contains(i));
-
-        assertTrue(cnsmr.stopped);
+        addAndWaitForConsumption(cnsmr, cdc, cache, txCache, ChangeDataCaptureSelfTest::addData, 0, KEYS_CNT * 2, getTestTimeout());
 
         removeData(cache, 0, KEYS_CNT);
 
         IgniteInternalFuture<?> rmvFut = runAsync(cdc);
 
-        assertTrue(waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, DELETE, cnsmr));
+        assertTrue(waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, DELETE, getTestTimeout(), cnsmr));
 
         rmvFut.cancel();
 
@@ -228,7 +213,7 @@ public class ChangeDataCaptureSelfTest extends GridCommonAbstractTest {
         onChangeLatch1.await(getTestTimeout(), TimeUnit.MILLISECONDS);
         onChangeLatch2.countDown();
 
-        assertTrue(waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, UPDATE, cnsmr));
+        assertTrue(waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, UPDATE, getTestTimeout(), cnsmr));
         assertTrue(cnsmr.stopped);
 
         List<Integer> keys = cnsmr.keys(UPDATE, cacheId(DEFAULT_CACHE_NAME));
@@ -288,7 +273,7 @@ public class ChangeDataCaptureSelfTest extends GridCommonAbstractTest {
 
             IgniteInternalFuture<?> fut = runAsync(cdc);
 
-            assertTrue(waitForSize(cnt.get(), DEFAULT_CACHE_NAME, UPDATE, cnsmr));
+            assertTrue(waitForSize(cnt.get(), DEFAULT_CACHE_NAME, UPDATE, getTestTimeout(), cnsmr));
 
             fut.cancel();
 
@@ -327,8 +312,8 @@ public class ChangeDataCaptureSelfTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> restartFut = runAsync(() -> {
             try {
-                assertTrue(waitForSize(2, DEFAULT_CACHE_NAME, UPDATE, cnsmr));
-                assertTrue(waitForSize(2, TX_CACHE_NAME, UPDATE, cnsmr));
+                assertTrue(waitForSize(2, DEFAULT_CACHE_NAME, UPDATE, getTestTimeout(), cnsmr));
+                assertTrue(waitForSize(2, TX_CACHE_NAME, UPDATE, getTestTimeout(), cnsmr));
 
                 runFut.cancel();
 
@@ -350,8 +335,8 @@ public class ChangeDataCaptureSelfTest extends GridCommonAbstractTest {
         addData(cache, KEYS_CNT, KEYS_CNT * 2);
         addData(txCache, KEYS_CNT, KEYS_CNT * 2);
 
-        assertTrue(waitForSize(KEYS_CNT * 2, DEFAULT_CACHE_NAME, UPDATE, cnsmr));
-        assertTrue(waitForSize(KEYS_CNT * 2, TX_CACHE_NAME, UPDATE, cnsmr));
+        assertTrue(waitForSize(KEYS_CNT * 2, DEFAULT_CACHE_NAME, UPDATE, getTestTimeout(), cnsmr));
+        assertTrue(waitForSize(KEYS_CNT * 2, TX_CACHE_NAME, UPDATE, getTestTimeout(), cnsmr));
 
         restartFut.cancel();
 
@@ -398,7 +383,7 @@ public class ChangeDataCaptureSelfTest extends GridCommonAbstractTest {
 
         addDataFut.get(getTestTimeout());
 
-        assertTrue(waitForSize(KEYS_CNT * 2, DEFAULT_CACHE_NAME, UPDATE, cnsmr1, cnsmr2));
+        assertTrue(waitForSize(KEYS_CNT * 2, DEFAULT_CACHE_NAME, UPDATE, getTestTimeout(), cnsmr1, cnsmr2));
 
         assertFalse(cnsmr1.stopped);
         assertFalse(cnsmr2.stopped);
@@ -414,7 +399,7 @@ public class ChangeDataCaptureSelfTest extends GridCommonAbstractTest {
         IgniteInternalFuture<?> rmvFut1 = runAsync(cdc1);
         IgniteInternalFuture<?> rmvFut2 = runAsync(cdc2);
 
-        assertTrue(waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, DELETE, cnsmr1, cnsmr2));
+        assertTrue(waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, DELETE, getTestTimeout(), cnsmr1, cnsmr2));
 
         rmvFut1.cancel();
         rmvFut2.cancel();
@@ -461,7 +446,7 @@ public class ChangeDataCaptureSelfTest extends GridCommonAbstractTest {
     public void testReReadIfNoCommit() throws Exception {
         IgniteConfiguration cfg = getConfiguration("ignite-0");
 
-        Ignite ign = startGrid(cfg);
+        IgniteEx ign = startGrid(cfg);
 
         ign.cluster().state(ACTIVE);
 
@@ -480,7 +465,7 @@ public class ChangeDataCaptureSelfTest extends GridCommonAbstractTest {
 
             IgniteInternalFuture<?> fut = runAsync(cdc);
 
-            assertTrue(waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, UPDATE, cnsmr));
+            assertTrue(waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, UPDATE, getTestTimeout(), cnsmr));
 
             fut.cancel();
 
@@ -513,7 +498,7 @@ public class ChangeDataCaptureSelfTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> fut = runAsync(cdc);
 
-        waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, UPDATE, cnsmr);
+        waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, UPDATE, getTestTimeout(), cnsmr);
 
         fut.cancel();
 
@@ -523,8 +508,8 @@ public class ChangeDataCaptureSelfTest extends GridCommonAbstractTest {
 
         fut = runAsync(cdc);
 
-        waitForSize(expSz[0], DEFAULT_CACHE_NAME, UPDATE, cnsmr);
-        waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, DELETE, cnsmr);
+        waitForSize(expSz[0], DEFAULT_CACHE_NAME, UPDATE, getTestTimeout(), cnsmr);
+        waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, DELETE, getTestTimeout(), cnsmr);
 
         fut.cancel();
 
@@ -532,10 +517,11 @@ public class ChangeDataCaptureSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private boolean waitForSize(
+    public static boolean waitForSize(
         int expSz,
         String cacheName,
         ChangeEventType evtType,
+        long timeout,
         TestCDCConsumer... cnsmrs
     ) throws IgniteInterruptedCheckedException {
         return waitForCondition(
@@ -543,11 +529,11 @@ public class ChangeDataCaptureSelfTest extends GridCommonAbstractTest {
                 int sum = Arrays.stream(cnsmrs).mapToInt(c -> F.size(c.keys(evtType, cacheId(cacheName)))).sum();
                 return sum >= expSz;
             },
-            getTestTimeout());
+            timeout);
     }
 
     /** */
-    private void addData(IgniteCache<Integer, User> cache, int from, int to) {
+    public static void addData(IgniteCache<Integer, User> cache, int from, int to) {
         for (int i = from; i < to; i++) {
             byte[] bytes = new byte[1024];
 
@@ -564,13 +550,54 @@ public class ChangeDataCaptureSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
+    public static void addAndWaitForConsumption(
+        TestCDCConsumer cnsmr,
+        ChangeDataCapture cdc,
+        IgniteCache<Integer, User> cache,
+        IgniteCache<Integer, User> txCache,
+        CI3<IgniteCache<Integer, User>, Integer, Integer> addData,
+        int from,
+        int to,
+        long timeout
+    ) throws IgniteCheckedException {
+        IgniteInternalFuture<?> fut = runAsync(cdc);
+
+        addData.apply(cache, from, to);
+
+        if (txCache != null)
+            addData.apply(txCache, from, to);
+
+        assertTrue(waitForSize(to - from, cache.getName(), UPDATE, timeout, cnsmr));
+
+        if (txCache != null)
+            assertTrue(waitForSize(to - from, txCache.getName(), UPDATE, timeout, cnsmr));
+
+        fut.cancel();
+
+        List<Integer> keys = cnsmr.keys(UPDATE, cacheId(cache.getName()));
+
+        assertEquals(to - from, keys.size());
+
+        for (int i = from; i < to; i++)
+            assertTrue(Integer.toString(i), keys.contains(i));
+
+        assertTrue(cnsmr.stopped);
+    }
+
+    /** */
     public static class TestCDCConsumer implements ChangeDataCaptureConsumer {
         /** Keys */
-        private final ConcurrentMap<IgniteBiTuple<ChangeEventType, Integer>, List<Integer>> cacheKeys =
+        final ConcurrentMap<IgniteBiTuple<ChangeEventType, Integer>, List<Integer>> cacheKeys =
             new ConcurrentHashMap<>();
 
         /** */
-        public volatile boolean stopped;
+        volatile boolean stopped;
+
+        /** */
+        volatile byte drId = -1;
+
+        /** */
+        volatile byte otherDrId = -1;
 
         /** {@inheritDoc} */
         @Override public void start() {
@@ -592,6 +619,12 @@ public class ChangeDataCaptureSelfTest extends GridCommonAbstractTest {
                     F.t(evt.value() == null ? DELETE : UPDATE, evt.cacheId()),
                     k -> new ArrayList<>()).add((Integer)evt.key()
                 );
+
+                if (drId != -1)
+                    assertEquals(drId, evt.version().dataCenterId());
+
+                if (otherDrId != -1)
+                    assertEquals(otherDrId, evt.version().otherDataCenterOrder().dataCenterId());
 
                 if (evt.value() != null) {
                     assertTrue(((User)evt.value()).getName().startsWith("John Connor"));

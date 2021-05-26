@@ -19,7 +19,7 @@ package org.apache.ignite.internal.cdc;
 
 import org.apache.ignite.cdc.ChangeDataCaptureConsumer;
 import org.apache.ignite.cdc.ChangeDataCaptureEvent;
-import org.apache.ignite.cdc.ChangeEventOrder;
+import org.apache.ignite.cdc.CacheEntryVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -46,7 +46,7 @@ public class ChangeDataCaptureEventImpl implements ChangeDataCaptureEvent {
     private final int part;
 
     /** Order of the entry change. */
-    private final ChangeEventOrder ord;
+    private final CacheEntryVersion ord;
 
     /** Cache id. */
     private final int cacheId;
@@ -60,7 +60,7 @@ public class ChangeDataCaptureEventImpl implements ChangeDataCaptureEvent {
      * @param cacheId Cache id.
      */
     public ChangeDataCaptureEventImpl(Object key, Object val, boolean primary, int part,
-        ChangeEventOrder ord, int cacheId) {
+        CacheEntryVersion ord, int cacheId) {
         this.key = key;
         this.val = val;
         this.primary = primary;
@@ -90,7 +90,7 @@ public class ChangeDataCaptureEventImpl implements ChangeDataCaptureEvent {
     }
 
     /** {@inheritDoc} */
-    @Override public ChangeEventOrder order() {
+    @Override public CacheEntryVersion version() {
         return ord;
     }
 

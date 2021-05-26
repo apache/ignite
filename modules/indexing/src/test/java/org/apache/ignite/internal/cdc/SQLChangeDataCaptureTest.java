@@ -92,9 +92,7 @@ public class SQLChangeDataCaptureTest extends GridCommonAbstractTest {
         cleanPersistenceDir();
     }
 
-    /**
-     * Simplest CDC test.
-     */
+    /** Simplest CDC test. */
     @Test
     public void testReadAllSQLRows() throws Exception {
         IgniteConfiguration cfg = getConfiguration("ignite-0");
@@ -170,7 +168,7 @@ public class SQLChangeDataCaptureTest extends GridCommonAbstractTest {
         BinaryCDCConsumer cnsmr
     ) throws IgniteInterruptedCheckedException {
         return waitForCondition(
-            () -> F.size(cnsmr.data(evtType, cacheId(cacheName))) >= expSz,
+            () -> F.size(cnsmr.data(evtType, cacheId(cacheName))) == expSz,
             getTestTimeout());
     }
 

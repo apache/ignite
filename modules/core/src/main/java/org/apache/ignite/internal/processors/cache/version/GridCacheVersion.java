@@ -23,7 +23,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
 import java.util.UUID;
-import org.apache.ignite.cdc.ChangeEventOrder;
+import org.apache.ignite.cdc.CacheEntryVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -32,7 +32,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * Grid unique version.
  */
-public class GridCacheVersion implements Message, Externalizable, ChangeEventOrder {
+public class GridCacheVersion implements Message, Externalizable, CacheEntryVersion {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -115,7 +115,7 @@ public class GridCacheVersion implements Message, Externalizable, ChangeEventOrd
     }
 
     /** {@inheritDoc} */
-    @Override public ChangeEventOrder otherDcOrder() {
+    @Override public CacheEntryVersion otherDataCenterOrder() {
         return conflictVersion();
     }
 
@@ -221,7 +221,7 @@ public class GridCacheVersion implements Message, Externalizable, ChangeEventOrd
     }
 
     /** {@inheritDoc} */
-    @Override public int compareTo(ChangeEventOrder other) {
+    @Override public int compareTo(CacheEntryVersion other) {
         int res = Integer.compare(topologyVersion(), other.topologyVersion());
 
         if (res != 0)

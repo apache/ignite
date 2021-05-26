@@ -471,8 +471,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             if (dsCfg.isCdcEnabled()) {
                 cdcDir = initDirectory(
-                    dsCfg.getCdcPath(),
-                    DataStorageConfiguration.DFLT_CDC_PATH,
+                    dsCfg.getCdcWalPath(),
+                    DataStorageConfiguration.DFLT_WAL_CDC_PATH,
                     resolveFolders.folderName(),
                     "cdc directory"
                 );
