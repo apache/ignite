@@ -52,7 +52,7 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
  */
 public class IoStatisticsSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final int RECORD_COUNT = 10000;
+    private static final int RECORD_COUNT = 5000;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
