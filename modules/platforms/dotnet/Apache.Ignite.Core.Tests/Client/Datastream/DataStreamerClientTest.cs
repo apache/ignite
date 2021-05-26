@@ -407,7 +407,14 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         [Test]
         public void TestAllOperationThrowWhenStreamerIsClosed()
         {
-            Assert.Fail("TODO");
+            var streamer = Client.GetDataStreamer<int, int>(CacheName);
+            streamer.Close(true);
+
+            Assert.Throws<ObjectDisposedException>(() => streamer.Add(1, 1));
+            Assert.Throws<ObjectDisposedException>(() => streamer.Remove(1));
+            Assert.Throws<ObjectDisposedException>(() => streamer.Remove(new[] {1, 2, 3}));
+            Assert.Throws<ObjectDisposedException>(() => streamer.Flush());
+            Assert.Throws<ObjectDisposedException>(() => streamer.FlushAsync());
         }
 
         [Test]
@@ -421,6 +428,8 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 streamer.Dispose();
                 streamer.Close(true);
                 streamer.Close(false);
+                streamer.CloseAsync(true).Wait();
+                streamer.CloseAsync(false).Wait();
             }
             
             Assert.AreEqual(2, GetCache<int>()[1]);
