@@ -470,6 +470,8 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         String... disabledRules) throws Exception {
         IgniteRel plan = physicalPlan(sql, schema, disabledRules);
 
+        checkSplitAndSerialization(plan, schema);
+
         if (!predicate.test((T)plan)) {
             String invalidPlanMsg = "Invalid plan (" + lastErrorMsg + "):\n" +
                 RelOptUtil.toString(plan, SqlExplainLevel.ALL_ATTRIBUTES);
