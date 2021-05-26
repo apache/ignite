@@ -87,7 +87,10 @@ public class LearningEnvironmentTest {
 
         DatasetTrainer<IgniteModel<Object, Vector>, Void> trainer = new DatasetTrainer<IgniteModel<Object, Vector>, Void>() {
             /** {@inheritDoc} */
-             @Override public <K, V> IgniteModel<Object, Vector> fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> preprocessor) {
+             @Override public <K, V> IgniteModel<Object, Vector> fitWithInitializedDeployingContext(
+                 DatasetBuilder<K, V> datasetBuilder,
+                 Preprocessor<K, V> preprocessor
+             ) {
                 Dataset<EmptyContext, TestUtils.DataWrapper<Integer>> ds = datasetBuilder.build(envBuilder,
                     new EmptyContextBuilder<>(),
                     (PartitionDataBuilder<K, V, EmptyContext, TestUtils.DataWrapper<Integer>>)(env, upstreamData, upstreamDataSize, ctx) ->
@@ -96,8 +99,10 @@ public class LearningEnvironmentTest {
 
                 Vector v = null;
                 for (int iter = 0; iter < iterations; iter++) {
-                    v = ds.compute((dw, env) -> VectorUtils.fill(-1, partitions).set(env.partition(), env.randomNumbersGenerator().nextInt()),
-                        (v1, v2) -> zipOverridingEmpty(v1, v2, -1));
+                    v = ds.compute(
+                        (dw, env) -> VectorUtils.fill(-1, partitions).set(env.partition(), env.randomNumbersGenerator().nextInt()),
+                        (v1, v2) -> zipOverridingEmpty(v1, v2, -1)
+                    );
                 }
                 return constantModel(v);
             }

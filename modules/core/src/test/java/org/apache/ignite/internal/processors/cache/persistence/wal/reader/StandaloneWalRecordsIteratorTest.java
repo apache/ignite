@@ -138,7 +138,10 @@ public class StandaloneWalRecordsIteratorTest extends GridCommonAbstractTest {
 
         assertTrue("At least one WAL file must be opened!", CountedFileIO.getCountOpenedWalFiles() > 0);
 
-        assertTrue("All WAL files must be closed at least ones!", CountedFileIO.getCountOpenedWalFiles() <= CountedFileIO.getCountClosedWalFiles());
+        assertTrue(
+            "All WAL files must be closed at least ones!",
+            CountedFileIO.getCountOpenedWalFiles() <= CountedFileIO.getCountClosedWalFiles()
+        );
     }
 
     /**

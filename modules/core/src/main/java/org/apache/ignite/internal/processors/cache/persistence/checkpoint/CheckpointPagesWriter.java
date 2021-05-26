@@ -201,7 +201,8 @@ public class CheckpointPagesWriter implements Runnable {
 
             tmpWriteBuf.rewind();
 
-            PageStoreWriter pageStoreWriter = pageStoreWriters.computeIfAbsent(pageMem, pageMemEx -> createPageStoreWriter(pageMemEx, pagesToRetry));
+            PageStoreWriter pageStoreWriter =
+                pageStoreWriters.computeIfAbsent(pageMem, pageMemEx -> createPageStoreWriter(pageMemEx, pagesToRetry));
 
             pageMem.checkpointWritePage(fullId, tmpWriteBuf, pageStoreWriter, tracker);
 

@@ -15,16 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.metastorage.persistence;
+package org.apache.ignite.tests.p2p;
 
-/** */
-enum DmsWorkerStatus {
-    /** */
-    CONTINUE,
+import javax.cache.configuration.Factory;
+import javax.cache.event.CacheEntryEvent;
+import org.apache.ignite.lang.IgniteClosure;
 
-    /** */
-    CANCEL,
-
-    /** */
-    HALT;
+/**
+ * Remote transformer with static initializer factory.
+ */
+public class GridP2PRemoteTransformerWithStaticInitializerFactory
+    implements Factory<IgniteClosure<CacheEntryEvent<Integer, Integer>, String>> {
+    /** {@inheritDoc} */
+    @Override public IgniteClosure<CacheEntryEvent<Integer, Integer>, String> create() {
+        return new GridP2PRemoteTransformerWithStaticInitializer();
+    }
 }

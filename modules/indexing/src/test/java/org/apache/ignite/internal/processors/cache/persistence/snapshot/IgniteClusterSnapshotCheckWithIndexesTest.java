@@ -42,7 +42,7 @@ public class IgniteClusterSnapshotCheckWithIndexesTest extends AbstractSnapshotS
         IgniteEx ignite = startGridsWithCache(3, 0, key -> new Account(key, key),
             txFilteredCache("indexed"));
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(SNAPSHOT_AWAIT_TIMEOUT_MS);
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
 
         IdleVerifyResultV2 res = ignite.context().cache().context().snapshotMgr().checkSnapshot(SNAPSHOT_NAME).get();
 
@@ -59,7 +59,7 @@ public class IgniteClusterSnapshotCheckWithIndexesTest extends AbstractSnapshotS
         IgniteEx ignite = startGridsWithCache(3, CACHE_KEYS_RANGE, key -> new Account(key, key),
             txFilteredCache("indexed"));
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(SNAPSHOT_AWAIT_TIMEOUT_MS);
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
 
         IdleVerifyResultV2 res = ignite.context().cache().context().snapshotMgr().checkSnapshot(SNAPSHOT_NAME).get();
 
@@ -85,7 +85,7 @@ public class IgniteClusterSnapshotCheckWithIndexesTest extends AbstractSnapshotS
             cache2.put(i, new Account(i, i));
         }
 
-        grid(0).snapshot().createSnapshot(SNAPSHOT_NAME).get(SNAPSHOT_AWAIT_TIMEOUT_MS);
+        grid(0).snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
 
         IdleVerifyResultV2 res = grid(0).context().cache().context().snapshotMgr().checkSnapshot(SNAPSHOT_NAME).get();
 
@@ -119,7 +119,7 @@ public class IgniteClusterSnapshotCheckWithIndexesTest extends AbstractSnapshotS
      * @param cacheName Cache name.
      * @return Cache configuration.
      */
-    private static CacheConfiguration<Integer, Account> txFilteredCache(String cacheName) {
+    private CacheConfiguration<Integer, Account> txFilteredCache(String cacheName) {
         return txCacheConfig(new CacheConfiguration<Integer, Account>(cacheName))
             .setCacheMode(CacheMode.REPLICATED)
             .setQueryEntities(singletonList(new QueryEntity(Integer.class.getName(), Account.class.getName())));

@@ -100,7 +100,10 @@ public class IgniteStableBaselineCacheRemoveFailoverTest extends GridCacheAbstra
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteInternalFuture createAndRunConcurrentAction(final AtomicBoolean stop, final AtomicReference<CyclicBarrier> cmp) {
+    @Override protected IgniteInternalFuture createAndRunConcurrentAction(
+        final AtomicBoolean stop,
+        final AtomicReference<CyclicBarrier> cmp
+    ) {
         return GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 Thread.currentThread().setName("restart-thread");

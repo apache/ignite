@@ -177,6 +177,7 @@ import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.IgniteFeatures.TCP_DISCOVERY_MESSAGE_NODE_COMPACT_REPRESENTATION;
 import static org.apache.ignite.internal.IgniteFeatures.nodeSupports;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_AUTHENTICATION_ENABLED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_EVENT_DRIVEN_SERVICE_PROCESSOR_ENABLED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_LATE_AFFINITY_ASSIGNMENT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
@@ -1255,7 +1256,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      */
     private void localAuthentication(SecurityCredentials locCred) {
         assert spi.nodeAuth != null;
-        assert locCred != null;
+        assert locCred != null || locNode.attribute(ATTR_AUTHENTICATION_ENABLED) != null;
 
         try {
             SecurityContext subj = spi.nodeAuth.authenticateNode(locNode, locCred);
@@ -3539,7 +3540,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 if (log.isDebugEnabled())
                                     log.debug("Handshake response: " + res);
 
-                                // We should take previousNodeAlive flag into account only if we received the response from the correct node.
+                                // We should take previousNodeAlive flag into account
+                                // only if we received the response from the correct node.
                                 if (res.creatorNodeId().equals(next.id()) && res.previousNodeAlive() && sndState != null) {
                                     sndState.checkTimeout();
 

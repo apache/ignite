@@ -106,7 +106,9 @@ public class QueryJoinWithDifferentNodeFiltersTest extends AbstractIndexingCommo
             cache2.put(i, new Person(i, i, "Person-" + i));
         }
 
-        info(cache2.query(new SqlFieldsQuery("select * from \"cache\".Organization r, \"cache2\".Person p where p.orgId=r.orgId")).getAll().toString());
+        info(cache2.query(
+            new SqlFieldsQuery("select * from \"cache\".Organization r, \"cache2\".Person p where p.orgId=r.orgId")
+        ).getAll().toString());
     }
 
     /**

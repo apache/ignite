@@ -48,6 +48,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
@@ -55,6 +56,7 @@ import org.apache.ignite.internal.managers.systemview.walker.CacheGroupViewWalke
 import org.apache.ignite.internal.managers.systemview.walker.CacheViewWalker;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteClusterReadOnlyException;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
@@ -383,7 +385,8 @@ public class ClusterCachesInfo {
     private void checkCache(CacheJoinNodeDiscoveryData.CacheInfo locInfo, CacheData rmtData, UUID rmt)
         throws IgniteCheckedException {
         GridCacheAttributes rmtAttr = new GridCacheAttributes(rmtData.cacheConfiguration(), rmtData.cacheConfigurationEnrichment());
-        GridCacheAttributes locAttr = new GridCacheAttributes(locInfo.cacheData().config(), locInfo.cacheData().cacheConfigurationEnrichment());
+        GridCacheAttributes locAttr =
+            new GridCacheAttributes(locInfo.cacheData().config(), locInfo.cacheData().cacheConfigurationEnrichment());
 
         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "cacheMode", "Cache mode",
             locAttr.cacheMode(), rmtAttr.cacheMode(), true);
@@ -582,6 +585,28 @@ public class ClusterCachesInfo {
         DiscoveryDataClusterState state = ctx.state().clusterState();
 
         if (state.active() && !state.transition()) {
+            Set<IgniteUuid> restartIds = new HashSet<>(F.viewReadOnly(
+                batch.requests(), DynamicCacheChangeRequest::restartId, req -> req.start() && req.restartId() != null));
+
+            assert restartIds.size() <= 1 : batch.requests();
+
+            Collection<UUID> nodes = ctx.cache().context().snapshotMgr().cacheStartRequiredAliveNodes(F.first(restartIds));
+
+            for (UUID nodeId : nodes) {
+                ClusterNode node = ctx.discovery().node(nodeId);
+
+                if (node != null && CU.baselineNode(node, state) && ctx.discovery().alive(node))
+                    continue;
+
+                ClusterTopologyCheckedException err =
+                    new ClusterTopologyCheckedException("Required node has left the cluster [nodeId=" + nodeId + ']');
+
+                for (DynamicCacheChangeRequest req : batch.requests())
+                    ctx.cache().completeCacheStartFuture(req, false, err);
+
+                return false;
+            }
+
             ExchangeActions exchangeActions = new ExchangeActions();
 
             CacheChangeProcessResult res = processCacheChangeRequests(exchangeActions,
@@ -593,6 +618,9 @@ public class ClusterCachesInfo {
                 assert !exchangeActions.empty() : exchangeActions;
 
                 batch.exchangeActions(exchangeActions);
+
+                if (!nodes.isEmpty())
+                    exchangeActions.cacheStartRequiredAliveNodes(nodes);
             }
 
             return res.needExchange;
@@ -1007,6 +1035,16 @@ public class ClusterCachesInfo {
             }
         }
 
+        if (err == null && req.restartId() == null) {
+            IgniteSnapshotManager snapshotMgr = ctx.cache().context().snapshotMgr();
+
+            if (snapshotMgr.isRestoring(cacheName, ccfg.getGroupName())) {
+                err = new IgniteCheckedException("Cache start failed. A cache or group with the same name is " +
+                    "currently being restored from a snapshot [cache=" + cacheName +
+                    (ccfg.getGroupName() == null ? "" : ", group=" + ccfg.getGroupName()) + ']');
+            }
+        }
+
         if (err != null) {
             if (persistedCfgs)
                 res.errs.add(err);
@@ -1385,7 +1423,9 @@ public class ClusterCachesInfo {
             if (!cachesToDestroy.isEmpty()) {
                 ctx.cache().dynamicDestroyCaches(cachesToDestroy, false);
 
-                throw new IllegalStateException("Node can't join to cluster in compatibility mode with newly configured caches: " + cachesToDestroy);
+                throw new IllegalStateException(
+                    "Node can't join to cluster in compatibility mode with newly configured caches: " + cachesToDestroy
+                );
             }
         }
     }

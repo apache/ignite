@@ -326,7 +326,8 @@ public class GridExchangeFreeCellularSwitchIsolationTest extends GridExchangeFre
             aliveCellNodes, orig == failed ? 1 : nodes,
             replTxVers);
 
-        BiConsumer<T2<Ignite, String>, T3<CountDownLatch, CountDownLatch, CountDownLatch>> txRun = // Counts tx's creations and preparations.
+        // Counts tx's creations and preparations.
+        BiConsumer<T2<Ignite, String>, T3<CountDownLatch, CountDownLatch, CountDownLatch>> txRun =
             (T2<Ignite, String> pair, T3</*create*/CountDownLatch, /*put*/CountDownLatch, /*commit*/CountDownLatch> latches) -> {
                 try {
                     Ignite ignite = pair.get1();

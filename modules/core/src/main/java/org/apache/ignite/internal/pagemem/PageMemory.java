@@ -19,6 +19,7 @@ package org.apache.ignite.internal.pagemem;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 
 /**
  */
@@ -67,4 +68,9 @@ public interface PageMemory extends PageIdAllocator, PageSupport {
      * Number of pages used in checkpoint buffer.
      */
     public int checkpointBufferPagesCount();
+
+    /**
+     * Metrics of the data region this memory is associated with.
+     */
+    public DataRegionMetricsImpl metrics();
 }

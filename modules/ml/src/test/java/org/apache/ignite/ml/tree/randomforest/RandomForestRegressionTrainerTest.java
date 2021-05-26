@@ -85,7 +85,8 @@ public class RandomForestRegressionTrainerTest extends TrainerTest {
 
         RandomForestModel originalMdl = trainer.fit(sample, parts, new LabeledDummyVectorizer<>());
         RandomForestModel updatedOnSameDS = trainer.update(originalMdl, sample, parts, new LabeledDummyVectorizer<>());
-        RandomForestModel updatedOnEmptyDS = trainer.update(originalMdl, new HashMap<Double, LabeledVector<Double>>(), parts, new LabeledDummyVectorizer<>());
+        RandomForestModel updatedOnEmptyDS =
+            trainer.update(originalMdl, new HashMap<Double, LabeledVector<Double>>(), parts, new LabeledDummyVectorizer<>());
 
         Vector v = VectorUtils.of(5, 0.5, 0.05, 0.005);
         assertEquals(originalMdl.predict(v), updatedOnSameDS.predict(v), 0.1);
