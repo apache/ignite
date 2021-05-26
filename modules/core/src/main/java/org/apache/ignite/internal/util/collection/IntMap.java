@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.util.collection;
 
+import java.util.Collection;
 import java.util.function.IntFunction;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.jetbrains.annotations.Nullable;
@@ -90,8 +91,8 @@ public interface IntMap<V> {
     /** Returns array of keys. */
     int[] keys();
 
-    /** Return array of values. */
-    V[] values();
+    /** Returns a collection of values. */
+    Collection<V> values();
 
     /**
      * If the specified key is not already associated with a value (or is mapped

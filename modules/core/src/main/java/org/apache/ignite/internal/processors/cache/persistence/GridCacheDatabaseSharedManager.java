@@ -47,6 +47,7 @@ import java.util.function.Predicate;
 import java.util.function.ToLongFunction;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsProvider;
 import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCheckedException;
@@ -315,7 +316,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private IgniteCacheSnapshotManager snapshotMgr;
 
     /** */
-    private DataStorageMetricsImpl persStoreMetrics;
+    private final DataStorageMetricsImpl persStoreMetrics;
 
     /**
      * MetaStorage instance. Value {@code null} means storage not initialized yet.
@@ -330,10 +331,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private List<MetastorageLifecycleListener> metastorageLifecycleLsnrs;
 
     /** Initially disabled cache groups. */
-    private Collection<Integer> initiallyGlobalWalDisabledGrps = new HashSet<>();
+    private final Collection<Integer> initiallyGlobalWalDisabledGrps = new HashSet<>();
 
     /** Initially local wal disabled groups. */
-    private Collection<Integer> initiallyLocalWalDisabledGrps = new HashSet<>();
+    private final Collection<Integer> initiallyLocWalDisabledGrps = new HashSet<>();
 
     /** Flag allows to log additional information about partitions during recovery phases. */
     private final boolean recoveryVerboseLogging =
@@ -343,7 +344,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private final Map<String, AtomicLong> pageListCacheLimits = new ConcurrentHashMap<>();
 
     /** Lock for releasing history for preloading. */
-    private ReentrantLock releaseHistForPreloadingLock = new ReentrantLock();
+    private final ReentrantLock releaseHistForPreloadingLock = new ReentrantLock();
 
     /** */
     private CachePartitionDefragmentationManager defrgMgr;
@@ -453,13 +454,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     @Override protected void initDataRegions0(DataStorageConfiguration memCfg) throws IgniteCheckedException {
         super.initDataRegions0(memCfg);
 
-        addDataRegion(
-            memCfg,
-            createMetastoreDataRegionConfig(memCfg),
-            false
-        );
+        addDataRegion(memCfg, createMetastoreDataRegionConfig(memCfg), false);
 
-        persStoreMetrics.regionMetrics(memMetricsMap.values());
+        List<DataRegionMetrics> regionMetrics = dataRegionMap.values().stream()
+            .map(DataRegion::metrics)
+            .collect(Collectors.toList());
+        persStoreMetrics.regionMetrics(regionMetrics);
     }
 
     /**
@@ -1046,12 +1046,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private MetaStorage createMetastorage(boolean readOnly) throws IgniteCheckedException {
         cctx.pageStore().initializeForMetastorage();
 
-        MetaStorage storage = new MetaStorage(
-            cctx,
-            dataRegion(METASTORE_DATA_REGION_NAME),
-            (DataRegionMetricsImpl) memMetricsMap.get(METASTORE_DATA_REGION_NAME),
-            readOnly
-        );
+        MetaStorage storage = new MetaStorage(cctx, dataRegion(METASTORE_DATA_REGION_NAME), readOnly);
 
         storage.init(this);
 
@@ -1237,11 +1232,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             this,
             memMetrics,
             resolveThrottlingPolicy(),
-            new IgniteOutClosure<CheckpointProgress>() {
-                @Override public CheckpointProgress apply() {
-                    return getCheckpointer().currentProgress();
-                }
-            }
+            () -> getCheckpointer().currentProgress()
         );
 
         memMetrics.pageMemory(pageMem);
@@ -1259,7 +1250,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         final DataRegionMetricsImpl memMetrics
     ) {
         return new DirectMemoryProvider() {
-            private AtomicInteger checkPointBufferIdxCnt = new AtomicInteger();
+            private final AtomicInteger checkPointBufferIdxCnt = new AtomicInteger();
 
             private final DirectMemoryProvider memProvider = memoryProvider0;
 
@@ -1524,9 +1515,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override public void onCacheGroupsStopped(
-        Collection<IgniteBiTuple<CacheGroupContext, Boolean>> stoppedGrps
-    ) {
+    @Override public void onCacheGroupsStopped(Collection<IgniteBiTuple<CacheGroupContext, Boolean>> stoppedGrps) {
         Map<PageMemoryEx, Collection<Integer>> destroyed = new HashMap<>();
 
         List<Integer> stoppedGrpIds = stoppedGrps.stream()
@@ -1536,30 +1525,38 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         cctx.snapshotMgr().onCacheGroupsStopped(stoppedGrpIds);
 
-        initiallyLocalWalDisabledGrps.removeAll(stoppedGrpIds);
+        initiallyLocWalDisabledGrps.removeAll(stoppedGrpIds);
         initiallyGlobalWalDisabledGrps.removeAll(stoppedGrpIds);
 
         for (IgniteBiTuple<CacheGroupContext, Boolean> tup : stoppedGrps) {
             CacheGroupContext gctx = tup.get1();
+            boolean destroy = tup.get2();
+
+            int grpId = gctx.groupId();
+
+            DataRegion dataRegion = gctx.dataRegion();
+
+            if (dataRegion != null)
+                dataRegion.metrics().removeCacheGrpPageMetrics(grpId);
 
             if (!gctx.persistenceEnabled())
                 continue;
 
-            snapshotMgr.onCacheGroupStop(gctx, tup.get2());
+            snapshotMgr.onCacheGroupStop(gctx, destroy);
 
-            PageMemoryEx pageMem = (PageMemoryEx)gctx.dataRegion().pageMemory();
+            PageMemoryEx pageMem = (PageMemoryEx) dataRegion.pageMemory();
 
             Collection<Integer> grpIds = destroyed.computeIfAbsent(pageMem, k -> new HashSet<>());
 
-            grpIds.add(tup.get1().groupId());
+            grpIds.add(grpId);
 
             if (gctx.config().isEncryptionEnabled())
-                cctx.kernalContext().encryption().onCacheGroupStop(gctx.groupId());
+                cctx.kernalContext().encryption().onCacheGroupStop(grpId);
 
-            pageMem.onCacheGroupDestroyed(tup.get1().groupId());
+            pageMem.onCacheGroupDestroyed(grpId);
 
-            if (tup.get2())
-                cctx.kernalContext().encryption().onCacheGroupDestroyed(gctx.groupId());
+            if (destroy)
+                cctx.kernalContext().encryption().onCacheGroupDestroyed(grpId);
         }
 
         Collection<IgniteInternalFuture<Void>> clearFuts = new ArrayList<>(destroyed.size());
@@ -3105,7 +3102,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** {@inheritDoc} */
     @Override public boolean walEnabled(int grpId, boolean local) {
         if (local)
-            return !initiallyLocalWalDisabledGrps.contains(grpId);
+            return !initiallyLocWalDisabledGrps.contains(grpId);
         else
             return !initiallyGlobalWalDisabledGrps.contains(grpId);
     }
@@ -3181,7 +3178,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 if (t2 != null) {
                     if (t2.get2())
-                        initiallyLocalWalDisabledGrps.add(t2.get1());
+                        initiallyLocWalDisabledGrps.add(t2.get1());
                     else
                         initiallyGlobalWalDisabledGrps.add(t2.get1());
                 }
@@ -3355,7 +3352,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     private IgnitePredicate<Integer> groupsWithEnabledWal() {
         return groupId -> !initiallyGlobalWalDisabledGrps.contains(groupId)
-            && !initiallyLocalWalDisabledGrps.contains(groupId);
+            && !initiallyLocWalDisabledGrps.contains(groupId);
     }
 
     /**

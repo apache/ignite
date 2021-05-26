@@ -804,7 +804,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
 
         long pageId = PageIdUtils.pageId(PageIdAllocator.INDEX_PARTITION, PageIdAllocator.FLAG_IDX, 171717);
 
-        io.initNewPage(pageAddr, pageId, pageSize);
+        io.initNewPage(pageAddr, pageId, pageSize, null);
 
         checkIo(io, page);
 
@@ -875,7 +875,7 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
 
         long pageId = PageIdUtils.pageId(PageIdAllocator.MAX_PARTITION_ID, PageIdAllocator.FLAG_DATA, 171717);
 
-        io.initNewPage(pageAddr, pageId, pageSize);
+        io.initNewPage(pageAddr, pageId, pageSize, null);
 
         checkIo(io, page);
 
