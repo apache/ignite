@@ -405,6 +405,18 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         }
 
         [Test]
+        public void TestAllOperationThrowWhenStreamerIsClosed()
+        {
+            Assert.Fail("TODO");
+        }
+
+        [Test]
+        public void TestMultipleConcurrentCloseAndDisposeCallsAreAllowed()
+        {
+            Assert.Fail("TODO");
+        }
+
+        [Test]
         public void TestFlushAsyncContinuationDoesNotRunOnSocketReceiverThread()
         {
             var cache = GetClientCache<int>();
