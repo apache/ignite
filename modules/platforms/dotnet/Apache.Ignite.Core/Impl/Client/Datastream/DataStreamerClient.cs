@@ -404,7 +404,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             
             var clientEx = exception as IgniteClientException;
 
-            if (clientEx != null && clientEx.StatusCode == ClientStatusCode.InvalidNodeState)
+            if (clientEx != null && 
+                (clientEx.InnerException is SocketException || 
+                 clientEx.StatusCode == ClientStatusCode.InvalidNodeState))
             {
                 return true;
             }
