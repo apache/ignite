@@ -41,13 +41,13 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * public class LocalConfigurationSchema {
  *
  *      {@literal @}Value
- *      private String foo;
+ *      public String foo;
  *
  *      {@literal @}Value
- *      private boolean bar;
+ *      public boolean bar;
  *
  *      {@literal @}ConfigValue
- *      private SomeOtherConfiguration someOther;
+ *      public SomeOtherConfiguration someOther;
  * }
  * </code></pre>
  */

@@ -47,11 +47,11 @@ public class ConfigurationListenerTest {
     public static class ParentConfigurationSchema {
         /** */
         @ConfigValue
-        private ChildConfigurationSchema child;
+        public ChildConfigurationSchema child;
 
         /** */
         @NamedConfigValue
-        private ChildConfigurationSchema elements;
+        public ChildConfigurationSchema elements;
     }
 
     /** */

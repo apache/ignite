@@ -28,10 +28,9 @@ import org.apache.ignite.configuration.annotation.NamedConfigValue;
 public class BaselineConfigurationSchema {
     /** Auto adjust */
     @ConfigValue
-    private AutoAdjustConfigurationSchema autoAdjust;
+    public AutoAdjustConfigurationSchema autoAdjust;
 
     /** Nodes. */
     @NamedConfigValue
-    private NodeConfigurationSchema nodes;
-
+    public NodeConfigurationSchema nodes;
 }

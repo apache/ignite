@@ -47,9 +47,9 @@ public class TableConfigurationSchema {
 
     /** Columns configuration. */
     @NamedConfigValue
-    ColumnConfigurationSchema columns;
+    public ColumnConfigurationSchema columns;
 
     /** Indices configuration. */
     @NamedConfigValue
-    TableIndexConfigurationSchema indices;
+    public TableIndexConfigurationSchema indices;
 }

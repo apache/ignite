@@ -28,9 +28,9 @@ import org.apache.ignite.configuration.annotation.NamedConfigValue;
 public class ClusterWideConfigurationSchema {
     /** Cache. */
     @NamedConfigValue
-    private CacheConfigurationSchema cacheConfig;
+    public CacheConfigurationSchema cacheConfig;
 
     /** Baseline. */
     @ConfigValue
-    private BaselineConfigurationSchema baseline;
+    public BaselineConfigurationSchema baseline;
 }

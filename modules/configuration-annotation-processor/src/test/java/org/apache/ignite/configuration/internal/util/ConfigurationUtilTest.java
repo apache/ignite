@@ -80,7 +80,7 @@ public class ConfigurationUtilTest {
     public static class ParentConfigurationSchema {
         /** */
         @NamedConfigValue
-        private NamedElementConfigurationSchema elements;
+        public NamedElementConfigurationSchema elements;
     }
 
     /** */
@@ -88,7 +88,7 @@ public class ConfigurationUtilTest {
     public static class NamedElementConfigurationSchema {
         /** */
         @ConfigValue
-        private ChildConfigurationSchema child;
+        public ChildConfigurationSchema child;
     }
 
     /** */

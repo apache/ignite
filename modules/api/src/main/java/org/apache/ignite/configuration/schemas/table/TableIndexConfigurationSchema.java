@@ -30,29 +30,29 @@ public class TableIndexConfigurationSchema {
     /** Index name. */
     @Value
     @Immutable
-    String name;
+    public String name;
 
     /** Index type name. */
     @Value
-    String type;
+    public String type;
 
     /** Has default value flag. */
     @Value(hasDefault = true)
-    boolean uniq = false;
+    public boolean uniq = false;
 
     /** Columns configuration for sorted indexes. */
     @NamedConfigValue
-    IndexColumnConfigurationSchema columns;
+    public IndexColumnConfigurationSchema columns;
 
     /** Columns names for hash indexes. */
     @Value(hasDefault = true)
-    String[] colNames = new String[0];
+    public String[] colNames = new String[0];
 
     /** Expression for PartialIndex: PARTIAL indexes. */
     @Value(hasDefault = true)
-    String expr = "";
+    public String expr = "";
 
     /** Affinity column names for PrimaryIndex. */
     @Value(hasDefault = true)
-    String[] affinityColumns = new String[0];
+    public String[] affinityColumns = new String[0];
 }

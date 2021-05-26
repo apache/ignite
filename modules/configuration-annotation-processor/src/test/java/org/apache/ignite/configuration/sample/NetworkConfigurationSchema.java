@@ -28,5 +28,5 @@ import org.apache.ignite.configuration.storage.ConfigurationType;
 public class NetworkConfigurationSchema {
     /** Discovery. */
     @ConfigValue
-    private DiscoveryConfigurationSchema discovery;
+    public DiscoveryConfigurationSchema discovery;
 }

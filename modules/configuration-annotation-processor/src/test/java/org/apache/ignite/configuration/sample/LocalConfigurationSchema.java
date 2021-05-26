@@ -28,5 +28,5 @@ import org.apache.ignite.configuration.storage.ConfigurationType;
 public class LocalConfigurationSchema {
     /** Baseline. */
     @ConfigValue
-    private BaselineConfigurationSchema baseline;
+    public BaselineConfigurationSchema baseline;
 }

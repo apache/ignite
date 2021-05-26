@@ -30,5 +30,5 @@ public class TablesConfigurationSchema {
     /** List of configured tables. */
     @NamedConfigValue
     @TableValidator
-    TableConfigurationSchema tables;
+    public TableConfigurationSchema tables;
 }
