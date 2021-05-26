@@ -261,12 +261,10 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         private void AddNoLock(DataStreamerClientEntry<TK, TV> entry)
         {
-            // TODO: Limit retry count?
             while (true)
             {
                 try
                 {
-                    // TODO: Retry connection failures if GetSocket fails (needed for affinity awareness mode)
                     var socket = _socket.GetAffinitySocket(_cacheId, entry.Key) ?? _socket.GetSocket();
                     var buffer = GetOrAddBuffer(socket);
 
@@ -313,12 +311,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         internal Task FlushBufferAsync(DataStreamerClientBuffer<TK, TV> buffer, ClientSocket socket,
             SemaphoreSlim semaphore)
         {
-            // TODO: WaitAsync is not available on .NET 4, but is available on .NET 4.5 and later
-            // Use reflection to get it.
-            // semaphore.WaitAsync();
             semaphore.Wait();
 
-            // TODO: Flush in a loop until succeeded.
             var tcs = new TaskCompletionSource<object>();
 
             FlushBuffer(buffer, socket, tcs);
@@ -376,14 +370,13 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             if (!socket.IsDisposed && !ShouldRetry(exception))
             {
                 // Socket is still connected: this error does not need to be retried.
-                Console.WriteLine(">>>> NON_RETRY_ERROR: " + exception); // TODO
+                Console.WriteLine(">>>> NON_RETRY_ERROR: " + exception);
                 ReturnArray(buffer.Entries);
                 tcs.SetException(exception);
 
                 return;
             }
 
-            // TODO: Retry count limit (see DataStreamerImpl#DFLT_MAX_REMAP_CNT).
             // Release receiver thread, perform retry on a separate thread.
             ThreadPool.QueueUserWorkItem(_ => FlushBufferRetry(buffer, socket, tcs));
         }
