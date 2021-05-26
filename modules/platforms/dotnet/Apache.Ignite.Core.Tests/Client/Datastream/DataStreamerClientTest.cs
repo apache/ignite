@@ -407,7 +407,12 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         [Test]
         public void TestAllOperationThrowWhenStreamerIsClosed()
         {
-            var streamer = Client.GetDataStreamer<int, int>(CacheName);
+            var options = new DataStreamerClientOptions
+            {
+                AllowOverwrite = true
+            };
+            
+            var streamer = Client.GetDataStreamer<int, int>(CacheName, options);
             streamer.Close(true);
 
             Assert.Throws<ObjectDisposedException>(() => streamer.Add(1, 1));
