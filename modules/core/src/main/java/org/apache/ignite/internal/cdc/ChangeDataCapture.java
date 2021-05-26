@@ -30,6 +30,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -277,7 +278,7 @@ public class ChangeDataCapture implements Runnable {
         try {
             Set<Path> seen = new HashSet<>();
 
-            long[] lastSgmnt = new long[] {-1};
+            AtomicLong lastSgmnt = new AtomicLong(-1);
 
             while (!stopped) {
                 try (Stream<Path> cdcFiles = Files.walk(cdcDir, 1)) {
@@ -292,9 +293,9 @@ public class ChangeDataCapture implements Runnable {
                         .peek(p -> {
                             long nextSgmnt = segmentIndex(p);
 
-                            assert lastSgmnt[0] == -1 || nextSgmnt - lastSgmnt[0] == 1;
+                            assert lastSgmnt.get() == -1 || nextSgmnt - lastSgmnt.get() == 1;
 
-                            lastSgmnt[0] = nextSgmnt;
+                            lastSgmnt.set(nextSgmnt);
                         })
                         .forEach(this::consumeSegment); // Consuming segments.
 
