@@ -26,9 +26,6 @@ import org.apache.ignite.internal.IgniteEx;
  * Snapshot restore test base.
  */
 public abstract class IgniteClusterSnapshotRestoreBaseTest extends AbstractSnapshotSelfTest {
-    /** Timeout. */
-    protected static final long TIMEOUT = 15_000;
-
     /** Cache value builder. */
     protected abstract Function<Integer, Object> valueBuilder();
 

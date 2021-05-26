@@ -184,90 +184,84 @@ public class SnapshotRestoreProcess {
             return new IgniteFinishedFutureImpl<>(e);
         }
 
-        ctx.cache().context().snapshotMgr().collectSnapshotMetadata(snpName).listen(
-            f -> {
-                if (f.error() != null) {
-                    finishProcess(fut0.rqId, f.error());
+        ctx.cache().context().snapshotMgr().checkSnapshot(snpName, cacheGrpNames).listen(f -> {
+            if (f.error() != null) {
+                finishProcess(fut0.rqId, f.error());
 
-                    return;
-                }
-
-                Set<UUID> dataNodes = new HashSet<>();
-                Set<String> snpBltNodes = null;
-                Map<ClusterNode, List<SnapshotMetadata>> metas = f.result();
-                Map<Integer, String> reqGrpIds = cacheGrpNames == null ? Collections.emptyMap() :
-                    cacheGrpNames.stream().collect(Collectors.toMap(CU::cacheId, v -> v));
-
-                for (Map.Entry<ClusterNode, List<SnapshotMetadata>> entry : metas.entrySet()) {
-                    SnapshotMetadata meta = F.first(entry.getValue());
-
-                    assert meta != null : entry.getKey().id();
-
-                    if (!entry.getKey().consistentId().equals(meta.consistentId()))
-                        continue;
-
-                    if (snpBltNodes == null)
-                        snpBltNodes = new HashSet<>(meta.baselineNodes());
-
-                    dataNodes.add(entry.getKey().id());
-
-                    reqGrpIds.keySet().removeAll(meta.partitions().keySet());
-                }
-
-                if (snpBltNodes == null) {
-                    finishProcess(fut0.rqId, new IllegalArgumentException(OP_REJECT_MSG + "No snapshot data " +
-                        "has been found [groups=" + reqGrpIds.values() + ", snapshot=" + snpName + ']'));
-
-                    return;
-                }
-
-                if (!reqGrpIds.isEmpty()) {
-                    finishProcess(fut0.rqId, new IllegalArgumentException(OP_REJECT_MSG + "Cache group(s) was not " +
-                        "found in the snapshot [groups=" + reqGrpIds.values() + ", snapshot=" + snpName + ']'));
-
-                    return;
-                }
-
-                Collection<String> bltNodes = F.viewReadOnly(ctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
-                    node -> node.consistentId().toString(), (node) -> CU.baselineNode(node, ctx.state().clusterState()));
-
-                snpBltNodes.removeAll(bltNodes);
-
-                if (!snpBltNodes.isEmpty()) {
-                    finishProcess(fut0.rqId, new IgniteIllegalStateException(OP_REJECT_MSG + "Some nodes required to " +
-                        "restore a cache group are missing [nodeId(s)=" + snpBltNodes + ", snapshot=" + snpName + ']'));
-
-                    return;
-                }
-
-                ctx.cache().context().snapshotMgr().runSnapshotVerification(metas).listen(
-                    f0 -> {
-                        if (f0.error() != null) {
-                            finishProcess(fut0.rqId, f0.error());
-
-                            return;
-                        }
-
-                        IdleVerifyResultV2 res = f0.result();
-
-                        if (!F.isEmpty(res.exceptions()) || res.hasConflicts()) {
-                            StringBuilder sb = new StringBuilder();
-
-                            res.print(sb::append, true);
-
-                            finishProcess(fut0.rqId, new IgniteException(sb.toString()));
-
-                            return;
-                        }
-
-                        SnapshotOperationRequest req = new SnapshotOperationRequest(
-                            fut0.rqId, F.first(dataNodes), snpName, cacheGrpNames, dataNodes);
-
-                        prepareRestoreProc.start(req.requestId(), req);
-                    }
-                );
+                return;
             }
-        );
+
+            if (!F.isEmpty(f.result().exceptions())) {
+                finishProcess(fut0.rqId, F.first(f.result().exceptions().values()));
+
+                return;
+            }
+
+            Set<UUID> dataNodes = new HashSet<>();
+            Set<String> snpBltNodes = null;
+            Map<ClusterNode, List<SnapshotMetadata>> metas = f.result().metas();
+            Map<Integer, String> reqGrpIds = cacheGrpNames == null ? Collections.emptyMap() :
+                cacheGrpNames.stream().collect(Collectors.toMap(CU::cacheId, v -> v));
+
+            for (Map.Entry<ClusterNode, List<SnapshotMetadata>> entry : metas.entrySet()) {
+                SnapshotMetadata meta = F.first(entry.getValue());
+
+                assert meta != null : entry.getKey().id();
+
+                if (!entry.getKey().consistentId().equals(meta.consistentId()))
+                    continue;
+
+                if (snpBltNodes == null)
+                    snpBltNodes = new HashSet<>(meta.baselineNodes());
+
+                dataNodes.add(entry.getKey().id());
+
+                reqGrpIds.keySet().removeAll(meta.partitions().keySet());
+            }
+
+            if (snpBltNodes == null) {
+                finishProcess(fut0.rqId, new IllegalArgumentException(OP_REJECT_MSG + "No snapshot data " +
+                    "has been found [groups=" + reqGrpIds.values() + ", snapshot=" + snpName + ']'));
+
+                return;
+            }
+
+            if (!reqGrpIds.isEmpty()) {
+                finishProcess(fut0.rqId, new IllegalArgumentException(OP_REJECT_MSG + "Cache group(s) was not " +
+                    "found in the snapshot [groups=" + reqGrpIds.values() + ", snapshot=" + snpName + ']'));
+
+                return;
+            }
+
+            Collection<String> bltNodes = F.viewReadOnly(ctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
+                node -> node.consistentId().toString(), (node) -> CU.baselineNode(node, ctx.state().clusterState()));
+
+            snpBltNodes.removeAll(bltNodes);
+
+            if (!snpBltNodes.isEmpty()) {
+                finishProcess(fut0.rqId, new IgniteIllegalStateException(OP_REJECT_MSG + "Some nodes required to " +
+                    "restore a cache group are missing [nodeId(s)=" + snpBltNodes + ", snapshot=" + snpName + ']'));
+
+                return;
+            }
+
+            IdleVerifyResultV2 res = f.result().idleVerifyResult();
+
+            if (!F.isEmpty(res.exceptions()) || res.hasConflicts()) {
+                StringBuilder sb = new StringBuilder();
+
+                res.print(sb::append, true);
+
+                finishProcess(fut0.rqId, new IgniteException(sb.toString()));
+
+                return;
+            }
+
+            SnapshotOperationRequest req = new SnapshotOperationRequest(
+                fut0.rqId, F.first(dataNodes), snpName, cacheGrpNames, dataNodes);
+
+            prepareRestoreProc.start(req.requestId(), req);
+        });
 
         return new IgniteFutureImpl<>(fut0);
     }

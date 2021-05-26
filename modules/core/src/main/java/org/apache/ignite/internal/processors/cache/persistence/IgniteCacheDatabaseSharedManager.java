@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -83,7 +82,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpStrategy;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.TimeBag;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -141,9 +139,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** */
     private static final String MBEAN_GROUP_NAME = "DataRegionMetrics";
-
-    /** */
-    protected final Map<String, DataRegionMetrics> memMetricsMap = new ConcurrentHashMap<>();
 
     /** */
     protected volatile boolean dataRegionsInitialized;
@@ -272,14 +267,12 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         assert cfg != null;
 
-        for (DataRegionMetrics memMetrics : memMetricsMap.values()) {
-            DataRegionConfiguration memPlcCfg = dataRegionMap.get(memMetrics.getName()).config();
-
+        for (DataRegion dataRegion : dataRegionMap.values()) {
             registerMetricsMBean(
                 cfg,
                 MBEAN_GROUP_NAME,
-                memPlcCfg.getName(),
-                new DataRegionMetricsMXBeanImpl((DataRegionMetricsImpl)memMetrics, memPlcCfg),
+                dataRegion.config().getName(),
+                new DataRegionMetricsMXBeanImpl(dataRegion),
                 DataRegionMetricsMXBean.class
             );
         }
@@ -297,8 +290,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         for (DataRegion memPlc : dataRegionMap.values()) {
             DataRegionConfiguration memPlcCfg = memPlc.config();
 
-            DataRegionMetricsImpl memMetrics = (DataRegionMetricsImpl)memMetricsMap.get(memPlcCfg.getName());
-
             boolean persistenceEnabled = memPlcCfg.isPersistenceEnabled();
 
             String freeListName = memPlcCfg.getName() + "##FreeList";
@@ -308,7 +299,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             CacheFreeList freeList = new CacheFreeList(
                 0,
                 freeListName,
-                memMetrics,
                 memPlc,
                 persistenceEnabled ? cctx.wal() : null,
                 0L,
@@ -444,15 +434,12 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         DataRegionMetricsImpl memMetrics = new DataRegionMetricsImpl(
             dataRegionCfg,
-            cctx.kernalContext().metric(),
-            cctx.kernalContext().performanceStatistics(),
+            cctx.kernalContext(),
             dataRegionMetricsProvider(dataRegionCfg));
 
         DataRegion region = initMemory(dataStorageCfg, dataRegionCfg, memMetrics, trackable, pmPageMgr);
 
         dataRegionMap.put(dataRegionName, region);
-
-        memMetricsMap.put(dataRegionName, memMetrics);
 
         if (dataRegionName.equals(dfltMemPlcName))
             dfltDataRegion = region;
@@ -864,17 +851,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @return DataRegionMetrics for all MemoryPolicies configured in Ignite instance.
      */
     public Collection<DataRegionMetrics> memoryMetrics() {
-        if (!F.isEmpty(memMetricsMap)) {
-            // Intentionally return a collection copy to make it explicitly serializable.
-            Collection<DataRegionMetrics> res = new ArrayList<>(memMetricsMap.size());
-
-            for (DataRegionMetrics metrics : memMetricsMap.values())
-                res.add(new DataRegionMetricsSnapshot(metrics));
-
-            return res;
-        }
-        else
-            return Collections.emptyList();
+        return dataRegionMap.values().stream()
+            .map(DataRegion::metrics)
+            .map(DataRegionMetricsSnapshot::new)
+            .collect(Collectors.toList());
     }
 
     /**
@@ -885,18 +865,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @param memPlcName Name of {@link DataRegion} to obtain {@link DataRegionMetrics} for.
+     * @param dataRegionName Name of {@link DataRegion} to obtain {@link DataRegionMetrics} for.
      * @return {@link DataRegionMetrics} snapshot for specified {@link DataRegion} or {@code null} if
      * no {@link DataRegion} is configured for specified name.
      */
-    public @Nullable DataRegionMetrics memoryMetrics(String memPlcName) {
-        if (!F.isEmpty(memMetricsMap)) {
-            DataRegionMetrics memMetrics = memMetricsMap.get(memPlcName);
-
-            return memMetrics == null ? null : new DataRegionMetricsSnapshot(memMetrics);
-        }
-        else
-            return null;
+    public @Nullable DataRegionMetrics memoryMetrics(String dataRegionName) {
+        DataRegion dataRegion = dataRegionMap.get(dataRegionName);
+        return dataRegion == null ? null : new DataRegionMetricsSnapshot(dataRegion.metrics());
     }
 
     /**
@@ -1229,7 +1204,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
             memPlc.evictionTracker().evictDataPage();
 
-            memPlc.memoryMetrics().updateEvictionRate();
+            memPlc.metrics().updateEvictionRate();
         }
     }
 
@@ -1362,13 +1337,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         memMetrics.persistenceEnabled(false);
 
         PageMemory pageMem = new PageMemoryNoStoreImpl(
-            log,
-            wrapMetricsMemoryProvider(memProvider, memMetrics),
             cctx,
+            wrapMetricsMemoryProvider(memProvider, memMetrics),
             memCfg.getPageSize(),
             memPlcCfg,
-            memMetrics.totalAllocatedPages(),
-            false
+            memMetrics
         );
 
         memMetrics.pageMemory(pageMem);
@@ -1498,7 +1471,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             unregisterMetricsMBean(
                 cctx.gridConfig(),
                 MBEAN_GROUP_NAME,
-                region.memoryMetrics().getName()
+                region.metrics().getName()
             );
         }
 
