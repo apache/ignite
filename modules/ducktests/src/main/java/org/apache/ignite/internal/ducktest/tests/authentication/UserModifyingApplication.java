@@ -24,13 +24,16 @@ import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 
 
-/** Simple application that modify users. */
+/**
+ * Simple application that modify users.
+ */
 public class UserModifyingApplication extends IgniteAwareApplication {
     /** {@inheritDoc} */
-    @Override
-    public void run(final JsonNode jsonNode) throws IgniteCheckedException {
+    @Override public void run(final JsonNode jsonNode) throws IgniteCheckedException {
         String restKey = jsonNode.get("rest_key").asText();
+
         String name = jsonNode.get("username").asText();
+        
         String pwd = jsonNode.get("password").asText();
 
         markInitialized();
