@@ -467,7 +467,8 @@ public class SystemViewComputeJobTest extends GridCommonAbstractTest {
             assertTrue(job.startTime() > 0);
             assertTrue(job.isStarted());
         }
-        else if (state == CANCELED)
+
+        if (state == CANCELED)
             assertTrue(waitForCondition(() -> job.finishTime() > 0, TIMEOUT));
         else
             assertEquals(0, job.finishTime());
