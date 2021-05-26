@@ -167,7 +167,6 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             var cache = GetClientCache<int>();
             const int count = 50000;
 
-            // TODO: Exceptions "data streamer closed" are being swallowed! Deal with this first.
             using (var streamer = Client.GetDataStreamer<int, int>(cache.Name))
             {
                 for (var k = 0; k < count; k++)
@@ -217,7 +216,6 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         [Category(TestUtils.CategoryIntensive)]
         public void TestStreamParallelFor()
         {
-            // TODO: This test is very slow on the laptop - check this.
             var cache = GetClientCache<int>();
             const int count = 250000;
 
