@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.schema;
 
 import org.apache.ignite.internal.tostring.S;
+import org.apache.ignite.schema.SortOrder;
 import org.apache.ignite.schema.SortedIndexColumn;
 
 /**
@@ -25,23 +26,23 @@ import org.apache.ignite.schema.SortedIndexColumn;
  */
 public class SortedIndexColumnImpl extends AbstractSchemaObject implements SortedIndexColumn {
     /** Sort order. */
-    private final boolean asc;
+    private final SortOrder sortOrder;
 
     /**
      * Constructor.
      *
      * @param name Column name.
-     * @param asc Sort order flag.
+     * @param sortOrder Sort order flag.
      */
-    public SortedIndexColumnImpl(String name, boolean asc) {
+    public SortedIndexColumnImpl(String name, SortOrder sortOrder) {
         super(name);
 
-        this.asc = asc;
+        this.sortOrder = sortOrder;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean asc() {
-        return asc;
+    @Override public SortOrder sortOrder() {
+        return sortOrder;
     }
 
     /** {@inheritDoc} */

@@ -19,12 +19,11 @@ package org.apache.ignite.internal.schema.builder;
 
 import org.apache.ignite.schema.PrimaryIndex;
 import org.apache.ignite.schema.SchemaBuilders;
+import org.apache.ignite.schema.SortOrder;
 import org.apache.ignite.schema.builder.PrimaryIndexBuilder;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Primary key builder test.
@@ -41,7 +40,7 @@ public class PrimaryKeyBuilderTest {
         PrimaryIndex idx = builder.build();
 
         assertEquals(2, idx.columns().size());
-        assertFalse(idx.columns().get(0).asc());
-        assertTrue(idx.columns().get(1).asc());
+        assertEquals(SortOrder.DESC, idx.columns().get(0).sortOrder());
+        assertEquals(SortOrder.ASC, idx.columns().get(1).sortOrder());
     }
 }

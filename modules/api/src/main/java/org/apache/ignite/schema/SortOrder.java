@@ -18,11 +18,16 @@
 package org.apache.ignite.schema;
 
 /**
- * Sorted index column.
+ * Index column sort order.
  */
-public interface SortedIndexColumn extends IndexColumn {
+public enum SortOrder {
     /**
-     * @return Column sort order.
+     * Ascending sort order.
      */
-    SortOrder sortOrder();
+    ASC,
+
+    /**
+     * Descending sort order.
+     */
+    DESC
 }

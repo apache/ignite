@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.schema.SortedIndexColumnImpl;
 import org.apache.ignite.internal.schema.SortedIndexImpl;
+import org.apache.ignite.schema.SortOrder;
 import org.apache.ignite.schema.SortedIndex;
 import org.apache.ignite.schema.SortedIndexColumn;
 import org.apache.ignite.schema.builder.SortedIndexBuilder;
@@ -101,7 +102,7 @@ public class SortedIndexBuilderImpl extends AbstractIndexBuilder implements Sort
         protected String name;
 
         /** Index order flag. */
-        protected boolean asc = true;
+        protected SortOrder asc = SortOrder.ASC;
 
         /**
          * Constructor.
@@ -114,14 +115,14 @@ public class SortedIndexBuilderImpl extends AbstractIndexBuilder implements Sort
 
         /** {@inheritDoc} */
         @Override public SortedIndexColumnBuilderImpl desc() {
-            asc = false;
+            asc = SortOrder.DESC;
 
             return this;
         }
 
         /** {@inheritDoc} */
         @Override public SortedIndexColumnBuilderImpl asc() {
-            asc = true;
+            asc = SortOrder.ASC;
 
             return this;
         }
