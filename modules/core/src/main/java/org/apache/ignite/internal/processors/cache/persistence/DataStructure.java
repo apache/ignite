@@ -28,6 +28,7 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.delta.RecycleRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.RotatedIdPartRecord;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
@@ -73,6 +74,9 @@ public abstract class DataStructure {
     /** */
     protected final byte pageFlag;
 
+    /** */
+    protected final PageMetrics metrics;
+
     /**
      * @param cacheGrpId Cache group ID.
      * @param grpName Cache group name.
@@ -100,6 +104,7 @@ public abstract class DataStructure {
         this.lockLsnr = lockLsnr == null ? NOOP_LSNR : lockLsnr;
         this.pageIoRslvr = pageIoRslvr;
         this.pageFlag = pageFlag;
+        this.metrics = pageMem.metrics().cacheGrpPageMetrics(cacheGrpId);
     }
 
     /**
@@ -441,6 +446,9 @@ public abstract class DataStructure {
 
         if (needWalDeltaRecord)
             wal.log(new RecycleRecord(grpId, pageId, recycled));
+
+        if (PageIO.isIndexPage(PageIO.getType(pageAddr)))
+            metrics.indexPages().decrement();
 
         return recycled;
     }
