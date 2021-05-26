@@ -63,6 +63,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.SnapshotEvent;
@@ -814,7 +815,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     public IgniteFuture<Boolean> restoreStatus(String snpName) {
-        return executeRestoreManagementTask(new SnapshotRestoreManagementTask.RestoreStatus(snpName));
+        return executeRestoreManagementTask(SnapshotRestoreStatusTask.class, snpName);
     }
 
     /**
@@ -912,7 +913,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * not running at all.
      */
     public IgniteFuture<Boolean> cancelRestore(String name) {
-        return executeRestoreManagementTask(new SnapshotRestoreManagementTask.CancelRestore(name));
+        return executeRestoreManagementTask(SnapshotRestoreCancelTask.class, name);
     }
 
     public boolean cancelLocalRestoreTask(String name) throws IgniteCheckedException {
@@ -921,7 +922,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             .get();
     }
 
-    private IgniteFuture<Boolean> executeRestoreManagementTask(IgniteCallable<Boolean> job) {
+    private IgniteFuture<Boolean> executeRestoreManagementTask(
+        Class<? extends ComputeTask<String, Boolean>> taskCls,
+        String jobArg
+    ) {
         cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
 
         Collection<ClusterNode> bltNodes = F.view(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
@@ -931,8 +935,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         cctx.kernalContext().task().setThreadContext(TC_SUBGRID, bltNodes);
         cctx.kernalContext().task().setThreadContext(TC_NO_FAILOVER, true);
 
-        ComputeTaskInternalFuture<Boolean> fut0 =
-            cctx.kernalContext().task().execute(SnapshotRestoreManagementTask.class, job);
+        ComputeTaskInternalFuture<Boolean> fut0 = cctx.kernalContext().task().execute(taskCls, jobArg);
 
         return new IgniteFutureImpl<>(fut0);
     }

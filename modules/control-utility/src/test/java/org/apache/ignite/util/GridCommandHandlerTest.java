@@ -3112,6 +3112,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertContains(log, sb.toString(), "The check procedure has finished, no conflicts have been found");
     }
 
+    /** @throws Exception If fails. */
     @Test
     public void testSnapshotRestore() throws Exception {
         int keysCnt = 100;
