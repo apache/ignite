@@ -17,12 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.util.Arrays;
-import java.util.Collection;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.mxbean.SnapshotMXBean;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Snapshot MBean features.
@@ -49,15 +46,5 @@ public class SnapshotMXBeanImpl implements SnapshotMXBean {
     /** {@inheritDoc} */
     @Override public void cancelSnapshot(String snpName) {
         mgr.cancelSnapshot(snpName).get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void restoreSnapshot(String snpName, @Nullable String grpNames) {
-        Collection<String> grps = grpNames != null ? Arrays.asList(grpNames.split(",", -1)) : null;
-
-        IgniteFuture<Void> fut = mgr.restoreSnapshot(snpName, grps);
-
-        if (fut.isDone())
-            fut.get();
     }
 }

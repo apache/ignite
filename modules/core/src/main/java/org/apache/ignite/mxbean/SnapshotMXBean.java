@@ -17,11 +17,7 @@
 
 package org.apache.ignite.mxbean;
 
-import java.util.Collection;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteSnapshot;
-import org.apache.ignite.lang.IgniteFuture;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Snapshot features MBean.
@@ -44,18 +40,4 @@ public interface SnapshotMXBean {
      */
     @MXBeanDescription("Cancel started cluster-wide snapshot on the node initiator.")
     public void cancelSnapshot(@MXBeanParameter(name = "snpName", description = "Snapshot name.") String snpName);
-
-    /**
-     * Restore cache group(s) from the snapshot.
-     * <p>
-     * <b>NOTE:</b> Cache groups to be restored from the snapshot must not present in the cluster, if they present,
-     * they must be destroyed by the user (eg with {@link IgniteCache#destroy()}) before starting this operation.
-     *
-     * @param snpName Snapshot name.
-     * @param grpNames Comma separated cache group names.
-     */
-    public void restoreSnapshot(
-        @MXBeanParameter(name = "snpName", description = "Snapshot name.") String snpName,
-        @MXBeanParameter(name = "grpNames", description = "Comma separated cache group names.") @Nullable String grpNames
-    );
 }

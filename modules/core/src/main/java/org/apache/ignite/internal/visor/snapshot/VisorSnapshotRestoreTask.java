@@ -20,11 +20,11 @@ package org.apache.ignite.internal.visor.snapshot;
 import java.util.Collection;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSnapshot;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMXBeanImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
+import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * @see IgniteSnapshot#restoreSnapshot(String, Collection)
@@ -54,12 +54,14 @@ public class VisorSnapshotRestoreTask extends VisorOneNodeTask<VisorSnapshotRest
 
         /** {@inheritDoc} */
         @Override protected String run(VisorSnapshotRestoreTaskArg arg) throws IgniteException {
-            String grps = F.isEmpty(arg.groupNames()) ? null : String.join(",", arg.groupNames());
+            IgniteFuture<Void> fut =
+                ignite.context().cache().context().snapshotMgr().restoreSnapshot(arg.snapshotName(), arg.groupNames());
 
-            new SnapshotMXBeanImpl(ignite.context()).restoreSnapshot(arg.snapshotName(), grps);
+            if (fut.isDone())
+                fut.get();
 
             return "Snapshot cache group restore operation started [snapshot=" + arg.snapshotName() +
-                (grps == null ? "" : ", group(s)=" + grps) + ']';
+                (arg.groupNames() == null ? "" : ", group(s)=" + F.concat(arg.groupNames(), ",")) + ']';
         }
     }
 }
