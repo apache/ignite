@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Net.Sockets;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -263,13 +264,25 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             // TODO: Limit retry count?
             while (true)
             {
-                // TODO: Retry connection failures if GetSocket fails (needed for affinity awareness mode)
-                var socket = _socket.GetAffinitySocket(_cacheId, entry.Key) ?? _socket.GetSocket();
-                var buffer = GetOrAddBuffer(socket);
-
-                if (buffer.Add(entry))
+                try
                 {
-                    return;
+                    // TODO: Retry connection failures if GetSocket fails (needed for affinity awareness mode)
+                    var socket = _socket.GetAffinitySocket(_cacheId, entry.Key) ?? _socket.GetSocket();
+                    var buffer = GetOrAddBuffer(socket);
+
+                    if (buffer.Add(entry))
+                    {
+                        return;
+                    }
+                }
+                catch (Exception e)
+                {
+                    if (ShouldRetry(e))
+                    {
+                        continue;
+                    }
+
+                    throw;
                 }
             }
         }
@@ -384,6 +397,11 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 exception = aggregate.GetBaseException();
             }
 
+            if (exception is SocketException)
+            {
+                return true;
+            }
+            
             var clientEx = exception as IgniteClientException;
 
             if (clientEx != null && clientEx.StatusCode == ClientStatusCode.InvalidNodeState)
