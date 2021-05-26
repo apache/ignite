@@ -411,7 +411,23 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         }
 
         [Test]
-        public void TestMultipleConcurrentCloseAndDisposeCallsAreAllowed()
+        public void TestMultipleCloseAndDisposeCallsAreAllowed()
+        {
+            using (var streamer = Client.GetDataStreamer<int, int>(CacheName))
+            {
+                streamer.Add(1, 2);
+                streamer.Close(cancel: false);
+
+                streamer.Dispose();
+                streamer.Close(true);
+                streamer.Close(false);
+            }
+            
+            Assert.AreEqual(2, GetCache<int>()[1]);
+        }
+
+        [Test]
+        public void TestCloseCancelDiscardsBufferedData()
         {
             Assert.Fail("TODO");
         }
