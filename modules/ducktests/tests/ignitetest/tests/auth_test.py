@@ -23,13 +23,15 @@ from ignitetest.services.utils.auth import DEFAULT_AUTH_PASSWORD, DEFAULT_AUTH_U
 from ignitetest.services.utils.control_utility import ControlUtility, ControlUtilityError
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
-from ignitetest.utils import ignite_versions, cluster
-from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
+from ignitetest.utils import ignite_versions, cluster, ignore_if
+from ignitetest.services.utils.ignite_configuration import IgniteThinClientConfiguration
+from ignitetest.services.utils.ssl.client_connector_configuration import ClientConnectorConfiguration
+from ignitetest.services.utils.auth import is_auth_enabled
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion
 
 WRONG_PASSWORD = "wrong_password"
-TEST_USERNAME = "admin"
+TEST_USERNAME = "ADMIN"
 TEST_PASSWORD = "qwe123"
 TEST_PASSWORD2 = "123qwe"
 
@@ -48,6 +50,7 @@ class AuthenticationTests(IgniteTest):
 
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
+    # @ignore_if(is_auth_enabled(globals))
     def test_change_users(self, ignite_version):
         """
         Test add, update and remove user
@@ -58,7 +61,8 @@ class AuthenticationTests(IgniteTest):
             version=IgniteVersion(ignite_version),
             data_storage=DataStorageConfiguration(
                 default=DataRegionConfiguration(persistent=True),
-            )
+            ),
+        client_connector_configuration=ClientConnectorConfiguration()
         )
 
         servers = IgniteService(self.test_context, config=config, num_nodes=self.NUM_NODES - 1)
@@ -67,7 +71,11 @@ class AuthenticationTests(IgniteTest):
 
         ControlUtility(cluster=servers, username=DEFAULT_AUTH_USERNAME, password=DEFAULT_AUTH_PASSWORD).activate()
 
-        client_cfg = config._replace(client_mode=True, discovery_spi=from_ignite_cluster(servers))
+        client_cfg = IgniteThinClientConfiguration(
+            addresses=servers.nodes[0].account.hostname + ":" + str(config.client_connector_configuration.port),
+            version=IgniteVersion(ignite_version),
+            username=DEFAULT_AUTH_USERNAME,
+            password=DEFAULT_AUTH_PASSWORD)
 
         # Add new user
         check_authenticate(servers, TEST_USERNAME, TEST_PASSWORD, True)
@@ -84,7 +92,6 @@ class AuthenticationTests(IgniteTest):
         self.run_with_creds(client_cfg, REMOVE_USER, TEST_USERNAME, free=False)
         check_authenticate(servers, TEST_USERNAME, TEST_PASSWORD2, True)
 
-    # pylint: disable=R0913
     def run_with_creds(self, client_configuration, rest_key: str, name: str, password: str = None, clean=False,
                        free=True):
         """
@@ -95,8 +102,6 @@ class AuthenticationTests(IgniteTest):
             client_configuration,
             java_class_name="org.apache.ignite.internal.ducktest.tests.authentication.UserModifyingApplication",
             params={"rest_key": rest_key,
-                    "auth_username": DEFAULT_AUTH_USERNAME,
-                    "auth_password": DEFAULT_AUTH_PASSWORD,
                     "username": name,
                     "password": password}
         )

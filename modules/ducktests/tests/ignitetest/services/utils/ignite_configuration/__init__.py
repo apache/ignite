@@ -127,6 +127,8 @@ class IgniteThinClientConfiguration(NamedTuple):
     addresses: str = None
     version: IgniteVersion = DEV_BRANCH
     ssl_params: SslParams = None
+    username: str = None
+    password: str = None
 
     def __prepare_ssl(self, test_globals, shared_root):
         """

@@ -19,50 +19,39 @@ package org.apache.ignite.internal.ducktest.tests.authentication;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
-import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
-import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 
-/**
- * Simple application that modify users.
- */
+import java.util.List;
+
+/** Simple application that modify users. */
 public class UserModifyingApplication extends IgniteAwareApplication {
-    /** {@inheritDoc} */
-    @Override public void run(JsonNode jsonNode) throws IgniteCheckedException {
+    /**{@inheritDoc}*/
+    @Override public void run(final JsonNode jsonNode) throws IgniteCheckedException {
         String restKey = jsonNode.get("rest_key").asText();
-
-        String authName = jsonNode.get("auth_username").asText();
-
-        String authPwd = jsonNode.get("auth_password").asText();
-
         String name = jsonNode.get("username").asText();
-
         String pwd = jsonNode.get("password").asText();
 
         markInitialized();
-
-        log.info("Input data: " + jsonNode.toString());
-
-        IgniteAuthenticationProcessor auth = ((IgniteEx)ignite).context().authentication();
-
-        AuthorizationContext actx = auth.authenticate(authName, authPwd);
-        AuthorizationContext.context(actx);
 
         GridRestCommand cmd = GridRestCommand.fromKey(restKey);
 
         switch (cmd) {
             case ADD_USER:
-                auth.addUser(name, pwd);
+                List list1 = client.query(new SqlFieldsQuery(String.format("CREATE USER %s WITH PASSWORD '%s';", name, pwd))).getAll();
+                list1.forEach(log::info);
                 break;
 
             case UPDATE_USER:
-                auth.updateUser(name, pwd);
+                List list2 = client.query(new SqlFieldsQuery(String.format("ALTER USER %s WITH PASSWORD '%s';", name, pwd))).getAll();
+                list2.forEach(log::info);
                 break;
 
             case REMOVE_USER:
-                auth.removeUser(name);
+                List list3 = client.query(new SqlFieldsQuery(String.format("DROP USER %s;", name))).getAll();
+                list3.forEach(log::info);
                 break;
 
             default:

@@ -28,6 +28,11 @@
             </list>
         </property>
 
+        {% if config.username %}
+        <property name="userName" value="{{ config.username }}"/>
+        <property name="userPassword" value="{{ config.password }}"/>
+        {% endif %}
+
         {% if config.ssl_params %}
         <property name="sslMode" value="REQUIRED"/>
         <property name="sslClientCertificateKeyStorePath" value="{{ config.ssl_params.key_store_path }}"/>
