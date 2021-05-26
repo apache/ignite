@@ -19,17 +19,16 @@ package org.apache.ignite.internal.ducktest.tests.authentication;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 
-import java.util.List;
 
 /** Simple application that modify users. */
 public class UserModifyingApplication extends IgniteAwareApplication {
-    /**{@inheritDoc}*/
-    @Override public void run(final JsonNode jsonNode) throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override
+    public void run(final JsonNode jsonNode) throws IgniteCheckedException {
         String restKey = jsonNode.get("rest_key").asText();
         String name = jsonNode.get("username").asText();
         String pwd = jsonNode.get("password").asText();
@@ -40,18 +39,15 @@ public class UserModifyingApplication extends IgniteAwareApplication {
 
         switch (cmd) {
             case ADD_USER:
-                List list1 = client.query(new SqlFieldsQuery(String.format("CREATE USER %s WITH PASSWORD '%s';", name, pwd))).getAll();
-                list1.forEach(log::info);
+                client.query(new SqlFieldsQuery(String.format("CREATE USER %s WITH PASSWORD '%s';", name, pwd))).getAll();
                 break;
 
             case UPDATE_USER:
-                List list2 = client.query(new SqlFieldsQuery(String.format("ALTER USER %s WITH PASSWORD '%s';", name, pwd))).getAll();
-                list2.forEach(log::info);
+                client.query(new SqlFieldsQuery(String.format("ALTER USER %s WITH PASSWORD '%s';", name, pwd))).getAll();
                 break;
 
             case REMOVE_USER:
-                List list3 = client.query(new SqlFieldsQuery(String.format("DROP USER %s;", name))).getAll();
-                list3.forEach(log::info);
+                client.query(new SqlFieldsQuery(String.format("DROP USER %s;", name))).getAll();
                 break;
 
             default:
