@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Net.Sockets;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Client;
@@ -358,7 +357,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                         ctx => (object)null,
                         syncCallback: true)
                     .ContinueWith(
-                        t => FlushBufferCompleteOrRetry(buffer, socket, tcs, t.Exception, t),
+                        t => FlushBufferCompleteOrRetry(buffer, socket, tcs, t.Exception),
                         TaskContinuationOptions.ExecuteSynchronously);
             }
             catch (Exception exception)
@@ -370,13 +369,10 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         private void FlushBufferCompleteOrRetry(DataStreamerClientBuffer<TK, TV> buffer,
             ClientSocket socket,
             TaskCompletionSource<object> tcs,
-            Exception exception,
-            Task prevTask = null)
+            Exception exception)
         {
             if (exception == null)
             {
-                PrintEntries(buffer.Entries, $"SENT (disposed={socket.IsDisposed}, task={prevTask?.Status}, socket={socket.RemoteEndPoint})");
-
                 ReturnArray(buffer.Entries);
                 tcs.SetResult(null);
 
@@ -422,30 +418,11 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             return false;
         }
 
-        private static void PrintEntries(DataStreamerClientEntry<TK, TV>[] entries, string prefix)
-        {
-            var sb = new StringBuilder();
-
-            for (var i = 0; i < entries.Length; i++)
-            {
-                var entry = entries[i];
-
-                if (!entry.IsEmpty)
-                {
-                    sb.Append(entry.Key).Append(", ");
-                }
-            }
-
-            Console.WriteLine($">>>> {prefix}: {sb}");
-        }
-
         private void FlushBufferRetry(
             DataStreamerClientBuffer<TK, TV> buffer,
             ClientSocket failedSocket,
             TaskCompletionSource<object> tcs)
         {
-            Console.WriteLine(">>>> RETRY");
-
             try
             {
                 // Connection failed. Remove disconnected socket from the map.
@@ -484,7 +461,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
                 if (!entry.IsEmpty)
                 {
-                    Console.WriteLine(">>>> RETRY " + entry.Key);
                     AddNoLock(entry);
                 }
             }
@@ -504,8 +480,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             w.WriteInt(count);
 
             var entries = buffer.Entries;
-
-            PrintEntries(entries, "SENDING ");
 
             for (var i = 0; i < count; i++)
             {

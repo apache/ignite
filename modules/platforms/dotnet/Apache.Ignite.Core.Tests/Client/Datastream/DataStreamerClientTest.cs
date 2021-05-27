@@ -51,7 +51,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         /// Initializes a new instance of <see cref="DataStreamerClientTest"/>.
         /// </summary>
         public DataStreamerClientTest(bool enablePartitionAwareness)
-            : base(gridCount: 3, enableSsl: false, enablePartitionAwareness: enablePartitionAwareness)
+            : base(GridCount, enableSsl: false, enablePartitionAwareness: enablePartitionAwareness)
         {
             // No-op.
         }
