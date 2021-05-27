@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 
 /**
@@ -30,6 +31,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
  * Data stored in persistence will be encrypted.
  */
 public class EncryptedCacheExample {
+    /** Cache name. */
+    private static final String CACHE_NAME = "encrypted-accounts-caches";
+
     /** */
     public static void main(String[] args) {
         System.out.println(">>> Starting cluster.");
@@ -40,9 +44,9 @@ public class EncryptedCacheExample {
         try (Ignite ignite = Ignition.start("examples/config/encryption/example-encrypted-store.xml")) {
             // Activate the cluster. Required to do if the persistent store is enabled because you might need
             // to wait while all the nodes, that store a subset of data on disk, join the cluster.
-            ignite.cluster().active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
 
-            CacheConfiguration<Long, BankAccount> ccfg = new CacheConfiguration<>("encrypted-cache");
+            CacheConfiguration<Long, BankAccount> ccfg = new CacheConfiguration<>(CACHE_NAME);
 
             // Enabling encryption for newly created cache.
             ccfg.setEncryptionEnabled(true);
@@ -64,10 +68,10 @@ public class EncryptedCacheExample {
         System.out.println(">>> Starting cluster again.");
         // Starting cluster again.
         try (Ignite ignite = Ignition.start("examples/config/encryption/example-encrypted-store.xml")) {
-            ignite.cluster().active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
 
             // We can obtain existing cache and load data from disk.
-            IgniteCache<Long, BankAccount> cache = ignite.getOrCreateCache("encrypted-cache");
+            IgniteCache<Long, BankAccount> cache = ignite.getOrCreateCache(CACHE_NAME);
 
             QueryCursor<Cache.Entry<Long, BankAccount>> cursor = cache.query(new ScanQuery<>());
 
@@ -79,7 +83,6 @@ public class EncryptedCacheExample {
                     ", AccountName = " + entry.getValue().accountName +
                     ", Balance = " + entry.getValue().balance);
             }
-
         }
     }
 
@@ -87,17 +90,17 @@ public class EncryptedCacheExample {
      * Test class with very secret data.
      */
     private static class BankAccount {
-        /**
-         * Name.
-         */
-        private String accountName;
+        /** Name. */
+        private final String accountName;
+
+        /** Balance. */
+        private final long balance;
 
         /**
-         * Balance.
+         * Creates a new instance with the given account name and balance.
+         * @param accountName Account name.
+         * @param balance Balance.
          */
-        private long balance;
-
-        /** */
         BankAccount(String accountName, long balance) {
             this.accountName = accountName;
             this.balance = balance;

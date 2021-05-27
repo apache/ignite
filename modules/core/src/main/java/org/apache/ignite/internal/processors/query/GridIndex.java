@@ -16,7 +16,7 @@
  */
 package org.apache.ignite.internal.processors.query;
 
-import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.util.lang.GridCursor;
 
 /**
@@ -30,8 +30,8 @@ public interface GridIndex<R> {
      *
      * @param lower Lower bound.
      * @param upper Upper bound.
-     * @param filterC Filtering closure.
+     * @param qctx Index query context.
      * @return Cursor over the rows within bounds.
      */
-    GridCursor<R> find(R lower, R upper, BPlusTree.TreeRowClosure<R, R> filterC);
+    GridCursor<R> find(R lower, R upper, IndexQueryContext qctx);
 }

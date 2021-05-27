@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
@@ -82,6 +83,7 @@ import org.junit.Before;
 import static java.nio.file.Files.newDirectoryStream;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.FILE_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
@@ -103,11 +105,14 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     /** Number of cache keys to pre-create at node start. */
     protected static final int CACHE_KEYS_RANGE = 1024;
 
+    /** Timeout in milliseconds to await for snapshot operation being completed. */
+    protected static final int SNAPSHOT_AWAIT_TIMEOUT_MS = 15_000;
+
     /** List of collected snapshot test events. */
     protected final List<Integer> locEvts = new CopyOnWriteArrayList<>();
 
     /** Configuration for the 'default' cache. */
-    protected volatile CacheConfiguration<Integer, Integer> dfltCacheCfg;
+    protected volatile CacheConfiguration<Integer, Object> dfltCacheCfg;
 
     /** Enable default data region persistence. */
     protected boolean persistence = true;
@@ -120,6 +125,9 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
         discoSpi.setIpFinder(((TcpDiscoverySpi)cfg.getDiscoverySpi()).getIpFinder());
 
+        if (dfltCacheCfg != null)
+            cfg.setCacheConfiguration(dfltCacheCfg);
+
         return cfg.setConsistentId(igniteInstanceName)
             .setCommunicationSpi(new TestRecordingCommunicationSpi())
             .setDataStorageConfiguration(new DataStorageConfiguration()
@@ -127,8 +135,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
                     .setMaxSize(100L * 1024 * 1024)
                     .setPersistenceEnabled(persistence))
                 .setCheckpointFrequency(3000)
-                .setPageSize(4096))
-            .setCacheConfiguration(dfltCacheCfg)
+                .setPageSize(DFLT_PAGE_SIZE))
             .setClusterStateOnStart(INACTIVE)
             .setIncludeEventTypes(EVTS_CLUSTER_SNAPSHOT)
             .setDiscoverySpi(discoSpi);
@@ -181,7 +188,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
      * @param ccfg Default cache configuration.
      * @return Cache configuration.
      */
-    protected static <K, V> CacheConfiguration<K, V> txCacheConfig(CacheConfiguration<K, V> ccfg) {
+    protected <K, V> CacheConfiguration<K, V> txCacheConfig(CacheConfiguration<K, V> ccfg) {
         return ccfg.setCacheMode(CacheMode.PARTITIONED)
             .setBackups(2)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
@@ -235,7 +242,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
      * @return Ignite instance.
      * @throws Exception If fails.
      */
-    protected IgniteEx startGridWithCache(CacheConfiguration<Integer, Integer> ccfg, int keys) throws Exception {
+    protected IgniteEx startGridWithCache(CacheConfiguration<Integer, Object> ccfg, int keys) throws Exception {
         return startGridsWithCache(1, ccfg, keys);
     }
 
@@ -246,7 +253,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
      * @return Ignite instance.
      * @throws Exception If fails.
      */
-    protected IgniteEx startGridsWithCache(int grids, CacheConfiguration<Integer, Integer> ccfg, int keys) throws Exception {
+    protected IgniteEx startGridsWithCache(int grids, CacheConfiguration<Integer, Object> ccfg, int keys) throws Exception {
         dfltCacheCfg = ccfg;
 
         return startGridsWithCache(grids, keys, Integer::new, ccfg);
@@ -326,9 +333,25 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         String snpName,
         boolean activate
     ) throws Exception {
+        return startGridsFromSnapshot(IntStream.range(0, cnt).boxed().collect(Collectors.toSet()), path, snpName, activate);
+    }
+
+    /**
+     * @param ids Set of ignite instances ids to start.
+     * @param path Snapshot path resolver.
+     * @param snpName Snapshot to start grids from.
+     * @param activate {@code true} to activate after cluster start.
+     * @return Coordinator ignite instance.
+     * @throws Exception If fails.
+     */
+    protected IgniteEx startGridsFromSnapshot(Set<Integer> ids,
+        Function<IgniteConfiguration, String> path,
+        String snpName,
+        boolean activate
+    ) throws Exception {
         IgniteEx crd = null;
 
-        for (int i = 0; i < cnt; i++) {
+        for (Integer i : ids) {
             IgniteConfiguration cfg = optimize(getConfiguration(getTestIgniteInstanceName(i)));
 
             cfg.setWorkDirectory(Paths.get(path.apply(cfg), snpName).toString());
@@ -491,6 +514,24 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
          */
         public void waitBlocked(long timeout) throws IgniteInterruptedCheckedException {
             GridTestUtils.waitForCondition(() -> !blocked.isEmpty(), timeout);
+        }
+    }
+
+    /** */
+    protected static class Value {
+        /** */
+        private final byte[] arr;
+
+        /**
+         * @param arr Test array.
+         */
+        public Value(byte[] arr) {
+            this.arr = arr;
+        }
+
+        /** */
+        public byte[] arr() {
+            return arr;
         }
     }
 

@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Binary
 {
+    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
@@ -27,6 +28,12 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// </summary>
     internal class BinaryProcessor : PlatformTargetAdapter, IBinaryProcessor
     {
+        /** Java platform id. See org.apache.ignite.internal.MarshallerPlatformIds in Java. */
+        public const byte JavaPlatformId = 0;
+
+        /** Type registry platform id. See org.apache.ignite.internal.MarshallerPlatformIds in Java. */
+        public const byte DotNetPlatformId = 1;
+
         /// <summary>
         /// Op codes.
         /// </summary>
@@ -103,7 +110,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="id">The identifier.</param>
         /// <param name="typeName">The type name.</param>
-        /// <param name="registerSameJavaType">True if should register type both for dotnet and java platforms.</param>	
+        /// <param name="registerSameJavaType">True if should register type both for dotnet and java platforms.</param>
         /// <returns>True if registration succeeded; otherwise, false.</returns>
         public bool RegisterType(int id, string typeName, bool registerSameJavaType)
         {
@@ -156,13 +163,19 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Gets the type name by id.
+        /// Gets the type name by id for specific platform.
         /// </summary>
         /// <param name="id">The identifier.</param>
+        /// <param name="platformId">Platform identifier.</param>
+        /// <param name="errorAction">Error action.</param>
         /// <returns>Type or null.</returns>
-        public string GetTypeName(int id)
+        public string GetTypeName(int id, byte platformId, Func<Exception, string> errorAction = null)
         {
-            return DoOutInOp((int) Op.GetType, w => w.WriteInt(id), r => Marshaller.StartUnmarshal(r).ReadString());
+            return DoOutInOp((int) Op.GetType, w =>
+            {
+                w.WriteInt(id);
+                w.WriteByte(platformId);
+            }, r => Marshaller.StartUnmarshal(r).ReadString(), errorAction);
         }
 
         /// <summary>

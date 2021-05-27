@@ -414,7 +414,8 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected List<UUID> intermediateMapping(@NotNull AffinityTopologyVersion topVer, boolean single, @Nullable Predicate<ClusterNode> filter) {
+    protected List<UUID> intermediateMapping(@NotNull AffinityTopologyVersion topVer, boolean single,
+        @Nullable Predicate<ClusterNode> filter) {
         return single ? select(nodes, 0) : select(nodes, 0, 1, 2, 3);
     }
 

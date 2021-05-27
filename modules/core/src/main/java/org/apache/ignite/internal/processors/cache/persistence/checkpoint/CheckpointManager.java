@@ -105,6 +105,7 @@ public class CheckpointManager {
      * @param longJvmPauseDetector Long JVM pause detector.
      * @param failureProcessor Failure processor.
      * @param cacheProcessor Cache processor.
+     * @param cpFreqDeviation Distributed checkpoint frequency deviation.
      * @throws IgniteCheckedException if fail.
      */
     public CheckpointManager(
@@ -124,7 +125,8 @@ public class CheckpointManager {
         DataStorageMetricsImpl persStoreMetrics,
         LongJVMPauseDetector longJvmPauseDetector,
         FailureProcessor failureProcessor,
-        GridCacheProcessor cacheProcessor
+        GridCacheProcessor cacheProcessor,
+        Supplier<Integer> cpFreqDeviation
     ) throws IgniteCheckedException {
         CheckpointHistory cpHistory = new CheckpointHistory(
             persistenceCfg,
@@ -189,7 +191,8 @@ public class CheckpointManager {
             checkpointWorkflow,
             checkpointPagesWriterFactory,
             persistenceCfg.getCheckpointFrequency(),
-            persistenceCfg.getCheckpointThreads()
+            persistenceCfg.getCheckpointThreads(),
+            cpFreqDeviation
         );
 
         checkpointer = checkpointerProvider.get();
@@ -324,9 +327,7 @@ public class CheckpointManager {
         checkpointMarkersStorage.cleanupCheckpointDirectory();
     }
 
-    /**
-     *
-     */
+    /** Current checkpointer implementation. */
     public Checkpointer getCheckpointer() {
         return checkpointer;
     }
@@ -367,12 +368,12 @@ public class CheckpointManager {
     /**
      * @param grpId Group ID.
      * @param partId Partition ID.
+     * @return {@code True} if the request to destroy the partition was canceled.
      */
-    public void cancelOrWaitPartitionDestroy(int grpId, int partId) throws IgniteCheckedException {
+    public boolean cancelOrWaitPartitionDestroy(int grpId, int partId) throws IgniteCheckedException {
         Checkpointer cp = checkpointer;
 
-        if (cp != null)
-            checkpointer.cancelOrWaitPartitionDestroy(grpId, partId);
+        return cp != null && cp.cancelOrWaitPartitionDestroy(grpId, partId);
     }
 
     /**

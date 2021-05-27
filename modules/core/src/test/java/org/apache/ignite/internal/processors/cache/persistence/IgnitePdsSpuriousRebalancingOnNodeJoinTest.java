@@ -31,6 +31,8 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
+import org.apache.ignite.internal.processors.cache.PartitionUpdateCounterErrorWrapper;
 import org.apache.ignite.internal.processors.cache.PartitionUpdateCounterTrackingImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
@@ -146,9 +148,13 @@ public class IgnitePdsSpuriousRebalancingOnNodeJoinTest extends GridCommonAbstra
 
             assertNotNull(part);
 
-            PartitionUpdateCounterTrackingImpl cntr0 = (PartitionUpdateCounterTrackingImpl)part.dataStore().partUpdateCounter();
+            PartitionUpdateCounter cntr0 = part.dataStore().partUpdateCounter();
 
-            AtomicLong cntr = U.field(cntr0, "cntr");
+            assertTrue(cntr0 instanceof PartitionUpdateCounterErrorWrapper);
+
+            PartitionUpdateCounterTrackingImpl delegate = U.field(cntr0, "delegate");
+
+            AtomicLong cntr = U.field(delegate, "cntr");
 
             cntr.set(cntr.get() - 1);
 

@@ -84,7 +84,7 @@ public enum SecurityPermission {
     /** Administration operation: write distributed properties values. */
     ADMIN_WRITE_DISTRIBUTED_PROPERTY,
 
-    /** Administration operation with cluster snapshots (CREATE, CANCEL). */
+    /** Administration operation with cluster snapshots (create, cancel, check). */
     ADMIN_SNAPSHOT;
 
     /** Enumerated values. */

@@ -23,10 +23,12 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteSnapshot;
+import org.apache.ignite.compute.ComputeTaskSession;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.checkpoint.CheckpointSpi;
 import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 
@@ -67,37 +69,52 @@ import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
  */
 public interface EventType {
     /**
-     * Built-in event type: checkpoint was saved.
+     * Built-in event type: intermediate state of a job or task, so-called checkpoint, was saved.
+     * <p>
+     * Checkpointing provides the ability to save an intermediate job state.
+     * It can be useful when long running jobs need to store some intermediate state to protect from node failures.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
      *
      * @see CheckpointEvent
+     * @see CheckpointSpi
+     * @see ComputeTaskSession#saveCheckpoint(String, Object)
      */
     public static final int EVT_CHECKPOINT_SAVED = 1;
 
     /**
-     * Built-in event type: checkpoint was loaded.
+     * Built-in event type: intermediate state of a job or task, so-called checkpoint, was loaded.
+     * <p>
+     * Checkpointing provides the ability to save an intermediate job state.
+     * It can be useful when long running jobs need to store some intermediate state to protect from node failures.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
      *
      * @see CheckpointEvent
+     * @see CheckpointSpi
+     * @see ComputeTaskSession#loadCheckpoint(String)
      */
     public static final int EVT_CHECKPOINT_LOADED = 2;
 
     /**
-     * Built-in event type: checkpoint was removed. Reasons are:
+     * Built-in event type: intermediate state of a job or task, so-called checkpoint, was removed. Reasons are:
      * <ul>
      * <li>timeout expired, or
      * <li>or it was manually removed, or
      * <li>it was automatically removed by the task session
      * </ul>
      * <p>
+     * Checkpointing provides the ability to save an intermediate job state.
+     * It can be useful when long running jobs need to store some intermediate state to protect from node failures.
+     * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
      *
      * @see CheckpointEvent
+     * @see CheckpointSpi
+     * @see ComputeTaskSession#removeCheckpoint(String)
      */
     public static final int EVT_CHECKPOINT_REMOVED = 3;
 

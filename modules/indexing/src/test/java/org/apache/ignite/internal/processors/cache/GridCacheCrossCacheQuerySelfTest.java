@@ -99,7 +99,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      */
     private static CacheConfiguration createCache(String name, CacheMode mode, Class<?> clsK, Class<?> clsV) {
-        CacheConfiguration<?,?> cc = defaultCacheConfiguration();
+        CacheConfiguration<?, ?> cc = defaultCacheConfiguration();
 
         cc.setName(name);
         cc.setCacheMode(mode);
@@ -220,7 +220,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testApiQueries() throws Exception {
-        IgniteCache<Object,Object> c = ignite.cache(PART_CACHE_NAME);
+        IgniteCache<Object, Object> c = ignite.cache(PART_CACHE_NAME);
 
         c.query(new SqlFieldsQuery("select cast(? as varchar) from FactPurchase").setArgs("aaa")).getAll();
 

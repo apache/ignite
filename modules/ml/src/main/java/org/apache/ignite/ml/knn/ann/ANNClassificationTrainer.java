@@ -160,7 +160,11 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
                 .get(centroidIdx);
 
             clsLbls.keySet().forEach(
-                (label) -> clsLbls.put(label, centroidLbDistribution.containsKey(label) ? ((double)(centroidLbDistribution.get(label)) / clusterSize) : 0.0)
+                (label) -> clsLbls.put(
+                    label,
+                    centroidLbDistribution.containsKey(label)
+                        ? ((double)(centroidLbDistribution.get(label)) / clusterSize)
+                        : 0.0)
             );
         }
         return new ProbableLabel(clsLbls);
@@ -171,7 +175,8 @@ public class ANNClassificationTrainer extends SingleLabelDatasetTrainer<ANNClass
                                                 Preprocessor<K, V> vectorizer,
                                                 List<Vector> centers) {
 
-        PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<LabeledVector>> partDataBuilder = new LabeledDatasetPartitionDataBuilderOnHeap<>(vectorizer);
+        PartitionDataBuilder<K, V, EmptyContext, LabeledVectorSet<LabeledVector>> partDataBuilder =
+            new LabeledDatasetPartitionDataBuilderOnHeap<>(vectorizer);
 
         try (Dataset<EmptyContext, LabeledVectorSet<LabeledVector>> dataset = datasetBuilder.build(
             envBuilder,

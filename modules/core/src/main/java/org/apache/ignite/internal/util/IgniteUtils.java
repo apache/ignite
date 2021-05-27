@@ -308,6 +308,9 @@ import static org.apache.ignite.internal.util.GridUnsafe.staticFieldOffset;
 @SuppressWarnings({"UnusedReturnValue"})
 public abstract class IgniteUtils {
     /** */
+    public static final long KB = 1024L;
+
+    /** */
     public static final long MB = 1024L * 1024;
 
     /** */
@@ -1660,7 +1663,8 @@ public abstract class IgniteUtils {
      *
      * @param cls Class.
      * @param dflt Default class to return.
-     * @param includePrimitiveTypes Whether class resolution should include primitive types (i.e. "int" will resolve to int.class if flag is set)
+     * @param includePrimitiveTypes Whether class resolution should include primitive types
+     *                              (i.e. "int" will resolve to int.class if flag is set)
      * @return Class or default given class if it can't be found.
      */
     @Nullable public static Class<?> classForName(
@@ -4215,6 +4219,32 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Closes given socket logging possible checked exception.
+     *
+     * @param sock Socket to close. If it's {@code null} - it's no-op.
+     * @param log Logger to log possible checked exception with (optional).
+     */
+    public static void close(@Nullable Socket sock, @Nullable IgniteLogger log) {
+        if (sock != null) {
+            try {
+                // Avoid tls 1.3 incompatibility https://bugs.openjdk.java.net/browse/JDK-8208526
+                sock.shutdownOutput();
+                sock.shutdownInput();
+            }
+            catch (Exception e) {
+                warn(log, "Failed to shutdown socket: " + e.getMessage(), e);
+            }
+
+            try {
+                sock.close();
+            }
+            catch (Exception e) {
+                warn(log, "Failed to close socket: " + e.getMessage(), e);
+            }
+        }
+    }
+
+    /**
      * Closes given resource suppressing possible checked exception.
      *
      * @param rsrc Resource to close. If it's {@code null} - it's no-op.
@@ -4369,7 +4399,7 @@ public abstract class IgniteUtils {
             return;
 
         try {
-            // Avoid java 12 bug see https://bugs.openjdk.java.net/browse/JDK-8219658
+            // Avoid tls 1.3 incompatibility https://bugs.openjdk.java.net/browse/JDK-8208526
             sock.shutdownOutput();
             sock.shutdownInput();
         }
@@ -5992,6 +6022,20 @@ public abstract class IgniteUtils {
         ComputeTaskName nameAnn = getAnnotation(taskCls, ComputeTaskName.class);
 
         return nameAnn == null ? taskCls.getName() : nameAnn.value();
+    }
+
+    /**
+     * Gets resource name.
+     * Returns a task name if it is a Compute task or a class name otherwise.
+     *
+     * @param rscCls Class of resource.
+     * @return Name of resource.
+     */
+    public static String getResourceName(Class rscCls) {
+        if (ComputeTask.class.isAssignableFrom(rscCls))
+            return getTaskName(rscCls);
+
+        return rscCls.getName();
     }
 
     /**
@@ -8950,7 +8994,11 @@ public abstract class IgniteUtils {
      * @return Class.
      * @throws ClassNotFoundException If class not found.
      */
-    public static Class<?> forName(String clsName, @Nullable ClassLoader ldr, IgnitePredicate<String> clsFilter) throws ClassNotFoundException {
+    public static Class<?> forName(
+        String clsName,
+        @Nullable ClassLoader ldr,
+        IgnitePredicate<String> clsFilter
+    ) throws ClassNotFoundException {
         return forName(clsName, ldr, clsFilter, GridBinaryMarshaller.USE_CACHE.get());
     }
 
@@ -8959,11 +9007,16 @@ public abstract class IgniteUtils {
      *
      * @param clsName Class name.
      * @param ldr Class loader.
-    * @param useCache If true class loader and result should be cached internally, false otherwise.
+     * @param useCache If true class loader and result should be cached internally, false otherwise.
      * @return Class.
      * @throws ClassNotFoundException If class not found.
      */
-    public static Class<?> forName(String clsName, @Nullable ClassLoader ldr, IgnitePredicate<String> clsFilter, boolean useCache) throws ClassNotFoundException {
+    public static Class<?> forName(
+        String clsName,
+        @Nullable ClassLoader ldr,
+        IgnitePredicate<String> clsFilter,
+        boolean useCache
+    ) throws ClassNotFoundException {
         assert clsName != null;
 
         Class<?> cls = primitiveMap.get(clsName);
@@ -9002,7 +9055,7 @@ public abstract class IgniteUtils {
 
         if (cls == null) {
             if (clsFilter != null && !clsFilter.apply(clsName))
-                throw new RuntimeException("Deserialization of class " + clsName + " is disallowed.");
+                throw new ClassNotFoundException("Deserialization of class " + clsName + " is disallowed.");
 
             // Avoid class caching inside Class.forName
             if (ldr instanceof CacheClassLoaderMarker)
@@ -9288,8 +9341,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * For each object provided by the given {@link Iterable} checks if it implements
-     * {@link org.apache.ignite.lifecycle.LifecycleAware} interface and executes {@link org.apache.ignite.lifecycle.LifecycleAware#stop} method.
+     * For each object provided by the given {@link Iterable} checks if it implements {@link org.apache.ignite.lifecycle.LifecycleAware}
+     * interface and executes {@link org.apache.ignite.lifecycle.LifecycleAware#stop} method.
      *
      * @param log Logger used to log error message in case of stop failure.
      * @param objs Object passed to Ignite configuration.
@@ -9609,7 +9662,7 @@ public abstract class IgniteUtils {
                         "    <property name=\"workDirectory\" value=\"location\"/> in IgniteConfiguration <bean>.\n");
                 }
             }
-            catch (Exception e) {
+            catch (Exception ignore) {
                 // Ignore.
             }
 
@@ -11419,7 +11472,7 @@ public abstract class IgniteUtils {
     /**
      * The batch of tasks with a batch index in global array.
      */
-    private static class Batch<T,R> {
+    private static class Batch<T, R> {
         /** List tasks. */
         private final List<T> tasks;
 
@@ -11640,7 +11693,11 @@ public abstract class IgniteUtils {
      * @param cancel Wheter should cancel workers.
      * @param log Logger.
      */
-    public static void awaitForWorkersStop(Collection<GridWorker> workers, boolean cancel, IgniteLogger log) {
+    public static void awaitForWorkersStop(
+        Collection<GridWorker> workers,
+        boolean cancel,
+        @Nullable IgniteLogger log
+    ) {
         for (GridWorker worker : workers) {
             try {
                 if (cancel)
@@ -11649,7 +11706,8 @@ public abstract class IgniteUtils {
                 worker.join();
             }
             catch (Exception e) {
-                log.warning(String.format("Failed to cancel grid runnable [%s]: %s", worker.toString(), e.getMessage()));
+                if (log != null)
+                    log.warning("Failed to cancel grid runnable [" + worker.toString() + "]: " + e.getMessage());
             }
         }
     }

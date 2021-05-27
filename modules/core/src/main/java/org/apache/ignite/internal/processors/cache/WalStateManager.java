@@ -51,6 +51,7 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteFuture;
@@ -203,27 +204,29 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         synchronized (mux) {
             // Process top pending requests.
             for (CacheGroupDescriptor grpDesc : cacheProcessor().cacheGroupDescriptors().values()) {
-                WalStateProposeMessage msg = grpDesc.nextWalChangeRequest();
+                CacheGroupContext cctx = cacheProcessor().cacheGroup(grpDesc.groupId());
 
-                if (msg != null) {
-                    if (log.isDebugEnabled())
-                        log.debug("Processing WAL state message on start: " + msg);
+                if (cctx != null)
+                    cctx.globalWalEnabled(grpDesc.walEnabled());
 
-                    boolean enabled = grpDesc.walEnabled();
+                for (WalStateProposeMessage msg : grpDesc.walChangeRequests()) {
+                    if (msg != null) {
+                        if (log.isDebugEnabled())
+                            log.debug("Processing WAL state message on start: " + msg);
 
-                    WalStateResult res;
+                        boolean enabled = grpDesc.walEnabled();
 
-                    if (F.eq(enabled, msg.enable()))
-                        res = new WalStateResult(msg, false);
-                    else {
-                        res = new WalStateResult(msg, true);
+                        WalStateResult res;
 
-                        grpDesc.walEnabled(!enabled);
+                        if (F.eq(enabled, msg.enable()))
+                            res = new WalStateResult(msg, false);
+                        else
+                            res = new WalStateResult(msg, true);
+
+                        initialRess.add(res);
+
+                        addResult(res);
                     }
-
-                    initialRess.add(res);
-
-                    addResult(res);
                 }
             }
         }
@@ -240,8 +243,18 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             return;
 
         synchronized (mux) {
-            for (WalStateResult res : initialRess)
+            for (WalStateResult res : initialRess) {
                 onCompletedLocally(res);
+
+                if (res.changed()) {
+                    WalStateProposeMessage propMsg = res.message();
+
+                    CacheGroupContext grpCtx = cctx.cache().cacheGroup(propMsg.groupId());
+
+                    if (grpCtx != null)
+                        grpCtx.globalWalEnabled(propMsg.enable());
+                }
+            }
 
             initialRess.clear();
         }
@@ -303,6 +316,12 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         cctx.tm().checkEmptyTransactions(() ->
             String.format("Cache WAL mode cannot be changed within lock or transaction " +
                     "[cacheNames=%s, walEnabled=%s]", cacheNames, enabled));
+
+        LT.warn(log, "Cache WAL mode may only be changed on stable topology: see https://issues.apache.org/jira/browse/IGNITE-13976");
+        LT.warn(log, "  ^-- No nodes may leave or join cluster while changing WAL mode.");
+        LT.warn(log, "  ^-- All baseline nodes should be present.");
+        LT.warn(log, "  ^-- Failure to observe these conditions may cause cache to be stuck in inconsistent state.");
+        LT.warn(log, "  ^-- You may need to destroy affected cache if that happens.");
 
         return init(cacheNames, enabled);
     }

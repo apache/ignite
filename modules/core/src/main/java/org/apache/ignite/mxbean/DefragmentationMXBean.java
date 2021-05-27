@@ -29,7 +29,9 @@ public interface DefragmentationMXBean {
      * @return {@code true} if defragmentation is scheduled, {@code false} otherwise.
      */
     @MXBeanDescription("Schedule defragmentation.")
-    public boolean schedule(@MXBeanParameter(name = "cacheNames", description = "Names of caches to run defragmentation on.") String cacheNames);
+    public boolean schedule(
+        @MXBeanParameter(name = "cacheNames", description = "Names of caches to run defragmentation on.") String cacheNames
+    );
 
     /**
      * Cancel defragmentation.

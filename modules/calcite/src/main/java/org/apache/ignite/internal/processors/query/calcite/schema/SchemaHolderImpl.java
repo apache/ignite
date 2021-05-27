@@ -197,7 +197,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     }
 
     /** */
-    private static Object affinityIdentity(CacheConfiguration<?,?> ccfg) {
+    private static Object affinityIdentity(CacheConfiguration<?, ?> ccfg) {
         if (ccfg.getCacheMode() == CacheMode.PARTITIONED)
             return new AffinityIdentity(ccfg.getAffinity(), ccfg.getBackups(), ccfg.getNodeFilter());
         return null;

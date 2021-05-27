@@ -419,13 +419,13 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
      * @param writer Writer.
      * @param meta Metadata
      */
-    private static void writeResultsetMeta(BinaryWriterExImpl writer, Collection<OdbcColumnMeta> meta) {
+    private void writeResultsetMeta(BinaryWriterExImpl writer, Collection<OdbcColumnMeta> meta) {
         assert meta != null;
 
         writer.writeInt(meta.size());
 
         for (OdbcColumnMeta columnMeta : meta)
-            columnMeta.write(writer);
+            columnMeta.write(writer, ver);
     }
 
     /** {@inheritDoc} */

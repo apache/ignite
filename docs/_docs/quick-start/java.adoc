@@ -12,7 +12,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-= Ignite for Java
+= Ignite Quick Start Guide for Java
 
 This page explains system requirements for running Ignite, how to install Ignite, start a cluster and run a simple Hello World example.
 
@@ -165,7 +165,7 @@ Run HelloWorld.java. You will see 'Hello World!' and other environment details p
 
 include::includes/exampleprojects.adoc[]
 
-== Running Ignite with Java 11 or later
+== Running Ignite with Java 11
 
 include::includes/java9.adoc[]
 

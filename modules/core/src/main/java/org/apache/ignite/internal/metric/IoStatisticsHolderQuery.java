@@ -23,7 +23,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Query Statistics holder to gather statistics related to concrete query.
- * Used in {@code org.apache.ignite.internal.stat.IoStatisticsHolderIndex} and {@code org.apache.ignite.internal.stat.IoStatisticsHolderCache}.
+ * Used in {@code org.apache.ignite.internal.stat.IoStatisticsHolderIndex}
+ * and {@code org.apache.ignite.internal.stat.IoStatisticsHolderCache}.
  * Query Statistics holder to gather statistics related to concrete query. Used in {@code
  * org.apache.ignite.internal.stat.IoStatisticsHolderIndex} and {@code org.apache.ignite.internal.stat.IoStatisticsHolderCache}.
  */

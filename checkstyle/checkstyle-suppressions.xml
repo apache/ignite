@@ -24,4 +24,6 @@
     <suppress checks="EmptyLineSeparator|MethodParamPad|SingleSpaceSeparator"
               files="BCrypt\.java|ConcurrentLinkedDeque8\.java"/>
     <suppress checks="NoWhitespaceBefore" files="ConcurrentLinkedHashMap\.java"/>
+    <suppress checks="LineLength"
+              files="ClusterTagGenerator\.java|PagesWriteSpeedBasedThrottle\.java|GridExecutorService\.java|CatboostClassificationModel\.java"/>
 </suppressions>

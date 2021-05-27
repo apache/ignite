@@ -957,7 +957,8 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
      */
     @Test
     public void testPlainBinaryObjectCopyFrom() {
-        GridBinaryTestClasses.TestObjectPlainBinary obj = new GridBinaryTestClasses.TestObjectPlainBinary(toBinary(new GridBinaryTestClasses.TestObjectAllTypes()));
+        GridBinaryTestClasses.TestObjectPlainBinary obj =
+            new GridBinaryTestClasses.TestObjectPlainBinary(toBinary(new GridBinaryTestClasses.TestObjectAllTypes()));
 
         BinaryObjectBuilderImpl builder = builder(toBinary(obj));
         assertTrue(builder.getField("plainBinary") instanceof BinaryObject);

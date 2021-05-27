@@ -46,7 +46,8 @@ import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
  *          listening to local grid events (events from remote nodes not included).
  *      </li>
  * </ul>
- * User can also wait for events using method {@link org.apache.ignite.IgniteEvents#waitForLocal(org.apache.ignite.lang.IgnitePredicate, int...)}.
+ * User can also wait for events using method
+ * {@link org.apache.ignite.IgniteEvents#waitForLocal(org.apache.ignite.lang.IgnitePredicate, int...)}.
  * <h1 class="header">Events and Performance</h1>
  * Note that by default all events in Ignite are enabled and therefore generated and stored
  * by whatever event storage SPI is configured. Ignite can and often does generate thousands events per seconds
@@ -54,8 +55,8 @@ import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
  * not needed by the application this load is unnecessary and leads to significant performance degradation.
  * <p>
  * It is <b>highly recommended</b> to enable only those events that your application logic requires
- * by using {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in Ignite configuration. Note that certain
- * events are required for Ignite's internal operations and such events will still be generated but not stored by
+ * by using {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in Ignite configuration.
+ * Note that certain events are required for Ignite's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in Ignite configuration.
  *
  * @see EventType#EVT_CONSISTENCY_VIOLATION
@@ -66,10 +67,10 @@ public class CacheConsistencyViolationEvent<K, V> extends EventAdapter {
     private static final long serialVersionUID = 0L;
 
     /** Represents original values of entries that were affected by a cache operation.*/
-    final Map<UUID /*Node*/, Map<K,V>> originalEntries;
+    final Map<UUID /*Node*/, Map<K, V>> originalEntries;
 
     /** Collection of repaired entries. */
-    final Map<K,V> repairedEntries;
+    final Map<K, V> repairedEntries;
 
     /**
      * Creates a new instance of CacheConsistencyViolationEvent.

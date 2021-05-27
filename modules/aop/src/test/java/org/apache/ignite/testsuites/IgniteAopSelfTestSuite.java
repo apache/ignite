@@ -22,6 +22,8 @@ import org.apache.ignite.gridify.GridifySetToXXXNonSpringAopSelfTest;
 import org.apache.ignite.gridify.GridifySetToXXXSpringAopSelfTest;
 import org.apache.ignite.gridify.NonSpringAopSelfTest;
 import org.apache.ignite.gridify.SpringAopSelfTest;
+import org.apache.ignite.gridify.hierarchy.GridifyHierarchyTest;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerAopTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.tools.junit.JUnitTeamcityReporter;
 import org.junit.BeforeClass;
@@ -44,6 +46,9 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
     GridifySetToXXXSpringAopSelfTest.class,
     GridifySetToXXXNonSpringAopSelfTest.class,
     ExternalNonSpringAopSelfTest.class,
+
+    OptimizedMarshallerAopTest.class,
+    GridifyHierarchyTest.class
 })
 public class IgniteAopSelfTestSuite {
     /** */

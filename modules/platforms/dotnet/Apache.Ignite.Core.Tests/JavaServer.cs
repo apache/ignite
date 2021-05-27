@@ -134,7 +134,9 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         public static IgniteClientConfiguration GetClientConfiguration()
         {
-            return new IgniteClientConfiguration("127.0.0.1:" + ClientPort);
+            var endpoint = string.Format("127.0.0.1:{0}..{1}", ClientPort, ClientPort + 5);
+
+            return new IgniteClientConfiguration(endpoint);
         }
 
         /// <summary>

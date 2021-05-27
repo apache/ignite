@@ -21,7 +21,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
+
 import io.opencensus.trace.SpanId;
 import org.apache.ignite.client.Config;
 import org.apache.ignite.internal.IgniteEx;
@@ -30,9 +33,11 @@ import org.apache.ignite.spi.tracing.TracingConfigurationParameters;
 import org.junit.Test;
 
 import static java.sql.DriverManager.getConnection;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_PAGE_ROWS;
+import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_QRY_ID;
 import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_BATCH_PROCESS;
 import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_CMD_QRY_EXECUTE;
 import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_CURSOR_CLOSE;
@@ -40,6 +45,7 @@ import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_CURSOR_
 import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_ITER_CLOSE;
 import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_ITER_OPEN;
 import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_PAGE_FETCH;
+import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_QRY;
 import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_QRY_EXECUTE;
 import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_QRY_PARSE;
 import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
@@ -48,7 +54,7 @@ import static org.apache.ignite.spi.tracing.TracingConfigurationParameters.SAMPL
 import static org.apache.ignite.spi.tracing.TracingConfigurationParameters.SAMPLING_RATE_NEVER;
 
 /**
- * Tests tracing of SQL quries execution via JDBC.
+ * Tests tracing of SQL queries execution via JDBC.
  */
 public class OpenCensusSqlJdbcTracingTest extends OpenCensusSqlNativeTracingTest {
     /** JDBC URL prefix. */
@@ -72,6 +78,10 @@ public class OpenCensusSqlJdbcTracingTest extends OpenCensusSqlNativeTracingTest
 
         SpanId rootSpan = executeAndCheckRootSpan("SELECT orgVal FROM " + orgTable, TEST_SCHEMA, false, false, true);
 
+        String qryId = getAttribute(rootSpan, SQL_QRY_ID);
+        assertTrue(Long.parseLong(qryId.substring(qryId.indexOf('_') + 1)) > 0);
+        UUID.fromString(qryId.substring(0, qryId.indexOf('_')));
+
         checkChildSpan(SQL_QRY_PARSE, rootSpan);
         checkChildSpan(SQL_CURSOR_OPEN, rootSpan);
         checkChildSpan(SQL_ITER_OPEN, rootSpan);
@@ -81,7 +91,7 @@ public class OpenCensusSqlJdbcTracingTest extends OpenCensusSqlNativeTracingTest
         checkChildSpan(SQL_QRY_EXECUTE, iterSpan);
 
         int fetchedRows = findChildSpans(SQL_PAGE_FETCH, rootSpan).stream()
-            .mapToInt(span -> getAttribute(span, SQL_PAGE_ROWS))
+            .mapToInt(span -> Integer.parseInt(getAttribute(span, SQL_PAGE_ROWS)))
             .sum();
 
         assertEquals(TEST_TABLE_POPULATION, fetchedRows);
@@ -121,6 +131,48 @@ public class OpenCensusSqlJdbcTracingTest extends OpenCensusSqlNativeTracingTest
     }
 
     /** {@inheritDoc} */
+    @Override public void testSelectQueryUserThreadSpanNotAffected() throws Exception {
+        String prsnTable = createTableAndPopulate(Person.class, PARTITIONED, 1);
+        String orgTable = createTableAndPopulate(Organization.class, PARTITIONED, 1);
+
+        String url = JDBC_URL_PREFIX + Config.SERVER + '/' + TEST_SCHEMA;
+
+        try (
+            Connection prsntConn = getConnection(url);
+            Connection orgConn = getConnection(url);
+
+            PreparedStatement prsntStmt = prsntConn.prepareStatement("SELECT * FROM " + prsnTable);
+            PreparedStatement orgStmt = orgConn.prepareStatement("SELECT * FROM " + orgTable)
+        ) {
+            prsntStmt.executeQuery();
+            orgStmt.executeQuery();
+
+            try (
+                ResultSet prsnResultSet = prsntStmt.getResultSet();
+                ResultSet orgResultSet = orgStmt.getResultSet()
+            ) {
+                while (prsnResultSet.next() && orgResultSet.next()) {
+                    // No-op.
+                }
+            }
+        }
+        catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        handler().flush();
+
+        checkDroppedSpans();
+
+        List<SpanId> rootSpans = findRootSpans(SQL_QRY);
+
+        assertEquals(2, rootSpans.size());
+
+        for (SpanId rootSpan : rootSpans)
+            checkBasicSelectQuerySpanTree(rootSpan, TEST_TABLE_POPULATION);
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings("StatementWithEmptyBody")
     @Override protected void executeQuery(
         String sql,
@@ -132,9 +184,11 @@ public class OpenCensusSqlJdbcTracingTest extends OpenCensusSqlNativeTracingTest
         String url = JDBC_URL_PREFIX + Config.SERVER + '/' + schema +
             "?skipReducerOnUpdate=" + skipReduceOnUpdate + "&distributedJoins=" + distributedJoins;
 
-        try (Connection conn = getConnection(url)) {
-            PreparedStatement stmt = conn.prepareStatement(sql);
+        try (
+            Connection conn = getConnection(url);
 
+            PreparedStatement stmt = conn.prepareStatement(sql)
+        ) {
             stmt.setFetchSize(PAGE_SIZE);
 
             if (isQry == null)
