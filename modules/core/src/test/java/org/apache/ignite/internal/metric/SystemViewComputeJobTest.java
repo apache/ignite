@@ -69,7 +69,7 @@ public class SystemViewComputeJobTest extends GridCommonAbstractTest {
     public static final long TIMEOUT = 10_000L;
 
     /** */
-    private static CyclicBarrier barrier;
+    private static volatile CyclicBarrier barrier;
 
     /** */
     private static IgniteEx server;
