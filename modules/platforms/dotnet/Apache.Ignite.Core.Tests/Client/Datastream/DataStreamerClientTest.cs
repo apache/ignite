@@ -18,15 +18,18 @@
 namespace Apache.Ignite.Core.Tests.Client.Datastream
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Datastream;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.Impl.Client.Datastream;
     using NUnit.Framework;
 
@@ -478,7 +481,19 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         [Test]
         public void TestStreamReceiver()
         {
-            Assert.Fail("TODO");
+            var cache = GetClientCache<int>();
+
+            var options = new DataStreamerClientOptions<int, int>
+            {
+                Receiver = new StreamReceiverAddOne()
+            };
+            
+            using (var streamer = Client.GetDataStreamer(cache.Name, options))
+            {
+                streamer.Add(1, 1);
+            }
+            
+            Assert.AreEqual(2, cache[1]);
         }
 
         [Test]
@@ -538,6 +553,15 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 Logger = new TestUtils.TestContextLogger()
             };
         }
+        
+        private class StreamReceiverAddOne : IStreamReceiver<int, int>
+        {
+            public void Receive(ICache<int, int> cache, ICollection<ICacheEntry<int, int>> entries)
+            {
+                cache.PutAll(entries.ToDictionary(x => x.Key, x => x.Value + 1));
+            }
+        }
+
 
         private class BlockingCacheStore : CacheStoreAdapter<int, int>, IFactory<ICacheStore>
         {
