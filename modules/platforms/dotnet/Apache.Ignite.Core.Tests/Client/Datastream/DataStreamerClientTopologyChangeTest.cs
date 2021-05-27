@@ -156,9 +156,14 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 streamer.Flush();
 
                 var streamerInternal = (DataStreamerClient<int, int>) streamer;
-                Assert.Less(streamerInternal.ArraysAllocated - streamerInternal.ArraysPooled, nodes.Count,
-                    string.Format("Array pool leak. Allocated: {0}, Pooled: {1}, Nodes: {2}", 
-                        streamerInternal.ArraysAllocated, streamerInternal.ArraysPooled, nodes.Count));
+                
+                var poolStats = string.Format("Allocated={0}, Pooled={1}, Nodes={2}", 
+                    streamerInternal.ArraysAllocated, streamerInternal.ArraysPooled, nodes.Count);
+                
+                Console.WriteLine("Array pool stats: " + poolStats);
+                
+                Assert.LessOrEqual(streamerInternal.ArraysAllocated - streamerInternal.ArraysPooled, nodes.Count,
+                    poolStats);
             }
 
             TestUtils.WaitForTrueCondition(() => id == cache.GetSize());
