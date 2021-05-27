@@ -26,8 +26,10 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Datastream;
+    using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Datastream;
 
     /// <summary>
     /// Thin client data streamer.
@@ -471,10 +473,15 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             w.WriteByte((byte) _flags);
             w.WriteInt(ServerBufferSizeAuto); // Server per-node buffer size.
             w.WriteInt(ServerBufferSizeAuto); // Server per-thread buffer size.
-            w.WriteObject(_options.Receiver);
-
+            
             if (_options.Receiver != null)
             {
+                var rcvHolder = new StreamReceiverHolder(_options.Receiver,
+                    (rec, grid, cache, stream, keepBinary) =>
+                        StreamReceiverHolder.InvokeReceiver((IStreamReceiver<TK, TV>) rec, grid, cache, stream,
+                            keepBinary));
+
+                w.WriteObjectDetached(rcvHolder);
                 w.WriteByte(ClientPlatformId.Dotnet);
             }
 

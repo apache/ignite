@@ -508,6 +508,12 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             Assert.Fail("TODO");
         }
 
+        [Test]
+        public void TestStreamReceiverDeserializationException()
+        {
+            Assert.Fail("TODO");
+        }
+
 #if NETCOREAPP
 
         [Test]
