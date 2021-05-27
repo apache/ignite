@@ -149,7 +149,8 @@ public class CommandHandler {
 
         // Adding logging to file.
         try {
-            String absPathPattern = new File(JavaLoggerFileHandler.logDirectory(U.defaultWorkDirectory()), "control-utility-%g.log").getAbsolutePath();
+            String absPathPattern =
+                new File(JavaLoggerFileHandler.logDirectory(U.defaultWorkDirectory()), "control-utility-%g.log").getAbsolutePath();
 
             FileHandler fileHandler = new FileHandler(absPathPattern, 5 * 1024 * 1024, 5);
 

@@ -30,11 +30,13 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * TTL manager eviction self test.
  */
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-10420")
 public class GridCacheTtlManagerEvictionSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int ENTRIES_TO_PUT = 10_100;

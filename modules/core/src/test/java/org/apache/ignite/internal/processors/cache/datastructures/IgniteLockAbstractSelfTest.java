@@ -752,7 +752,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
 
                 lock.getOrCreateCondition("c1").signal();
 
-                lock.getOrCreateCondition("c2").await(10,MILLISECONDS);
+                lock.getOrCreateCondition("c2").await(10, MILLISECONDS);
             }
             finally {
                 lock.unlock();

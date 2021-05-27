@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Binary
     /// same for all time zones. .NET, in contrast, stores dates as a difference
     /// between current time and some predefined date relative to the current time
     /// zone. It means that this difference will be different as you change time zones.
-    /// To overcome this discrepancy Ignite always converts .Net date to UTC form
+    /// To overcome this discrepancy Ignite always converts .NET date to UTC form
     /// before serializing and allows user to decide whether to deserialize them
     /// in UTC or local form using <c>ReadTimestamp(..., true/false)</c> methods in
     /// <see cref="IBinaryReader"/> and <see cref="IBinaryRawReader"/>.

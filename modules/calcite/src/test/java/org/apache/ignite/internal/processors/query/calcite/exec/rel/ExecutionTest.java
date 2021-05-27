@@ -196,7 +196,8 @@ public class ExecutionTest extends AbstractExecutionTest {
             new Object[] {2, "SQL"}
         ));
 
-        RelDataType outType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class, int.class, String.class);
+        RelDataType outType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class,
+            int.class, String.class);
         RelDataType leftType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class);
         RelDataType rightType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class);
 
@@ -253,7 +254,8 @@ public class ExecutionTest extends AbstractExecutionTest {
             new Object[] {3, "QA"}
         ));
 
-        RelDataType outType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, int.class, String.class, Integer.class);
+        RelDataType outType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, int.class,
+            String.class, Integer.class);
         RelDataType leftType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class);
         RelDataType rightType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class);
 
@@ -310,7 +312,8 @@ public class ExecutionTest extends AbstractExecutionTest {
             new Object[] {3, "QA"}
         ));
 
-        RelDataType outType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class, int.class, String.class);
+        RelDataType outType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class,
+            int.class, String.class);
         RelDataType leftType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class, Integer.class);
         RelDataType rightType = TypeUtils.createRowType(ctx.getTypeFactory(), int.class, String.class);
 
@@ -519,7 +522,8 @@ public class ExecutionTest extends AbstractExecutionTest {
 
         int inBufSize = U.field(AbstractNode.class, "IN_BUFFER_SIZE");
 
-        int[] sizes = {1, max(inBufSize / 3, 1), max(inBufSize / 2, 1), max(inBufSize - 1, 1), inBufSize, inBufSize + 1, 2 * inBufSize - 1, 2 * inBufSize, 2 * inBufSize + 1};
+        int[] sizes = {1, max(inBufSize / 3, 1), max(inBufSize / 2, 1), max(inBufSize - 1, 1), inBufSize,
+            inBufSize + 1, 2 * inBufSize - 1, 2 * inBufSize, 2 * inBufSize + 1};
 
         for (int leftSize : sizes) {
             for (int rightSize : sizes) {

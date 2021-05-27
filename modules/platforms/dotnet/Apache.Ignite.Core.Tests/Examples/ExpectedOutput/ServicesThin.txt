@@ -1,0 +1,3 @@
+>>> Services example started.
+
+>>> Map service size: 10

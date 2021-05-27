@@ -254,7 +254,7 @@ public abstract class AbstractReducer implements Reducer {
 
             initLastPages(nodeId, res);
 
-            ConcurrentMap<ReduceSourceKey,Integer> lp = lastPages;
+            ConcurrentMap<ReduceSourceKey, Integer> lp = lastPages;
 
             if (lp == null)
                 return; // It was not initialized --> wait for last page flag.
@@ -288,7 +288,7 @@ public abstract class AbstractReducer implements Reducer {
         if (allRows < 0 || res.page() != 0)
             return;
 
-        ConcurrentMap<ReduceSourceKey,Integer> lp = lastPages;
+        ConcurrentMap<ReduceSourceKey, Integer> lp = lastPages;
 
         if (lp == null && !LAST_PAGES_UPDATER.compareAndSet(this, null, lp = new ConcurrentHashMap<>()))
             lp = lastPages;

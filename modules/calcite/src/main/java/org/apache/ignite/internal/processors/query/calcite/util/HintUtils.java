@@ -20,7 +20,10 @@ package org.apache.ignite.internal.processors.query.calcite.util;
 import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.apache.calcite.rel.hint.Hintable;
+
+import com.google.common.collect.ImmutableList;
+import org.apache.calcite.rel.hint.RelHint;
+import org.apache.ignite.internal.util.typedef.F;
 
 /** */
 public class HintUtils {
@@ -30,11 +33,11 @@ public class HintUtils {
     }
 
     /** */
-    public static Set<String> disabledRules(Hintable rel) {
-        if (rel.getHints().isEmpty())
+    public static Set<String> disabledRules(ImmutableList<RelHint> hints) {
+        if (F.isEmpty(hints))
             return Collections.emptySet();
 
-        return rel.getHints().stream()
+        return hints.stream()
             .filter(h -> "DISABLE_RULE".equals(h.hintName))
             .flatMap(h -> h.listOptions.stream())
             .collect(Collectors.toSet());

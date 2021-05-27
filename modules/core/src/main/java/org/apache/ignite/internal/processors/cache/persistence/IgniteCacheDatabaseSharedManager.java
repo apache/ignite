@@ -101,8 +101,7 @@ import static java.util.Objects.nonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REUSE_MEMORY_ON_DEACTIVATE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_ARCHIVE_MAX_SIZE;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_HISTORY_SIZE;
+import static org.apache.ignite.configuration.DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE;
 import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LOG_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.METASTORE_DATA_REGION_NAME;
 import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.VOLATILE_DATA_REGION_NAME;
@@ -446,6 +445,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         DataRegionMetricsImpl memMetrics = new DataRegionMetricsImpl(
             dataRegionCfg,
             cctx.kernalContext().metric(),
+            cctx.kernalContext().performanceStatistics(),
             dataRegionMetricsProvider(dataRegionCfg));
 
         DataRegion region = initMemory(dataStorageCfg, dataRegionCfg, memMetrics, trackable, pmPageMgr);
@@ -618,28 +618,37 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * Check wal archive size configuration for correctness.
+     * Check WAL archive size configuration for correctness.
      *
      * @param memCfg durable memory configuration for an Apache Ignite node.
+     * @throws IgniteCheckedException if maximum WAL archive size is configured incorrectly
      */
     private void checkWalArchiveSizeConfiguration(DataStorageConfiguration memCfg) throws IgniteCheckedException {
-        if (memCfg.getWalHistorySize() == DFLT_WAL_HISTORY_SIZE || memCfg.getWalHistorySize() == Integer.MAX_VALUE)
-            LT.warn(log, "DataRegionConfiguration.maxWalArchiveSize instead DataRegionConfiguration.walHistorySize " +
-            "would be used for removing old archive wal files");
-        else if (memCfg.getMaxWalArchiveSize() == DFLT_WAL_ARCHIVE_MAX_SIZE)
-            LT.warn(log, "walHistorySize was deprecated and does not have any effect anymore. " +
-                "maxWalArchiveSize should be used instead");
-        else
-            throw new IgniteCheckedException("Should be used only one of wal history size or max wal archive size." +
-                "(use DataRegionConfiguration.maxWalArchiveSize because DataRegionConfiguration.walHistorySize was deprecated)"
+        long maxWalArchiveSize = memCfg.getMaxWalArchiveSize();
+
+        if (!CU.isPersistenceEnabled(memCfg)) {
+            if (maxWalArchiveSize != DataStorageConfiguration.DFLT_WAL_ARCHIVE_MAX_SIZE) {
+                LT.info(log, "Maximum WAL archive size has been configured but this node has been launched in " +
+                    "non-persistent mode, so this parameter will be ignored");
+            }
+            return;
+        }
+
+        if (memCfg.isWalHistorySizeParameterUsed())
+            LT.warn(log,
+                "DataRegionConfiguration.walHistorySize property is deprecated and is no longer supported. " +
+                    "It will be ignored and DataRegionConfiguration.maxWalArchiveSize property will be used " +
+                    "instead to control removal of archived WAL files"
             );
 
-        if (memCfg.getMaxWalArchiveSize() != DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE
-            && memCfg.getMaxWalArchiveSize() < memCfg.getWalSegmentSize())
-            throw new IgniteCheckedException(
-                "DataRegionConfiguration.maxWalArchiveSize should be greater than DataRegionConfiguration.walSegmentSize " +
-                    "or must be equal to " + DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE + "."
-            );
+        if (maxWalArchiveSize != UNLIMITED_WAL_ARCHIVE && maxWalArchiveSize < memCfg.getWalSegmentSize())
+            throw new IgniteCheckedException(String.format(
+                "DataRegionConfiguration.maxWalArchiveSize must be no less than " +
+                    "DataRegionConfiguration.walSegmentSize or equal to %d (unlimited size), current settings:" + System.lineSeparator() +
+                    "DataRegionConfiguration.maxWalArchiveSize: %d bytes" + System.lineSeparator() +
+                    "DataRegionConfiguration.walSegmentSize: %d bytes",
+                UNLIMITED_WAL_ARCHIVE, memCfg.getMaxWalArchiveSize(), memCfg.getWalSegmentSize()
+            ));
     }
 
     /**
@@ -1006,7 +1015,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      * @return Last checkpoint mark WAL pointer.
      */
-    public WALPointer lastCheckpointMarkWalPointer() {
+    @Nullable public WALPointer lastCheckpointMarkWalPointer() {
         return null;
     }
 
@@ -1077,12 +1086,14 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * Performs indexes rebuild for all cache contexts from {@code contexts}.
+     * Initiate an asynchronous forced index rebuild for caches.
      *
-     * @param contexts List of cache contexts.
+     * @param contexts Cache contexts.
+     * @return Cache contexts for which index rebuilding is not initiated by
+     *      this call because they are already in the process of rebuilding.
      */
-    public void forceRebuildIndexes(Collection<GridCacheContext> contexts) {
-        // No-op.
+    public Collection<GridCacheContext> forceRebuildIndexes(Collection<GridCacheContext> contexts) {
+        return Collections.emptyList();
     }
 
     /**
@@ -1370,7 +1381,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param memMetrics Memory metrics.
      * @return Wrapped memory provider.
      */
-    protected DirectMemoryProvider wrapMetricsMemoryProvider(
+    private DirectMemoryProvider wrapMetricsMemoryProvider(
         final DirectMemoryProvider memoryProvider0,
         final DataRegionMetricsImpl memMetrics
     ) {

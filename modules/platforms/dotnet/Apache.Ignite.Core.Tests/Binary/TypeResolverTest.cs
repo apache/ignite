@@ -178,7 +178,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestReferencedAssemblyLoading()
         {
-            const string dllName = "Apache.Ignite.Core.Tests.TestDll";
+            const string dllName = "Apache.Ignite.Core.Tests.TestDll,";
 
             const string typeName = "Apache.Ignite.Core.Tests.TestDll.TestClass";
 

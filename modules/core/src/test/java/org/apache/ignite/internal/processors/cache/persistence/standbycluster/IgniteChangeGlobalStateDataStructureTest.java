@@ -27,6 +27,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -34,6 +35,7 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 /**
  *
  */
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-9081")
 public class IgniteChangeGlobalStateDataStructureTest extends IgniteChangeGlobalStateAbstractTest {
     /**
      * @throws Exception If failed.

@@ -83,7 +83,7 @@ public class JavaThinClient {
         // Start a node
         Ignite ignite = Ignition.start(cfg);
         // end::clusterConfiguration[]
-        
+
         ignite.close();
     }
 
@@ -318,7 +318,7 @@ public class JavaThinClient {
         // end::results-to-map[]
     }
 
-    
+
     void veiwsystemview() {
         //tag::system-views[]
         ClientConfiguration cfg = new ClientConfiguration().setAddresses("127.0.0.1:10800");
@@ -360,6 +360,26 @@ public class JavaThinClient {
         //end::partition-awareness[]
     }
 
+    void clientAddressFinder() throws Exception {
+        //tag::client-address-finder[]
+        ClientAddressFinder finder = () -> {
+            String[] dynamicServerAddresses = fetchServerAddresses();
+
+            return dynamicServerAddresses;
+        };
+
+        ClientConfiguration cfg = new ClientConfiguration()
+            .setAddressFinder(finder)
+            .setPartitionAwarenessEnabled(true);
+
+        try (IgniteClient client = Ignition.startClient(cfg)) {
+            ClientCache<Integer, String> cache = client.cache("myCache");
+            // Put, get, or remove data from the cache...
+        } catch (ClientException e) {
+            System.err.println(e.getMessage());
+        }
+        //end::client-address-finder[]
+    }
 
     @Test
     void cientCluster() throws Exception {
@@ -416,6 +436,20 @@ public class JavaThinClient {
                 "MyService", MyService.class).myServiceMethod();
         }
         //end::client-services[]
+    }
+
+    void asyncApi() throws Exception {
+        ClientConfiguration clientCfg = new ClientConfiguration().setAddresses("127.0.0.1:10800");
+        //tag::async-api[]
+        IgniteClient client = Ignition.startClient(clientCfg);
+        ClientCache<Integer, String> cache = client.getOrCreateCache("cache");
+
+        IgniteClientFuture<Void> putFut = cache.putAsync(1, "hello");
+        putFut.get(); // Blocking wait.
+
+        IgniteClientFuture<String> getFut = cache.getAsync(1);
+        getFut.thenAccept(val -> System.out.println(val)); // Non-blocking continuation.
+        //end::async-api[]
     }
 
     private static class MyTask {

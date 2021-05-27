@@ -18,10 +18,9 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.List;
-
+import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.query.GridIndex;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
@@ -266,7 +265,7 @@ public abstract class GridH2IndexBase extends H2IndexCostedBase implements GridI
     @Override public GridCursor<H2Row> find(
         H2Row lower,
         H2Row upper,
-        BPlusTree.TreeRowClosure<H2Row, H2Row> filterClosure
+        IndexQueryContext qctx
     ) {
         throw new UnsupportedOperationException();
     }

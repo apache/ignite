@@ -579,12 +579,13 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                 qry.setRemoteFilterFactory(noOpFilterFactory());
 
             if (qry instanceof ContinuousQuery) {
-                ((ContinuousQuery<QueryTestKey, QueryTestValue>)qry).setLocalListener(new CacheEntryUpdatedListener<QueryTestKey, QueryTestValue>() {
-                    @Override public void onUpdated(Iterable<CacheEntryEvent<? extends QueryTestKey,
-                        ? extends QueryTestValue>> events) throws CacheEntryListenerException {
-                        for (CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue> e : events)
-                            evts.add(e);
-                    }
+                ((ContinuousQuery<QueryTestKey, QueryTestValue>)qry).setLocalListener(
+                    new CacheEntryUpdatedListener<QueryTestKey, QueryTestValue>() {
+                        @Override public void onUpdated(Iterable<CacheEntryEvent<? extends QueryTestKey,
+                            ? extends QueryTestValue>> events) throws CacheEntryListenerException {
+                            for (CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue> e : events)
+                                evts.add(e);
+                        }
                 });
             }
             else if (qry instanceof ContinuousQueryWithTransformer)
@@ -717,12 +718,13 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                 qry.setRemoteFilterFactory(noOpFilterFactory());
 
             if (qry instanceof ContinuousQuery) {
-                ((ContinuousQuery<QueryTestKey, QueryTestValue>)qry).setLocalListener(new CacheEntryUpdatedListener<QueryTestKey, QueryTestValue>() {
-                    @Override public void onUpdated(Iterable<CacheEntryEvent<? extends QueryTestKey,
-                        ? extends QueryTestValue>> events) throws CacheEntryListenerException {
-                        for (CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue> e : events)
-                            evts.add(e);
-                    }
+                ((ContinuousQuery<QueryTestKey, QueryTestValue>)qry).setLocalListener(
+                    new CacheEntryUpdatedListener<QueryTestKey, QueryTestValue>() {
+                        @Override public void onUpdated(Iterable<CacheEntryEvent<? extends QueryTestKey,
+                            ? extends QueryTestValue>> events) throws CacheEntryListenerException {
+                            for (CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue> e : events)
+                                evts.add(e);
+                        }
                 });
             }
             else if (qry instanceof ContinuousQueryWithTransformer)
@@ -1307,7 +1309,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                         tx.commit();
 
                     // We don't update part counter if nothing was removed when MVCC enabled.
-                    updatePartitionCounter(cache, key, partCntr, expEvtCntrs,mvccEnabled && proc.getOldVal() == null);
+                    updatePartitionCounter(cache, key, partCntr, expEvtCntrs, mvccEnabled && proc.getOldVal() == null);
 
                     waitAndCheckEvent(evtsQueues, partCntr, expEvtCntrs, affinity(cache), key, oldVal, oldVal);
 

@@ -52,6 +52,7 @@
   <ItemGroup>
     <Compile Include="Binary\BinaryBasicNameMapper.cs" />
     <Compile Include="Binary\TimestampAttribute.cs" />
+    <Compile Include="Binary\ITimestampConverter.cs" />
     <Compile Include="Cache\Affinity\IAffinityBackupFilter.cs" />
     <Compile Include="Cache\Affinity\Rendezvous\ClusterNodeAttributeAffinityBackupFilter.cs" />
     <Compile Include="Cache\Configuration\CacheKeyConfiguration.cs" />
@@ -80,6 +81,7 @@
     <Compile Include="Cluster\IBaselineNode.cs" />
     <Compile Include="Common\IgniteIllegalStateException.cs" />
     <Compile Include="Common\IgniteProductVersion.cs" />
+    <Compile Include="Configuration\AsyncContinuationExecutor.cs" />
     <Compile Include="Configuration\CheckpointWriteOrder.cs" />
     <Compile Include="Configuration\DataPageEvictionMode.cs" />
     <Compile Include="Configuration\DiskPageCompression.cs" />
@@ -113,6 +115,8 @@
     <Compile Include="Impl\Cache\Query\IQueryBaseInternal.cs" />
     <Compile Include="Impl\Cache\Query\PlatformCacheQueryCursor.cs" />
     <Compile Include="Impl\Cache\Query\QueryCursorField.cs" />
+    <Compile Include="Impl\Client\Binary\BinaryConfigurationClientInternal.cs" />
+    <Compile Include="Impl\Client\Binary\BinaryNameMapperMode.cs" />
     <Compile Include="Impl\Client\Cache\Query\ClientContinuousQueryHandle.cs" />
     <Compile Include="Impl\Client\ClientBitmaskFeature.cs" />
     <Compile Include="Impl\Client\ClientConnection.cs" />
@@ -148,6 +152,7 @@
     <Compile Include="Impl\Transactions\TransactionRollbackOnlyProxy.cs" />
     <Compile Include="Impl\Transactions\TransactionCollectionImpl.cs" />
     <Compile Include="Impl\Unmanaged\Jni\Jvm.CrossAppDomain.cs" />
+    <Compile Include="Impl\Unmanaged\NativeLibraryUtils.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedThread.cs" />
     <Compile Include="Log\ConsoleLogger.cs" />
     <Compile Include="Log\IDateTimeProvider.cs" />

@@ -23,10 +23,16 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest.authenticate;
+import static org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcessor.SECURITY_DISABLED_ERROR_MSG;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
 
 /**
  * Test for disabled {@link IgniteAuthenticationProcessor}.
@@ -87,7 +93,7 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
      */
     @Test
     public void testServerNodeJoinDisabled() throws Exception {
-        checkNodeJoinDisabled(false);
+        checkNodeJoinFailed(false, false);
     }
 
     /**
@@ -95,7 +101,7 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
      */
     @Test
     public void testClientNodeJoinDisabled() throws Exception {
-        checkNodeJoinDisabled(true);
+        checkNodeJoinFailed(true, false);
     }
 
     /**
@@ -103,7 +109,7 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
      */
     @Test
     public void testServerNodeJoinEnabled() throws Exception {
-        checkNodeJoinEnabled(false);
+        checkNodeJoinFailed(false, true);
     }
 
     /**
@@ -111,43 +117,28 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
      */
     @Test
     public void testClientNodeJoinEnabled() throws Exception {
-        checkNodeJoinEnabled(true);
+        checkNodeJoinFailed(true, true);
     }
 
     /**
+     * Checks that a new node cannot join a cluster with a different authentication enable state.
+     *
      * @param client Is joining node client.
+     * @param authEnabled Whether authentication is enabled on joining node.
      * @throws Exception If failed.
      */
-    private void checkNodeJoinDisabled(boolean client) throws Exception {
-        startGrid(configuration(0, true, false));
+    private void checkNodeJoinFailed(boolean client, boolean authEnabled) throws Exception {
+        startGrid(configuration(0, authEnabled, false));
 
-        startGrid(configuration(1, false, client));
-
-        grid(0).cluster().active(true);
-
-        AuthorizationContext actx = grid(1).context().authentication().authenticate("ignite", "ignite");
-
-        assertNotNull(actx);
-
-        assertEquals("ignite", actx.userName());
-    }
-
-    /**
-     * @param client Is joining node client.
-     * @throws Exception If failed.
-     */
-    private void checkNodeJoinEnabled(boolean client) throws Exception {
-        startGrid(configuration(0, false, false));
-
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    startGrid(configuration(1, true, client));
+                    startGrid(configuration(1, !authEnabled, client));
 
                     return null;
                 }
             },
-            IgniteCheckedException.class,
-            "User authentication is disabled on cluster");
+            IgniteSpiException.class,
+            "Local node's grid security processor class is not equal to remote node's grid security processor class");
     }
 
     /**
@@ -161,39 +152,35 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    grid(0).context().authentication().addUser("test", "test");
+                    grid(0).context().security().createUser("test", "test".toCharArray());
 
                     return null;
                 }
-            }, IgniteException.class,
-            "Can not perform the operation because the authentication is not enabled for the cluster");
+            }, IgniteException.class, SECURITY_DISABLED_ERROR_MSG);
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    grid(0).context().authentication().removeUser("test");
+                    grid(0).context().security().dropUser("test");
 
                     return null;
                 }
-            }, IgniteException.class,
-            "Can not perform the operation because the authentication is not enabled for the cluster");
+            }, IgniteException.class, SECURITY_DISABLED_ERROR_MSG);
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    grid(0).context().authentication().updateUser("test", "test");
+                    grid(0).context().security().alterUser("test", "test".toCharArray());
 
                     return null;
                 }
-            }, IgniteException.class,
-            "Can not perform the operation because the authentication is not enabled for the cluster");
+            }, IgniteException.class, SECURITY_DISABLED_ERROR_MSG);
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    grid(0).context().authentication().authenticate("test", "test");
+                    authenticate(grid(0), "test", "test");
 
                     return null;
                 }
-            }, IgniteException.class,
-            "Can not perform the operation because the authentication is not enabled for the cluster");
+            }, IgniteException.class, SECURITY_DISABLED_ERROR_MSG);
     }
 
     /**
@@ -210,5 +197,18 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
             },
             IgniteCheckedException.class,
             "Authentication can be enabled only for cluster with enabled persistence");
+    }
+
+    /** Tests that authentication and security plugin can't be configured at the same time. */
+    @Test
+    public void testBothAuthenticationAndSecurityPluginConfiguration() {
+        GridTestUtils.assertThrowsAnyCause(log, () -> {
+                startGrid(configuration(0, true, false)
+                    .setPluginProviders(new TestSecurityPluginProvider("login", "", ALLOW_ALL, false)));
+
+                return null;
+            },
+            IgniteCheckedException.class,
+            "Invalid security configuration: both authentication is enabled and external security plugin is provided.");
     }
 }

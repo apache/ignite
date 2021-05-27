@@ -34,7 +34,6 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -58,6 +57,12 @@ public abstract class AbstractClientCompatibilityTest extends IgniteCompatibilit
     /** Version 2.9.0. */
     protected static final IgniteProductVersion VER_2_9_0 = IgniteProductVersion.fromString("2.9.0");
 
+    /** Version 2.10.0. */
+    protected static final IgniteProductVersion VER_2_10_0 = IgniteProductVersion.fromString("2.10.0");
+
+    /** Version 2.11.0. */
+    protected static final IgniteProductVersion VER_2_11_0 = IgniteProductVersion.fromString("2.11.0");
+
     /** Ignite versions to test. Note: Only released versions or current version should be included to this list. */
     protected static final String[] TESTED_IGNITE_VERSIONS = new String[] {
         "2.4.0",
@@ -69,6 +74,8 @@ public abstract class AbstractClientCompatibilityTest extends IgniteCompatibilit
         "2.8.0",
         "2.8.1",
         "2.9.0",
+        "2.9.1",
+        "2.10.0",
         IgniteVersionUtils.VER_STR
     };
 
@@ -149,31 +156,19 @@ public abstract class AbstractClientCompatibilityTest extends IgniteCompatibilit
      */
     @Test
     public void testCurrentClientToOldServer() throws Exception {
-        IgniteProcessProxy proxy = null;
-
         try {
             if (verFormatted.equals(IgniteVersionUtils.VER_STR)) {
                 Ignite ignite = startGrid(0);
 
                 initNode(ignite);
             }
-            else {
-                Ignite ignite = startGrid(1, verFormatted, this::processRemoteConfiguration, this::initNode);
-
-                proxy = IgniteProcessProxy.ignite(ignite.name());
-            }
+            else
+                startGrid(1, verFormatted, this::processRemoteConfiguration, this::initNode);
 
             testClient(verFormatted);
         }
         finally {
             stopAllGrids();
-
-            if (proxy != null) {
-                Process proc = proxy.getProcess().getProcess();
-
-                // We should wait until process exits, or it can affect next tests.
-                assertTrue(GridTestUtils.waitForCondition(() -> !proc.isAlive(), 5_000L));
-            }
         }
     }
 

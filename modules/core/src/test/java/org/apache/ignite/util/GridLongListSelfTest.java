@@ -125,22 +125,22 @@ public class GridLongListSelfTest {
      */
     @Test
     public void testRemove() {
-        GridLongList list = asList(1,2,3,4,5,6);
+        GridLongList list = asList(1, 2, 3, 4, 5, 6);
 
         assertEquals(2, list.removeValue(0, 3));
-        assertEquals(asList(1,2,4,5,6), list);
+        assertEquals(asList(1, 2, 4, 5, 6), list);
 
         assertEquals(-1, list.removeValue(1, 1));
         assertEquals(-1, list.removeValue(0, 3));
 
         assertEquals(4, list.removeValue(0, 6));
-        assertEquals(asList(1,2,4,5), list);
+        assertEquals(asList(1, 2, 4, 5), list);
 
         assertEquals(2, list.removeIndex(1));
-        assertEquals(asList(1,4,5), list);
+        assertEquals(asList(1, 4, 5), list);
 
         assertEquals(1, list.removeIndex(0));
-        assertEquals(asList(4,5), list);
+        assertEquals(asList(4, 5), list);
     }
 
     /**

@@ -164,6 +164,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.GridKernalState.DISCONNECTED;
+import static org.apache.ignite.internal.IgnitionEx.gridx;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValueHierarchy;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
@@ -732,7 +733,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     private void cleanUpTestEnviroment() throws Exception {
         long dur = System.currentTimeMillis() - ts;
 
-        U.quietAndInfo(log(),">>> Stopping test: " + testDescription() + " in " + dur + " ms <<<");
+        U.quietAndInfo(log(), ">>> Stopping test: " + testDescription() + " in " + dur + " ms <<<");
         printJvmMemoryStatistic();
 
         try {
@@ -827,7 +828,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @return First started grid.
      * @throws Exception If failed.
      */
-    protected final IgniteEx startGrids(int cnt) throws Exception {
+    protected IgniteEx startGrids(int cnt) throws Exception {
         assert cnt > 0;
 
         IgniteEx ignite = null;
@@ -1038,6 +1039,22 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * Starts new grid with given index.
      *
      * @param idx Index of the grid to start.
+     * @param cfgC Configuration mutator. Can be used to avoid oversimplification of {@link #getConfiguration()}.
+     * @return Started grid.
+     * @throws Exception If anything failed.
+     */
+    protected IgniteEx startGrid(int idx, Consumer<IgniteConfiguration> cfgC) throws Exception {
+        return startGrid(getTestIgniteInstanceName(idx), cfg -> {
+            cfgC.accept(cfg);
+
+            return cfg;
+        });
+    }
+
+    /**
+     * Starts new grid with given index.
+     *
+     * @param idx Index of the grid to start.
      * @param cfgOp Configuration mutator. Can be used to avoid overcomplification of {@link #getConfiguration()}.
      * @return Started grid.
      * @throws Exception If anything failed.
@@ -1183,7 +1200,11 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @return Started grid.
      * @throws Exception If anything failed.
      */
-    protected Ignite startGrid(String igniteInstanceName, UnaryOperator<IgniteConfiguration> cfgOp, GridSpringResourceContext ctx) throws Exception {
+    protected Ignite startGrid(
+        String igniteInstanceName,
+        UnaryOperator<IgniteConfiguration> cfgOp,
+        GridSpringResourceContext ctx
+    ) throws Exception {
         IgniteConfiguration cfg = optimize(getConfiguration(igniteInstanceName));
 
         if (cfgOp != null)
@@ -1284,7 +1305,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      */
     protected Ignite startRemoteGrid(String igniteInstanceName, IgniteConfiguration cfg, GridSpringResourceContext ctx)
         throws Exception {
-        return startRemoteGrid(igniteInstanceName, cfg, ctx,true);
+        return startRemoteGrid(igniteInstanceName, cfg, ctx, true);
     }
 
     /**
@@ -1455,13 +1476,33 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /**
+     * Stop grid waiting for it to come up
      * @param igniteInstanceName Ignite instance name.
      * @param cancel Cancel flag.
      * @param awaitTop Await topology change flag.
      */
     protected void stopGrid(@Nullable String igniteInstanceName, boolean cancel, boolean awaitTop) {
+        stopGrid0(igniteInstanceName, cancel, awaitTop, false);
+    }
+
+    /**
+     * Stop grid without waiting for it to come up
+     * @param igniteInstanceName Ignite instance name.
+     * @param cancel Cancel flag.
+     * @param awaitTop Await topology change flag.
+     */
+    protected void stopGridx(@Nullable String igniteInstanceName, boolean cancel, boolean awaitTop) {
+        stopGrid0(igniteInstanceName, cancel, awaitTop, true);
+    }
+
+    /**
+     * @param igniteInstanceName Ignite instance name.
+     * @param cancel Cancel flag.
+     * @param awaitTop Await topology change flag.
+     */
+    private void stopGrid0(@Nullable String igniteInstanceName, boolean cancel, boolean awaitTop, boolean stopNotStarted) {
         try {
-            IgniteEx ignite = grid(igniteInstanceName);
+            IgniteEx ignite = stopNotStarted ? gridx(igniteInstanceName) : grid(igniteInstanceName);
 
             assert ignite != null : "Ignite returned null grid for name: " + igniteInstanceName;
 
@@ -1473,7 +1514,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
                 IgniteUtils.setCurrentIgniteName(igniteInstanceName);
 
                 try {
-                    G.stop(igniteInstanceName, cancel);
+                    IgnitionEx.stop(igniteInstanceName, cancel, null, stopNotStarted);
                 }
                 finally {
                     IgniteUtils.setCurrentIgniteName(null);
@@ -1503,14 +1544,24 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /**
+     * Stop all grids waiting for them to start
      * @param cancel Cancel flag.
      */
     protected void stopAllGrids(boolean cancel) {
+        stopAllGrids(cancel, true);
+    }
+
+    /**
+     * Stop all grids
+     * @param cancel Cancel flag.
+     * @param wait Wait for grids to start first.
+     */
+    protected void stopAllGrids(boolean cancel, boolean wait) {
         try {
             Collection<Ignite> clients = new ArrayList<>();
             Collection<Ignite> srvs = new ArrayList<>();
 
-            for (Ignite g : G.allGrids()) {
+            for (Ignite g : wait ? G.allGrids() : IgnitionEx.allGridsx()) {
                 if (g.configuration().getDiscoverySpi().isClientMode())
                     clients.add(g);
                 else
@@ -1518,10 +1569,16 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
             }
 
             for (Ignite g : clients)
-                stopGrid(g.name(), cancel, false);
+                if (wait)
+                    stopGrid(g.name(), cancel, false);
+                else
+                    stopGridx(g.name(), cancel, false);
 
             for (Ignite g : srvs)
-                stopGrid(g.name(), cancel, false);
+                if (wait)
+                    stopGrid(g.name(), cancel, false);
+                else
+                    stopGridx(g.name(), cancel, false);
 
             List<Ignite> nodes = G.allGrids();
 
@@ -2414,7 +2471,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
 
             if (t != null) {
                 if (t instanceof AssumptionViolatedException)
-                    U.quietAndInfo(log,"Test ignored [test=" + testDescription() + ", msg=" + t.getMessage() + "]");
+                    U.quietAndInfo(log, "Test ignored [test=" + testDescription() + ", msg=" + t.getMessage() + "]");
                 else {
                     U.error(log, "Test failed [test=" + testDescription() +
                         ", duration=" + (System.currentTimeMillis() - ts) + "]", t);

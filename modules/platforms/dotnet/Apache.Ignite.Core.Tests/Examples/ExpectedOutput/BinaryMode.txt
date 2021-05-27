@@ -1,0 +1,21 @@
+>>> Binary mode example started.
+
+>>> Name of the person with id 1: James Wilson
+>>> Modified person with id 1: Person [idHash=_, CompanyId=-1, Name=James Wilson Jr.]
+
+>>> All person names:
+>>>     Allison Mathis
+>>>     Breana Robbin
+>>>     Cristian Moss
+>>>     Daniel Adams
+>>>     James Peters
+>>>     James Wilson Jr.
+>>>     Philip Horsley
+
+>>> Persons working for Apache:
+>>>     James Wilson Jr.
+>>>     Daniel Adams
+>>>     Cristian Moss
+
+>>> Persons named Peters:
+>>>     Person [idHash=_, CompanyId=-2, Name=James Peters]

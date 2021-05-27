@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.ddl;
 
+import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -171,7 +172,11 @@ public class DdlCommandHandler {
         for (ColumnDefinition col : cmd.columns()) {
             String name = col.name();
 
-            res.addQueryField(name, tf.getJavaClass(col.type()).getTypeName(), null);
+            Type javaType = tf.getJavaClass(col.type());
+
+            String typeName = javaType instanceof Class ? ((Class<?>)javaType).getName() : javaType.getTypeName();
+
+            res.addQueryField(name, typeName, null);
 
             if (!col.nullable()) {
                 if (notNullFields == null)
@@ -208,8 +213,11 @@ public class DdlCommandHandler {
             if (F.isEmpty(keyTypeName))
                 keyTypeName = QueryUtils.createTableKeyTypeName(valTypeName);
 
-            if (!F.isEmpty(cmd.primaryKeyColumns()))
+            if (!F.isEmpty(cmd.primaryKeyColumns())) {
                 res.setKeyFields(new LinkedHashSet<>(cmd.primaryKeyColumns()));
+
+                res = new QueryEntityEx(res).setPreserveKeysOrder(true);
+            }
         }
         else if (!F.isEmpty(cmd.primaryKeyColumns()) && cmd.primaryKeyColumns().size() == 1) {
             String pkFieldName = cmd.primaryKeyColumns().get(0);

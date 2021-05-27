@@ -22,14 +22,14 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.client.ClientClusterGroup;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.Person;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
@@ -255,9 +255,15 @@ public class ServicesTest extends AbstractThinClientTest {
             TestServiceInterface svc = client.services().serviceProxy(CLUSTER_SINGLTON_SERVICE_NAME,
                 TestServiceInterface.class, timeout);
 
-            IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> svc.sleep(timeout * 2));
+            TestService.latch = new CountDownLatch(1);
 
-            GridTestUtils.assertThrowsAnyCause(log, fut::get, ClientException.class, "timed out");
+            GridTestUtils.assertThrowsAnyCause(log, svc::waitLatch, ClientException.class, "timed out");
+        }
+        finally {
+            if (TestService.latch != null) {
+                TestService.latch.countDown();
+                TestService.latch = null;
+            }
         }
     }
 
@@ -294,13 +300,16 @@ public class ServicesTest extends AbstractThinClientTest {
         public Object testException();
 
         /** */
-        public void sleep(long millis);
+        public boolean waitLatch() throws Exception;
     }
 
     /**
      * Implementation of TestServiceInterface.
      */
     public static class TestService implements Service, TestServiceInterface {
+        /** Latch. */
+        public static CountDownLatch latch;
+
         /** {@inheritDoc} */
         @Override public void cancel(ServiceContext ctx) {
             // No-op.
@@ -367,14 +376,10 @@ public class ServicesTest extends AbstractThinClientTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void sleep(long millis) {
-            long ts = U.currentTimeMillis();
+        @Override public boolean waitLatch() throws Exception {
+            latch.await(10L, TimeUnit.SECONDS);
 
-            doSleep(millis);
-
-            // Make sure cached timestamp updated.
-            while (ts + millis >= U.currentTimeMillis())
-                doSleep(100L);
+            return true;
         }
     }
 

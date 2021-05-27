@@ -155,11 +155,19 @@ public class Accumulators {
         private Object holder;
 
         /** */
+        private boolean touched;
+
+        /** */
         public static final Supplier<Accumulator> FACTORY = SingleVal::new;
 
         /** */
         @Override public void add(Object... args) {
             assert args.length == 1 : args.length;
+
+            if (touched)
+                throw new IllegalArgumentException("Subquery returned more than 1 value.");
+
+            touched = true;
 
             holder = args[0];
         }

@@ -969,7 +969,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
             node2part.put(parts.nodeId(), parts);
 
             // Add new mappings.
-            for (Map.Entry<Integer,GridDhtPartitionState> e : parts.entrySet()) {
+            for (Map.Entry<Integer, GridDhtPartitionState> e : parts.entrySet()) {
                 int p = e.getKey();
 
                 Set<UUID> ids = part2node.get(p);

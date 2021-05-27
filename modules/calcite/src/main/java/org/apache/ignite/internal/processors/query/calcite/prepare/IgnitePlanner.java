@@ -188,7 +188,13 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
         return Pair.of(validatedNode, type);
     }
 
-    public RelDataType conver(SqlDataTypeSpec typeSpec) {
+    /**
+     * Converts a SQL data type specification to a relational data type.
+     *
+     * @param typeSpec Spec to convert from.
+     * @return Relational type representation of given SQL type.
+     */
+    public RelDataType convert(SqlDataTypeSpec typeSpec) {
         return typeSpec.deriveType(validator());
     }
 

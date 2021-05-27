@@ -189,7 +189,7 @@ struct MetaQueriesTestSuiteFixture : public odbc::OdbcTestSuite
             "   dec3 decimal,"
             "   char1 char(3),"
             "   char2 char(42),"
-            "   char3 char,"
+            "   char3 char not null,"
             "   vchar varchar"
             ")");
 
@@ -218,14 +218,14 @@ struct MetaQueriesTestSuiteFixture : public odbc::OdbcTestSuite
 
         BOOST_CHECK_EQUAL(columnCount, 8);
 
-        CheckColumnMetaWithSQLDescribeCol(stmt, 1, "ID", SQL_INTEGER, 10, 0, SQL_NULLABLE_UNKNOWN);
-        CheckColumnMetaWithSQLDescribeCol(stmt, 2, "DEC1", SQL_DECIMAL, 3, 0, SQL_NULLABLE_UNKNOWN);
-        CheckColumnMetaWithSQLDescribeCol(stmt, 3, "DEC2", SQL_DECIMAL, 42, 12, SQL_NULLABLE_UNKNOWN);
-        CheckColumnMetaWithSQLDescribeCol(stmt, 4, "DEC3", SQL_DECIMAL, 65535, 32767, SQL_NULLABLE_UNKNOWN);
-        CheckColumnMetaWithSQLDescribeCol(stmt, 5, "CHAR1", SQL_VARCHAR, 3, 0, SQL_NULLABLE_UNKNOWN);
-        CheckColumnMetaWithSQLDescribeCol(stmt, 6, "CHAR2", SQL_VARCHAR, 42, 0, SQL_NULLABLE_UNKNOWN);
-        CheckColumnMetaWithSQLDescribeCol(stmt, 7, "CHAR3", SQL_VARCHAR, 2147483647, 0, SQL_NULLABLE_UNKNOWN);
-        CheckColumnMetaWithSQLDescribeCol(stmt, 8, "VCHAR", SQL_VARCHAR, 2147483647, 0, SQL_NULLABLE_UNKNOWN);
+        CheckColumnMetaWithSQLDescribeCol(stmt, 1, "ID", SQL_INTEGER, 10, 0, SQL_NULLABLE);
+        CheckColumnMetaWithSQLDescribeCol(stmt, 2, "DEC1", SQL_DECIMAL, 3, 0, SQL_NULLABLE);
+        CheckColumnMetaWithSQLDescribeCol(stmt, 3, "DEC2", SQL_DECIMAL, 42, 12, SQL_NULLABLE);
+        CheckColumnMetaWithSQLDescribeCol(stmt, 4, "DEC3", SQL_DECIMAL, 65535, 32767, SQL_NULLABLE);
+        CheckColumnMetaWithSQLDescribeCol(stmt, 5, "CHAR1", SQL_VARCHAR, 3, 0, SQL_NULLABLE);
+        CheckColumnMetaWithSQLDescribeCol(stmt, 6, "CHAR2", SQL_VARCHAR, 42, 0, SQL_NULLABLE);
+        CheckColumnMetaWithSQLDescribeCol(stmt, 7, "CHAR3", SQL_VARCHAR, 2147483647, 0, SQL_NO_NULLS);
+        CheckColumnMetaWithSQLDescribeCol(stmt, 8, "VCHAR", SQL_VARCHAR, 2147483647, 0, SQL_NULLABLE);
     }
 
     /**
@@ -298,7 +298,7 @@ struct MetaQueriesTestSuiteFixture : public odbc::OdbcTestSuite
             "   dec3 decimal,"
             "   char1 char(3),"
             "   char2 char(42),"
-            "   char3 char,"
+            "   char3 char not null,"
             "   vchar varchar"
             ")");
 
@@ -327,14 +327,14 @@ struct MetaQueriesTestSuiteFixture : public odbc::OdbcTestSuite
 
         BOOST_CHECK_EQUAL(columnCount, 8);
 
-        CheckColumnMetaWithSQLColAttribute(stmt, 1, "ID", SQL_INTEGER, 10, 0, SQL_NULLABLE_UNKNOWN);
-        CheckColumnMetaWithSQLColAttribute(stmt, 2, "DEC1", SQL_DECIMAL, 3, 0, SQL_NULLABLE_UNKNOWN);
-        CheckColumnMetaWithSQLColAttribute(stmt, 3, "DEC2", SQL_DECIMAL, 42, 12, SQL_NULLABLE_UNKNOWN);
-        CheckColumnMetaWithSQLColAttribute(stmt, 4, "DEC3", SQL_DECIMAL, 65535, 32767, SQL_NULLABLE_UNKNOWN);
-        CheckColumnMetaWithSQLColAttribute(stmt, 5, "CHAR1", SQL_VARCHAR, 3, 0, SQL_NULLABLE_UNKNOWN);
-        CheckColumnMetaWithSQLColAttribute(stmt, 6, "CHAR2", SQL_VARCHAR, 42, 0, SQL_NULLABLE_UNKNOWN);
-        CheckColumnMetaWithSQLColAttribute(stmt, 7, "CHAR3", SQL_VARCHAR, 2147483647, 0, SQL_NULLABLE_UNKNOWN);
-        CheckColumnMetaWithSQLColAttribute(stmt, 8, "VCHAR", SQL_VARCHAR, 2147483647, 0, SQL_NULLABLE_UNKNOWN);
+        CheckColumnMetaWithSQLColAttribute(stmt, 1, "ID", SQL_INTEGER, 10, 0, SQL_NULLABLE);
+        CheckColumnMetaWithSQLColAttribute(stmt, 2, "DEC1", SQL_DECIMAL, 3, 0, SQL_NULLABLE);
+        CheckColumnMetaWithSQLColAttribute(stmt, 3, "DEC2", SQL_DECIMAL, 42, 12, SQL_NULLABLE);
+        CheckColumnMetaWithSQLColAttribute(stmt, 4, "DEC3", SQL_DECIMAL, 65535, 32767, SQL_NULLABLE);
+        CheckColumnMetaWithSQLColAttribute(stmt, 5, "CHAR1", SQL_VARCHAR, 3, 0, SQL_NULLABLE);
+        CheckColumnMetaWithSQLColAttribute(stmt, 6, "CHAR2", SQL_VARCHAR, 42, 0, SQL_NULLABLE);
+        CheckColumnMetaWithSQLColAttribute(stmt, 7, "CHAR3", SQL_VARCHAR, 2147483647, 0, SQL_NO_NULLS);
+        CheckColumnMetaWithSQLColAttribute(stmt, 8, "VCHAR", SQL_VARCHAR, 2147483647, 0, SQL_NULLABLE);
     }
 
     /**
@@ -883,7 +883,7 @@ BOOST_AUTO_TEST_CASE(TestSQLNumResultColsAfterSQLPrepare)
  * 2. Connect to node using ODBC.
  * 3. Create table with decimal and char columns with specified size and scale.
  * 4. Prepare statement.
- * 5. Check presicion and scale of every column using SQLDescribeCol.
+ * 5. Check precision and scale of every column using SQLDescribeCol.
  */
 BOOST_AUTO_TEST_CASE(TestSQLDescribeColPrecisionAndScaleAfterPrepare)
 {
@@ -897,7 +897,7 @@ BOOST_AUTO_TEST_CASE(TestSQLDescribeColPrecisionAndScaleAfterPrepare)
  * 2. Connect to node using ODBC.
  * 3. Create table with decimal and char columns with specified size and scale.
  * 4. Execute statement.
- * 5. Check presicion and scale of every column using SQLDescribeCol. */
+ * 5. Check precision and scale of every column using SQLDescribeCol. */
 BOOST_AUTO_TEST_CASE(TestSQLDescribeColPrecisionAndScaleAfterExec)
 {
     CheckSQLDescribeColPrecisionAndScale(&OdbcTestSuite::ExecQuery);
@@ -910,7 +910,7 @@ BOOST_AUTO_TEST_CASE(TestSQLDescribeColPrecisionAndScaleAfterExec)
  * 2. Connect to node using ODBC.
  * 3. Create table with decimal and char columns with specified size and scale.
  * 4. Prepare statement.
- * 5. Check presicion and scale of every column using SQLColAttribute.
+ * 5. Check precision and scale of every column using SQLColAttribute.
  */
 BOOST_AUTO_TEST_CASE(TestSQLColAttributePrecisionAndScaleAfterPrepare)
 {
@@ -924,7 +924,7 @@ BOOST_AUTO_TEST_CASE(TestSQLColAttributePrecisionAndScaleAfterPrepare)
  * 2. Connect to node using ODBC.
  * 3. Create table with decimal and char columns with specified size and scale.
  * 4. Execute statement.
- * 5. Check presicion and scale of every column using SQLColAttribute. */
+ * 5. Check precision and scale of every column using SQLColAttribute. */
 BOOST_AUTO_TEST_CASE(TestSQLColAttributePrecisionAndScaleAfterExec)
 {
     CheckSQLColAttributePrecisionAndScale(&OdbcTestSuite::ExecQuery);

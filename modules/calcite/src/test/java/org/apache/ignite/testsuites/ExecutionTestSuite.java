@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.internal.processors.query.calcite.exec.RuntimeTreeIndexTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ContinuousExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.HashAggregateExecutionTest;
@@ -48,7 +49,8 @@ import org.junit.runners.Suite;
     HashAggregateSingleGroupExecutionTest.class,
     SortAggregateExecutionTest.class,
     MinusExecutionTest.class,
-    IntersectExecutionTest.class
+    IntersectExecutionTest.class,
+    RuntimeTreeIndexTest.class,
 })
 public class ExecutionTestSuite {
 }

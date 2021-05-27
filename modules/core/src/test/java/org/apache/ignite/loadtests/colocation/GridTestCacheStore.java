@@ -85,7 +85,8 @@ public class GridTestCacheStore extends CacheStoreAdapter<GridTestKey, Long> {
                             end += mod;
 
                         for (long i = start; i < end; i++) {
-                            if (ignite.affinity(cache.getName()).mapKeyToNode(GridTestKey.affinityKey(i)).isLocal()) { // Only add if key is local.
+                            // Only add if key is local.
+                            if (ignite.affinity(cache.getName()).mapKeyToNode(GridTestKey.affinityKey(i)).isLocal()) {
                                 clo.apply(new GridTestKey(i), i);
 
                                 adder.increment();

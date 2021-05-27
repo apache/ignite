@@ -38,6 +38,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -133,6 +134,7 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -191,6 +193,9 @@ import static org.apache.ignite.internal.processors.tracing.SpanType.EXCHANGE_FU
  * Partition exchange manager.
  */
 public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
+    /** Prefix of error message for dumping long running operations. */
+    public static final String FAILED_DUMP_MSG = "Failed to dump debug information: ";
+
     /** @see IgniteSystemProperties#IGNITE_EXCHANGE_HISTORY_SIZE */
     public static final int DFLT_EXCHANGE_HISTORY_SIZE = 1_000;
 
@@ -308,6 +313,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /** */
     private final ReentrantLock dumpLongRunningOpsLock = new ReentrantLock();
+
+    /** Latch that is used to guarantee that this manager fully started and all variables initialized. */
+    private final CountDownLatch startLatch = new CountDownLatch(1);
 
     /** Discovery listener. */
     private final DiscoveryEventListener discoLsnr = new DiscoveryEventListener() {
@@ -453,8 +461,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         GridDhtPartitionsExchangeFuture currentExchange = lastTopologyFuture();
 
                         if (currentExchange != null && currentExchange.addOrMergeDelayedFullMessage(node, msg)) {
-                            if (log.isInfoEnabled())
-                                log.info("Delay process full message without exchange id (there is exchange in progress) [nodeId=" + node.id() + "]");
+                            if (log.isInfoEnabled()) {
+                                log.info("Delay process full message without exchange id (there is exchange in progress) " +
+                                    "[nodeId=" + node.id() + "]");
+                            }
 
                             return;
                         }
@@ -530,8 +540,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         MetricRegistry clusterReg = cctx.kernalContext().metric().registry(CLUSTER_METRICS);
 
         rebalanced = clusterReg.booleanMetric(REBALANCED,
-            "True if the cluster has achieved fully rebalanced state. Note that an inactive cluster always has" +
+            "True if the cluster has fully achieved rebalanced state. Note that an inactive cluster always has" +
             " this metric in False regardless of the real partitions state.");
+
+        startLatch.countDown();
     }
 
     /**
@@ -615,7 +627,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                         baselineChanging = exchActions.changedBaseline()
                             // Or it is the first activation.
-                            || state.state() != ClusterState.INACTIVE && !state.previouslyActive() && state.previousBaselineTopology() == null;
+                            || state.state() != ClusterState.INACTIVE
+                                && !state.previouslyActive()
+                                && state.previousBaselineTopology() == null;
                     }
 
                     exchFut.listen(f -> onClusterStateChangeFinish(f, exchActions, baselineChanging));
@@ -971,6 +985,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         U.join(exchWorker, log);
 
+        if (cctx.kernalContext().clientDisconnected())
+            cctx.affinity().removeGroupHolders();
+
         // Finish all exchange futures.
         ExchangeFutureSet exchFuts0 = exchFuts;
 
@@ -1035,7 +1052,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         CacheGroupDescriptor grpDesc = cctx.affinity().cacheGroups().get(grpId);
 
-        assert grpDesc != null : grpId;
+        assert grpDesc != null : "grpId=" + grpId;
 
         CacheConfiguration<?, ?> ccfg = grpDesc.config();
 
@@ -1265,9 +1282,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /**
      * @param topVer Topology version.
      * @param grpId Group id.
+     * @param rebalanceId Rebalance id.
      */
-    public void finishPreloading(AffinityTopologyVersion topVer, int grpId) {
-        exchWorker.finishPreloading(topVer, grpId);
+    public void finishPreloading(AffinityTopologyVersion topVer, int grpId, long rebalanceId) {
+        exchWorker.finishPreloading(topVer, grpId, rebalanceId);
     }
 
     /**
@@ -1375,7 +1393,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             // No need to send to nodes which did not finish their first exchange.
             AffinityTopologyVersion rmtTopVer =
                 lastFut != null ?
-                    (lastFut.isDone() ? lastFut.topologyVersion() : lastFut.initialVersion())
+                    (lastFut.isDone() && lastFut.error() == null ? lastFut.topologyVersion() : lastFut.initialVersion())
                     : AffinityTopologyVersion.NONE;
 
             Collection<ClusterNode> rmts = cctx.discovery().remoteAliveNodesWithCaches(rmtTopVer);
@@ -2427,6 +2445,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             if (!dumpLongRunningOpsLock.tryLock())
                 return;
 
+            startLatch.await();
+
             try {
                 if (U.currentTimeMillis() < nextLongRunningOpsDumpTime)
                     return;
@@ -2459,7 +2479,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             }
         }
         catch (Exception e) {
-            U.error(diagnosticLog, "Failed to dump debug information: " + e, e);
+            U.error(diagnosticLog, FAILED_DUMP_MSG + e, e);
         }
     }
 
@@ -3023,9 +3043,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         /**
          * @param topVer Topology version.
          * @param grpId Group id.
+         * @param rebalanceId Rebalance id.
          */
-        void finishPreloading(AffinityTopologyVersion topVer, int grpId) {
-            futQ.add(new FinishPreloadingTask(topVer, grpId));
+        void finishPreloading(AffinityTopologyVersion topVer, int grpId, long rebalanceId) {
+            futQ.add(new FinishPreloadingTask(topVer, grpId, rebalanceId));
         }
 
         /**
@@ -3412,7 +3433,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                         dumpDebugInfo(exchFut);
                                     }
                                     catch (Exception e) {
-                                        U.error(diagnosticLog, "Failed to dump debug information: " + e, e);
+                                        U.error(diagnosticLog, FAILED_DUMP_MSG + e, e);
                                     }
 
                                     nextDumpTime = U.currentTimeMillis() + nextDumpTimeout(dumpCnt++, dumpTimeout);
@@ -3677,7 +3698,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         /** {@inheritDoc} */
         @Override public void onTimeout() {
-            cctx.kernalContext().closure().runLocalSafe(new Runnable() {
+            cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
                 @Override public void run() {
                     if (!busyLock.readLock().tryLock())
                         return;

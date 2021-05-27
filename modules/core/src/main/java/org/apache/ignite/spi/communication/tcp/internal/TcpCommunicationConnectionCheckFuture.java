@@ -50,7 +50,8 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 /**
  * Tcp Communication Connection Check Future.
  */
-public class TcpCommunicationConnectionCheckFuture extends GridFutureAdapter<BitSet> implements IgniteSpiTimeoutObject, GridLocalEventListener {
+public class TcpCommunicationConnectionCheckFuture
+    extends GridFutureAdapter<BitSet> implements IgniteSpiTimeoutObject, GridLocalEventListener {
     /** Session future. */
     public static final int SES_FUT_META = GridNioSessionMetaKey.nextUniqueKey();
 

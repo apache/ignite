@@ -569,7 +569,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         };
 
         t1.start();
-        t2.start();// Should cancel t1 rebalancing.
+        t2.start(); // Should cancel t1 rebalancing.
         t3.start();
 
         t1.join();

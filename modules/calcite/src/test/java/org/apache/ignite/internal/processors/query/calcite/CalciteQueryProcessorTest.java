@@ -990,8 +990,8 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
      * @param node Node.
      * @param sql Statement.
      */
-    protected List<List<?>> execute(IgniteEx node, String sql) {
-        return node.context().query().querySqlFields(new SqlFieldsQuery(sql).setSchema("PUBLIC"), true).getAll();
+    protected List<List<?>> execute(IgniteEx node, String sql, Object... args) {
+        return node.context().query().querySqlFields(new SqlFieldsQuery(sql).setSchema("PUBLIC").setArgs(args), true).getAll();
     }
 
     /** */
@@ -1160,123 +1160,12 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC",
             "" +
                 "select * from DEVELOPER d, PROJECT p where d.projectId = p._key and d._key = ?;" +
-                "select * from DEVELOPER d, PROJECT p where d.projectId = p._key and d._key = ?", 0,1);
+                "select * from DEVELOPER d, PROJECT p where d.projectId = p._key and d._key = ?", 0, 1);
 
         assertEquals(2, query.size());
 
         assertEqualsCollections(Arrays.asList("Igor", 1, "Calcite"), F.first(query.get(0).getAll()));
         assertEqualsCollections(Arrays.asList("Roman", 0, "Ignite"), F.first(query.get(1).getAll()));
-    }
-
-    /** */
-    @Test
-    public void testInsertPrimitiveKey() throws Exception {
-        grid(1).getOrCreateCache(new CacheConfiguration<Integer, Developer>()
-            .setName("developer")
-            .setSqlSchema("PUBLIC")
-            .setIndexedTypes(Integer.class, Developer.class)
-            .setBackups(2)
-        );
-
-        QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
-
-        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC",
-            "INSERT INTO DEVELOPER(_key, name, projectId) VALUES (?, ?, ?)", 0, "Igor", 1);
-
-        assertEquals(1, query.size());
-
-        List<List<?>> rows = query.get(0).getAll();
-
-        assertEquals(1, rows.size());
-
-        List<?> row = rows.get(0);
-
-        assertNotNull(row);
-
-        assertEqualsCollections(F.asList(1L), row);
-
-        query = engine.query(null, "PUBLIC", "select _key, * from DEVELOPER");
-
-        assertEquals(1, query.size());
-
-        row = F.first(query.get(0).getAll());
-
-        assertNotNull(row);
-
-        assertEqualsCollections(Arrays.asList(0, "Igor", 1), row);
-    }
-
-    /** */
-    @Test
-    public void testInsertUpdateDeleteNonPrimitiveKey() throws Exception {
-        client.getOrCreateCache(new CacheConfiguration<Key, Developer>()
-            .setName("developer")
-            .setSqlSchema("PUBLIC")
-            .setIndexedTypes(Key.class, Developer.class)
-            .setBackups(2)
-        );
-
-        awaitPartitionMapExchange(true, true, null);
-
-        QueryEngine engine = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
-
-        List<FieldsQueryCursor<List<?>>> query = engine.query(null, "PUBLIC", "INSERT INTO DEVELOPER VALUES (?, ?, ?, ?)", 0, 0, "Igor", 1);
-
-        assertEquals(1, query.size());
-
-        List<?> row = F.first(query.get(0).getAll());
-
-        assertNotNull(row);
-
-        assertEqualsCollections(F.asList(1L), row);
-
-        query = engine.query(null, "PUBLIC", "select * from DEVELOPER");
-
-        assertEquals(1, query.size());
-
-        row = F.first(query.get(0).getAll());
-
-        assertNotNull(row);
-
-        assertEqualsCollections(F.asList(0, 0, "Igor", 1), row);
-
-        query = engine.query(null, "PUBLIC", "UPDATE DEVELOPER d SET name = 'Roman' WHERE id = ?", 0);
-
-        assertEquals(1, query.size());
-
-        row = F.first(query.get(0).getAll());
-
-        assertNotNull(row);
-
-        assertEqualsCollections(F.asList(1L), row);
-
-        query = engine.query(null, "PUBLIC", "select * from DEVELOPER");
-
-        assertEquals(1, query.size());
-
-        row = F.first(query.get(0).getAll());
-
-        assertNotNull(row);
-
-        assertEqualsCollections(F.asList(0, 0, "Roman", 1), row);
-
-        query = engine.query(null, "PUBLIC", "DELETE FROM DEVELOPER WHERE id = ?", 0);
-
-        assertEquals(1, query.size());
-
-        row = F.first(query.get(0).getAll());
-
-        assertNotNull(row);
-
-        assertEqualsCollections(F.asList(1L), row);
-
-        query = engine.query(null, "PUBLIC", "select * from DEVELOPER");
-
-        assertEquals(1, query.size());
-
-        row = F.first(query.get(0).getAll());
-
-        assertNull(row);
     }
 
     /**
@@ -1330,6 +1219,17 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         assertEquals(ImmutableIntList.of(2, 3), tblMap.get("MY_TBL_1").descriptor().distribution().getKeys());
         assertEquals(ImmutableIntList.of(3), tblMap.get("MY_TBL_2").descriptor().distribution().getKeys());
+    }
+
+    /** */
+    @Test
+    public void testSequentialInserts() throws Exception {
+        sql("CREATE TABLE t(x INTEGER)", true);
+
+        for (int i = 0; i < 10_000; i++)
+            sql("INSERT INTO t VALUES (?)", true, i);
+
+        assertEquals(10_000L, sql("SELECT count(*) FROM t").get(0).get(0));
     }
 
     /**
@@ -1496,13 +1396,15 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         // warmup
         for (int i = 0; i < numIterations; i++) {
-            List<FieldsQueryCursor<List<?>>> query = client.context().query().querySqlFields(new SqlFieldsQuery("select * from DEVELOPER").setSchema("PUBLIC"), false, false);
+            List<FieldsQueryCursor<List<?>>> query = client.context().query().querySqlFields(
+                new SqlFieldsQuery("select * from DEVELOPER").setSchema("PUBLIC"), false, false);
             query.get(0).getAll();
         }
 
         start = System.currentTimeMillis();
         for (int i = 0; i < numIterations; i++) {
-            List<FieldsQueryCursor<List<?>>> query = client.context().query().querySqlFields(new SqlFieldsQuery("select * from DEVELOPER").setSchema("PUBLIC"), false, false);
+            List<FieldsQueryCursor<List<?>>> query = client.context().query().querySqlFields(
+                new SqlFieldsQuery("select * from DEVELOPER").setSchema("PUBLIC"), false, false);
             query.get(0).getAll();
         }
         System.out.println("H2 duration = " + (System.currentTimeMillis() - start));
@@ -1514,14 +1416,14 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private List<List<?>> sql(String sql, boolean noCheck) throws IgniteInterruptedCheckedException {
+    private List<List<?>> sql(String sql, boolean noCheck, Object...args) throws IgniteInterruptedCheckedException {
         QueryEngine engineSrv = Commons.lookupComponent(grid(0).context(), QueryEngine.class);
 
         assertTrue(client.configuration().isClientMode());
 
         QueryEngine engineCli = Commons.lookupComponent(client.context(), QueryEngine.class);
 
-        List<FieldsQueryCursor<List<?>>> cursorsCli = engineCli.query(null, "PUBLIC", sql);
+        List<FieldsQueryCursor<List<?>>> cursorsCli = engineCli.query(null, "PUBLIC", sql, args);
 
         List<List<?>> allSrv;
 

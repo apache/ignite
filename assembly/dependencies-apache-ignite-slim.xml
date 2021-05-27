@@ -145,6 +145,7 @@
                 <!-- Removed from slim packaging are: -->
                 <exclude>org.apache.ignite:ignite-aop</exclude>
                 <exclude>org.apache.ignite:ignite-aws</exclude>
+                <exclude>org.apache.ignite:ignite-azure</exclude>
                 <exclude>org.apache.ignite:ignite-cassandra-serializers</exclude>
                 <exclude>org.apache.ignite:ignite-cassandra-store</exclude>
                 <exclude>org.apache.ignite:ignite-cloud</exclude>

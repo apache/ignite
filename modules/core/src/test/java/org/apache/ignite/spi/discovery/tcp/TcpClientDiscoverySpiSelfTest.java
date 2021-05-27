@@ -1129,15 +1129,17 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         attachListeners(1, 1);
 
-        ((TcpDiscoverySpi)G.ignite("server-1").configuration().getDiscoverySpi()).addSendMessageListener(new IgniteInClosure<TcpDiscoveryAbstractMessage>() {
-            @Override public void apply(TcpDiscoveryAbstractMessage msg) {
-                try {
-                    Thread.sleep(1000000);
-                } catch (InterruptedException ignored) {
-                    Thread.interrupted();
+        ((TcpDiscoverySpi)G.ignite("server-1").configuration().getDiscoverySpi()).addSendMessageListener(
+            new IgniteInClosure<TcpDiscoveryAbstractMessage>() {
+                @Override public void apply(TcpDiscoveryAbstractMessage msg) {
+                    try {
+                        Thread.sleep(1000000);
+                    }
+                    catch (InterruptedException ignored) {
+                        Thread.interrupted();
+                    }
                 }
-            }
-        });
+            });
         failClient(1);
         failServer(1);
 

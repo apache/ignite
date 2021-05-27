@@ -4634,7 +4634,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
     /**
      *
      */
-    static class MapBasedStore<K,V> implements CacheStore<K,V>, Serializable {
+    static class MapBasedStore<K, V> implements CacheStore<K, V>, Serializable {
         /** */
         private final Map<K, V> src;
 
