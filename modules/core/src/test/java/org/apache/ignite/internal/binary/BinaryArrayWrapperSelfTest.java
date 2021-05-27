@@ -20,16 +20,17 @@ package org.apache.ignite.internal.binary;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.binary.BinaryMarshallerSelfTest.TestClass1;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /** */
+@WithSystemProperty(key = IgniteSystemProperties.IGNITE_USE_ARRAY_BINARY_WRAPPER, value = "true")
 public class BinaryArrayWrapperSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
-    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_USE_ARRAY_BINARY_WRAPPER, value = "true")
     public void testArray() throws Exception {
         Ignite ign = startGrid();
 
@@ -39,5 +40,19 @@ public class BinaryArrayWrapperSelfTest extends GridCommonAbstractTest {
         TestClass1[] obj = cache.get(1);
 
         assertEquals(TestClass1[].class, obj.getClass());
+    }
+
+    /** */
+    @Test
+    public void testBinaryModeArray() throws Exception {
+        Ignite ign = startGrid();
+
+        IgniteCache<Integer, TestClass1[]> cache = ign.createCache("my-cache");
+
+        cache.put(1, new TestClass1[] {new TestClass1(), new TestClass1()});
+        BinaryObject obj = (BinaryObject)cache.withKeepBinary().get(1);
+
+        assertEquals(BinaryArrayWrapper.class, obj.getClass());
+        assertEquals(TestClass1[].class, obj.deserialize().getClass());
     }
 }

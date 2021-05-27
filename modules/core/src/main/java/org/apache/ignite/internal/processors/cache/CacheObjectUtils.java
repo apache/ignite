@@ -203,6 +203,7 @@ public class CacheObjectUtils {
             return unwrapBinariesIfNeeded(ctx, (Map<Object, Object>)o, keepBinary, cpy);
         else if (o instanceof Object[])
             return unwrapBinariesInArrayIfNeeded(ctx, (Object[])o, keepBinary, cpy);
+        //TODO: fixme
 
         return o;
     }
