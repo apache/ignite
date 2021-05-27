@@ -25,14 +25,12 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
-import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Snapshot resore management task.
  */
-@GridInternal
 abstract class SnapshotRestoreManagementTask<T> extends ComputeTaskAdapter<T, Boolean> {
    /**
      * @param param Compute job argument.

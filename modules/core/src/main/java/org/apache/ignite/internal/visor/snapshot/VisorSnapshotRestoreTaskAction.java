@@ -38,7 +38,7 @@ public enum VisorSnapshotRestoreTaskAction {
                 return val;
         }
 
-        throw new IllegalArgumentException("Unknown command line argument \"" + cmdArg + "\"");
+        throw new IllegalArgumentException("Unexpected command line argument \"" + cmdArg + "\"");
     }
 
     /** @return Command line argument name. */
