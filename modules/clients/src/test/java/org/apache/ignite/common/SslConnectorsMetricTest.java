@@ -111,7 +111,7 @@ public class SslConnectorsMetricTest extends GridCommonAbstractTest {
 
         assertSslCommunicationMetrics(reg, 1, 0, 0);
 
-        assertThrowsWithCause(() -> getConnection(jdbcConnectionConfiguration("client", "trustboth", CIPHER_SUITE)), SQLException.class);
+        assertThrowsWithCause(() -> getConnection(jdbcConnectionConfiguration("client", "trusttwo", CIPHER_SUITE)), SQLException.class);
         assertSslCommunicationMetrics(reg, 2, 0, 1);
 
         assertThrowsWithCause(() ->
@@ -137,13 +137,13 @@ public class SslConnectorsMetricTest extends GridCommonAbstractTest {
         assertSslCommunicationMetrics(reg, 1, 0, 0);
 
         try (GridClient ignored = start(gridClientConfiguration("client", "trustthree", CIPHER_SUITE))) {
-            // The GridClient makes 3 connection attempts and does not throw an exception if they all fail.
+            // GridClient makes 2 additional connection attempts if an SSL error occurs and does not throw an exception if they all fail.
         }
 
         assertSslCommunicationMetrics(reg, 4, 0, 3);
 
         try (GridClient ignored = start(gridClientConfiguration("connectorClient", "trustthree", NON_SUP_CIPHER_SUITE))) {
-            // The GridClient makes 3 connection attempts and does not throw an exception if they all fail.
+            // GridClient makes 2 additional connection attempts if an SSL error occurs and does not throw an exception if they all fail.
         }
 
         assertSslCommunicationMetrics(reg, 7, 0, 6);
@@ -159,21 +159,18 @@ public class SslConnectorsMetricTest extends GridCommonAbstractTest {
         assertTrue(reg(srv, DISCO_METRICS).<BooleanMetric>findMetric(SSL_ENABLED_METRIC_NAME).value());
         assertEquals(0, reg(srv, DISCO_METRICS).<LongMetric>findMetric(SSL_REJECTED_CONNECTIONS_CNT_METRIC_NAME).value());
 
-        assertNodeJoinFails(2, true, "thinClient", "trustboth", CIPHER_SUITE, "TLSv1.2");
-        assertEquals(1, reg(srv, DISCO_METRICS).<LongMetric>findMetric(SSL_REJECTED_CONNECTIONS_CNT_METRIC_NAME).value());
-
-        try (IgniteEx ignored = startGrid(nodeConfiguration(2, false, "thinClient", "trustboth", CIPHER_SUITE, "TLSv1.2"))) {
-            assertEquals(1, srv.cluster().forServers().nodes().size());
-        }
-        assertEquals(2, reg(srv, DISCO_METRICS).<LongMetric>findMetric(SSL_REJECTED_CONNECTIONS_CNT_METRIC_NAME).value());
-
+        assertNodeJoinFails(2, true, "thinClient", "trusttwo", CIPHER_SUITE, "TLSv1.2");
+        assertNodeJoinFails(2, false, "thinClient", "trusttwo", CIPHER_SUITE, "TLSv1.2");
         assertNodeJoinFails(2, true, "client", "trustone", NON_SUP_CIPHER_SUITE, "TLSv1.2");
         assertNodeJoinFails(2, false, "node01", "trustone", NON_SUP_CIPHER_SUITE, "TLSv1.2");
         assertNodeJoinFails(2, true, "client", "trustone", CIPHER_SUITE, "TLSv1.1");
         assertNodeJoinFails(2, false, "node01", "trustone", CIPHER_SUITE, "TLSv1.1");
 
-        // In case of an incorrect cipher suite or protocol version, the client and server nodes make 3 connection attempts.
-        assertEquals(14, reg(srv, DISCO_METRICS).<LongMetric>findMetric(SSL_REJECTED_CONNECTIONS_CNT_METRIC_NAME).value());
+        // In case of an SSL error, the client and server nodes make 2 additional connection attempts.
+        assertTrue(waitForCondition(() ->
+            18 == reg(srv, DISCO_METRICS).<LongMetric>findMetric(SSL_REJECTED_CONNECTIONS_CNT_METRIC_NAME).value(),
+            getTestTimeout()
+        ));
     }
 
     /** Tests SSL communication metrics produced by node connection. */
@@ -296,7 +293,7 @@ public class SslConnectorsMetricTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = nodeConfiguration(idx, client, keyStore, trustStore, cipherSuite, protocol);
 
         if (client)
-            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setJoinTimeout(1);
+            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setJoinTimeout(1); // To avoid client rejoin after failed connection.
 
         GridTestUtils.assertThrowsWithCause(() -> startGrid(cfg), IgniteCheckedException.class);
     }
@@ -309,15 +306,15 @@ public class SslConnectorsMetricTest extends GridCommonAbstractTest {
     /** Checks SSL communication metrics. */
     private void assertSslCommunicationMetrics(MetricRegistry mreg, long handshakeCnt, long sesCnt, long rejectedSesCnt) throws Exception {
         assertEquals(true, mreg.<BooleanMetric>findMetric(SSL_ENABLED_METRIC_NAME).value());
-        waitForCondition(() -> sesCnt == mreg.<IntMetric>findMetric(SESSIONS_CNT_METRIC_NAME).value(), getTestTimeout());
-        waitForCondition(() ->
+        assertTrue(waitForCondition(() -> sesCnt == mreg.<IntMetric>findMetric(SESSIONS_CNT_METRIC_NAME).value(), getTestTimeout()));
+        assertTrue(waitForCondition(() ->
             handshakeCnt == Arrays.stream(mreg.<HistogramMetric>findMetric(SSL_HANDSHAKE_DURATION_HISTOGRAM_METRIC_NAME).value()).sum(),
             getTestTimeout()
-        );
-        waitForCondition(() ->
+        ));
+        assertTrue(waitForCondition(() ->
             rejectedSesCnt == mreg.<LongMetric>findMetric(SSL_REJECTED_SESSIONS_CNT_METRIC_NAME).value(),
             getTestTimeout()
-        );
+        ));
     }
 
     /** Creates {@link SslContextFactory} with specified options. */
