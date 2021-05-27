@@ -148,7 +148,7 @@ namespace Apache.Ignite.Core.Client.Datastream
         /// <para />
         /// Default is <see cref="TimeSpan.Zero"/> (disabled).
         /// </summary>
-        TimeSpan AutoFlushInterval { get; set; }
+        public TimeSpan AutoFlushInterval { get; set; }
 
         /// <summary>
         /// Gets or sets the receiver object.

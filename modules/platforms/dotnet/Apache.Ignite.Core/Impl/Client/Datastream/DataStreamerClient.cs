@@ -82,6 +82,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         private readonly ConcurrentStack<DataStreamerClientEntry<TK, TV>[]> _arrayPool
             = new ConcurrentStack<DataStreamerClientEntry<TK, TV>[]>();
 
+        private readonly Timer _autoFlushTimer;
+
         /** */
         private int _arraysAllocated;
 
@@ -99,13 +101,18 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             Debug.Assert(socket != null);
             Debug.Assert(!string.IsNullOrEmpty(cacheName));
 
+            // Copy to prevent modification.
+            _options = new DataStreamerClientOptions<TK, TV>(options);
             _socket = socket;
             _cacheName = cacheName;
             _cacheId = BinaryUtils.GetCacheId(cacheName);
-
-            // Copy to prevent modification.
-            _options = new DataStreamerClientOptions<TK, TV>(options);
             _flags = GetFlags(_options);
+
+            var interval = _options.AutoFlushInterval;
+            if (interval != TimeSpan.Zero)
+            {
+                _autoFlushTimer = new Timer(_ => AutoFlush(), null, interval, interval);
+            }
         }
 
         /** <inheritdoc /> */
@@ -397,32 +404,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             ThreadPool.QueueUserWorkItem(_ => FlushBufferRetry(buffer, socket, tcs));
         }
 
-        private static bool ShouldRetry(Exception exception)
-        {
-            var aggregate = exception as AggregateException;
-
-            if (aggregate != null)
-            {
-                exception = aggregate.GetBaseException();
-            }
-
-            if (exception is SocketException)
-            {
-                return true;
-            }
-            
-            var clientEx = exception as IgniteClientException;
-
-            if (clientEx != null && 
-                (clientEx.InnerException is SocketException || 
-                 clientEx.StatusCode == ClientStatusCode.InvalidNodeState))
-            {
-                return true;
-            }
-
-            return false;
-        }
-
         private void FlushBufferRetry(
             DataStreamerClientBuffer<TK, TV> buffer,
             ClientSocket failedSocket,
@@ -522,6 +503,32 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
         }
 
+        private static bool ShouldRetry(Exception exception)
+        {
+            var aggregate = exception as AggregateException;
+
+            if (aggregate != null)
+            {
+                exception = aggregate.GetBaseException();
+            }
+
+            if (exception is SocketException)
+            {
+                return true;
+            }
+            
+            var clientEx = exception as IgniteClientException;
+
+            if (clientEx != null && 
+                (clientEx.InnerException is SocketException || 
+                 clientEx.StatusCode == ClientStatusCode.InvalidNodeState))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
         private static Flags GetFlags(DataStreamerClientOptions options)
         {
             var flags = Flags.Flush | Flags.Close;
@@ -578,6 +585,11 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         private DataStreamerClientPerNodeBuffer<TK, TV> CreatePerNodeBuffer(ClientSocket socket)
         {
             return new DataStreamerClientPerNodeBuffer<TK, TV>(this, socket);
+        }
+
+        private void AutoFlush()
+        {
+            
         }
     }
 }
