@@ -468,6 +468,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /** For test purposes. */
     private boolean skipAddrsRandomization = false;
 
+    /** The name of the metric that provides number of rejected connections due to SSL errors. */
+    public static final String SSL_REJECTED_CONNECTIONS_CNT_METRIC_NAME = "sslRejectedConnectionsCount";
+
     /**
      * Gets current SPI state.
      *

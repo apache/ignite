@@ -96,6 +96,9 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     /** Executor service. */
     private ExecutorService execSvc;
 
+    /** The name of the metric group associated with the thin client connector. */
+    public static final String CLIENT_CONNECTOR_METRIC_GROUP_NAME = "client.connector.tcp";
+
     /**
      * @param ctx Kernal context.
      */
@@ -177,6 +180,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                             .filters(filters)
                             .directMode(true)
                             .idleTimeout(idleTimeout > 0 ? idleTimeout : Long.MAX_VALUE)
+                            .metricRegistry(ctx.metric().registry(CLIENT_CONNECTOR_METRIC_GROUP_NAME))
                             .build();
 
                         ctx.ports().registerPort(port, IgnitePortProtocol.TCP, getClass());

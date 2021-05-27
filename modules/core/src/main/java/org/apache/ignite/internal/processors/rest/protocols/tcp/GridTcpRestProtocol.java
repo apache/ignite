@@ -63,6 +63,9 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     /** NIO server listener. */
     private GridTcpRestNioListener lsnr;
 
+    /** The name of the metric group associated with the REST TCP connector. */
+    public static final String REST_CONNECTOR_METRIC_GROUP_NAME = "client.connector.rest.tcp";
+
     /** @param ctx Context. */
     public GridTcpRestProtocol(GridKernalContext ctx) {
         super(ctx);
@@ -245,6 +248,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
                 .sendQueueLimit(cfg.getSendQueueLimit())
                 .filters(filters)
                 .directMode(false)
+                .metricRegistry(ctx.metric().registry(REST_CONNECTOR_METRIC_GROUP_NAME))
                 .build();
 
             srv.idleTimeout(cfg.getIdleTimeout());

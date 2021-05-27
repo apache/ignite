@@ -26,6 +26,9 @@ import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.nio.GridNioException;
 import org.apache.ignite.internal.util.nio.GridNioFilterAdapter;
 import org.apache.ignite.internal.util.nio.GridNioFinishedFuture;
@@ -35,6 +38,7 @@ import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META;
 
@@ -72,6 +76,18 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     /** Whether direct mode is used. */
     private boolean directMode;
 
+    /** The name of the metric that provides histogram of SSL handshake duration. */
+    public static final String SSL_HANDSHAKE_DURATION_HISTOGRAM_METRIC_NAME = "sslHandshakeDurationHistogram";
+
+    /** The name of the metric that provides number of rejected session due to SSL errors. */
+    public static final String SSL_REJECTED_SESSIONS_CNT_METRIC_NAME = "sslRejectedSessionsCount";
+
+    /** Metric that indicates the number of rejected sessions due to SSL errors. */
+    @Nullable private LongAdderMetric rejectedSesMetric;
+
+    /** Histogram that provides distribution of SSL handshake duration. */
+    @Nullable private HistogramMetricImpl handshakeDurationHistogram;
+
     /**
      * Creates SSL filter.
      *
@@ -87,6 +103,20 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
         this.sslCtx = sslCtx;
         this.directBuf = directBuf;
         this.order = order;
+    }
+
+    /** Registers SSL metrics in the specified registry. */
+    public void registerMetrics(MetricRegistry mreg) {
+        handshakeDurationHistogram = mreg.histogram(
+            SSL_HANDSHAKE_DURATION_HISTOGRAM_METRIC_NAME,
+            new long[] {250, 500, 1000},
+            "Histogram of SSL handshake duration in milliseconds."
+        );
+
+        rejectedSesMetric = mreg.longAdderMetric(
+            SSL_REJECTED_SESSIONS_CNT_METRIC_NAME,
+            "The number of rejected TCP sessions due to SSL errors."
+        );
     }
 
     /**
@@ -201,6 +231,20 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
 
             sslMeta.handler(hnd);
 
+            if (handshakeDurationHistogram != null) {
+                GridNioFutureImpl<?> fut = ses.meta(HANDSHAKE_FUT_META_KEY);
+
+                if (fut == null) {
+                    fut = new GridNioFutureImpl<>(null);
+
+                   ses.addMeta(HANDSHAKE_FUT_META_KEY, fut);
+                }
+
+                final long handshakeStartTime = System.nanoTime();
+
+                fut.listen(f -> handshakeDurationHistogram.value(U.nanosToMillis(System.nanoTime() - handshakeStartTime)));
+            }
+
             hnd.handshake();
 
             ByteBuffer alreadyDecoded = sslMeta.decodedBuffer();
@@ -210,6 +254,9 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
         }
         catch (SSLException e) {
             U.error(log, "Failed to start SSL handshake (will close inbound connection): " + ses, e);
+
+            if (rejectedSesMetric != null)
+                rejectedSesMetric.increment();
 
             ses.close();
         }
@@ -358,6 +405,9 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
             }
         }
         catch (SSLException e) {
+            if (rejectedSesMetric != null)
+                rejectedSesMetric.increment();
+
             throw new GridNioException("Failed to decode SSL data: " + ses, e);
         }
         finally {

@@ -83,6 +83,8 @@ import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMessage;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.processors.tracing.Span;
@@ -184,10 +186,13 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_COMPACT_FOOTER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
+import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.DISCO_METRICS;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
+import static org.apache.ignite.internal.util.nio.GridNioServer.SSL_ENABLED_METRIC_NAME;
 import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_NODE_IDS_HISTORY_SIZE;
+import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.SSL_REJECTED_CONNECTIONS_CNT_METRIC_NAME;
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.AUTH_FAILED;
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.CHECK_FAILED;
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.CONNECTED;
@@ -316,6 +321,9 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** History of all node UUIDs that current node has seen. */
     private final GridBoundedLinkedHashSet<UUID> nodesIdsHist =
         new GridBoundedLinkedHashSet<>(JOINED_NODE_IDS_HISTORY_SIZE);
+
+    /** Metric that indicates the number of rejected connections due to SSL errors. */
+    private LongAdderMetric sslRejectedConnectionsMetric;
 
     /**
      * @param adapter Adapter.
@@ -486,6 +494,19 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** {@inheritDoc} */
     @Override public void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
         spiCtx.registerPort(tcpSrvr.port, TCP);
+
+        MetricRegistry mreg = (MetricRegistry)spiCtx.getOrCreateMetricRegistry(DISCO_METRICS);
+
+        boolean sslEnabled = spi.sslEnable;
+
+        mreg.booleanMetric(SSL_ENABLED_METRIC_NAME, "Whether SSL is enabled.").value(sslEnabled);
+
+        if (sslEnabled) {
+            sslRejectedConnectionsMetric = mreg.longAdderMetric(
+                SSL_REJECTED_CONNECTIONS_CNT_METRIC_NAME,
+                "The number of rejected TCP discovery connections due to SSL errors."
+            );
+        }
     }
 
     /** {@inheritDoc} */
@@ -7021,10 +7042,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (log.isDebugEnabled())
                         U.error(log, "Caught exception on handshake [err=" + e + ", sock=" + sock + ']', e);
 
-                    if (X.hasCause(e, SSLException.class) && spi.isSslEnabled() && !spi.isNodeStopping0())
+                    if (X.hasCause(e, SSLException.class) && spi.isSslEnabled() && !spi.isNodeStopping0()) {
                         LT.warn(log, "Failed to initialize connection " +
                             "(missing SSL configuration on remote node?) " +
                             "[rmtAddr=" + sock.getInetAddress() + ']', true);
+
+                        if (sslRejectedConnectionsMetric != null)
+                            sslRejectedConnectionsMetric.increment();
+                    }
                     else if ((X.hasCause(e, ObjectStreamException.class) || !sock.isClosed())
                         && !spi.isNodeStopping0()) {
                         if (U.isMacInvalidArgumentError(e))
