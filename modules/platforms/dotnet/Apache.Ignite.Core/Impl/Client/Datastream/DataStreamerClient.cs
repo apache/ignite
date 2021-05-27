@@ -526,7 +526,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 flags |= Flags.SkipStore;
             }
 
-            if (options.KeepBinary)
+            if (options.ReceiverKeepBinary)
             {
                 flags |= Flags.KeepBinary;
             }

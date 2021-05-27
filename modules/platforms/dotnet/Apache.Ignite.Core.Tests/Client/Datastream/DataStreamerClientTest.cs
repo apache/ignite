@@ -500,7 +500,20 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         [Test]
         public void TestStreamReceiverKeepBinary()
         {
-            Assert.Fail("TODO");
+            var cache = GetClientCache<Test>().WithKeepBinary<int, IBinaryObject>();
+
+            var options = new DataStreamerClientOptions<int, IBinaryObject>
+            {
+                Receiver = new StreamReceiverAddTwoKeepBinary(),
+                ReceiverKeepBinary = true
+            };
+            
+            using (var streamer = Client.GetDataStreamer(cache.Name, options))
+            {
+                streamer.Add(1, Client.GetBinary().ToBinary<IBinaryObject>(new Test {Val = 3}));
+            }
+            
+            Assert.AreEqual(5, cache[1]);
         }
 
         [Test]
