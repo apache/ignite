@@ -34,11 +34,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     /// <summary>
     /// Thin client data streamer.
     /// TODO:
-    /// * Auto flush interval
     /// * Fix old .NET build
     /// * XMLDoc
-    /// * Api review.
-    /// * Buffers still leak in RandomTopChange test?
+    /// * API review.
     /// </summary>
     internal sealed class DataStreamerClient<TK, TV> : IDataStreamerClient<TK, TV>
     {
