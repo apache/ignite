@@ -104,8 +104,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /** <inheritdoc /> */
         public void Dispose()
         {
-            // TODO: Lock?
-            // TODO: ThrowIfDisposed everywhere.
             Close(cancel: false);
         }
 
