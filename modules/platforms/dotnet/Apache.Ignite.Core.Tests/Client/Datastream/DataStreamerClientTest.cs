@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Store;
@@ -568,6 +569,25 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             }
         }
 
+        private class StreamReceiverAddTwoKeepBinary : IStreamReceiver<int, IBinaryObject>
+        {
+            /** <inheritdoc /> */
+            public void Receive(ICache<int, IBinaryObject> cache, ICollection<ICacheEntry<int, IBinaryObject>> entries)
+            {
+                var binary = cache.Ignite.GetBinary();
+
+                cache.PutAll(entries.ToDictionary(x => x.Key, x =>
+                    binary.ToBinary<IBinaryObject>(new Test
+                    {
+                        Val = x.Value.Deserialize<Test>().Val + 2
+                    })));
+            }
+        }
+
+        private class Test
+        {
+            public int Val { get; set; }
+        }
 
         private class BlockingCacheStore : CacheStoreAdapter<int, int>, IFactory<ICacheStore>
         {
