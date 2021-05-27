@@ -19,11 +19,9 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache.Configuration;
-    using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Client.Datastream;
@@ -155,21 +153,11 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 adderTask.Wait(TimeSpan.FromSeconds(15));
             }
 
-            Assert.AreEqual(1, cache[1]);
-
-            if (!TestUtils.WaitForCondition(() => id == cache.GetSize(), 1000))
-            {
-                // TODO: Some buffers never get sent - confirmed.
-                var expectedKeys = Enumerable.Range(1, id).ToArray();
-                var actualKeys = cache.Query(new ScanQuery<int, int>()).GetAll().Select(x => x.Key).ToArray();
-                var missingKeys = expectedKeys.Except(actualKeys);
-                var missingKeysStr = "Missing keys: " + string.Join(", ", missingKeys);
-                Console.WriteLine(">>>> Expected keys count: " + expectedKeys.Length);
-                Console.WriteLine(">>>> Actual keys count: " + actualKeys.Length);
-                Assert.AreEqual(id, cache.GetSize(), missingKeysStr);
-            }
-
+            TestUtils.WaitForTrueCondition(() => id == cache.GetSize());
             Assert.Greater(id, 10000);
+
+            Assert.AreEqual(1, cache[1]);
+            Assert.AreEqual(id, cache[id]);
         }
 
         [Test]
