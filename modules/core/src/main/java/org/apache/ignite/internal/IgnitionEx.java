@@ -658,7 +658,11 @@ public class IgnitionEx {
      * @throws IgniteCheckedException If grid could not be started. This exception will be thrown
      *      also if named grid has already been started.
      */
-    public static T2<Ignite, Boolean> start(IgniteConfiguration cfg, @Nullable GridSpringResourceContext springCtx, boolean failIfStarted) throws IgniteCheckedException {
+    public static T2<Ignite, Boolean> start(
+        IgniteConfiguration cfg,
+        @Nullable GridSpringResourceContext springCtx,
+        boolean failIfStarted
+    ) throws IgniteCheckedException {
         A.notNull(cfg, "cfg");
 
         T2<IgniteNamedInstance, Boolean> res = start0(new GridStartContext(cfg, null, springCtx), failIfStarted);
@@ -1098,7 +1102,10 @@ public class IgnitionEx {
      *      the flag is {@code false}.
      * @throws IgniteCheckedException If grid could not be started.
      */
-    private static T2<IgniteNamedInstance, Boolean> start0(GridStartContext startCtx, boolean failIfStarted ) throws IgniteCheckedException {
+    private static T2<IgniteNamedInstance, Boolean> start0(
+        GridStartContext startCtx,
+        boolean failIfStarted
+    ) throws IgniteCheckedException {
         assert startCtx != null;
 
         String name = startCtx.config().getIgniteInstanceName();

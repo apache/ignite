@@ -47,6 +47,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -894,40 +895,36 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
 
-        GridFutureAdapter<IdleVerifyResultV2> res = new GridFutureAdapter<>();
+        cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
 
-        collectSnapshotMetadata(name).listen(f0 -> {
-                if (f0.error() == null) {
-                    Map<ClusterNode, List<SnapshotMetadata>> metas = f0.result();
-
-                    runSnapshotVerification(metas).listen(f1 -> {
-                        if (f1.error() == null)
-                            res.onDone(f1.result());
-                        else if (f1.error() instanceof IgniteSnapshotVerifyException)
-                            res.onDone(new IdleVerifyResultV2(((IgniteSnapshotVerifyException)f1.error()).exceptions()));
-                        else
-                            res.onDone(f1.error());
-                    });
-                }
-                else {
-                    if (f0.error() instanceof IgniteSnapshotVerifyException)
-                        res.onDone(new IdleVerifyResultV2(((IgniteSnapshotVerifyException)f0.error()).exceptions()));
-                    else
-                        res.onDone(f0.error());
-                }
-            });
-
-        return res;
+        return checkSnapshot(name, null).chain(f -> {
+            try {
+                return f.get().idleVerifyResult();
+            }
+            catch (Throwable t) {
+                throw new GridClosureException(t);
+            }
+        });
     }
 
     /**
+     * The check snapshot procedure performs compute operation over the whole cluster to verify the snapshot
+     * entirety and partitions consistency. The result future will be completed with an exception if this
+     * exception is not related to the check procedure, and will be completed normally with the {@code IdleVerifyResult}.
+     *
      * @param name Snapshot name.
-     * @return Future with snapshot metadata obtained from nodes.
+     * @param grps Collection of cache group names to check.
+     * @return {@code true} if snapshot is OK.
      */
-    IgniteInternalFuture<Map<ClusterNode, List<SnapshotMetadata>>> collectSnapshotMetadata(String name) {
-        GridKernalContext kctx0 = cctx.kernalContext();
+    public IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> checkSnapshot(String name, @Nullable Collection<String> grps) {
+        A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
+        A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
+        A.ensure(grps == null || grps.stream().filter(Objects::isNull).collect(Collectors.toSet()).isEmpty(),
+            "Collection of cache groups names cannot contain null elements.");
 
-        kctx0.security().authorize(ADMIN_SNAPSHOT);
+        GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> res = new GridFutureAdapter<>();
+
+        GridKernalContext kctx0 = cctx.kernalContext();
 
         Collection<ClusterNode> bltNodes = F.view(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
             (node) -> CU.baselineNode(node, kctx0.state().clusterState()));
@@ -935,20 +932,51 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         kctx0.task().setThreadContext(TC_SKIP_AUTH, true);
         kctx0.task().setThreadContext(TC_SUBGRID, bltNodes);
 
-        return kctx0.task().execute(SnapshotMetadataCollectorTask.class, name);
-    }
+        kctx0.task().execute(SnapshotMetadataCollectorTask.class, name).listen(f0 -> {
+            if (f0.error() == null) {
+                Map<ClusterNode, List<SnapshotMetadata>> metas = f0.result();
 
-    /**
-     * @param metas Nodes snapshot metadata.
-     * @return Future with the verification results.
-     */
-    IgniteInternalFuture<IdleVerifyResultV2> runSnapshotVerification(Map<ClusterNode, List<SnapshotMetadata>> metas) {
-        GridKernalContext kctx0 = cctx.kernalContext();
+                Map<Integer, String> grpIds = grps == null ? Collections.emptyMap() :
+                    grps.stream().collect(Collectors.toMap(CU::cacheId, v -> v));
 
-        kctx0.task().setThreadContext(TC_SKIP_AUTH, true);
-        kctx0.task().setThreadContext(TC_SUBGRID, new ArrayList<>(metas.keySet()));
+                for (List<SnapshotMetadata> nodeMetas : metas.values()) {
+                    for (SnapshotMetadata meta : nodeMetas)
+                        grpIds.keySet().removeAll(meta.partitions().keySet());
+                }
 
-        return kctx0.task().execute(SnapshotPartitionsVerifyTask.class, metas);
+                if (!grpIds.isEmpty()) {
+                    res.onDone(new SnapshotPartitionsVerifyTaskResult(metas,
+                        new IdleVerifyResultV2(Collections.singletonMap(cctx.localNode(),
+                            new IllegalArgumentException("Cache group(s) was not " +
+                                "found in the snapshot [groups=" + grpIds.values() + ", snapshot=" + name + ']')))));
+
+                    return;
+                }
+
+                kctx0.task().setThreadContext(TC_SKIP_AUTH, true);
+                kctx0.task().setThreadContext(TC_SUBGRID, new ArrayList<>(metas.keySet()));
+
+                kctx0.task().execute(SnapshotPartitionsVerifyTask.class, new SnapshotPartitionsVerifyTaskArg(grps, metas))
+                    .listen(f1 -> {
+                        if (f1.error() == null)
+                            res.onDone(f1.result());
+                        else if (f1.error() instanceof IgniteSnapshotVerifyException)
+                            res.onDone(new SnapshotPartitionsVerifyTaskResult(metas,
+                                new IdleVerifyResultV2(((IgniteSnapshotVerifyException)f1.error()).exceptions())));
+                        else
+                            res.onDone(f1.error());
+                    });
+            }
+            else {
+                if (f0.error() instanceof IgniteSnapshotVerifyException)
+                    res.onDone(new SnapshotPartitionsVerifyTaskResult(null,
+                        new IdleVerifyResultV2(((IgniteSnapshotVerifyException)f0.error()).exceptions())));
+                else
+                    res.onDone(f0.error());
+            }
+        });
+
+        return res;
     }
 
     /**
@@ -997,8 +1025,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         try (InputStream in = new BufferedInputStream(new FileInputStream(smf))) {
             SnapshotMetadata meta = marsh.unmarshal(in, U.resolveClassLoader(cctx.gridConfig()));
 
-            if (!U.maskForFileName(meta.consistentId()).equals(smfName))
-                throw new IgniteException("Error reading snapshot metadata [smfName=" + smfName + ", consId=" + U.maskForFileName(meta.consistentId()));
+            if (!U.maskForFileName(meta.consistentId()).equals(smfName)) {
+                throw new IgniteException(
+                    "Error reading snapshot metadata [smfName=" + smfName + ", consId=" + U.maskForFileName(meta.consistentId())
+                );
+            }
 
             return meta;
         }
@@ -1095,17 +1126,26 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             ClusterSnapshotFuture snpFut0;
 
             synchronized (snpOpMux) {
-                if (clusterSnpFut != null && !clusterSnpFut.isDone())
-                    throw new IgniteException("Create snapshot request has been rejected. The previous snapshot operation was not completed.");
+                if (clusterSnpFut != null && !clusterSnpFut.isDone()) {
+                    throw new IgniteException(
+                        "Create snapshot request has been rejected. The previous snapshot operation was not completed."
+                    );
+                }
 
                 if (clusterSnpReq != null)
                     throw new IgniteException("Create snapshot request has been rejected. Parallel snapshot processes are not allowed.");
 
-                if (localSnapshotNames().contains(name))
-                    throw new IgniteException("Create snapshot request has been rejected. Snapshot with given name already exists on local node.");
+                if (localSnapshotNames().contains(name)) {
+                    throw new IgniteException(
+                        "Create snapshot request has been rejected. Snapshot with given name already exists on local node."
+                    );
+                }
 
-                if (isRestoring())
-                    throw new IgniteException("Snapshot operation has been rejected. Cache group restore operation is currently in progress.");
+                if (isRestoring()) {
+                    throw new IgniteException(
+                        "Snapshot operation has been rejected. Cache group restore operation is currently in progress."
+                    );
+                }
 
                 snpFut0 = new ClusterSnapshotFuture(UUID.randomUUID(), name);
 
@@ -1285,11 +1325,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         List<File> grps = cacheDirectories(nodePath, name -> name.equals(grpName));
 
-        if (F.isEmpty(grps))
-            throw new IgniteCheckedException("The snapshot cache group not found [dir=" + snpDir.getAbsolutePath() + ", grpName=" + grpName + ']');
+        if (F.isEmpty(grps)) {
+            throw new IgniteCheckedException(
+                "The snapshot cache group not found [dir=" + snpDir.getAbsolutePath() + ", grpName=" + grpName + ']'
+            );
+        }
 
-        if (grps.size() > 1)
-            throw new IgniteCheckedException("The snapshot cache group directory cannot be uniquely identified [dir=" + snpDir.getAbsolutePath() + ", grpName=" + grpName + ']');
+        if (grps.size() > 1) {
+            throw new IgniteCheckedException(
+                "The snapshot cache group directory cannot be uniquely identified [dir=" + snpDir.getAbsolutePath() +
+                    ", grpName=" + grpName + ']'
+            );
+        }
 
         File snpPart = getPartitionFile(new File(snapshotLocalDir(snpName), databaseRelativePath(folderName)),
             grps.get(0).getName(), partId);
@@ -1331,8 +1378,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         boolean withMetaStorage,
         SnapshotSender snpSndr
     ) {
-        if (!busyLock.enterBusy())
-            return new SnapshotFutureTask(new IgniteCheckedException("Snapshot manager is stopping [locNodeId=" + cctx.localNodeId() + ']'));
+        if (!busyLock.enterBusy()) {
+            return new SnapshotFutureTask(
+                new IgniteCheckedException("Snapshot manager is stopping [locNodeId=" + cctx.localNodeId() + ']'));
+        }
 
         try {
             if (locSnpTasks.containsKey(snpName))

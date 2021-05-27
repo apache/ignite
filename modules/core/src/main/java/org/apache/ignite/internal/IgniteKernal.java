@@ -55,6 +55,9 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.CacheException;
+import javax.cache.expiry.Duration;
+import javax.cache.expiry.EternalExpiryPolicy;
+import javax.cache.expiry.ExpiryPolicy;
 import javax.management.JMException;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsAdapter;
@@ -1561,6 +1564,37 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 EventType.EVT_NODE_JOINED, localNode());
 
         startTimer.finishGlobalStage("Await exchange");
+
+        for (GridCacheContext cacheCtx : ctx.cache().context().cacheContexts()) {
+            System.out.println("====================================");
+            System.out.println("cache=" + cacheCtx.cache().name() +
+                    ", expirePlc=" + buildExpirePolicyInfo(cacheCtx));
+            System.out.println("====================================");
+        }
+    }
+
+    /**
+     * Build formatted string with expire policy info.
+     *
+     * @param cacheCtx - cache context.
+     * @return formatted expire policy info.
+     */
+    private String buildExpirePolicyInfo(GridCacheContext cacheCtx) {
+        ExpiryPolicy expPlc = cacheCtx.expiry();
+        if (expPlc == null || expPlc instanceof EternalExpiryPolicy) return null;
+
+        Duration dur;
+        if (expPlc.getExpiryForCreation() != null)
+            dur = expPlc.getExpiryForCreation();
+        else if (expPlc.getExpiryForUpdate() != null)
+            dur = expPlc.getExpiryForUpdate();
+        else
+            dur = expPlc.getExpiryForAccess();
+
+        if (dur == null || dur.getTimeUnit() == null) return null;
+
+        return "expirePolicy=[duration=" + dur.getTimeUnit().toMillis(dur.getDurationAmount()) +
+                "ms, isEagerTtl=" + cacheCtx.ttl().eagerTtlEnabled() + ']';
     }
 
     /** */
@@ -2387,7 +2421,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 long offHeapUsed = region.pageMemory().systemPageSize() * pagesCnt;
                 long offHeapInit = regCfg.getInitialSize();
                 long offHeapMax = regCfg.getMaxSize();
-                long offHeapComm = region.memoryMetrics().getOffHeapSize();
+                long offHeapComm = region.metrics().getOffHeapSize();
 
                 long offHeapUsedInMBytes = offHeapUsed / MEGABYTE;
                 long offHeapMaxInMBytes = offHeapMax / MEGABYTE;
@@ -2427,7 +2461,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     .a("%, allocRam=").a(dblFmt.format(offHeapCommInMBytes)).a("MB");
 
                 if (regCfg.isPersistenceEnabled()) {
-                    long pdsUsed = region.memoryMetrics().getTotalAllocatedSize();
+                    long pdsUsed = region.metrics().getTotalAllocatedSize();
                     long pdsUsedInMBytes = pdsUsed / MEGABYTE;
 
                     pdsUsedSummary += pdsUsed;

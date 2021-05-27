@@ -188,14 +188,21 @@ public class KillQueryOnClientDisconnectTest extends GridCommonAbstractTest {
                 assertEquals(1, runningQueries.size());
 
                 IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
-                    clientNode().cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("KILL QUERY '" + runningQueries.get(0).globalQueryId() + "'"));
+                    clientNode().cache(DEFAULT_CACHE_NAME).query(
+                        new SqlFieldsQuery("KILL QUERY '" + runningQueries.get(0).globalQueryId() + "'")
+                    );
                 });
 
                 doSleep(500);
 
                 TestSQLFunctions.reqLatch.countDown();
 
-                GridTestUtils.assertThrows(log, () -> fut.get(TIMEOUT), IgniteCheckedException.class, "Failed to cancel query because local client node has been disconnected from the cluster");
+                GridTestUtils.assertThrows(
+                    log,
+                    () -> fut.get(TIMEOUT),
+                    IgniteCheckedException.class,
+                    "Failed to cancel query because local client node has been disconnected from the cluster"
+                );
             }
             catch (Exception e) {
                 log.error("Unexpected exception.", e);

@@ -647,7 +647,11 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                             0,
                                             0,
                                             needVer,
-                                            U.deploymentClassLoader(ctx.kernalContext(), U.contextDeploymentClassLoaderId(ctx.kernalContext())));
+                                            U.deploymentClassLoader(
+                                                ctx.kernalContext(),
+                                                U.contextDeploymentClassLoaderId(ctx.kernalContext())
+                                            )
+                                        );
                                     }
                                 }
                                 else

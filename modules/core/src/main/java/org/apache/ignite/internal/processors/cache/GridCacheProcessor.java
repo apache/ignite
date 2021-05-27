@@ -2297,7 +2297,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             dataRegion = ctx.config().getDataStorageConfiguration().getDefaultDataRegionConfiguration().getName();
 
         if (log.isInfoEnabled()) {
-            String expPlcInfo = buildExpirePolicyInfo(cacheCtx);
+            String expPlcInfo = "";//cfg.getExpirePolicyInfo();
 
             log.info("Started cache [name=" + cfg.getName() +
                 ", id=" + cacheCtx.cacheId() +
@@ -2380,7 +2380,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             desc.schema() != null ? desc.schema() : new QuerySchema(), desc.sql());
 
         if (log.isInfoEnabled()) {
-            String expPlcInfo = buildExpirePolicyInfo(cacheCtx);
+            String expPlcInfo = "";//cfg.getExpirePolicyInfo();
 
             log.info("Started cache in recovery mode [name=" + cfg.getName() +
                 ", id=" + cacheCtx.cacheId() +
@@ -2394,26 +2394,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         return cacheCtx;
-    }
-
-    /**
-     * Get formatted string with expire policy info.
-     *
-     * @param cacheCtx - grid cache context.
-     * @return formatted expire policy info.
-     */
-    private String buildExpirePolicyInfo(GridCacheContext cacheCtx) {
-        ExpiryPolicy expPlc = cacheCtx.expiry();
-
-        if (expPlc == null) return null;
-
-        Duration dur = expPlc.getExpiryForCreation() != null ? expPlc.getExpiryForCreation() :
-                expPlc.getExpiryForUpdate() != null ? expPlc.getExpiryForUpdate() : expPlc.getExpiryForAccess();
-
-        if (dur == null || dur.getTimeUnit() == null) return null;
-
-        return "expirePolicy=[duration=" + dur.getTimeUnit().toMillis(dur.getDurationAmount()) +
-                "ms, isEagerTtl=" + cacheCtx.config().isEagerTtl() + ']';
     }
 
     /**

@@ -120,7 +120,8 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
 
         assertEquals(VAL, ignite.cache(CACHE_NAME).get(KEY));
 
-        final PersistenceBasicCompatibilityTest.TestStringContainerToBePrinted actual = (PersistenceBasicCompatibilityTest.TestStringContainerToBePrinted)ignite.cache(CACHE_NAME).get(KEY_OBJ);
+        final PersistenceBasicCompatibilityTest.TestStringContainerToBePrinted actual =
+            (PersistenceBasicCompatibilityTest.TestStringContainerToBePrinted)ignite.cache(CACHE_NAME).get(KEY_OBJ);
         assertEquals(VAL, actual.data);
 
         assertNodeIndexesInFolder(); // should not create any new style directories
