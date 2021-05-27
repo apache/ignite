@@ -30,10 +30,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
-    /// TODO:
-    /// * Receiver tests
-    /// * keepBinary tests
-    /// * Remove diagnostic output
+    /// Thin client data streamer.
     /// </summary>
     internal sealed class DataStreamerClient<TK, TV> : IDataStreamerClient<TK, TV>
     {
