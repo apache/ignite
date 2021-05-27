@@ -945,7 +945,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
             if (ex != null)
             {
-                throw new ObjectDisposedException("Data streamer has been disposed", ex);
+                throw new IgniteClientException("Client connection has failed. Examine InnerException for details", ex);
             }
         }
 
