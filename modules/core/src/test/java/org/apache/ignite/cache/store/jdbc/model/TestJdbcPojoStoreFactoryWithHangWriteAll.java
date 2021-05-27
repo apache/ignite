@@ -58,7 +58,12 @@ public class TestJdbcPojoStoreFactoryWithHangWriteAll<K, V> extends CacheJdbcPoj
     /** */
     public static class TestJdbcPojoStoreWithHangWriteAll<K, V> extends CacheJdbcPojoStore<K, V> {
         /** {@inheritDoc} */
-        @Override protected void fillParameter(PreparedStatement stmt, int idx, JdbcTypeField field, @Nullable Object fieldVal) throws CacheException {
+        @Override protected void fillParameter(
+            PreparedStatement stmt,
+            int idx,
+            JdbcTypeField field,
+            @Nullable Object fieldVal
+        ) throws CacheException {
             try {
                 super.fillParameter(stmt, idx, field, fieldVal);
             }

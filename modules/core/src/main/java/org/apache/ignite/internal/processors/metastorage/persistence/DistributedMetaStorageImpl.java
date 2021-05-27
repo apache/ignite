@@ -28,6 +28,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Future;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiConsumer;
@@ -74,7 +75,6 @@ import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
 import org.apache.ignite.spi.systemview.view.MetastorageView;
-import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
@@ -176,7 +176,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     );
 
     /**
-     * Map with futures used to wait for async write/remove operations completion.
+     * Map with user futures used to wait for async write/remove operations completion.
      */
     private final ConcurrentMap<UUID, GridFutureAdapter<Boolean>> updateFuts = new ConcurrentHashMap<>();
 
@@ -441,11 +441,16 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     private void onMetaStorageReadyForWrite(ReadWriteMetastorage metastorage) {
         assert isPersistenceEnabled;
 
-        worker.setMetaStorage(metastorage);
+        lock.writeLock().lock();
 
-        IgniteThread workerThread = new IgniteThread(ctx.igniteInstanceName(), "dms-writer-thread", worker);
+        try {
+            worker.setMetaStorage(metastorage);
 
-        workerThread.start();
+            worker.start();
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
     }
 
     /** {@inheritDoc} */
@@ -1166,6 +1171,8 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             return;
         }
 
+        lock.writeLock().lock();
+
         try {
             if (msg instanceof DistributedMetaStorageCasMessage)
                 completeCas((DistributedMetaStorageCasMessage)msg);
@@ -1177,6 +1184,9 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         }
         catch (IgniteCheckedException | Error e) {
             throw criticalError(e);
+        }
+        finally {
+            lock.writeLock().unlock();
         }
     }
 
@@ -1211,6 +1221,32 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     }
 
     /**
+     * @return Future which will be completed when all the updates prior to the pause processed.
+     */
+    public Future<?> flush() {
+        assert isPersistenceEnabled;
+
+        return worker.flush();
+    }
+
+    /**
+     * @param compFut Future which should be completed when worker may proceed with updates.
+     */
+    public void suspend(IgniteInternalFuture<?> compFut) {
+        assert isPersistenceEnabled;
+
+        lock.readLock().lock();
+
+        try {
+            // Read lock taken, so no other distributed updated will be added to the queue.
+            worker.suspend(compFut);
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    /**
      * Invoke failure handler and rethrow passed exception, possibly wrapped into the unchecked one.
      */
     private RuntimeException criticalError(Throwable e) {
@@ -1231,39 +1267,40 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
     private void completeWrite(
         DistributedMetaStorageHistoryItem histItem
     ) throws IgniteCheckedException {
-        lock.writeLock().lock();
+        assert lock.writeLock().isHeldByCurrentThread();
 
-        try {
-            histItem = optimizeHistoryItem(histItem);
+        histItem = optimizeHistoryItem(histItem);
 
-            if (histItem == null)
-                return;
+        if (histItem == null)
+            return;
 
-            ver = ver.nextVersion(histItem);
+        ver = ver.nextVersion(histItem);
 
-            for (int i = 0, len = histItem.keys().length; i < len; i++) {
-                String key = histItem.keys()[i];
-                byte[] valBytes = histItem.valuesBytesArray()[i];
+        for (int i = 0, len = histItem.keys().length; i < len; i++) {
+            String key = histItem.keys()[i];
+            byte[] valBytes = histItem.valuesBytesArray()[i];
 
-                notifyListeners(
-                    histItem.keys()[i],
-                    () -> bridge.read(key),
-                    () -> unmarshal(marshaller, valBytes));
-            }
-
-            for (int i = 0, len = histItem.keys().length; i < len; i++)
-                bridge.write(histItem.keys()[i], histItem.valuesBytesArray()[i]);
-
-            addToHistoryCache(ver.id(), histItem);
+            notifyListeners(
+                histItem.keys()[i],
+                () -> bridge.read(key),
+                () -> unmarshal(marshaller, valBytes));
         }
-        finally {
-            lock.writeLock().unlock();
-        }
+
+        for (int i = 0, len = histItem.keys().length; i < len; i++)
+            bridge.write(histItem.keys()[i], histItem.valuesBytesArray()[i]);
+
+        addToHistoryCache(ver.id(), histItem);
 
         if (isPersistenceEnabled)
             worker.update(histItem);
 
-        shrinkHistory();
+        // Shrink history so that its estimating size doesn't exceed {@link #histMaxBytes}.
+        while (histCache.sizeInBytes() > histMaxBytes && histCache.size() > 1) {
+            histCache.removeOldest();
+
+            if (isPersistenceEnabled)
+                worker.removeHistItem(ver.id() - histCache.size());
+        }
     }
 
     /**
@@ -1362,25 +1399,6 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
         assert lock.isWriteLockedByCurrentThread();
 
         histCache.clear();
-    }
-
-    /**
-     * Shrikn history so that its estimating size doesn't exceed {@link #histMaxBytes}.
-     */
-    private void shrinkHistory() {
-        lock.writeLock().lock();
-
-        try {
-            while (histCache.sizeInBytes() > histMaxBytes && histCache.size() > 1) {
-                histCache.removeOldest();
-
-                if (isPersistenceEnabled)
-                    worker.removeHistItem(ver.id() - histCache.size());
-            }
-        }
-        finally {
-            lock.writeLock().unlock();
-        }
     }
 
     /**

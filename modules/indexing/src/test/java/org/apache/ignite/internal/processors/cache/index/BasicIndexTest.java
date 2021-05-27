@@ -572,7 +572,9 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         System.err.println(plan);
 
-        return idxName != null ? (!plan.contains(SCAN_INDEX_NAME_SUFFIX) && plan.contains(idxName.toUpperCase())) : !plan.contains(SCAN_INDEX_NAME_SUFFIX);
+        return idxName != null
+            ? (!plan.contains(SCAN_INDEX_NAME_SUFFIX) && plan.contains(idxName.toUpperCase()))
+            : !plan.contains(SCAN_INDEX_NAME_SUFFIX);
     }
 
     /** */

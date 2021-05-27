@@ -308,7 +308,8 @@ public class IgniteSqlKeyValueFieldsTest extends AbstractIndexingCommonTest {
         checkInsert(cache2, "insert into Integer (_key, _val) values (?, ?)", 100, 1);
         checkInsert(cache2, "insert into Integer (_key, _val) values (?, ?)", 200, 2);
 
-        QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("select p.id, j._key from Person p, \"" + CACHE_JOB + "\".Integer j where p.id = j._val"));
+        QueryCursor<List<?>> cursor =
+            cache.query(new SqlFieldsQuery("select p.id, j._key from Person p, \"" + CACHE_JOB + "\".Integer j where p.id = j._val"));
         List<List<?>> results = cursor.getAll();
         assertEquals(2, results.size());
         assertEquals(1, results.get(0).get(0));

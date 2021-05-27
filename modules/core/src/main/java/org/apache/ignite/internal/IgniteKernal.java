@@ -1250,9 +1250,15 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 startTimer.finishGlobalStage("Configure binary metadata");
 
                 startProcessor(createComponent(IGridClusterStateProcessor.class, ctx));
-                startProcessor(new IgniteAuthenticationProcessor(ctx));
                 startProcessor(new PerformanceStatisticsProcessor(ctx));
                 startProcessor(new GridCacheProcessor(ctx));
+
+                if (cfg.isAuthenticationEnabled()) {
+                    IgniteSecurityProcessor sec = (IgniteSecurityProcessor)ctx.security();
+
+                    ((IgniteAuthenticationProcessor)sec.securityProcessor()).startProcessor();
+                }
+
                 startProcessor(new IndexProcessor(ctx));
                 startProcessor(new GridQueryProcessor(ctx));
                 startProcessor(new ClientListenerProcessor(ctx));
@@ -1567,6 +1573,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      */
     private GridProcessor securityProcessor() throws IgniteCheckedException {
         GridSecurityProcessor prc = createComponent(GridSecurityProcessor.class, ctx);
+
+        if (cfg.isAuthenticationEnabled() && !(prc instanceof IgniteAuthenticationProcessor)) {
+            throw new IgniteCheckedException("Invalid security configuration: both authentication is enabled" +
+                " and external security plugin is provided.");
+        }
 
         return prc != null && prc.enabled()
             ? new IgniteSecurityProcessor(ctx, prc)
@@ -2376,7 +2387,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 long offHeapUsed = region.pageMemory().systemPageSize() * pagesCnt;
                 long offHeapInit = regCfg.getInitialSize();
                 long offHeapMax = regCfg.getMaxSize();
-                long offHeapComm = region.memoryMetrics().getOffHeapSize();
+                long offHeapComm = region.metrics().getOffHeapSize();
 
                 long offHeapUsedInMBytes = offHeapUsed / MEGABYTE;
                 long offHeapMaxInMBytes = offHeapMax / MEGABYTE;
@@ -2416,7 +2427,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     .a("%, allocRam=").a(dblFmt.format(offHeapCommInMBytes)).a("MB");
 
                 if (regCfg.isPersistenceEnabled()) {
-                    long pdsUsed = region.memoryMetrics().getTotalAllocatedSize();
+                    long pdsUsed = region.metrics().getTotalAllocatedSize();
                     long pdsUsedInMBytes = pdsUsed / MEGABYTE;
 
                     pdsUsedSummary += pdsUsed;
@@ -4357,7 +4368,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             return (T)new GridClusterStateProcessor(ctx);
 
         if (cls.equals(GridSecurityProcessor.class))
-            return null;
+            return ctx.config().isAuthenticationEnabled() ? (T)new IgniteAuthenticationProcessor(ctx) : null;
 
         if (cls.equals(IgniteRestProcessor.class))
             return (T)new GridRestProcessor(ctx);

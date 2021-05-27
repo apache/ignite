@@ -155,7 +155,8 @@ public class VectorNormTest {
             final double[] ref = new double[size];
             final boolean nonNegative = pow != (int)pow;
 
-            final VectorImplementationsTest.ElementsChecker checker = new VectorImplementationsTest.ElementsChecker(v, ref, desc + ", pow = " + pow, nonNegative);
+            final VectorImplementationsTest.ElementsChecker checker =
+                new VectorImplementationsTest.ElementsChecker(v, ref, desc + ", pow = " + pow, nonNegative);
             final double norm = new Norm(ref, pow).calculate();
 
             for (int idx = 0; idx < size; idx++)

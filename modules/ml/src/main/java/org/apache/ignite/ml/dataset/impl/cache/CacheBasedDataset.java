@@ -204,7 +204,8 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
      */
     private <R> R computeForAllPartitions(IgniteFunction<Integer, R> fun, IgniteBinaryOperator<R> reduce, R identity) {
         Collection<String> cacheNames = Arrays.asList(datasetCache.getName(), upstreamCache.getName());
-        Collection<R> results = ComputeUtils.affinityCallWithRetries(ignite, cacheNames, fun, retries, RETRY_INTERVAL, locLearningEnv.deployingContext());
+        Collection<R> results =
+            ComputeUtils.affinityCallWithRetries(ignite, cacheNames, fun, retries, RETRY_INTERVAL, locLearningEnv.deployingContext());
 
         R res = identity;
         for (R partRes : results)

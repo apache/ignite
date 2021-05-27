@@ -31,7 +31,6 @@ import org.apache.ignite.configuration.ThinClientConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
@@ -144,7 +143,13 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
      * @param maxCursors Max active cursors.
      * @param thinCfg Thin-client configuration.
      */
-    public ClientConnectionContext(GridKernalContext ctx, GridNioSession ses, long connId, int maxCursors, ThinClientConfiguration thinCfg) {
+    public ClientConnectionContext(
+        GridKernalContext ctx,
+        GridNioSession ses,
+        long connId,
+        int maxCursors,
+        ThinClientConfiguration thinCfg
+    ) {
         super(ctx, ses, connId);
 
         this.maxCursors = maxCursors;
@@ -214,11 +219,11 @@ public class ClientConnectionContext extends ClientListenerAbstractConnectionCon
             }
         }
 
-        AuthorizationContext authCtx = authenticate(ses, user, pwd);
+        authenticate(ses, user, pwd);
 
         initClientDescriptor("cli");
 
-        handler = new ClientRequestHandler(this, authCtx, currentProtocolContext);
+        handler = new ClientRequestHandler(this, currentProtocolContext);
         parser = new ClientMessageParser(this, currentProtocolContext);
 
         this.ses = ses;

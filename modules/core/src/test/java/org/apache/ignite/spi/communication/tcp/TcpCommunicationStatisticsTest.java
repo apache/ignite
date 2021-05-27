@@ -137,7 +137,12 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
             );
 
             // Send custom message from node0 to node1.
-            grid(0).context().io().sendToGridTopic(grid(1).cluster().localNode(), GridTopic.TOPIC_IO_TEST, new GridTestMessage(), GridIoPolicy.PUBLIC_POOL);
+            grid(0).context().io().sendToGridTopic(
+                grid(1).cluster().localNode(),
+                GridTopic.TOPIC_IO_TEST,
+                new GridTestMessage(),
+                GridIoPolicy.PUBLIC_POOL
+            );
 
             latch.await(10, TimeUnit.SECONDS);
 

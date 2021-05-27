@@ -103,5 +103,14 @@ public class BinaryAbstractOutputStreamTest extends GridCommonAbstractTest {
         catch (IllegalArgumentException ignored) {
             // Expected exception.
         }
+
+        try {
+            BinaryAbstractOutputStream.capacity(0, -1);
+
+            fail();
+        }
+        catch (IllegalArgumentException ignored) {
+            // Expected exception.
+        }
     }
 }

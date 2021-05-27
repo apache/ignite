@@ -52,7 +52,6 @@ import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.managers.systemview.JmxSystemViewExporterSpi;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
-import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
@@ -386,11 +385,6 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public <K, V> DataStreamProcessor<K, V> dataStream() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteAuthenticationProcessor authentication() {
         return null;
     }
 
@@ -734,7 +728,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
-    @Override public DurableBackgroundTasksProcessor durableBackgroundTasksProcessor() {
+    @Override public DurableBackgroundTasksProcessor durableBackgroundTask() {
         return null;
     }
 
