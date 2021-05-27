@@ -229,7 +229,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 Parallel.For(0, count, i => streamer.Add(i, i + 2));
                 
                 streamer.Flush();
-                CheckArrayPoolLeak(streamer, GridCount);
+                CheckArrayPoolLeak(streamer);
             }
 
             var size = cache.GetSize();
@@ -520,7 +520,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
 #endif
 
-        internal static void CheckArrayPoolLeak<TK, TV>(IDataStreamerClient<TK, TV> streamer, int maxDiff)
+        internal static void CheckArrayPoolLeak<TK, TV>(IDataStreamerClient<TK, TV> streamer, int maxDiff = 0)
         {
             var streamerImpl = (DataStreamerClient<TK, TV>) streamer;
                 
