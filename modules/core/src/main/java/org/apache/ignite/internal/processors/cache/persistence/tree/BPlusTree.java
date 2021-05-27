@@ -2734,7 +2734,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
 
         // Update forward page.
-        io.splitForwardPage(pageAddr, fwdId, fwdBuf, mid, cnt, pageSize());
+        io.splitForwardPage(pageAddr, fwdId, fwdBuf, mid, cnt, pageSize(), metrics);
 
         // Update existing page.
         io.splitExistingPage(pageAddr, mid, fwdId);
@@ -3797,7 +3797,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                                     null,
                                     fwdId,
                                     pageSize(),
-                                    needWal);
+                                    needWal,
+                                    metrics);
 
                                 if (needWal)
                                     wal.log(new NewRootInitRecord<>(grpId, newRootId, newRootId,

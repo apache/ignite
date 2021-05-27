@@ -106,7 +106,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     protected static final int CACHE_KEYS_RANGE = 1024;
 
     /** Timeout in milliseconds to await for snapshot operation being completed. */
-    protected static final int SNAPSHOT_AWAIT_TIMEOUT_MS = 15_000;
+    protected static final long TIMEOUT = 15_000;
 
     /** List of collected snapshot test events. */
     protected final List<Integer> locEvts = new CopyOnWriteArrayList<>();
