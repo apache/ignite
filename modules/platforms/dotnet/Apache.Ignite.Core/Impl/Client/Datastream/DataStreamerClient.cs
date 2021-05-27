@@ -69,20 +69,23 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             new ConcurrentDictionary<ClientSocket, DataStreamerClientPerNodeBuffer<TK, TV>>();
 
         /** */
+        private readonly ReaderWriterLockSlim _rwLock = new ReaderWriterLockSlim();
+
+        /** Cached flags. */
+        private readonly Flags _flags;
+        
+        /** */
         private readonly ConcurrentStack<DataStreamerClientEntry<TK, TV>[]> _arrayPool
             = new ConcurrentStack<DataStreamerClientEntry<TK, TV>[]>();
 
         /** */
-        private readonly ReaderWriterLockSlim _rwLock = new ReaderWriterLockSlim();
+        private int _arraysAllocated;
 
         /** Exception. When set, the streamer is closed. */
         private volatile Exception _exception;
 
         /** Cancelled flag. */
         private volatile bool _cancelled;
-
-        /** Cached flags. */
-        private readonly Flags _flags;
 
         public DataStreamerClient(
             ClientFailoverSocket socket,
@@ -214,6 +217,22 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
         }
 
+        /// <summary>
+        /// Gets the count of allocated arrays.
+        /// </summary>
+        internal int ArraysAllocated
+        {
+            get { return Interlocked.CompareExchange(ref _arraysAllocated, -1, -1); }
+        }
+
+        /// <summary>
+        /// Gets the count of pooled arrays. 
+        /// </summary>
+        internal int ArraysPooled
+        {
+            get { return _arrayPool.Count; }
+        }
+
         internal DataStreamerClientEntry<TK, TV>[] GetArray()
         {
             DataStreamerClientEntry<TK,TV>[] res;
@@ -229,6 +248,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 return res;
             }
 
+            Interlocked.Increment(ref _arraysAllocated);
             res = new DataStreamerClientEntry<TK, TV>[_options.PerNodeBufferSize];
             return res;
         }
