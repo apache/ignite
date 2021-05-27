@@ -1202,16 +1202,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         // Scan iterator may return already transformed entry
                         data.add(row0);
 
-                    else if (type == TEXT)
-                        // (K, V, score). Value transfers as BinaryObject.
-                        data.add(row0);
-
                     else {
                         IgniteBiTuple<K, V> row = (IgniteBiTuple<K, V>)row0;
 
                         final K key = row.getKey();
 
-                        V val = row.getValue();
+                        final V val = row.getValue();
 
                         if (log.isDebugEnabled()) {
                             ClusterNode primaryNode = cctx.affinity().primaryByKey(key,
@@ -1311,8 +1307,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             else
                                 continue;
                         }
-                        else
-                            data.add(new T2<>(key, val));
+                        else {
+                            if (type == TEXT)
+                                // (K, V, score). Value transfers as BinaryObject.
+                                data.add(row0);
+                            else
+                                data.add(new T2<>(key, val));
+                        }
                     }
 
                     if (!loc) {
