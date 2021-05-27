@@ -133,10 +133,10 @@ public class SnapshotCommand extends AbstractCommand<Object> {
 
         Map<String, String> startParams = new LinkedHashMap<>(commonParams);
 
-        startParams.put("groupName1,...groupNameN", "Cache group names.");
+        startParams.put("group1,...groupN", "Cache group names.");
 
         Command.usage(log, "Restore snapshot:", SNAPSHOT, startParams, RESTORE.toString(),
-            SnapshotRestoreAction.START.toString(), "snapshot_name", optional("group_name1,...group_nameN"));
+            SnapshotRestoreAction.START.toString(), "snapshot_name", optional("group1,...groupN"));
 
         Command.usage(log, "Snapshot restore operation status:", SNAPSHOT, commonParams, RESTORE.toString(),
             SnapshotRestoreAction.STATUS.toString(), "snapshot_name");

@@ -156,11 +156,11 @@ This utility can do the following commands:
       snapshot_name  - Snapshot name.
 
   Restore snapshot:
-    control.(sh|bat) --snapshot restore --start snapshot_name [group_name1,...group_nameN]
+    control.(sh|bat) --snapshot restore --start snapshot_name [group1,...groupN]
 
     Parameters:
-      snapshot_name             - Snapshot name.
-      groupName1,...groupNameN  - Cache group names.
+      snapshot_name     - Snapshot name.
+      group1,...groupN  - Cache group names.
 
   Snapshot restore operation status:
     control.(sh|bat) --snapshot restore --status snapshot_name
