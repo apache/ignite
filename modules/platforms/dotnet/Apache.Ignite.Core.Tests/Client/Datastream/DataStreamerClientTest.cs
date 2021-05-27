@@ -577,15 +577,15 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
 #endif
 
-        internal static void CheckArrayPoolLeak<TK, TV>(IDataStreamerClient<TK, TV> streamer, int maxDiff = 0)
+        internal static void CheckArrayPoolLeak<TK, TV>(IDataStreamerClient<TK, TV> streamer)
         {
             var streamerImpl = (DataStreamerClient<TK, TV>) streamer;
+            
+            TestUtils.WaitForCondition(() => streamerImpl.ArraysAllocated == streamerImpl.ArraysPooled, 500);
                 
-            var poolStats = string.Format("Allocated={0}, Pooled={1}, MaxDiff={2}", 
-                streamerImpl.ArraysAllocated, streamerImpl.ArraysPooled, maxDiff);
-
-            Assert.LessOrEqual(streamerImpl.ArraysAllocated - streamerImpl.ArraysPooled, maxDiff, poolStats);
-            Console.WriteLine("Array pool stats: " + poolStats);
+            Assert.AreEqual(streamerImpl.ArraysAllocated, streamerImpl.ArraysPooled, "Pooled arrays should not leak.");
+            
+            Console.WriteLine("Array pool size: " + streamerImpl.ArraysPooled);
         }
 
         protected override IgniteConfiguration GetIgniteConfiguration()

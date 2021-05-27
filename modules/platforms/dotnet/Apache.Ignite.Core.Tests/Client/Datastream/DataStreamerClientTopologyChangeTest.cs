@@ -152,7 +152,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 adderTask.Wait(TimeSpan.FromSeconds(15));
 
                 streamer.Flush();
-                DataStreamerClientTest.CheckArrayPoolLeak(streamer, maxNodes);
+                DataStreamerClientTest.CheckArrayPoolLeak(streamer);
             }
 
             TestUtils.WaitForTrueCondition(() => id == cache.GetSize());
