@@ -61,7 +61,7 @@ public class SortAggregateConverterRule {
         /** {@inheritDoc} */
         @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq,
             LogicalAggregate agg) {
-            // Applicable only for GROUP BY
+            // Applicable only for GROUP BY or SELECT DISTINCT
             if (F.isEmpty(agg.getGroupSet()) || agg.getGroupSets().size() > 1)
                 return null;
 
@@ -102,7 +102,7 @@ public class SortAggregateConverterRule {
         /** {@inheritDoc} */
         @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq,
             LogicalAggregate agg) {
-            // Applicable only for GROUP BY
+            // Applicable only for GROUP BY or SELECT DISTINCT
             if (F.isEmpty(agg.getGroupSet()) || agg.getGroupSets().size() > 1)
                 return null;
 

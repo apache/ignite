@@ -226,13 +226,16 @@ public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
 
         publicSchema.addTable("TEST", tbl);
 
-        String sql = "SELECT /*+ EXPAND_DISTINCT_AGG */ SUM(DISTINCT val0), AVG(DISTINCT val1) FROM test GROUP BY grp0";
+        String sql = "SELECT " +
+//            "/*+ EXPAND_DISTINCT_AGG */ " +
+            "/*+ EXPAND_DISTINCT_AGG, DISABLE_RULE('SortSingleAggregateConverterRule', 'SortMapReduceAggregateConverterRule') */ " +
+            "SUM(DISTINCT val0), AVG(DISTINCT val1) FROM test GROUP BY grp0";
 
         IgniteRel phys = physicalPlan(
             sql,
-            publicSchema,
-            algo.rulesToDisable
-        );
+            publicSchema);
+
+       System.out.println("+++\n" + RelOptUtil.toString(phys, SqlExplainLevel.ALL_ATTRIBUTES));
 
         checkSplitAndSerialization(phys, publicSchema);
 
@@ -292,3 +295,9 @@ public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
         }
     }
 }
+
+
+
+/*
+
+* */

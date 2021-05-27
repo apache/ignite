@@ -111,6 +111,11 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() {
+        stopAllGrids();
+    }
+
     /**
      * Test verifies that replicated cache with specified cache group
      * could be properly mapped on server nodes.

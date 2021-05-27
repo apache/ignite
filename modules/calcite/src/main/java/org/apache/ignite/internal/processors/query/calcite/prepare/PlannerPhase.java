@@ -147,7 +147,9 @@ public enum PlannerPhase {
                     CoreRules.UNION_REMOVE,
                     CoreRules.JOIN_COMMUTE,
                     CoreRules.AGGREGATE_REMOVE,
-                    CoreRules.AGGREGATE_REDUCE_FUNCTIONS,
+
+                    // Useful of this rule is not clear now.
+                    // CoreRules.AGGREGATE_REDUCE_FUNCTIONS,
 
                     PruneEmptyRules.SortFetchZeroRuleConfig.EMPTY
                         .withOperandSupplier(b ->
@@ -178,8 +180,6 @@ public enum PlannerPhase {
                     SortAggregateConverterRule.MAP_REDUCE,
                     MinusConverterRule.SINGLE,
                     MinusConverterRule.MAP_REDUCE,
-                    MergeJoinConverterRule.INSTANCE,
-                    NestedLoopJoinConverterRule.INSTANCE,
                     ProjectConverterRule.INSTANCE,
                     FilterConverterRule.INSTANCE,
                     TableModifyConverterRule.INSTANCE,
