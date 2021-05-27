@@ -553,15 +553,23 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         private DataStreamerClientPerNodeBuffer<TK, TV> GetOrAddBuffer(ClientSocket socket)
         {
-#if NETCOREAPP
-            return _buffers.GetOrAdd(socket, (sock, streamer) => streamer.CreatePerNodeBuffer(sock), this);
-#else
-            // Do not allocate closure on every call, only when the buffer does not exist (rare).
             DataStreamerClientPerNodeBuffer<TK,TV> res;
-            return _buffers.TryGetValue(socket, out res)
-                ? res
-                : _buffers.GetOrAdd(socket, sock => CreateBuffer(sock));
-#endif
+            if (_buffers.TryGetValue(socket, out res))
+            {
+                return res;
+            }
+
+            var candidate = CreatePerNodeBuffer(socket);
+
+            res = _buffers.GetOrAdd(socket, candidate);
+
+            if (res != candidate)
+            {
+                // Another thread won - return array to the pool.
+                ReturnArray(candidate.Close().Entries);
+            }
+
+            return res;
         }
 
         private void ThrowIfClosed()
