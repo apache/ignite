@@ -82,9 +82,9 @@ public class SchemaConfigurationConverterTest {
 
         confRegistry.getConfiguration(TablesConfiguration.KEY).change(
             ch -> {
-                SchemaConfigurationConverter.createTable(tbl, ch);
-                ch.changeTables(tblsCh -> tblsCh.create(tbl.canonicalName(),
-                    tblCh -> tblCh.changeReplicas(1)));
+                SchemaConfigurationConverter.createTable(tbl, ch)
+                    .changeTables(tblsCh -> tblsCh.create(tbl.canonicalName(),
+                        tblCh -> tblCh.changeReplicas(1)));
             }).get();
     }
 

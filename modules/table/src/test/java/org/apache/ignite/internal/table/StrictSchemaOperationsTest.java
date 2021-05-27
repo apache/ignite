@@ -89,8 +89,7 @@ public class StrictSchemaOperationsTest {
             1,
             new Column[] {new Column("id", NativeTypes.LONG, false)},
             new Column[] {
-                new Column("valString", NativeTypes.stringOf(3), true),
-                new Column("valBytes", NativeTypes.blobOf(3), true)
+                new Column("valString", NativeTypes.stringOf(3), true)
             }
         );
 
@@ -104,5 +103,29 @@ public class StrictSchemaOperationsTest {
 
         // Chek string 3 char length and 9 bytes.
         tbl.tupleBuilder().set("valString", "我是谁");
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void bytesTypeMatch() {
+        SchemaDescriptor schema = new SchemaDescriptor(
+            tableId,
+            1,
+            new Column[] {new Column("id", NativeTypes.LONG, false)},
+            new Column[] {
+                new Column("valUnlimited", NativeTypes.BYTES, true),
+                new Column("valLimited", NativeTypes.blobOf(2), true)
+            });
+
+        Table tbl = new TableImpl(new DummyInternalTableImpl(), new DummySchemaManagerImpl(schema));
+
+        tbl.tupleBuilder().set("valUnlimited", null);
+        tbl.tupleBuilder().set("valLimited", null);
+        tbl.tupleBuilder().set("valUnlimited", new byte[2]);
+        tbl.tupleBuilder().set("valLimited", new byte[2]);
+        tbl.tupleBuilder().set("valUnlimited", new byte[3]);
+        assertThrows(InvalidTypeException.class, () -> tbl.tupleBuilder().set("valLimited", new byte[3]));
     }
 }

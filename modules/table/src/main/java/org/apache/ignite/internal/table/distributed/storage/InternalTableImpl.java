@@ -71,7 +71,7 @@ public class InternalTableImpl implements InternalTable {
 
     /** {@inheritDoc} */
     @Override public @NotNull CompletableFuture<BinaryRow> get(BinaryRow keyRow) {
-        return partitionMap.get(keyRow.hash() % partitions).<KVGetResponse>run(new GetCommand(keyRow))
+        return partitionMap.get(partId(keyRow)).<KVGetResponse>run(new GetCommand(keyRow))
             .thenApply(KVGetResponse::getValue);
     }
 
@@ -82,7 +82,7 @@ public class InternalTableImpl implements InternalTable {
 
     /** {@inheritDoc} */
     @Override public @NotNull CompletableFuture<Void> upsert(BinaryRow row) {
-        return partitionMap.get(row.hash() % partitions).run(new UpsertCommand(row));
+        return partitionMap.get(partId(row)).run(new UpsertCommand(row));
     }
 
     /** {@inheritDoc} */
@@ -97,7 +97,7 @@ public class InternalTableImpl implements InternalTable {
 
     /** {@inheritDoc} */
     @Override public @NotNull CompletableFuture<Boolean> insert(BinaryRow row) {
-        return partitionMap.get(row.hash() % partitions).run(new InsertCommand(row));
+        return partitionMap.get(partId(row)).run(new InsertCommand(row));
     }
 
     /** {@inheritDoc} */
@@ -112,7 +112,7 @@ public class InternalTableImpl implements InternalTable {
 
     /** {@inheritDoc} */
     @Override public @NotNull CompletableFuture<Boolean> replace(BinaryRow oldRow, BinaryRow newRow) {
-        return partitionMap.get(oldRow.hash() % partitions).run(new ReplaceCommand(oldRow, newRow));
+        return partitionMap.get(partId(oldRow)).run(new ReplaceCommand(oldRow, newRow));
     }
 
     /** {@inheritDoc} */
@@ -122,7 +122,7 @@ public class InternalTableImpl implements InternalTable {
 
     /** {@inheritDoc} */
     @Override public @NotNull CompletableFuture<Boolean> delete(BinaryRow keyRow) {
-        return partitionMap.get(keyRow.hash() % partitions).run(new DeleteCommand(keyRow));
+        return partitionMap.get(partId(keyRow)).run(new DeleteCommand(keyRow));
     }
 
     /** {@inheritDoc} */
@@ -143,5 +143,17 @@ public class InternalTableImpl implements InternalTable {
     /** {@inheritDoc} */
     @Override public @NotNull CompletableFuture<Collection<BinaryRow>> deleteAllExact(Collection<BinaryRow> rows) {
         return null;
+    }
+
+    /**
+     * Get partition id by key row.
+     *
+     * @param row Key row.
+     * @return partition id.
+     */
+    private int partId(BinaryRow row) {
+        int partId = row.hash() % partitions;
+
+        return (partId < 0) ? -partId : partId;
     }
 }

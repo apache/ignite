@@ -39,6 +39,7 @@ import org.apache.ignite.internal.metastorage.MetaStorageManager;
 import org.apache.ignite.internal.raft.Loza;
 import org.apache.ignite.internal.schema.SchemaManager;
 import org.apache.ignite.internal.schema.SchemaRegistry;
+import org.apache.ignite.internal.schema.configuration.SchemaConfigurationConverter;
 import org.apache.ignite.internal.schema.event.SchemaEvent;
 import org.apache.ignite.internal.schema.event.SchemaEventParameters;
 import org.apache.ignite.internal.table.distributed.TableManager;
@@ -47,6 +48,9 @@ import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.metastorage.client.Condition;
 import org.apache.ignite.metastorage.client.Operation;
 import org.apache.ignite.network.ClusterNode;
+import org.apache.ignite.schema.ColumnType;
+import org.apache.ignite.schema.SchemaBuilders;
+import org.apache.ignite.schema.SchemaTable;
 import org.apache.ignite.table.Table;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -195,7 +199,7 @@ public class TableManagerTest {
 
         TableManager tableManager = mockManagersAndCreateTable(DYNAMIC_TABLE_NAME, mm, sm, am, rm, vm, node, tblIdFut);
 
-        assertNotNull(tableManager.table(DYNAMIC_TABLE_NAME));
+        assertNotNull(tableManager.table("PUBLIC." + DYNAMIC_TABLE_NAME));
     }
 
     /**
@@ -215,7 +219,7 @@ public class TableManagerTest {
 
         TableManager tableManager = mockManagersAndCreateTable(DYNAMIC_TABLE_FOR_DROP_NAME, mm, sm, am, rm, vm, node, tblIdFut);
 
-        assertNotNull(tableManager.table(DYNAMIC_TABLE_FOR_DROP_NAME));
+        assertNotNull(tableManager.table("PUBLIC." + DYNAMIC_TABLE_FOR_DROP_NAME));
 
         when(sm.unregisterSchemas(any())).thenReturn(CompletableFuture.completedFuture(true));
 
@@ -253,9 +257,9 @@ public class TableManagerTest {
             return null;
         }).when(am).listen(same(AffinityEvent.REMOVED), any());
 
-        tableManager.dropTable(DYNAMIC_TABLE_FOR_DROP_NAME);
+        tableManager.dropTable("PUBLIC." + DYNAMIC_TABLE_FOR_DROP_NAME);
 
-        assertNull(tableManager.table(DYNAMIC_TABLE_FOR_DROP_NAME));
+        assertNull(tableManager.table("PUBLIC." + DYNAMIC_TABLE_FOR_DROP_NAME));
     }
 
     /**
@@ -290,7 +294,8 @@ public class TableManagerTest {
 
             byte[] metastorageKeyBytes = (byte[])ReflectionUtils.invokeMethod(getKeyMethod, internalCondition);
 
-            tblIdFut.complete(UUID.fromString(new String(metastorageKeyBytes, StandardCharsets.UTF_8).substring(INTERNAL_PREFIX.length())));
+            tblIdFut.complete(UUID.fromString(new String(metastorageKeyBytes, StandardCharsets.UTF_8)
+                .substring(INTERNAL_PREFIX.length())));
 
             return CompletableFuture.completedFuture(true);
         });
@@ -335,22 +340,15 @@ public class TableManagerTest {
 
         int tablesBeforeCreation = tableManager.tables().size();
 
-        Table tbl2 = tableManager.createTable(tableName, change ->
-            change.changeName(tableName)
-                .changePartitions(PARTITIONS)
-                .changeReplicas(1)
-                .changeColumns(cols -> cols
-                    .create("key", c -> c.changeName("key").changeType(t -> t.changeType("INT64")).changeNullable(false))
-                    .create("val", c -> c.changeName("val").changeType(t -> t.changeType("INT64")).changeNullable(true))
-                )
-                .changeIndices(idxs -> idxs
-                    .create("PK", idx -> idx
-                        .changeName("PK")
-                        .changeType("PRIMARY")
-                        .changeColumns(c -> c
-                            .create("key", t -> t.changeName("key").changeAsc(true)))
-                        .changeAffinityColumns(new String[] {"key"}))
-                ));
+        SchemaTable scmTbl2 = SchemaBuilders.tableBuilder("PUBLIC", tableName).columns(
+            SchemaBuilders.column("key", ColumnType.INT64).asNonNull().build(),
+            SchemaBuilders.column("val", ColumnType.INT64).asNullable().build()
+        ).withPrimaryKey("key").build();
+
+        Table tbl2 = tableManager.createTable(scmTbl2.canonicalName(), tblCh -> SchemaConfigurationConverter.convert(scmTbl2, tblCh)
+            .changeReplicas(1)
+            .changePartitions(10)
+        );
 
         assertNotNull(tbl2);
 

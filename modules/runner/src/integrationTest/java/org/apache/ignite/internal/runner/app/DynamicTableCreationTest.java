@@ -23,7 +23,11 @@ import java.util.UUID;
 import org.apache.ignite.app.Ignite;
 import org.apache.ignite.app.IgnitionManager;
 import org.apache.ignite.internal.schema.SchemaManager;
+import org.apache.ignite.internal.schema.configuration.SchemaConfigurationConverter;
 import org.apache.ignite.lang.IgniteLogger;
+import org.apache.ignite.schema.ColumnType;
+import org.apache.ignite.schema.SchemaBuilders;
+import org.apache.ignite.schema.SchemaTable;
 import org.apache.ignite.table.KeyValueBinaryView;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;
@@ -92,33 +96,26 @@ class DynamicTableCreationTest {
         assertEquals(3, clusterNodes.size());
 
         // Create table on node 0.
-        clusterNodes.get(0).tables().createTable("tbl1", tbl -> tbl
-            .changeName("tbl1")
-            .changeReplicas(1)
-            .changePartitions(10)
-            .changeColumns(cols -> cols
-                .create("key", c -> c.changeName("key").changeNullable(false).changeType(t -> t.changeType("INT64")))
-                .create("val", c -> c.changeName("val").changeNullable(true).changeType(t -> t.changeType("INT32")))
-            )
-            .changeIndices(idxs -> idxs
-                .create("PK", idx -> idx
-                    .changeName("PK")
-                    .changeType("PRIMARY")
-                    .changeColNames(new String[] {"key"})
-                    .changeColumns(c -> c
-                        .create("key", t -> t.changeName("key")))
-                    .changeAffinityColumns(new String[] {"key"}))
-            ));
+        SchemaTable schTbl1 = SchemaBuilders.tableBuilder("PUBLIC", "tbl1").columns(
+            SchemaBuilders.column("key", ColumnType.INT64).asNonNull().build(),
+            SchemaBuilders.column("val", ColumnType.INT32).asNullable().build()
+        ).withPrimaryKey("key").build();
+
+        clusterNodes.get(0).tables().createTable(schTbl1.canonicalName(), tblCh ->
+            SchemaConfigurationConverter.convert(schTbl1, tblCh)
+                .changeReplicas(1)
+                .changePartitions(10)
+        );
 
         // Put data on node 1.
-        Table tbl1 = waitForTable(clusterNodes.get(1));
+        Table tbl1 = waitForTable(schTbl1.canonicalName(), clusterNodes.get(1));
         KeyValueBinaryView kvView1 = tbl1.kvView();
 
         tbl1.insert(tbl1.tupleBuilder().set("key", 1L).set("val", 111).build());
         kvView1.put(tbl1.tupleBuilder().set("key", 2L).build(), tbl1.tupleBuilder().set("val", 222).build());
 
         // Get data on node 2.
-        Table tbl2 = waitForTable(clusterNodes.get(2));
+        Table tbl2 = waitForTable(schTbl1.canonicalName(), clusterNodes.get(2));
         KeyValueBinaryView kvView2 = tbl2.kvView();
 
         final Tuple keyTuple1 = tbl2.tupleBuilder().set("key", 1L).build();
@@ -138,20 +135,21 @@ class DynamicTableCreationTest {
     /**
      * Waits for table, until it is initialized.
      *
+     * @param tableName Table name
      * @param ign Ignite.
      * @return Table.
      */
-    private Table waitForTable(Ignite ign) {
-        while (ign.tables().table("tbl1") == null) {
+    private Table waitForTable(String tableName, Ignite ign) {
+        while (ign.tables().table(tableName) == null) {
             try {
                 Thread.sleep(100);
             }
             catch (InterruptedException e) {
-                LOG.warn("Waiting for table is interrupted.");
+                LOG.warn("Waiting for table " + tableName + " is interrupted.");
             }
         }
 
-        return ign.tables().table("tbl1");
+        return ign.tables().table(tableName);
     }
 
     /**
@@ -167,33 +165,30 @@ class DynamicTableCreationTest {
         assertEquals(3, clusterNodes.size());
 
         // Create table on node 0.
-        clusterNodes.get(0).tables().createTable("tbl1", tbl -> tbl
-            .changeName("tbl1")
-            .changeReplicas(1)
-            .changePartitions(10)
-            .changeColumns(cols -> cols
-                .create("key", c -> c.changeName("key").changeNullable(false).changeType(t -> t.changeType("UUID")))
-                .create("affKey", c -> c.changeName("affKey").changeNullable(false).changeType(t -> t.changeType("INT64")))
-                .create("valStr", c -> c.changeName("valStr").changeNullable(true).changeType(t -> t.changeType("STRING")))
-                .create("valInt", c -> c.changeName("valInt").changeNullable(true).changeType(t -> t.changeType("INT32")))
-                .create("valNull", c -> c.changeName("valNull").changeNullable(true).changeType(t -> t.changeType("INT16")).changeNullable(true))
-            )
-            .changeIndices(idxs -> idxs
-                .create("PK", idx -> idx
-                    .changeName("PK")
-                    .changeType("PRIMARY")
-                    .changeColNames(new String[] {"key", "affKey"})
-                    .changeColumns(c -> c
-                        .create("key", t -> t.changeName("key").changeAsc(true))
-                        .create("affKey", t -> t.changeName("affKey").changeAsc(false)))
-                    .changeAffinityColumns(new String[] {"affKey"}))
-            ));
+        SchemaTable scmTbl1 = SchemaBuilders.tableBuilder("PUBLIC", "tbl1").columns(
+            SchemaBuilders.column("key", ColumnType.UUID).asNonNull().build(),
+            SchemaBuilders.column("affKey", ColumnType.INT64).asNonNull().build(),
+            SchemaBuilders.column("valStr", ColumnType.string()).asNullable().build(),
+            SchemaBuilders.column("valInt", ColumnType.INT32).asNullable().build(),
+            SchemaBuilders.column("valNull", ColumnType.INT16).asNullable().build()
+        ).withIndex(
+            SchemaBuilders.pkIndex()
+                .addIndexColumn("key").done()
+                .addIndexColumn("affKey").done()
+                .withAffinityColumns("affKey")
+                .build()
+        ).build();
+
+        clusterNodes.get(0).tables().createTable(scmTbl1.canonicalName(), tblCh ->
+            SchemaConfigurationConverter.convert(scmTbl1, tblCh)
+                .changeReplicas(1)
+                .changePartitions(10));
 
         final UUID uuid = UUID.randomUUID();
         final UUID uuid2 = UUID.randomUUID();
 
         // Put data on node 1.
-        Table tbl1 = waitForTable(clusterNodes.get(1));
+        Table tbl1 = waitForTable(scmTbl1.canonicalName(), clusterNodes.get(1));
         KeyValueBinaryView kvView1 = tbl1.kvView();
 
         tbl1.insert(tbl1.tupleBuilder().set("key", uuid).set("affKey", 42L)
@@ -203,7 +198,7 @@ class DynamicTableCreationTest {
             kvView1.tupleBuilder().set("valStr", "String value 2").set("valInt", 7373).set("valNull", null).build());
 
         // Get data on node 2.
-        Table tbl2 = waitForTable(clusterNodes.get(2));
+        Table tbl2 = waitForTable(scmTbl1.canonicalName(), clusterNodes.get(2));
         KeyValueBinaryView kvView2 = tbl2.kvView();
 
         final Tuple keyTuple1 = tbl2.tupleBuilder().set("key", uuid).set("affKey", 42L).build();

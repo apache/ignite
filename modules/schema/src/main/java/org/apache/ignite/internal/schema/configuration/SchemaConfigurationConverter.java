@@ -98,11 +98,15 @@ public class SchemaConfigurationConverter {
     /**
      * Convert SortedIndexColumn to IndexColumnChange.
      * @param col IndexColumnChange.
-     * @param colInit IndexColumnChange to fullfill.
+     * @param colInit IndexColumnChange to fulfill.
+     * @return IndexColumnChange to get result from.
      */
-    public static void convert(SortedIndexColumn col, IndexColumnChange colInit) {
+    public static IndexColumnChange convert(SortedIndexColumn col, IndexColumnChange colInit) {
         colInit.changeName(col.name());
+
         colInit.changeAsc(col.sortOrder() == SortOrder.ASC);
+
+        return colInit;
     }
 
     /**
@@ -119,9 +123,10 @@ public class SchemaConfigurationConverter {
      * Convert TableIndex to TableIndexChange.
      *
      * @param idx TableIndex.
-     * @param idxChg TableIndexChange to fullfill.
+     * @param idxChg TableIndexChange to fulfill.
+     * @return TableIndexChange to get result from.
      */
-    public static void convert(TableIndex idx, TableIndexChange idxChg) {
+    public static TableIndexChange convert(TableIndex idx, TableIndexChange idxChg) {
         idxChg.changeName(idx.name());
         idxChg.changeType(idx.type());
 
@@ -181,6 +186,8 @@ public class SchemaConfigurationConverter {
             default:
                 throw new IllegalArgumentException("Unknown index type " + idx.type());
         }
+
+        return idxChg;
     }
 
     /**
@@ -203,10 +210,10 @@ public class SchemaConfigurationConverter {
                 boolean sortedUniq = idxView.uniq();
 
                 SortedMap<Integer, SortedIndexColumn> sortedCols = new TreeMap<>();
-                
+
                 for (String key : idxView.columns().namedListKeys()) {
                     SortedIndexColumn col = convert(idxView.columns().get(key));
-                    
+
                     sortedCols.put(Integer.valueOf(key), col);
                 }
 
@@ -218,10 +225,10 @@ public class SchemaConfigurationConverter {
 
                 NamedListView<? extends IndexColumnView> colsView = idxView.columns();
                 SortedMap<Integer, SortedIndexColumn> partialCols = new TreeMap<>();
-                
+
                 for (String key : idxView.columns().namedListKeys()) {
                     SortedIndexColumn col = convert(colsView.get(key));
-                    
+
                     partialCols.put(Integer.valueOf(key), col);
                 }
 
@@ -229,10 +236,10 @@ public class SchemaConfigurationConverter {
 
             case PK_TYPE:
                 SortedMap<Integer, SortedIndexColumn> cols = new TreeMap<>();
-                
+
                 for (String key : idxView.columns().namedListKeys()) {
                     SortedIndexColumn col = convert(idxView.columns().get(key));
-                    
+
                     cols.put(Integer.valueOf(key), col);
                 }
 
@@ -249,11 +256,12 @@ public class SchemaConfigurationConverter {
      * Convert ColumnType to ColumnTypeChange.
      *
      * @param colType ColumnType.
-     * @param colTypeChg ColumnTypeChange to fullfill.
+     * @param colTypeChg ColumnTypeChange to fulfill.
+     * @return ColumnTypeChange to get result from
      */
-    public static void convert(ColumnType colType, ColumnTypeChange colTypeChg) {
+    public static ColumnTypeChange convert(ColumnType colType, ColumnTypeChange colTypeChg) {
         String typeName = colType.typeSpec().name().toUpperCase();
-        
+
         if (types.containsKey(typeName))
             colTypeChg.changeType(typeName);
         else {
@@ -281,6 +289,8 @@ public class SchemaConfigurationConverter {
                     throw new IllegalArgumentException("Unknown type " + colType.typeSpec().name());
             }
         }
+
+        return colTypeChg;
     }
 
     /**
@@ -292,7 +302,7 @@ public class SchemaConfigurationConverter {
     public static ColumnType convert(ColumnTypeView colTypeView) {
         String typeName = colTypeView.type().toUpperCase();
         ColumnType res = types.get(typeName);
-        
+
         if (res != null)
             return res;
         else {
@@ -329,15 +339,18 @@ public class SchemaConfigurationConverter {
      *
      * @param col Column to convert.
      * @param colChg Column
+     * @return ColumnChange to get result from.
      */
-    public static void convert(Column col, ColumnChange colChg) {
+    public static ColumnChange convert(Column col, ColumnChange colChg) {
         colChg.changeName(col.name());
         colChg.changeType(colTypeInit -> convert(col.type(), colTypeInit));
-        
+
         if (col.defaultValue() != null)
             colChg.changeDefaultValue(col.defaultValue().toString());
-            
+
         colChg.changeNullable(col.nullable());
+
+        return colChg;
     }
 
     /**
@@ -358,9 +371,10 @@ public class SchemaConfigurationConverter {
      * Convert schema table to schema table change.
      *
      * @param tbl Schema table to convert.
-     * @param tblChg Change to fullfill.
+     * @param tblChg Change to fulfill.
+     * @return TableChange to get result from.
      */
-    public static void convert(SchemaTable tbl, TableChange tblChg) {
+    public static TableChange convert(SchemaTable tbl, TableChange tblChg) {
         tblChg.changeName(tbl.canonicalName());
 
         tblChg.changeIndices(idxsChg -> {
@@ -379,6 +393,8 @@ public class SchemaConfigurationConverter {
             for (Column col : tbl.valueColumns())
                 colsChg.create(String.valueOf(colIdx++), colChg -> convert(col, colChg));
         });
+
+        return tblChg;
     }
 
     /**
@@ -426,7 +442,7 @@ public class SchemaConfigurationConverter {
         }
 
         LinkedHashMap<String, Column> colsMap = new LinkedHashMap<>(colsView.size());
-        
+
         columns.forEach((i,v) -> colsMap.put(v.name(), v));
 
         return new SchemaTableImpl(schemaName, tableName, colsMap, indices);
@@ -458,7 +474,7 @@ public class SchemaConfigurationConverter {
      * Add index.
      *
      * @param idx Index to add.
-     * @param tblChange TableChange to fullfill.
+     * @param tblChange TableChange to fulfill.
      * @return TableChange to get result from.
      */
     public static TableChange addIndex(TableIndex idx, TableChange tblChange) {

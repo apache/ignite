@@ -52,7 +52,7 @@ public class SchemaDescriptorConverter {
         assert colType != null;
 
         ColumnType.ColumnTypeSpec type = colType.typeSpec();
-        
+
         switch (type) {
             case INT8:
                 return BYTE;
@@ -89,12 +89,22 @@ public class SchemaDescriptorConverter {
                 return NativeTypes.bitmaskOf(((ColumnType.VarLenColumnType) colType).length());
 
             case STRING:
-                return NativeTypes.stringOf(((ColumnType.VarLenColumnType)colType).length());
+                int strLen = ((ColumnType.VarLenColumnType)colType).length();
+
+                if (strLen == 0)
+                    strLen = Integer.MAX_VALUE;
+
+                return NativeTypes.stringOf(strLen);
 
             case BLOB:
-                return NativeTypes.blobOf(((ColumnType.VarLenColumnType)colType).length());
+                int blobLen = ((ColumnType.VarLenColumnType)colType).length();
 
-                default:
+                if (blobLen == 0)
+                    blobLen = Integer.MAX_VALUE;
+
+                return NativeTypes.blobOf(blobLen);
+
+            default:
                 throw new InvalidTypeException("Unexpected type " + type);
         }
     }
@@ -119,9 +129,9 @@ public class SchemaDescriptorConverter {
      */
     public static SchemaDescriptor convert(UUID tblId, int schemaVer, SchemaTable tblCfg) {
         List<org.apache.ignite.schema.Column> keyColsCfg = new ArrayList<>(tblCfg.keyColumns());
-        
+
         Column[] keyCols = new Column[keyColsCfg.size()];
-        
+
         for (int i = 0;i < keyCols.length;i++)
             keyCols[i] = convert(keyColsCfg.get(i));
 
@@ -129,9 +139,9 @@ public class SchemaDescriptorConverter {
             .toArray(String[]::new);
 
         List<org.apache.ignite.schema.Column> valColsCfg = new ArrayList<>(tblCfg.valueColumns());
-        
+
         Column[] valCols = new Column[valColsCfg.size()];
-        
+
         for (int i = 0;i < valCols.length;i++)
             valCols[i] = convert(valColsCfg.get(i));
 
