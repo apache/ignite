@@ -449,8 +449,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
             catch (Exception e)
             {
-                Console.WriteLine(">>>> Failed to retry flush: " + e);  // TODO: Retry again!
-
                 tcs.SetException(e);
             }
         }
