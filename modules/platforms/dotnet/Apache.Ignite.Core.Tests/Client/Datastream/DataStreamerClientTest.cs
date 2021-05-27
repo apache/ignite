@@ -468,6 +468,24 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             }
         }
 
+        [Test]
+        public void TestStreamReceiver()
+        {
+            Assert.Fail("TODO");
+        }
+
+        [Test]
+        public void TestStreamReceiverKeepBinary()
+        {
+            Assert.Fail("TODO");
+        }
+
+        [Test]
+        public void TestStreamReceiverException()
+        {
+            Assert.Fail("TODO");
+        }
+
 #if NETCOREAPP
 
         [Test]
