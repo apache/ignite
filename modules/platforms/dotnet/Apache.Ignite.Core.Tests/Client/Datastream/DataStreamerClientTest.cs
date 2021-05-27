@@ -519,7 +519,18 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         [Test]
         public void TestStreamReceiverException()
         {
-            Assert.Fail("TODO");
+            var options = new DataStreamerClientOptions<int, int>
+            {
+                Receiver = new StreamReceiverThrowException()
+            };
+
+            var streamer = Client.GetDataStreamer(CacheName, options);
+            streamer.Add(1, 1);
+
+            var ex = Assert.Throws<AggregateException>(() => streamer.Flush());
+            var clientEx = (IgniteClientException) ex.GetBaseException();
+            
+            Assert.Fail("TODO: " + clientEx);
         }
 
         [Test]
@@ -579,6 +590,14 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             public void Receive(ICache<int, int> cache, ICollection<ICacheEntry<int, int>> entries)
             {
                 cache.PutAll(entries.ToDictionary(x => x.Key, x => x.Value + 1));
+            }
+        }
+
+        private class StreamReceiverThrowException : IStreamReceiver<int, int>
+        {
+            public void Receive(ICache<int, int> cache, ICollection<ICacheEntry<int, int>> entries)
+            {
+                throw new ArithmeticException("Foo");
             }
         }
 
