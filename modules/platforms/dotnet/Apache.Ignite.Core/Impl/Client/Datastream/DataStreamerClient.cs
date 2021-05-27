@@ -211,6 +211,11 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 }
 
                 _exception = new ObjectDisposedException("DataStreamerClient", "Data streamer has been disposed");
+                
+                if (_autoFlushTimer != null)
+                {
+                    _autoFlushTimer.Dispose();
+                }
 
                 if (cancel)
                 {
@@ -589,7 +594,30 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         private void AutoFlush()
         {
+            if (_exception != null)
+            {
+                return;
+            }
             
+            // Prevent multiple parallel timer calls. 
+            if (!Monitor.TryEnter(_autoFlushTimer))
+            {
+                return;
+            }
+
+            try
+            {
+                // Initiate flush, don't wait for completion.
+                FlushInternalAsync();
+            }
+            catch (Exception)
+            {
+                // Ignore.
+            }
+            finally
+            {
+                Monitor.Exit(_autoFlushTimer);
+            }
         }
     }
 }
