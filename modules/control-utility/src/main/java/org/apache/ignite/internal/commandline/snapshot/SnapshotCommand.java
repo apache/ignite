@@ -29,10 +29,9 @@ import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
-import org.apache.ignite.internal.commandline.argument.CommandArg;
-import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
+import org.apache.ignite.internal.visor.snapshot.VisorSnapshotRestoreTaskAction;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotRestoreTaskArg;
 import org.apache.ignite.mxbean.SnapshotMXBean;
 
@@ -104,23 +103,23 @@ public class SnapshotCommand extends AbstractCommand<Object> {
         String arg = argIter.nextArg("Restore action expected.");
         Set<String> grpNames = null;
 
-        SnapshotRestoreAction cmdAction = CommandArgUtils.of(arg, SnapshotRestoreAction.class);
+        VisorSnapshotRestoreTaskAction cmdAction = VisorSnapshotRestoreTaskAction.fromCmdArg(arg);
 
         if (cmdAction == null) {
             throw new IllegalArgumentException("Invalid argument \"" + arg + "\" one of " +
-                Arrays.toString(SnapshotRestoreAction.values()) + " is expected.");
+                Arrays.toString(VisorSnapshotRestoreTaskAction.values()) + " is expected.");
         }
 
         if (argIter.hasNextSubArg()) {
             arg = argIter.nextArg("");
 
-            if (cmdAction != SnapshotRestoreAction.START)
+            if (cmdAction != VisorSnapshotRestoreTaskAction.START)
                 throw new IllegalArgumentException("Invalid argument \"" + arg + "\", no more arguments expected.");
 
             grpNames = argIter.parseStringSet(arg);
         }
 
-        cmdArg = new VisorSnapshotRestoreTaskArg(cmdAction.name(), snpName, grpNames);
+        cmdArg = new VisorSnapshotRestoreTaskArg(cmdAction, snpName, grpNames);
     }
 
     /** {@inheritDoc} */
@@ -136,49 +135,17 @@ public class SnapshotCommand extends AbstractCommand<Object> {
         startParams.put("group1,...groupN", "Cache group names.");
 
         Command.usage(log, "Restore snapshot:", SNAPSHOT, startParams, RESTORE.toString(),
-            SnapshotRestoreAction.START.toString(), "snapshot_name", optional("group1,...groupN"));
+            VisorSnapshotRestoreTaskAction.START.cmdName(), "snapshot_name", optional("group1,...groupN"));
 
         Command.usage(log, "Snapshot restore operation status:", SNAPSHOT, commonParams, RESTORE.toString(),
-            SnapshotRestoreAction.STATUS.toString(), "snapshot_name");
+            VisorSnapshotRestoreTaskAction.STATUS.cmdName(), "snapshot_name");
 
         Command.usage(log, "Cancel snapshot restore opeeration:", SNAPSHOT, commonParams, RESTORE.toString(),
-            SnapshotRestoreAction.CANCEL.toString(), "snapshot_name");
+            VisorSnapshotRestoreTaskAction.CANCEL.cmdName(), "snapshot_name");
     }
 
     /** {@inheritDoc} */
     @Override public String name() {
         return SNAPSHOT.toCommandName();
-    }
-
-    /** Snapshot restore action. */
-    private enum SnapshotRestoreAction implements CommandArg {
-        /** Start snapshot restore operation. */
-        START("--start"),
-
-        /** Cancel snapshot restore operation. */
-        CANCEL("--cancel"),
-
-        /** Status of the snapshot restore operation. */
-        STATUS("--status");
-
-        /** Name of the argument. */
-        private final String name;
-
-        /**
-         * @param name Name of the argument.
-         */
-        SnapshotRestoreAction(String name) {
-            this.name = name;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String argName() {
-            return name;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return name;
-        }
     }
 }
