@@ -530,7 +530,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             var ex = Assert.Throws<AggregateException>(() => streamer.Flush());
             var clientEx = (IgniteClientException) ex.GetBaseException();
             
-            Assert.Fail("TODO: " + clientEx);
+            StringAssert.Contains("Failed to finish operation (too many remaps)", clientEx.Message);
         }
 
         [Test]
