@@ -30,7 +30,7 @@ from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion
 
 WRONG_PASSWORD = "wrong_password"
-TEST_USERNAME = "ADMIN"
+TEST_USERNAME = "admin"
 TEST_PASSWORD = "qwe123"
 TEST_PASSWORD2 = "123qwe"
 

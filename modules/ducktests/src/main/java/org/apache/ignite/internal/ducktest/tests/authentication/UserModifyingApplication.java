@@ -41,15 +41,15 @@ public class UserModifyingApplication extends IgniteAwareApplication {
 
         switch (cmd) {
             case ADD_USER:
-                client.query(new SqlFieldsQuery(String.format("CREATE USER %s WITH PASSWORD '%s';", name, pwd))).getAll();
+                client.query(new SqlFieldsQuery(String.format("CREATE USER \"%s\" WITH PASSWORD '%s';", name, pwd))).getAll();
                 break;
 
             case UPDATE_USER:
-                client.query(new SqlFieldsQuery(String.format("ALTER USER %s WITH PASSWORD '%s';", name, pwd))).getAll();
+                client.query(new SqlFieldsQuery(String.format("ALTER USER \"%s\" WITH PASSWORD '%s';", name, pwd))).getAll();
                 break;
 
             case REMOVE_USER:
-                client.query(new SqlFieldsQuery(String.format("DROP USER %s;", name))).getAll();
+                client.query(new SqlFieldsQuery(String.format("DROP USER \"%s\";", name))).getAll();
                 break;
 
             default:
