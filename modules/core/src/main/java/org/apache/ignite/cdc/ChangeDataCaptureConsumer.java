@@ -19,6 +19,7 @@ package org.apache.ignite.cdc;
 
 import java.util.Iterator;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.internal.cdc.ChangeDataCapture;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.resources.LoggerResource;

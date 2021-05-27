@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.cdc;
 
-import org.apache.ignite.cdc.CacheEntryVersion;
+import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.cdc.ChangeDataCaptureConsumer;
 import org.apache.ignite.cdc.ChangeDataCaptureEvent;
 import org.apache.ignite.internal.util.typedef.internal.S;

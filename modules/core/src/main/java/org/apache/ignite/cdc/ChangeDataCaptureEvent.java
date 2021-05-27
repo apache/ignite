@@ -18,6 +18,7 @@
 package org.apache.ignite.cdc;
 
 import java.io.Serializable;
+import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.internal.cdc.ChangeDataCapture;
 import org.apache.ignite.lang.IgniteExperimental;
