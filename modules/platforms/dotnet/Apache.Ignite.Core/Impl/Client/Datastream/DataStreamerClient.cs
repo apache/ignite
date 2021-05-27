@@ -35,6 +35,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     /// Thin client data streamer.
     /// TODO:
     /// * Auto flush interval
+    /// * Fix old .NET build
     /// * XMLDoc
     /// * Api review.
     /// * Buffers still leak in RandomTopChange test?

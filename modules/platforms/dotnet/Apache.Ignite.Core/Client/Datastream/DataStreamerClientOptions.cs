@@ -70,13 +70,13 @@ namespace Apache.Ignite.Core.Client.Datastream
                 return;
             }
 
-            // TODO: Auto flush interval
             ReceiverKeepBinary = options.ReceiverKeepBinary;
             ReceiverInternal = options.ReceiverInternal;
             AllowOverwrite = options.AllowOverwrite;
             SkipStore = options.SkipStore;
             PerNodeBufferSize = options.PerNodeBufferSize;
             PerNodeParallelOperations = options.PerNodeParallelOperations;
+            AutoFlushInterval = options.AutoFlushInterval;
         }
 
         /// <summary>
@@ -134,6 +134,21 @@ namespace Apache.Ignite.Core.Client.Datastream
                 _perNodeParallelOperations = value;
             }
         }
+        
+        /// <summary>
+        /// Gets or sets the automatic flush interval. Data streamer buffers the data for performance reasons.
+        /// The buffer is flushed in the following cases:
+        /// <ul>
+        /// <li>Buffer is full.</li>
+        /// <li><see cref="IDataStreamerClient{TK,TV}.Flush"/> is called.</li>
+        /// <li>Periodically when <see cref="AutoFlushInterval"/> is set.</li >
+        /// </ul>
+        /// <para />
+        /// When set to <see cref="TimeSpan.Zero"/>, automatic flush is disabled.
+        /// <para />
+        /// Default is <see cref="TimeSpan.Zero"/> (disabled).
+        /// </summary>
+        TimeSpan AutoFlushInterval { get; set; }
 
         /// <summary>
         /// Gets or sets the receiver object.
