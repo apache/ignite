@@ -23,7 +23,6 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 
-
 /**
  * Simple application that modify users.
  */
