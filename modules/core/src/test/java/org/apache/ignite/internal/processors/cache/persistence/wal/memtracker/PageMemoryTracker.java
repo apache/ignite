@@ -34,6 +34,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
@@ -54,6 +55,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
@@ -75,6 +77,8 @@ import org.mockito.Mockito;
 
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_CACHE_ID_DATA_REF_MVCC_LEAF;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_DATA_REF_MVCC_LEAF;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Page memory tracker.
@@ -226,27 +230,7 @@ public class PageMemoryTracker implements IgnitePlugin {
 
         pageSize = ctx.igniteConfiguration().getDataStorageConfiguration().getPageSize();
 
-        EncryptionSpi encSpi = ctx.igniteConfiguration().getEncryptionSpi();
-
-        pageMemoryMock = Mockito.mock(PageMemory.class);
-
-        Mockito.doReturn(pageSize).when(pageMemoryMock).pageSize();
-        Mockito.when(pageMemoryMock.realPageSize(Mockito.anyInt())).then(mock -> {
-            int grpId = (Integer)mock.getArguments()[0];
-
-            if (gridCtx.encryption().getActiveKey(grpId) == null)
-                return pageSize;
-
-            return pageSize
-                - (encSpi.encryptedSizeNoPadding(pageSize) - pageSize)
-                - encSpi.blockSize() /* For CRC. */;
-        });
-
-        Mockito.when(pageMemoryMock.pageBuffer(Mockito.anyLong())).then(mock -> {
-            long pageAddr = (Long)mock.getArguments()[0];
-
-            return GridUnsafe.wrapPointer(pageAddr, pageSize);
-        });
+        pageMemoryMock = mockPageMemory();
 
         GridCacheSharedContext sharedCtx = gridCtx.cache().context();
 
@@ -301,6 +285,38 @@ public class PageMemoryTracker implements IgnitePlugin {
         started = true;
 
         log.info("PageMemory tracker started, " + U.readableSize(maxMemorySize, false) + " offheap memory allocated.");
+    }
+
+    /**
+     * Creates a mock for the Page Memory.
+     */
+    private PageMemory mockPageMemory() {
+        PageMemory mock = mock(PageMemory.class);
+
+        when(mock.pageSize()).thenReturn(pageSize);
+
+        when(mock.realPageSize(Mockito.anyInt())).then(invocation -> {
+            int grpId = (Integer)invocation.getArguments()[0];
+
+            if (gridCtx.encryption().getActiveKey(grpId) == null)
+                return pageSize;
+
+            EncryptionSpi encSpi = ctx.igniteConfiguration().getEncryptionSpi();
+
+            return pageSize
+                - (encSpi.encryptedSizeNoPadding(pageSize) - pageSize)
+                - encSpi.blockSize() /* For CRC. */;
+        });
+
+        when(mock.pageBuffer(Mockito.anyLong())).then(invocation -> {
+            long pageAddr = (Long)invocation.getArguments()[0];
+
+            return GridUnsafe.wrapPointer(pageAddr, pageSize);
+        });
+
+        when(mock.metrics()).thenReturn(new DataRegionMetricsImpl(new DataRegionConfiguration(), gridCtx));
+
+        return mock;
     }
 
     /**
