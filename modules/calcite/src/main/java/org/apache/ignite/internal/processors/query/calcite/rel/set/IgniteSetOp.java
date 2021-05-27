@@ -58,11 +58,9 @@ public interface IgniteSetOp extends TraitsAwareIgniteRel {
     /** Gets count of fields for aggregation for this node. Required for memory consumption calculation. */
     public int aggregateFieldsCount();
 
-    /** {@inheritDoc} */
-    @Override public default RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+    /** Compute cost for set op. */
+    public default RelOptCost computeSetOpCost(RelOptPlanner planner, RelMetadataQuery mq) {
         IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
-
-        double rows = estimateRowCount(mq);
 
         double inputRows = 0;
 
@@ -71,7 +69,7 @@ public interface IgniteSetOp extends TraitsAwareIgniteRel {
 
         double mem = 0.5 * inputRows * aggregateFieldsCount() * IgniteCost.AVERAGE_FIELD_SIZE;
 
-        return costFactory.makeCost(rows, inputRows * IgniteCost.ROW_PASS_THROUGH_COST, 0, mem, 0);
+        return costFactory.makeCost(inputRows, inputRows * IgniteCost.ROW_PASS_THROUGH_COST, 0, mem, 0);
     }
 
     /** Aggregate type. */

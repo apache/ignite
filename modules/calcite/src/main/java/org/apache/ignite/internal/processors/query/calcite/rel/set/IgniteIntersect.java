@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.query.calcite.rel.set;
 
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptCost;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
@@ -51,6 +53,11 @@ public abstract class IgniteIntersect extends Intersect implements IgniteSetOp {
             rows = 0.5 * Math.min(rows, mq.getRowCount(inputs.get(i)));
 
         return rows;
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
+        return computeSetOpCost(planner, mq);
     }
 
     /** {@inheritDoc} */

@@ -40,7 +40,7 @@ public class MinusNode<Row> extends AbstractSetOpNode<Row> {
             super(ctx, rowFactory, type, all);
         }
 
-        /** */
+        /** {@inheritDoc} */
         @Override protected void addOnSingle(Row row, int setIdx) {
             int[] cntrs;
 
@@ -53,7 +53,7 @@ public class MinusNode<Row> extends AbstractSetOpNode<Row> {
 
                 cntrs[0]++;
             }
-            else {
+            else if (all) {
                 cntrs = groups.get(key);
 
                 if (cntrs != null) {
@@ -63,9 +63,11 @@ public class MinusNode<Row> extends AbstractSetOpNode<Row> {
                         groups.remove(key);
                 }
             }
+            else
+                groups.remove(key);
         }
 
-        /** */
+        /** {@inheritDoc} */
         @Override protected void addOnMapper(Row row, int setIdx) {
             // Value in the map will always have 2 elements, first - count of keys in the first set,
             // second - count of keys in all sets except first.

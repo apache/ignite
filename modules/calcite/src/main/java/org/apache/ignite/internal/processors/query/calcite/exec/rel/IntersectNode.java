@@ -54,7 +54,7 @@ public class IntersectNode<Row> extends AbstractSetOpNode<Row> {
             super.endOfSet(setIdx);
         }
 
-        /** */
+        /** {@inheritDoc} */
         @Override protected void addOnSingle(Row row, int setIdx) {
             int[] cntrs;
 
@@ -77,7 +77,7 @@ public class IntersectNode<Row> extends AbstractSetOpNode<Row> {
             }
         }
 
-        /** */
+        /** {@inheritDoc} */
         @Override protected void addOnMapper(Row row, int setIdx) {
             int[] cntrs = groups.computeIfAbsent(key(row), k -> new int[inputsCnt]);
 

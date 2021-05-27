@@ -155,13 +155,12 @@ public abstract class AbstractSetOpNode<Row> extends AbstractNode<Row> {
         inLoop = true;
 
         try {
-            while (requested > 0 && !grouping.isEmpty()) {
+            if (requested > 0 && !grouping.isEmpty()) {
                 int toSnd = Math.min(requested, IN_BUFFER_SIZE - processed);
 
                 for (Row row : grouping.getRows(toSnd)) {
-                    checkState();
-
                     requested--;
+
                     downstream().push(row);
 
                     processed++;
