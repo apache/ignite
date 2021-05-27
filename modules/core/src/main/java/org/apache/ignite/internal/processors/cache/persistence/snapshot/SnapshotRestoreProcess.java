@@ -402,8 +402,8 @@ public class SnapshotRestoreProcess {
         SnapshotRestoreContext opCtx0 = opCtx;
         ClusterSnapshotFuture fut0 = fut;
 
-        if (opCtx0 == null || !opCtx0.snpName.equals(snpName)) {
-            if (fut0 == null || !fut0.name.equals(snpName))
+        if (opCtx0 == null || (snpName != null && !opCtx0.snpName.equals(snpName))) {
+            if (fut0 == null || (snpName != null && !fut0.name.equals(snpName)))
                 return new GridFinishedFuture<>(false);
 
             fut0.interruptEx = reason;
