@@ -484,6 +484,10 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 w.WriteObjectDetached(rcvHolder);
                 w.WriteByte(ClientPlatformId.Dotnet);
             }
+            else
+            {
+                w.WriteObject<object>(null);
+            }
 
             var count = buffer.Count;
             w.WriteInt(count);
