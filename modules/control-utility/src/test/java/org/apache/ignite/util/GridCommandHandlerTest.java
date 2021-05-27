@@ -43,6 +43,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
@@ -3269,14 +3270,21 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertContains(log, testOut.toString(),
             "Snapshot cache group restore operation is not in progress [snapshot=" + missingSnpName + ']');
 
-        GridTestUtils.runAsync((Runnable)spi::stopBlock);
+        GridTestUtils.runAsync(() -> {
+            // Wait for the process to be interrupted.
+            AtomicReference<?> errRef = U.field((Object)U.field((Object)U.field(
+                grid(0).context().cache().context().snapshotMgr(), "restoreCacheGrpProc"), "opCtx"), "err");
+
+            waitForCondition(() -> errRef.get() != null, getTestTimeout());
+
+            spi.stopBlock();
+
+            return null;
+        });
 
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--cancel"));
         assertContains(log, testOut.toString(),
             "Snapshot cache group restore operation canceled [snapshot=" + snpName + ']');
-
-        assertFalse(grid(0).context().cache().context().snapshotMgr().isRestoring());
-        assertFalse(grid(1).context().cache().context().snapshotMgr().isRestoring());
 
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--status"));
         assertContains(log, testOut.toString(),
