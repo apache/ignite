@@ -38,24 +38,24 @@ public interface QueryEngine extends GridProcessor {
     List<FieldsQueryCursor<List<?>>> query(@Nullable QueryContext ctx, String schemaName, String qry, Object... params)
         throws IgniteSQLException;
 
-    /**
-     * Return SQL running queries.
-     *
-     * @return SQL running queries.
-     */
-    List<RunningQueryInfo> runningQueries();
+//    /**
+//     * Return SQL running queries.
+//     *
+//     * @return SQL running queries.
+//     */
+//    List<RunningQueryInfo> runningQueries();
+//
+//    /**
+//     * Return running queries fragments.
+//     *
+//     * @return Running queries fragments.
+//     */
+//    List<RunningFragmentInfo> runningFragments();
 
-    /**
-     * Return running queries fragments.
-     *
-     * @return Running queries fragments.
-     */
-    List<RunningFragmentInfo> runningFragments();
-
-    /**
-     * Cancel specified query.
-     *
-     * @param qryId Queries ID to cancel.
-     */
-    void cancelQuery(UUID qryId);
+//    /**
+//     * Cancel specified query.
+//     *
+//     * @param qryId Queries ID to cancel.
+//     */
+//    void cancelQuery(UUID qryId);
 }

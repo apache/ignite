@@ -84,7 +84,6 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDesc
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RemoteException;
-import org.apache.ignite.internal.processors.query.calcite.prepare.CacheKey;
 import org.apache.ignite.internal.processors.query.calcite.prepare.DdlPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ExplainPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FieldsMetadata;
@@ -448,15 +447,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     ) {
         PlanningContext pctx = createContext(Commons.convert(ctx), topologyVersion(), localNodeId(), schema, qry, params);
 
-        UUID planningId = runningQrySvc.register(pctx);
-
-        List<QueryPlan> qryPlans;
-        try {
-            qryPlans = queryPlanCache().queryPlan(pctx, new CacheKey(pctx.schemaName(), pctx.query()), this::prepareQuery);
-        }
-        finally {
-            runningQrySvc.deregister(planningId);
-        }
+        List<QueryPlan> qryPlans = queryPlanCache().queryPlan(pctx, this::prepareQuery);
 
         return executePlans(qryPlans, pctx);
     }
@@ -564,6 +555,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
     /** */
     private List<QueryPlan> prepareQuery(PlanningContext ctx) {
+        UUID planningId = runningQrySvc.register(ctx);
         try {
             String qry = ctx.query();
 
@@ -597,6 +589,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 throw new IgniteSQLException("The query was cancelled while planning.", IgniteQueryErrorCode.QUERY_CANCELED);
 
             throw new IgniteSQLException("Failed to plan query.", IgniteQueryErrorCode.UNKNOWN, e);
+        }
+        finally {
+            runningQrySvc.deregister(planningId);
         }
     }
 
@@ -907,7 +902,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
             List<QueryPlan> qryPlans = queryPlanCache().queryPlan(
                 pctx,
-                new CacheKey(pctx.schemaName(), pctx.query()),
                 this::prepareFragment
             );
 

@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+
 import org.apache.ignite.internal.processors.query.RunningFragmentInfo;
 import org.apache.ignite.internal.processors.query.RunningQueryInfo;
 import org.apache.ignite.internal.processors.query.RunningStage;
@@ -146,14 +147,6 @@ public class RunningQueryService implements Service {
 
         if (runningInfo != null) {
             runningInfo.cancel();
-
-            return true;
-        }
-
-        List<RunningFragmentInfo> frs = fragments.get(qryId);
-
-        if (frs != null) {
-            new ArrayList<>(frs).forEach(RunningFragmentInfo::cancel);
 
             return true;
         }

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.List;
 import java.util.Map;
+
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridIndex;
@@ -73,8 +74,10 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
     }
 
     /** {@inheritDoc} */
-    @Override public List<QueryPlan> queryPlan(PlanningContext ctx, CacheKey key, QueryPlanFactory factory) {
+    @Override public List<QueryPlan> queryPlan(PlanningContext ctx, QueryPlanFactory factory) {
         Map<CacheKey, List<QueryPlan>> cache = this.cache;
+
+        CacheKey key = new CacheKey(ctx.schemaName(), ctx.query());
 
         List<QueryPlan> template = cache.get(key);
 
