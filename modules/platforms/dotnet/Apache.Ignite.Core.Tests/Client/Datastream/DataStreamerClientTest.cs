@@ -568,17 +568,19 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 TestUtils.WaitForTrueCondition(() => cache.ContainsKey(2));
             }
         }
-        
-        [Test]
-        public void TestAutoFlushIntervalWithBlockedStore()
-        {
-            Assert.Fail("TODO");
-        }
 
         [Test]
-        public void TestAutoFlushIntervalWithException()
+        public void TestAutoFlushClosesStreamerWhenCacheDoesNotExist()
         {
-            Assert.Fail("TODO");
+            var options = new DataStreamerClientOptions
+            {
+                AutoFlushInterval = TimeSpan.FromSeconds(0.1)
+            };
+
+            var streamer = Client.GetDataStreamer<int, int>("bad-cache-name", options);
+            streamer.Add(1, 1);
+            
+            TestUtils.WaitForTrueCondition(() => streamer.IsClosed);
         }
 
 #if NETCOREAPP
