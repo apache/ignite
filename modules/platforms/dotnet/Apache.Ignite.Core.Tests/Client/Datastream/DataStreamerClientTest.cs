@@ -553,7 +553,20 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         [Test]
         public void TestAutoFlushInterval()
         {
-            Assert.Fail("TODO");
+            var cache = GetClientCache<int>();
+            var options = new DataStreamerClientOptions
+            {
+                AutoFlushInterval = TimeSpan.FromSeconds(0.1)
+            };
+            
+            using (var streamer = Client.GetDataStreamer<int, int>(cache.Name, options))
+            {
+                streamer.Add(1, 1);
+                TestUtils.WaitForTrueCondition(() => cache.ContainsKey(1));
+                
+                streamer.Add(2, 2);
+                TestUtils.WaitForTrueCondition(() => cache.ContainsKey(2));
+            }
         }
         
         [Test]
