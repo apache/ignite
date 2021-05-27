@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Client.Datastream;
     using Apache.Ignite.Core.Impl.Client;
+    using Apache.Ignite.Core.Impl.Client.Datastream;
     using NUnit.Framework;
 
     /// <summary>
@@ -151,6 +152,13 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
                 cancel = true;
                 adderTask.Wait(TimeSpan.FromSeconds(15));
+
+                streamer.Flush();
+
+                var streamerInternal = (DataStreamerClient<int, int>) streamer;
+                Assert.Less(streamerInternal.ArraysAllocated - streamerInternal.ArraysPooled, nodes.Count,
+                    string.Format("Array pool leak. Allocated: {0}, Pooled: {1}, Nodes: {2}", 
+                        streamerInternal.ArraysAllocated, streamerInternal.ArraysPooled, nodes.Count));
             }
 
             TestUtils.WaitForTrueCondition(() => id == cache.GetSize());
