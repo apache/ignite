@@ -33,6 +33,7 @@ import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
@@ -68,7 +69,7 @@ public class SystemViewComputeJobTest extends GridCommonAbstractTest {
     public static final long TIMEOUT = 10_000L;
 
     /** */
-    private static CyclicBarrier barrier;
+    private static volatile CyclicBarrier barrier;
 
     /** */
     private static IgniteEx server;
@@ -447,12 +448,13 @@ public class SystemViewComputeJobTest extends GridCommonAbstractTest {
     }
 
     /** Check job fields. */
-    private void checkJobView(ComputeJobView job) {
+    private void checkJobView(ComputeJobView job) throws IgniteInterruptedCheckedException {
         checkJobView(job, getClass().getName(), ACTIVE);
     }
 
     /** Check job fields. */
-    private void checkJobView(ComputeJobView job, String taskPrefix, ComputeJobState state) {
+    private void checkJobView(ComputeJobView job, String taskPrefix, ComputeJobState state)
+        throws IgniteInterruptedCheckedException {
         assertFalse(job.isInternal());
         assertNull(job.affinityCacheIds());
         assertEquals(-1, job.affinityPartitionId());
@@ -460,12 +462,16 @@ public class SystemViewComputeJobTest extends GridCommonAbstractTest {
         assertTrue(job.taskName().startsWith(taskPrefix));
         assertEquals(client.localNode().id(), job.originNodeId());
         assertEquals(state, job.state());
-        assertEquals(0, job.finishTime());
 
         if (state == ACTIVE) {
             assertTrue(job.startTime() > 0);
             assertTrue(job.isStarted());
         }
+
+        if (state == CANCELED)
+            assertTrue(waitForCondition(() -> job.finishTime() > 0, TIMEOUT));
+        else
+            assertEquals(0, job.finishTime());
     }
 
     /** */
