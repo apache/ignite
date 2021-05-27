@@ -591,7 +591,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 throw new ObjectDisposedException("Streamer is closed.");
             }
 
-            throw new IgniteClientException("Streamer is closed with error, check inner exception for details", ex);
+            throw new IgniteClientException("Streamer is closed with error, check inner exception for details.", ex);
         }
 
         private DataStreamerClientPerNodeBuffer<TK, TV> CreatePerNodeBuffer(ClientSocket socket)

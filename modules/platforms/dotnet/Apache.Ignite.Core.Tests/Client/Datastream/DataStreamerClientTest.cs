@@ -583,8 +583,13 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             Assert.IsFalse(streamer.IsClosed);
             TestUtils.WaitForTrueCondition(() => streamer.IsClosed);
 
-            var ex = Assert.Throws<ObjectDisposedException>(() => streamer.Flush());
-            Assert.AreEqual("x", ex.Message);
+            var ex = Assert.Throws<IgniteClientException>(() => streamer.Flush());
+            Assert.AreEqual("Streamer is closed with error, check inner exception for details.", ex.Message);
+
+            Assert.IsNotNull(ex.InnerException);
+            var inner = ((AggregateException)ex.InnerException).GetBaseException();
+            
+            StringAssert.StartsWith("Cache does not exist", inner.Message);
         }
 
 #if NETCOREAPP
