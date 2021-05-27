@@ -23,12 +23,14 @@ import org.apache.ignite.IgniteCheckedException;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * This class is responsible for iterating over cache query results. Query results are delivered with function
+ * This class is responsible for reducing results of cache query. Query results are delivered with function
  * {@link #addPage(UUID, Collection)}. Note that this reducer deeply interacts with corresponding query future
- * {@link GridCacheQueryFutureAdapter}, so they used the same lock object. It guards reducer pages operations and
- * the future status. Custom reduce logic is applied within {@link #next()} and {@link #hasNext()}.
+ * {@link GridCacheQueryFutureAdapter}, so they used the same lock object. It guards reducer pages operations
+ * and the future status. Custom reduce logic is applied within {@link #next()} and {@link #hasNext()}.
+ *
+ * <T> is a type of cache query result item.
  */
-public interface Reducer<T> {
+public interface CacheQueryReducer<T> {
     /**
      * @return Next item.
      */
@@ -45,7 +47,8 @@ public interface Reducer<T> {
     public Object sharedLock();
 
     /**
-     * Offer query result page for reduce.
+     * Offer query result page for reduce. Note that the data collection may contain extension of type T.
+     * In such cases it stores additional payload for custom reducer logic.
      *
      * @param nodeId Node ID that sent this page. {@code null} means local node or error page.
      * @param data Page data rows.

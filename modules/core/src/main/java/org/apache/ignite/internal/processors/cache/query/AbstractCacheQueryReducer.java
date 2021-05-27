@@ -26,12 +26,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Declares dependencies on future and logic on pate iteration.
+ * Base abstract class for all Reducer descenders. It declares dependencies on cache query, and base logic for handling
+ * remote pages.
  */
-public abstract class AbstractReducer<R> implements Reducer<R> {
-    /** Iterator over current page. */
-    private Iterator<R> iter;
-
+public abstract class AbstractCacheQueryReducer<R> implements CacheQueryReducer<R> {
     /** Query info. */
     private final GridCacheQueryAdapter qry;
 
@@ -44,11 +42,13 @@ public abstract class AbstractReducer<R> implements Reducer<R> {
     /** Lock shared between this reducer and future. */
     private final Object sharedLock;
 
-    /** */
-    AbstractReducer(GridCacheQueryFutureAdapter fut) {
+    /**
+     * @param fut Cache query future relates to this query. Future is done when last page is delivered to reducer.
+     */
+    AbstractCacheQueryReducer(GridCacheQueryFutureAdapter fut) {
         qry = fut.qry.query();
         timeoutTime = fut.endTime();
-        // The only reason to use lock in 2 places is deduplication. We can move it to reducer to simplify this code.
+        // The only reason to use lock in 2 places is the deduplication mechanism.
         sharedLock = fut.lock;
     }
 
@@ -68,6 +68,9 @@ public abstract class AbstractReducer<R> implements Reducer<R> {
     class PageStream {
         /** Queue of data of results pages. */
         protected final Queue<Collection<R>> queue = new LinkedList<>();
+
+        /** Iterator over current page. */
+        private Iterator<R> iter;
 
         /** Add new query result page of data. */
         void addPage(Collection<R> data) {

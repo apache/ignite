@@ -42,7 +42,7 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
     private IgniteInternalFuture<?> fut;
 
     /** Local reducer for this query. */
-    private final Reducer<R> reducer;
+    private final CacheQueryReducer<R> reducer;
 
     /**
      * @param ctx Context.
@@ -53,7 +53,7 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
 
         run = new LocalQueryRunnable();
 
-        reducer = new LocalReducer<>(this);
+        reducer = new LocalCacheQueryReducer<>(this);
     }
 
     /**
@@ -80,7 +80,7 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
     }
 
     /** {@inheritDoc} */
-    @Override protected Reducer<R> reducer() {
+    @Override protected CacheQueryReducer<R> reducer() {
         return reducer;
     }
 

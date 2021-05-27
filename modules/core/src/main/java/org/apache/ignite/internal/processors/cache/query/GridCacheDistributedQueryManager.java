@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.query;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -59,6 +60,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SCAN;
+import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
 
 /**
  * Distributed query manager (for cache in REPLICATED / PARTITIONED cache mode).
@@ -100,8 +102,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     /** Event listener. */
     private GridLocalEventListener lsnr;
 
-    /** Fetcher of cache query result pages. */
-    private CacheQueryResultFetcher pageFetcher;
+    /** Requester of cache query result pages. */
+    private CacheQueryPageRequester pageRequester;
 
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
@@ -109,7 +111,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
         assert cctx.config().getCacheMode() != LOCAL;
 
-        pageFetcher = new CacheQueryResultFetcher(cctx, futs) {
+        pageRequester = new CacheQueryPageRequester(cctx) {
             /** {@inheritDoc} */
             @Override protected void sendLocal(GridCacheQueryRequest req) {
                 cctx.closures().callLocalSafe(new GridPlainCallable<Object>() {
@@ -549,8 +551,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
         long reqId = cctx.io().nextIoId();
 
-        final GridCacheDistributedQueryFuture<K, V, ?> fut =
-            new GridCacheDistributedQueryFuture<>(cctx, reqId, qry, nodes, pageFetcher);
+        final GridCacheDistributedQueryFuture<K, V, ?> fut = new GridCacheDistributedQueryFuture(cctx, reqId, qry);
 
         initDistributedQuery(reqId, fut, nodes);
 
@@ -717,8 +718,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
         long reqId = cctx.io().nextIoId();
 
-        final GridCacheDistributedFieldsQueryFuture fut =
-            new GridCacheDistributedFieldsQueryFuture(cctx, reqId, qry, nodes, pageFetcher);
+        final GridCacheDistributedFieldsQueryFuture fut = new GridCacheDistributedFieldsQueryFuture(cctx, reqId, qry);
 
         initDistributedQuery(reqId, fut, nodes);
 
@@ -728,6 +728,10 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     /** Initialize distributed query: stores future, sends query requests to nodes. */
     private void initDistributedQuery(long reqId, GridCacheDistributedQueryFuture fut, Collection<ClusterNode> nodes) {
         try {
+            DistributedCacheQueryReducer reducer = createReducer(fut.qry.query().type(), reqId, fut, nodes);
+
+            fut.reducer(reducer);
+
             fut.qry.query().validate();
 
             addQueryFuture(reqId, fut);
@@ -742,11 +746,35 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 }
             });
 
-            pageFetcher.initFetchPages(reqId, fut, nodes);
+            pageRequester.initRequestPages(reqId, fut, nodes);
         }
         catch (IgniteCheckedException e) {
             fut.onDone(e);
         }
+    }
+
+    /** Creates a reducer depends on query type. */
+    private DistributedCacheQueryReducer createReducer(GridCacheQueryType qryType, long reqId,
+        GridCacheDistributedQueryFuture fut, Collection<ClusterNode> nodes) {
+
+        if (qryType == TEXT) {
+            Comparator<CacheEntryWithPayload<K, V, Float>> cmp = (c1, c2) -> {
+                if (c1.payload() == c2.payload())
+                    return 0;
+
+                if (c1.payload() == null)
+                    return -1;
+
+                if (c2.payload() == null)
+                    return 1;
+
+                return Float.compare((float) c2.payload(), (float) c1.payload());
+            };
+
+            return new MergeSortDistributedCacheQueryReducer(
+                fut, reqId, pageRequester, nodes, cmp);
+        } else
+            return new UnsortedDistributedCacheQueryReducer(fut, reqId, pageRequester, nodes);
     }
 
     /**

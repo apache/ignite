@@ -1201,6 +1201,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     if (type == SCAN)
                         // Scan iterator may return already transformed entry
                         data.add(row0);
+
+                    else if (type == TEXT)
+                        // (K, V, score). Value transfers as BinaryObject.
+                        data.add(row0);
+
                     else {
                         IgniteBiTuple<K, V> row = (IgniteBiTuple<K, V>)row0;
 

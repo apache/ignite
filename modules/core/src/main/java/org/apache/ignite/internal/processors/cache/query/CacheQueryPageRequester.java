@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.query;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -32,13 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  * This class is responsible for sending request for query result pages to remote nodes.
  */
-public abstract class CacheQueryResultFetcher {
-    /**
-     * Map (requestId -> query future) where request id is unique for all requests per query.
-     * This map is populated by query manager.
-     */
-    private final ConcurrentMap<Long, GridCacheDistributedQueryFuture<?, ?, ?>> qryFuts;
-
+public abstract class CacheQueryPageRequester {
     /** Cache context. */
     private final GridCacheContext cctx;
 
@@ -46,11 +39,7 @@ public abstract class CacheQueryResultFetcher {
     private final IgniteLogger log;
 
     /** */
-    CacheQueryResultFetcher(
-        final GridCacheContext cctx,
-        final ConcurrentMap<Long, GridCacheDistributedQueryFuture<?, ?, ?>> qryFuts) {
-
-        this.qryFuts = qryFuts;
+    CacheQueryPageRequester(final GridCacheContext cctx) {
         this.cctx = cctx;
         this.log = cctx.kernalContext().config().getGridLogger();
     }
@@ -62,7 +51,8 @@ public abstract class CacheQueryResultFetcher {
      * @param fut Cache query future, contains query info.
      * @param nodes Collection of nodes to send a request.
      */
-    public void initFetchPages(long reqId, GridCacheDistributedQueryFuture fut, Collection<ClusterNode> nodes) throws IgniteCheckedException {
+    public void initRequestPages(long reqId, GridCacheDistributedQueryFuture fut,
+        Collection<ClusterNode> nodes) throws IgniteCheckedException {
         GridCacheQueryBean bean = fut.query();
         GridCacheQueryAdapter qry = bean.query();
 
@@ -105,8 +95,7 @@ public abstract class CacheQueryResultFetcher {
      * @param nodes Collection of nodes to send a request.
      * @param all If {@code true} then request for all pages, otherwise for single only.
      */
-    public void fetchPages(long reqId, Collection<UUID> nodes, boolean all) {
-        GridCacheDistributedQueryFuture fut = qryFuts.get(reqId);
+    public void requestPages(long reqId, GridCacheQueryFutureAdapter fut, Collection<UUID> nodes, boolean all) {
         GridCacheQueryAdapter qry = fut.query().query();
 
         GridCacheQueryRequest req = new GridCacheQueryRequest(
@@ -189,7 +178,7 @@ public abstract class CacheQueryResultFetcher {
      * @throws IgniteCheckedException In case of error.
      */
     private void sendRequest(
-        final GridCacheDistributedQueryFuture fut,
+        final GridCacheQueryFutureAdapter fut,
         final GridCacheQueryRequest req,
         Collection<ClusterNode> nodes
     ) throws IgniteCheckedException {

@@ -21,13 +21,13 @@ import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 
-/** Reducer for local queries. */
-public class LocalReducer<R> extends AbstractReducer<R> {
+/** Simple reducer for local queries. */
+public class LocalCacheQueryReducer<R> extends AbstractCacheQueryReducer<R> {
     /** Stream of local pages. */
     private final PageStream pageStream = new PageStream();
 
     /** */
-    LocalReducer(GridCacheQueryFutureAdapter fut) {
+    LocalCacheQueryReducer(GridCacheQueryFutureAdapter fut) {
         super(fut);
     }
 

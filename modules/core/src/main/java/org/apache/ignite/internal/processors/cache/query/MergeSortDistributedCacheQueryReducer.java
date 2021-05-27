@@ -34,10 +34,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Reducer of distirbuted query that order return values through all nodes. Note that it's assumed that every node
- * returns pre-ordered collection of data.
+ * Reducer of distirbuted query that sort result through all nodes. Note that it's assumed that every node
+ * returns pre-sorted collection of data.
  */
-public class MergeSortDistributedReducer<R> extends UnsortedDistributedReducer<R> {
+public class MergeSortDistributedCacheQueryReducer<R> extends UnsortedDistributedCacheQueryReducer<R> {
     /** Map of Node ID to stream. Used for inserting new pages. */
     private final Map<UUID, NodePageStream> streamsMap;
 
@@ -56,9 +56,12 @@ public class MergeSortDistributedReducer<R> extends UnsortedDistributedReducer<R
     /** Compares head of streams to get lowest value at the moment. */
     private final Comparator<NodePageStream> streamCmp;
 
-    /** */
-    public MergeSortDistributedReducer(GridCacheQueryFutureAdapter fut, long reqId, CacheQueryResultFetcher fetcher,
-        Collection<ClusterNode> nodes) {
+    /**
+     * @param rowCmp Comparator to sort query results from different nodes.
+     */
+    public MergeSortDistributedCacheQueryReducer(GridCacheQueryFutureAdapter fut, long reqId,
+        CacheQueryPageRequester fetcher, Collection<ClusterNode> nodes, Comparator<R> rowCmp
+    ) {
         super(fut, reqId, fetcher, nodes);
 
         synchronized (sharedLock()) {
@@ -75,10 +78,8 @@ public class MergeSortDistributedReducer<R> extends UnsortedDistributedReducer<R
             streamsMap = Collections.unmodifiableMap(nodeStreamMap);
         }
 
-        RowComparator rowCmp = new RowComparator();
-
         streamCmp = (o1, o2) -> {
-            if (o1 == o2) // both nulls
+            if (o1 == o2)
                 return 0;
 
             if (o1 == null)
@@ -87,7 +88,7 @@ public class MergeSortDistributedReducer<R> extends UnsortedDistributedReducer<R
             if (o2 == null)
                 return 1;
 
-            return rowCmp.compare(o1.head(), o2.head());
+            return rowCmp.compare(o1.head, o2.head);
         };
     }
 
@@ -163,7 +164,7 @@ public class MergeSortDistributedReducer<R> extends UnsortedDistributedReducer<R
         }
 
         if (nodes != null)
-            fetcher.fetchPages(reqId, nodes, false);
+            pageRequester.requestPages(reqId, fut, nodes, false);
     }
 
     /** {@inheritDoc} */
@@ -185,7 +186,6 @@ public class MergeSortDistributedReducer<R> extends UnsortedDistributedReducer<R
 
         // Local node.
         if (nodeId == null) {
-            // TODO: should map contain localNodeID or not?
             nodeId = cctx.localNodeId();
 
             // If nodeId is NULL and query doesn't execute on local node, then it is error, notify all streams.
@@ -276,24 +276,7 @@ public class MergeSortDistributedReducer<R> extends UnsortedDistributedReducer<R
 
         /** {@inheritDoc} */
         @Override protected boolean allPagesReady() {
-            return MergeSortDistributedReducer.this.allPagesReady || allPagesReady || finished();
-        }
-    }
-
-    /** Compares only comparable objects. Otherwise objects are assumed equal. */
-    private class RowComparator implements Comparator<Object> {
-        /** {@inheritDoc} */
-        @Override public int compare(Object left, Object right) {
-            if (left == null || right == null)
-                return 0;
-
-            if (left.getClass() != right.getClass())
-                return 0;
-
-            if (!(left instanceof Comparable))
-                return 0;
-
-            return ((Comparable) left).compareTo(right);
+            return MergeSortDistributedCacheQueryReducer.this.allPagesReady || allPagesReady || finished();
         }
     }
 }

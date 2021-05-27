@@ -34,7 +34,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Reducer of distributed query, fetch pages from remote nodes. All pages go in single page stream so no ordering is provided.
  */
-class UnsortedDistributedReducer<R> extends AbstractReducer<R> implements DistributedReducer<R> {
+class UnsortedDistributedCacheQueryReducer<R> extends AbstractCacheQueryReducer<R> implements DistributedCacheQueryReducer<R> {
     /**
      * Whether it is allowed to send cache query result requests to nodes.
      * It is set to {@code false} if a query finished or failed.
@@ -55,8 +55,8 @@ class UnsortedDistributedReducer<R> extends AbstractReducer<R> implements Distri
      */
     protected final Collection<UUID> rcvd = new HashSet<>();
 
-    /** Fetcher of cache query result pages. */
-    protected final CacheQueryResultFetcher fetcher;
+    /** Requester of cache query result pages. */
+    protected final CacheQueryPageRequester pageRequester;
 
     /** Cache context. */
     protected final GridCacheContext cctx;
@@ -67,16 +67,20 @@ class UnsortedDistributedReducer<R> extends AbstractReducer<R> implements Distri
     /** Single page stream. */
     private final PageStream pageStream;
 
-    /** Whether query is a fields query. */
-    private final boolean fieldsQry;
+    /** Query future. */
+    protected final GridCacheQueryFutureAdapter fut;
 
-    /** */
-    UnsortedDistributedReducer(GridCacheQueryFutureAdapter fut, long reqId, CacheQueryResultFetcher fetcher,
+    /**
+     * @param reqId Cache query request ID.
+     * @param pageRequester Provides a functionality to request pages from remote nodes.
+     * @param nodes Collection of nodes this query applies to.
+     */
+    UnsortedDistributedCacheQueryReducer(GridCacheQueryFutureAdapter fut, long reqId, CacheQueryPageRequester pageRequester,
         Collection<ClusterNode> nodes) {
         super(fut);
 
         this.reqId = reqId;
-        this.fetcher = fetcher;
+        this.pageRequester = pageRequester;
 
         synchronized (sharedLock()) {
             for (ClusterNode node : nodes)
@@ -87,7 +91,7 @@ class UnsortedDistributedReducer<R> extends AbstractReducer<R> implements Distri
 
         pageStream = new PageStream();
 
-        fieldsQry = fut.fields();
+        this.fut = fut;
     }
 
     /** {@inheritDoc} */
@@ -132,7 +136,7 @@ class UnsortedDistributedReducer<R> extends AbstractReducer<R> implements Distri
             subgrid.clear();
         }
 
-        fetcher.cancelQueryRequest(reqId, nodes, fieldsQry);
+        pageRequester.cancelQueryRequest(reqId, nodes, fut.fields());
     }
 
     /** {@inheritDoc} */
@@ -154,7 +158,7 @@ class UnsortedDistributedReducer<R> extends AbstractReducer<R> implements Distri
         }
 
         if (nodes != null)
-            fetcher.fetchPages(reqId, nodes, false);
+            pageRequester.requestPages(reqId, fut, nodes, false);
     }
 
     /** {@inheritDoc} */
@@ -171,7 +175,7 @@ class UnsortedDistributedReducer<R> extends AbstractReducer<R> implements Distri
         }
 
         if (nodes != null)
-            fetcher.fetchPages(reqId, nodes, true);
+            pageRequester.requestPages(reqId, fut, nodes, true);
     }
 
     /** {@inheritDoc} */

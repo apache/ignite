@@ -17,11 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -38,17 +36,14 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
     private final long reqId;
 
     /** Reducer of distributed query results. */
-    private final DistributedReducer<R> reducer;
+    private DistributedCacheQueryReducer<R> reducer;
 
     /**
      * @param ctx Cache context.
      * @param reqId Request ID.
      * @param qry Query.
-     * @param nodes Nodes.
-     * @param fetcher Fetcher of cache query results pages.
      */
-    protected GridCacheDistributedQueryFuture(GridCacheContext<K, V> ctx, long reqId,
-        GridCacheQueryBean qry, Collection<ClusterNode> nodes, CacheQueryResultFetcher fetcher) {
+    protected GridCacheDistributedQueryFuture(GridCacheContext<K, V> ctx, long reqId, GridCacheQueryBean qry) {
         super(ctx, qry, false);
 
         assert reqId > 0;
@@ -58,8 +53,6 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
         GridCacheQueryManager<K, V> mgr = ctx.queries();
 
         assert mgr != null;
-
-        reducer = new UnsortedDistributedReducer<>(this, reqId, fetcher, nodes);
     }
 
     /** {@inheritDoc} */
@@ -107,22 +100,13 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
     }
 
     /** {@inheritDoc} */
-    @Override protected Reducer<R> reducer() {
+    @Override protected CacheQueryReducer<R> reducer() {
         return reducer;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean onCancelled() {
-        reducer.onLastPage();
-
-        return super.onCancelled();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onTimeout() {
-        reducer.onLastPage();
-
-        super.onTimeout();
+    /** Set reducer. */
+    void reducer(DistributedCacheQueryReducer<R> reducer) {
+        this.reducer = reducer;
     }
 
     /** {@inheritDoc} */

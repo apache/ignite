@@ -24,7 +24,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Reducer for distributed cache query.
  */
-public interface DistributedReducer<T> extends Reducer<T> {
+public interface DistributedCacheQueryReducer<T> extends CacheQueryReducer<T> {
     /**
      * Callback that invoked after getting a page from remote node. Checks whether it is the last page for query or not.
      *

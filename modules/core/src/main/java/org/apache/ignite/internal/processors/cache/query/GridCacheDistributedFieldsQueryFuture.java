@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
@@ -44,11 +43,9 @@ public class GridCacheDistributedFieldsQueryFuture
      * @param ctx Cache context.
      * @param reqId Request ID.
      * @param qry Query.
-     * @param nodes Nodes.
      */
-    public GridCacheDistributedFieldsQueryFuture(GridCacheContext<?, ?> ctx, long reqId,
-        GridCacheQueryBean qry, Collection<ClusterNode> nodes, CacheQueryResultFetcher fetcher) {
-        super((GridCacheContext<Object, Object>)ctx, reqId, qry, nodes, fetcher);
+    public GridCacheDistributedFieldsQueryFuture(GridCacheContext<?, ?> ctx, long reqId, GridCacheQueryBean qry) {
+        super((GridCacheContext<Object, Object>)ctx, reqId, qry);
 
         metaFut = new GridFutureAdapter<>();
 

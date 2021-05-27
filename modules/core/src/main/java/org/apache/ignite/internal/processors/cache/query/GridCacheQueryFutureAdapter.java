@@ -24,12 +24,12 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -45,7 +45,7 @@ import org.jetbrains.annotations.Nullable;
  * Query future adapter. Future marked as done after all result pages are ready. Note that completeness of this future
  * doesn't depend on whether all data are delievered to user or not. This class provides {@code Iterator} interface to
  * access result data. Handling of recieved pages is triggered by {@code Iterator} methods.
- * Reducing of result data (order, limit) is controlled by {@link Reducer}.
+ * Reducing of result data (order, limit) is controlled by {@link CacheQueryReducer}.
  *
  * @param <R> Result type.
  */
@@ -66,11 +66,17 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     /** */
     protected final GridCacheQueryBean qry;
 
+    /** */
+    private int capacity;
+
+    /** */
+    private boolean limitDisabled;
+
     /** Set of received keys used to deduplicate query result set. */
     private final Collection<K> keys;
 
     /** */
-    private final AtomicInteger cnt = new AtomicInteger();
+    private int cnt;
 
     /** */
     private final IgniteUuid timeoutId = IgniteUuid.randomUuid();
@@ -106,6 +112,8 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
         long startTime = U.currentTimeMillis();
 
         long timeout = qry.query().timeout();
+        capacity = query().query().limit();
+        limitDisabled = capacity <= 0;
 
         if (timeout > 0) {
             endTime = startTime + timeout;
@@ -146,16 +154,21 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     /** {@inheritDoc} */
     @Override public R next() {
         try {
+            if (!limitDisabled && cnt == capacity)
+                return null;
+
             checkError();
 
             R next = null;
 
-            if (reducer().hasNext())
+            if (reducer().hasNext()) {
                 next = unmaskNull(reducer().next());
 
-            checkError();
+                if (!limitDisabled)
+                    cnt++;
+            }
 
-            cnt.decrementAndGet();
+            checkError();
 
             return next;
         }
@@ -165,7 +178,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     }
 
     /** @return Cache query results reducer. */
-    protected abstract Reducer<R> reducer();
+    protected abstract CacheQueryReducer<R> reducer();
 
     /**
      * Waits for the first item to be received from remote node(s), if any.
@@ -255,9 +268,30 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
                 if (data == null)
                     data = Collections.emptyList();
 
-                data = dedupIfRequired((Collection<Object>)data);
+                data = dedupIfRequired(data);
 
-                data = cctx.unwrapBinariesIfNeeded((Collection<Object>)data, qry.query().keepBinary());
+                if (qry.query().type() == GridCacheQueryType.TEXT) {
+                    ArrayList unwrapped = new ArrayList();
+
+                    for (Object o: data) {
+                        CacheEntryWithPayload e = (CacheEntryWithPayload) o;
+
+                        Object uKey = CacheObjectUtils.unwrapBinary(
+                            cctx.cacheObjectContext(), e.getKey(), qry.query().keepBinary(), true, null);
+
+                        Object uVal = CacheObjectUtils.unwrapBinary(
+                            cctx.cacheObjectContext(), e.getValue(), qry.query().keepBinary(), true, null);
+
+                        if (uKey != e.getKey() || uVal != e.getValue())
+                            unwrapped.add(new CacheEntryWithPayload<>(uKey, uVal, e.payload()));
+                        else
+                            unwrapped.add(o);
+                    }
+
+                    data = unwrapped;
+
+                } else
+                    data = cctx.unwrapBinariesIfNeeded((Collection<Object>)data, qry.query().keepBinary());
 
                 synchronized (lock) {
                     reducer().addPage(nodeId, (Collection<R>) data);
@@ -406,8 +440,17 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     }
 
     /** {@inheritDoc} */
+    @Override public boolean onCancelled() {
+        reducer().onLastPage();
+
+        return super.onCancelled();
+    }
+
+    /** {@inheritDoc} */
     @Override public void onTimeout() {
         try {
+            reducer().onLastPage();
+
             cancelQuery();
 
             onDone(new IgniteFutureTimeoutCheckedException("Query timed out."));
