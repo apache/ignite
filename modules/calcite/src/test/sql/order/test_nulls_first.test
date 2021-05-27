@@ -76,26 +76,3 @@ SELECT * FROM test ORDER BY i NULLS LAST, j NULLS LAST LIMIT 2
 ----
 1	1
 1	NULL
-
-# changed default now
-statement ok
-PRAGMA default_null_order='NULLS LAST'
-
-query I
-SELECT * FROM integers ORDER BY i
-----
-1
-NULL
-
-statement ok
-PRAGMA default_null_order='NULLS FIRST'
-
-statement error
-PRAGMA default_null_order())
-
-statement error
-PRAGMA default_null_order=UNKNOWN)
-
-statement error
-PRAGMA default_null_order=3)
-
