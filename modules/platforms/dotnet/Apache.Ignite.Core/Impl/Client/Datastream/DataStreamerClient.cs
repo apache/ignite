@@ -78,6 +78,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /** Exception. When set, the streamer is closed. */
         private volatile Exception _exception;
 
+        /** Cancelled flag. */
+        private volatile bool _cancelled;
+
         /** Cached flags. */
         private readonly Flags _flags;
 
@@ -199,8 +202,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
                 if (cancel)
                 {
-                    // Disregard current buffers, but wait for active flushes.
-                    // TODO: Implement!
+                    // Disregard current buffers, stop all retry loops.
+                    _cancelled = true;
+                    
                     return Task.CompletedTask;
                 }
 
@@ -257,7 +261,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         private void AddNoLock(DataStreamerClientEntry<TK, TV> entry)
         {
-            while (true)
+            while (!_cancelled)
             {
                 try
                 {
@@ -351,8 +355,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             Exception exception,
             Task prevTask = null)
         {
-            // NOTE: when onSocketThread is true, we are on socket receiver thread - don't perform any heavy operations.
-
             if (exception == null)
             {
                 PrintEntries(buffer.Entries, $"SENT (disposed={socket.IsDisposed}, task={prevTask?.Status}, socket={socket.RemoteEndPoint})");
@@ -363,10 +365,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 return;
             }
 
-            if (!socket.IsDisposed && !ShouldRetry(exception))
+            if (_cancelled || (!socket.IsDisposed && !ShouldRetry(exception)))
             {
                 // Socket is still connected: this error does not need to be retried.
-                Console.WriteLine(">>>> NON_RETRY_ERROR: " + exception);
                 ReturnArray(buffer.Entries);
                 tcs.SetException(exception);
 
