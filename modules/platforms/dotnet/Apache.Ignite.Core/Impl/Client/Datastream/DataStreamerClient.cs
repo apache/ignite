@@ -37,6 +37,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     /// * Fix old .NET build
     /// * XMLDoc
     /// * API review.
+    /// * Benchmark re-run and results cleanup.
     /// </summary>
     internal sealed class DataStreamerClient<TK, TV> : IDataStreamerClient<TK, TV>
     {
