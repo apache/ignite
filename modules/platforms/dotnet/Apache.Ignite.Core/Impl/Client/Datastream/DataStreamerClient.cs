@@ -473,6 +473,11 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             w.WriteInt(ServerBufferSizeAuto); // Server per-thread buffer size.
             w.WriteObject(_options.Receiver);
 
+            if (_options.Receiver != null)
+            {
+                w.WriteByte(ClientPlatformId.Dotnet);
+            }
+
             var count = buffer.Count;
             w.WriteInt(count);
 
