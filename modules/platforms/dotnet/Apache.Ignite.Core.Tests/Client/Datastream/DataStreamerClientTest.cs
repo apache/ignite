@@ -550,6 +550,24 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             StringAssert.Contains("Failed to finish operation (too many remaps)", clientEx.Message);
         }
 
+        [Test]
+        public void TestAutoFlushInterval()
+        {
+            Assert.Fail("TODO");
+        }
+        
+        [Test]
+        public void TestAutoFlushIntervalWithBlockedStore()
+        {
+            Assert.Fail("TODO");
+        }
+
+        [Test]
+        public void TestAutoFlushIntervalWithException()
+        {
+            Assert.Fail("TODO");
+        }
+
 #if NETCOREAPP
 
         [Test]
