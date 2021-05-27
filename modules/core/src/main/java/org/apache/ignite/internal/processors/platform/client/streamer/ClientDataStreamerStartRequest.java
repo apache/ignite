@@ -17,16 +17,22 @@
 
 package org.apache.ignite.internal.processors.platform.client.streamer;
 
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
+import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientLongResponse;
+import org.apache.ignite.internal.processors.platform.client.ClientPlatform;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheRequest;
+import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.stream.StreamReceiver;
 
 import java.util.Collection;
@@ -54,8 +60,11 @@ public class ClientDataStreamerStartRequest extends ClientRequest {
     /** */
     private final int perThreadBufferSize;
 
-    /** */
-    private final StreamReceiver receiver;
+    /** Receiver object */
+    private final Object receiverObj;
+
+    /** Receiver platform. */
+    private final byte receiverPlatform;
 
     /** Data entries. */
     private final Collection<DataStreamerEntry> entries;
@@ -72,7 +81,8 @@ public class ClientDataStreamerStartRequest extends ClientRequest {
         flags = reader.readByte();
         perNodeBufferSize = reader.readInt();
         perThreadBufferSize = reader.readInt();
-        receiver = (StreamReceiver) reader.readObject();
+        receiverObj = reader.readObjectDetached();
+        receiverPlatform = receiverObj == null ? 0 : reader.readByte();
         entries = ClientDataStreamerReader.read(reader);
     }
 
@@ -97,8 +107,8 @@ public class ClientDataStreamerStartRequest extends ClientRequest {
         dataStreamer.skipStore(skipStore());
         dataStreamer.keepBinary(keepBinary());
 
-        if (receiver != null)
-            dataStreamer.receiver(receiver);
+        if (receiverObj != null)
+            dataStreamer.receiver(createReceiver(ctx.kernalContext(), receiverObj, receiverPlatform, keepBinary()));
 
         if (entries != null)
             dataStreamer.addDataInternal(entries, useThreadBuffer);
@@ -135,5 +145,41 @@ public class ClientDataStreamerStartRequest extends ClientRequest {
 
     private boolean keepBinary() {
         return (flags & KEEP_BINARY) != 0;
+    }
+
+
+    /**
+     * Creates the receiver.
+     *
+     * @return Receiver.
+     */
+    private static StreamReceiver createReceiver(GridKernalContext ctx,
+                                                 Object receiverObj,
+                                                 byte platform,
+                                                 boolean keepBinary) {
+        if (receiverObj == null)
+            return null;
+
+        switch (platform) {
+            case ClientPlatform.JAVA:
+                return ((BinaryObject)receiverObj).deserialize();
+
+            case ClientPlatform.DOTNET:
+                PlatformContext platformCtx = ctx.platform().context();
+
+                String curPlatform = platformCtx.platform();
+
+                if (!PlatformUtils.PLATFORM_DOTNET.equals(curPlatform)) {
+                    throw new IgniteException("Stream receiver platform is " + PlatformUtils.PLATFORM_DOTNET +
+                            ", current platform is " + curPlatform);
+                }
+
+                return platformCtx.createStreamReceiver(receiverObj, 0, keepBinary);
+
+            case ClientPlatform.CPP:
+
+            default:
+                throw new UnsupportedOperationException("Invalid stream receiver platform code: " + platform);
+        }
     }
 }
