@@ -35,6 +35,9 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
     /// </summary>
     public class DataStreamerClientTest : ClientTestBase
     {
+        /** */
+        private const int GridCount = 3;
+        
         /// <summary>
         /// Initializes a new instance of <see cref="DataStreamerClientTest"/>.
         /// </summary>
@@ -224,6 +227,9 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             {
                 // ReSharper disable once AccessToDisposedClosure
                 Parallel.For(0, count, i => streamer.Add(i, i + 2));
+                
+                streamer.Flush();
+                CheckArrayPoolLeak(streamer, GridCount);
             }
 
             var size = cache.GetSize();
