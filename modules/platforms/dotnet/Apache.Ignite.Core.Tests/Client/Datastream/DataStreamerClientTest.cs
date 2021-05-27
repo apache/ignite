@@ -574,13 +574,17 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         {
             var options = new DataStreamerClientOptions
             {
-                AutoFlushInterval = TimeSpan.FromSeconds(0.1)
+                AutoFlushInterval = TimeSpan.FromSeconds(0.2)
             };
 
             var streamer = Client.GetDataStreamer<int, int>("bad-cache-name", options);
             streamer.Add(1, 1);
             
+            Assert.IsFalse(streamer.IsClosed);
             TestUtils.WaitForTrueCondition(() => streamer.IsClosed);
+
+            var ex = Assert.Throws<ObjectDisposedException>(() => streamer.Flush());
+            Assert.AreEqual("x", ex.Message);
         }
 
 #if NETCOREAPP
