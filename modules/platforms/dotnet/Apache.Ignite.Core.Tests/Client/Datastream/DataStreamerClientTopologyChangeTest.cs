@@ -137,7 +137,6 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                     }
                 });
 
-                // TODO: Run this test for multiple minutes.
                 for (int i = 0; i < 20; i++)
                 {
                     if (nodes.Count <= 2 || (nodes.Count < maxNodes && TestUtils.Random.Next(2) == 0))
@@ -154,14 +153,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 adderTask.Wait(TimeSpan.FromSeconds(15));
 
                 streamer.Flush();
-
-                var streamerImpl = (DataStreamerClient<int, int>) streamer;
-                
-                var poolStats = string.Format("Allocated={0}, Pooled={1}, Nodes={2}", 
-                    streamerImpl.ArraysAllocated, streamerImpl.ArraysPooled, nodes.Count);
-
-                Assert.LessOrEqual(streamerImpl.ArraysAllocated - streamerImpl.ArraysPooled, maxNodes, poolStats);
-                Console.WriteLine("Array pool stats: " + poolStats);
+                DataStreamerClientTest.CheckArrayPoolLeak(streamer, maxNodes);
             }
 
             TestUtils.WaitForTrueCondition(() => id == cache.GetSize());

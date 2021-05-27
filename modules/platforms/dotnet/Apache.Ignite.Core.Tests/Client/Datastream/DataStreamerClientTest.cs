@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Datastream;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Client.Datastream;
     using NUnit.Framework;
 
     /// <summary>
@@ -512,6 +513,17 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         }
 
 #endif
+
+        internal static void CheckArrayPoolLeak<TK, TV>(IDataStreamerClient<TK, TV> streamer, int maxDiff)
+        {
+            var streamerImpl = (DataStreamerClient<TK, TV>) streamer;
+                
+            var poolStats = string.Format("Allocated={0}, Pooled={1}, MaxDiff={2}", 
+                streamerImpl.ArraysAllocated, streamerImpl.ArraysPooled, maxDiff);
+
+            Assert.LessOrEqual(streamerImpl.ArraysAllocated - streamerImpl.ArraysPooled, maxDiff, poolStats);
+            Console.WriteLine("Array pool stats: " + poolStats);
+        }
 
         protected override IgniteConfiguration GetIgniteConfiguration()
         {
