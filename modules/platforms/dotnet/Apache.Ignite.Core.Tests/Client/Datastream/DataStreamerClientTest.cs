@@ -536,7 +536,18 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         [Test]
         public void TestStreamReceiverDeserializationException()
         {
-            Assert.Fail("TODO");
+            var options = new DataStreamerClientOptions<int, int>
+            {
+                Receiver = new StreamReceiverReadBinaryThrowException()
+            };
+
+            var streamer = Client.GetDataStreamer(CacheName, options);
+            streamer.Add(1, 1);
+
+            var ex = Assert.Throws<AggregateException>(() => streamer.Flush());
+            var clientEx = (IgniteClientException) ex.GetBaseException();
+            
+            StringAssert.Contains("Failed to finish operation (too many remaps)", clientEx.Message);
         }
 
 #if NETCOREAPP
@@ -598,6 +609,24 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             public void Receive(ICache<int, int> cache, ICollection<ICacheEntry<int, int>> entries)
             {
                 throw new ArithmeticException("Foo");
+            }
+        }
+
+        private class StreamReceiverReadBinaryThrowException : IStreamReceiver<int, int>, IBinarizable
+        {
+            public void Receive(ICache<int, int> cache, ICollection<ICacheEntry<int, int>> entries)
+            {
+                // No-op.
+            }
+
+            public void WriteBinary(IBinaryWriter writer)
+            {
+                // No-op.
+            }
+
+            public void ReadBinary(IBinaryReader reader)
+            {
+                throw new InvalidOperationException("Bar");
             }
         }
 
