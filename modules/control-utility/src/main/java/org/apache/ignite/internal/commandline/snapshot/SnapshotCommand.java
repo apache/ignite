@@ -134,7 +134,7 @@ public class SnapshotCommand extends AbstractCommand<Object> {
         Command.usage(log, "Snapshot restore operation status:", SNAPSHOT, commonParams, RESTORE.toString(),
             VisorSnapshotRestoreTaskAction.STATUS.cmdName(), "snapshot_name");
 
-        Command.usage(log, "Cancel snapshot restore opeeration:", SNAPSHOT, commonParams, RESTORE.toString(),
+        Command.usage(log, "Cancel snapshot restore operation:", SNAPSHOT, commonParams, RESTORE.toString(),
             VisorSnapshotRestoreTaskAction.CANCEL.cmdName(), "snapshot_name");
     }
 

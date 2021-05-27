@@ -168,7 +168,7 @@ This utility can do the following commands:
     Parameters:
       snapshot_name  - Snapshot name.
 
-  Cancel snapshot restore opeeration:
+  Cancel snapshot restore operation:
     control.(sh|bat) --snapshot restore --cancel snapshot_name
 
     Parameters:
