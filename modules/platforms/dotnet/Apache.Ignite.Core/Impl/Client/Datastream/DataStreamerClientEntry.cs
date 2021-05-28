@@ -23,6 +23,15 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     internal struct DataStreamerClientEntry<TK, TV>
     {
         /** */
+        private const byte StatusEmpty = 0;
+        
+        /** */
+        private const byte StatusAdd = 1;
+        
+        /** */
+        private const byte StatusRemove = 2;
+
+        /** */
         private readonly TK _key;
 
         /** */
@@ -38,7 +47,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         {
             _key = key;
             _val = val;
-            _status = 1;
+            _status = StatusAdd;
         }
 
         /// <summary>
@@ -48,7 +57,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         {
             _key = key;
             _val = default(TV);
-            _status = 2;
+            _status = StatusRemove;
         }
 
         /// <summary>
@@ -72,7 +81,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /// </summary>
         public bool Remove
         {
-            get { return _status == 2; }
+            get { return _status == StatusRemove; }
         }
 
         /// <summary>
@@ -80,7 +89,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /// </summary>
         public bool IsEmpty
         {
-            get { return _status == 0; }
+            get { return _status == StatusEmpty; }
         }
 
         /** <inheritdoc /> */

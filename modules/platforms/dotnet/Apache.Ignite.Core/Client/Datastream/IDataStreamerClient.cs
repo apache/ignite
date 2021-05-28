@@ -32,6 +32,9 @@ namespace Apache.Ignite.Core.Client.Datastream
     /// </summary>
     public interface IDataStreamerClient<TK, TV> : IDisposable
     {
+        /// <summary>
+        /// Gets the cache name.
+        /// </summary>
         string CacheName { get; }
 
         /// <summary>
@@ -39,6 +42,9 @@ namespace Apache.Ignite.Core.Client.Datastream
         /// </summary>
         bool IsClosed { get; }
 
+        /// <summary>
+        /// Gets the options.
+        /// </summary>
         DataStreamerClientOptions<TK, TV> Options { get; }
 
         /// <summary>
@@ -52,6 +58,14 @@ namespace Apache.Ignite.Core.Client.Datastream
         /// <param name="val">Value.</param>
         void Add(TK key, TV val);
 
+        /// <summary>
+        /// Adds multiple entries to the streamer.
+        /// <para />
+        /// This method adds entries to the buffer. When the buffer gets full, it is scheduled for
+        /// asynchronous background flush. This method will block when the number of active flush operations
+        /// exceeds <see cref="DataStreamerClientOptions.PerNodeParallelOperations"/>.
+        /// </summary>
+        /// <param name="entries">Entries to add.</param>
         void Add(IEnumerable<KeyValuePair<TK, TV>> entries);
 
         void Remove(TK key);
