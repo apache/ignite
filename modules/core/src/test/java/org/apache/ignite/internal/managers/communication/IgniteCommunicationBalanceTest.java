@@ -122,7 +122,8 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
 
             waitNioBalanceStop(Collections.singletonList(client), 10_000);
 
-            final GridNioServer srv = ((GridNioServerWrapper) GridTestUtils.getFieldValue(client.configuration().getCommunicationSpi(), "nioSrvWrapper")).nio();
+            final GridNioServer srv =
+                ((GridNioServerWrapper) GridTestUtils.getFieldValue(client.configuration().getCommunicationSpi(), "nioSrvWrapper")).nio();
 
             ThreadLocalRandom rnd = ThreadLocalRandom.current();
 

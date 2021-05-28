@@ -927,14 +927,18 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                                                 parent.remapFut = null;
                                             }
 
-                                            parent.cctx.time().waitAsync(affFut, parent.tx.remainingTime(), new IgniteBiInClosure<IgniteCheckedException, Boolean>() {
-                                                @Override public void apply(IgniteCheckedException e, Boolean timedOut) {
-                                                    if (parent.errorOrTimeoutOnTopologyVersion(e, timedOut))
-                                                        return;
+                                            parent.cctx.time().waitAsync(
+                                                affFut,
+                                                parent.tx.remainingTime(),
+                                                new IgniteBiInClosure<IgniteCheckedException, Boolean>() {
+                                                    @Override public void apply(IgniteCheckedException e, Boolean timedOut) {
+                                                        if (parent.errorOrTimeoutOnTopologyVersion(e, timedOut))
+                                                            return;
 
-                                                    remap(res);
+                                                        remap(res);
+                                                    }
                                                 }
-                                            });
+                                            );
                                         }
                                         else {
                                             ClusterTopologyCheckedException err0 = new ClusterTopologyCheckedException(

@@ -49,7 +49,8 @@ public class VisorTracingConfigurationTask
     /**
      * Job that will collect and update tracing configuration.
      */
-    private static class VisorTracingConfigurationJob extends VisorJob<VisorTracingConfigurationTaskArg, VisorTracingConfigurationTaskResult> {
+    private static class VisorTracingConfigurationJob
+        extends VisorJob<VisorTracingConfigurationTaskArg, VisorTracingConfigurationTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;
 

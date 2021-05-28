@@ -104,8 +104,18 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
 
         cfg.setCacheConfiguration(
             cacheConfiguration("custord", CacheMode.PARTITIONED, Integer.class, CustOrder.class),
-            cacheConfiguration("replord", CacheMode.PARTITIONED, useColocatedData() ? AffinityKey.class : Integer.class, ReplaceOrder.class),
-            cacheConfiguration("ordparam", CacheMode.PARTITIONED, useColocatedData() ? AffinityKey.class : Integer.class, OrderParams.class),
+            cacheConfiguration(
+                "replord",
+                CacheMode.PARTITIONED,
+                useColocatedData() ? AffinityKey.class : Integer.class,
+                ReplaceOrder.class
+            ),
+            cacheConfiguration(
+                "ordparam",
+                CacheMode.PARTITIONED,
+                useColocatedData() ? AffinityKey.class : Integer.class,
+                OrderParams.class
+            ),
             cacheConfiguration("cancel", CacheMode.PARTITIONED, useColocatedData() ? AffinityKey.class : Integer.class, Cancel.class),
             cacheConfiguration("exec", CacheMode.REPLICATED, useColocatedData() ? AffinityKey.class : Integer.class, Exec.class));
 

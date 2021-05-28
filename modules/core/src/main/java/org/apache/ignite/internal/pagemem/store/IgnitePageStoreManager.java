@@ -19,7 +19,6 @@ package org.apache.ignite.internal.pagemem.store;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
-import java.util.function.LongConsumer;
 import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -28,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageReadWriteManager;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 
@@ -51,10 +51,10 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * @param cacheId Cache id.
      * @param partitions Partitions count.
      * @param workingDir Working directory.
-     * @param tracker Allocation tracker.
+     * @param pageMetrics Page metrics.
      * @throws IgniteCheckedException If failed.
      */
-    void initialize(int cacheId, int partitions, String workingDir, LongConsumer tracker)
+    public void initialize(int cacheId, int partitions, String workingDir, PageMetrics pageMetrics)
         throws IgniteCheckedException;
 
     /**
@@ -130,7 +130,13 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * @param pageBuf Page buffer to write.
      * @throws IgniteCheckedException If failed to write page.
      */
-    @Override public PageStore write(int grpId, long pageId, ByteBuffer pageBuf, int tag, boolean calculateCrc) throws IgniteCheckedException;
+    @Override public PageStore write(
+        int grpId,
+        long pageId,
+        ByteBuffer pageBuf,
+        int tag,
+        boolean calculateCrc
+    ) throws IgniteCheckedException;
 
     /**
      * Gets page offset within the page store file.

@@ -25,6 +25,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -42,6 +43,12 @@ public class ExchangeActions {
 
     /** */
     private Map<String, CacheActionData> cachesToStart;
+
+    /**
+     * Server nodes on which a successful start of the cache(s) is required, if any of these nodes fails when starting
+     * the cache(s), the whole procedure is rolled back.
+     */
+    private Collection<UUID> cacheStartRequiredAliveNodes;
 
     /** */
     private Map<String, CacheActionData> cachesToStop;
@@ -317,6 +324,23 @@ public class ExchangeActions {
         }
 
         return false;
+    }
+
+    /**
+     * @return Server nodes on which a successful start of the cache(s) is required, if any of these nodes fails when
+     *      starting the cache(s), the whole procedure is rolled back.
+     */
+    public Collection<UUID> cacheStartRequiredAliveNodes() {
+        return cacheStartRequiredAliveNodes == null ? Collections.emptyList() : cacheStartRequiredAliveNodes;
+    }
+
+    /**
+     * @param cacheStartRequiredAliveNodes Server nodes on which a successful start of the cache(s) is required, if any
+     *                                     of these nodes fails when starting the cache(s), the whole procedure is
+     *                                     rolled back.
+     */
+    public void cacheStartRequiredAliveNodes(Collection<UUID> cacheStartRequiredAliveNodes) {
+        this.cacheStartRequiredAliveNodes = new ArrayList<>(cacheStartRequiredAliveNodes);
     }
 
     /**

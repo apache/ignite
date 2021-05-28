@@ -638,7 +638,8 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         final Supplier<ClusterNode> locNodeSupplier = () -> getSpiContext().localNode();
         final Supplier<Ignite> igniteExSupplier = this::ignite;
         final Function<UUID, Boolean> pingNode = (nodeId) -> getSpiContext().pingNode(nodeId);
-        final Supplier<FailureProcessor> failureProcessorSupplier = () -> ignite instanceof IgniteEx ? ((IgniteEx)ignite).context().failure() : null;
+        final Supplier<FailureProcessor> failureProcessorSupplier =
+            () -> ignite instanceof IgniteEx ? ((IgniteEx)ignite).context().failure() : null;
         final Supplier<Boolean> isStopped = () -> getSpiContext().isStopping();
 
         this.igniteInstanceName = igniteInstanceName;
@@ -946,7 +947,11 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
 
         metricsLsnr = new TcpCommunicationMetricsListener(ignite, spiCtx);
 
-        registerMBean(igniteInstanceName, new TcpCommunicationSpiMBeanImpl(this, metricsLsnr, cfg, stateProvider), TcpCommunicationSpiMBean.class);
+        registerMBean(
+            igniteInstanceName,
+            new TcpCommunicationSpiMBeanImpl(this, metricsLsnr, cfg, stateProvider),
+            TcpCommunicationSpiMBean.class
+        );
 
         srvLsnr.metricsListener(metricsLsnr);
         clientPool.metricsListener(metricsLsnr);
