@@ -33,6 +33,8 @@ import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.Pair;
+import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
+import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
@@ -170,7 +172,23 @@ public class IgniteTableModify extends TableModify implements TraitsAwareIgniteR
 
     /** {@inheritDoc} */
     @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        //TODO: Implement
-        return super.computeSelfCost(planner, mq);
+        IgniteCostFactory costFactory = (IgniteCostFactory)planner.getCostFactory();
+
+        double rowCnt = mq.getRowCount(getInput());
+        double bytesPerRow = getRowType().getFieldCount() * IgniteCost.AVERAGE_FIELD_SIZE;
+        double totalBytes = rowCnt * bytesPerRow;
+        double cpuCost;
+        double networkCost = 0;
+
+        cpuCost = rowCnt * IgniteCost.ROW_PASS_THROUGH_COST;
+
+        IgniteDistribution distributionTrait = IgniteDistributions.affinity(0, "default",
+                getTraitSet().getTrait(DistributionTraitDef.INSTANCE));
+
+        if (distributionTrait.function().type() == RelDistribution.Type.HASH_DISTRIBUTED) {
+            networkCost = Double.MAX_VALUE;
+        }
+
+        return costFactory.makeCost(rowCnt, cpuCost, 0, totalBytes, networkCost);
     }
 }
