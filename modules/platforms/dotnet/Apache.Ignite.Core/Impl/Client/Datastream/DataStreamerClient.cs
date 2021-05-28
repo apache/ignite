@@ -290,7 +290,10 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 _rwLock.ExitReadLock();
             }
         }
-
+        
+        /// <summary>
+        /// Adds an entry without RW lock.
+        /// </summary>
         private void AddNoLock(DataStreamerClientEntry<TK, TV> entry)
         {
             while (!_cancelled)
@@ -298,7 +301,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 try
                 {
                     var socket = _socket.GetAffinitySocket(_cacheId, entry.Key) ?? _socket.GetSocket();
-                    var buffer = GetOrAddBuffer(socket);
+                    var buffer = GetOrAddPerNodeBuffer(socket);
 
                     if (buffer.Add(entry))
                     {
@@ -317,6 +320,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
         }
 
+        /// <summary>
+        /// Flushes the streamer asynchronously.
+        /// </summary>
         private Task FlushInternalAsync()
         {
             if (_buffers.IsEmpty)
@@ -340,14 +346,19 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             return TaskRunner.WhenAll(tasks.ToArray());
         }
 
-        internal Task FlushBufferAsync(DataStreamerClientBuffer<TK, TV> buffer, ClientSocket socket,
+        /// <summary>
+        /// Flushes the specified buffer asynchronously.
+        /// </summary>
+        internal Task FlushBufferAsync(
+            DataStreamerClientBuffer<TK, TV> buffer, 
+            ClientSocket socket,
             SemaphoreSlim semaphore)
         {
             semaphore.Wait();
 
             var tcs = new TaskCompletionSource<object>();
 
-            FlushBuffer(buffer, socket, tcs);
+            FlushBufferInternalAsync(buffer, socket, tcs);
 
             return tcs.Task.ContinueWith(t =>
             {
@@ -359,7 +370,10 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }, TaskContinuationOptions.ExecuteSynchronously);
         }
 
-        private void FlushBuffer(
+        /// <summary>
+        /// Flushes the specified buffer asynchronously.
+        /// </summary>
+        private void FlushBufferInternalAsync(
             DataStreamerClientBuffer<TK, TV> buffer,
             ClientSocket socket,
             TaskCompletionSource<object> tcs)
@@ -381,7 +395,11 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
         }
 
-        private void FlushBufferCompleteOrRetry(DataStreamerClientBuffer<TK, TV> buffer,
+        /// <summary>
+        /// Completes or retries the buffer flush operation.
+        /// </summary>
+        private void FlushBufferCompleteOrRetry(
+            DataStreamerClientBuffer<TK, TV> buffer,
             ClientSocket socket,
             TaskCompletionSource<object> tcs,
             Exception exception)
@@ -407,6 +425,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             ThreadPool.QueueUserWorkItem(_ => FlushBufferRetry(buffer, socket, tcs));
         }
 
+        /// <summary>
+        /// Retries the buffer flush operation.
+        /// </summary>
         private void FlushBufferRetry(
             DataStreamerClientBuffer<TK, TV> buffer,
             ClientSocket failedSocket,
@@ -439,6 +460,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
         }
 
+        /// <summary>
+        /// Re-adds obsolete buffer entries to new buffers and returns the array to the pool. 
+        /// </summary>
         private void ReAddEntriesAndReturnBuffer(DataStreamerClientBuffer<TK, TV> buffer)
         {
             var count = buffer.Count;
@@ -457,6 +481,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             ReturnPooledArray(entries);
         }
 
+        /// <summary>
+        /// Writes buffer data to the specified writer.
+        /// </summary>
         private void WriteBuffer(DataStreamerClientBuffer<TK, TV> buffer, BinaryWriter w)
         {
             w.WriteInt(_cacheId);
@@ -506,55 +533,10 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
         }
 
-        private static bool ShouldRetry(Exception exception)
-        {
-            var aggregate = exception as AggregateException;
-
-            if (aggregate != null)
-            {
-                exception = aggregate.GetBaseException();
-            }
-
-            if (exception is SocketException)
-            {
-                return true;
-            }
-            
-            var clientEx = exception as IgniteClientException;
-
-            if (clientEx != null && 
-                (clientEx.InnerException is SocketException || 
-                 clientEx.StatusCode == ClientStatusCode.InvalidNodeState))
-            {
-                return true;
-            }
-
-            return false;
-        }
-
-        private static Flags GetFlags(DataStreamerClientOptions options)
-        {
-            var flags = Flags.Flush | Flags.Close;
-
-            if (options.AllowOverwrite)
-            {
-                flags |= Flags.AllowOverwrite;
-            }
-
-            if (options.SkipStore)
-            {
-                flags |= Flags.SkipStore;
-            }
-
-            if (options.ReceiverKeepBinary)
-            {
-                flags |= Flags.KeepBinary;
-            }
-
-            return flags;
-        }
-
-        private DataStreamerClientPerNodeBuffer<TK, TV> GetOrAddBuffer(ClientSocket socket)
+        /// <summary>
+        /// Gets or adds per-node buffer for the specified socket.
+        /// </summary>
+        private DataStreamerClientPerNodeBuffer<TK, TV> GetOrAddPerNodeBuffer(ClientSocket socket)
         {
             DataStreamerClientPerNodeBuffer<TK,TV> res;
             if (_buffers.TryGetValue(socket, out res))
@@ -575,6 +557,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             return res;
         }
 
+        /// <summary>
+        /// Throws an exception if current streamer instance is closed.
+        /// </summary>
         private void ThrowIfClosed()
         {
             var ex = _exception;
@@ -623,6 +608,61 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             {
                 Monitor.Exit(_autoFlushTimer);
             }
+        }
+        
+        
+        /// <summary>
+        /// Gets a value indicating whether flush should be retried after the specified exception.
+        /// </summary>
+        private static bool ShouldRetry(Exception exception)
+        {
+            var aggregate = exception as AggregateException;
+
+            if (aggregate != null)
+            {
+                exception = aggregate.GetBaseException();
+            }
+
+            if (exception is SocketException)
+            {
+                return true;
+            }
+            
+            var clientEx = exception as IgniteClientException;
+
+            if (clientEx != null && 
+                (clientEx.InnerException is SocketException || 
+                 clientEx.StatusCode == ClientStatusCode.InvalidNodeState))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Gets the flags.
+        /// </summary>
+        private static Flags GetFlags(DataStreamerClientOptions options)
+        {
+            var flags = Flags.Flush | Flags.Close;
+
+            if (options.AllowOverwrite)
+            {
+                flags |= Flags.AllowOverwrite;
+            }
+
+            if (options.SkipStore)
+            {
+                flags |= Flags.SkipStore;
+            }
+
+            if (options.ReceiverKeepBinary)
+            {
+                flags |= Flags.KeepBinary;
+            }
+
+            return flags;
         }
     }
 }
