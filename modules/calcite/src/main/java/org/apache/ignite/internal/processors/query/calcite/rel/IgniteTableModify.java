@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
+import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
@@ -26,18 +26,20 @@ import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitsAwareIgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 
 /**
  *
@@ -125,6 +127,13 @@ public class IgniteTableModify extends TableModify implements TraitsAwareIgniteR
     @Override
     public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveDistribution(RelTraitSet nodeTraits,
                                                                          List<RelTraitSet> inTraits) {
+        IgniteDistribution distributionTrait = IgniteDistributions.affinity(0, "default",
+                nodeTraits.getTrait(DistributionTraitDef.INSTANCE));
+
+        if (distributionTrait.function().type() != RelDistribution.Type.HASH_DISTRIBUTED) {
+            return Collections.emptyList();
+        }
+
         return ImmutableList.of(Pair.of(nodeTraits.replace(TraitUtils.distribution(inTraits.get(0))),
                 inTraits));
     }
@@ -156,11 +165,7 @@ public class IgniteTableModify extends TableModify implements TraitsAwareIgniteR
     @Override
     public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCorrelation(RelTraitSet nodeTraits,
                                                                         List<RelTraitSet> inTraits) {
-        Set<CorrelationId> corrIds = RexUtils.extractCorrelationIds(getSourceExpressionList());
-
-        corrIds.addAll(TraitUtils.correlation(inTraits.get(0)).correlationIds());
-
-        return ImmutableList.of(Pair.of(nodeTraits.replace(CorrelationTrait.correlations(corrIds)), inTraits));
+        return ImmutableList.of(Pair.of(nodeTraits.replace(TraitUtils.correlation(inTraits.get(0))), inTraits));
     }
 
     /** {@inheritDoc} */
