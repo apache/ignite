@@ -67,6 +67,8 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
             using (var streamer = Client.GetDataStreamer<int, string>(cache.Name))
             {
+                Assert.AreEqual(cache.Name, streamer.CacheName);
+                
                 streamer.Add(1, "1");
                 streamer.Add(2, "2");
             }
@@ -357,6 +359,11 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 Assert.AreEqual(DataStreamerClientOptions.DefaultPerNodeBufferSize, opts.PerNodeBufferSize);
                 Assert.AreEqual(DataStreamerClientOptions.DefaultPerNodeParallelOperations, opts.PerNodeParallelOperations);
                 Assert.AreEqual(Environment.ProcessorCount * 4, opts.PerNodeParallelOperations);
+                Assert.AreEqual(TimeSpan.Zero, opts.AutoFlushInterval);
+                Assert.IsNull(opts.Receiver);
+                Assert.IsFalse(opts.AllowOverwrite);
+                Assert.IsFalse(opts.SkipStore);
+                Assert.IsFalse(opts.ReceiverKeepBinary);
             }
         }
 
