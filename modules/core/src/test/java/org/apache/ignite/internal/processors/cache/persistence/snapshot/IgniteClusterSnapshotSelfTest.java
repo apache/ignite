@@ -895,7 +895,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
                     /** {@inheritDoc} */
                     @Override public void onInitBeforeTopologyLock(GridDhtPartitionsExchangeFuture fut) {
                         try {
-                            block.await(SNAPSHOT_AWAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+                            block.await(TIMEOUT, TimeUnit.MILLISECONDS);
                         }
                         catch (InterruptedException e) {
                             fail("Must not catch exception here: " + e.getMessage());
