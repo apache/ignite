@@ -19,25 +19,48 @@ package org.apache.ignite.configuration.sample;
 
 import java.util.Collections;
 import java.util.NoSuchElementException;
+import org.apache.ignite.configuration.internal.asm.ConfigurationAsmGenerator;
 import org.apache.ignite.configuration.tree.ConfigurationSource;
 import org.apache.ignite.configuration.tree.ConstructableTreeNode;
-import org.apache.ignite.configuration.tree.NamedListNode;
+import org.apache.ignite.configuration.tree.InnerNode;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** */
 public class ConstructableTreeNodeTest {
+    private static ConfigurationAsmGenerator cgen;
+
+    @BeforeAll
+    public static void beforeAll() {
+        cgen = new ConfigurationAsmGenerator();
+
+        cgen.compileRootSchema(TraversableTreeNodeTest.ParentConfigurationSchema.class);
+    }
+
+    @AfterAll
+    public static void afterAll() {
+        cgen = null;
+    }
+
+    public static <P extends InnerNode & ParentView & ParentChange> P newParentInstance() {
+        return (P)cgen.instantiateNode(TraversableTreeNodeTest.ParentConfigurationSchema.class);
+    }
+
+    public static <C extends InnerNode & ChildView & ChildChange> C newChildInstance() {
+        return (C)cgen.instantiateNode(TraversableTreeNodeTest.ChildConfigurationSchema.class);
+    }
+
     /** */
     @Test
     public void noKey() {
-        var childNode = new ChildNode();
+        var childNode = newChildInstance();
 
         assertThrows(NoSuchElementException.class, () -> childNode.construct("foo", null));
     }
@@ -45,7 +68,9 @@ public class ConstructableTreeNodeTest {
     /** */
     @Test
     public void nullSource() {
-        var parentNode = new ParentNode().changeChild(child ->
+        var parentNode = newParentInstance();
+
+        parentNode.changeChild(child ->
             child.changeStrCfg("value")
         )
         .changeElements(elements ->
@@ -53,7 +78,7 @@ public class ConstructableTreeNodeTest {
         );
 
         // Named list node.
-        NamedListNode<NamedElementNode> elements = parentNode.elements();
+        var elements = parentNode.elements();
 
         parentNode.construct("elements", null);
 
@@ -62,14 +87,14 @@ public class ConstructableTreeNodeTest {
         assertEquals(Collections.emptySet(), parentNode.elements().namedListKeys());
 
         // Inner node.
-        NamedElementNode element = elements.get("name");
+        NamedElementView element = elements.get("name");
 
-        elements.construct("name", null);
+        ((ConstructableTreeNode)elements).construct("name", null);
 
         assertNull(elements.get("name"));
 
         // Leaf.
-        element.construct("strCfg", null);
+        ((ConstructableTreeNode)element).construct("strCfg", null);
 
         assertNull(element.strCfg());
     }
@@ -95,7 +120,7 @@ public class ConstructableTreeNodeTest {
     /** */
     @Test
     public void unwrap() {
-        var childNode = new ChildNode();
+        var childNode = newChildInstance();
 
         childNode.construct("strCfg", new ConstantConfigurationSource("value"));
 
@@ -114,7 +139,7 @@ public class ConstructableTreeNodeTest {
     @Test
     public void descend() {
         // Inner node.
-        var parentNode = new ParentNode();
+        var parentNode = newParentInstance();
 
         parentNode.construct("child", new ConfigurationSource() {
             @Override public <T> T unwrap(Class<T> clazz) {
@@ -129,9 +154,9 @@ public class ConstructableTreeNodeTest {
         assertEquals("value", parentNode.child().strCfg());
 
         // Named list node.
-        NamedListNode<NamedElementNode> elementsNode = parentNode.elements();
+        var elementsNode = parentNode.elements();
 
-        elementsNode.construct("name", new ConfigurationSource() {
+        ((ConstructableTreeNode)elementsNode).construct("name", new ConfigurationSource() {
             @Override public <T> T unwrap(Class<T> clazz) {
                 throw new UnsupportedOperationException("unwrap");
             }
@@ -148,7 +173,7 @@ public class ConstructableTreeNodeTest {
     @Test
     public void constructDefault() {
         // Inner node with no leaves.
-        var parentNode = new ParentNode();
+        var parentNode = newParentInstance();
 
         assertThrows(NoSuchElementException.class, () -> parentNode.constructDefault("child"));
         assertThrows(NoSuchElementException.class, () -> parentNode.constructDefault("elements"));
@@ -156,20 +181,22 @@ public class ConstructableTreeNodeTest {
         // Inner node with a leaf.
         parentNode.changeElements(elements -> elements.create("name", element -> {}));
 
-        NamedElementNode elementNode = parentNode.elements().get("name");
+        var elementNode = parentNode.elements().get("name");
 
-        assertFalse(elementNode.constructDefault("strCfg"));
+        ((InnerNode)elementNode).constructDefault("strCfg");
+
+        assertNull(elementNode.strCfg());
 
         // Another inner node with leaves.
         parentNode.changeChild(child -> {});
 
-        ChildNode child = parentNode.child();
+        var child = parentNode.child();
 
-        assertFalse(child.constructDefault("strCfg"));
+        ((InnerNode)child).constructDefault("strCfg");
 
         assertThrows(NullPointerException.class, () -> child.intCfg());
 
-        assertTrue(child.constructDefault("intCfg"));
+        ((InnerNode)child).constructDefault("intCfg");
 
         assertEquals(99, child.intCfg());
     }

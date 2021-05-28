@@ -23,7 +23,7 @@ import java.lang.annotation.Target;
 import org.apache.ignite.configuration.internal.NamedListConfiguration;
 
 import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.RetentionPolicy.SOURCE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
  * This annotation denotes configuration schema fields that are dynamically created and mapped by name.
@@ -43,7 +43,7 @@ import static java.lang.annotation.RetentionPolicy.SOURCE;
  * </code></pre>
  */
 @Target({ FIELD })
-@Retention(SOURCE)
+@Retention(RUNTIME)
 @Documented
 public @interface NamedConfigValue {
 }

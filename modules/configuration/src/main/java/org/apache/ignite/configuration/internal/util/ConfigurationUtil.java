@@ -595,7 +595,7 @@ public class ConfigurationUtil {
 
         /** {@inheritDoc} */
         @Override public void descend(ConstructableTreeNode dstNode) {
-            assert srcNode.getClass() == dstNode.getClass();
+            assert srcNode.getClass() == dstNode.getClass() : srcNode.getClass() + " : " + dstNode.getClass();
 
             srcNode.traverseChildren(new ConfigurationVisitor<>() {
                 @Override public Void visitLeafNode(String key, Serializable val) {

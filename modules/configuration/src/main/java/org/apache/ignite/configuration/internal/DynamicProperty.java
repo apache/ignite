@@ -60,7 +60,7 @@ public class DynamicProperty<T extends Serializable> extends ConfigurationNode<T
     @Override public Future<Void> update(T newValue) throws ConfigurationValidationException {
         Objects.requireNonNull(newValue, "Configuration value cannot be null.");
 
-        InnerNode rootNodeChange = ((RootKeyImpl)rootKey).createRootNode();
+        InnerNode rootNodeChange = changer.createRootNode(rootKey);
 
         assert keys instanceof RandomAccess;
         assert !keys.isEmpty();

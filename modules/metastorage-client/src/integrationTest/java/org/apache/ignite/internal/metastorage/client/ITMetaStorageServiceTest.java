@@ -43,7 +43,7 @@ import org.apache.ignite.network.internal.recovery.message.HandshakeStartMessage
 import org.apache.ignite.network.internal.recovery.message.HandshakeStartMessageSerializationFactory;
 import org.apache.ignite.network.internal.recovery.message.HandshakeStartResponseMessage;
 import org.apache.ignite.network.internal.recovery.message.HandshakeStartResponseMessageSerializationFactory;
-import org.apache.ignite.network.scalecube.ScaleCubeClusterServiceFactory;
+import org.apache.ignite.network.scalecube.TestScaleCubeClusterServiceFactory;
 import org.apache.ignite.network.scalecube.message.ScaleCubeMessage;
 import org.apache.ignite.network.scalecube.message.ScaleCubeMessageSerializationFactory;
 import org.apache.ignite.network.serialization.MessageSerializationRegistry;
@@ -94,7 +94,7 @@ public class ITMetaStorageServiceTest {
     private static final RaftClientMessageFactory FACTORY = new RaftClientMessageFactoryImpl();
 
     /** Network factory. */
-    private static final ClusterServiceFactory NETWORK_FACTORY = new ScaleCubeClusterServiceFactory();
+    private static final ClusterServiceFactory NETWORK_FACTORY = new TestScaleCubeClusterServiceFactory();
 
     /** */
     private static final MessageSerializationRegistry SERIALIZATION_REGISTRY = new MessageSerializationRegistry()

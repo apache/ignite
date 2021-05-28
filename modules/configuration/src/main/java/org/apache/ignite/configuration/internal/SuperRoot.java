@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.function.Function;
 import org.apache.ignite.configuration.RootKey;
 import org.apache.ignite.configuration.tree.ConfigurationSource;
 import org.apache.ignite.configuration.tree.ConfigurationVisitor;
@@ -33,39 +34,39 @@ public final class SuperRoot extends InnerNode {
     private final SortedMap<String, InnerNode> roots = new TreeMap<>();
 
     /** */
-    private final Map<String, RootKey<?, ?>> allRootKeys;
+    private final Function<String, InnerNode> nodeCreator;
 
     /** Copy constructor. */
     private SuperRoot(SuperRoot superRoot) {
         roots.putAll(superRoot.roots);
 
-        allRootKeys = superRoot.allRootKeys;
+        nodeCreator = superRoot.nodeCreator;
     }
 
     /**
-     * @param rootKeys Shared map of all available root keys.
+     * @param nodeCreator Function that creates root node by root name or returns {@code null} if root name is not found
      */
-    public SuperRoot(Map<String, RootKey<?, ?>> rootKeys) {
-        allRootKeys = rootKeys;
+    public SuperRoot(Function<String, InnerNode> nodeCreator) {
+        this.nodeCreator = nodeCreator;
     }
 
     /**
-     * @param rootKeys Shared map of all available root keys.
+     * @param nodeCreator Function that creates root node by root name or returns {@code null} if root name is not found
      * @param roots Map of roots belonging to this super root.
      */
-    public SuperRoot(Map<String, RootKey<?, ?>> rootKeys, Map<RootKey<?, ?>, InnerNode> roots) {
-        allRootKeys = rootKeys;
+    public SuperRoot(Function<String, InnerNode> nodeCreator, Map<RootKey<?, ?>, InnerNode> roots) {
+        this.nodeCreator = nodeCreator;
 
         for (Map.Entry<RootKey<?, ?>, InnerNode> entry : roots.entrySet())
             this.roots.put(entry.getKey().key(), entry.getValue());
     }
 
     /**
-     * @param rootKeys Shared map of all available root keys.
+     * @param nodeCreator Function that creates root node by root name or returns {@code null} if root name is not found
      * @param superRoots List of super roots to merge into even more superior root.
      */
-    public SuperRoot(Map<String, RootKey<?, ?>> rootKeys, List<SuperRoot> superRoots) {
-        this(rootKeys);
+    public SuperRoot(Function<String, InnerNode> nodeCreator, List<SuperRoot> superRoots) {
+        this(nodeCreator);
 
         for (SuperRoot superRoot : superRoots)
             roots.putAll(superRoot.roots);
@@ -78,7 +79,6 @@ public final class SuperRoot extends InnerNode {
      */
     public void addRoot(RootKey<?, ?> rootKey, InnerNode root) {
         assert !roots.containsKey(rootKey.key()) : rootKey.key() + " : " + roots;
-        assert allRootKeys.get(rootKey.key()) == rootKey : rootKey.key() + " : " + allRootKeys;
 
         roots.put(rootKey.key(), root);
     }
@@ -112,14 +112,16 @@ public final class SuperRoot extends InnerNode {
     @Override public void construct(String key, ConfigurationSource src) throws NoSuchElementException {
         assert src != null;
 
-        RootKeyImpl<?, ?> rootKey = (RootKeyImpl<?, ?>)allRootKeys.get(key);
-
-        if (rootKey == null)
-            throw new NoSuchElementException(key);
-
         InnerNode root = roots.get(key);
 
-        root = root == null ? rootKey.createRootNode() : root.copy();
+        if (root == null) {
+            root = nodeCreator.apply(key);
+
+            if (root == null)
+                throw new NoSuchElementException(key);
+        }
+        else
+            root = root.copy();
 
         roots.put(key, root);
 
@@ -127,7 +129,7 @@ public final class SuperRoot extends InnerNode {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean constructDefault(String key) throws NoSuchElementException {
+    @Override public void constructDefault(String key) throws NoSuchElementException {
         throw new NoSuchElementException(key);
     }
 

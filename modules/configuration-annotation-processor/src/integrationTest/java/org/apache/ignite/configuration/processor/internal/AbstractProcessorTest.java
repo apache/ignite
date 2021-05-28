@@ -62,17 +62,13 @@ public class AbstractProcessorTest {
      * @return ConfigSet.
      */
     protected static ConfigSet getConfigSet(ClassName clazz, final Map<ClassName, JavaFileObject> generatedClasses) {
-        final ClassName configurationName = Utils.getConfigurationName(clazz);
-        final ClassName nodeName = Utils.getNodeName(clazz);
         final ClassName viewName = Utils.getViewName(clazz);
         final ClassName changeName = Utils.getChangeName(clazz);
 
-        final JavaFileObject configurationClass = generatedClasses.get(configurationName);
-        final JavaFileObject nodeClass = generatedClasses.get(nodeName);
         final JavaFileObject viewClass = generatedClasses.get(viewName);
         final JavaFileObject changeClass = generatedClasses.get(changeName);
 
-        return new ConfigSet(configurationClass, nodeClass, viewClass, changeClass);
+        return new ConfigSet(viewClass, changeClass);
     }
 
     /**

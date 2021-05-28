@@ -25,7 +25,12 @@ import org.apache.ignite.configuration.annotation.ConfigurationRoot;
 import org.apache.ignite.configuration.annotation.NamedConfigValue;
 import org.apache.ignite.configuration.annotation.Value;
 import org.apache.ignite.configuration.internal.SuperRoot;
+import org.apache.ignite.configuration.internal.asm.ConfigurationAsmGenerator;
 import org.apache.ignite.configuration.storage.ConfigurationType;
+import org.apache.ignite.configuration.tree.InnerNode;
+import org.apache.ignite.configuration.tree.TraversableTreeNode;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static java.util.Collections.emptyMap;
@@ -39,6 +44,24 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /** */
 public class ConfigurationUtilTest {
+    private static ConfigurationAsmGenerator cgen;
+
+    @BeforeAll
+    public static void beforeAll() {
+        cgen = new ConfigurationAsmGenerator();
+
+        cgen.compileRootSchema(ParentConfigurationSchema.class);
+    }
+
+    @AfterAll
+    public static void afterAll() {
+        cgen = null;
+    }
+
+    public static <P extends InnerNode & ParentView & ParentChange> P newParentInstance() {
+        return (P)cgen.instantiateNode(ParentConfigurationSchema.class);
+    }
+
     /** */
     @Test
     public void escape() {
@@ -102,7 +125,9 @@ public class ConfigurationUtilTest {
     /** */
     @Test
     public void findSuccessfully() {
-        var parent = new ParentNode().changeElements(elements ->
+        var parent = newParentInstance();
+
+        parent.changeElements(elements ->
             elements.update("name", element ->
                 element.changeChild(child ->
                     child.changeStr("value")
@@ -139,7 +164,7 @@ public class ConfigurationUtilTest {
     /** */
     @Test
     public void findNulls() {
-        var parent = new ParentNode();
+        var parent = newParentInstance();
 
         assertNull(ConfigurationUtil.find(List.of("elements", "name"), parent));
 
@@ -147,7 +172,7 @@ public class ConfigurationUtilTest {
 
         assertNull(ConfigurationUtil.find(List.of("elements", "name", "child"), parent));
 
-        parent.elements().get("name").changeChild(child -> {});
+        ((NamedElementChange)parent.elements().get("name")).changeChild(child -> {});
 
         assertNull(ConfigurationUtil.find(List.of("elements", "name", "child", "str"), parent));
     }
@@ -155,7 +180,7 @@ public class ConfigurationUtilTest {
     /** */
     @Test
     public void findUnsuccessfully() {
-        var parent = new ParentNode();
+        var parent = newParentInstance();
 
         assertThrows(
             KeyNotFoundException.class,
@@ -169,7 +194,7 @@ public class ConfigurationUtilTest {
             () -> ConfigurationUtil.find(List.of("elements", "name", "child", "str"), parent)
         );
 
-        parent.elements().get("name").changeChild(child -> child.changeStr("value"));
+        ((NamedElementChange)parent.elements().get("name")).changeChild(child -> child.changeStr("value"));
 
         assertThrows(
             KeyNotFoundException.class,
@@ -204,7 +229,7 @@ public class ConfigurationUtilTest {
     /** */
     @Test
     public void fillFromPrefixMapSuccessfully() {
-        var parentNode = new ParentNode();
+        var parentNode = newParentInstance();
 
         ConfigurationUtil.fillFromPrefixMap(parentNode, Map.of(
             "elements", Map.of(
@@ -224,7 +249,9 @@ public class ConfigurationUtilTest {
     /** */
     @Test
     public void fillFromPrefixMapSuccessfullyWithRemove() {
-        var parentNode = new ParentNode().changeElements(elements ->
+        var parentNode = newParentInstance();
+
+        parentNode.changeElements(elements ->
             elements.update("name", element ->
                 element.changeChild(child -> {})
             )
@@ -240,9 +267,9 @@ public class ConfigurationUtilTest {
     /** */
     @Test
     public void nodeToFlatMap() {
-        var parentNode = new ParentNode();
+        var parentNode = newParentInstance();
 
-        var parentSuperRoot = new SuperRoot(emptyMap(), Map.of(
+        var parentSuperRoot = new SuperRoot(key -> null, Map.of(
             ParentConfiguration.KEY,
             parentNode
         ));
@@ -268,9 +295,9 @@ public class ConfigurationUtilTest {
 
         assertEquals(
             emptyMap(),
-            ConfigurationUtil.nodeToFlatMap(parentSuperRoot, new SuperRoot(emptyMap(), singletonMap(
+            ConfigurationUtil.nodeToFlatMap(parentSuperRoot, new SuperRoot(key -> null, singletonMap(
                 ParentConfiguration.KEY,
-                new ParentNode().changeElements(elements ->
+                (InnerNode)newParentInstance().changeElements(elements ->
                     elements.delete("void")
                 )
             )))
@@ -278,9 +305,9 @@ public class ConfigurationUtilTest {
 
         assertEquals(
             singletonMap("root.elements.name.child.str", null),
-            ConfigurationUtil.nodeToFlatMap(parentSuperRoot, new SuperRoot(emptyMap(), singletonMap(
+            ConfigurationUtil.nodeToFlatMap(parentSuperRoot, new SuperRoot(key -> null, singletonMap(
                 ParentConfiguration.KEY,
-                new ParentNode().changeElements(elements ->
+                (InnerNode)newParentInstance().changeElements(elements ->
                     elements.delete("name")
                 )
             )))
@@ -290,14 +317,16 @@ public class ConfigurationUtilTest {
     /** */
     @Test
     public void patch() {
-        var originalRoot = new ParentNode().changeElements(elements ->
+        var originalRoot = newParentInstance();
+
+        originalRoot.changeElements(elements ->
             elements.create("name1", element ->
                 element.changeChild(child -> child.changeStr("value1"))
             )
         );
 
         // Updating config.
-        ParentNode updatedRoot = ConfigurationUtil.patch(originalRoot, new ParentNode().changeElements(elements ->
+        ParentView updatedRoot = ConfigurationUtil.patch(originalRoot, (TraversableTreeNode)newParentInstance().changeElements(elements ->
             elements.update("name1", element ->
                 element.changeChild(child -> child.changeStr("value2"))
             )
@@ -312,7 +341,7 @@ public class ConfigurationUtilTest {
         assertEquals("value2", updatedRoot.elements().get("name1").child().str());
 
         // Expanding config.
-        ParentNode expandedRoot = ConfigurationUtil.patch(originalRoot, new ParentNode().changeElements(elements ->
+        ParentView expandedRoot = ConfigurationUtil.patch(originalRoot, (TraversableTreeNode)newParentInstance().changeElements(elements ->
             elements.update("name2", element ->
                 element.changeChild(child -> child.changeStr("value2"))
             )
@@ -328,7 +357,7 @@ public class ConfigurationUtilTest {
         assertEquals("value2", expandedRoot.elements().get("name2").child().str());
 
         // Shrinking config.
-        ParentNode shrinkedRoot = ConfigurationUtil.patch(expandedRoot, new ParentNode().changeElements(elements ->
+        ParentView shrinkedRoot = (ParentView)ConfigurationUtil.patch((InnerNode)expandedRoot, (TraversableTreeNode)newParentInstance().changeElements(elements ->
             elements.delete("name1")
         ));
 
@@ -343,13 +372,17 @@ public class ConfigurationUtilTest {
     /** */
     @Test
     public void cleanupMatchingValues() {
-        var curParent = new ParentNode().changeElements(elements -> elements
+        var curParent = newParentInstance();
+
+        curParent.changeElements(elements -> elements
             .create("missing", element -> {})
             .create("match", element -> element.changeChild(child -> child.changeStr("match")))
             .create("mismatch", element -> element.changeChild(child -> child.changeStr("foo")))
         );
 
-        var newParent = new ParentNode().changeElements(elements -> elements
+        var newParent = newParentInstance();
+
+        newParent.changeElements(elements -> elements
             .create("extra", element -> {})
             .create("match", element -> element.changeChild(child -> child.changeStr("match")))
             .create("mismatch", element -> element.changeChild(child -> child.changeStr("bar")))

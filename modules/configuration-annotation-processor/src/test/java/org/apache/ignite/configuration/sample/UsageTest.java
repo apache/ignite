@@ -128,12 +128,12 @@ public class UsageTest {
 
         assertEquals(
             failureDetectionTimeout,
-            registry.getConfiguration(NetworkConfigurationImpl.KEY).discovery().failureDetectionTimeout().value()
+            registry.getConfiguration(NetworkConfiguration.KEY).discovery().failureDetectionTimeout().value()
         );
 
         assertEquals(
             autoAdjustTimeout,
-            registry.getConfiguration(LocalConfigurationImpl.KEY).baseline().autoAdjust().timeout().value()
+            registry.getConfiguration(LocalConfiguration.KEY).baseline().autoAdjust().timeout().value()
         );
     }
 }

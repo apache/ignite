@@ -185,7 +185,7 @@ public class VaultBaseContractsTest {
         for (int i = 3; i < 7; i++)
             vaultManager.put(getKey(i), ("new" + i).getBytes());
 
-        assertTrue(counter.await(10, TimeUnit.MILLISECONDS));
+        assertTrue(counter.await(1, TimeUnit.SECONDS));
     }
 
     /**

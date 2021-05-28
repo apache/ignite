@@ -20,7 +20,6 @@ import java.io.Serializable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -29,17 +28,21 @@ import org.apache.ignite.configuration.annotation.ConfigValue;
 import org.apache.ignite.configuration.annotation.ConfigurationRoot;
 import org.apache.ignite.configuration.annotation.NamedConfigValue;
 import org.apache.ignite.configuration.annotation.Value;
+import org.apache.ignite.configuration.internal.asm.ConfigurationAsmGenerator;
 import org.apache.ignite.configuration.storage.ConfigurationType;
 import org.apache.ignite.configuration.storage.Data;
 import org.apache.ignite.configuration.storage.TestConfigurationStorage;
+import org.apache.ignite.configuration.tree.InnerNode;
 import org.apache.ignite.configuration.validation.Immutable;
 import org.apache.ignite.configuration.validation.ValidationContext;
 import org.apache.ignite.configuration.validation.ValidationIssue;
 import org.apache.ignite.configuration.validation.Validator;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import static java.util.Collections.singletonMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.configuration.AConfiguration.KEY;
@@ -91,6 +94,13 @@ public class ConfigurationChangerTest {
         public String strCfg;
     }
 
+    private static ConfigurationAsmGenerator cgen = new ConfigurationAsmGenerator();
+
+    @AfterAll
+    public static void afterAll() {
+        cgen = null;
+    }
+
     /**
      * Test simple change of configuration.
      */
@@ -98,17 +108,17 @@ public class ConfigurationChangerTest {
     public void testSimpleConfigurationChange() throws Exception {
         final TestConfigurationStorage storage = new TestConfigurationStorage();
 
-        ANode data = new ANode()
-            .changeChild(change -> change.changeIntCfg(1).changeStrCfg("1"))
-            .changeElements(change -> change.create("a", element -> element.changeStrCfg("1")));
-
-        ConfigurationChanger changer = new ConfigurationChanger((oldRoot, newRoot, revision) -> completedFuture(null));
+        ConfigurationChanger changer = new TestConfigurationChanger();
         changer.addRootKey(KEY);
         changer.register(storage);
 
-        changer.change(Collections.singletonMap(KEY, data)).get(1, SECONDS);
+        AChange data = ((AChange)changer.createRootNode(KEY))
+            .changeChild(change -> change.changeIntCfg(1).changeStrCfg("1"))
+            .changeElements(change -> change.create("a", element -> element.changeStrCfg("1")));
 
-        ANode newRoot = (ANode)changer.getRootNode(KEY);
+        changer.change(singletonMap(KEY, (InnerNode)data)).get(1, SECONDS);
+
+        AView newRoot = (AView)changer.getRootNode(KEY);
 
         assertEquals(1, newRoot.child().intCfg());
         assertEquals("1", newRoot.child().strCfg());
@@ -122,36 +132,37 @@ public class ConfigurationChangerTest {
     public void testModifiedFromAnotherStorage() throws Exception {
         final TestConfigurationStorage storage = new TestConfigurationStorage();
 
-        ANode data1 = new ANode()
+        ConfigurationChanger changer1 = new TestConfigurationChanger();
+        changer1.addRootKey(KEY);
+        changer1.register(storage);
+
+        ConfigurationChanger changer2 = new TestConfigurationChanger();
+        changer2.addRootKey(KEY);
+        changer2.register(storage);
+
+        AChange data1 = ((AChange)changer1.createRootNode(KEY))
             .changeChild(change -> change.changeIntCfg(1).changeStrCfg("1"))
             .changeElements(change -> change.create("a", element -> element.changeStrCfg("1")));
 
-        ANode data2 = new ANode()
+        changer1.change(singletonMap(KEY, (InnerNode)data1)).get(1, SECONDS);
+
+        AChange data2 = ((AChange)changer2.createRootNode(KEY))
             .changeChild(change -> change.changeIntCfg(2).changeStrCfg("2"))
             .changeElements(change -> change
                 .create("a", element -> element.changeStrCfg("2"))
                 .create("b", element -> element.changeStrCfg("2"))
             );
 
-        ConfigurationChanger changer1 = new ConfigurationChanger((oldRoot, newRoot, revision) -> completedFuture(null));
-        changer1.addRootKey(KEY);
-        changer1.register(storage);
+        changer2.change(singletonMap(KEY, (InnerNode)data2)).get(1, SECONDS);
 
-        ConfigurationChanger changer2 = new ConfigurationChanger((oldRoot, newRoot, revision) -> completedFuture(null));
-        changer2.addRootKey(KEY);
-        changer2.register(storage);
-
-        changer1.change(Collections.singletonMap(KEY, data1)).get(1, SECONDS);
-        changer2.change(Collections.singletonMap(KEY, data2)).get(1, SECONDS);
-
-        ANode newRoot1 = (ANode)changer1.getRootNode(KEY);
+        AView newRoot1 = (AView)changer1.getRootNode(KEY);
 
         assertEquals(2, newRoot1.child().intCfg());
         assertEquals("2", newRoot1.child().strCfg());
         assertEquals("2", newRoot1.elements().get("a").strCfg());
         assertEquals("2", newRoot1.elements().get("b").strCfg());
 
-        ANode newRoot2 = (ANode)changer2.getRootNode(KEY);
+        AView newRoot2 = (AView)changer2.getRootNode(KEY);
 
         assertEquals(2, newRoot2.child().intCfg());
         assertEquals("2", newRoot2.child().strCfg());
@@ -166,26 +177,19 @@ public class ConfigurationChangerTest {
     public void testModifiedFromAnotherStorageWithIncompatibleChanges() throws Exception {
         final TestConfigurationStorage storage = new TestConfigurationStorage();
 
-        ANode data1 = new ANode()
-            .changeChild(change -> change.changeIntCfg(1).changeStrCfg("1"))
-            .changeElements(change -> change.create("a", element -> element.changeStrCfg("1")));
-
-        ANode data2 = new ANode()
-            .changeChild(change -> change.changeIntCfg(2).changeStrCfg("2"))
-            .changeElements(change -> change
-                .create("a", element -> element.changeStrCfg("2"))
-                .create("b", element -> element.changeStrCfg("2"))
-            );
-
-        ConfigurationChanger changer1 = new ConfigurationChanger((oldRoot, newRoot, revision) -> completedFuture(null));
+        ConfigurationChanger changer1 = new TestConfigurationChanger();
         changer1.addRootKey(KEY);
         changer1.register(storage);
 
-        ConfigurationChanger changer2 = new ConfigurationChanger((oldRoot, newRoot, revision) -> completedFuture(null));
+        ConfigurationChanger changer2 = new TestConfigurationChanger();
         changer2.addRootKey(KEY);
         changer2.register(storage);
 
-        changer1.change(Collections.singletonMap(KEY, data1)).get(1, SECONDS);
+        AChange data1 = ((AChange)changer1.createRootNode(KEY))
+            .changeChild(change -> change.changeIntCfg(1).changeStrCfg("1"))
+            .changeElements(change -> change.create("a", element -> element.changeStrCfg("1")));
+
+        changer1.change(singletonMap(KEY, (InnerNode)data1)).get(1, SECONDS);
 
         changer2.addValidator(MaybeInvalid.class, new Validator<MaybeInvalid, Object>() {
             @Override public void validate(MaybeInvalid annotation, ValidationContext<Object> ctx) {
@@ -193,9 +197,16 @@ public class ConfigurationChangerTest {
             }
         });
 
-        assertThrows(ExecutionException.class, () -> changer2.change(Collections.singletonMap(KEY, data2)).get(1, SECONDS));
+        AChange data2 = ((AChange)changer2.createRootNode(KEY))
+            .changeChild(change -> change.changeIntCfg(2).changeStrCfg("2"))
+            .changeElements(change -> change
+                .create("a", element -> element.changeStrCfg("2"))
+                .create("b", element -> element.changeStrCfg("2"))
+            );
 
-        ANode newRoot = (ANode)changer2.getRootNode(KEY);
+        assertThrows(ExecutionException.class, () -> changer2.change(singletonMap(KEY, (InnerNode)data2)).get(1, SECONDS));
+
+        AView newRoot = (AView)changer2.getRootNode(KEY);
 
         assertEquals(1, newRoot.child().intCfg());
         assertEquals("1", newRoot.child().strCfg());
@@ -209,9 +220,7 @@ public class ConfigurationChangerTest {
     public void testFailedToWrite() {
         final TestConfigurationStorage storage = new TestConfigurationStorage();
 
-        ANode data = new ANode().changeChild(child -> child.changeIntCfg(1));
-
-        ConfigurationChanger changer = new ConfigurationChanger((oldRoot, newRoot, revision) -> completedFuture(null));
+        ConfigurationChanger changer = new TestConfigurationChanger();
         changer.addRootKey(KEY);
 
         storage.fail(true);
@@ -224,7 +233,9 @@ public class ConfigurationChangerTest {
 
         storage.fail(true);
 
-        assertThrows(ExecutionException.class, () -> changer.change(Collections.singletonMap(KEY, data)).get(1, SECONDS));
+        AChange data = ((AChange)changer.createRootNode(KEY)).changeChild(child -> child.changeIntCfg(1));
+
+        assertThrows(ExecutionException.class, () -> changer.change(singletonMap(KEY, (InnerNode)data)).get(1, SECONDS));
 
         storage.fail(false);
 
@@ -233,7 +244,7 @@ public class ConfigurationChangerTest {
 
         assertEquals(0, dataMap.size());
 
-        ANode newRoot = (ANode)changer.getRootNode(KEY);
+        AView newRoot = (AView)changer.getRootNode(KEY);
         assertNull(newRoot.child());
     }
 
@@ -267,7 +278,7 @@ public class ConfigurationChangerTest {
 
     @Test
     public void defaultsOnInit() throws Exception {
-        var changer = new ConfigurationChanger((oldRoot, newRoot, revision) -> completedFuture(null));
+        var changer = new TestConfigurationChanger();
 
         changer.addRootKey(DefaultsConfiguration.KEY);
 
@@ -277,19 +288,38 @@ public class ConfigurationChangerTest {
 
         changer.initialize(storage.type());
 
-        DefaultsNode root = (DefaultsNode)changer.getRootNode(DefaultsConfiguration.KEY);
+        DefaultsView root = (DefaultsView)changer.getRootNode(DefaultsConfiguration.KEY);
 
         assertEquals("foo", root.defStr());
         assertEquals("bar", root.child().defStr());
         assertEquals(List.of("xyz"), Arrays.asList(root.child().arr()));
 
-        // This is not init, move it to another test =(
-        changer.change(Map.of(DefaultsConfiguration.KEY, new DefaultsNode().changeChildsList(childs ->
+        DefaultsChange change = ((DefaultsChange)changer.createRootNode(DefaultsConfiguration.KEY)).changeChildsList(childs ->
             childs.create("name", child -> {})
-        ))).get(1, SECONDS);
+        );
 
-        root = (DefaultsNode)changer.getRootNode(DefaultsConfiguration.KEY);
+        changer.change(Map.of(DefaultsConfiguration.KEY, (InnerNode)change)).get(1, SECONDS);
+
+        root = (DefaultsView)changer.getRootNode(DefaultsConfiguration.KEY);
 
         assertEquals("bar", root.childsList().get("name").defStr());
+    }
+
+    private static class TestConfigurationChanger extends ConfigurationChanger {
+        TestConfigurationChanger() {
+            super((oldRoot, newRoot, revision) -> completedFuture(null));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void addRootKey(RootKey<?, ?> rootKey) {
+            super.addRootKey(rootKey);
+
+            cgen.compileRootSchema(rootKey.schemaClass());
+        }
+
+        /** {@inheritDoc} */
+        @Override public InnerNode createRootNode(RootKey<?, ?> rootKey) {
+            return cgen.instantiateNode(rootKey.schemaClass());
+        }
     }
 }

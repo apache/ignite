@@ -32,40 +32,16 @@ import spoon.support.compiler.VirtualFile;
  * Wrapper for generated classes of the configuration schema.
  */
 public class ConfigSet {
-    /** Configuration class. */
-    private final JavaFileObject configurationClass;
-
-    /** Configuration node class. */
-    private final JavaFileObject nodeClass;
-
     /** VIEW class. */
     private final JavaFileObject viewClass;
 
     /** CHANGE class. */
     private final JavaFileObject changeClass;
 
-    /** Parsed configuration class. */
-    private final ParsedClass conf;
-
-    /** Parsed node class. */
-    private final ParsedClass node;
-
     /** Constructor. */
-    public ConfigSet(JavaFileObject configurationClass, JavaFileObject nodeClass, JavaFileObject viewClass, JavaFileObject changeClass) {
-        this.configurationClass = configurationClass;
+    public ConfigSet(JavaFileObject viewClass, JavaFileObject changeClass) {
         this.viewClass = viewClass;
         this.changeClass = changeClass;
-        this.nodeClass = nodeClass;
-
-        if (configurationClass != null)
-            this.conf = parse(configurationClass);
-        else
-            this.conf = null;
-
-        if (nodeClass != null)
-            this.node = parse(nodeClass);
-        else
-            this.node = null;
     }
 
     /**
@@ -88,16 +64,7 @@ public class ConfigSet {
      * @return {@code true} if all required classes were generated.
      */
     public boolean allGenerated() {
-        return configurationClass != null && nodeClass != null && viewClass != null && changeClass != null;
-    }
-
-    /** */
-    public ParsedClass getConfigurationClass() {
-        return conf;
-    }
-
-    public ParsedClass getNodeClass() {
-        return node;
+        return viewClass != null && changeClass != null;
     }
 
     /**

@@ -67,21 +67,11 @@ public abstract class DynamicConfiguration<VIEW, CHANGE> extends ConfigurationNo
         members.put(member.key(), member);
     }
 
-    /**
-     * Add new configuration member.
-     *
-     * @param member Configuration member (leaf or node).
-     * @param <M> Type of member.
-     */
-    protected final <M extends DynamicProperty<?>> void add(M member) {
-        members.put(member.key(), member);
-    }
-
     /** {@inheritDoc} */
     @Override public final Future<Void> change(Consumer<CHANGE> change) {
         Objects.requireNonNull(change, "Configuration consumer cannot be null.");
 
-        InnerNode rootNodeChange = ((RootKeyImpl)rootKey).createRootNode();
+        InnerNode rootNodeChange = changer.createRootNode(rootKey);
 
         if (keys.size() == 1) {
             // Current node is a root.

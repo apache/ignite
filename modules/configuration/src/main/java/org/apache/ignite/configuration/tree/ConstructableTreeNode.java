@@ -29,7 +29,7 @@ public interface ConstructableTreeNode {
      * @param src Source that provides data for construction.
      * @throws NoSuchElementException If {@code key} cannot be constructed.
      */
-    void construct(String key,/* boolean canMutate, */ ConfigurationSource src) throws NoSuchElementException;
+    void construct(String key, ConfigurationSource src) throws NoSuchElementException;
 
     /**
      * Public equivalent of {@link Object#clone()} method. Creates a copy with effectively the same content.

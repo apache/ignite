@@ -25,7 +25,6 @@ import org.apache.ignite.configuration.storage.ConfigurationType;
 /**
  * Local node configuration schema.
  */
-@SuppressWarnings("PMD.UnusedPrivateField")
 @ConfigurationRoot(rootName = "node", type = ConfigurationType.LOCAL)
 public class NodeConfigurationSchema {
     /** Uniq local node name. */

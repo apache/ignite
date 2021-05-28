@@ -30,23 +30,40 @@ import org.apache.ignite.configuration.annotation.ConfigurationRoot;
 import org.apache.ignite.configuration.annotation.NamedConfigValue;
 import org.apache.ignite.configuration.annotation.Value;
 import org.apache.ignite.configuration.internal.SuperRoot;
+import org.apache.ignite.configuration.internal.asm.ConfigurationAsmGenerator;
 import org.apache.ignite.configuration.internal.util.ConfigurationUtil;
 import org.apache.ignite.configuration.storage.ConfigurationType;
+import org.apache.ignite.configuration.tree.InnerNode;
 import org.apache.ignite.configuration.tree.NamedListView;
 import org.apache.ignite.configuration.validation.ValidationContext;
 import org.apache.ignite.configuration.validation.ValidationIssue;
 import org.apache.ignite.configuration.validation.Validator;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
-import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /** */
 public class ValidationUtilTest {
+    private static ConfigurationAsmGenerator cgen;
+
+    @BeforeAll
+    public static void beforeAll() {
+        cgen = new ConfigurationAsmGenerator();
+
+        cgen.compileRootSchema(ValidatedRootConfigurationSchema.class);
+    }
+
+    @AfterAll
+    public static void afterAll() {
+        cgen = null;
+    }
+
     /** */
     @Target(FIELD)
     @Retention(RUNTIME)
@@ -89,18 +106,20 @@ public class ValidationUtilTest {
     }
 
     /** */
-    private final ValidatedRootNode root = new ValidatedRootNode();
+    private InnerNode root;
 
     /** */
     @BeforeEach
     public void before() {
+        root = cgen.instantiateNode(ValidatedRootConfigurationSchema.class);
+
         ConfigurationUtil.addDefaults(root, root);
     }
 
     /** */
     @Test
     public void validateLeafNode() throws Exception {
-        var rootsNode = new SuperRoot(emptyMap(), Map.of(ValidatedRootConfiguration.KEY, root));
+        var rootsNode = new SuperRoot(key -> null, Map.of(ValidatedRootConfiguration.KEY, root));
 
         Validator<LeafValidation, String> validator = new Validator<>() {
             @Override public void validate(LeafValidation annotation, ValidationContext<String> ctx) {
@@ -125,7 +144,7 @@ public class ValidationUtilTest {
     /** */
     @Test
     public void validateInnerNode() throws Exception {
-        var rootsNode = new SuperRoot(emptyMap(), Map.of(ValidatedRootConfiguration.KEY, root));
+        var rootsNode = new SuperRoot(key -> null, Map.of(ValidatedRootConfiguration.KEY, root));
 
         Validator<InnerValidation, ValidatedChildView> validator = new Validator<>() {
             @Override public void validate(InnerValidation annotation, ValidationContext<ValidatedChildView> ctx) {
@@ -150,7 +169,7 @@ public class ValidationUtilTest {
     /** */
     @Test
     public void validateNamedListNode() throws Exception {
-        var rootsNode = new SuperRoot(emptyMap(), Map.of(ValidatedRootConfiguration.KEY, root));
+        var rootsNode = new SuperRoot(key -> null, Map.of(ValidatedRootConfiguration.KEY, root));
 
         Validator<NamedListValidation, NamedListView<?>> validator = new Validator<>() {
             @Override public void validate(NamedListValidation annotation, ValidationContext<NamedListView<?>> ctx) {

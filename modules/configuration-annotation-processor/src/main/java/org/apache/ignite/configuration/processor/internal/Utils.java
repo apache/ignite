@@ -16,34 +16,14 @@
  */
 package org.apache.ignite.configuration.processor.internal;
 
-import com.squareup.javapoet.AnnotationSpec;
 import com.squareup.javapoet.ClassName;
-import com.squareup.javapoet.ParameterizedTypeName;
-import com.squareup.javapoet.TypeName;
-import org.apache.ignite.configuration.internal.NamedListConfiguration;
 
 /**
  * Annotation processing utilities.
  */
 public class Utils {
-    /** */
-    private static final ClassName NAMED_LIST_CFG_CLASSNAME = ClassName.get("org.apache.ignite.configuration.internal", "NamedListConfiguration");
-
     /** Private constructor. */
     private Utils() {
-    }
-
-    /**
-     * Get {@link ClassName} for configuration class.
-     *
-     * @param schemaClassName Configuration schema ClassName.
-     * @return Configuration ClassName.
-     */
-    public static ClassName getConfigurationName(ClassName schemaClassName) {
-        return ClassName.get(
-            schemaClassName.packageName(),
-            schemaClassName.simpleName().replaceAll("Schema$", "Impl")
-        );
     }
 
     /**
@@ -56,19 +36,6 @@ public class Utils {
         return ClassName.get(
             schemaClassName.packageName(),
             schemaClassName.simpleName().replaceAll("Schema$", "")
-        );
-    }
-
-    /**
-     * Get {@link ClassName} for a configuration node object class.
-     *
-     * @param schemaClassName Configuration schema ClassName.
-     * @return Configuration node object ClassName.
-     */
-    public static ClassName getNodeName(ClassName schemaClassName) {
-        return ClassName.get(
-            schemaClassName.packageName(),
-            schemaClassName.simpleName().replace("ConfigurationSchema", "Node")
         );
     }
 
@@ -96,30 +63,5 @@ public class Utils {
             schemaClassName.packageName(),
             schemaClassName.simpleName().replace("ConfigurationSchema", "Change")
         );
-    }
-
-    /**
-     * Check whether type is {@link NamedListConfiguration}.
-     *
-     * @param type Type.
-     * @return {@code true} if type is {@link NamedListConfiguration}.
-     */
-    public static boolean isNamedConfiguration(TypeName type) {
-        if (type instanceof ParameterizedTypeName) {
-            ParameterizedTypeName parameterizedTypeName = (ParameterizedTypeName) type;
-
-            if (parameterizedTypeName.rawType.equals(NAMED_LIST_CFG_CLASSNAME))
-                return true;
-        }
-        return false;
-    }
-
-    /**
-     * @return {@code @SuppressWarnings("unchecked")} annotation spec object.
-     */
-    public static AnnotationSpec suppressWarningsUnchecked() {
-        return AnnotationSpec.builder(SuppressWarnings.class)
-            .addMember("value", "$S", "unchecked")
-            .build();
     }
 }

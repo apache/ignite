@@ -20,6 +20,10 @@ package org.apache.ignite.configuration.sample;
 import java.util.function.Supplier;
 import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.Value;
+import org.apache.ignite.configuration.internal.asm.ConfigurationAsmGenerator;
+import org.apache.ignite.configuration.tree.InnerNode;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.configuration.internal.util.ConfigurationUtil.leafNodeVisitor;
@@ -39,28 +43,42 @@ public class ConfigurationArrayTest {
         public String[] array;
     }
 
+    private static ConfigurationAsmGenerator cgen;
+
+    @BeforeAll
+    public static void beforeAll() {
+        cgen = new ConfigurationAsmGenerator();
+
+        cgen.compileRootSchema(TestArrayConfigurationSchema.class);
+    }
+
+    @AfterAll
+    public static void afterAll() {
+        cgen = null;
+    }
+
     /**
      * Test array node init operation.
      */
     @Test
     public void testInit() {
-        var arrayNode = new TestArrayNode();
+        InnerNode arrayNode = cgen.instantiateNode(TestArrayConfigurationSchema.class);
 
         Supplier<String[]> initialSupplier = () -> {
             return new String[]{"test1", "test2"};
         };
 
         final String[] initialValue = initialSupplier.get();
-        arrayNode.changeArray(initialValue);
+        ((TestArrayChange)arrayNode).changeArray(initialValue);
 
         // test that field is not the same as initialValue
         assertNotSame(getArray(arrayNode), initialValue);
 
         // test that init method set values successfully
-        assertThat(arrayNode.array(), is(initialSupplier.get()));
+        assertThat(((TestArrayView)arrayNode).array(), is(initialSupplier.get()));
 
         // test that returned array is a copy of the field
-        assertNotSame(getArray(arrayNode), arrayNode.array());
+        assertNotSame(getArray(arrayNode), ((TestArrayView)arrayNode).array());
     }
 
     /**
@@ -68,23 +86,23 @@ public class ConfigurationArrayTest {
      */
     @Test
     public void testChange() {
-        var arrayNode = new TestArrayNode();
+        InnerNode arrayNode = cgen.instantiateNode(TestArrayConfigurationSchema.class);
 
         Supplier<String[]> changeSupplier = () -> {
             return new String[]{"foo", "bar"};
         };
 
         final String[] changeValue = changeSupplier.get();
-        arrayNode.changeArray(changeValue);
+        ((TestArrayChange)arrayNode).changeArray(changeValue);
 
         // test that field is not the same as initialValue
         assertNotSame(getArray(arrayNode), changeValue);
 
         // test that change method set values successfully
-        assertThat(arrayNode.array(), is(changeSupplier.get()));
+        assertThat(((TestArrayView)arrayNode).array(), is(changeSupplier.get()));
 
         // test that returned array is a copy of the field
-        assertNotSame(getArray(arrayNode), arrayNode.array());
+        assertNotSame(getArray(arrayNode), ((TestArrayView)arrayNode).array());
     }
 
     /**
@@ -92,7 +110,7 @@ public class ConfigurationArrayTest {
      * @param arrayNode ArrayNode.
      * @return Array field value.
      */
-    private String[] getArray(TestArrayNode arrayNode) {
+    private String[] getArray(InnerNode arrayNode) {
         return (String[])arrayNode.traverseChild("array", leafNodeVisitor());
     }
 }

@@ -17,14 +17,10 @@
 
 package org.apache.ignite.configuration.internal;
 
-import java.util.function.BiFunction;
-import java.util.function.Supplier;
-import org.apache.ignite.configuration.ConfigurationChanger;
 import org.apache.ignite.configuration.ConfigurationTree;
 import org.apache.ignite.configuration.RootKey;
 import org.apache.ignite.configuration.annotation.ConfigurationRoot;
 import org.apache.ignite.configuration.storage.ConfigurationType;
-import org.apache.ignite.configuration.tree.InnerNode;
 
 /** */
 public class RootKeyImpl<T extends ConfigurationTree<VIEW, ?>, VIEW> extends RootKey<T, VIEW> {
@@ -35,27 +31,20 @@ public class RootKeyImpl<T extends ConfigurationTree<VIEW, ?>, VIEW> extends Roo
     private final ConfigurationType storageType;
 
     /** */
-    private final Supplier<InnerNode> rootSupplier;
-
-    /** */
-    private final BiFunction<RootKey<T, VIEW>, ConfigurationChanger, T> publicRootCreator;
+    private final Class<?> schemaClass;
 
     /**
-     * @param rootName Name of the root as described in {@link ConfigurationRoot#rootName()}.
-     * @param storageType Storage class as described in {@link ConfigurationRoot#type()}.
-     * @param rootSupplier Closure to instantiate internal configuration tree roots.
-     * @param publicRootCreator Function to create a public user-facing tree instance.
+     * @param schemaClass Class of the configuration schema.
      */
-    public RootKeyImpl(
-        String rootName,
-        ConfigurationType storageType,
-        Supplier<InnerNode> rootSupplier,
-        BiFunction<RootKey<T, VIEW>, ConfigurationChanger, T> publicRootCreator
-    ) {
-        this.rootName = rootName;
-        this.storageType = storageType;
-        this.rootSupplier = rootSupplier;
-        this.publicRootCreator = publicRootCreator;
+    public RootKeyImpl(Class<?> schemaClass) {
+        this.schemaClass = schemaClass;
+
+        ConfigurationRoot rootAnnotation = schemaClass.getAnnotation(ConfigurationRoot.class);
+
+        assert rootAnnotation != null;
+
+        this.rootName = rootAnnotation.rootName();
+        this.storageType = rootAnnotation.type();
     }
 
     /** {@inheritDoc} */
@@ -69,12 +58,7 @@ public class RootKeyImpl<T extends ConfigurationTree<VIEW, ?>, VIEW> extends Roo
     }
 
     /** {@inheritDoc} */
-    @Override protected InnerNode createRootNode() {
-        return rootSupplier.get();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected T createPublicRoot(ConfigurationChanger changer) {
-        return publicRootCreator.apply(this, changer);
+    @Override public Class<?> schemaClass() {
+        return schemaClass;
     }
 }

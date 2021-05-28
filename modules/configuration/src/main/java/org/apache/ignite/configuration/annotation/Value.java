@@ -23,7 +23,7 @@ import java.lang.annotation.Target;
 import org.apache.ignite.configuration.internal.DynamicProperty;
 
 import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.RetentionPolicy.SOURCE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
  * This annotation marks configuration schema field as a configuration tree leaf.
@@ -40,7 +40,7 @@ import static java.lang.annotation.RetentionPolicy.SOURCE;
  * </ul>
  */
 @Target(FIELD)
-@Retention(SOURCE)
+@Retention(RUNTIME)
 @Documented
 public @interface Value {
     /**

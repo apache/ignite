@@ -28,6 +28,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.configuration.internal.SuperRoot;
 import org.apache.ignite.configuration.internal.validation.MemberKey;
@@ -57,7 +58,7 @@ import static org.apache.ignite.configuration.internal.util.ConfigurationUtil.to
 /**
  * Class that handles configuration changes, by validating them, passing to storage and listening to storage updates.
  */
-public final class ConfigurationChanger {
+public abstract class ConfigurationChanger {
     /** */
     private final ForkJoinPool pool = new ForkJoinPool(2);
 
@@ -154,6 +155,25 @@ public final class ConfigurationChanger {
     }
 
     /**
+     * Created new {@code Node} object that corresponds to passed root keys root configuration node.
+     * @param rootKey Root key.
+     * @return New {@link InnerNode} instance that represents root.
+     */
+    public abstract InnerNode createRootNode(RootKey<?, ?> rootKey);
+
+    /**
+     * Utility method to create {@link SuperRoot} parameter value.
+     * @return Function that creates root node by root name or returns {@code null} if root name is not found.
+     */
+    @NotNull private Function<String, InnerNode> rootCreator() {
+        return key -> {
+            RootKey<?, ?> rootKey = rootKeys.get(key);
+
+            return rootKey == null ? null : createRootNode(rootKey);
+        };
+    }
+
+    /**
      * Registers a storage.
      * @param configurationStorage Configuration storage instance.
      */
@@ -174,14 +194,14 @@ public final class ConfigurationChanger {
             throw new ConfigurationChangeException("Failed to initialize configuration: " + e.getMessage(), e);
         }
 
-        SuperRoot superRoot = new SuperRoot(rootKeys);
+        SuperRoot superRoot = new SuperRoot(rootCreator());
 
         Map<String, ?> dataValuesPrefixMap = toPrefixMap(data.values());
 
         for (RootKey<?, ?> rootKey : storageRootKeys) {
             Map<String, ?> rootPrefixMap = (Map<String, ?>)dataValuesPrefixMap.get(rootKey.key());
 
-            InnerNode rootNode = rootKey.createRootNode();
+            InnerNode rootNode = createRootNode(rootKey);
 
             if (rootPrefixMap != null)
                 fillFromPrefixMap(rootNode, rootPrefixMap);
@@ -211,7 +231,7 @@ public final class ConfigurationChanger {
         StorageRoots storageRoots = storagesRootsMap.get(storageType);
 
         SuperRoot superRoot = storageRoots.roots;
-        SuperRoot defaultsNode = new SuperRoot(rootKeys);
+        SuperRoot defaultsNode = new SuperRoot(rootCreator());
 
         addDefaults(superRoot, defaultsNode);
 
@@ -247,7 +267,7 @@ public final class ConfigurationChanger {
         ConfigurationSource source,
         @Nullable ConfigurationStorage storage
     ) {
-        SuperRoot superRoot = new SuperRoot(rootKeys);
+        SuperRoot superRoot = new SuperRoot(rootCreator());
 
         source.descend(superRoot);
 
@@ -318,14 +338,14 @@ public final class ConfigurationChanger {
             );
         }
 
-        return changeInternally(new SuperRoot(rootKeys, changes), storageInstances.get(storagesTypes.iterator().next()));
+        return changeInternally(new SuperRoot(rootCreator(), changes), storageInstances.get(storagesTypes.iterator().next()));
     }
 
     /**
      * @return Super root chat contains roots belonging to all storages.
      */
     public SuperRoot mergedSuperRoot() {
-        return new SuperRoot(rootKeys, storagesRootsMap.values().stream().map(roots -> roots.roots).collect(toList()));
+        return new SuperRoot(rootCreator(), storagesRootsMap.values().stream().map(roots -> roots.roots).collect(toList()));
     }
 
     /**
@@ -349,7 +369,7 @@ public final class ConfigurationChanger {
                 // different set of values and different dynamic defaults at the same time.
                 SuperRoot patchedSuperRoot = patch(curRoots, changes);
 
-                SuperRoot defaultsNode = new SuperRoot(rootKeys);
+                SuperRoot defaultsNode = new SuperRoot(rootCreator());
 
                 addDefaults(patchedSuperRoot, defaultsNode);
 
