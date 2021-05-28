@@ -38,6 +38,10 @@ import org.apache.ignite.network.TestMessage;
 import org.apache.ignite.network.TestMessageFactory;
 import org.apache.ignite.network.TestMessageSerializationFactory;
 import org.apache.ignite.network.TopologyEventHandler;
+import org.apache.ignite.network.internal.recovery.message.HandshakeStartMessage;
+import org.apache.ignite.network.internal.recovery.message.HandshakeStartMessageSerializationFactory;
+import org.apache.ignite.network.internal.recovery.message.HandshakeStartResponseMessage;
+import org.apache.ignite.network.internal.recovery.message.HandshakeStartResponseMessageSerializationFactory;
 import org.apache.ignite.network.scalecube.message.ScaleCubeMessage;
 import org.apache.ignite.network.scalecube.message.ScaleCubeMessageSerializationFactory;
 import org.apache.ignite.network.serialization.MessageSerializationRegistry;
@@ -266,6 +270,8 @@ class ITScaleCubeNetworkMessagingTest {
         /** */
         private final MessageSerializationRegistry serializationRegistry = new MessageSerializationRegistry()
             .registerFactory(ScaleCubeMessage.TYPE, new ScaleCubeMessageSerializationFactory())
+            .registerFactory(HandshakeStartMessage.TYPE, new HandshakeStartMessageSerializationFactory())
+            .registerFactory(HandshakeStartResponseMessage.TYPE, new HandshakeStartResponseMessageSerializationFactory())
             .registerFactory(TestMessage.TYPE, new TestMessageSerializationFactory());
 
         /** */

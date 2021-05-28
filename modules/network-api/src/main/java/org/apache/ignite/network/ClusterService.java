@@ -23,17 +23,17 @@ package org.apache.ignite.network;
  */
 public interface ClusterService {
     /**
-     * Returns the {@link TopologyService} for working with the cluster topology.
+     * @return {@link TopologyService} for working with the cluster topology.
      */
     TopologyService topologyService();
 
     /**
-     * Returns the {@link TopologyService} for sending messages to the cluster members.
+     * @return {@link TopologyService} for sending messages to the cluster members.
      */
     MessagingService messagingService();
 
     /**
-     * Returns the context associated with the current node.
+     * @return Context associated with the current node.
      */
     ClusterLocalConfiguration localConfiguration();
 

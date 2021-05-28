@@ -33,7 +33,13 @@ public abstract class AbstractClusterService implements ClusterService {
     /** Messaging service. */
     private final MessagingService messagingService;
 
-    /** */
+    /**
+     * Constructor.
+     *
+     * @param context Cluster context.
+     * @param topologyService Topology service.
+     * @param messagingService Messaging service.
+     */
     public AbstractClusterService(
         ClusterLocalConfiguration context,
         TopologyService topologyService,

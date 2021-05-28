@@ -232,6 +232,7 @@ public interface MessageReader {
     /**
      * Reads a nested message.
      *
+     * @param <T> Type of a message;
      * @param name Field name.
      * @return Message.
      */
@@ -240,6 +241,7 @@ public interface MessageReader {
     /**
      * Reads an array of objects.
      *
+     * @param <T> Type of an array.
      * @param name Field name.
      * @param itemType A component type of the array.
      * @param itemCls A component class of the array.
@@ -250,6 +252,7 @@ public interface MessageReader {
     /**
      * Reads a collection.
      *
+     * @param <C> Type of a collection.
      * @param name Field name.
      * @param itemType An item type of the Collection.
      * @return Collection.
@@ -259,6 +262,7 @@ public interface MessageReader {
     /**
      * Reads a map.
      *
+     * @param <M> Type of a map.
      * @param name Field name.
      * @param keyType The type of the map's key.
      * @param valType The type of the map's value.

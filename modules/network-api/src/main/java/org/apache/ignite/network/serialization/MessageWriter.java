@@ -266,6 +266,7 @@ public interface MessageWriter {
     /**
      * Writes an array of objects.
      *
+     * @param <T> Type of an array.
      * @param name Field name.
      * @param arr Array of objects.
      * @param itemType A component type of the array.
@@ -276,6 +277,7 @@ public interface MessageWriter {
     /**
      * Writes collection.
      *
+     * @param <T> Type of a collection.
      * @param name Field name.
      * @param col Collection.
      * @param itemType An item type of the collection.
@@ -286,6 +288,8 @@ public interface MessageWriter {
     /**
      * Writes a map.
      *
+     * @param <K> Type of the map's keys.
+     * @param <V> Type of the map's values.
      * @param name Field name.
      * @param map Map.
      * @param keyType The type of the map's key.

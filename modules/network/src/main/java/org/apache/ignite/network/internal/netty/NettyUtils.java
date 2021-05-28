@@ -58,6 +58,7 @@ public class NettyUtils {
     /**
      * Convert a Netty {@link Future} to a {@link CompletableFuture}.
      *
+     * @param <T> Type of the future.
      * @param future Future.
      * @return CompletableFuture.
      */

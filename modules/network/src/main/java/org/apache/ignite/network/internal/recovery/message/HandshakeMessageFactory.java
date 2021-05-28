@@ -15,30 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.network;
+package org.apache.ignite.network.internal.recovery.message;
 
-import java.util.Map;
-import org.apache.ignite.network.processor.annotations.AutoSerializable;
+public class HandshakeMessageFactory {
 
-@AutoSerializable(messageFactory = TestMessageFactory.class)
-public interface TestMessage extends NetworkMessage {
-    /** Visible type for tests. */
-    public static final short TYPE = 4;
-
-    String msg();
-
-    Map<Integer, String> map();
-
-    /** {@inheritDoc} */
-    @Override public default short directType() {
-        return TYPE;
+    public static HandshakeStartMessage.Builder handshakeStartMessage() {
+        return new HandshakeStartMessageImpl();
     }
 
-    interface Builder {
-        Builder msg(String msg);
-
-        Builder map(Map<Integer, String> map);
-
-        TestMessage build();
+    public static HandshakeStartResponseMessage.Builder handshakeStartResponseMessage() {
+        return new HandshakeStartResponseMessageImpl();
     }
 }

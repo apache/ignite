@@ -29,7 +29,6 @@ import java.util.StringJoiner;
 import java.util.stream.Collectors;
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.RoundEnvironment;
-import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
@@ -54,7 +53,6 @@ import org.apache.ignite.network.serialization.MessageSerializer;
  * Annotation processor for generating (de-)serializers for network messages marked with the {@link AutoSerializable}
  * annotation.
  */
-@SupportedSourceVersion(SourceVersion.RELEASE_11)
 public class AutoSerializableProcessor extends AbstractProcessor {
     /** {@inheritDoc} */
     @Override public Set<String> getSupportedAnnotationTypes() {
@@ -244,5 +242,10 @@ public class AutoSerializableProcessor extends AbstractProcessor {
         }
 
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public SourceVersion getSupportedSourceVersion() {
+        return SourceVersion.latest();
     }
 }

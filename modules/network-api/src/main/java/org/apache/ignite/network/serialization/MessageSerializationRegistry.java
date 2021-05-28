@@ -23,16 +23,22 @@ import org.apache.ignite.network.NetworkMessage;
 /**
  * Container that maps message types to {@link MessageSerializationFactory} instances.
  */
-public final class MessageSerializationRegistry {
+public class MessageSerializationRegistry {
     /** message type -> MessageSerializerProvider instance */
     private final MessageSerializationFactory<?>[] factories = new MessageSerializationFactory<?>[Short.MAX_VALUE << 1];
 
     /**
      * Registers message serialization factory by message type.
+     *
+     * @param type Direct type of a message.
+     * @param factory Message's serialization factory.
+     * @return This registry.
+     * @throws NetworkConfigurationException If there is an already registered factory for the given type.
      */
-    public MessageSerializationRegistry registerFactory(short type, MessageSerializationFactory<?> factory) {
+    public MessageSerializationRegistry registerFactory(short type,
+        MessageSerializationFactory<?> factory) {
         if (this.factories[type] != null)
-            throw new NetworkConfigurationException("Message mapper for type " + type + " is already defined");
+            throw new NetworkConfigurationException("Message serialization factory for direct type " + type + " is already defined");
 
         this.factories[type] = factory;
 
@@ -40,7 +46,11 @@ public final class MessageSerializationRegistry {
     }
 
     /**
-     * Returns a {@link MessageSerializationFactory} for the given message type.
+     * Gets a {@link MessageSerializationFactory} for the given message type.
+     *
+     * @param <T> Type of a message.
+     * @param type Direct type of a message.
+     * @return Message's serialization factory.
      */
     private <T extends NetworkMessage> MessageSerializationFactory<T> getFactory(short type) {
         var provider = factories[type];
@@ -56,6 +66,10 @@ public final class MessageSerializationRegistry {
      * {@link MessageSerializationRegistry} does not track the correspondence between the message type and its Java
      * representation, so the actual generic specialization of the returned provider relies on the caller of this
      * method.
+     *
+     * @param <T> Type of a message.
+     * @param type Direct type of a message.
+     * @return Message's serializer.
      */
     public <T extends NetworkMessage> MessageSerializer<T> createSerializer(short type) {
         MessageSerializationFactory<T> factory = getFactory(type);
@@ -68,6 +82,10 @@ public final class MessageSerializationRegistry {
      * {@link MessageSerializationRegistry} does not track the correspondence between the message type and its Java
      * representation, so the actual generic specialization of the returned provider relies on the caller of this
      * method.
+     *
+     * @param <T> Type of a message.
+     * @param type Direct type of a message.
+     * @return Message's deserializer.
      */
     public <T extends NetworkMessage> MessageDeserializer<T> createDeserializer(short type) {
         MessageSerializationFactory<T> factory = getFactory(type);

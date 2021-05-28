@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.network.processor.internal;
+package org.apache.ignite.network.messages.internal.processor;
 
 import java.util.Arrays;
 import java.util.List;
@@ -25,6 +25,7 @@ import com.google.testing.compile.Compilation;
 import com.google.testing.compile.Compiler;
 import com.google.testing.compile.JavaFileObjects;
 import org.apache.ignite.network.NetworkMessage;
+import org.apache.ignite.network.processor.internal.AutoSerializableProcessor;
 import org.junit.jupiter.api.Test;
 
 import static com.google.testing.compile.CompilationSubject.assertThat;

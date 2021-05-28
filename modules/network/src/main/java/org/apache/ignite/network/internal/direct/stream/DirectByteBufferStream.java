@@ -167,6 +167,7 @@ public interface DirectByteBufferStream {
     public void writeMessage(NetworkMessage msg, MessageWriter writer);
 
     /**
+     * @param <T> Type of the array.
      * @param arr Array.
      * @param itemType Component type.
      * @param writer Writer.
@@ -174,6 +175,7 @@ public interface DirectByteBufferStream {
     public <T> void writeObjectArray(T[] arr, MessageCollectionItemType itemType, MessageWriter writer);
 
     /**
+     * @param <T> Type of the collection.
      * @param col Collection.
      * @param itemType Component type.
      * @param writer Writer.
@@ -181,6 +183,8 @@ public interface DirectByteBufferStream {
     public <T> void writeCollection(Collection<T> col, MessageCollectionItemType itemType, MessageWriter writer);
 
     /**
+     * @param <K> Type of the map's keys.
+     * @param <V> Type of the map's values.
      * @param map Map.
      * @param keyType Key type.
      * @param valType Value type.
@@ -290,12 +294,14 @@ public interface DirectByteBufferStream {
     public IgniteUuid readIgniteUuid();
 
     /**
+     * @param <T> Type of a message.
      * @param reader Reader.
      * @return Message.
      */
     public <T extends NetworkMessage> T readMessage(MessageReader reader);
 
     /**
+     * @param <T> Type of an array.
      * @param itemType Item type.
      * @param itemCls Item class.
      * @param reader Reader.
@@ -304,6 +310,7 @@ public interface DirectByteBufferStream {
     public <T> T[] readObjectArray(MessageCollectionItemType itemType, Class<T> itemCls, MessageReader reader);
 
     /**
+     * @param <C> Type of a collection.
      * @param itemType Item type.
      * @param reader Reader.
      * @return Collection.
@@ -311,6 +318,7 @@ public interface DirectByteBufferStream {
     public <C extends Collection<?>> C readCollection(MessageCollectionItemType itemType, MessageReader reader);
 
     /**
+     * @param <M> Type of a map.
      * @param keyType Key type.
      * @param valType Value type.
      * @param linked Whether linked map should be created.

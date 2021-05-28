@@ -39,6 +39,8 @@ final class ScaleCubeTopologyService extends AbstractTopologyService {
 
     /**
      * Sets the ScaleCube's local {@link Member}.
+     *
+     * @param member Local member.
      */
     void setLocalMember(Member member) {
         localMember = fromMember(member);
@@ -49,6 +51,8 @@ final class ScaleCubeTopologyService extends AbstractTopologyService {
 
     /**
      * Delegates the received topology event to the registered event handlers.
+     *
+     * @param event Membership event.
      */
     void onMembershipEvent(MembershipEvent event) {
         ClusterNode member = fromMember(event.member());

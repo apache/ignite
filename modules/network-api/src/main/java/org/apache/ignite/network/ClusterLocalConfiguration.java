@@ -55,28 +55,28 @@ public class ClusterLocalConfiguration {
     }
 
     /**
-     * Network alias of a node.
+     * @return Network alias of a node.
      */
     public String getName() {
         return name;
     }
 
     /**
-     * Port.
+     * @return Port.
      */
     public int getPort() {
         return port;
     }
 
     /**
-     * Addresses of other nodes.
+     * @return Addresses of other nodes.
      */
     public List<String> getMemberAddresses() {
         return memberAddresses;
     }
 
     /**
-     * Message mapper providers.
+     * @return Message serialization registry.
      */
     public MessageSerializationRegistry getSerializationRegistry() {
         return serializationRegistry;

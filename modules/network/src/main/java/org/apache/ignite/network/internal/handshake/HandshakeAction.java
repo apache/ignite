@@ -15,30 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.network;
+package org.apache.ignite.network.internal.handshake;
 
-import java.util.Map;
-import org.apache.ignite.network.processor.annotations.AutoSerializable;
+import org.apache.ignite.network.internal.netty.HandshakeHandler;
 
-@AutoSerializable(messageFactory = TestMessageFactory.class)
-public interface TestMessage extends NetworkMessage {
-    /** Visible type for tests. */
-    public static final short TYPE = 4;
+/**
+ * Enum representing actions that are propagated from a {@link HandshakeManager} to a {@link HandshakeHandler}.
+ */
+public enum HandshakeAction {
+    /** Fail the handshake operation and close the channel. */
+    FAIL,
 
-    String msg();
+    /** Remove the handshake handler. */
+    REMOVE_HANDLER,
 
-    Map<Integer, String> map();
-
-    /** {@inheritDoc} */
-    @Override public default short directType() {
-        return TYPE;
-    }
-
-    interface Builder {
-        Builder msg(String msg);
-
-        Builder map(Map<Integer, String> map);
-
-        TestMessage build();
-    }
+    /** Do nothing. */
+    NOOP
 }

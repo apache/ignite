@@ -43,6 +43,7 @@ public interface MessagingService {
      *
      * @param recipient Recipient of the message.
      * @param msg Message which should be delivered.
+     * @return Future of the send operation.
      */
     CompletableFuture<Void> send(ClusterNode recipient, NetworkMessage msg);
 
@@ -52,6 +53,7 @@ public interface MessagingService {
      * @param recipient Recipient of the message.
      * @param msg Message which should be delivered.
      * @param correlationId Correlation id when replying to the request.
+     * @return Future of the send operation.
      */
     CompletableFuture<Void> send(ClusterNode recipient, NetworkMessage msg, String correlationId);
 
@@ -68,6 +70,8 @@ public interface MessagingService {
 
     /**
      * Registers a handler for network message events.
+     *
+     * @param handler Message handler.
      */
     void addMessageHandler(NetworkMessageHandler handler);
 }

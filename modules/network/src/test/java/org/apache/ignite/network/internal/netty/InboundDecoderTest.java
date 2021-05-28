@@ -28,6 +28,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.embedded.EmbeddedChannel;
+import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.TestMessage;
 import org.apache.ignite.network.TestMessageFactory;
 import org.apache.ignite.network.TestMessageSerializationFactory;
@@ -35,7 +36,6 @@ import org.apache.ignite.network.internal.AllTypesMessage;
 import org.apache.ignite.network.internal.AllTypesMessageGenerator;
 import org.apache.ignite.network.internal.AllTypesMessageSerializationFactory;
 import org.apache.ignite.network.internal.direct.DirectMessageWriter;
-import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 import org.apache.ignite.network.serialization.MessageSerializer;
 import org.junit.jupiter.api.Test;
@@ -194,7 +194,7 @@ public class InboundDecoderTest {
     }
 
     /**
-     * Source of parameters for the {@link #test(long)} method.
+     * Source of parameters for the {@link #testAllTypes(long)} method.
      * Creates seeds for a {@link AllTypesMessage} generation.
      * @return Random seeds.
      */

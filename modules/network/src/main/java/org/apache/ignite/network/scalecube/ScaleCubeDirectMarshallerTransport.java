@@ -33,6 +33,7 @@ import io.scalecube.net.Address;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.network.NetworkMessage;
+import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.internal.netty.ConnectionManager;
 import org.apache.ignite.network.scalecube.message.ScaleCubeMessage;
 import org.apache.ignite.network.scalecube.message.ScaleCubeMessageFactory;
@@ -67,6 +68,9 @@ public class ScaleCubeDirectMarshallerTransport implements Transport {
     /** Connection manager. */
     private final ConnectionManager connectionManager;
 
+    /** */
+    private final ScaleCubeTopologyService topologyService;
+
     /** Node address. */
     private Address address;
 
@@ -74,9 +78,12 @@ public class ScaleCubeDirectMarshallerTransport implements Transport {
      * Constructor.
      *
      * @param connectionManager Connection manager.
+     * @param topologyService Topology service.
      */
-    public ScaleCubeDirectMarshallerTransport(ConnectionManager connectionManager) {
+    public ScaleCubeDirectMarshallerTransport(ConnectionManager connectionManager, ScaleCubeTopologyService topologyService) {
         this.connectionManager = connectionManager;
+        this.topologyService = topologyService;
+
         this.connectionManager.addListener(this::onMessage);
         // Setup cleanup
         stop.then(doStop())
@@ -150,7 +157,11 @@ public class ScaleCubeDirectMarshallerTransport implements Transport {
         var addr = InetSocketAddress.createUnresolved(address.host(), address.port());
 
         return Mono.fromFuture(() -> {
-            return connectionManager.channel(addr).thenCompose(client -> client.send(fromMessage(message)));
+            ClusterNode node = topologyService.getByAddress(address.toString());
+
+            String consistentId = node != null ? node.name() : null;
+
+            return connectionManager.channel(consistentId, addr).thenCompose(client -> client.send(fromMessage(message)));
         });
     }
 

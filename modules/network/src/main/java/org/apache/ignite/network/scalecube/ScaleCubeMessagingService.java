@@ -17,12 +17,12 @@
 
 package org.apache.ignite.network.scalecube;
 
-import java.time.Duration;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import io.scalecube.cluster.Cluster;
 import io.scalecube.cluster.transport.api.Message;
 import io.scalecube.net.Address;
+import java.time.Duration;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.network.AbstractMessagingService;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.MessagingService;
@@ -43,13 +43,19 @@ final class ScaleCubeMessagingService extends AbstractMessagingService {
      */
     private ScaleCubeTopologyService topologyService;
 
-    /** */
+    /**
+     * Constructor.
+     *
+     * @param topologyService Topology service.
+     */
     ScaleCubeMessagingService(ScaleCubeTopologyService topologyService) {
         this.topologyService = topologyService;
     }
 
     /**
      * Sets the ScaleCube's {@link Cluster}. Needed for cyclic dependency injection.
+     *
+     * @param cluster Cluster.
      */
     void setCluster(Cluster cluster) {
         this.cluster = cluster;
@@ -57,6 +63,8 @@ final class ScaleCubeMessagingService extends AbstractMessagingService {
 
     /**
      * Delegates the received message to the registered message handlers.
+     *
+     * @param message Received message.
      */
     void fireEvent(Message message) {
         NetworkMessage msg = message.data();
@@ -110,6 +118,9 @@ final class ScaleCubeMessagingService extends AbstractMessagingService {
 
     /**
      * Extracts the given node's {@link Address}.
+     *
+     * @param node Node.
+     * @return Node's address.
      */
     private static Address clusterNodeAddress(ClusterNode node) {
         return Address.create(node.host(), node.port());

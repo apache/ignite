@@ -17,6 +17,7 @@
 
 package org.apache.ignite.network.internal.netty;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 import io.netty.buffer.ByteBuf;
@@ -121,5 +122,16 @@ public class InboundDecoder extends ByteToMessageDecoder {
                 throw e;
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Exception caught: " + cause.getMessage(), cause);
+
+        // Ignore IOExceptions that are thrown from the Netty's insides. IOExceptions that occured during reads
+        // or writes should be handled elsewhere.
+        if (cause instanceof Exception && !(cause instanceof IOException) )
+            throw (Exception) cause;
     }
 }

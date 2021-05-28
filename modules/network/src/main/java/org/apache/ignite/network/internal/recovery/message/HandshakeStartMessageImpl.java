@@ -15,30 +15,41 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.network;
+package org.apache.ignite.network.internal.recovery.message;
 
-import java.util.Map;
-import org.apache.ignite.network.processor.annotations.AutoSerializable;
+import java.util.UUID;
 
-@AutoSerializable(messageFactory = TestMessageFactory.class)
-public interface TestMessage extends NetworkMessage {
-    /** Visible type for tests. */
-    public static final short TYPE = 4;
+public class HandshakeStartMessageImpl implements HandshakeStartMessage, HandshakeStartMessage.Builder {
+    /** */
+    private UUID launchId;
 
-    String msg();
-
-    Map<Integer, String> map();
+    /** */
+    private String consistentId;
 
     /** {@inheritDoc} */
-    @Override public default short directType() {
-        return TYPE;
+    @Override public UUID launchId() {
+        return launchId;
     }
 
-    interface Builder {
-        Builder msg(String msg);
+    /** {@inheritDoc} */
+    @Override public String consistentId() {
+        return consistentId;
+    }
 
-        Builder map(Map<Integer, String> map);
+    /** {@inheritDoc} */
+    @Override public Builder launchId(UUID launchId) {
+        this.launchId = launchId;
+        return this;
+    }
 
-        TestMessage build();
+    /** {@inheritDoc} */
+    @Override public Builder consistentId(String consistentId) {
+        this.consistentId = consistentId;
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public HandshakeStartMessage build() {
+        return this;
     }
 }

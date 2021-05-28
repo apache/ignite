@@ -38,6 +38,8 @@ public interface TopologyService {
 
     /**
      * Registers a handler for topology change events.
+     *
+     * @param handler Topology events handler.
      */
     void addEventHandler(TopologyEventHandler handler);
 

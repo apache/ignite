@@ -17,9 +17,6 @@
 
 package org.apache.ignite.network.internal.netty;
 
-import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.embedded.EmbeddedChannel;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
@@ -27,7 +24,14 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.embedded.EmbeddedChannel;
 import org.apache.ignite.lang.IgniteInternalException;
+import org.apache.ignite.network.NetworkMessage;
+import org.apache.ignite.network.internal.handshake.HandshakeAction;
+import org.apache.ignite.network.internal.handshake.HandshakeManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -156,11 +160,16 @@ public class NettyClientTest {
     public void testStartTwice() throws Exception {
         var channel = new EmbeddedChannel();
 
-        Bootstrap bootstrap = Mockito.mock(Bootstrap.class);
+        Bootstrap bootstrap = mockBootstrap();
 
         Mockito.doReturn(channel.newSucceededFuture()).when(bootstrap).connect(Mockito.any());
 
-        client = new NettyClient(address, null);
+        client = new NettyClient(
+            address,
+            null,
+            new MockClientHandshakeManager(channel),
+            (address1, message) -> {}
+        );
 
         client.start(bootstrap);
 
@@ -176,13 +185,31 @@ public class NettyClientTest {
      * @return Client and a NettySender future.
      */
     private ClientAndSender createClientAndSenderFromChannelFuture(ChannelFuture future) {
-        var client = new NettyClient(address, null);
+        var client = new NettyClient(
+            address,
+            null,
+            new MockClientHandshakeManager(future.channel()),
+            (address1, message) -> {}
+        );
 
-        Bootstrap bootstrap = Mockito.mock(Bootstrap.class);
+        Bootstrap bootstrap = mockBootstrap();
 
         Mockito.doReturn(future).when(bootstrap).connect(Mockito.any());
 
         return new ClientAndSender(client, client.start(bootstrap));
+    }
+
+    /**
+     * Create mock of a {@link Bootstrap} that implements {@link Bootstrap#clone()}.
+     *
+     * @return Mocked bootstrap.
+     */
+    private Bootstrap mockBootstrap() {
+        Bootstrap bootstrap = Mockito.mock(Bootstrap.class);
+
+        Mockito.doReturn(bootstrap).when(bootstrap).clone();
+
+        return bootstrap;
     }
 
     /**
@@ -204,6 +231,39 @@ public class NettyClientTest {
         private ClientAndSender(NettyClient client, CompletableFuture<NettySender> sender) {
             this.client = client;
             this.sender = sender;
+        }
+    }
+
+    /**
+     * Client handshake manager that doesn't do any actual handshaking.
+     */
+    private static class MockClientHandshakeManager implements HandshakeManager {
+        /** Sender. */
+        private final NettySender sender;
+
+        /** Constructor. */
+        private MockClientHandshakeManager(Channel channel) {
+            this.sender = new NettySender(channel, "", "");
+        }
+
+        /** {@inheritDoc} */
+        @Override public HandshakeAction onMessage(Channel channel, NetworkMessage message) {
+            return HandshakeAction.REMOVE_HANDLER;
+        }
+
+        /** {@inheritDoc} */
+        @Override public CompletableFuture<NettySender> handshakeFuture() {
+            return CompletableFuture.completedFuture(sender);
+        }
+
+        /** {@inheritDoc} */
+        @Override public HandshakeAction init(Channel channel) {
+            return HandshakeAction.NOOP;
+        }
+
+        /** {@inheritDoc} */
+        @Override public HandshakeAction onConnectionOpen(Channel channel) {
+            return HandshakeAction.NOOP;
         }
     }
 }

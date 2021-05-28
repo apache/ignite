@@ -28,19 +28,19 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.stream.ChunkedWriteHandler;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.network.NetworkMessage;
+import org.apache.ignite.network.internal.handshake.HandshakeManager;
 import org.apache.ignite.network.serialization.MessageSerializationRegistry;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
 
 /**
@@ -62,8 +62,8 @@ public class ConnectionManager {
     /** Server. */
     private final NettyServer server;
 
-    /** Channels. */
-    private final Map<SocketAddress, NettySender> channels = new ConcurrentHashMap<>();
+    /** Channels map from consistentId to {@link NettySender}. */
+    private final Map<String, NettySender> channels = new ConcurrentHashMap<>();
 
     /** Clients. */
     private final Map<SocketAddress, NettyClient> clients = new ConcurrentHashMap<>();
@@ -74,16 +74,39 @@ public class ConnectionManager {
     /** Message listeners. */
     private final List<BiConsumer<SocketAddress, NetworkMessage>> listeners = new CopyOnWriteArrayList<>();
 
+    /** Node consistent id. */
+    private final String consistentId;
+
+    /** Client handshake manager factory. */
+    private final Supplier<HandshakeManager> clientHandshakeManagerFactory;
+
     /**
      * Constructor.
      *
      * @param port Server port.
      * @param registry Serialization registry.
+     * @param consistentId Consistent id of this node.
+     * @param serverHandshakeManagerFactory Server handshake manager factory.
+     * @param clientHandshakeManagerFactory Client handshake manager factory.
      */
-    public ConnectionManager(int port, MessageSerializationRegistry registry) {
+    public ConnectionManager(
+        int port,
+        MessageSerializationRegistry registry,
+        String consistentId,
+        Supplier<HandshakeManager> serverHandshakeManagerFactory,
+        Supplier<HandshakeManager> clientHandshakeManagerFactory
+    ) {
         this.serializationRegistry = registry;
-        this.server = new NettyServer(port, this::onNewIncomingChannel, this::onMessage, serializationRegistry);
-        this.clientBootstrap = createClientBootstrap(clientWorkerGroup, serializationRegistry, this::onMessage);
+        this.consistentId = consistentId;
+        this.clientHandshakeManagerFactory = clientHandshakeManagerFactory;
+        this.server = new NettyServer(
+            port,
+            serverHandshakeManagerFactory.get(),
+            this::onNewIncomingChannel,
+            this::onMessage,
+            serializationRegistry
+        );
+        this.clientBootstrap = createClientBootstrap(clientWorkerGroup, serializationRegistry);
     }
 
     /**
@@ -110,24 +133,36 @@ public class ConnectionManager {
 
     /**
      * Gets a {@link NettySender}, that sends data from this node to another node with the specified address.
+     * @param consistentId Another node's consistent id.
      * @param address Another node's address.
      * @return Sender.
      */
-    public CompletableFuture<NettySender> channel(SocketAddress address) {
-        NettySender channel = channels.compute(
-            address,
-            (addr, sender) -> (sender == null || !sender.isOpen()) ? null : sender
-        );
+    public CompletableFuture<NettySender> channel(@Nullable String consistentId, SocketAddress address) {
+        if (consistentId != null) {
+            // If consistent id is known, try looking up a channel by consistent id. There can be an outbound connection
+            // or an inbound connection associated with that consistent id.
+            NettySender channel = channels.compute(
+                consistentId,
+                (addr, sender) -> (sender == null || !sender.isOpen()) ? null : sender
+            );
 
-        if (channel != null)
-            return CompletableFuture.completedFuture(channel);
+            if (channel != null)
+                return CompletableFuture.completedFuture(channel);
+        }
 
+        // Get an existing client or create a new one. NettyClient provides a CompletableFuture that resolves
+        // when the client is ready for write operations, so previously started client, that didn't establish connection
+        // or didn't perform the handhsake operaton, can be reused.
         NettyClient client = clients.compute(address, (addr, existingClient) ->
             existingClient != null && !existingClient.failedToConnect() && !existingClient.isDisconnected() ?
                 existingClient : connect(addr)
         );
 
-        return client.sender();
+        CompletableFuture<NettySender> sender = client.sender();
+
+        assert sender != null;
+
+        return sender;
     }
 
     /**
@@ -146,8 +181,7 @@ public class ConnectionManager {
      * @param channel Channel from client to this {@link #server}.
      */
     private void onNewIncomingChannel(NettySender channel) {
-        SocketAddress remoteAddress = channel.remoteAddress();
-        channels.put(remoteAddress, channel);
+        channels.put(channel.consistentId(), channel);
     }
 
     /**
@@ -156,14 +190,21 @@ public class ConnectionManager {
      * @param address Target address.
      * @return New netty client.
      */
-    private NettyClient connect(SocketAddress address) {
-        NettyClient client = new NettyClient(address, serializationRegistry);
+    private NettyClient connect(
+        SocketAddress address
+    ) {
+        var client = new NettyClient(
+            address,
+            serializationRegistry,
+            clientHandshakeManagerFactory.get(),
+            this::onMessage
+        );
 
         client.start(clientBootstrap).whenComplete((sender, throwable) -> {
-            if (throwable != null)
-                clients.remove(address);
+            if (throwable == null)
+                channels.put(sender.consistentId(), sender);
             else
-                channels.put(address, sender);
+                clients.remove(address);
         });
 
         return client;
@@ -208,6 +249,14 @@ public class ConnectionManager {
     }
 
     /**
+     * @return This node's consistent id.
+     */
+    @TestOnly
+    public String consistentId() {
+        return consistentId;
+    }
+
+    /**
      * @return Collection of all the clients started by this connection manager.
      */
     @TestOnly
@@ -215,18 +264,25 @@ public class ConnectionManager {
         return Collections.unmodifiableCollection(clients.values());
     }
 
+
+    /**
+     * @return Map of the channels.
+     */
+    @TestOnly
+    public Map<String, NettySender> channels() {
+        return Collections.unmodifiableMap(channels);
+    }
+
     /**
      * Creates a {@link Bootstrap} for clients, providing channel handlers and options.
      *
      * @param eventLoopGroup Event loop group for channel handling.
      * @param serializationRegistry Serialization registry.
-     * @param messageListener Message listener.
      * @return Bootstrap for clients.
      */
     public static Bootstrap createClientBootstrap(
         EventLoopGroup eventLoopGroup,
-        MessageSerializationRegistry serializationRegistry,
-        BiConsumer<SocketAddress, NetworkMessage> messageListener
+        MessageSerializationRegistry serializationRegistry
     ) {
         Bootstrap clientBootstrap = new Bootstrap();
 
@@ -234,16 +290,8 @@ public class ConnectionManager {
             .channel(NioSocketChannel.class)
             // See NettyServer#start for netty configuration details.
             .option(ChannelOption.SO_KEEPALIVE, true)
-            .handler(new ChannelInitializer<SocketChannel>() {
-                /** {@inheritDoc} */
-                @Override public void initChannel(SocketChannel ch) {
-                    ch.pipeline().addLast(
-                        new InboundDecoder(serializationRegistry),
-                        new MessageHandler(messageListener),
-                        new ChunkedWriteHandler()
-                    );
-                }
-            });
+            .option(ChannelOption.SO_LINGER, 0)
+            .option(ChannelOption.TCP_NODELAY, true);
 
         return clientBootstrap;
     }

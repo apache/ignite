@@ -885,6 +885,6 @@ public class Processor extends AbstractProcessor {
 
     /** {@inheritDoc} */
     @Override public SourceVersion getSupportedSourceVersion() {
-        return SourceVersion.RELEASE_11;
+        return SourceVersion.latest();
     }
 }

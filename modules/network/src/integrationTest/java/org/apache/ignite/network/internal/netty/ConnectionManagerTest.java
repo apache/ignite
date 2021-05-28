@@ -15,21 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.network;
+package org.apache.ignite.network.internal.netty;
 
 import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
-import org.apache.ignite.network.internal.netty.ConnectionManager;
-import org.apache.ignite.network.internal.netty.NettyClient;
-import org.apache.ignite.network.internal.netty.NettySender;
-import org.apache.ignite.network.internal.netty.NettyServer;
 import org.apache.ignite.network.NetworkMessage;
+import org.apache.ignite.network.TestMessage;
+import org.apache.ignite.network.TestMessageFactory;
+import org.apache.ignite.network.TestMessageSerializationFactory;
+import org.apache.ignite.network.internal.recovery.RecoveryClientHandshakeManager;
+import org.apache.ignite.network.internal.recovery.RecoveryServerHandshakeManager;
+import org.apache.ignite.network.internal.recovery.message.HandshakeStartMessage;
+import org.apache.ignite.network.internal.recovery.message.HandshakeStartMessageSerializationFactory;
+import org.apache.ignite.network.internal.recovery.message.HandshakeStartResponseMessage;
+import org.apache.ignite.network.internal.recovery.message.HandshakeStartResponseMessageSerializationFactory;
 import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -72,11 +78,52 @@ public class ConnectionManagerTest {
 
         manager2.addListener((address, message) -> fut.complete(message));
 
-        NettySender sender = manager1.channel(new InetSocketAddress(port2)).get();
+        NettySender sender = manager1.channel(null, new InetSocketAddress(port2)).get(3, TimeUnit.SECONDS);
 
         TestMessage testMessage = TestMessageFactory.testMessage().msg(msgText).build();
 
-        sender.send(testMessage).join();
+        sender.send(testMessage).get(3, TimeUnit.SECONDS);
+
+        NetworkMessage receivedMessage = fut.get(3, TimeUnit.SECONDS);
+
+        assertEquals(msgText, ((TestMessage) receivedMessage).msg());
+    }
+
+    /**
+     * Tests that incoming connection is reused for sending messages.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testReuseIncomingConnection() throws Exception {
+        String msgText = "test";
+
+        int port1 = 4000;
+        int port2 = 4001;
+
+        ConnectionManager manager1 = startManager(port1);
+        ConnectionManager manager2 = startManager(port2);
+
+        var fut = new CompletableFuture<NetworkMessage>();
+
+        manager1.addListener((address, message) -> fut.complete(message));
+
+        NettySender senderFrom1to2 = manager1.channel(null, new InetSocketAddress(port2)).get(3, TimeUnit.SECONDS);
+
+        // Ensure a handshake has finished on both sides.
+        senderFrom1to2.send(TestMessageFactory.testMessage().msg("test").build()).get(3, TimeUnit.SECONDS);
+
+        NettySender senderFrom2to1 = manager2.channel(manager1.consistentId(), new InetSocketAddress(port1)).get(3, TimeUnit.SECONDS);
+
+        InetSocketAddress clientLocalAddress = (InetSocketAddress) senderFrom1to2.channel().localAddress();
+
+        InetSocketAddress clientRemoteAddress = (InetSocketAddress) senderFrom2to1.channel().remoteAddress();
+
+        assertEquals(clientLocalAddress, clientRemoteAddress);
+
+        TestMessage testMessage = TestMessageFactory.testMessage().msg("test").build();
+
+        senderFrom2to1.send(testMessage).get(3, TimeUnit.SECONDS);
 
         NetworkMessage receivedMessage = fut.get(3, TimeUnit.SECONDS);
 
@@ -96,8 +143,8 @@ public class ConnectionManagerTest {
         ConnectionManager manager1 = startManager(port1);
         ConnectionManager manager2 = startManager(port2);
 
-        NettySender sender1 = manager1.channel(new InetSocketAddress(port2)).get();
-        NettySender sender2 = manager2.channel(new InetSocketAddress(port1)).get();
+        NettySender sender1 = manager1.channel(null, new InetSocketAddress(port2)).get(3, TimeUnit.SECONDS);
+        NettySender sender2 = manager2.channel(null, new InetSocketAddress(port1)).get(3, TimeUnit.SECONDS);
 
         assertNotNull(sender1);
         assertNotNull(sender2);
@@ -131,7 +178,7 @@ public class ConnectionManagerTest {
         ConnectionManager manager1 = startManager(port1);
         ConnectionManager manager2 = startManager(port2);
 
-        NettySender sender = manager1.channel(new InetSocketAddress(port2)).get();
+        NettySender sender = manager1.channel(null, new InetSocketAddress(port2)).get(3, TimeUnit.SECONDS);
 
         TestMessage testMessage = TestMessageFactory.testMessage().msg(msgText).build();
 
@@ -141,7 +188,7 @@ public class ConnectionManagerTest {
 
         assertThrows(ClosedChannelException.class, () -> {
             try {
-                finalSender.send(testMessage).join();
+                finalSender.send(testMessage).get(3, TimeUnit.SECONDS);
             }
             catch (Exception e) {
                 throw e.getCause();
@@ -154,9 +201,9 @@ public class ConnectionManagerTest {
 
         manager2.addListener((address, message) -> fut.complete(message));
 
-        sender = manager1.channel(new InetSocketAddress(port2)).get();
+        sender = manager1.channel(null, new InetSocketAddress(port2)).get(3, TimeUnit.SECONDS);
 
-        sender.send(testMessage).join();
+        sender.send(testMessage).get(3, TimeUnit.SECONDS);
 
         NetworkMessage receivedMessage = fut.get(3, TimeUnit.SECONDS);
 
@@ -171,9 +218,20 @@ public class ConnectionManagerTest {
      */
     private ConnectionManager startManager(int port) {
         var registry = new MessageSerializationRegistry()
+            .registerFactory(HandshakeStartMessage.TYPE, new HandshakeStartMessageSerializationFactory())
+            .registerFactory(HandshakeStartResponseMessage.TYPE, new HandshakeStartResponseMessageSerializationFactory())
             .registerFactory(TestMessage.TYPE, new TestMessageSerializationFactory());
 
-        var manager = new ConnectionManager(port, registry);
+        UUID launchId = UUID.randomUUID();
+        String consistentId = UUID.randomUUID().toString();
+
+        var manager = new ConnectionManager(
+            port,
+            registry,
+            consistentId,
+            () -> new RecoveryServerHandshakeManager(launchId, consistentId),
+            () -> new RecoveryClientHandshakeManager(launchId, consistentId)
+        );
 
         manager.start();
 

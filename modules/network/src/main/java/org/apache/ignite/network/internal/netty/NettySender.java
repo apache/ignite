@@ -17,18 +17,12 @@
 
 package org.apache.ignite.network.internal.netty;
 
-import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.stream.ChunkedInput;
 import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.internal.direct.DirectMessageWriter;
-import org.apache.ignite.network.serialization.MessageSerializationRegistry;
-import org.apache.ignite.network.serialization.MessageSerializer;
+import org.jetbrains.annotations.TestOnly;
 
 /**
  * Wrapper for a Netty {@link Channel}, that uses {@link ChunkedInput} and {@link DirectMessageWriter} to send data.
@@ -37,130 +31,68 @@ public class NettySender {
     /** Netty channel. */
     private final Channel channel;
 
-    /** Serialization registry. */
-    private final MessageSerializationRegistry serializationRegistry;
+    /** Launch id of the remote node. */
+    private final String launchId;
+
+    /** Consistent id of the remote node. */
+    private final String consistentId;
 
     /**
      * Constructor.
      *
      * @param channel Netty channel.
-     * @param registry Serialization registry.
+     * @param launchId Launch id of the remote node.
+     * @param consistentId Consistent id of the remote node.
      */
-    public NettySender(Channel channel, MessageSerializationRegistry registry) {
+    public NettySender(Channel channel, String launchId, String consistentId) {
         this.channel = channel;
-        serializationRegistry = registry;
+        this.launchId = launchId;
+        this.consistentId = consistentId;
     }
 
     /**
-     * Send message.
+     * Sends the message.
      *
      * @param msg Network message.
+     * @return Future of the send operation.
      */
     public CompletableFuture<Void> send(NetworkMessage msg) {
-        MessageSerializer<NetworkMessage> serializer = serializationRegistry.createSerializer(msg.directType());
-
-        return NettyUtils.toCompletableFuture(
-            channel.writeAndFlush(new NetworkMessageChunkedInput(msg, serializer, serializationRegistry))
-        );
+        return NettyUtils.toCompletableFuture(channel.writeAndFlush(msg));
     }
 
     /**
-     * Close channel.
+     * @return Launch id of the remote node.
+     */
+    public String launchId() {
+        return launchId;
+    }
+
+    /**
+     * @return Consistent id of the remote node.
+     */
+    public String consistentId() {
+        return consistentId;
+    }
+
+    /**
+     * Closes channel.
      */
     public void close() {
         this.channel.close().awaitUninterruptibly();
     }
 
     /**
-     * @return Gets the remote address of the channel.
-     */
-    public SocketAddress remoteAddress() {
-        return this.channel.remoteAddress();
-    }
-
-    /**
-     * @return {@code true} if channel is open, {@code false} otherwise.
+     * @return {@code true} if the channel is open, {@code false} otherwise.
      */
     public boolean isOpen() {
         return this.channel.isOpen();
     }
 
     /**
-     * Chunked input for network message.
+     * @return Channel.
      */
-    private static class NetworkMessageChunkedInput implements ChunkedInput<ByteBuf> {
-        /** Network message. */
-        private final NetworkMessage msg;
-
-        /** Message serializer. */
-        private final MessageSerializer<NetworkMessage> serializer;
-
-        /** Message writer. */
-        private final DirectMessageWriter writer;
-
-        /** Whether the message was fully written. */
-        private boolean finished = false;
-
-        /**
-         * Constructor.
-         *
-         * @param msg Network message.
-         * @param serializer Serializer.
-         */
-        private NetworkMessageChunkedInput(
-            NetworkMessage msg,
-            MessageSerializer<NetworkMessage> serializer,
-            MessageSerializationRegistry registry
-        ) {
-            this.msg = msg;
-            this.serializer = serializer;
-            this.writer = new DirectMessageWriter(registry, ConnectionManager.DIRECT_PROTOCOL_VERSION);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isEndOfInput() throws Exception {
-            return finished;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void close() throws Exception {
-
-        }
-
-        /** {@inheritDoc} */
-        @Deprecated
-        @Override public ByteBuf readChunk(ChannelHandlerContext ctx) throws Exception {
-            return readChunk(ctx.alloc());
-        }
-
-        /** {@inheritDoc} */
-        @Override public ByteBuf readChunk(ByteBufAllocator allocator) throws Exception {
-            ByteBuf buffer = allocator.ioBuffer();
-            int capacity = buffer.capacity();
-
-            ByteBuffer byteBuffer = buffer.internalNioBuffer(0, capacity);
-
-            int initialPosition = byteBuffer.position();
-
-            writer.setBuffer(byteBuffer);
-
-            finished = serializer.writeMessage(msg, writer);
-
-            buffer.writerIndex(byteBuffer.position() - initialPosition);
-
-            return buffer;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long length() {
-            // Return negative values, because object's size is unknown.
-            return -1;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long progress() {
-            // Not really needed, as there won't be listeners for the write operation's progress.
-            return 0;
-        }
+    @TestOnly
+    public Channel channel() {
+        return channel;
     }
 }

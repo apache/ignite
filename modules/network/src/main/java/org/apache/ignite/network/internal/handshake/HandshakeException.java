@@ -15,30 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.network;
+package org.apache.ignite.network.internal.handshake;
 
-import java.util.Map;
-import org.apache.ignite.network.processor.annotations.AutoSerializable;
-
-@AutoSerializable(messageFactory = TestMessageFactory.class)
-public interface TestMessage extends NetworkMessage {
-    /** Visible type for tests. */
-    public static final short TYPE = 4;
-
-    String msg();
-
-    Map<Integer, String> map();
-
-    /** {@inheritDoc} */
-    @Override public default short directType() {
-        return TYPE;
+/**
+ * Handshake exception.
+ */
+public class HandshakeException extends Exception {
+    /**
+     * Constructor.
+     *
+     * @param message Handshake error message.
+     */
+    public HandshakeException(String message) {
+        super(message);
     }
 
-    interface Builder {
-        Builder msg(String msg);
-
-        Builder map(Map<Integer, String> map);
-
-        TestMessage build();
+    /**
+     * Constructor.
+     *
+     * @param message Handshake error message.
+     * @param cause Handshake error cause.
+     */
+    public HandshakeException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

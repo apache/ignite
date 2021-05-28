@@ -1321,6 +1321,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     }
 
     /**
+     * @param <T> Type of an array.
      * @param creator Array creator.
      * @param lenShift Array length shift size.
      * @param off Base offset.
@@ -1383,6 +1384,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     }
 
     /**
+     * @param <T> Type of an array.
      * @param creator Array creator.
      * @param typeSize Primitive type size in bytes.
      * @param lenShift Array length shift size.

@@ -33,6 +33,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import org.apache.ignite.lang.IgniteInternalException;
+import org.apache.ignite.network.internal.handshake.HandshakeManager;
 import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 import org.jetbrains.annotations.Nullable;
@@ -63,6 +64,9 @@ public class NettyServer {
     /** Incoming message listener. */
     private final BiConsumer<SocketAddress, NetworkMessage> messageListener;
 
+    /** Handshake manager. */
+    private final HandshakeManager handshakeManager;
+
     /** Server start future. */
     private CompletableFuture<Void> serverStartFuture;
 
@@ -86,17 +90,19 @@ public class NettyServer {
      * Constructor.
      *
      * @param port Server port.
+     * @param handshakeManager Handshake manager.
      * @param newConnectionListener New connections listener.
      * @param messageListener Message listener.
      * @param serializationRegistry Serialization registry.
      */
     public NettyServer(
         int port,
+        HandshakeManager handshakeManager,
         Consumer<NettySender> newConnectionListener,
         BiConsumer<SocketAddress, NetworkMessage> messageListener,
         MessageSerializationRegistry serializationRegistry
     ) {
-        this(new ServerBootstrap(), port, newConnectionListener, messageListener, serializationRegistry);
+        this(new ServerBootstrap(), port, handshakeManager, newConnectionListener, messageListener, serializationRegistry);
     }
 
     /**
@@ -104,6 +110,7 @@ public class NettyServer {
      *
      * @param bootstrap Server bootstrap.
      * @param port Server port.
+     * @param handshakeManager Handshake manager.
      * @param newConnectionListener New connections listener.
      * @param messageListener Message listener.
      * @param serializationRegistry Serialization registry.
@@ -111,12 +118,14 @@ public class NettyServer {
     public NettyServer(
         ServerBootstrap bootstrap,
         int port,
+        HandshakeManager handshakeManager,
         Consumer<NettySender> newConnectionListener,
         BiConsumer<SocketAddress, NetworkMessage> messageListener,
         MessageSerializationRegistry serializationRegistry
     ) {
         this.bootstrap = bootstrap;
         this.port = port;
+        this.handshakeManager = handshakeManager;
         this.newConnectionListener = newConnectionListener;
         this.messageListener = messageListener;
         this.serializationRegistry = serializationRegistry;
@@ -146,16 +155,23 @@ public class NettyServer {
                              * to read chunked data.
                              */
                             new InboundDecoder(serializationRegistry),
+                            // Handshake handler.
+                            new HandshakeHandler(handshakeManager),
                             // Handles decoded NetworkMessages.
                             new MessageHandler(messageListener),
                             /*
                              * Encoder that uses org.apache.ignite.network.internal.MessageWriter
                              * to write chunked data.
                              */
-                            new ChunkedWriteHandler()
+                            new ChunkedWriteHandler(),
+                            // Converts NetworkMessage to a ChunkedNetworkMessageInput
+                            new OutboundEncoder(serializationRegistry)
                         );
 
-                        newConnectionListener.accept(new NettySender(ch, serializationRegistry));
+                        handshakeManager.handshakeFuture().whenComplete((sender, throwable) -> {
+                            if (sender != null)
+                                newConnectionListener.accept(sender);
+                        });
                     }
                 })
                 /*
@@ -169,7 +185,24 @@ public class NettyServer {
                  * in either direction for 2 hours (NOTE: the actual value is implementation dependent),
                  * TCP automatically sends a keepalive probe to the peer.
                  */
-                .childOption(ChannelOption.SO_KEEPALIVE, true);
+                .childOption(ChannelOption.SO_KEEPALIVE, true)
+                /*
+                 * Specify a linger-on-close timeout. This option disables/enables immediate return from a close()
+                 * of a TCP Socket. Enabling this option with a non-zero Integer timeout means that a close() will
+                 * block pending the transmission and acknowledgement of all data written to the peer, at which point
+                 * the socket is closed gracefully. Upon reaching the linger timeout, the socket is closed forcefully,
+                 * with a TCP RST. Enabling the option with a timeout of zero does a forceful close immediately.
+                 * If the specified timeout value exceeds 65,535 it will be reduced to 65,535.
+                 */
+                .childOption(ChannelOption.SO_LINGER, 0)
+                /*
+                 * Disable Nagle's algorithm for this connection. Written data to the network is not buffered pending
+                 * acknowledgement of previously written data. Valid for TCP only. Setting this option reduces
+                 * network latency and and delivery time for small messages.
+                 * For more information, see Socket#setTcpNoDelay(boolean)
+                 * and https://en.wikipedia.org/wiki/Nagle%27s_algorithm.
+                 */
+                .childOption(ChannelOption.TCP_NODELAY, true);
 
             serverStartFuture = NettyUtils.toChannelCompletableFuture(bootstrap.bind(port))
                 .handle((channel, err) -> {
