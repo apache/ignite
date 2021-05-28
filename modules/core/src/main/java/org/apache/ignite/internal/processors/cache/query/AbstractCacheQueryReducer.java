@@ -167,6 +167,15 @@ public abstract class AbstractCacheQueryReducer<R> implements CacheQueryReducer<
         protected boolean allPagesReady() {
             return allPagesReady;
         }
+
+        /** Clear all stored data in this stream. */
+        protected void clear() {
+            synchronized (sharedLock) {
+                queue.clear();
+
+                iter = null;
+            }
+        }
     }
 
     /** Loads next pages if there is no available. */

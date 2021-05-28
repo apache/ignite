@@ -137,6 +137,8 @@ class UnsortedDistributedCacheQueryReducer<R> extends AbstractCacheQueryReducer<
         }
 
         pageRequester.cancelQueryRequest(reqId, nodes, fut.fields());
+
+        pageStream.clear();
     }
 
     /** {@inheritDoc} */

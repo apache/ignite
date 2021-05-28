@@ -164,8 +164,13 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
             if (reducer().hasNext()) {
                 next = unmaskNull(reducer().next());
 
-                if (!limitDisabled)
+                if (!limitDisabled) {
                     cnt++;
+
+                    // Exceed limit, stop page loading and cancel queries.
+                    if (cnt == capacity)
+                        cancel();
+                }
             }
 
             checkError();

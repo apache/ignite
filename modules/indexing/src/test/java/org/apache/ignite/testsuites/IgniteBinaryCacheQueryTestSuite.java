@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheDynamicLoadOnClientP
 import org.apache.ignite.internal.processors.cache.GridCacheDynamicLoadOnClientTest;
 import org.apache.ignite.internal.processors.cache.GridCacheFullTextQueryLimitTest;
 import org.apache.ignite.internal.processors.cache.GridCacheFullTextQueryMultithreadedSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheFullTextQueryPagesTest;
 import org.apache.ignite.internal.processors.cache.GridCacheFullTextQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheLazyQueryPartitionsReleaseTest;
 import org.apache.ignite.internal.processors.cache.GridCacheQueryIndexDisabledSelfTest;
@@ -491,6 +492,7 @@ import org.junit.runners.Suite;
     // Full text queries.
     GridCacheFullTextQuerySelfTest.class,
     GridCacheFullTextQueryMultithreadedSelfTest.class,
+    GridCacheFullTextQueryPagesTest.class,
     GridCacheFullTextQueryLimitTest.class,
     IgniteCacheFullTextQueryNodeJoiningSelfTest.class,
 

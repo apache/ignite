@@ -21,13 +21,12 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -65,17 +64,15 @@ public class MergeSortDistributedCacheQueryReducer<R> extends UnsortedDistribute
         super(fut, reqId, fetcher, nodes);
 
         synchronized (sharedLock()) {
-            Map<UUID, NodePageStream> nodeStreamMap = new HashMap<>(nodes.size());
+            streamsMap = new ConcurrentHashMap<>(nodes.size());
             streams = (NodePageStream[])Array.newInstance(NodePageStream.class, nodes.size());
 
             int i = 0;
 
             for (ClusterNode node : nodes) {
                 streams[i] = new NodePageStream(node.id());
-                nodeStreamMap.put(node.id(), streams[i++]);
+                streamsMap.put(node.id(), streams[i++]);
             }
-
-            streamsMap = Collections.unmodifiableMap(nodeStreamMap);
         }
 
         streamCmp = (o1, o2) -> {
@@ -104,6 +101,7 @@ public class MergeSortDistributedCacheQueryReducer<R> extends UnsortedDistribute
 
             if (!s.hasNext()) {
                 // Nullify obsolete stream, move left bound.
+                streamsMap.remove(s.nodeId);
                 streams[i] = null;
                 streamOff++;
             }
@@ -133,6 +131,7 @@ public class MergeSortDistributedCacheQueryReducer<R> extends UnsortedDistribute
                 return true;
 
             // Nullify obsolete stream, move left bound.
+            streamsMap.remove(streams[i].nodeId);
             streams[i] = null;
             streamOff++;
         }
@@ -158,7 +157,7 @@ public class MergeSortDistributedCacheQueryReducer<R> extends UnsortedDistribute
                 // Try to contain 2 pages for every stream to avoid waits. A node has to be present in collections:
                 // 1. rcvd - as requested and already handled before, so currently no parallel request to this node.
                 // 2. subgrid - as this node still has pages to request.
-                if (streams[i].queue.size() < 2 && rcvd.remove(nodeId) && subgrid.contains(nodeId))
+                if (streams[i].queue.size() < 1 && rcvd.remove(nodeId) && subgrid.contains(nodeId))
                     nodes.add(nodeId);
             }
         }
@@ -174,8 +173,11 @@ public class MergeSortDistributedCacheQueryReducer<R> extends UnsortedDistribute
         if (nodeId == null)
             nodeId = cctx.localNodeId();
 
-        if (last && streamsMap.containsKey(nodeId))
+        if (last && streamsMap.containsKey(nodeId)) {
             streamsMap.get(nodeId).allPagesReady = true;
+
+            streamsMap.remove(nodeId);
+        }
 
         return qryLast;
     }
@@ -199,7 +201,21 @@ public class MergeSortDistributedCacheQueryReducer<R> extends UnsortedDistribute
             }
         }
 
+        assert streamsMap.containsKey(nodeId) : "Get result from unexpected node: " + nodeId;
+
         streamsMap.get(nodeId).addPage(data);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void cancel() {
+        super.cancel();
+
+        for (int i = streamOff; i < streams.length; i++) {
+            streams[i].clear();
+            streams[i] = null;
+        }
+
+        streamsMap.clear();
     }
 
     /** */
