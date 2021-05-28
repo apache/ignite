@@ -23,6 +23,11 @@ namespace Apache.Ignite.Core.Client.Datastream
     /// <summary>
     /// Thin client data streamer.
     /// <para />
+    /// Data streamer loads data efficiently into cache. Updates are buffered and mapped to primary nodes
+    /// to ensure minimal data movement and optimal resource utilization. 
+    /// <para />
+    /// Note that streamer send data to remote nodes asynchronously, so cache updates can be reordered.
+    /// <para />
     /// Instances of the implementing class are thread-safe: data can be added from multiple threads.
     /// <para />
     /// Closing and disposing: <see cref="IDisposable.Dispose"/> method calls <see cref="Close"/><c>(false)</c>.
@@ -69,8 +74,14 @@ namespace Apache.Ignite.Core.Client.Datastream
         /// <param name="key"></param>
         void Remove(TK key);
 
+        /// <summary>
+        /// Flushes all buffered entries.
+        /// </summary>
         void Flush();
 
+        /// <summary>
+        /// Flushes all buffered entries asynchronously.
+        /// </summary>
         Task FlushAsync();
 
         /// <summary>
