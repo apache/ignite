@@ -392,7 +392,8 @@ public class ChangeDataCapture implements Runnable {
         }
 
         if (!cdcRoot.exists()) {
-            log.warning(cdcRoot + " not exists.");
+            log.warning(cdcRoot + " not exists. Should be created by Ignite Node. " +
+                "Is Change Data Capture enabled in IgniteConfiguration?");
 
             return null;
         }
@@ -400,7 +401,8 @@ public class ChangeDataCapture implements Runnable {
         Path cdcDir = Paths.get(cdcRoot.getAbsolutePath(), dbStoreDirWithSubdirectory.getName());
 
         if (!Files.exists(cdcDir)) {
-            log.warning(cdcDir + " not exists.");
+            log.warning(cdcRoot + " not exists. Should be create by Ignite Node. " +
+                "Is Change Data Capture enabled in IgniteConfiguration?");
 
             return null;
         }
