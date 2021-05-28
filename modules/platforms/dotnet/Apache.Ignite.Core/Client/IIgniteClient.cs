@@ -159,16 +159,35 @@ namespace Apache.Ignite.Core.Client
         IServicesClient GetServices();
 
         /// <summary>
-        /// Gets a new instance of data streamer associated with given cache name. Data streamer
-        /// is responsible for loading external data into Ignite. For more information
-        /// refer to <see cref="IDataStreamerClient{TK,TV}"/> documentation.
+        /// Gets a new instance of the data streamer associated with the given cache name.
+        /// <para />
+        /// Data streamer loads data efficiently into cache.
+        /// See <see cref="IDataStreamerClient{TK,TV}"/> for more information.
         /// </summary>
-        /// <param name="cacheName">Cache name (<c>null</c> for default cache).</param>
+        /// <param name="cacheName">Cache name.</param>
         /// <returns>Data streamer.</returns>
         IDataStreamerClient<TK, TV> GetDataStreamer<TK, TV>(string cacheName);
 
+        /// <summary>
+        /// Gets a new instance of the data streamer associated with the given cache name.
+        /// <para />
+        /// Data streamer loads data efficiently into cache.
+        /// See <see cref="IDataStreamerClient{TK,TV}"/> for more information.
+        /// </summary>
+        /// <param name="cacheName">Cache name.</param>
+        /// <param name="options">Data streamer options.</param>
+        /// <returns>Data streamer.</returns>
         IDataStreamerClient<TK, TV> GetDataStreamer<TK, TV>(string cacheName, DataStreamerClientOptions options);
 
+        /// <summary>
+        /// Gets a new instance of the data streamer associated with the given cache name.
+        /// <para />
+        /// Data streamer loads data efficiently into cache.
+        /// See <see cref="IDataStreamerClient{TK,TV}"/> for more information.
+        /// </summary>
+        /// <param name="cacheName">Cache name.</param>
+        /// <param name="options">Data streamer options.</param>
+        /// <returns>Data streamer.</returns>
         IDataStreamerClient<TK, TV> GetDataStreamer<TK, TV>(string cacheName, DataStreamerClientOptions<TK, TV> options);
     }
 }
