@@ -34,9 +34,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     /// <summary>
     /// Thin client data streamer.
     /// TODO:
-    /// * Fix old .NET build
-    /// * XMLDoc
-    /// * API review.
     /// * Benchmark re-run and results cleanup.
     /// </summary>
     internal sealed class DataStreamerClient<TK, TV> : IDataStreamerClient<TK, TV>
@@ -92,6 +89,12 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /** Cancelled flag. */
         private volatile bool _cancelled;
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="DataStreamerClient{TK,TV}"/>.
+        /// </summary>
+        /// <param name="socket">Socket.</param>
+        /// <param name="cacheName">Cache name.</param>
+        /// <param name="options">Options.</param>
         public DataStreamerClient(
             ClientFailoverSocket socket,
             string cacheName,
@@ -132,6 +135,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             get { return _exception != null; }
         }
 
+        /** <inheritdoc /> */
         public DataStreamerClientOptions<TK, TV> Options
         {
             get
@@ -141,6 +145,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
         }
 
+        /** <inheritdoc /> */
         public void Add(TK key, TV val)
         {
             IgniteArgumentCheck.NotNull(key, "key");
@@ -148,6 +153,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             Add(new DataStreamerClientEntry<TK, TV>(key, val));
         }
 
+        /** <inheritdoc /> */
         public void Remove(TK key)
         {
             IgniteArgumentCheck.NotNull(key, "key");
@@ -160,11 +166,13 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             Add(new DataStreamerClientEntry<TK, TV>(key));
         }
 
+        /** <inheritdoc /> */
         public void Flush()
         {
             FlushAsync().Wait();
         }
 
+        /** <inheritdoc /> */
         public Task FlushAsync()
         {
             ThrowIfClosed();
@@ -172,11 +180,13 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             return FlushInternalAsync();
         }
 
+        /** <inheritdoc /> */
         public void Close(bool cancel)
         {
             CloseAsync(cancel).Wait();
         }
 
+        /** <inheritdoc /> */
         public Task CloseAsync(bool cancel)
         {
             _rwLock.EnterWriteLock();
@@ -228,7 +238,10 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             get { return _arrayPool.Count; }
         }
 
-        internal DataStreamerClientEntry<TK, TV>[] GetArray()
+        /// <summary>
+        /// Gets the pooled entry array.
+        /// </summary>
+        internal DataStreamerClientEntry<TK, TV>[] GetPooledArray()
         {
             DataStreamerClientEntry<TK,TV>[] res;
 
@@ -248,11 +261,17 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             return res;
         }
 
-        internal void ReturnArray(DataStreamerClientEntry<TK, TV>[] buffer)
+        /// <summary>
+        /// Returns entry array to the pool.
+        /// </summary>
+        internal void ReturnPooledArray(DataStreamerClientEntry<TK, TV>[] buffer)
         {
             _arrayPool.Push(buffer);
         }
 
+        /// <summary>
+        /// Adds an entry to the streamer. 
+        /// </summary>
         private void Add(DataStreamerClientEntry<TK, TV> entry)
         {
             if (!_rwLock.TryEnterReadLock(0))
@@ -369,7 +388,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         {
             if (exception == null)
             {
-                ReturnArray(buffer.Entries);
+                ReturnPooledArray(buffer.Entries);
                 tcs.SetResult(null);
 
                 return;
@@ -378,7 +397,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             if (_cancelled || (!socket.IsDisposed && !ShouldRetry(exception)))
             {
                 // Socket is still connected: this error does not need to be retried.
-                ReturnArray(buffer.Entries);
+                ReturnPooledArray(buffer.Entries);
                 tcs.SetException(exception);
 
                 return;
@@ -435,7 +454,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 }
             }
 
-            ReturnArray(entries);
+            ReturnPooledArray(entries);
         }
 
         private void WriteBuffer(DataStreamerClientBuffer<TK, TV> buffer, BinaryWriter w)
@@ -550,7 +569,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             if (res != candidate)
             {
                 // Another thread won - return array to the pool.
-                ReturnArray(candidate.Close().Entries);
+                ReturnPooledArray(candidate.Close().Entries);
             }
 
             return res;
