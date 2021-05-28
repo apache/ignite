@@ -68,7 +68,7 @@ public class SslConnectorsMetricTest extends GridCommonAbstractTest {
     private static final String CIPHER_SUITE = "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256";
 
     /** Cipher suite not supported by cluster nodes. */
-    private static final String NON_SUP_CIPHER_SUITE = "TLS_RSA_WITH_AES_128_GCM_SHA256";
+    private static final String UNSUPPORTED_CIPHER_SUITE = "TLS_RSA_WITH_AES_128_GCM_SHA256";
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -80,12 +80,12 @@ public class SslConnectorsMetricTest extends GridCommonAbstractTest {
     /** Checks the status of the SSL metric if SSL is not configured on the node. */
     @Test
     public void testSslDisabled() throws Exception {
-        IgniteEx srv = startClusterNode(0, false);
+        IgniteEx srv = startGrid();
 
         assertFalse(reg(srv, DISCO_METRICS).<BooleanMetric>findMetric(SSL_ENABLED_METRIC_NAME).value());
         assertFalse(reg(srv, COMMUNICATION_METRICS_GROUP_NAME).<BooleanMetric>findMetric(SSL_ENABLED_METRIC_NAME).value());
         assertFalse(reg(srv, CLIENT_CONNECTOR_METRIC_GROUP_NAME).<BooleanMetric>findMetric(SSL_ENABLED_METRIC_NAME).value());
-        assertFalse(reg(srv, REST_CONNECTOR_METRIC_GROUP_NAME).<BooleanMetric>findMetric(SSL_ENABLED_METRIC_NAME).value());
+        assertNull(reg(srv, REST_CONNECTOR_METRIC_GROUP_NAME).<BooleanMetric>findMetric(SSL_ENABLED_METRIC_NAME));
         assertNull(reg(srv, DISCO_METRICS).<BooleanMetric>findMetric(SSL_REJECTED_CONNECTIONS_CNT_METRIC_NAME));
         assertNull(reg(srv, COMMUNICATION_METRICS_GROUP_NAME).<BooleanMetric>findMetric(SSL_REJECTED_SESSIONS_CNT_METRIC_NAME));
         assertNull(reg(srv, CLIENT_CONNECTOR_METRIC_GROUP_NAME).<BooleanMetric>findMetric(SSL_REJECTED_SESSIONS_CNT_METRIC_NAME));
@@ -95,80 +95,120 @@ public class SslConnectorsMetricTest extends GridCommonAbstractTest {
         assertNull(reg(srv, REST_CONNECTOR_METRIC_GROUP_NAME).<BooleanMetric>findMetric(SSL_HANDSHAKE_DURATION_HISTOGRAM_METRIC_NAME));
         assertNotNull(reg(srv, COMMUNICATION_METRICS_GROUP_NAME).<BooleanMetric>findMetric(SESSIONS_CNT_METRIC_NAME));
         assertNotNull(reg(srv, CLIENT_CONNECTOR_METRIC_GROUP_NAME).<BooleanMetric>findMetric(SESSIONS_CNT_METRIC_NAME));
+        assertNull(reg(srv, REST_CONNECTOR_METRIC_GROUP_NAME).<BooleanMetric>findMetric(SESSIONS_CNT_METRIC_NAME));
+
+        stopAllGrids();
+
+        srv = startGrid(getConfiguration().setConnectorConfiguration(new ConnectorConfiguration()));
+
+        assertFalse(reg(srv, REST_CONNECTOR_METRIC_GROUP_NAME).<BooleanMetric>findMetric(SSL_ENABLED_METRIC_NAME).value());
         assertNotNull(reg(srv, REST_CONNECTOR_METRIC_GROUP_NAME).<BooleanMetric>findMetric(SESSIONS_CNT_METRIC_NAME));
     }
 
     /** Tests SSL metrics produced by JDBC connection. */
     @Test
     public void testJdbc() throws Exception {
-        IgniteEx srv = startClusterNode(0, true);
+        MetricRegistry reg = reg(startClusterNode(0, CIPHER_SUITE, "TLSv1.2"), CLIENT_CONNECTOR_METRIC_GROUP_NAME);
 
-        MetricRegistry reg = reg(srv, CLIENT_CONNECTOR_METRIC_GROUP_NAME);
-
-        try (Connection ignored = getConnection(jdbcConnectionConfiguration("thinClient", "trusttwo", CIPHER_SUITE))) {
+        try (Connection ignored = getConnection(jdbcConnectionConfiguration("thinClient", "trusttwo", CIPHER_SUITE, "TLSv1.2"))) {
             assertSslCommunicationMetrics(reg, 1, 1, 0);
         }
 
         assertSslCommunicationMetrics(reg, 1, 0, 0);
 
-        assertThrowsWithCause(() -> getConnection(jdbcConnectionConfiguration("client", "trusttwo", CIPHER_SUITE)), SQLException.class);
+        // Tests untrusted certificate.
+        assertThrowsWithCause(() ->
+                getConnection(jdbcConnectionConfiguration("client", "trusttwo", CIPHER_SUITE, "TLSv1.2")),
+            SQLException.class);
         assertSslCommunicationMetrics(reg, 2, 0, 1);
 
+        // Tests unsupported cipher suite.
         assertThrowsWithCause(() ->
-            getConnection(jdbcConnectionConfiguration("thinClient", "trusttwo", NON_SUP_CIPHER_SUITE)),
-            SQLException.class
-        );
+                getConnection(jdbcConnectionConfiguration("thinClient", "trusttwo", UNSUPPORTED_CIPHER_SUITE, "TLSv1.2")),
+            SQLException.class);
         assertSslCommunicationMetrics(reg, 3, 0, 2);
+
+        stopAllGrids(true);
+
+        // Tests mismatched protocol versions.
+        reg = reg(startClusterNode(0, null, "TLSv1.2"), CLIENT_CONNECTOR_METRIC_GROUP_NAME);
+
+        assertThrowsWithCause(() ->
+                getConnection(jdbcConnectionConfiguration("thinClient", "trusttwo", null, "TLSv1.1")),
+            SQLException.class);
+        assertSslCommunicationMetrics(reg, 1, 0, 1);
     }
 
     /** Tests SSL metrics produced by REST TCP client connection. */
     @Test
     public void testRestClientConnector() throws Exception {
-        IgniteEx srv = startClusterNode(0, true);
-
-        MetricRegistry reg = reg(srv, REST_CONNECTOR_METRIC_GROUP_NAME);
+        MetricRegistry reg = reg(startClusterNode(0, CIPHER_SUITE, "TLSv1.2"), REST_CONNECTOR_METRIC_GROUP_NAME);
 
         try (
-            GridClient ignored = start(gridClientConfiguration("connectorClient", "trustthree", CIPHER_SUITE))
+            GridClient ignored = start(gridClientConfiguration("connectorClient", "trustthree", CIPHER_SUITE, "TLSv1.2"))
         ) {
             assertSslCommunicationMetrics(reg, 1, 1, 0);
         }
 
         assertSslCommunicationMetrics(reg, 1, 0, 0);
 
-        try (GridClient ignored = start(gridClientConfiguration("client", "trustthree", CIPHER_SUITE))) {
+        // Tests untrusted certificate.
+        try (GridClient ignored = start(gridClientConfiguration("client", "trustthree", CIPHER_SUITE, "TLSv1.2"))) {
             // GridClient makes 2 additional connection attempts if an SSL error occurs and does not throw an exception if they all fail.
         }
-
         assertSslCommunicationMetrics(reg, 4, 0, 3);
 
-        try (GridClient ignored = start(gridClientConfiguration("connectorClient", "trustthree", NON_SUP_CIPHER_SUITE))) {
+        // Tests unsupported cipher suite.
+        try (GridClient ignored = start(gridClientConfiguration("connectorClient", "trustthree", UNSUPPORTED_CIPHER_SUITE, "TLSv1.2"))) {
             // GridClient makes 2 additional connection attempts if an SSL error occurs and does not throw an exception if they all fail.
         }
-
         assertSslCommunicationMetrics(reg, 7, 0, 6);
+
+        stopAllGrids(true);
+
+        // Tests mismatched protocol versions.
+        reg = reg(startClusterNode(0, null, "TLSv1.2"), REST_CONNECTOR_METRIC_GROUP_NAME);
+
+        // Tests mismatched protocol versions.
+        try (GridClient ignored = start(gridClientConfiguration("connectorClient", "trustthree", null, "TLSv1.1"))) {
+            // GridClient makes 2 additional connection attempts if an SSL error occurs and does not throw an exception if they all fail.
+        }
+        assertSslCommunicationMetrics(reg, 3, 0, 3);
     }
 
     /** Tests SSL discovery metrics produced by node connection. */
     @Test
     public void testDiscovery() throws Exception {
-        IgniteEx srv = startClusterNode(0, true);
+        MetricRegistry reg = reg(startClusterNode(0, CIPHER_SUITE, "TLSv1.2"), DISCO_METRICS);
 
         startGrid(nodeConfiguration(1, true, "client", "trustone", CIPHER_SUITE, "TLSv1.2"));
 
-        assertTrue(reg(srv, DISCO_METRICS).<BooleanMetric>findMetric(SSL_ENABLED_METRIC_NAME).value());
-        assertEquals(0, reg(srv, DISCO_METRICS).<LongMetric>findMetric(SSL_REJECTED_CONNECTIONS_CNT_METRIC_NAME).value());
+        assertTrue(reg.<BooleanMetric>findMetric(SSL_ENABLED_METRIC_NAME).value());
+        assertEquals(0, reg.<LongMetric>findMetric(SSL_REJECTED_CONNECTIONS_CNT_METRIC_NAME).value());
 
+        // Tests untrusted certificate.
         assertNodeJoinFails(2, true, "thinClient", "trusttwo", CIPHER_SUITE, "TLSv1.2");
         assertNodeJoinFails(2, false, "thinClient", "trusttwo", CIPHER_SUITE, "TLSv1.2");
-        assertNodeJoinFails(2, true, "client", "trustone", NON_SUP_CIPHER_SUITE, "TLSv1.2");
-        assertNodeJoinFails(2, false, "node01", "trustone", NON_SUP_CIPHER_SUITE, "TLSv1.2");
-        assertNodeJoinFails(2, true, "client", "trustone", CIPHER_SUITE, "TLSv1.1");
-        assertNodeJoinFails(2, false, "node01", "trustone", CIPHER_SUITE, "TLSv1.1");
+        // Tests untrusted cipher suites.
+        assertNodeJoinFails(2, true, "client", "trustone", UNSUPPORTED_CIPHER_SUITE, "TLSv1.2");
+        assertNodeJoinFails(2, false, "node01", "trustone", UNSUPPORTED_CIPHER_SUITE, "TLSv1.2");
 
         // In case of an SSL error, the client and server nodes make 2 additional connection attempts.
         assertTrue(waitForCondition(() ->
-            18 == reg(srv, DISCO_METRICS).<LongMetric>findMetric(SSL_REJECTED_CONNECTIONS_CNT_METRIC_NAME).value(),
+                12 == reg.<LongMetric>findMetric(SSL_REJECTED_CONNECTIONS_CNT_METRIC_NAME).value(),
+            getTestTimeout()));
+
+       stopAllGrids();
+
+        // Tests mismatched protocol versions.
+        MetricRegistry finalReg = reg(startClusterNode(0, null, "TLSv1.2"), DISCO_METRICS);
+
+        assertNodeJoinFails(2, true, "client", "trustone", null, "TLSv1.1");
+        assertNodeJoinFails(2, false, "node01", "trustone", null, "TLSv1.1");
+
+        // In case of an SSL error, the client and server nodes make 2 additional connection attempts.
+        assertTrue(waitForCondition(() ->
+                6 == finalReg.<LongMetric>findMetric(SSL_REJECTED_CONNECTIONS_CNT_METRIC_NAME).value(),
             getTestTimeout()
         ));
     }
@@ -176,15 +216,13 @@ public class SslConnectorsMetricTest extends GridCommonAbstractTest {
     /** Tests SSL communication metrics produced by node connection. */
     @Test
     public void testCommunication() throws Exception {
-        IgniteEx srv = startClusterNode(0, true);
-
-        MetricRegistry reg = reg(srv, COMMUNICATION_METRICS_GROUP_NAME);
+        MetricRegistry reg = reg(startClusterNode(0, CIPHER_SUITE, "TLSv1.2"), COMMUNICATION_METRICS_GROUP_NAME);
 
         assertSslCommunicationMetrics(reg, 0, 0, 0);
 
         try (
             IgniteEx cliNode = startGrid(nodeConfiguration(1, true, "client", "trustone", CIPHER_SUITE, "TLSv1.2"));
-            IgniteEx srvNode = startGrid(nodeConfiguration(2, true, "client", "trustone", CIPHER_SUITE, "TLSv1.2"))
+            IgniteEx srvNode = startGrid(nodeConfiguration(2, false, "node01", "trustone", CIPHER_SUITE, "TLSv1.2"))
         ) {
             assertSslCommunicationMetrics(reg, 2, 2, 0);
             assertSslCommunicationMetrics(reg(cliNode, COMMUNICATION_METRICS_GROUP_NAME), 0, 1, 0);
@@ -197,56 +235,71 @@ public class SslConnectorsMetricTest extends GridCommonAbstractTest {
     /** Tests SSL metrics produced by thin client connection. */
     @Test
     public void testClientConnector() throws Exception {
-        IgniteEx srv = startClusterNode(0, true);
+        MetricRegistry reg = reg(startClusterNode(0, CIPHER_SUITE, "TLSv1.2"), CLIENT_CONNECTOR_METRIC_GROUP_NAME);
 
-        MetricRegistry reg = reg(srv, CLIENT_CONNECTOR_METRIC_GROUP_NAME);
-
-        try (IgniteClient ignored = startClient(clientConfiguration("thinClient", "trusttwo", CIPHER_SUITE))) {
+        try (IgniteClient ignored = startClient(clientConfiguration("thinClient", "trusttwo", CIPHER_SUITE, "TLSv1.2"))) {
             assertSslCommunicationMetrics(reg, 1, 1, 0);
         }
-
         assertSslCommunicationMetrics(reg, 1, 0, 0);
 
-        assertThrowsWithCause(() -> startClient(clientConfiguration("client", "trustboth", CIPHER_SUITE)), ClientConnectionException.class);
+        // Tests untrusted certificate.
+        assertThrowsWithCause(() ->
+                startClient(clientConfiguration("client", "trustboth", CIPHER_SUITE, "TLSv1.2")),
+            ClientConnectionException.class);
         assertSslCommunicationMetrics(reg, 2, 0, 1);
 
+        // Tests unsupported cipher suites.
         assertThrowsWithCause(() ->
-            startClient(clientConfiguration("thinClient", "trusttwo", NON_SUP_CIPHER_SUITE)),
+            startClient(clientConfiguration("thinClient", "trusttwo", UNSUPPORTED_CIPHER_SUITE, "TLSv1.2")),
             ClientConnectionException.class
         );
-
         assertSslCommunicationMetrics(reg, 3, 0, 2);
+
+        stopAllGrids();
+
+        reg = reg(startClusterNode(0, null, "TLSv1.2"), CLIENT_CONNECTOR_METRIC_GROUP_NAME);
+
+        // Tests mismatched protocol versions.
+        assertThrowsWithCause(() ->
+                startClient(clientConfiguration("thinClient", "trusttwo", null, "TLSv1.1")),
+            ClientConnectionException.class
+        );
+        assertSslCommunicationMetrics(reg, 1, 0, 1);
     }
 
     /** Starts node that imitates a cluster node to which connections will be performed. */
-    private IgniteEx startClusterNode(int idx, boolean sslEnabled) throws Exception {
+    private IgniteEx startClusterNode(int idx, String cipherSuite, String protocol) throws Exception {
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(idx));
 
-        if (sslEnabled)
-            cfg.setSslContextFactory(sslContextFactory("server", "trustone", CIPHER_SUITE, "TLSv1.2"));
+        cfg.setSslContextFactory(sslContextFactory("server", "trustone", cipherSuite, protocol));
 
         cfg.setClientConnectorConfiguration(new ClientConnectorConfiguration()
-            .setSslEnabled(sslEnabled)
-            .setSslClientAuth(sslEnabled)
+            .setSslEnabled(true)
+            .setSslClientAuth(true)
             .setUseIgniteSslContextFactory(false)
-            .setSslContextFactory(sslContextFactory("thinServer", "trusttwo", CIPHER_SUITE, "TLSv1.2")));
+            .setSslContextFactory(sslContextFactory("thinServer", "trusttwo", cipherSuite, protocol)));
 
         cfg.setConnectorConfiguration(new ConnectorConfiguration()
-            .setSslClientAuth(sslEnabled)
-            .setSslEnabled(sslEnabled)
-            .setSslFactory(sslContextFactory("connectorServer", "trustthree", CIPHER_SUITE, "TLSv1.2")));
+            .setSslClientAuth(true)
+            .setSslEnabled(true)
+            .setSslFactory(sslContextFactory("connectorServer", "trustthree", cipherSuite, protocol)));
 
         return startGrid(cfg);
     }
 
     /** @return JDBC connection configuration with specified SSL options. */
-    private String jdbcConnectionConfiguration(String keyStore, String trustStore, String cipherSuite) {
-        return "jdbc:ignite:thin://" + Config.SERVER + "?sslMode=require" +
+    private String jdbcConnectionConfiguration(String keyStore, String trustStore, String cipherSuite, String protocol) {
+        String res = "jdbc:ignite:thin://" + Config.SERVER + "?sslMode=require" +
             "&sslClientCertificateKeyStoreUrl=" + keyStorePath(keyStore) +
             "&sslClientCertificateKeyStorePassword=" + keyStorePassword() +
             "&sslTrustCertificateKeyStoreUrl=" + keyStorePath(trustStore) +
             "&sslTrustCertificateKeyStorePassword=" + keyStorePassword() +
-            "&sslCipherSuites=" + cipherSuite;
+            "&sslProtocol=" + protocol;
+
+        if (cipherSuite != null)
+            res += "&sslCipherSuites=" + cipherSuite;
+
+        return res;
     }
 
     /** @return Node connection configuration with specified SSL options. */
@@ -264,8 +317,8 @@ public class SslConnectorsMetricTest extends GridCommonAbstractTest {
     }
 
     /** @return Grid client connection configuration with specified SSL options. */
-    private GridClientConfiguration gridClientConfiguration(String keyStore, String trustStore, String cipherSuite) {
-        SslContextFactory sslCtxFactory = sslContextFactory(keyStore, trustStore, cipherSuite, "TLSv1.2");
+    private GridClientConfiguration gridClientConfiguration(String keyStore, String trustStore, String cipherSuite, String protocol) {
+        SslContextFactory sslCtxFactory = sslContextFactory(keyStore, trustStore, cipherSuite, protocol);
 
         return new GridClientConfiguration()
             .setServers(Collections.singleton("127.0.0.1:11211"))
@@ -273,11 +326,11 @@ public class SslConnectorsMetricTest extends GridCommonAbstractTest {
     }
 
     /** @return Thin client connection configuration with specified SSL options. */
-    private ClientConfiguration clientConfiguration(String keyStore, String trustStore, String cipherSuite) {
+    private ClientConfiguration clientConfiguration(String keyStore, String trustStore, String cipherSuite, String protocol) {
        return new ClientConfiguration()
             .setAddresses("127.0.0.1:10800")
             .setSslMode(SslMode.REQUIRED)
-            .setSslContextFactory(sslContextFactory(keyStore, trustStore, cipherSuite, "TLSv1.2"));
+            .setSslContextFactory(sslContextFactory(keyStore, trustStore, cipherSuite, protocol));
     }
 
     /** Asserts that the node connection failed if the connection was performed with the specified SSL options. */
@@ -293,7 +346,7 @@ public class SslConnectorsMetricTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = nodeConfiguration(idx, client, keyStore, trustStore, cipherSuite, protocol);
 
         if (client)
-            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setJoinTimeout(1); // To avoid client rejoin after failed connection.
+            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setJoinTimeout(1); // To prevent client multiple join attempts.
 
         GridTestUtils.assertThrowsWithCause(() -> startGrid(cfg), IgniteCheckedException.class);
     }
@@ -321,8 +374,10 @@ public class SslConnectorsMetricTest extends GridCommonAbstractTest {
     private SslContextFactory sslContextFactory(String keyStore, String trustStore, String cipherSuite, String protocol) {
         SslContextFactory res = (SslContextFactory)sslTrustedFactory(keyStore, trustStore);
 
-        res.setCipherSuites(cipherSuite);
-        res.setProtocol(protocol);
+        if (cipherSuite != null)
+            res.setCipherSuites(cipherSuite);
+
+        res.setProtocols(protocol);
 
         return res;
     }
