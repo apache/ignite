@@ -17,15 +17,15 @@
 
 package org.apache.ignite.internal.processors.platform.client.streamer;
 
+import java.util.ArrayList;
+import java.util.Collection;
+
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
-
-import java.util.ArrayList;
-import java.util.Collection;
 
 /**
  *

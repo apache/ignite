@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.platform.client.streamer;
 
+import java.util.Collection;
+
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.GridKernalContext;
@@ -34,8 +36,6 @@ import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheRequest;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.stream.StreamReceiver;
-
-import java.util.Collection;
 
 import static org.apache.ignite.internal.processors.platform.client.streamer.ClientDataStreamerFlags.ALLOW_OVERWRITE;
 import static org.apache.ignite.internal.processors.platform.client.streamer.ClientDataStreamerFlags.CLOSE;
