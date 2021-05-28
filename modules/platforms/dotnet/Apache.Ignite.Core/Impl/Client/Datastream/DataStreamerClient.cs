@@ -148,16 +148,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             Add(new DataStreamerClientEntry<TK, TV>(key, val));
         }
 
-        public void Add(IEnumerable<KeyValuePair<TK, TV>> entries)
-        {
-            IgniteArgumentCheck.NotNull(entries, "entries");
-
-            foreach (var entry in entries)
-            {
-                Add(entry.Key, entry.Value);
-            }
-        }
-
         public void Remove(TK key)
         {
             IgniteArgumentCheck.NotNull(key, "key");
@@ -168,16 +158,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
 
             Add(new DataStreamerClientEntry<TK, TV>(key));
-        }
-
-        public void Remove(IEnumerable<TK> keys)
-        {
-            IgniteArgumentCheck.NotNull(keys, "keys");
-
-            foreach (var key in keys)
-            {
-                Remove(key);
-            }
         }
 
         public void Flush()

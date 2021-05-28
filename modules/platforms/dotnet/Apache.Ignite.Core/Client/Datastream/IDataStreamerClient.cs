@@ -59,18 +59,16 @@ namespace Apache.Ignite.Core.Client.Datastream
         void Add(TK key, TV val);
 
         /// <summary>
-        /// Adds multiple entries to the streamer.
+        /// Adds a removal entry to the streamer. Cache entry with the specified key will be removed.
         /// <para />
-        /// This method adds entries to the buffer. When the buffer gets full, it is scheduled for
+        /// Removal requires <see cref="DataStreamerClientOptions.AllowOverwrite"/> to be <c>true</c>.
+        /// <para />
+        /// This method adds an entry to the buffer. When the buffer gets full, it is scheduled for
         /// asynchronous background flush. This method will block when the number of active flush operations
         /// exceeds <see cref="DataStreamerClientOptions.PerNodeParallelOperations"/>.
         /// </summary>
-        /// <param name="entries">Entries to add.</param>
-        void Add(IEnumerable<KeyValuePair<TK, TV>> entries);
-
+        /// <param name="key"></param>
         void Remove(TK key);
-
-        void Remove(IEnumerable<TK> keys);
 
         void Flush();
 
