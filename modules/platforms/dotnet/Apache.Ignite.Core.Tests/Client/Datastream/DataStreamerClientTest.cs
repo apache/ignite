@@ -300,7 +300,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             {
                 foreach (var x in Enumerable.Range(1, 300))
                 {
-                    streamer.Add(x, x);
+                    streamer.Add(x, -x);
                 }
             }
 
