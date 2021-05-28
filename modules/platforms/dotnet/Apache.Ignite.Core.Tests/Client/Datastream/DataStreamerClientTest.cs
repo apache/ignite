@@ -87,8 +87,11 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             {
                 streamer.Add(1, 11);
                 streamer.Add(20, 20);
-                streamer.Remove(2);
-                streamer.Remove(new[] {4, 6, 7, 8, 9, 10});
+
+                foreach (var key in new[] {2, 4, 6, 7, 8, 9, 10})
+                {
+                    streamer.Remove(key);
+                }
             }
 
             var resKeys = cache.GetAll(Enumerable.Range(1, 30))
@@ -295,7 +298,10 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
             using (var streamer = Client.GetDataStreamer<int, int>(serverCache.Name, options))
             {
-                streamer.Add(Enumerable.Range(1, 300).ToDictionary(x => x, x => -x));
+                foreach (var x in Enumerable.Range(1, 300))
+                {
+                    streamer.Add(x, x);
+                }
             }
 
             Assert.AreEqual(300, serverCache.GetSize());
@@ -426,7 +432,6 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
             Assert.Throws<ObjectDisposedException>(() => streamer.Add(1, 1));
             Assert.Throws<ObjectDisposedException>(() => streamer.Remove(1));
-            Assert.Throws<ObjectDisposedException>(() => streamer.Remove(new[] {1, 2, 3}));
             Assert.Throws<ObjectDisposedException>(() => streamer.Flush());
             Assert.Throws<ObjectDisposedException>(() => streamer.FlushAsync());
         }

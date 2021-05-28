@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Client.Datastream
 {
     using System;
-    using System.Collections.Generic;
     using System.Threading.Tasks;
 
     /// <summary>
