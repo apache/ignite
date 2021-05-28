@@ -86,7 +86,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /** <inheritdoc /> */
         public override string ToString()
         {
-            return $"DataStreamerClientEntry [Key={Key}, Val={Val}, Remove={Remove}, IsEmpty={IsEmpty}]";
+            return string.Format("DataStreamerClientEntry [Key={0}, Val={1}, Remove={2}, IsEmpty={3}]", Key, Val,
+                Remove, IsEmpty);
         }
     }
 }

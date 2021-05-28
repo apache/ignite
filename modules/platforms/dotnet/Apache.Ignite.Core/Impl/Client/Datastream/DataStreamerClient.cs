@@ -206,7 +206,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 if (_exception != null)
                 {
                     // Already closed.
-                    return Task.CompletedTask;
+                    return TaskRunner.CompletedTask;
                 }
 
                 _exception = new ObjectDisposedException("DataStreamerClient", "Data streamer has been disposed");
@@ -221,7 +221,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                     // Disregard current buffers, stop all retry loops.
                     _cancelled = true;
                     
-                    return Task.CompletedTask;
+                    return TaskRunner.CompletedTask;
                 }
 
                 return FlushInternalAsync();
