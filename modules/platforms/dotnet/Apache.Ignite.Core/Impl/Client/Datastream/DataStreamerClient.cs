@@ -544,7 +544,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 return res;
             }
 
-            var candidate = CreatePerNodeBuffer(socket);
+            var candidate = new DataStreamerClientPerNodeBuffer<TK, TV>(this, socket);
 
             res = _buffers.GetOrAdd(socket, candidate);
 
@@ -577,11 +577,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             throw new IgniteClientException("Streamer is closed with error, check inner exception for details.", ex);
         }
 
-        private DataStreamerClientPerNodeBuffer<TK, TV> CreatePerNodeBuffer(ClientSocket socket)
-        {
-            return new DataStreamerClientPerNodeBuffer<TK, TV>(this, socket);
-        }
-
+        /// <summary>
+        /// Performs timer-based automatic flush.
+        /// </summary>
         private void AutoFlush()
         {
             if (_exception != null)
@@ -609,8 +607,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 Monitor.Exit(_autoFlushTimer);
             }
         }
-        
-        
+
         /// <summary>
         /// Gets a value indicating whether flush should be retried after the specified exception.
         /// </summary>
