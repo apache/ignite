@@ -17,18 +17,29 @@
 
 package org.apache.ignite.raft.client.exception;
 
+import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.raft.client.RaftErrorCode;
 
 /**
  * A raft exception containing code and description.
  */
-public class RaftException extends RuntimeException {
+public class RaftException extends IgniteInternalException {
     private final RaftErrorCode code;
 
     /**
      * @param errCode Error code.
      */
     public RaftException(RaftErrorCode errCode) {
+        this.code = errCode;
+    }
+
+    /**
+     * @param errCode Error code.
+     * @param message Error message.
+     */
+    public RaftException(RaftErrorCode errCode, String message) {
+        super(message);
+
         this.code = errCode;
     }
 

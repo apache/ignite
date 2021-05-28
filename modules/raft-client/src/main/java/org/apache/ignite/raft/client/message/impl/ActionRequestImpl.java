@@ -23,19 +23,26 @@ import org.apache.ignite.raft.client.message.ActionRequest;
 /** */
 class ActionRequestImpl<T> implements ActionRequest, ActionRequest.Builder {
     /** */
+    private String groupId;
+
+    /** */
     private Command cmd;
 
     /** */
-    private String groupId;
+    private boolean readOnlySafe;
+
+    /** {@inheritDoc} */
+    @Override public String groupId() {
+        return groupId;
+    }
 
     /** {@inheritDoc} */
     @Override public Command command() {
         return cmd;
     }
 
-    /** {@inheritDoc} */
-    @Override public String groupId() {
-        return groupId;
+    @Override public boolean readOnlySafe() {
+        return readOnlySafe;
     }
 
     /** {@inheritDoc} */
@@ -48,6 +55,13 @@ class ActionRequestImpl<T> implements ActionRequest, ActionRequest.Builder {
     /** {@inheritDoc} */
     @Override public Builder command(Command cmd) {
         this.cmd = cmd;
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Builder readOnlySafe(boolean readOnlySafe) {
+        this.readOnlySafe = readOnlySafe;
 
         return this;
     }

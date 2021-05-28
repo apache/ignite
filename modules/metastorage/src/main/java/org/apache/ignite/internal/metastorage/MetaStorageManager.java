@@ -31,7 +31,7 @@ import org.apache.ignite.configuration.internal.ConfigurationManager;
 import org.apache.ignite.configuration.schemas.runner.NodeConfiguration;
 import org.apache.ignite.internal.metastorage.client.MetaStorageServiceImpl;
 import org.apache.ignite.internal.metastorage.server.SimpleInMemoryKeyValueStorage;
-import org.apache.ignite.internal.metastorage.server.raft.MetaStorageCommandListener;
+import org.apache.ignite.internal.metastorage.server.raft.MetaStorageListener;
 import org.apache.ignite.internal.metastorage.watch.AggregatedWatch;
 import org.apache.ignite.internal.metastorage.watch.KeyCriterion;
 import org.apache.ignite.internal.metastorage.watch.WatchAggregator;
@@ -138,7 +138,7 @@ public class MetaStorageManager {
                         clusterNetSvc.topologyService().allMembers().stream().filter(
                             metaStorageNodesContainsLocPred).
                             collect(Collectors.toList()),
-                        new MetaStorageCommandListener(new SimpleInMemoryKeyValueStorage())
+                        new MetaStorageListener(new SimpleInMemoryKeyValueStorage())
                     )
                 )
             );

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.table.distributed.raft;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.internal.table.distributed.command.DeleteCommand;
 import org.apache.ignite.internal.table.distributed.command.GetCommand;
@@ -30,13 +31,13 @@ import org.apache.ignite.internal.table.distributed.command.response.KVGetRespon
 import org.apache.ignite.raft.client.ReadCommand;
 import org.apache.ignite.raft.client.WriteCommand;
 import org.apache.ignite.raft.client.service.CommandClosure;
-import org.apache.ignite.raft.client.service.RaftGroupCommandListener;
+import org.apache.ignite.raft.client.service.RaftGroupListener;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Partition command handler.
  */
-public class PartitionCommandListener implements RaftGroupCommandListener {
+public class PartitionListener implements RaftGroupListener {
     /** Storage. */
     private ConcurrentHashMap<KeyWrapper, BinaryRow> storage = new ConcurrentHashMap<>();
 
@@ -47,7 +48,7 @@ public class PartitionCommandListener implements RaftGroupCommandListener {
 
             assert clo.command() instanceof GetCommand;
 
-            clo.success(new KVGetResponse(storage.get(extractAndWrapKey(((GetCommand)clo.command()).getKeyRow()))));
+            clo.result(new KVGetResponse(storage.get(extractAndWrapKey(((GetCommand)clo.command()).getKeyRow()))));
         }
     }
 
@@ -62,14 +63,14 @@ public class PartitionCommandListener implements RaftGroupCommandListener {
                     ((InsertCommand)clo.command()).getRow()
                 );
 
-                clo.success(previous == null);
+                clo.result(previous == null);
             }
             else if (clo.command() instanceof DeleteCommand) {
                 BinaryRow deleted = storage.remove(
                     extractAndWrapKey(((DeleteCommand)clo.command()).getKeyRow())
                 );
 
-                clo.success(deleted != null);
+                clo.result(deleted != null);
             }
             else if (clo.command() instanceof ReplaceCommand) {
                 ReplaceCommand cmd = ((ReplaceCommand)clo.command());
@@ -84,10 +85,10 @@ public class PartitionCommandListener implements RaftGroupCommandListener {
                     equalValues(current, expected)) {
                     storage.put(key, cmd.getRow());
 
-                    clo.success(true);
+                    clo.result(true);
                 }
                 else
-                    clo.success(false);
+                    clo.result(false);
             }
             else if (clo.command() instanceof UpsertCommand) {
                 storage.put(
@@ -95,11 +96,22 @@ public class PartitionCommandListener implements RaftGroupCommandListener {
                     ((UpsertCommand)clo.command()).getRow()
                 );
 
-                clo.success(null);
+                clo.result(null);
             }
             else
                 assert false : "Command was not found [cmd=" + clo.command() + ']';
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onSnapshotSave(String path, Consumer<Throwable> doneClo) {
+        // Not implemented yet.
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean onSnapshotLoad(String path) {
+        // Not implemented yet.
+        return false;
     }
 
     /**

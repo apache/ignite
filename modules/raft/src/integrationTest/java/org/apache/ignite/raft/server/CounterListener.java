@@ -18,16 +18,17 @@
 package org.apache.ignite.raft.server;
 
 import java.util.Iterator;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import org.apache.ignite.raft.client.ReadCommand;
 import org.apache.ignite.raft.client.WriteCommand;
 import org.apache.ignite.raft.client.service.CommandClosure;
-import org.apache.ignite.raft.client.service.RaftGroupCommandListener;
+import org.apache.ignite.raft.client.service.RaftGroupListener;
 
 /** */
-public class CounterCommandListener implements RaftGroupCommandListener {
+public class CounterListener implements RaftGroupListener {
     /** */
-    private AtomicInteger counter = new AtomicInteger();
+    private AtomicLong counter = new AtomicLong();
 
     /** {@inheritDoc} */
     @Override public void onRead(Iterator<CommandClosure<ReadCommand>> iterator) {
@@ -36,7 +37,7 @@ public class CounterCommandListener implements RaftGroupCommandListener {
 
             assert clo.command() instanceof GetValueCommand;
 
-            clo.success(counter.get());
+            clo.result(counter.get());
         }
     }
 
@@ -47,7 +48,16 @@ public class CounterCommandListener implements RaftGroupCommandListener {
 
             IncrementAndGetCommand cmd0 = (IncrementAndGetCommand) clo.command();
 
-            clo.success(counter.addAndGet(cmd0.delta()));
+            clo.result(counter.addAndGet(cmd0.delta()));
         }
+    }
+
+    @Override public void onSnapshotSave(String path, Consumer<Throwable> doneClo) {
+        // Not implemented.
+    }
+
+    @Override public boolean onSnapshotLoad(String path) {
+        // Not implemented.
+        return false;
     }
 }

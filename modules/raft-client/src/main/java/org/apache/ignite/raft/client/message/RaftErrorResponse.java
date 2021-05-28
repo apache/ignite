@@ -24,13 +24,18 @@ import org.apache.ignite.raft.client.RaftErrorCode;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Raft error response. Also used as a default response when errorCode == {@link RaftErrorCode#SUCCESS}
+ * Raft error response.
  */
 public interface RaftErrorResponse extends NetworkMessage, Serializable {
     /**
      * @return Error code.
      */
     public RaftErrorCode errorCode();
+
+    /**
+     * @return Error message.
+     */
+    public String errorMessage();
 
     /**
      * @return The new leader if a current leader is obsolete or null if not applicable.
@@ -44,6 +49,12 @@ public interface RaftErrorResponse extends NetworkMessage, Serializable {
          * @return The builder.
          */
         Builder errorCode(RaftErrorCode errorCode);
+
+        /**
+         * @param errorMsg Error message.
+         * @return The builder.
+         */
+        Builder errorMessage(String errorMsg);
 
         /**
          * @param newLeader New leader.

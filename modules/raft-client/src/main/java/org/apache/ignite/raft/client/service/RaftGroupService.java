@@ -41,7 +41,7 @@ import org.jetbrains.annotations.Nullable;
  * If an error is occured during operation execution, the future will be completed with the corresponding
  * IgniteException having an error code and a related message.
  * <p>
- * Async operations provided by the service are not cancellable.
+ * All async operations provided by the service are not cancellable.
  */
 public interface RaftGroupService {
     /**
@@ -195,4 +195,9 @@ public interface RaftGroupService {
      * @return A future with the execution result.
      */
     <R> CompletableFuture<R> run(Peer peer, ReadCommand cmd);
+
+    /**
+     * Shutdown and cleanup resources for this instance.
+     */
+    void shutdown();
 }

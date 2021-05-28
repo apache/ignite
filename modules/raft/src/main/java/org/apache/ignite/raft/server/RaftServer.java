@@ -17,40 +17,54 @@
 
 package org.apache.ignite.raft.server;
 
-import org.apache.ignite.network.ClusterNode;
-import org.apache.ignite.raft.client.service.RaftGroupCommandListener;
+import java.util.List;
+import org.apache.ignite.network.ClusterService;
+import org.apache.ignite.raft.client.Peer;
+import org.apache.ignite.raft.client.service.RaftGroupListener;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * The RAFT protocol based replication server.
  * <p>
  * Supports multiple RAFT groups.
  * <p>
- * The server listens for client commands, submits them to a replicated log and calls {@link RaftGroupCommandListener}
+ * The server listens for client commands, submits them to a replicated log and calls {@link RaftGroupListener}
  * {@code onRead} and {@code onWrite} methods then after the command was committed to the log.
  */
 public interface RaftServer {
     /**
-     * @return Local member.
+     * @return Cluster service.
      */
-    ClusterNode localMember();
+    ClusterService clusterService();
 
     /**
-     * Set a listener for group commands.
-     * @param groupId group id.
-     * @param lsnr Listener.
-     */
-    void setListener(String groupId, RaftGroupCommandListener lsnr);
-
-    /**
-     * Remove a command listener.
+     * Starts a raft group bound to this cluster node.
      * @param groupId Group id.
+     * @param lsnr The listener.
+     * @param initialConf Inititial group configuration.
+     *
+     * @return {@code True} if a group was successfully started.
      */
-    void clearListener(String groupId);
+    boolean startRaftGroup(String groupId, RaftGroupListener lsnr, List<Peer> initialConf);
+
+    /**
+     * Synchronously stops a raft group.
+     * @param groupId Group id.
+     * @return {@code True} if a group was successfully stopped.
+     */
+    boolean stopRaftGroup(String groupId);
+
+    /**
+     * Returns a local peer.
+     * @param groupId Group id.
+     * @return Local peer or null if the group is not started.
+     */
+    @Nullable Peer localPeer(String groupId);
 
     /**
      * Shutdown a server.
      *
-     * @throws Exception
+     * @throws Exception If failed.
      */
     void shutdown() throws Exception;
 }

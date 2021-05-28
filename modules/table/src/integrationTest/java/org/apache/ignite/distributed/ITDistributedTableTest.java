@@ -37,7 +37,7 @@ import org.apache.ignite.internal.table.TableImpl;
 import org.apache.ignite.internal.table.distributed.command.GetCommand;
 import org.apache.ignite.internal.table.distributed.command.InsertCommand;
 import org.apache.ignite.internal.table.distributed.command.response.KVGetResponse;
-import org.apache.ignite.internal.table.distributed.raft.PartitionCommandListener;
+import org.apache.ignite.internal.table.distributed.raft.PartitionListener;
 import org.apache.ignite.internal.table.distributed.storage.InternalTableImpl;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.network.ClusterLocalConfiguration;
@@ -154,12 +154,14 @@ public class ITDistributedTableTest {
         RaftServer partSrv = new RaftServerImpl(
             cluster.get(0),
             FACTORY,
-            1000,
-            Map.of(grpId, new PartitionCommandListener())
+            true
         );
 
-        RaftGroupService partRaftGrp = new RaftGroupServiceImpl(grpId, client, FACTORY, 10_000,
-            List.of(new Peer(cluster.get(0).topologyService().localMember())), true, 200);
+        List<Peer> conf = List.of(new Peer(cluster.get(0).topologyService().localMember().address()));
+
+        partSrv.startRaftGroup(grpId, new PartitionListener(), conf);
+
+        RaftGroupService partRaftGrp = new RaftGroupServiceImpl(grpId, client, FACTORY, 10_000, conf, true, 200, true);
 
         Row testRow = getTestRow();
 
@@ -170,11 +172,11 @@ public class ITDistributedTableTest {
 //        Row keyChunk = new Row(SCHEMA, new ByteBufferRow(testRow.keySlice()));
         Row keyChunk = getTestKey();
 
-        CompletableFuture<KVGetResponse> getFur = partRaftGrp.run(new GetCommand(keyChunk));
+        CompletableFuture<KVGetResponse> getFut = partRaftGrp.run(new GetCommand(keyChunk));
 
-        assertNotNull(getFur.get().getValue());
+        assertNotNull(getFut.get().getValue());
 
-        assertEquals(testRow.longValue(1), new Row(SCHEMA, getFur.get().getValue()).longValue(1));
+        assertEquals(testRow.longValue(1), new Row(SCHEMA, getFut.get().getValue()).longValue(1));
 
         partSrv.shutdown();
     }
@@ -204,8 +206,7 @@ public class ITDistributedTableTest {
             raftServers.put(cluster.get(i).topologyService().localMember(), new RaftServerImpl(
                 cluster.get(i),
                 FACTORY,
-                1000,
-                Map.of()
+                true
             ));
         }
 
@@ -226,10 +227,11 @@ public class ITDistributedTableTest {
 
             String grpId = "part-" + p;
 
-            rs.setListener(grpId, new PartitionCommandListener());
+            List<Peer> conf = List.of(new Peer(partNodes.get(0).address()));
 
-            partMap.put(p, new RaftGroupServiceImpl(grpId, client, FACTORY, 10_000,
-                List.of(new Peer(partNodes.get(0))), true, 200));
+            rs.startRaftGroup(grpId, new PartitionListener(), conf);
+
+            partMap.put(p, new RaftGroupServiceImpl(grpId, client, FACTORY, 10_000, conf, true, 200, true));
 
             p++;
         }

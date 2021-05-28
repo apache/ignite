@@ -26,11 +26,19 @@ public class RaftErrorResponseImpl implements RaftErrorResponse, RaftErrorRespon
     private RaftErrorCode errorCode;
 
     /** */
+    private String errorMsg;
+
+    /** */
     private Peer newLeader;
 
     /** {@inheritDoc} */
     @Override public RaftErrorCode errorCode() {
         return errorCode;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String errorMessage() {
+        return errorMsg;
     }
 
     /** {@inheritDoc} */
@@ -41,6 +49,13 @@ public class RaftErrorResponseImpl implements RaftErrorResponse, RaftErrorRespon
     /** {@inheritDoc} */
     @Override public Builder errorCode(RaftErrorCode errorCode) {
         this.errorCode = errorCode;
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Builder errorMessage(String errorMsg) {
+        this.errorMsg = errorMsg;
 
         return this;
     }

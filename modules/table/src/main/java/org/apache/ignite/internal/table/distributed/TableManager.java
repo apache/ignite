@@ -46,7 +46,7 @@ import org.apache.ignite.internal.schema.SchemaRegistry;
 import org.apache.ignite.internal.schema.event.SchemaEvent;
 import org.apache.ignite.internal.schema.event.SchemaEventParameters;
 import org.apache.ignite.internal.table.TableImpl;
-import org.apache.ignite.internal.table.distributed.raft.PartitionCommandListener;
+import org.apache.ignite.internal.table.distributed.raft.PartitionListener;
 import org.apache.ignite.internal.table.distributed.storage.InternalTableImpl;
 import org.apache.ignite.internal.table.event.TableEvent;
 import org.apache.ignite.internal.table.event.TableEventParameters;
@@ -138,7 +138,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
             partitionMap.put(p, raftMgr.startRaftGroup(
                 raftGroupName(tblId, p),
                 assignment.get(p),
-                new PartitionCommandListener()
+                new PartitionListener()
             ));
         }
 

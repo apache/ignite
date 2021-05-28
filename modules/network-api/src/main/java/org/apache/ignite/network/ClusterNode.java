@@ -40,6 +40,10 @@ public class ClusterNode implements Serializable {
     private String address;
 
     /**
+     * @param id The id.
+     * @param name The unique node name.
+     * @param host The host.
+     * @param port The port.
      * @param id Local id that changes between restarts.
      * @param name Unique name of member in cluster.
      * @param host Node host.

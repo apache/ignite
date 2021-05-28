@@ -18,22 +18,9 @@
 package org.apache.ignite.raft.server;
 
 import java.util.List;
-import java.util.Map;
-import org.apache.ignite.lang.IgniteLogger;
-import org.apache.ignite.network.ClusterLocalConfiguration;
+import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;
-import org.apache.ignite.network.ClusterServiceFactory;
-import org.apache.ignite.network.internal.recovery.message.HandshakeStartMessage;
-import org.apache.ignite.network.internal.recovery.message.HandshakeStartMessageSerializationFactory;
-import org.apache.ignite.network.internal.recovery.message.HandshakeStartResponseMessage;
-import org.apache.ignite.network.internal.recovery.message.HandshakeStartResponseMessageSerializationFactory;
-import org.apache.ignite.network.scalecube.TestScaleCubeClusterServiceFactory;
-import org.apache.ignite.network.scalecube.message.ScaleCubeMessage;
-import org.apache.ignite.network.scalecube.message.ScaleCubeMessageSerializationFactory;
-import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 import org.apache.ignite.raft.client.Peer;
-import org.apache.ignite.raft.client.message.RaftClientMessageFactory;
-import org.apache.ignite.raft.client.message.impl.RaftClientMessageFactoryImpl;
 import org.apache.ignite.raft.client.service.RaftGroupService;
 import org.apache.ignite.raft.client.service.impl.RaftGroupServiceImpl;
 import org.apache.ignite.raft.server.impl.RaftServerImpl;
@@ -44,48 +31,25 @@ import org.junit.jupiter.api.TestInfo;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** */
-class ITRaftCounterServerTest {
-    /** The logger. */
-    private static final IgniteLogger LOG = IgniteLogger.forClass(ITRaftCounterServerTest.class);
+class ITRaftCounterServerTest extends RaftCounterServerAbstractTest {
+    /** */
+    protected RaftServer server;
 
     /** */
-    private static final RaftClientMessageFactory FACTORY = new RaftClientMessageFactoryImpl();
-
-    /** Network factory. */
-    private static final ClusterServiceFactory NETWORK_FACTORY = new TestScaleCubeClusterServiceFactory();
+    protected static final String COUNTER_GROUP_ID_0 = "counter0";
 
     /** */
-    private static final MessageSerializationRegistry SERIALIZATION_REGISTRY = new MessageSerializationRegistry()
-        .registerFactory(ScaleCubeMessage.TYPE, new ScaleCubeMessageSerializationFactory())
-        .registerFactory(HandshakeStartMessage.TYPE, new HandshakeStartMessageSerializationFactory())
-        .registerFactory(HandshakeStartResponseMessage.TYPE, new HandshakeStartResponseMessageSerializationFactory());
+    protected static final String COUNTER_GROUP_ID_1 = "counter1";
 
     /** */
-    private RaftServer server;
+    protected RaftGroupService client1;
 
     /** */
-    private ClusterService client;
-
-    /** */
-    private static final String SERVER_ID = "testServer";
-
-    /** Server id 2. */
-    private static final String SERVER_ID_2 = "testServer2";
-
-    /** */
-    private static final String CLIENT_ID = "testClient";
-
-    /** */
-    private static final String COUNTER_GROUP_ID_0 = "counter0";
-
-    /** */
-    private static final String COUNTER_GROUP_ID_1 = "counter1";
-
-    /** Counter group id 3. */
-    private static final String COUNTER_GROUP_ID_3 = "counter3";
+    protected RaftGroupService client2;
 
     /**
      * @param testInfo Test info.
@@ -94,140 +58,71 @@ class ITRaftCounterServerTest {
     void before(TestInfo testInfo) {
         LOG.info(">>>> Starting test " + testInfo.getTestMethod().orElseThrow().getName());
 
-        server = new RaftServerImpl(startClient(SERVER_ID, 20100, List.of()),
-            FACTORY,
-            1000,
-            Map.of(COUNTER_GROUP_ID_0, new CounterCommandListener(), COUNTER_GROUP_ID_1, new CounterCommandListener()));
+        String id = "localhost:" + PORT;
 
-        client = startClient(CLIENT_ID, 20101, List.of("localhost:20100"));
+        ClusterService service = clusterService(id, PORT, List.of(), false);
 
-        assertTrue(waitForTopology(client, 2, 1000));
+        server = new RaftServerImpl(service, FACTORY, false);
+
+        ClusterNode serverNode = this.server.clusterService().topologyService().localMember();
+
+        this.server.startRaftGroup(COUNTER_GROUP_ID_0, new CounterListener(), List.of(new Peer(serverNode.address())));
+        this.server.startRaftGroup(COUNTER_GROUP_ID_1, new CounterListener(), List.of(new Peer(serverNode.address())));
+
+        ClusterService clientNode1 = clusterService("localhost:" + (PORT + 1), PORT + 1, List.of(id), false);
+
+        client1 = new RaftGroupServiceImpl(COUNTER_GROUP_ID_0, clientNode1, FACTORY, 1000, List.of(new Peer(serverNode.address())), false, 200, false);
+
+        ClusterService clientNode2 = clusterService("localhost:" + (PORT + 2), PORT + 2, List.of(id), false);
+
+        client2 = new RaftGroupServiceImpl(COUNTER_GROUP_ID_1, clientNode2, FACTORY, 1000, List.of(new Peer(serverNode.address())), false, 200, false);
+
+        assertTrue(waitForTopology(service, 2, 1000));
+        assertTrue(waitForTopology(clientNode1, 2, 1000));
+        assertTrue(waitForTopology(clientNode2, 2, 1000));
     }
 
-    /**
-     * @throws Exception
-     */
+    /** */
     @AfterEach
     void after() throws Exception {
         server.shutdown();
-        client.shutdown();
+        client1.shutdown();
+        client2.shutdown();
     }
 
     /**
-     * @throws Exception
+     * Tests if a leader is fetched correctly.
      */
     @Test
-    public void testTwoServer() throws Exception {
-        RaftServer raftServer2 = new RaftServerImpl(startClient(SERVER_ID_2, 20102, List.of("localhost:20100")),
-            FACTORY,
-            1000,
-            Map.of(COUNTER_GROUP_ID_3, new CounterCommandListener()));
+    public void testRefreshLeader() throws Exception {
+        Peer leader = client1.leader();
 
-        assertTrue(waitForTopology(client, 3, 10_000), "Nodes: " + client.topologyService().allMembers().size());
+        assertNull(leader);
 
-        Peer server = new Peer(client.topologyService().allMembers().stream().filter(m -> SERVER_ID.equals(m.name())).findFirst().orElseThrow());
-        Peer server2 = new Peer(client.topologyService().allMembers().stream().filter(m -> SERVER_ID_2.equals(m.name())).findFirst().orElseThrow());
+        client1.refreshLeader().get();
 
-        RaftGroupService service = new RaftGroupServiceImpl(COUNTER_GROUP_ID_0, client, FACTORY, 1000,
-            List.of(server), true, 200);
-
-        RaftGroupService service2 = new RaftGroupServiceImpl(COUNTER_GROUP_ID_3, client, FACTORY, 1000,
-            List.of(server2), true, 200);
-
-        Peer leader = service.leader();
-        Peer leader2 = service2.leader();
-
-        assertEquals(server.getNode().name(), leader.getNode().name());
-        assertEquals(server2.getNode().name(), leader2.getNode().name());
-
-        assertEquals(0, service.<Integer>run(new GetValueCommand()).get());
-        assertEquals(0, service2.<Integer>run(new GetValueCommand()).get());
-
-        assertEquals(2, service.<Integer>run(new IncrementAndGetCommand(2)).get());
-        assertEquals(2, service2.<Integer>run(new IncrementAndGetCommand(2)).get());
-
-        assertEquals(2, service.<Integer>run(new GetValueCommand()).get());
-        assertEquals(2, service2.<Integer>run(new GetValueCommand()).get());
-
-        raftServer2.shutdown();
+        assertNotNull(client1.leader());
     }
 
     /**
-     */
-    @Test
-    public void testRefreshLeader() {
-        Peer server = new Peer(client.topologyService().allMembers().stream().filter(m -> SERVER_ID.equals(m.name())).findFirst().orElseThrow());
-
-        RaftGroupService service = new RaftGroupServiceImpl(COUNTER_GROUP_ID_0, client, FACTORY, 1000,
-            List.of(server), true, 200);
-
-        Peer leader = service.leader();
-
-        assertNotNull(leader);
-        assertEquals(server.getNode().name(), leader.getNode().name());
-    }
-
-    /**
-     * @throws Exception
+     * Tests raft group listener.
      */
     @Test
     public void testCounterCommandListener() throws Exception {
-        Peer server = new Peer(client.topologyService().allMembers().stream().filter(m -> SERVER_ID.equals(m.name())).findFirst().orElseThrow());
+        client1.refreshLeader().get();
+        client2.refreshLeader().get();
 
-        RaftGroupService service0 = new RaftGroupServiceImpl(COUNTER_GROUP_ID_0, client, FACTORY, 1000,
-            List.of(server), true, 200);
+        assertNotNull(client1.leader());
+        assertNotNull(client2.leader());
 
-        RaftGroupService service1 = new RaftGroupServiceImpl(COUNTER_GROUP_ID_1, client, FACTORY, 1000,
-            List.of(server), true, 200);
+        assertEquals(2, client1.<Long>run(new IncrementAndGetCommand(2)).get());
+        assertEquals(2, client1.<Long>run(new GetValueCommand()).get());
+        assertEquals(3, client1.<Long>run(new IncrementAndGetCommand(1)).get());
+        assertEquals(3, client1.<Long>run(new GetValueCommand()).get());
 
-        assertNotNull(service0.leader());
-        assertNotNull(service1.leader());
-
-        assertEquals(2, service0.<Integer>run(new IncrementAndGetCommand(2)).get());
-        assertEquals(2, service0.<Integer>run(new GetValueCommand()).get());
-        assertEquals(3, service0.<Integer>run(new IncrementAndGetCommand(1)).get());
-        assertEquals(3, service0.<Integer>run(new GetValueCommand()).get());
-
-        assertEquals(4, service1.<Integer>run(new IncrementAndGetCommand(4)).get());
-        assertEquals(4, service1.<Integer>run(new GetValueCommand()).get());
-        assertEquals(7, service1.<Integer>run(new IncrementAndGetCommand(3)).get());
-        assertEquals(7, service1.<Integer>run(new GetValueCommand()).get());
-    }
-
-    /**
-     * @param name Node name.
-     * @param port Local port.
-     * @param servers Server nodes of the cluster.
-     * @return The client cluster view.
-     */
-    private ClusterService startClient(String name, int port, List<String> servers) {
-        var context = new ClusterLocalConfiguration(name, port, servers, SERIALIZATION_REGISTRY);
-        var network = NETWORK_FACTORY.createClusterService(context);
-        network.start();
-        return network;
-    }
-
-    /**
-     * @param cluster The cluster.
-     * @param expected Expected count.
-     * @param timeout The timeout in millis.
-     * @return {@code True} if topology size is equal to expected.
-     */
-    private boolean waitForTopology(ClusterService cluster, int expected, int timeout) {
-        long stop = System.currentTimeMillis() + timeout;
-
-        while(System.currentTimeMillis() < stop) {
-            if (cluster.topologyService().allMembers().size() >= expected)
-                return true;
-
-            try {
-                Thread.sleep(50);
-            }
-            catch (InterruptedException e) {
-                return false;
-            }
-        }
-
-        return false;
+        assertEquals(4, client2.<Long>run(new IncrementAndGetCommand(4)).get());
+        assertEquals(4, client2.<Long>run(new GetValueCommand()).get());
+        assertEquals(7, client2.<Long>run(new IncrementAndGetCommand(3)).get());
+        assertEquals(7, client2.<Long>run(new GetValueCommand()).get());
     }
 }

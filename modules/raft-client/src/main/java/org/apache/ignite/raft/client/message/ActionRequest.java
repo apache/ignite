@@ -35,8 +35,19 @@ public interface ActionRequest<T> extends NetworkMessage, Serializable {
      */
     Command command();
 
+    /**
+     * @return {@code True} for linearizable reading.
+     */
+    boolean readOnlySafe();
+
     /** */
     public interface Builder {
+        /**
+         * @param groupId Group id.
+         * @return The builder.
+         */
+        Builder groupId(String groupId);
+
         /**
          * @param cmd Action's command.
          * @return The builder.
@@ -44,10 +55,10 @@ public interface ActionRequest<T> extends NetworkMessage, Serializable {
         Builder command(Command cmd);
 
         /**
-         * @param groupId Group id.
+         * @param readOnlySafe Read only safe flag.
          * @return The builder.
          */
-        Builder groupId(String groupId);
+        Builder readOnlySafe(boolean readOnlySafe);
 
         /**
          * @return The complete message.

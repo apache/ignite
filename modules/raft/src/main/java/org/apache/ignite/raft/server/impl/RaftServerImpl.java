@@ -17,9 +17,9 @@
 
 package org.apache.ignite.raft.server.impl;
 
+import java.io.Serializable;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -34,35 +34,34 @@ import org.apache.ignite.raft.client.Peer;
 import org.apache.ignite.raft.client.RaftErrorCode;
 import org.apache.ignite.raft.client.ReadCommand;
 import org.apache.ignite.raft.client.WriteCommand;
-import org.apache.ignite.raft.client.exception.RaftException;
 import org.apache.ignite.raft.client.message.ActionRequest;
 import org.apache.ignite.raft.client.message.GetLeaderRequest;
 import org.apache.ignite.raft.client.message.GetLeaderResponse;
 import org.apache.ignite.raft.client.message.RaftClientMessageFactory;
 import org.apache.ignite.raft.client.message.RaftErrorResponse;
 import org.apache.ignite.raft.client.service.CommandClosure;
-import org.apache.ignite.raft.client.service.RaftGroupCommandListener;
+import org.apache.ignite.raft.client.service.RaftGroupListener;
 import org.apache.ignite.raft.server.RaftServer;
-import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * A single node server implementation.
+ * A single node service implementation.
  */
 public class RaftServerImpl implements RaftServer {
+    /** */
+    private static final int QUEUE_SIZE = 1000;
+
     /** The logger. */
     private static final IgniteLogger LOG = IgniteLogger.forClass(RaftServerImpl.class);
-
-    /** */
-    private final String id;
 
     /** */
     private final RaftClientMessageFactory clientMsgFactory;
 
     /** */
-    private final ClusterService server;
+    private final ClusterService service;
 
     /** */
-    private final ConcurrentMap<String, RaftGroupCommandListener> listeners = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, RaftGroupListener> listeners = new ConcurrentHashMap<>();
 
     /** */
     private final BlockingQueue<CommandClosureEx<ReadCommand>> readQueue;
@@ -76,41 +75,39 @@ public class RaftServerImpl implements RaftServer {
     /** */
     private final Thread writeWorker;
 
+    /** */
+    private final boolean reuse;
+
     /**
      * @param service Network service.
      * @param clientMsgFactory Client message factory.
-     * @param queueSize Queue size.
-     * @param listeners Command listeners.
+     * @param reuse {@code True} to reuse cluster service.
      */
     public RaftServerImpl(
         ClusterService service,
-        @NotNull RaftClientMessageFactory clientMsgFactory,
-        int queueSize,
-        Map<String, RaftGroupCommandListener> listeners
+        RaftClientMessageFactory clientMsgFactory,
+        boolean reuse
     ) {
+        Objects.requireNonNull(service);
         Objects.requireNonNull(clientMsgFactory);
 
-        this.id = service.topologyService().localMember().name();
+        this.service = service;
         this.clientMsgFactory = clientMsgFactory;
+        this.reuse = reuse;
 
-        if (listeners != null)
-            this.listeners.putAll(listeners);
+        readQueue = new ArrayBlockingQueue<>(QUEUE_SIZE);
+        writeQueue = new ArrayBlockingQueue<>(QUEUE_SIZE);
 
-        readQueue = new ArrayBlockingQueue<>(queueSize);
-        writeQueue = new ArrayBlockingQueue<>(queueSize);
-
-        server = service;
-
-        server.messagingService().addMessageHandler((message, sender, correlationId) -> {
+        service.messagingService().addMessageHandler((message, sender, correlationId) -> {
             if (message instanceof GetLeaderRequest) {
-                GetLeaderResponse resp = clientMsgFactory.getLeaderResponse().leader(new Peer(server.topologyService().localMember())).build();
+                GetLeaderResponse resp = clientMsgFactory.getLeaderResponse().leader(new Peer(service.topologyService().localMember().address())).build();
 
-                server.messagingService().send(sender, resp, correlationId);
+                service.messagingService().send(sender, resp, correlationId);
             }
             else if (message instanceof ActionRequest) {
                 ActionRequest<?> req0 = (ActionRequest<?>)message;
 
-                RaftGroupCommandListener lsnr = RaftServerImpl.this.listeners.get(req0.groupId());
+                RaftGroupListener lsnr = RaftServerImpl.this.listeners.get(req0.groupId());
 
                 if (lsnr == null) {
                     sendError(sender, correlationId, RaftErrorCode.ILLEGAL_STATE);
@@ -118,66 +115,84 @@ public class RaftServerImpl implements RaftServer {
                     return;
                 }
 
-                if (req0.command() instanceof ReadCommand) {
+                if (req0.command() instanceof ReadCommand)
                     handleActionRequest(sender, req0, correlationId, readQueue, lsnr);
-                }
-                else {
+                else
                     handleActionRequest(sender, req0, correlationId, writeQueue, lsnr);
-                }
             }
-            else {
-                LOG.warn("Unsupported message class " + message.getClass().getName());
-            }
+            // TODO https://issues.apache.org/jira/browse/IGNITE-14775
         });
 
-        readWorker = new Thread(() -> processQueue(readQueue, RaftGroupCommandListener::onRead), "read-cmd-worker#" + id);
+        if (!reuse)
+            service.start();
+
+        readWorker = new Thread(() -> processQueue(readQueue, RaftGroupListener::onRead), "read-cmd-worker#" + service.topologyService().localMember().toString());
         readWorker.setDaemon(true);
         readWorker.start();
 
-        writeWorker = new Thread(() -> processQueue(writeQueue, RaftGroupCommandListener::onWrite), "write-cmd-worker#" + id);
+        writeWorker = new Thread(() -> processQueue(writeQueue, RaftGroupListener::onWrite), "write-cmd-worker#" + service.topologyService().localMember().toString());
         writeWorker.setDaemon(true);
         writeWorker.start();
 
-        LOG.info("Started replication server [node=" + server.topologyService().localMember() + ']');
+        LOG.info("Started replication server [node=" + service.toString() + ']');
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterNode localMember() {
-        return server.topologyService().localMember();
+    @Override public ClusterService clusterService() {
+        return service;
     }
 
     /** {@inheritDoc} */
-    @Override public void setListener(String groupId, RaftGroupCommandListener lsnr) {
+    @Override public synchronized boolean startRaftGroup(String groupId, RaftGroupListener lsnr, List<Peer> initialConf) {
+        if (listeners.containsKey(groupId))
+            return false;
+
         listeners.put(groupId, lsnr);
+
+        return true;
     }
 
     /** {@inheritDoc} */
-    @Override public void clearListener(String groupId) {
-        listeners.remove(groupId);
+    @Override public synchronized boolean stopRaftGroup(String groupId) {
+        return listeners.remove(groupId) != null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable Peer localPeer(String groupId) {
+        return new Peer(service.topologyService().localMember().address());
     }
 
     /** {@inheritDoc} */
     @Override public synchronized void shutdown() throws Exception {
-        server.shutdown();
-
         readWorker.interrupt();
         readWorker.join();
 
         writeWorker.interrupt();
         writeWorker.join();
 
-        LOG.info("Stopped replication server [node=" + server.topologyService().localMember() + ']');
+        if (!reuse)
+            service.shutdown();
+
+        LOG.info("Stopped replication server [node=" + service.toString() + ']');
     }
 
+    /**
+     * @param sender The sender.
+     * @param req The request.
+     * @param corellationId Corellation id.
+     * @param queue The queue.
+     * @param lsnr The listener.
+     * @param <T> Command type.
+     */
     private <T extends Command> void handleActionRequest(
         ClusterNode sender,
         ActionRequest<?> req,
         String corellationId,
         BlockingQueue<CommandClosureEx<T>> queue,
-        RaftGroupCommandListener lsnr
+        RaftGroupListener lsnr
     ) {
         if (!queue.offer(new CommandClosureEx<>() {
-            @Override public RaftGroupCommandListener listener() {
+            @Override public RaftGroupListener listener() {
                 return lsnr;
             }
 
@@ -185,13 +200,9 @@ public class RaftServerImpl implements RaftServer {
                 return (T)req.command();
             }
 
-            @Override public void success(Object res) {
+            @Override public void result(Serializable res) {
                 var msg = clientMsgFactory.actionResponse().result(res).build();
-                server.messagingService().send(sender, msg, corellationId);
-            }
-
-            @Override public void failure(Throwable t) {
-                sendError(sender, corellationId, RaftErrorCode.ILLEGAL_STATE);
+                service.messagingService().send(sender, msg, corellationId);
             }
         })) {
             // Queue out of capacity.
@@ -199,23 +210,28 @@ public class RaftServerImpl implements RaftServer {
         }
     }
 
+    /**
+     * @param queue The queue.
+     * @param clo The closure.
+     * @param <T> Command type.
+     */
     private <T extends Command> void processQueue(
         BlockingQueue<CommandClosureEx<T>> queue,
-        BiConsumer<RaftGroupCommandListener, Iterator<CommandClosure<T>>> clo
+        BiConsumer<RaftGroupListener, Iterator<CommandClosure<T>>> clo
     ) {
         while (!Thread.interrupted()) {
             try {
                 CommandClosureEx<T> cmdClo = queue.take();
 
-                RaftGroupCommandListener lsnr = cmdClo.listener();
+                RaftGroupListener lsnr = cmdClo.listener();
 
-                if (lsnr == null)
-                    cmdClo.failure(new RaftException(RaftErrorCode.ILLEGAL_STATE));
-                else
-                    clo.accept(lsnr, List.<CommandClosure<T>>of(cmdClo).iterator());
+                clo.accept(lsnr, List.<CommandClosure<T>>of(cmdClo).iterator());
             }
-            catch (InterruptedException e) {
+            catch (InterruptedException e0) {
                 return;
+            }
+            catch (Exception e) {
+                LOG.error("Failed to process the command", e);
             }
         }
     }
@@ -223,10 +239,14 @@ public class RaftServerImpl implements RaftServer {
     private void sendError(ClusterNode sender, String corellationId, RaftErrorCode errorCode) {
         RaftErrorResponse resp = clientMsgFactory.raftErrorResponse().errorCode(errorCode).build();
 
-        server.messagingService().send(sender, resp, corellationId);
+        service.messagingService().send(sender, resp, corellationId);
     }
 
+    /** */
     private interface CommandClosureEx<T extends Command> extends CommandClosure<T> {
-        RaftGroupCommandListener listener();
+        /**
+         * @return The listener.
+         */
+        RaftGroupListener listener();
     }
 }

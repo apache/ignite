@@ -22,19 +22,19 @@ import org.apache.ignite.raft.client.WriteCommand;
 /** */
 public class IncrementAndGetCommand implements WriteCommand {
     /** */
-    private final int delta;
+    private final long delta;
 
     /**
      * @param delta The delta.
      */
-    public IncrementAndGetCommand(int delta) {
+    public IncrementAndGetCommand(long delta) {
         this.delta = delta;
     }
 
     /**
      * @return The delta.
      */
-    public int delta() {
+    public long delta() {
         return delta;
     }
 }
