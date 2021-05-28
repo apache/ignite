@@ -35,6 +35,12 @@ public class HintUtils {
     }
 
     /** */
+    public static boolean containsDisabledRules(ImmutableList<RelHint> hints) {
+        return hints.stream()
+            .anyMatch(h -> "DISABLE_RULE".equals(h.hintName) && !h.listOptions.isEmpty());
+    }
+
+    /** */
     public static Set<String> disabledRules(ImmutableList<RelHint> hints) {
         if (F.isEmpty(hints))
             return Collections.emptySet();

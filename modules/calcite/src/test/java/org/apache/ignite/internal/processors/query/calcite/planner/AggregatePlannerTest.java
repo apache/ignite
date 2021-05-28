@@ -227,18 +227,17 @@ public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
         publicSchema.addTable("TEST", tbl);
 
         String sql = "SELECT " +
-//            "/*+ EXPAND_DISTINCT_AGG */ " +
-            "/*+ EXPAND_DISTINCT_AGG, DISABLE_RULE('SortSingleAggregateConverterRule', 'SortMapReduceAggregateConverterRule') */ " +
+            "/*+ EXPAND_DISTINCT_AGG */ " +
             "SUM(DISTINCT val0), AVG(DISTINCT val1) FROM test GROUP BY grp0";
 
         IgniteRel phys = physicalPlan(
             sql,
-            publicSchema);
-
-       System.out.println("+++\n" + RelOptUtil.toString(phys, SqlExplainLevel.ALL_ATTRIBUTES));
+            publicSchema,
+            algo.rulesToDisable);
 
         checkSplitAndSerialization(phys, publicSchema);
 
+        // Plan must not contain distinct accumulators.
         assertFalse(
             "Invalid plan\n" + RelOptUtil.toString(phys, SqlExplainLevel.ALL_ATTRIBUTES),
             findNodes(phys, byClass(IgniteAggregate.class)).stream()
@@ -250,6 +249,25 @@ public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
         assertNotNull(
             "Invalid plan\n" + RelOptUtil.toString(phys, SqlExplainLevel.ALL_ATTRIBUTES),
             findFirstNode(phys, byClass(Join.class)));
+
+        // Check the first aggrgation step is SELECT DISTINCT (doesn't contains any accumulators)
+        assertTrue(
+            "Invalid plan\n" + RelOptUtil.toString(phys, SqlExplainLevel.ALL_ATTRIBUTES),
+            findNodes(phys, byClass(algo.reduce)).stream()
+                .allMatch(n -> ((IgniteReduceAggregateBase)n).getAggregateCalls().isEmpty())
+        );
+        assertTrue(
+            "Invalid plan\n" + RelOptUtil.toString(phys, SqlExplainLevel.ALL_ATTRIBUTES),
+            findNodes(phys, byClass(algo.map)).stream()
+                .allMatch(n -> ((IgniteMapAggregateBase)n).getAggCallList().isEmpty())
+        );
+
+        // Check the second aggrgation step contains accumulators.
+        assertTrue(
+            "Invalid plan\n" + RelOptUtil.toString(phys, SqlExplainLevel.ALL_ATTRIBUTES),
+            findNodes(phys, byClass(algo.single)).stream()
+                .noneMatch(n -> ((IgniteSingleAggregateBase)n).getAggCallList().isEmpty())
+        );
     }
 
     /** */

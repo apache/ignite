@@ -72,7 +72,7 @@ public class PlannerHelper {
 
             RelNode rel = root.rel;
 
-            if (!F.isEmpty(root.hints))
+            if (HintUtils.containsDisabledRules(root.hints))
                 planner.setDisabledRules(HintUtils.disabledRules(root.hints));
 
             // Transformation chain
