@@ -245,13 +245,13 @@ public class DataStorageConfiguration implements Serializable {
     /** WAL archive path. */
     private String walArchivePath = DFLT_WAL_ARCHIVE_PATH;
 
-    /** CDC path. */
+    /** Change Data Capture path. */
     @IgniteExperimental
-    private String cdcWalPath = DFLT_WAL_CDC_PATH;
+    private String changeDataCaptureWalPath = DFLT_WAL_CDC_PATH;
 
-    /** CDC enabled flag. */
+    /** Change Data Capture enabled flag. */
     @IgniteExperimental
-    private boolean cdcEnabled;
+    private boolean changeDataCaptureEnabled;
 
     /** Metrics enabled flag. */
     private boolean metricsEnabled = DFLT_METRICS_ENABLED;
@@ -745,20 +745,20 @@ public class DataStorageConfiguration implements Serializable {
      * @return CDC directory.
      */
     @IgniteExperimental
-    public String getCdcWalPath() {
-        return cdcWalPath;
+    public String getChangeDataCaptureWalPath() {
+        return changeDataCaptureWalPath;
     }
 
     /**
      * Sets a path for the CDC directory.
      * Hard link to every WAL Archive segment will be created in it for CDC processing purpose.
      *
-     * @param cdcWalPath CDC directory.
+     * @param changeDataCaptureWalPath CDC directory.
      * @return {@code this} for chaining.
      */
     @IgniteExperimental
-    public DataStorageConfiguration setCdcWalPath(String cdcWalPath) {
-        this.cdcWalPath = cdcWalPath;
+    public DataStorageConfiguration setChangeDataCaptureWalPath(String changeDataCaptureWalPath) {
+        this.changeDataCaptureWalPath = changeDataCaptureWalPath;
 
         return this;
     }
@@ -766,11 +766,11 @@ public class DataStorageConfiguration implements Serializable {
     /**
      * Sets flag indicating whether CDC enabled.
      *
-     * @param cdcEnabled CDC enabled flag.
+     * @param changeDataCaptureEnabled CDC enabled flag.
      */
     @IgniteExperimental
-    public DataStorageConfiguration setCdcEnabled(boolean cdcEnabled) {
-        this.cdcEnabled = cdcEnabled;
+    public DataStorageConfiguration setChangeDataCaptureEnabled(boolean changeDataCaptureEnabled) {
+        this.changeDataCaptureEnabled = changeDataCaptureEnabled;
 
         return this;
     }
@@ -782,8 +782,8 @@ public class DataStorageConfiguration implements Serializable {
      * @return Metrics enabled flag.
      */
     @IgniteExperimental
-    public boolean isCdcEnabled() {
-        return cdcEnabled;
+    public boolean isChangeDataCaptureEnabled() {
+        return changeDataCaptureEnabled;
     }
 
     /**

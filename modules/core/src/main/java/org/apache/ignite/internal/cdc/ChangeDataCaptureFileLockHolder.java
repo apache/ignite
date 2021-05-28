@@ -30,21 +30,21 @@ import org.apache.ignite.internal.processors.cache.persistence.FileLockHolder;
  */
 public class ChangeDataCaptureFileLockHolder extends FileLockHolder {
     /** Consumer ID. */
-    private final Supplier<String> consumerId;
+    private final String consumerId;
 
     /**
      * @param rootDir Root directory for lock file.
      * @param log Log.
      */
-    public ChangeDataCaptureFileLockHolder(String rootDir, Supplier<String> consumerId, IgniteLogger log) {
+    public ChangeDataCaptureFileLockHolder(String rootDir, String consumerId, IgniteLogger log) {
         super(rootDir, log);
 
         this.consumerId = consumerId;
     }
 
     /** {@inheritDoc} */
-    @Override public String lockId() {
-        return "[consumerId=" + consumerId.get() + ",proc=" + ManagementFactory.getRuntimeMXBean().getName() + ']';
+    @Override public String lockInfo() {
+        return "[consumerId=" + consumerId + ",proc=" + ManagementFactory.getRuntimeMXBean().getName() + ']';
 
     }
 

@@ -45,10 +45,10 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPD
  */
 public class WALRecordsConsumer<K, V> {
     /** Ignite logger. */
-    private IgniteLogger log;
+    private final IgniteLogger log;
 
     /** Data change events consumer. */
-    private final ChangeDataCaptureConsumer cdcConsumer;
+    private final ChangeDataCaptureConsumer consumer;
 
     /** Operations types we interested in. */
     private static final EnumSet<GridCacheOperation> OPERATIONS_TYPES = EnumSet.of(CREATE, UPDATE, DELETE, TRANSFORM);
@@ -66,10 +66,12 @@ public class WALRecordsConsumer<K, V> {
     };
 
     /**
-     * @param cdcConsumer User provided CDC consumer.
+     * @param consumer User provided CDC consumer.
+     * @param log Logger.
      */
-    public WALRecordsConsumer(ChangeDataCaptureConsumer cdcConsumer) {
-        this.cdcConsumer = cdcConsumer;
+    public WALRecordsConsumer(ChangeDataCaptureConsumer consumer, IgniteLogger log) {
+        this.consumer = consumer;
+        this.log = log;
     }
 
     /**
@@ -84,7 +86,7 @@ public class WALRecordsConsumer<K, V> {
     public <T extends WALRecord> boolean onRecords(Iterator<T> recs) {
         recs = F.iterator(recs, r -> r, true, r -> r.type() == WALRecord.RecordType.DATA_RECORD_V2);
 
-        return cdcConsumer.onEvents(F.concat(F.iterator(recs, r -> F.iterator(((DataRecord)r).writeEntries(), e -> {
+        return consumer.onEvents(F.concat(F.iterator(recs, r -> F.iterator(((DataRecord)r).writeEntries(), e -> {
             UnwrappedDataEntry ue = (UnwrappedDataEntry)e;
 
             return new ChangeDataCaptureEventImpl(
@@ -101,32 +103,29 @@ public class WALRecordsConsumer<K, V> {
     /**
      * Starts the consumer.
      *
-     * @param log Logger.
      * @throws IgniteCheckedException If failed.
      */
-    public void start(IgniteLogger log) throws IgniteCheckedException {
-        this.log = log;
-
-        cdcConsumer.start();
+    public void start() throws IgniteCheckedException {
+        consumer.start();
 
         if (log.isInfoEnabled())
-            log.info("WalRecordsConsumer started[consumer=" + cdcConsumer.getClass() + ']');
+            log.info("WalRecordsConsumer started[consumer=" + consumer.getClass() + ']');
     }
 
     /**
      * Stops the consumer.
-     * This methods can be invoked only after {@link #start(IgniteLogger)}.
+     * This methods can be invoked only after {@link #start()}.
      */
     public void stop() {
-        cdcConsumer.stop();
+        consumer.stop();
 
         if (log.isInfoEnabled())
-            log.info("WalRecordsConsumer stoped[consumer=" + cdcConsumer.getClass() + ']');
+            log.info("WalRecordsConsumer stoped[consumer=" + consumer.getClass() + ']');
     }
 
     /** @return Change Data Capture Consumer. */
-    public ChangeDataCaptureConsumer getCdcConsumer() {
-        return cdcConsumer;
+    public ChangeDataCaptureConsumer consumer() {
+        return consumer;
     }
 
     /** {@inheritDoc} */

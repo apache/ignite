@@ -51,7 +51,7 @@ public class ChangeDataCaptureConfiguration {
     private long lockTimeout = DFLT_LOCK_TIMEOUT;
 
     /**
-     * CDC application periodically scans {@link DataStorageConfiguration#getCdcWalPath()} folder to find new WAL segments.
+     * CDC application periodically scans {@link DataStorageConfiguration#getChangeDataCaptureWalPath()} folder to find new WAL segments.
      * This frequency specify amount of time application sleeps between subsequent checks when no new files available.
      * Default is {@code 1000 ms}.
      */

@@ -3019,7 +3019,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         /** {@inheritDoc} */
-        @Override public String lockId() {
+        @Override public String lockInfo() {
             SB sb = new SB();
 
             //write node id

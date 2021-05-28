@@ -347,7 +347,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     public static final String SITE = "ignite.apache.org";
 
     /** System line separator. */
-    private static final String NL = U.nl();
+    public static final String NL = U.nl();
 
     /** System megabyte. */
     private static final int MEGABYTE = 1024 * 1024;

@@ -79,7 +79,7 @@ public class ChangeDataCaptureOrderTest extends GridCommonAbstractTest {
         int segmentSz = 10 * 1024 * 1024;
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-            .setCdcEnabled(true)
+            .setChangeDataCaptureEnabled(true)
             .setWalMode(FSYNC)
             .setMaxWalArchiveSize(10 * segmentSz)
             .setWalSegmentSize(segmentSz)

@@ -72,7 +72,7 @@ public class ChangeDataCaptureConfigurationTest extends GridCommonAbstractTest {
             loadChangeDataCapture("modules/spring/src/test/config/cdc/correct-cdc-config.xml");
 
         TestCDCConsumer cnsmr =
-            (TestCDCConsumer)((WALRecordsConsumer<?, ?>)getFieldValue(cdc, "consumer")).getCdcConsumer();
+            (TestCDCConsumer)((WALRecordsConsumer<?, ?>)getFieldValue(cdc, "consumer")).consumer();
 
         assertNotNull(cnsmr);
 
