@@ -155,7 +155,11 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 DataStreamerClientTest.CheckArrayPoolLeak(streamer);
             }
 
-            TestUtils.WaitForTrueCondition(() => id == cache.GetSize());
+            TestUtils.WaitForTrueCondition(
+                () => id == cache.GetSize(), 
+                () => string.Format("Expected: {0}, actual: {1}", id, cache.GetSize()),
+                timeout: 3000);
+            
             Assert.Greater(id, 10000);
 
             Assert.AreEqual(1, cache[1]);
