@@ -38,12 +38,17 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /** */
         private readonly ReaderWriterLockSlim _rwLock = new ReaderWriterLockSlim();
 
-        /** Only the thread that completes the previous buffer can set a new one to this field. */
+        /** */
         private volatile DataStreamerClientBuffer<TK, TV> _buffer;
 
         /** */
         private volatile bool _closed;
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="DataStreamerClientPerNodeBuffer{TK,TV}"/>.
+        /// </summary>
+        /// <param name="client">Streamer.</param>
+        /// <param name="socket">Socket for the node.</param>
         public DataStreamerClientPerNodeBuffer(DataStreamerClient<TK, TV> client, ClientSocket socket)
         {
             Debug.Assert(client != null);
@@ -55,6 +60,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             _buffer = new DataStreamerClientBuffer<TK, TV>(_client.GetPooledArray(), this, null);
         }
 
+        /// <summary>
+        /// Adds an entry to the buffer.
+        /// </summary>
         public bool Add(DataStreamerClientEntry<TK,TV> entry)
         {
             if (!_rwLock.TryEnterReadLock(0))
@@ -117,6 +125,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
         }
 
+        /// <summary>
+        /// Flushes all buffers asynchronously.
+        /// </summary>
         public Task FlushAllAsync()
         {
             var buffer = _buffer;
@@ -125,9 +136,11 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             return buffer.GetChainFlushTask();
         }
 
-        internal Task FlushAsync(DataStreamerClientBuffer<TK, TV> buffer)
+        /// <summary>
+        /// Flushes the specified buffer asynchronously.
+        /// </summary>
+        public Task FlushBufferAsync(DataStreamerClientBuffer<TK, TV> buffer)
         {
-            // Stateless mode: every client client-side buffer creates a one-off streamer on the server.
             return _client.FlushBufferAsync(buffer, _socket, _semaphore);
         }
     }

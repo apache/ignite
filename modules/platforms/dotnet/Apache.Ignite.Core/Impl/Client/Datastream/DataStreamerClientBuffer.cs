@@ -245,7 +245,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             // for completions?
 
             // NOTE: Continuation runs on socket thread - set result on thread pool.
-            _parent.FlushAsync(this).ContinueWith(
+            _parent.FlushBufferAsync(this).ContinueWith(
                 t => ThreadPool.QueueUserWorkItem(buf =>
                     ((DataStreamerClientBuffer<TK, TV>)buf).OnFlushed(t.Exception), this),
                 TaskContinuationOptions.ExecuteSynchronously);
