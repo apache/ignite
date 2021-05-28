@@ -57,7 +57,7 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
     private static final AtomicBoolean LOAD = new AtomicBoolean(true);
 
     /** */
-    private static final AtomicLong CNTR = new AtomicLong();
+    private static final AtomicLong LOAD_COUNTER = new AtomicLong();
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -74,7 +74,7 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
 
         LOAD.set(true);
 
-        CNTR.set(0);
+        LOAD_COUNTER.set(0);
     }
 
     /**
@@ -163,7 +163,7 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
             LOAD.set(false);
         }
 
-        assertTrue(waitForCondition(() -> logicalReads(mmgr) == CNTR.get(), TIMEOUT));
+        assertTrue(waitForCondition(() -> logicalReads(mmgr) == LOAD_COUNTER.get(), TIMEOUT));
     }
 
     /**
@@ -182,7 +182,7 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
 
         new Thread(() -> {
             while (LOAD.get()) {
-                long i = CNTR.incrementAndGet();
+                long i = LOAD_COUNTER.incrementAndGet();
 
                 cache.put(i, i);
             }
