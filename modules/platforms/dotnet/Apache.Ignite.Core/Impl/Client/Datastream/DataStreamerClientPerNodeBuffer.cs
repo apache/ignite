@@ -88,11 +88,13 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
                     var entryArray = _client.GetPooledArray();
 
+#pragma warning disable 0420 // A reference to a volatile field will not be treated as volatile (not a problem)
                     if (Interlocked.CompareExchange(ref _buffer,
                         new DataStreamerClientBuffer<TK, TV>(entryArray, this, buffer), buffer) != buffer)
                     {
                         _client.ReturnPooledArray(entryArray);
                     }
+#pragma warning restore 0420 // A reference to a volatile field will not be treated as volatile
                 }
 
                 return true;
