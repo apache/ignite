@@ -50,6 +50,9 @@ namespace Apache.Ignite.Core.Client.Datastream
         /** */
         private int _perNodeBufferSize;
 
+        /** */
+        private TimeSpan _autoFlushInterval;
+
         /// <summary>
         /// Initializes a new instance of <see cref="DataStreamerClientOptions"/>.
         /// </summary>
@@ -134,7 +137,7 @@ namespace Apache.Ignite.Core.Client.Datastream
                 _perNodeParallelOperations = value;
             }
         }
-        
+
         /// <summary>
         /// Gets or sets the automatic flush interval. Data streamer buffers the data for performance reasons.
         /// The buffer is flushed in the following cases:
@@ -148,7 +151,15 @@ namespace Apache.Ignite.Core.Client.Datastream
         /// <para />
         /// Default is <see cref="TimeSpan.Zero"/> (disabled).
         /// </summary>
-        public TimeSpan AutoFlushInterval { get; set; }
+        public TimeSpan AutoFlushInterval
+        {
+            get { return _autoFlushInterval; }
+            set
+            {
+                IgniteArgumentCheck.Ensure(value >= TimeSpan.Zero, "value", "should be >= 0");
+                _autoFlushInterval = value;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the receiver object.
