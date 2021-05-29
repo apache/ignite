@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.IO;
     using System.Net.Sockets;
     using System.Threading;
     using System.Threading.Tasks;
@@ -30,10 +31,12 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Datastream;
+    using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
 
     /// <summary>
     /// Thin client data streamer.
     /// TODO:
+    /// * Run tests on Windows
     /// * Benchmark re-run and results cleanup.
     /// * Coyote testing?
     /// </summary>
@@ -621,7 +624,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 exception = aggregate.GetBaseException();
             }
 
-            if (exception is SocketException)
+            if (exception is SocketException || exception is IOException)
             {
                 return true;
             }
