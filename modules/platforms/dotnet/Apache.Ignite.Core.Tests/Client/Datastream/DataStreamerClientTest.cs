@@ -664,6 +664,9 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             }
         }
 
+        /// <summary>
+        /// Tests that streamer gets closed when automatic flush encounters a fatal error (cache does not exist).
+        /// </summary>
         [Test]
         public void TestAutoFlushClosesStreamerWhenCacheDoesNotExist()
         {
@@ -689,6 +692,9 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
 #if NETCOREAPP
 
+        /// <summary>
+        /// Tests streaming with async/await.
+        /// </summary>
         [Test]
         public async Task TestStreamingAsyncAwait()
         {
