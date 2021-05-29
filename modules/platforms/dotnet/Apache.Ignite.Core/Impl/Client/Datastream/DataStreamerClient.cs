@@ -35,6 +35,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     /// Thin client data streamer.
     /// TODO:
     /// * Benchmark re-run and results cleanup.
+    /// * Coyote testing?
     /// </summary>
     internal sealed class DataStreamerClient<TK, TV> : IDataStreamerClient<TK, TV>
     {
