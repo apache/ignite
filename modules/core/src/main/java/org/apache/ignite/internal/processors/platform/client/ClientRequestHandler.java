@@ -148,7 +148,6 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
         return protocolCtx.version();
     }
 
-
     /**
      * Gets the status based on the provided exception.
      *

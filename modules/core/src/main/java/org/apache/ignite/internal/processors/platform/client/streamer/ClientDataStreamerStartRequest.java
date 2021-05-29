@@ -147,7 +147,6 @@ public class ClientDataStreamerStartRequest extends ClientRequest {
         return (flags & KEEP_BINARY) != 0;
     }
 
-
     /**
      * Creates the receiver.
      *

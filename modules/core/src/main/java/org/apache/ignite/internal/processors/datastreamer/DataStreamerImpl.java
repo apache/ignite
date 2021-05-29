@@ -1459,7 +1459,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
      * @throws org.apache.ignite.plugin.security.SecurityException If permissions are not enough for streaming.
      */
     private void checkSecurityPermissions(Collection<? extends DataStreamerEntry> entries)
-            throws org.apache.ignite.plugin.security.SecurityException{
+            throws org.apache.ignite.plugin.security.SecurityException {
         if (!ctx.security().enabled())
             return;
 

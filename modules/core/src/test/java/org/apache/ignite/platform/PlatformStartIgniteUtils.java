@@ -19,7 +19,6 @@ package org.apache.ignite.platform;
 
 import java.security.Permissions;
 
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
