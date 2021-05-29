@@ -346,6 +346,10 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             Assert.AreEqual(-100, serverCache[100]);
         }
 
+        /// <summary>
+        /// Tests that add method gets blocked when the number of active flush operations for a node
+        /// exceeds <see cref="DataStreamerClientOptions.PerNodeParallelOperations"/>.
+        /// </summary>
         [Test]
         public void TestExceedingPerNodeParallelOperationsBlocksAddMethod()
         {
@@ -385,8 +389,11 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             Assert.AreEqual(3, serverCache.GetSize());
         }
 
+        /// <summary>
+        /// Tests that <see cref="DataStreamerClientOptions{TK,TV}"/> have correct default values.
+        /// </summary>
         [Test]
-        public void TestOptionsDefaults()
+        public void TestOptionsHaveCorrectDefaults()
         {
             using (var streamer = Client.GetDataStreamer<int, int>(CacheName))
             {
@@ -403,8 +410,11 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             }
         }
 
+        /// <summary>
+        /// Tests that option values are validated on set.
+        /// </summary>
         [Test]
-        public void TestOptionsValidation()
+        public void TestInvalidOptionValuesCauseArgumentException()
         {
             var opts = new DataStreamerClientOptions();
 
@@ -412,6 +422,9 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             Assert.Throws<ArgumentException>(() => opts.PerNodeParallelOperations = -1);
         }
 
+        /// <summary>
+        /// Tests that flush throws a correct exception when cache does not exist.
+        /// </summary>
         [Test]
         public void TestFlushThrowsWhenCacheDoesNotExist()
         {
@@ -425,6 +438,9 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             Assert.IsTrue(streamer.IsClosed);
         }
 
+        /// <summary>
+        /// Tests that flush throws when exception happens in cache store.
+        /// </summary>
         [Test]
         public void TestFlushThrowsOnCacheStoreException()
         {
