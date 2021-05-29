@@ -41,7 +41,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
     {
         /** */
         private const int GridCount = 3;
-        
+
         /// <summary>
         /// Initializes a new instance of <see cref="DataStreamerClientTest"/>.
         /// </summary>
@@ -60,6 +60,9 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             // No-op.
         }
 
+        /// <summary>
+        /// Tests basic streaming with default options.
+        /// </summary>
         [Test]
         public void TestBasicStreaming()
         {
@@ -68,7 +71,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             using (var streamer = Client.GetDataStreamer<int, string>(cache.Name))
             {
                 Assert.AreEqual(cache.Name, streamer.CacheName);
-                
+
                 streamer.Add(1, "1");
                 streamer.Add(2, "2");
             }
@@ -77,6 +80,9 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             Assert.AreEqual("2", cache[2]);
         }
 
+        /// <summary>
+        /// Tests add and remove operations combined.
+        /// </summary>
         [Test]
         public void TestAddRemoveOverwrite()
         {
@@ -107,6 +113,9 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             Assert.AreEqual(new[] {1, 3, 5, 20}, resKeys);
         }
 
+        /// <summary>
+        /// Tests automatic flush when buffer gets full.
+        /// </summary>
         [Test]
         public void TestAutoFlushOnFullBuffer()
         {
@@ -134,6 +143,9 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             }
         }
 
+        /// <summary>
+        /// Tests manual (explicit) flush.
+        /// </summary>
         [Test]
         public void TestManualFlush()
         {
@@ -160,6 +172,10 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             }
         }
 
+        /// <summary>
+        /// Tests that <see cref="IDataStreamerClient{TK,TV}.Remove"/> throws an exception when
+        /// <see cref="DataStreamerClientOptions.AllowOverwrite"/> is not enabled.
+        /// </summary>
         [Test]
         public void TestRemoveNoAllowOverwriteThrows()
         {
@@ -173,6 +189,9 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             }
         }
 
+        /// <summary>
+        /// Tests streaming of relatively long list of entries to verify multiple buffer flush correctness.
+        /// </summary>
         [Test]
         [Category(TestUtils.CategoryIntensive)]
         public void TestStreamLongList()
@@ -193,6 +212,9 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             Assert.AreEqual(-200, cache[200]);
         }
 
+        /// <summary>
+        /// Tests streamer usage from multiple threads.
+        /// </summary>
         [Test]
         [Category(TestUtils.CategoryIntensive)]
         public void TestStreamMultithreaded()
@@ -225,6 +247,10 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             Assert.AreEqual(22, cache[20]);
         }
 
+        /// <summary>
+        /// Tests streamer usage with Parallel.For, which dynamically allocates threads to perform work.
+        /// This test verifies backpressure behavior quite well.
+        /// </summary>
         [Test]
         [Category(TestUtils.CategoryIntensive)]
         public void TestStreamParallelFor()
@@ -236,7 +262,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             {
                 // ReSharper disable once AccessToDisposedClosure
                 Parallel.For(0, count, i => streamer.Add(i, i + 2));
-                
+
                 streamer.Flush();
                 CheckArrayPoolLeak(streamer);
             }
@@ -254,6 +280,9 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             Assert.AreEqual(22, cache[20]);
         }
 
+        /// <summary>
+        /// Tests that disposing the streamer without adding any data does nothing.
+        /// </summary>
         [Test]
         public void TestDisposeWithNoDataAdded()
         {
@@ -267,6 +296,9 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             Assert.AreEqual(0, cache.GetSize());
         }
 
+        /// <summary>
+        /// Tests that closing the streamer without adding any data does nothing.
+        /// </summary>
         [Test]
         public void TestCloseWithNoDataAdded([Values(true, false)] bool cancel)
         {
@@ -280,8 +312,12 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             Assert.AreEqual(0, cache.GetSize());
         }
 
+        /// <summary>
+        /// Tests that enabling <see cref="DataStreamerClientOptions.SkipStore"/> causes cache store to be skipped
+        /// during streaming.
+        /// </summary>
         [Test]
-        public void TestSkipStore()
+        public void TestSkipStoreDoesNotInvokeCacheStore([Values(true, false)] bool allowOverwrite)
         {
             var serverCache = Ignition.GetIgnite().CreateCache<int, int>(new CacheConfiguration
             {
@@ -293,7 +329,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             var options = new DataStreamerClientOptions
             {
                 SkipStore = true,
-                AllowOverwrite = true // Required for cache store to be invoked.
+                AllowOverwrite = allowOverwrite
             };
 
             BlockingCacheStore.Block();
@@ -433,7 +469,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             {
                 AllowOverwrite = true
             };
-            
+
             var streamer = Client.GetDataStreamer<int, int>(CacheName, options);
             streamer.Close(true);
 
@@ -457,7 +493,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 streamer.CloseAsync(true).Wait();
                 streamer.CloseAsync(false).Wait();
             }
-            
+
             Assert.AreEqual(2, GetCache<int>()[1]);
         }
 
@@ -470,7 +506,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 streamer.Add(2, 2);
                 streamer.Close(cancel: true);
             }
-            
+
             Assert.AreEqual(0, GetCache<int>().GetSize());
         }
 
@@ -500,12 +536,12 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             {
                 Receiver = new StreamReceiverAddOne()
             };
-            
+
             using (var streamer = Client.GetDataStreamer(cache.Name, options))
             {
                 streamer.Add(1, 1);
             }
-            
+
             Assert.AreEqual(2, cache[1]);
         }
 
@@ -519,12 +555,12 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 Receiver = new StreamReceiverAddTwoKeepBinary(),
                 ReceiverKeepBinary = true
             };
-            
+
             using (var streamer = Client.GetDataStreamer(cache.Name, options))
             {
                 streamer.Add(1, Client.GetBinary().ToBinary<IBinaryObject>(new Test {Val = 3}));
             }
-            
+
             Assert.AreEqual(5, cache[1].Deserialize<Test>().Val);
         }
 
@@ -541,7 +577,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
             var ex = Assert.Throws<AggregateException>(() => streamer.Flush());
             var clientEx = (IgniteClientException) ex.GetBaseException();
-            
+
             StringAssert.Contains("Failed to finish operation (too many remaps)", clientEx.Message);
         }
 
@@ -558,7 +594,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
             var ex = Assert.Throws<AggregateException>(() => streamer.Flush());
             var clientEx = (IgniteClientException) ex.GetBaseException();
-            
+
             StringAssert.Contains("Failed to finish operation (too many remaps)", clientEx.Message);
         }
 
@@ -570,12 +606,12 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             {
                 AutoFlushInterval = TimeSpan.FromSeconds(0.1)
             };
-            
+
             using (var streamer = Client.GetDataStreamer<int, int>(cache.Name, options))
             {
                 streamer.Add(1, 1);
                 TestUtils.WaitForTrueCondition(() => cache.ContainsKey(1));
-                
+
                 streamer.Add(2, 2);
                 TestUtils.WaitForTrueCondition(() => cache.ContainsKey(2));
             }
@@ -591,7 +627,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
             var streamer = Client.GetDataStreamer<int, int>("bad-cache-name", options);
             streamer.Add(1, 1);
-            
+
             Assert.IsFalse(streamer.IsClosed);
             TestUtils.WaitForTrueCondition(() => streamer.IsClosed);
 
@@ -600,7 +636,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
             Assert.IsNotNull(ex.InnerException);
             var inner = ((AggregateException)ex.InnerException).GetBaseException();
-            
+
             StringAssert.StartsWith("Cache does not exist", inner.Message);
         }
 
@@ -634,11 +670,11 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         internal static void CheckArrayPoolLeak<TK, TV>(IDataStreamerClient<TK, TV> streamer)
         {
             var streamerImpl = (DataStreamerClient<TK, TV>) streamer;
-            
+
             TestUtils.WaitForCondition(() => streamerImpl.ArraysAllocated == streamerImpl.ArraysPooled, 1000);
-                
+
             Assert.AreEqual(streamerImpl.ArraysAllocated, streamerImpl.ArraysPooled, "Pooled arrays should not leak.");
-            
+
             Console.WriteLine("Array pool size: " + streamerImpl.ArraysPooled);
         }
 
@@ -649,7 +685,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 Logger = new TestUtils.TestContextLogger()
             };
         }
-        
+
         private class StreamReceiverAddOne : IStreamReceiver<int, int>
         {
             public void Receive(ICache<int, int> cache, ICollection<ICacheEntry<int, int>> entries)
