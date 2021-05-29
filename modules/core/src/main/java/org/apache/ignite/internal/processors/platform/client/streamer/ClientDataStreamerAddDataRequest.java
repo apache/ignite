@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.platform.client.streamer;
 
+import java.util.Collection;
+
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -25,8 +27,6 @@ import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-
-import java.util.Collection;
 
 import static org.apache.ignite.internal.processors.platform.client.streamer.ClientDataStreamerFlags.CLOSE;
 import static org.apache.ignite.internal.processors.platform.client.streamer.ClientDataStreamerFlags.FLUSH;

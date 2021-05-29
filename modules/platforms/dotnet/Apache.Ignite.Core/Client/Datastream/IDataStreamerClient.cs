@@ -18,11 +18,15 @@
 namespace Apache.Ignite.Core.Client.Datastream
 {
     using System;
-    using System.Collections.Generic;
     using System.Threading.Tasks;
 
     /// <summary>
     /// Thin client data streamer.
+    /// <para />
+    /// Data streamer loads data efficiently into cache. Updates are buffered and mapped to primary nodes
+    /// to ensure minimal data movement and optimal resource utilization. 
+    /// <para />
+    /// Note that streamer send data to remote nodes asynchronously, so cache updates can be reordered.
     /// <para />
     /// Instances of the implementing class are thread-safe: data can be added from multiple threads.
     /// <para />
@@ -32,6 +36,9 @@ namespace Apache.Ignite.Core.Client.Datastream
     /// </summary>
     public interface IDataStreamerClient<TK, TV> : IDisposable
     {
+        /// <summary>
+        /// Gets the cache name.
+        /// </summary>
         string CacheName { get; }
 
         /// <summary>
@@ -39,28 +46,42 @@ namespace Apache.Ignite.Core.Client.Datastream
         /// </summary>
         bool IsClosed { get; }
 
+        /// <summary>
+        /// Gets the options.
+        /// </summary>
         DataStreamerClientOptions<TK, TV> Options { get; }
 
         /// <summary>
         /// Adds an entry to the streamer.
         /// <para />
-        /// This method adds an entry to the buffer - it does not block the thread and does not perform IO.
-        /// When the buffer gets full, it is scheduled for asynchronous flush.
-        /// TODO: Note about backpressure.
-        /// TODO: Async overloads for non-blocking backpressure behavior?
+        /// This method adds an entry to the buffer. When the buffer gets full, it is scheduled for
+        /// asynchronous background flush. This method will block when the number of active flush operations
+        /// exceeds <see cref="DataStreamerClientOptions.PerNodeParallelOperations"/>.
         /// </summary>
         /// <param name="key">Key.</param>
         /// <param name="val">Value.</param>
         void Add(TK key, TV val);
 
-        void Add(IEnumerable<KeyValuePair<TK, TV>> entries);
-
+        /// <summary>
+        /// Adds a removal entry to the streamer. Cache entry with the specified key will be removed.
+        /// <para />
+        /// Removal requires <see cref="DataStreamerClientOptions.AllowOverwrite"/> to be <c>true</c>.
+        /// <para />
+        /// This method adds an entry to the buffer. When the buffer gets full, it is scheduled for
+        /// asynchronous background flush. This method will block when the number of active flush operations
+        /// exceeds <see cref="DataStreamerClientOptions.PerNodeParallelOperations"/>.
+        /// </summary>
+        /// <param name="key"></param>
         void Remove(TK key);
 
-        void Remove(IEnumerable<TK> keys);
-
+        /// <summary>
+        /// Flushes all buffered entries.
+        /// </summary>
         void Flush();
 
+        /// <summary>
+        /// Flushes all buffered entries asynchronously.
+        /// </summary>
         Task FlushAsync();
 
         /// <summary>

@@ -30,7 +30,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     {
         /** Array vs concurrent data structures:
          * - Can be written in parallel, since index is from Interlocked.Increment, no additional synchronization needed
-         * - Compact storage
+         * - Compact storage (contiguous memory block)
+         * - Less allocations
          * - Easy pooling
          */
         private readonly DataStreamerClientEntry<TK, TV>[] _entries;
@@ -44,7 +45,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /** */
         private readonly DataStreamerClientPerNodeBuffer<TK,TV> _parent;
 
-        /** */
+        /** Previous buffer in the chain. Buffer chain allows us to track previous flushes. */
         private DataStreamerClientBuffer<TK,TV> _previous;
 
         /** */
@@ -56,6 +57,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /** */
         private volatile bool _flushed;
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="DataStreamerClientBuffer{TK,TV}"/>.
+        /// </summary>
         public DataStreamerClientBuffer(
             DataStreamerClientEntry<TK,TV>[] entries,
             DataStreamerClientPerNodeBuffer<TK, TV> parent,
@@ -68,11 +72,18 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             _previous = previous;
         }
 
+        /// <summary>
+        /// Gets the entry count.
+        /// </summary>
         public int Count
         {
+            // Size can exceed entries length when multiple threads compete on Add.
             get { return _size > _entries.Length ? _entries.Length : (int) _size; }
         }
 
+        /// <summary>
+        /// Gets the flush task for this and all previous buffers.
+        /// </summary>
         public Task GetChainFlushTask()
         {
             _rwLock.EnterWriteLock();
@@ -108,11 +119,19 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
         }
 
+        /// <summary>
+        /// Gets the entries array.
+        /// </summary>
         public DataStreamerClientEntry<TK, TV>[] Entries
         {
             get { return _entries; }
         }
 
+        /// <summary>
+        /// Adds an entry to the buffer.
+        /// </summary>
+        /// <param name="entry">Entry.</param>
+        /// <returns>True when added successfully; false otherwise (buffer is full, flushing, flushed, or closed).</returns>
         public bool Add(DataStreamerClientEntry<TK, TV> entry)
         {
             if (!_rwLock.TryEnterReadLock(0))
@@ -143,7 +162,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
             if (newSize == _entries.Length)
             {
-                TryRunFlushAction();
+                TryStartFlush();
             }
 
             return true;
@@ -152,19 +171,20 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /// <summary>
         /// Returns true if flushing has started as a result of this call or before that.
         /// </summary>
-        public bool ScheduleFlush()
+        public void ScheduleFlush()
         {
             if (Interlocked.CompareExchange(ref _size, -1, -1) == 0)
             {
                 // Empty buffer.
-                return false;
+                return;
             }
 
-            TryRunFlushAction();
-
-            return true;
+            TryStartFlush();
         }
 
+        /// <summary>
+        /// Marks this buffer as flushed.
+        /// </summary>
         public bool MarkFlushed()
         {
             _rwLock.EnterWriteLock();
@@ -185,7 +205,10 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
         }
 
-        private void TryRunFlushAction()
+        /// <summary>
+        /// Attempts to start the flush operation.
+        /// </summary>
+        private void TryStartFlush()
         {
             _rwLock.EnterWriteLock();
 
@@ -200,7 +223,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
                 if (Count > 0)
                 {
-                    RunFlushAction();
+                    StartFlush();
                 }
                 else
                 {
@@ -213,18 +236,24 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
         }
 
-        private void RunFlushAction()
+        /// <summary>
+        /// Starts the flush operation.
+        /// </summary>
+        private void StartFlush()
         {
             // TODO: This is not necessary during normal operation - can we get rid of this if no one listens
             // for completions?
 
             // NOTE: Continuation runs on socket thread - set result on thread pool.
-            _parent.FlushAsync(this).ContinueWith(
+            _parent.FlushBufferAsync(this).ContinueWith(
                 t => ThreadPool.QueueUserWorkItem(buf =>
                     ((DataStreamerClientBuffer<TK, TV>)buf).OnFlushed(t.Exception), this),
                 TaskContinuationOptions.ExecuteSynchronously);
         }
 
+        /// <summary>
+        /// Called when flush operation completes.
+        /// </summary>
         private void OnFlushed(AggregateException exception = null)
         {
             TaskCompletionSource<object> tcs;
@@ -262,20 +291,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             }
         }
 
-        /** */
-        private void TrySetResultOrException(TaskCompletionSource<object> tcs, Exception exception)
-        {
-            if (exception == null)
-            {
-                tcs.TrySetResult(null);
-            }
-            else
-            {
-                tcs.TrySetException(exception);
-            }
-        }
-
-        /** */
+        /// <summary>
+        /// Checks if entire buffer chain is already flushed.
+        /// </summary>
         private bool CheckChainFlushed()
         {
             var previous = _previous;
@@ -293,6 +311,21 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             _previous = null;
 
             return _flushed;
+        }
+
+        /// <summary>
+        /// Sets task completion source status. 
+        /// </summary>
+        private static void TrySetResultOrException(TaskCompletionSource<object> tcs, Exception exception)
+        {
+            if (exception == null)
+            {
+                tcs.TrySetResult(null);
+            }
+            else
+            {
+                tcs.TrySetException(exception);
+            }
         }
     }
 }

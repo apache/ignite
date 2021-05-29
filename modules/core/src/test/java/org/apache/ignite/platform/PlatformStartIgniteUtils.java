@@ -17,7 +17,8 @@
 
 package org.apache.ignite.platform;
 
-import org.apache.ignite.Ignite;
+import java.security.Permissions;
+
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -27,17 +28,21 @@ import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 
-import java.security.Permissions;
-
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_PUT;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_REMOVE;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
 
 /**
- * Task to start an Ignite node.
+ * Ignite start/stop utils.
  */
 public class PlatformStartIgniteUtils {
+    /**
+     * Starts an Ignite instance with test security plugin provider.
+     *
+     * @param name Ignite instance name.
+     * @throws IgniteException Exception.
+     */
     public static void startWithSecurity(String name) throws IgniteException {
         TestSecurityPluginProvider securityPluginProvider = new TestSecurityPluginProvider(
                 "login1",
@@ -60,6 +65,11 @@ public class PlatformStartIgniteUtils {
         Ignition.start(cfg);
     }
 
+    /**
+     * Stops an Ignite instance with the specified name.
+     *
+     * @param name Ignite instance name.
+     */
     public static void stop(String name) {
         Ignition.stop(name, true);
     }

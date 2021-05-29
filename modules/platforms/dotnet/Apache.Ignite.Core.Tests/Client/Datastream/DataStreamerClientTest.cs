@@ -18,15 +18,20 @@
 namespace Apache.Ignite.Core.Tests.Client.Datastream
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Datastream;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Datastream;
+    using Apache.Ignite.Core.Impl.Client.Datastream;
     using NUnit.Framework;
 
     /// <summary>
@@ -34,6 +39,9 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
     /// </summary>
     public class DataStreamerClientTest : ClientTestBase
     {
+        /** */
+        private const int GridCount = 3;
+        
         /// <summary>
         /// Initializes a new instance of <see cref="DataStreamerClientTest"/>.
         /// </summary>
@@ -47,7 +55,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         /// Initializes a new instance of <see cref="DataStreamerClientTest"/>.
         /// </summary>
         public DataStreamerClientTest(bool enablePartitionAwareness)
-            : base(gridCount: 3, enableSsl: false, enablePartitionAwareness: enablePartitionAwareness)
+            : base(GridCount, enableSsl: false, enablePartitionAwareness: enablePartitionAwareness)
         {
             // No-op.
         }
@@ -59,6 +67,8 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
             using (var streamer = Client.GetDataStreamer<int, string>(cache.Name))
             {
+                Assert.AreEqual(cache.Name, streamer.CacheName);
+                
                 streamer.Add(1, "1");
                 streamer.Add(2, "2");
             }
@@ -79,8 +89,11 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             {
                 streamer.Add(1, 11);
                 streamer.Add(20, 20);
-                streamer.Remove(2);
-                streamer.Remove(new[] {4, 6, 7, 8, 9, 10});
+
+                foreach (var key in new[] {2, 4, 6, 7, 8, 9, 10})
+                {
+                    streamer.Remove(key);
+                }
             }
 
             var resKeys = cache.GetAll(Enumerable.Range(1, 30))
@@ -167,7 +180,6 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             var cache = GetClientCache<int>();
             const int count = 50000;
 
-            // TODO: Exceptions "data streamer closed" are being swallowed! Deal with this first.
             using (var streamer = Client.GetDataStreamer<int, int>(cache.Name))
             {
                 for (var k = 0; k < count; k++)
@@ -217,7 +229,6 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         [Category(TestUtils.CategoryIntensive)]
         public void TestStreamParallelFor()
         {
-            // TODO: This test is very slow on the laptop - check this.
             var cache = GetClientCache<int>();
             const int count = 250000;
 
@@ -225,6 +236,9 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             {
                 // ReSharper disable once AccessToDisposedClosure
                 Parallel.For(0, count, i => streamer.Add(i, i + 2));
+                
+                streamer.Flush();
+                CheckArrayPoolLeak(streamer);
             }
 
             var size = cache.GetSize();
@@ -286,7 +300,10 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
             using (var streamer = Client.GetDataStreamer<int, int>(serverCache.Name, options))
             {
-                streamer.Add(Enumerable.Range(1, 300).ToDictionary(x => x, x => -x));
+                foreach (var x in Enumerable.Range(1, 300))
+                {
+                    streamer.Add(x, -x);
+                }
             }
 
             Assert.AreEqual(300, serverCache.GetSize());
@@ -342,6 +359,11 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 Assert.AreEqual(DataStreamerClientOptions.DefaultPerNodeBufferSize, opts.PerNodeBufferSize);
                 Assert.AreEqual(DataStreamerClientOptions.DefaultPerNodeParallelOperations, opts.PerNodeParallelOperations);
                 Assert.AreEqual(Environment.ProcessorCount * 4, opts.PerNodeParallelOperations);
+                Assert.AreEqual(TimeSpan.Zero, opts.AutoFlushInterval);
+                Assert.IsNull(opts.Receiver);
+                Assert.IsFalse(opts.AllowOverwrite);
+                Assert.IsFalse(opts.SkipStore);
+                Assert.IsFalse(opts.ReceiverKeepBinary);
             }
         }
 
@@ -405,6 +427,54 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         }
 
         [Test]
+        public void TestAllOperationThrowWhenStreamerIsClosed()
+        {
+            var options = new DataStreamerClientOptions
+            {
+                AllowOverwrite = true
+            };
+            
+            var streamer = Client.GetDataStreamer<int, int>(CacheName, options);
+            streamer.Close(true);
+
+            Assert.Throws<ObjectDisposedException>(() => streamer.Add(1, 1));
+            Assert.Throws<ObjectDisposedException>(() => streamer.Remove(1));
+            Assert.Throws<ObjectDisposedException>(() => streamer.Flush());
+            Assert.Throws<ObjectDisposedException>(() => streamer.FlushAsync());
+        }
+
+        [Test]
+        public void TestMultipleCloseAndDisposeCallsAreAllowed()
+        {
+            using (var streamer = Client.GetDataStreamer<int, int>(CacheName))
+            {
+                streamer.Add(1, 2);
+                streamer.Close(cancel: false);
+
+                streamer.Dispose();
+                streamer.Close(true);
+                streamer.Close(false);
+                streamer.CloseAsync(true).Wait();
+                streamer.CloseAsync(false).Wait();
+            }
+            
+            Assert.AreEqual(2, GetCache<int>()[1]);
+        }
+
+        [Test]
+        public void TestCloseCancelDiscardsBufferedData()
+        {
+            using (var streamer = Client.GetDataStreamer<int, int>(CacheName))
+            {
+                streamer.Add(1, 1);
+                streamer.Add(2, 2);
+                streamer.Close(cancel: true);
+            }
+            
+            Assert.AreEqual(0, GetCache<int>().GetSize());
+        }
+
+        [Test]
         public void TestFlushAsyncContinuationDoesNotRunOnSocketReceiverThread()
         {
             var cache = GetClientCache<int>();
@@ -419,6 +489,119 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                     StringAssert.DoesNotContain("ClientSocket", trace);
                 }, TaskContinuationOptions.ExecuteSynchronously).Wait();
             }
+        }
+
+        [Test]
+        public void TestStreamReceiver()
+        {
+            var cache = GetClientCache<int>();
+
+            var options = new DataStreamerClientOptions<int, int>
+            {
+                Receiver = new StreamReceiverAddOne()
+            };
+            
+            using (var streamer = Client.GetDataStreamer(cache.Name, options))
+            {
+                streamer.Add(1, 1);
+            }
+            
+            Assert.AreEqual(2, cache[1]);
+        }
+
+        [Test]
+        public void TestStreamReceiverKeepBinary()
+        {
+            var cache = GetClientCache<Test>().WithKeepBinary<int, IBinaryObject>();
+
+            var options = new DataStreamerClientOptions<int, IBinaryObject>
+            {
+                Receiver = new StreamReceiverAddTwoKeepBinary(),
+                ReceiverKeepBinary = true
+            };
+            
+            using (var streamer = Client.GetDataStreamer(cache.Name, options))
+            {
+                streamer.Add(1, Client.GetBinary().ToBinary<IBinaryObject>(new Test {Val = 3}));
+            }
+            
+            Assert.AreEqual(5, cache[1].Deserialize<Test>().Val);
+        }
+
+        [Test]
+        public void TestStreamReceiverException()
+        {
+            var options = new DataStreamerClientOptions<int, int>
+            {
+                Receiver = new StreamReceiverThrowException()
+            };
+
+            var streamer = Client.GetDataStreamer(CacheName, options);
+            streamer.Add(1, 1);
+
+            var ex = Assert.Throws<AggregateException>(() => streamer.Flush());
+            var clientEx = (IgniteClientException) ex.GetBaseException();
+            
+            StringAssert.Contains("Failed to finish operation (too many remaps)", clientEx.Message);
+        }
+
+        [Test]
+        public void TestStreamReceiverDeserializationException()
+        {
+            var options = new DataStreamerClientOptions<int, int>
+            {
+                Receiver = new StreamReceiverReadBinaryThrowException()
+            };
+
+            var streamer = Client.GetDataStreamer(CacheName, options);
+            streamer.Add(1, 1);
+
+            var ex = Assert.Throws<AggregateException>(() => streamer.Flush());
+            var clientEx = (IgniteClientException) ex.GetBaseException();
+            
+            StringAssert.Contains("Failed to finish operation (too many remaps)", clientEx.Message);
+        }
+
+        [Test]
+        public void TestAutoFlushInterval()
+        {
+            var cache = GetClientCache<int>();
+            var options = new DataStreamerClientOptions
+            {
+                AutoFlushInterval = TimeSpan.FromSeconds(0.1)
+            };
+            
+            using (var streamer = Client.GetDataStreamer<int, int>(cache.Name, options))
+            {
+                streamer.Add(1, 1);
+                TestUtils.WaitForTrueCondition(() => cache.ContainsKey(1));
+                
+                streamer.Add(2, 2);
+                TestUtils.WaitForTrueCondition(() => cache.ContainsKey(2));
+            }
+        }
+
+        [Test]
+        public void TestAutoFlushClosesStreamerWhenCacheDoesNotExist()
+        {
+            var options = new DataStreamerClientOptions
+            {
+                AutoFlushInterval = TimeSpan.FromSeconds(0.2)
+            };
+
+            var streamer = Client.GetDataStreamer<int, int>("bad-cache-name", options);
+            streamer.Add(1, 1);
+            
+            Assert.IsFalse(streamer.IsClosed);
+            TestUtils.WaitForTrueCondition(() => streamer.IsClosed);
+
+            var ex = Assert.Throws<IgniteClientException>(() => streamer.Flush());
+            Assert.AreEqual("Streamer is closed with error, check inner exception for details.", ex.Message);
+
+            Assert.IsNotNull(ex.InnerException);
+            var inner = ((AggregateException)ex.InnerException).GetBaseException();
+            
+            StringAssert.StartsWith("Cache does not exist", inner.Message);
         }
 
 #if NETCOREAPP
@@ -448,12 +631,77 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
 #endif
 
+        internal static void CheckArrayPoolLeak<TK, TV>(IDataStreamerClient<TK, TV> streamer)
+        {
+            var streamerImpl = (DataStreamerClient<TK, TV>) streamer;
+            
+            TestUtils.WaitForCondition(() => streamerImpl.ArraysAllocated == streamerImpl.ArraysPooled, 1000);
+                
+            Assert.AreEqual(streamerImpl.ArraysAllocated, streamerImpl.ArraysPooled, "Pooled arrays should not leak.");
+            
+            Console.WriteLine("Array pool size: " + streamerImpl.ArraysPooled);
+        }
+
         protected override IgniteConfiguration GetIgniteConfiguration()
         {
             return new IgniteConfiguration(base.GetIgniteConfiguration())
             {
                 Logger = new TestUtils.TestContextLogger()
             };
+        }
+        
+        private class StreamReceiverAddOne : IStreamReceiver<int, int>
+        {
+            public void Receive(ICache<int, int> cache, ICollection<ICacheEntry<int, int>> entries)
+            {
+                cache.PutAll(entries.ToDictionary(x => x.Key, x => x.Value + 1));
+            }
+        }
+
+        private class StreamReceiverThrowException : IStreamReceiver<int, int>
+        {
+            public void Receive(ICache<int, int> cache, ICollection<ICacheEntry<int, int>> entries)
+            {
+                throw new ArithmeticException("Foo");
+            }
+        }
+
+        private class StreamReceiverReadBinaryThrowException : IStreamReceiver<int, int>, IBinarizable
+        {
+            public void Receive(ICache<int, int> cache, ICollection<ICacheEntry<int, int>> entries)
+            {
+                // No-op.
+            }
+
+            public void WriteBinary(IBinaryWriter writer)
+            {
+                // No-op.
+            }
+
+            public void ReadBinary(IBinaryReader reader)
+            {
+                throw new InvalidOperationException("Bar");
+            }
+        }
+
+        private class StreamReceiverAddTwoKeepBinary : IStreamReceiver<int, IBinaryObject>
+        {
+            /** <inheritdoc /> */
+            public void Receive(ICache<int, IBinaryObject> cache, ICollection<ICacheEntry<int, IBinaryObject>> entries)
+            {
+                var binary = cache.Ignite.GetBinary();
+
+                cache.PutAll(entries.ToDictionary(x => x.Key, x =>
+                    binary.ToBinary<IBinaryObject>(new Test
+                    {
+                        Val = x.Value.Deserialize<Test>().Val + 2
+                    })));
+            }
+        }
+
+        private class Test
+        {
+            public int Val { get; set; }
         }
 
         private class BlockingCacheStore : CacheStoreAdapter<int, int>, IFactory<ICacheStore>

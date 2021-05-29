@@ -19,15 +19,14 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache.Configuration;
-    using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Client.Datastream;
     using Apache.Ignite.Core.Impl.Client;
+    using Apache.Ignite.Core.Impl.Client.Datastream;
     using NUnit.Framework;
 
     /// <summary>
@@ -104,7 +103,14 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         [Test]
         public void TestStreamerDoesNotLoseDataOnRandomTopologyChanges()
         {
-            const int maxNodes = 5;
+            // TODO: Fails on CI:
+            // Nodes started on local machine require more than 80% of physical RAM what can lead to significant slowdown due to swapping (please decrease JVM heap size, data region size or checkpoint buffer size) [required=20886MB, available=15360MB]
+            // Failed to wait for initial partition map exchange.
+            // GC Overhead Limit Exceeded
+            // What should I tweak to avoid this?
+            
+            const int maxNodes = 4;
+            const int topologyChanges = 16;
 
             var nodes = new Queue<IIgnite>();
             nodes.Enqueue(StartServer());
@@ -112,6 +118,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             var client = StartClient(maxPort: 10809);
 
             var id = 0;
+            long entriesSent = 0;
             var cache = CreateCache(client);
 
             var options = new DataStreamerClientOptions {AllowOverwrite = true};
@@ -138,9 +145,10 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                     }
                 });
 
-                // TODO: Run this test for multiple minutes.
-                for (int i = 0; i < 20; i++)
+                for (int i = 0; i < topologyChanges; i++)
                 {
+                    Thread.Sleep(100);
+                    
                     if (nodes.Count <= 2 || (nodes.Count < maxNodes && TestUtils.Random.Next(2) == 0))
                     {
                         nodes.Enqueue(StartServer());
@@ -153,25 +161,24 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
                 cancel = true;
                 adderTask.Wait(TimeSpan.FromSeconds(15));
+
+                streamer.Flush();
+                
+                DataStreamerClientTest.CheckArrayPoolLeak(streamer);
+                entriesSent = ((DataStreamerClient<int, int>) streamer).EntriesSent;
             }
+            
+            Assert.AreEqual(id, entriesSent);
+
+            TestUtils.WaitForTrueCondition(
+                () => id == cache.GetSize(), 
+                () => string.Format("Expected: {0}, actual: {1}, sent: {2}", id, cache.GetSize(), entriesSent),
+                timeout: 3000);
+            
+            Assert.Greater(id, 10000);
 
             Assert.AreEqual(1, cache[1]);
-
-            if (!TestUtils.WaitForCondition(() => id == cache.GetSize(), 1000))
-            {
-                // TODO: We find "SENT" keys as missing.
-                // 1. Server loses data
-                // 2. Buffer sharing issues (check this by disabling buffer pooling)
-                var expectedKeys = Enumerable.Range(1, id).ToArray();
-                var actualKeys = cache.Query(new ScanQuery<int, int>()).GetAll().Select(x => x.Key).ToArray();
-                var missingKeys = expectedKeys.Except(actualKeys);
-                var missingKeysStr = "Missing keys: " + string.Join(", ", missingKeys);
-                Console.WriteLine(">>>> Expected keys count: " + expectedKeys.Length);
-                Console.WriteLine(">>>> Actual keys count: " + actualKeys.Length);
-                Assert.AreEqual(id, cache.GetSize(), missingKeysStr);
-            }
-
-            Assert.Greater(id, 10000);
+            Assert.AreEqual(id, cache[id]);
         }
 
         [Test]
@@ -218,7 +225,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 server.Dispose();
 
                 // Perform cache operation to detect connection failure.
-                Assert.Throws<IgniteClientException>(() => cache.Put(1, 3));
+                Assert.Catch(() => cache.Put(1, 3));
 
                 // Fill the buffer to force flush.
                 streamer.Add(1, 1);
@@ -256,7 +263,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 server.Dispose();
 
                 // Perform cache operation to detect connection failure.
-                Assert.Throws<IgniteClientException>(() => cache.Put(1, 3));
+                Assert.Catch(() => cache.Put(1, 3));
 
                 // Fill the buffer for a new node.
                 streamer.Add(1, 1);

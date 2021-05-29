@@ -43,7 +43,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
         /// Initializes a new instance of <see cref="ClientClusterDiscoveryTests"/>.
         /// </summary>
         public ClientClusterDiscoveryTestsBase(bool noLocalhost, bool enableSsl)
-            : base(gridCount: 3, enableSsl, enableServerListLogging: true)
+            : base(3, enableSsl, enableServerListLogging: true)
         {
             _noLocalhost = noLocalhost;
         }
