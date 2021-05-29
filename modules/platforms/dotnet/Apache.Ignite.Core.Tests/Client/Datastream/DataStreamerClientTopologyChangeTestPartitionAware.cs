@@ -26,6 +26,9 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
     [Category(TestUtils.CategoryIntensive)]
     public class DataStreamerClientTopologyChangeTestPartitionAware : DataStreamerClientTopologyChangeTest
     {
+        /// <summary>
+        /// Initializes a new instance of <see cref="DataStreamerClientTopologyChangeTestPartitionAware"/> class.
+        /// </summary>
         public DataStreamerClientTopologyChangeTestPartitionAware() : base(true)
         {
             // No-op.

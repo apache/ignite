@@ -39,16 +39,25 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         /** */
         private readonly bool _enablePartitionAwareness;
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="DataStreamerClientTopologyChangeTest"/> class.
+        /// </summary>
         public DataStreamerClientTopologyChangeTest() : this(false)
         {
             // No-op.
         }
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="DataStreamerClientTopologyChangeTest"/> class.
+        /// </summary>
         public DataStreamerClientTopologyChangeTest(bool enablePartitionAwareness)
         {
             _enablePartitionAwareness = enablePartitionAwareness;
         }
 
+        /// <summary>
+        /// Tests that streamer does not lose per-node buffer data when node leaves the cluster.
+        /// </summary>
         [Test]
         public void TestStreamerDoesNotLoseDataOnFlushWhenNewNodeEntersAndOriginalNodeLeaves()
         {
