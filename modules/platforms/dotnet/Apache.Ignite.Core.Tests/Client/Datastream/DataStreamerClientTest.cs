@@ -621,8 +621,11 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             StringAssert.Contains("Failed to finish operation (too many remaps)", clientEx.Message);
         }
 
+        /// <summary>
+        /// Tests that flush throws when exception happens during stream receiver deserialization.
+        /// </summary>
         [Test]
-        public void TestStreamReceiverDeserializationException()
+        public void TestFlushThrowsOnExceptionInStreamReceiverReadBinary()
         {
             var options = new DataStreamerClientOptions<int, int>
             {
@@ -638,6 +641,10 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             StringAssert.Contains("Failed to finish operation (too many remaps)", clientEx.Message);
         }
 
+        /// <summary>
+        /// Tests that streamer flushes data periodically when <see cref="DataStreamerClientOptions.AutoFlushInterval"/>
+        /// is set to non-zero value.
+        /// </summary>
         [Test]
         public void TestAutoFlushInterval()
         {
