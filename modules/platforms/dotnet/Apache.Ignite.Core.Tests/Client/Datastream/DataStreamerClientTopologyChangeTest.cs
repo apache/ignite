@@ -128,6 +128,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         [Test]
         public void TestStreamerDoesNotLoseDataOnRandomTopologyChanges()
         {
+            // TODO: Throw exception on server if node is stopping at the moment of request end?
             const int maxNodes = 4;
             const int topologyChanges = 16;
 
