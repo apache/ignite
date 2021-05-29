@@ -56,6 +56,15 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         }
 
         /// <summary>
+        /// Tears down the test.
+        /// </summary>
+        [TearDown]
+        public void TearDown()
+        {
+            Ignition.StopAll(true);
+        }
+
+        /// <summary>
         /// Tests that streamer does not lose per-node buffer data when node leaves the cluster.
         /// </summary>
         [Test]
@@ -88,6 +97,9 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             }
         }
 
+        /// <summary>
+        /// Tests that streamer does not lose per-node buffer data when node leaves the cluster.
+        /// </summary>
         [Test]
         public void TestStreamerDoesNotLoseDataOnDisposeWhenNewNodeEntersAndOriginalNodeLeaves()
         {
@@ -110,6 +122,9 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             Assert.AreEqual(2, cache[2]);
         }
 
+        /// <summary>
+        /// Tests that streamer does not lose data during random topology changes.
+        /// </summary>
         [Test]
         public void TestStreamerDoesNotLoseDataOnRandomTopologyChanges()
         {
@@ -185,6 +200,9 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             Assert.AreEqual(id, cache[id]);
         }
 
+        /// <summary>
+        /// Tests that flush fails when all servers leave the cluster.
+        /// </summary>
         [Test]
         public void TestFlushFailsWhenAllServersStop()
         {
@@ -206,8 +224,11 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             StringAssert.StartsWith("Failed to establish Ignite thin client connection", ex.Message);
         }
 
+        /// <summary>
+        /// Tests that buffers for disconnected server nodes get flushed on explicit flush call.
+        /// </summary>
         [Test]
-        public void TestAbandonedBuffersGetFlushedOnExplicitFlush()
+        public void TestDisconnectedBuffersGetFlushedOnExplicitFlush()
         {
             var server = StartServer();
             var client = StartClient();
@@ -250,8 +271,11 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             }
         }
 
+        /// <summary>
+        /// Tests that buffers for disconnected server nodes get flushed on close / dispose.
+        /// </summary>
         [Test]
-        public void TestAbandonedBuffersGetFlushedOnClose()
+        public void TestDisconnectedBuffersGetFlushedOnClose()
         {
             var server = StartServer();
             var client = StartClient();
@@ -277,12 +301,6 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             // Close/Dispose flushes all buffers, including the buffer for the old node that was disconnected.
             Assert.AreEqual(4, cache.GetSize());
             Assert.IsTrue(cache.ContainsKeys(new[]{-1, -2, 1, 2}));
-        }
-
-        [TearDown]
-        public void TearDown()
-        {
-            Ignition.StopAll(true);
         }
 
         private static IgniteConfiguration GetServerConfiguration()
