@@ -219,7 +219,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 server.Dispose();
 
                 // Perform cache operation to detect connection failure.
-                Assert.Throws<IgniteClientException>(() => cache.Put(1, 3));
+                Assert.Catch(() => cache.Put(1, 3));
 
                 // Fill the buffer to force flush.
                 streamer.Add(1, 1);
@@ -257,7 +257,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 server.Dispose();
 
                 // Perform cache operation to detect connection failure.
-                Assert.Throws<IgniteClientException>(() => cache.Put(1, 3));
+                Assert.Catch(() => cache.Put(1, 3));
 
                 // Fill the buffer for a new node.
                 streamer.Add(1, 1);
