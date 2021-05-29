@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Client.Datastream;
+    using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Impl.Client;
     using Apache.Ignite.Core.Impl.Client.Datastream;
     using NUnit.Framework;
@@ -103,12 +104,6 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         [Test]
         public void TestStreamerDoesNotLoseDataOnRandomTopologyChanges()
         {
-            // TODO: Fails on CI:
-            // Nodes started on local machine require more than 80% of physical RAM what can lead to significant slowdown due to swapping (please decrease JVM heap size, data region size or checkpoint buffer size) [required=20886MB, available=15360MB]
-            // Failed to wait for initial partition map exchange.
-            // GC Overhead Limit Exceeded
-            // What should I tweak to avoid this?
-            
             const int maxNodes = 4;
             const int topologyChanges = 16;
 
@@ -118,7 +113,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             var client = StartClient(maxPort: 10809);
 
             var id = 0;
-            long entriesSent = 0;
+            long entriesSent;
             var cache = CreateCache(client);
 
             var options = new DataStreamerClientOptions {AllowOverwrite = true};
@@ -137,7 +132,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                         // ReSharper disable once AccessToDisposedClosure
                         streamer.Add(id, id);
 
-                        if (id % 2000 == 0)
+                        if (id % 500 == 0)
                         {
                             // Sleep once in a while to reduce streamed data size.
                             Thread.Sleep(100);
@@ -148,7 +143,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 for (int i = 0; i < topologyChanges; i++)
                 {
                     Thread.Sleep(100);
-                    
+
                     if (nodes.Count <= 2 || (nodes.Count < maxNodes && TestUtils.Random.Next(2) == 0))
                     {
                         nodes.Enqueue(StartServer());
@@ -163,18 +158,18 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 adderTask.Wait(TimeSpan.FromSeconds(15));
 
                 streamer.Flush();
-                
+
                 DataStreamerClientTest.CheckArrayPoolLeak(streamer);
                 entriesSent = ((DataStreamerClient<int, int>) streamer).EntriesSent;
             }
-            
+
             Assert.AreEqual(id, entriesSent);
 
             TestUtils.WaitForTrueCondition(
-                () => id == cache.GetSize(), 
+                () => id == cache.GetSize(),
                 () => string.Format("Expected: {0}, actual: {1}, sent: {2}", id, cache.GetSize(), entriesSent),
                 timeout: 3000);
-            
+
             Assert.Greater(id, 10000);
 
             Assert.AreEqual(1, cache[1]);
@@ -286,7 +281,15 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 AutoGenerateIgniteInstanceName = true,
-                DiscoverySpi = TestUtils.GetStaticDiscovery(maxPort: 47509)
+                DiscoverySpi = TestUtils.GetStaticDiscovery(maxPort: 47509),
+                DataStorageConfiguration = new DataStorageConfiguration
+                {
+                    DefaultDataRegionConfiguration = new DataRegionConfiguration
+                    {
+                        Name = DataStorageConfiguration.DefaultDataRegionName,
+                        MaxSize = 500 * 1024 * 1024
+                    }
+                }
             };
         }
 
