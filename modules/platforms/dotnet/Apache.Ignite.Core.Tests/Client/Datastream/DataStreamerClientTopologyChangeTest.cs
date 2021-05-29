@@ -103,6 +103,12 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         [Test]
         public void TestStreamerDoesNotLoseDataOnRandomTopologyChanges()
         {
+            // TODO: Fails on CI:
+            // Nodes started on local machine require more than 80% of physical RAM what can lead to significant slowdown due to swapping (please decrease JVM heap size, data region size or checkpoint buffer size) [required=20886MB, available=15360MB]
+            // Failed to wait for initial partition map exchange.
+            // GC Overhead Limit Exceeded
+            // What should I tweak to avoid this?
+            
             const int maxNodes = 4;
             const int topologyChanges = 16;
 
