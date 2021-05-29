@@ -635,7 +635,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         {
             var streamerImpl = (DataStreamerClient<TK, TV>) streamer;
             
-            TestUtils.WaitForCondition(() => streamerImpl.ArraysAllocated == streamerImpl.ArraysPooled, 500);
+            TestUtils.WaitForCondition(() => streamerImpl.ArraysAllocated == streamerImpl.ArraysPooled, 1000);
                 
             Assert.AreEqual(streamerImpl.ArraysAllocated, streamerImpl.ArraysPooled, "Pooled arrays should not leak.");
             
