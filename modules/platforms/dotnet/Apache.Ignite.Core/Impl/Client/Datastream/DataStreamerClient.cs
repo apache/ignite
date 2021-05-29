@@ -87,6 +87,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /** */
         private int _arraysAllocated;
 
+        /** */
+        private long _entriesSent;
+
         /** Exception. When set, the streamer is closed. */
         private volatile Exception _exception;
 
@@ -232,6 +235,14 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         internal int ArraysAllocated
         {
             get { return Interlocked.CompareExchange(ref _arraysAllocated, -1, -1); }
+        }
+
+        /// <summary>
+        /// Gets the count of sent entries.
+        /// </summary>
+        internal long EntriesSent
+        {
+            get { return Interlocked.CompareExchange(ref _entriesSent, -1, -1); }
         }
 
         /// <summary>
@@ -410,6 +421,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         {
             if (exception == null)
             {
+                // Successful flush.
+                Interlocked.Add(ref _entriesSent, buffer.Count);
                 ReturnPooledArray(buffer.Entries);
                 tcs.SetResult(null);
 

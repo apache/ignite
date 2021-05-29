@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Client.Datastream;
     using Apache.Ignite.Core.Impl.Client;
+    using Apache.Ignite.Core.Impl.Client.Datastream;
     using NUnit.Framework;
 
     /// <summary>
@@ -111,6 +112,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             var client = StartClient(maxPort: 10809);
 
             var id = 0;
+            long entriesSent = 0;
             var cache = CreateCache(client);
 
             var options = new DataStreamerClientOptions {AllowOverwrite = true};
@@ -155,12 +157,16 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 adderTask.Wait(TimeSpan.FromSeconds(15));
 
                 streamer.Flush();
+                
                 DataStreamerClientTest.CheckArrayPoolLeak(streamer);
+                entriesSent = ((DataStreamerClient<int, int>) streamer).EntriesSent;
             }
+            
+            Assert.AreEqual(id, entriesSent);
 
             TestUtils.WaitForTrueCondition(
                 () => id == cache.GetSize(), 
-                () => string.Format("Expected: {0}, actual: {1}", id, cache.GetSize()),
+                () => string.Format("Expected: {0}, actual: {1}, sent: {2}", id, cache.GetSize(), entriesSent),
                 timeout: 3000);
             
             Assert.Greater(id, 10000);
