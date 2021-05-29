@@ -136,8 +136,6 @@ namespace Apache.Ignite.Core.Tests
 #else
 namespace Apache.Ignite.Core.Tests
 {
-    using Apache.Ignite.Core.Tests.Client.Datastream;
-
     /// <summary>
     /// Test runner.
     /// </summary>
@@ -148,22 +146,7 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private static void Main()
         {
-            var t = new DataStreamerClientTopologyChangeTest();
-
-            while (true)
-            {
-                t.TestStreamerDoesNotLoseDataOnRandomTopologyChanges();
-                Ignition.StopAll(true);
-            }
-
-            // for (int i = 0; i < 20; i++)
-            // {
-            //     t.TestSetUp();
-            //     var sw = Stopwatch.StartNew();
-            //     t.TestStreamParallelFor();
-            //     Console.WriteLine("{0}: {1}", i, sw.Elapsed);
-            // }
-            // ReSharper disable once FunctionNeverReturns
+            new IgniteStartStopTest().TestStartDefault();
         }
     }
 }
