@@ -423,7 +423,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         }
 
         /// <summary>
-        /// Tests that flush throws a correct exception when cache does not exist.
+        /// Tests that flush throws correct exception when cache does not exist.
         /// </summary>
         [Test]
         public void TestFlushThrowsWhenCacheDoesNotExist()
@@ -435,6 +435,21 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             StringAssert.StartsWith("Cache does not exist", ex.GetBaseException().Message);
 
             // Streamer is closed because of the flush failure.
+            Assert.IsTrue(streamer.IsClosed);
+        }
+
+        /// <summary>
+        /// Tests that dispose throws correct exception when cache does not exist.
+        /// </summary>
+        [Test]
+        public void TestDisposeThrowsWhenCacheDoesNotExist()
+        {
+            var streamer = Client.GetDataStreamer<int, int>("bad-cache-name");
+            streamer.Add(1, 1);
+            Assert.IsFalse(streamer.IsClosed);
+
+            var ex = Assert.Throws<AggregateException>(() => streamer.Dispose());
+            StringAssert.StartsWith("Cache does not exist", ex.GetBaseException().Message);
             Assert.IsTrue(streamer.IsClosed);
         }
 
@@ -466,20 +481,11 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             Assert.IsTrue(streamer.IsClosed);
         }
 
+        /// <summary>
+        /// Tests that all add/remove operations throw <see cref="ObjectDisposedException"/> when streamer is closed.
+        /// </summary>
         [Test]
-        public void TestDisposeThrowsWhenCacheDoesNotExist()
-        {
-            var streamer = Client.GetDataStreamer<int, int>("bad-cache-name");
-            streamer.Add(1, 1);
-            Assert.IsFalse(streamer.IsClosed);
-
-            var ex = Assert.Throws<AggregateException>(() => streamer.Dispose());
-            StringAssert.StartsWith("Cache does not exist", ex.GetBaseException().Message);
-            Assert.IsTrue(streamer.IsClosed);
-        }
-
-        [Test]
-        public void TestAllOperationThrowWhenStreamerIsClosed()
+        public void TestAllOperationsThrowWhenStreamerIsClosed()
         {
             var options = new DataStreamerClientOptions
             {
@@ -495,6 +501,9 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             Assert.Throws<ObjectDisposedException>(() => streamer.FlushAsync());
         }
 
+        /// <summary>
+        /// Tests that Dispose and Close methods can be called multiple times.
+        /// </summary>
         [Test]
         public void TestMultipleCloseAndDisposeCallsAreAllowed()
         {
@@ -513,6 +522,9 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             Assert.AreEqual(2, GetCache<int>()[1]);
         }
 
+        /// <summary>
+        /// Tests that cancelled streamer discards buffered data.
+        /// </summary>
         [Test]
         public void TestCloseCancelDiscardsBufferedData()
         {
@@ -526,6 +538,9 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             Assert.AreEqual(0, GetCache<int>().GetSize());
         }
 
+        /// <summary>
+        /// Tests that async continuation does not happen on socket receiver system thread.
+        /// </summary>
         [Test]
         public void TestFlushAsyncContinuationDoesNotRunOnSocketReceiverThread()
         {
@@ -543,6 +558,9 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             }
         }
 
+        /// <summary>
+        /// Tests data streamer with a receiver.
+        /// </summary>
         [Test]
         public void TestStreamReceiver()
         {
@@ -561,6 +579,9 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             Assert.AreEqual(2, cache[1]);
         }
 
+        /// <summary>
+        /// Tests stream receiver in binary mode.
+        /// </summary>
         [Test]
         public void TestStreamReceiverKeepBinary()
         {
@@ -580,8 +601,11 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             Assert.AreEqual(5, cache[1].Deserialize<Test>().Val);
         }
 
+        /// <summary>
+        /// Tests that flush throws when exception happens in stream receiver.
+        /// </summary>
         [Test]
-        public void TestStreamReceiverException()
+        public void TestFlushThrowsOnExceptionInStreamReceiver()
         {
             var options = new DataStreamerClientOptions<int, int>
             {
