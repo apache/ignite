@@ -128,7 +128,6 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
         [Test]
         public void TestStreamerDoesNotLoseDataOnRandomTopologyChanges()
         {
-            // TODO: Throw exception on server if node is stopping at the moment of request end?
             const int maxNodes = 4;
             const int topologyChanges = 16;
 
@@ -190,6 +189,9 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 entriesSent = ((DataStreamerClient<int, int>) streamer).EntriesSent;
             }
 
+            // TODO:
+            // Condition not reached within 3000 ms (Expected: 49000, actual: 48996, sent: 48996)
+            // Some of the data does not get sent.
             TestUtils.WaitForTrueCondition(
                 () => id == cache.GetSize(),
                 () => string.Format("Expected: {0}, actual: {1}, sent: {2}", id, cache.GetSize(), entriesSent),
