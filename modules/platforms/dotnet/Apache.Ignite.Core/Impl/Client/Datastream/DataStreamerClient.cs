@@ -644,6 +644,22 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 return true;
             }
 
+            // TODO: Check the root cause
+            /*
+             * System.AggregateException : One or more errors occurred. (Streamer is closed with error, check inner exception for details.)
+  ----> Apache.Ignite.Core.Client.IgniteClientException : Streamer is closed with error, check inner exception for details.
+  ----> System.AggregateException : One or more errors occurred. (Client connection has failed. Examine InnerException for details)
+  ----> Apache.Ignite.Core.Client.IgniteClientException : Client connection has failed. Examine InnerException for details
+  ----> System.IO.IOException : Unable to write data to the transport connection: Broken pipe.
+  ----> System.Net.Sockets.SocketException : Broken pipe
+             */
+
+            // TODO: Improve this logic when streamer gets closed due to grid stop.
+            if (exception.Message == "Data streamer has been closed.")
+            {
+                return true;
+            }
+
             var clientEx = exception as IgniteClientException;
 
             if (clientEx != null &&
