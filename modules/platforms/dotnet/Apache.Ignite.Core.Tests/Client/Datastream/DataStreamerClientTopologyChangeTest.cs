@@ -197,6 +197,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
             // TODO:
             // Condition not reached within 3000 ms (Expected: 49000, actual: 48996, sent: 48996)
+            // Condition not reached within 3000 ms (Expected: 20012, actual: 20011, sent: 20011, alloc: 69, pool: 68)
             // Some of the data does not get sent.
             TestUtils.WaitForTrueCondition(
                 () => id == cache.GetSize(),
