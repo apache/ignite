@@ -81,7 +81,7 @@ def preload_data(context, config, preloaders, backups, cache_count, entry_count,
             min(map(lambda app: app.get_init_time(), apps))).total_seconds()
 
 
-def await_rebalance_start(ignite, timeout=1):
+def await_rebalance_start(ignite, timeout=10):
     """
     Awaits rebalance starting on any test-cache on any node.
     :param ignite: IgniteService instance.
