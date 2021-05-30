@@ -77,7 +77,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
         /** Cached flags. */
         private readonly Flags _flags;
-        
+
         /** */
         private readonly ConcurrentStack<DataStreamerClientEntry<TK, TV>[]> _arrayPool
             = new ConcurrentStack<DataStreamerClientEntry<TK, TV>[]>();
@@ -207,7 +207,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 }
 
                 _exception = new ObjectDisposedException("DataStreamerClient", "Data streamer has been disposed");
-                
+
                 if (_autoFlushTimer != null)
                 {
                     _autoFlushTimer.Dispose();
@@ -217,7 +217,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 {
                     // Disregard current buffers, stop all retry loops.
                     _cancelled = true;
-                    
+
                     return TaskRunner.CompletedTask;
                 }
 
@@ -246,7 +246,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         }
 
         /// <summary>
-        /// Gets the count of pooled arrays. 
+        /// Gets the count of pooled arrays.
         /// </summary>
         internal int ArraysPooled
         {
@@ -285,7 +285,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         }
 
         /// <summary>
-        /// Adds an entry to the streamer. 
+        /// Adds an entry to the streamer.
         /// </summary>
         private void Add(DataStreamerClientEntry<TK, TV> entry)
         {
@@ -305,7 +305,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 _rwLock.ExitReadLock();
             }
         }
-        
+
         /// <summary>
         /// Adds an entry without RW lock.
         /// </summary>
@@ -365,7 +365,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /// Flushes the specified buffer asynchronously.
         /// </summary>
         internal Task FlushBufferAsync(
-            DataStreamerClientBuffer<TK, TV> buffer, 
+            DataStreamerClientBuffer<TK, TV> buffer,
             ClientSocket socket,
             SemaphoreSlim semaphore)
         {
@@ -469,6 +469,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                     }
                 }
 
+                // TODO: If flush was caused by full buffer, we don't need to force flush everything here -
+                // just re-add entries to other buffers.
                 FlushInternalAsync().ContinueWith(flushTask => flushTask.SetAsResult(tcs));
             }
             catch (Exception e)
@@ -478,7 +480,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         }
 
         /// <summary>
-        /// Re-adds obsolete buffer entries to new buffers and returns the array to the pool. 
+        /// Re-adds obsolete buffer entries to new buffers and returns the array to the pool.
         /// </summary>
         private void ReAddEntriesAndReturnBuffer(DataStreamerClientBuffer<TK, TV> buffer)
         {
@@ -507,7 +509,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             w.WriteByte((byte) _flags);
             w.WriteInt(ServerBufferSizeAuto); // Server per-node buffer size.
             w.WriteInt(ServerBufferSizeAuto); // Server per-thread buffer size.
-            
+
             if (_options.Receiver != null)
             {
                 var rcvHolder = new StreamReceiverHolder(_options.Receiver,
@@ -585,7 +587,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             {
                 return;
             }
-            
+
             if (ex is ObjectDisposedException)
             {
                 throw new ObjectDisposedException("Streamer is closed.");
@@ -603,8 +605,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             {
                 return;
             }
-            
-            // Prevent multiple parallel timer calls. 
+
+            // Prevent multiple parallel timer calls.
             if (!Monitor.TryEnter(_autoFlushTimer))
             {
                 return;
@@ -641,11 +643,11 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             {
                 return true;
             }
-            
+
             var clientEx = exception as IgniteClientException;
 
-            if (clientEx != null && 
-                (clientEx.InnerException is SocketException || 
+            if (clientEx != null &&
+                (clientEx.InnerException is SocketException ||
                  clientEx.StatusCode == ClientStatusCode.InvalidNodeState))
             {
                 return true;
