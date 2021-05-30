@@ -134,13 +134,13 @@ class RebalancePersistentTest(IgniteTest):
         if trigger_event:
             node = ignites.nodes[node_count - 1]
             ignites.stop_node(node)
-            control_utility.remove_from_baseline(node)
+            control_utility.remove_from_baseline([node])
             ignite = ignites
         else:
             ignite = IgniteService(self.test_context, node_config._replace(discovery_spi=from_ignite_cluster(ignites)),
                                    num_nodes=1)
             ignite.start()
-            control_utility.add_to_baseline(ignite.nodes[0])
+            control_utility.add_to_baseline(ignite.nodes)
 
 
         start_node, _ = await_rebalance_start(ignite)
