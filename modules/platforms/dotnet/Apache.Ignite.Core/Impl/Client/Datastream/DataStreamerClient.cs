@@ -57,6 +57,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         private const int ServerBufferSizeAuto = -1;
 
         /** */
+        private const int MaxRetries = 16;
+
+        /** */
         private readonly ClientFailoverSocket _socket;
 
         /** */
@@ -311,6 +314,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /// </summary>
         private void AddNoLock(DataStreamerClientEntry<TK, TV> entry)
         {
+            var retries = MaxRetries;
+
             while (!_cancelled)
             {
                 try
@@ -325,7 +330,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 }
                 catch (Exception e)
                 {
-                    if (ShouldRetry(e))
+                    if (ShouldRetry(e) && retries --> 0)
                     {
                         continue;
                     }
@@ -632,27 +637,15 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /// </summary>
         private static bool ShouldRetry(Exception exception)
         {
-            var aggregate = exception as AggregateException;
-
-            if (aggregate != null)
+            while (exception.InnerException != null)
             {
-                exception = aggregate.GetBaseException();
+                exception = exception.InnerException;
             }
 
             if (exception is SocketException || exception is IOException)
             {
                 return true;
             }
-
-            // TODO: Check the root cause
-            /*
-             * System.AggregateException : One or more errors occurred. (Streamer is closed with error, check inner exception for details.)
-  ----> Apache.Ignite.Core.Client.IgniteClientException : Streamer is closed with error, check inner exception for details.
-  ----> System.AggregateException : One or more errors occurred. (Client connection has failed. Examine InnerException for details)
-  ----> Apache.Ignite.Core.Client.IgniteClientException : Client connection has failed. Examine InnerException for details
-  ----> System.IO.IOException : Unable to write data to the transport connection: Broken pipe.
-  ----> System.Net.Sockets.SocketException : Broken pipe
-             */
 
             // TODO: Improve this logic when streamer gets closed due to grid stop.
             if (exception.Message == "Data streamer has been closed.")
@@ -662,9 +655,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
             var clientEx = exception as IgniteClientException;
 
-            if (clientEx != null &&
-                (clientEx.InnerException is SocketException ||
-                 clientEx.StatusCode == ClientStatusCode.InvalidNodeState))
+            if (clientEx != null && clientEx.StatusCode == ClientStatusCode.InvalidNodeState)
             {
                 return true;
             }
