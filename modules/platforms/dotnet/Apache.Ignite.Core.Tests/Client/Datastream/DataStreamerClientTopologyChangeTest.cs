@@ -182,15 +182,13 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 cancel = true;
                 adderTask.Wait(TimeSpan.FromSeconds(15));
 
-                streamer.Flush();
+                streamer.Close(false);
 
                 // TODO: Enable once we stabilize this test.
                 // DataStreamerClientTest.CheckArrayPoolLeak(streamer);
 
                 entriesSent = ((DataStreamerClient<int, int>) streamer).EntriesSent;
             }
-
-            Assert.AreEqual(id, entriesSent);
 
             TestUtils.WaitForTrueCondition(
                 () => id == cache.GetSize(),
