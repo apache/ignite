@@ -113,14 +113,14 @@ public class ClientDataStreamerStartRequest extends ClientRequest {
         if (entries != null)
             dataStreamer.addDataInternal(entries, useThreadBuffer);
 
+        if (flush())
+            dataStreamer.flush();
+
         if (close()) {
             dataStreamer.close();
 
             return new ClientLongResponse(requestId(), 0);
         } else {
-            if (flush())
-                dataStreamer.flush();
-
             long rsrcId = ctx.resources().put(new ClientDataStreamerHandle(dataStreamer));
 
             return new ClientLongResponse(requestId(), rsrcId);
