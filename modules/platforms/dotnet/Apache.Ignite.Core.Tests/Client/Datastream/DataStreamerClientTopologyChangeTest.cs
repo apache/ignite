@@ -138,6 +138,8 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
             var id = 0;
             long entriesSent;
+            int arraysAlloc;
+            int arraysPooled;
             var cache = CreateCache(client);
 
             var options = new DataStreamerClientOptions {AllowOverwrite = true};
@@ -186,7 +188,11 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 // TODO: Enable once we stabilize this test.
                 // DataStreamerClientTest.CheckArrayPoolLeak(streamer);
 
-                entriesSent = ((DataStreamerClient<int, int>) streamer).EntriesSent;
+                Thread.Sleep(1000);
+                var streamerImpl = (DataStreamerClient<int, int>) streamer;
+                entriesSent = streamerImpl.EntriesSent;
+                arraysAlloc = streamerImpl.ArraysAllocated;
+                arraysPooled = streamerImpl.ArraysPooled;
             }
 
             // TODO:
@@ -194,7 +200,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             // Some of the data does not get sent.
             TestUtils.WaitForTrueCondition(
                 () => id == cache.GetSize(),
-                () => string.Format("Expected: {0}, actual: {1}, sent: {2}", id, cache.GetSize(), entriesSent),
+                () => string.Format("Expected: {0}, actual: {1}, sent: {2}, alloc: {3}, pool: {4}", id, cache.GetSize(), entriesSent, arraysAlloc, arraysPooled),
                 timeout: 3000);
 
             Assert.Greater(id, 10000);
