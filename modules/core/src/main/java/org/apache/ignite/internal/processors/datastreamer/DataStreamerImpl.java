@@ -1312,11 +1312,19 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
      */
     @Override public void close(boolean cancel) throws CacheException {
         try {
-            closeEx(cancel, false);
+            closeEx(cancel);
         }
         catch (IgniteCheckedException e) {
             throw CU.convertToCacheException(e);
         }
+    }
+
+    /**
+     * @param cancel {@code True} to close with cancellation.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void closeEx(boolean cancel) throws IgniteCheckedException {
+        closeEx(cancel, false);
     }
 
     /**
