@@ -342,14 +342,18 @@ namespace Apache.Ignite.Core.Tests
         public static void WaitForTrueCondition(Func<bool> cond, Func<string> messageFunc, int timeout = 1000)
         {
             var res = WaitForCondition(cond, timeout);
-            var message = string.Format("Condition not reached within {0} ms", timeout);
 
-            if (messageFunc != null)
+            if (!res)
             {
-                message += string.Format(" ({0})", messageFunc());
-            }
+                var message = string.Format("Condition not reached within {0} ms", timeout);
 
-            Assert.IsTrue(res, message);
+                if (messageFunc != null)
+                {
+                    message += string.Format(" ({0})", messageFunc());
+                }
+
+                Assert.IsTrue(res, message);
+            }
         }
 
         /// <summary>

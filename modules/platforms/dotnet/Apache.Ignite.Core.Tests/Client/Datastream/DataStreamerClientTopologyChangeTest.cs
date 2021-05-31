@@ -137,71 +137,67 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             var client = StartClient(maxPort: 10809);
 
             var id = 0;
-            long entriesSent;
-            int arraysAlloc;
-            int arraysPooled;
             var cache = CreateCache(client);
 
             var options = new DataStreamerClientOptions {AllowOverwrite = true};
 
-            using (var streamer = client.GetDataStreamer<int, int>(cache.Name, options))
+            var streamer = client.GetDataStreamer<int, int>(cache.Name, options);
+            var cancel = false;
+
+            var adderTask = Task.Factory.StartNew(() =>
             {
-                var cancel = false;
-
-                var adderTask = Task.Factory.StartNew(() =>
+                // ReSharper disable once AccessToModifiedClosure
+                while (!cancel)
                 {
-                    // ReSharper disable once AccessToModifiedClosure
-                    while (!cancel)
+                    id++;
+
+                    // ReSharper disable once AccessToDisposedClosure
+                    streamer.Add(id, id);
+
+                    if (id % 500 == 0)
                     {
-                        id++;
-
-                        // ReSharper disable once AccessToDisposedClosure
-                        streamer.Add(id, id);
-
-                        if (id % 500 == 0)
-                        {
-                            // Sleep once in a while to reduce streamed data size.
-                            Thread.Sleep(100);
-                        }
-                    }
-                });
-
-                for (int i = 0; i < topologyChanges; i++)
-                {
-                    Thread.Sleep(100);
-
-                    if (nodes.Count <= 2 || (nodes.Count < maxNodes && TestUtils.Random.Next(2) == 0))
-                    {
-                        nodes.Enqueue(StartServer());
-                    }
-                    else
-                    {
-                        nodes.Dequeue().Dispose();
+                        // Sleep once in a while to reduce streamed data size.
+                        Thread.Sleep(100);
                     }
                 }
+            });
 
-                cancel = true;
-                adderTask.Wait(TimeSpan.FromSeconds(15));
+            for (int i = 0; i < topologyChanges; i++)
+            {
+                Thread.Sleep(100);
 
-                streamer.Close(false);
-
-                // TODO: Enable once we stabilize this test.
-                // DataStreamerClientTest.CheckArrayPoolLeak(streamer);
-
-                Thread.Sleep(1000);
-                var streamerImpl = (DataStreamerClient<int, int>) streamer;
-                entriesSent = streamerImpl.EntriesSent;
-                arraysAlloc = streamerImpl.ArraysAllocated;
-                arraysPooled = streamerImpl.ArraysPooled;
+                if (nodes.Count <= 2 || (nodes.Count < maxNodes && TestUtils.Random.Next(2) == 0))
+                {
+                    nodes.Enqueue(StartServer());
+                }
+                else
+                {
+                    nodes.Dequeue().Dispose();
+                }
             }
 
+            cancel = true;
+            adderTask.Wait(TimeSpan.FromSeconds(15));
+            streamer.Close(cancel: false);
+
+            // TODO: Enable once we stabilize this test.
+            // DataStreamerClientTest.CheckArrayPoolLeak(streamer);
+
+            var streamerImpl = (DataStreamerClient<int, int>) streamer;
+
             // TODO:
-            // Condition not reached within 3000 ms (Expected: 49000, actual: 48996, sent: 48996)
-            // Condition not reached within 3000 ms (Expected: 20012, actual: 20011, sent: 20011, alloc: 69, pool: 68)
+            // (Expected: 49000, actual: 48996, sent: 48996)
+            // (Expected: 20012, actual: 20011, sent: 20011, alloc: 69, pool: 68)
+            // (Expected: 54000, actual: 53998, sent: 53998, alloc: 40, pool: 38)
             // Some of the data does not get sent.
             TestUtils.WaitForTrueCondition(
                 () => id == cache.GetSize(),
-                () => string.Format("Expected: {0}, actual: {1}, sent: {2}, alloc: {3}, pool: {4}", id, cache.GetSize(), entriesSent, arraysAlloc, arraysPooled),
+                () =>
+                {
+                    return string.Format("Expected: {0}, actual: {1}, sent: {2}, alloc: {3}, pool: {4}", id,
+                        cache.GetSize(), streamerImpl.EntriesSent, streamerImpl.ArraysAllocated,
+                        streamerImpl.ArraysPooled);
+                },
                 timeout: 3000);
 
             Assert.Greater(id, 10000);
