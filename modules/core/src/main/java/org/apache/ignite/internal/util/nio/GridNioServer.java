@@ -469,11 +469,13 @@ public class GridNioServer<T> {
             else
                 sslFilter = this.sslFilter;
 
-            if (sslFilter != null)
+            boolean sslEnabled = sslFilter != null;
+
+            if (sslEnabled)
                 sslFilter.registerMetrics(mreg);
 
             mreg.register(SESSIONS_CNT_METRIC_NAME, sessions::size, "Number of active TCP sessions.");
-            mreg.booleanMetric(SSL_ENABLED_METRIC_NAME, "Whether SSL is enabled.").value(sslFilter != null);
+            mreg.booleanMetric(SSL_ENABLED_METRIC_NAME, "Whether SSL is enabled.").value(sslEnabled);
         }
     }
 
