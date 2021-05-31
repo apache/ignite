@@ -477,9 +477,14 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 {
                     var remaining = removed.Close();
 
-                    if (remaining != null)
+                    while (remaining != null)
                     {
-                        ReAddEntriesAndReturnBuffer(remaining);
+                        if (remaining.MarkFlushed())
+                        {
+                            ReAddEntriesAndReturnBuffer(remaining);
+                        }
+
+                        remaining = remaining.Previous;
                     }
                 }
 

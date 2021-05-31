@@ -128,6 +128,14 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         }
 
         /// <summary>
+        /// Gets the previous buffer in the chain.
+        /// </summary>
+        public DataStreamerClientBuffer<TK, TV> Previous
+        {
+            get { return _previous; }
+        }
+
+        /// <summary>
         /// Adds an entry to the buffer.
         /// </summary>
         /// <param name="entry">Entry.</param>

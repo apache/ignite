@@ -114,10 +114,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             {
                 _closed = true;
 
-                var buffer = _buffer;
-
-                // If the buffer was not yet flushed, we mark it as flushed and return.
-                return buffer.MarkFlushed() ? buffer : null;
+                return _buffer;
             }
             finally
             {
