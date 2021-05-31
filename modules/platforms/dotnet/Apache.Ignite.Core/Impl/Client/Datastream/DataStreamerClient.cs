@@ -154,6 +154,12 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         }
 
         /** <inheritdoc /> */
+        public override string ToString()
+        {
+            return string.Format("{0} [CacheName={1}, IsClosed={2}]", GetType(), CacheName, IsClosed);
+        }
+
+        /** <inheritdoc /> */
         public void Add(TK key, TV val)
         {
             IgniteArgumentCheck.NotNull(key, "key");
