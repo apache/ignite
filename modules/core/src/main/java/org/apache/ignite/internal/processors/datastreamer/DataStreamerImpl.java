@@ -262,9 +262,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     private final AtomicBoolean closed = new AtomicBoolean();
 
     /** */
-    private volatile boolean closedOnKernalStop;
-
-    /** */
     private volatile long lastFlushTime = U.currentTimeMillis();
 
     /** */
@@ -1324,45 +1321,24 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
      * @throws IgniteCheckedException If failed.
      */
     public void closeEx(boolean cancel) throws IgniteCheckedException {
-        closeEx(cancel, false);
-    }
-
-    /**
-     * @param cancel {@code True} to close with cancellation.
-     * @param onKernalStop {@code True} to indicate that streamer is closed due to kernal stop.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void closeEx(boolean cancel, boolean onKernalStop) throws IgniteCheckedException {
-        IgniteCheckedException err = closeEx(cancel, onKernalStop, null);
+        IgniteCheckedException err = closeEx(cancel, null);
 
         if (err != null)
             throw err; // Throws at close().
     }
 
     /**
-     * Gets a value indicating whether this instance was closed due to kernal stop.
-     * @return True when this instance was closed due to kernal stop, false otherwise.
-     */
-    public boolean isClosedOnKernalStop() {
-        return closedOnKernalStop;
-    }
-
-    /**
      * @param cancel {@code True} to close with cancellation.
-     * @param onKernalStop {@code True} to indicate that streamer is closed due to kernal stop.
      * @param err Error.
      * @throws IgniteCheckedException If failed.
      */
-    private IgniteCheckedException closeEx(boolean cancel, boolean onKernalStop, IgniteCheckedException err)
-            throws IgniteCheckedException {
+    private IgniteCheckedException closeEx(boolean cancel, IgniteCheckedException err) throws IgniteCheckedException {
         if (!closed.compareAndSet(false, true))
             return null;
 
         busyLock.writeLock();
 
         try {
-            closedOnKernalStop = onKernalStop;
-
             if (log.isDebugEnabled())
                 log.debug("Closing data streamer [ldr=" + this + ", cancel=" + cancel + ']');
 
@@ -1425,7 +1401,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         for (Buffer buf : bufMappings.values())
             buf.cancelAll(err);
 
-        closeEx(true, false, err);
+        closeEx(true, err);
     }
 
     /**

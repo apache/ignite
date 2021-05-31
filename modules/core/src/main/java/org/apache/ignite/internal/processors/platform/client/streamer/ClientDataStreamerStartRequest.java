@@ -128,8 +128,8 @@ public class ClientDataStreamerStartRequest extends ClientDataStreamerRequest {
                 return new ClientLongResponse(requestId(), rsrcId);
             }
         }
-        catch (IllegalStateException e) {
-            return getInvalidNodeStateResponse(dataStreamer, e);
+        catch (IllegalStateException unused) {
+            return getInvalidNodeStateResponse();
         }
     }
 

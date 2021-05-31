@@ -152,7 +152,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
                 log.debug("Closing active data streamer on grid stop [ldr=" + ldr + ", cancel=" + cancel + ']');
 
             try {
-                ldr.closeEx(cancel, true);
+                ldr.closeEx(cancel);
             }
             catch (IgniteInterruptedCheckedException e) {
                 U.warn(log, "Interrupted while waiting for completion of the data streamer: " + ldr, e);

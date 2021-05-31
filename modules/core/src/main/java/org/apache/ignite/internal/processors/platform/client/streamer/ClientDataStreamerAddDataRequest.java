@@ -76,8 +76,8 @@ public class ClientDataStreamerAddDataRequest extends ClientDataStreamerRequest 
                 ctx.resources().release(streamerId);
             }
         }
-        catch (IllegalStateException e) {
-            return getInvalidNodeStateResponse(dataStreamer, e);
+        catch (IllegalStateException unused) {
+            return getInvalidNodeStateResponse();
         }
 
         return new ClientResponse(requestId());

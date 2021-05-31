@@ -18,9 +18,6 @@
 package org.apache.ignite.internal.processors.platform.client.streamer;
 
 import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
@@ -39,18 +36,12 @@ abstract class ClientDataStreamerRequest extends ClientRequest {
     }
 
     /**
-     * Returns invalid node state response or rethrows the exception.
+     * Returns invalid node state response.
      *
-     * @param dataStreamer Streamer.
-     * @param e Exception.
      * @return Invalid node state response.
      */
-    protected ClientResponse getInvalidNodeStateResponse(DataStreamerImpl<KeyCacheObject, CacheObject> dataStreamer,
-                                                         IllegalStateException e) {
-        if (dataStreamer.isClosedOnKernalStop())
-            return new ClientResponse(requestId(), ClientStatus.INVALID_NODE_STATE,
-                    "Data streamer has been closed because node is stopping.");
-
-        throw e;
+    protected ClientResponse getInvalidNodeStateResponse() {
+        return new ClientResponse(requestId(), ClientStatus.INVALID_NODE_STATE,
+                "Data streamer has been closed because node is stopping.");
     }
 }
