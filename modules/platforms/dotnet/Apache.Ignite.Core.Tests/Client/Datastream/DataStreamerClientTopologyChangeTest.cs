@@ -135,13 +135,12 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             nodes.Enqueue(StartServer());
 
             var client = StartClient(maxPort: 10809);
-
-            var id = 0;
             var cache = CreateCache(client);
 
             var options = new DataStreamerClientOptions {AllowOverwrite = true};
-
             var streamer = client.GetDataStreamer<int, int>(cache.Name, options);
+
+            var id = 0;
             var cancel = false;
 
             var adderTask = Task.Factory.StartNew(() =>
@@ -151,7 +150,6 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 {
                     id++;
 
-                    // ReSharper disable once AccessToDisposedClosure
                     streamer.Add(id, id);
 
                     if (id % 500 == 0)
@@ -180,16 +178,8 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             adderTask.Wait(TimeSpan.FromSeconds(15));
             streamer.Close(cancel: false);
 
-            // TODO: Enable once we stabilize this test.
-            // DataStreamerClientTest.CheckArrayPoolLeak(streamer);
-
             var streamerImpl = (DataStreamerClient<int, int>) streamer;
 
-            // TODO:
-            // (Expected: 49000, actual: 48996, sent: 48996)
-            // (Expected: 20012, actual: 20011, sent: 20011, alloc: 69, pool: 68)
-            // (Expected: 54000, actual: 53998, sent: 53998, alloc: 40, pool: 38)
-            // Some of the data does not get sent.
             TestUtils.WaitForTrueCondition(
                 () => id == cache.GetSize(),
                 () =>
@@ -199,6 +189,8 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                         streamerImpl.ArraysPooled);
                 },
                 timeout: 3000);
+
+            DataStreamerClientTest.CheckArrayPoolLeak(streamer);
 
             Assert.Greater(id, 10000);
 
