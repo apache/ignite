@@ -19,13 +19,12 @@ package org.apache.ignite.internal.processors.platform.client.streamer;
 
 import java.util.Collection;
 
-import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
+import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
-import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 import static org.apache.ignite.internal.processors.platform.client.streamer.ClientDataStreamerFlags.CLOSE;
@@ -34,7 +33,7 @@ import static org.apache.ignite.internal.processors.platform.client.streamer.Cli
 /**
  * Adds data to the existing streamer.
  */
-public class ClientDataStreamerAddDataRequest extends ClientRequest {
+public class ClientDataStreamerAddDataRequest extends ClientDataStreamerRequest {
     /** */
     private final long streamerId;
 
@@ -62,18 +61,23 @@ public class ClientDataStreamerAddDataRequest extends ClientRequest {
      */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         ClientDataStreamerHandle handle = ctx.resources().get(streamerId);
-        IgniteDataStreamer<KeyCacheObject, CacheObject> dataStreamer = handle.getStreamer();
+        DataStreamerImpl<KeyCacheObject, CacheObject> dataStreamer =
+                (DataStreamerImpl<KeyCacheObject, CacheObject>)handle.getStreamer();
 
-        // To remove data, pass null as a value for the key.
-        if (entries != null)
-            dataStreamer.addData(entries);
+        try {
+            if (entries != null)
+                dataStreamer.addData(entries);
 
-        if ((flags & FLUSH) != 0)
-            dataStreamer.flush();
+            if ((flags & FLUSH) != 0)
+                dataStreamer.flush();
 
-        if ((flags & CLOSE) != 0) {
-            dataStreamer.close();
-            ctx.resources().release(streamerId);
+            if ((flags & CLOSE) != 0) {
+                dataStreamer.close();
+                ctx.resources().release(streamerId);
+            }
+        }
+        catch (IllegalStateException e) {
+            return getInvalidNodeStateResponse(dataStreamer, e);
         }
 
         return new ClientResponse(requestId());

@@ -31,8 +31,8 @@ import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientLongResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientPlatform;
-import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheRequest;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.stream.StreamReceiver;
@@ -47,7 +47,7 @@ import static org.apache.ignite.internal.processors.platform.client.streamer.Cli
  *
  */
 @SuppressWarnings({"rawtypes", "unchecked"})
-public class ClientDataStreamerStartRequest extends ClientRequest {
+public class ClientDataStreamerStartRequest extends ClientDataStreamerRequest {
     /** */
     private final int cacheId;
 
@@ -92,40 +92,45 @@ public class ClientDataStreamerStartRequest extends ClientRequest {
         DataStreamerImpl<KeyCacheObject, CacheObject> dataStreamer = (DataStreamerImpl<KeyCacheObject, CacheObject>)
                 ctx.kernalContext().grid().<KeyCacheObject, CacheObject>dataStreamer(cacheName);
 
-        // Don't use thread buffer for a one-off streamer operation.
-        boolean close = (flags & CLOSE) != 0;
-        boolean keepBinary = (flags & KEEP_BINARY) != 0;
-        boolean useThreadBuffer = !close;
+        try {
+            // Don't use thread buffer for a one-off streamer operation.
+            boolean close = (flags & CLOSE) != 0;
+            boolean keepBinary = (flags & KEEP_BINARY) != 0;
+            boolean useThreadBuffer = !close;
 
-        if (perNodeBufferSize >= 0)
-            dataStreamer.perNodeBufferSize(perNodeBufferSize);
-        else if (entries != null && !entries.isEmpty() && close)
-            dataStreamer.perNodeBufferSize(entries.size());
+            if (perNodeBufferSize >= 0)
+                dataStreamer.perNodeBufferSize(perNodeBufferSize);
+            else if (entries != null && !entries.isEmpty() && close)
+                dataStreamer.perNodeBufferSize(entries.size());
 
-        if (perThreadBufferSize >= 0 && useThreadBuffer)
-            dataStreamer.perThreadBufferSize(perThreadBufferSize);
+            if (perThreadBufferSize >= 0 && useThreadBuffer)
+                dataStreamer.perThreadBufferSize(perThreadBufferSize);
 
-        dataStreamer.allowOverwrite((flags & ALLOW_OVERWRITE) != 0);
-        dataStreamer.skipStore((flags & SKIP_STORE) != 0);
-        dataStreamer.keepBinary(keepBinary);
+            dataStreamer.allowOverwrite((flags & ALLOW_OVERWRITE) != 0);
+            dataStreamer.skipStore((flags & SKIP_STORE) != 0);
+            dataStreamer.keepBinary(keepBinary);
 
-        if (receiverObj != null)
-            dataStreamer.receiver(createReceiver(ctx.kernalContext(), receiverObj, receiverPlatform, keepBinary));
+            if (receiverObj != null)
+                dataStreamer.receiver(createReceiver(ctx.kernalContext(), receiverObj, receiverPlatform, keepBinary));
 
-        if (entries != null)
-            dataStreamer.addDataInternal(entries, useThreadBuffer);
+            if (entries != null)
+                dataStreamer.addDataInternal(entries, useThreadBuffer);
 
-        if ((flags & FLUSH) != 0)
-            dataStreamer.flush();
+            if ((flags & FLUSH) != 0)
+                dataStreamer.flush();
 
-        if (close) {
-            dataStreamer.close();
+            if (close) {
+                dataStreamer.close();
 
-            return new ClientLongResponse(requestId(), 0);
-        } else {
-            long rsrcId = ctx.resources().put(new ClientDataStreamerHandle(dataStreamer));
+                return new ClientLongResponse(requestId(), 0);
+            } else {
+                long rsrcId = ctx.resources().put(new ClientDataStreamerHandle(dataStreamer));
 
-            return new ClientLongResponse(requestId(), rsrcId);
+                return new ClientLongResponse(requestId(), rsrcId);
+            }
+        }
+        catch (IllegalStateException e) {
+            return getInvalidNodeStateResponse(dataStreamer, e);
         }
     }
 
