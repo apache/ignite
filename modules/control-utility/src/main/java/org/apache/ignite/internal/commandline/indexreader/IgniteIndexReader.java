@@ -35,6 +35,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -44,6 +45,13 @@ import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.AbstractInlineInnerIO;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.AbstractInlineLeafIO;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InlineIO;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InnerIO;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.LeafIO;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.MvccInnerIO;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.MvccLeafIO;
 import org.apache.ignite.internal.commandline.ProgressPrinter;
 import org.apache.ignite.internal.commandline.StringBuilderOutputStream;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgument;
@@ -71,13 +79,6 @@ import org.apache.ignite.internal.processors.cache.tree.AbstractDataLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.PendingRowIO;
 import org.apache.ignite.internal.processors.cache.tree.RowLinkIO;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataLeafIO;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.AbstractInlineInnerIO;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.AbstractInlineLeafIO;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InnerIO;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.LeafIO;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.MvccInnerIO;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.MvccLeafIO;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InlineIO;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.lang.GridClosure3;
@@ -89,7 +90,6 @@ import org.jetbrains.annotations.Nullable;
 import static java.lang.Integer.parseInt;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
-import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
@@ -113,9 +113,6 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageIndex;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.partId;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
-import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_META;
-import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_PAGE_LIST_META;
-import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_PART_META;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getType;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getVersion;
 import static org.apache.ignite.internal.util.GridUnsafe.allocateBuffer;
@@ -353,42 +350,38 @@ public class IgniteIndexReader implements AutoCloseable {
         List<Throwable> errors;
 
         try {
-            Set<Short> metaPageClasses = new HashSet<>(asList(T_META, T_PAGE_LIST_META));
+            long pageMetaPageId = partMetaPageId(INDEX_PARTITION, FLAG_IDX);
 
-            Map<Short, Long> idxMetaPages = findPages(INDEX_PARTITION, FLAG_IDX, idxStore, metaPageClasses);
-
-            Long pageMetaPageId = idxMetaPages.get(T_META);
+            AtomicLong pageListMetaPageId = new AtomicLong(-1);
 
             // Traversing trees.
-            if (pageMetaPageId != null) {
-                doWithBuffer((buf, addr) -> {
-                    readPage(idxStore, pageMetaPageId, buf);
+            doWithBuffer((buf, addr) -> {
+                readPage(idxStore, pageMetaPageId, buf);
 
-                    PageMetaIO pageMetaIO = PageIO.getPageIO(addr);
+                PageMetaIO pageMetaIO = PageIO.getPageIO(addr);
 
-                    long metaTreeRootId = normalizePageId(pageMetaIO.getTreeRoot(addr));
+                pageListMetaPageId.set(pageMetaIO.getReuseListRoot(addr));
 
-                    treeInfo.set(traverseAllTrees("Index trees traversal", metaTreeRootId, CountOnlyStorage::new, this::traverseTree));
+                long metaTreeRootId = normalizePageId(pageMetaIO.getTreeRoot(addr));
 
-                    treeInfo.get().forEach((name, info) -> {
-                        pageIds.addAll(info.innerPageIds);
+                treeInfo.set(traverseAllTrees("Index trees traversal", metaTreeRootId, CountOnlyStorage::new, this::traverseTree));
 
-                        pageIds.add(info.rootPageId);
-                    });
+                treeInfo.get().forEach((name, info) -> {
+                    pageIds.addAll(info.innerPageIds);
 
-                    Supplier<ItemStorage> itemStorageFactory = checkParts ? LinkStorage::new : CountOnlyStorage::new;
-
-                    horizontalScans.set(traverseAllTrees("Scan index trees horizontally", metaTreeRootId, itemStorageFactory, this::horizontalTreeScan));
-
-                    return null;
+                    pageIds.add(info.rootPageId);
                 });
-            }
 
-            Long pageListMetaPageId = idxMetaPages.get(T_PAGE_LIST_META);
+                Supplier<ItemStorage> itemStorageFactory = checkParts ? LinkStorage::new : CountOnlyStorage::new;
+
+                horizontalScans.set(traverseAllTrees("Scan index trees horizontally", metaTreeRootId, itemStorageFactory, this::horizontalTreeScan));
+
+                return null;
+            });
 
             // Scanning page reuse lists.
-            if (pageListMetaPageId != null)
-                pageListsInfo.set(getPageListsInfo(pageListMetaPageId));
+            if (pageListMetaPageId.get() != -1)
+                pageListsInfo.set(getPageListsInfo(pageListMetaPageId.get()));
 
             ProgressPrinter progressPrinter = new ProgressPrinter(System.out, "Reading pages sequentially", pagesNum);
 
@@ -587,9 +580,7 @@ public class IgniteIndexReader implements AutoCloseable {
             final int partId = i;
 
             try {
-                Map<Short, Long> metaPages = findPages(i, FLAG_DATA, partStore, singleton(T_PART_META));
-
-                long partMetaId = metaPages.get(T_PART_META);
+                long partMetaId = partMetaPageId(i, FLAG_DATA);
 
                 doWithBuffer((buf, addr) -> {
                     readPage(partStore, partMetaId, buf);
@@ -659,31 +650,12 @@ public class IgniteIndexReader implements AutoCloseable {
     }
 
     /**
-     * Finds certain pages in file page store. When all pages corresponding given types is found, at least one page
-     * for each type, we return the result.
-     *
      * @param partId Partition id.
-     * @param flag Page store flag.
-     * @param store File page store.
-     * @param pageTypes Page types to find.
-     * @return Map of found pages. First page of this class that was found, is put to this map.
-     * @throws IgniteCheckedException If failed.
+     * @param flag Flag.
+     * @return Id of partition meta page.
      */
-    private Map<Short, Long> findPages(int partId, byte flag, FilePageStore store, Set<Short> pageTypes)
-        throws IgniteCheckedException {
-        Map<Short, Long> res = new HashMap<>();
-
-        scanFileStore(partId, flag, store, (pageId, addr, io) -> {
-            if (pageTypes.contains((short)io.getType())) {
-                res.put((short)io.getType(), pageId);
-
-                pageTypes.remove((short)io.getType());
-            }
-
-            return !pageTypes.isEmpty();
-        });
-
-        return res;
+    private long partMetaPageId(int partId, byte flag) {
+        return PageIdUtils.pageId(partId, flag, 0);
     }
 
     /**
