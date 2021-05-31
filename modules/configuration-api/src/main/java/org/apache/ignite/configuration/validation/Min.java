@@ -15,38 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration.annotation;
+package org.apache.ignite.configuration.validation;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-import org.apache.ignite.configuration.internal.DynamicProperty;
 
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * This annotation marks configuration schema field as a configuration tree leaf.
- * Every field annotated with this annotation will produce a {@link DynamicProperty} field in generated configuration
- * class.
- * <p>
- * Type must be one of the following (or array of one of the following):
- * <ul>
- *     <li>boolean</li>
- *     <li>int</li>
- *     <li>long</li>
- *     <li>double</li>
- *     <li>String</li>
- * </ul>
+ * Signifies that this value has lower limit (exclusive).
  */
 @Target(FIELD)
 @Retention(RUNTIME)
 @Documented
-public @interface Value {
-    /**
-     * Indicates that the current configuration value has a default value. Value itself is derived from the instantiated object
-     * of a corresponding schema type. This means that the default is not necessarily a constant value.
-     * @return {@code hasDefault} flag value.
-     */
-    boolean hasDefault() default false;
+public @interface Min {
+    long value();
 }

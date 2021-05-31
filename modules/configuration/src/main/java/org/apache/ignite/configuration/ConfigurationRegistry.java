@@ -27,12 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotNull;
-import org.apache.ignite.configuration.annotation.ConfigurationRoot;
 import org.apache.ignite.configuration.internal.DynamicConfiguration;
-import org.apache.ignite.configuration.internal.RootKeyImpl;
 import org.apache.ignite.configuration.internal.SuperRoot;
 import org.apache.ignite.configuration.internal.asm.ConfigurationAsmGenerator;
 import org.apache.ignite.configuration.internal.util.ConfigurationUtil;
@@ -47,8 +42,11 @@ import org.apache.ignite.configuration.tree.ConfigurationVisitor;
 import org.apache.ignite.configuration.tree.InnerNode;
 import org.apache.ignite.configuration.tree.TraversableTreeNode;
 import org.apache.ignite.configuration.validation.Immutable;
+import org.apache.ignite.configuration.validation.Max;
+import org.apache.ignite.configuration.validation.Min;
 import org.apache.ignite.configuration.validation.Validator;
 import org.apache.ignite.lang.IgniteLogger;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.configuration.internal.util.ConfigurationNotificationsUtil.notifyListeners;
@@ -201,17 +199,5 @@ public class ConfigurationRegistry {
         CompletableFuture[] resultFutures = futures.stream().map(mapping).toArray(CompletableFuture[]::new);
 
         return CompletableFuture.allOf(resultFutures);
-    }
-
-    /**
-     * Method to instantiate a new {@link RootKey} for your configuration root. Invoked in generated code only.
-     * Does not register this root anywhere, used for static object initialization only.
-     * @param schemaClass Class of Configuration Schema that was annotated with {@link ConfigurationRoot}.
-     * @param <T> Type of public configuration tree.
-     * @param <V> View type for the root.
-     * @return Root key instance.
-     */
-    public static <T extends ConfigurationTree<V, ?>, V> RootKey<T, V> newRootKey(Class<?> schemaClass) {
-        return new RootKeyImpl<>(schemaClass);
     }
 }

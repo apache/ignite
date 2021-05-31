@@ -59,7 +59,6 @@
         <netty.version>4.1.60.Final</netty.version>
         <javapoet.version>1.13.0</javapoet.version>
         <javax.annotation.api.version>1.3.2</javax.annotation.api.version>
-        <javax.validation.version>2.0.1.Final</javax.validation.version>
         <jetbrains.annotations.version>20.1.0</jetbrains.annotations.version>
         <jmh.framework.version>1.13</jmh.framework.version>
         <junit.jupiter.version>5.7.0</junit.jupiter.version>
@@ -147,6 +146,12 @@
             <dependency>
                 <groupId>org.apache.ignite</groupId>
                 <artifactId>ignite-configuration-annotation-processor</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.ignite</groupId>
+                <artifactId>ignite-configuration-api</artifactId>
                 <version>${project.version}</version>
             </dependency>
             
@@ -287,12 +292,6 @@
                 <groupId>info.picocli</groupId>
                 <artifactId>picocli</artifactId>
                 <version>${picocli.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>javax.validation</groupId>
-                <artifactId>validation-api</artifactId>
-                <version>${javax.validation.version}</version>
             </dependency>
 
             <dependency>

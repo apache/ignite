@@ -17,22 +17,52 @@
 
 package org.apache.ignite.configuration;
 
+import org.apache.ignite.configuration.annotation.ConfigurationRoot;
 import org.apache.ignite.configuration.storage.ConfigurationType;
 
 /** */
-public abstract class RootKey<T extends ConfigurationTree<VIEW, ?>, VIEW> {
+public class RootKey<T extends ConfigurationTree<VIEW, ?>, VIEW> {
+    /** */
+    private final String rootName;
+
+    /** */
+    private final ConfigurationType storageType;
+
+    /** */
+    private final Class<?> schemaClass;
+
+    /**
+     * @param schemaClass Class of the configuration schema.
+     */
+    public RootKey(Class<?> schemaClass) {
+        this.schemaClass = schemaClass;
+
+        ConfigurationRoot rootAnnotation = schemaClass.getAnnotation(ConfigurationRoot.class);
+
+        assert rootAnnotation != null;
+
+        this.rootName = rootAnnotation.rootName();
+        this.storageType = rootAnnotation.type();
+    }
+
     /**
      * @return Name of the configuration root.
      */
-    public abstract String key();
+    public String key() {
+        return rootName;
+    }
 
     /**
      * @return Configuration type of the root.
      */
-    protected abstract ConfigurationType type();
+    public ConfigurationType type() {
+        return storageType;
+    }
 
     /**
      * @return Schema class for the root.
      */
-    public abstract Class<?> schemaClass();
+    public Class<?> schemaClass() {
+        return schemaClass;
+    }
 }

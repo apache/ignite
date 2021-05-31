@@ -17,7 +17,7 @@
 
 package org.apache.ignite.configuration.internal.validation;
 
-import javax.validation.constraints.Max;
+import org.apache.ignite.configuration.validation.Max;
 import org.apache.ignite.configuration.validation.ValidationContext;
 import org.apache.ignite.configuration.validation.ValidationIssue;
 import org.apache.ignite.configuration.validation.Validator;

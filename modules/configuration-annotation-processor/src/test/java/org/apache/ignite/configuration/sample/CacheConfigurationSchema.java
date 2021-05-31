@@ -17,9 +17,9 @@
 
 package org.apache.ignite.configuration.sample;
 
-import javax.validation.constraints.Min;
 import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.Value;
+import org.apache.ignite.configuration.validation.Min;
 
 /**
  * Test cache configuration schema.
@@ -28,6 +28,6 @@ import org.apache.ignite.configuration.annotation.Value;
 public class CacheConfigurationSchema {
     /** Size. */
     @Value
-    @Min(value = 1, message = "Minimal cache size is 1")
+    @Min(1)
     public int size;
 }

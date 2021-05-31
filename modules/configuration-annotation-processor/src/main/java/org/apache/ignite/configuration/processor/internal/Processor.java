@@ -204,12 +204,10 @@ public class Processor extends AbstractProcessor {
 
         ParameterizedTypeName fieldTypeName = ParameterizedTypeName.get(ROOT_KEY_CLASSNAME, configInterface, viewClassName);
 
-        ClassName cfgRegistryClassName = ClassName.get("org.apache.ignite.configuration", "ConfigurationRegistry");
-
         FieldSpec keyField = FieldSpec.builder(fieldTypeName, "KEY", PUBLIC, STATIC, FINAL)
             .initializer(
-                "$T.newRootKey($T.class)",
-                cfgRegistryClassName,
+                "new $T($T.class)",
+                ROOT_KEY_CLASSNAME,
                 realSchemaClass
             )
             .build();

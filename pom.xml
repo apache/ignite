@@ -42,6 +42,7 @@
         <module>modules/cli-common</module>
         <module>modules/configuration</module>
         <module>modules/configuration-annotation-processor</module>
+        <module>modules/configuration-api</module>
         <module>modules/core</module>
         <module>modules/metastorage</module>
         <module>modules/metastorage-client</module>

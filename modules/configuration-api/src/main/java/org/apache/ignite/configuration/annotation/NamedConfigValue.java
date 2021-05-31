@@ -20,39 +20,29 @@ package org.apache.ignite.configuration.annotation;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-import org.apache.ignite.configuration.internal.DynamicConfiguration;
 
-import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * This annotation, if applied to a class, marks it as a configuration schema.
- * Annotation processor generates several classes for each configuration schema:
- * <ul>
- * <li>Config - Represents configuration itself, provides API to init, change and view it. Extends {@link DynamicConfiguration}</li>
- * <li>Change - changes config tree</li>
- * <li>View - immutable object to view config tree</li>
- * </ul>
+ * This annotation denotes configuration schema fields that are dynamically created and mapped by name.
+ * Example use-cases for this annotation are Ignite node configuration, cache configuration, because nodes and caches
+ * can be added dynamically.
+ * Every field annotated with this annotation will produce a {@code NamedListConfiguration} field in generated configuration class.
  *
  * <h1 class="header">Example</h1>
- * Here is how to create a root configuration schema:
  * <pre><code>
  * {@literal @}Config(value = "local", root = true)
  * public class LocalConfigurationSchema {
  *
- *      {@literal @}Value
- *      public String foo;
+ *      {@literal @}NamedConfigValue
+ *      private SomeOtherConfiguration someOther;
  *
- *      {@literal @}Value
- *      public boolean bar;
- *
- *      {@literal @}ConfigValue
- *      public SomeOtherConfiguration someOther;
  * }
  * </code></pre>
  */
-@Target({ TYPE })
+@Target({ FIELD })
 @Retention(RUNTIME)
 @Documented
-public @interface Config {
+public @interface NamedConfigValue {
 }

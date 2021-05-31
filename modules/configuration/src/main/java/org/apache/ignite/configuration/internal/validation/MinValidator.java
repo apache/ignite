@@ -17,7 +17,7 @@
 
 package org.apache.ignite.configuration.internal.validation;
 
-import javax.validation.constraints.Min;
+import org.apache.ignite.configuration.validation.Min;
 import org.apache.ignite.configuration.validation.ValidationContext;
 import org.apache.ignite.configuration.validation.ValidationIssue;
 import org.apache.ignite.configuration.validation.Validator;

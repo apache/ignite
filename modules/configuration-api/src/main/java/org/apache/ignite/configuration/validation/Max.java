@@ -15,35 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration.annotation;
+package org.apache.ignite.configuration.validation;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-import org.apache.ignite.configuration.internal.NamedListConfiguration;
 
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * This annotation denotes configuration schema fields that are dynamically created and mapped by name.
- * Example use-cases for this annotation are Ignite node configuration, cache configuration, because nodes and caches
- * can be added dynamically.
- * Every field annotated with this annotation will produce a {@link NamedListConfiguration} field in generated configuration class.
- *
- * <h1 class="header">Example</h1>
- * <pre><code>
- * {@literal @}Config(value = "local", root = true)
- * public class LocalConfigurationSchema {
- *
- *      {@literal @}NamedConfigValue
- *      private SomeOtherConfiguration someOther;
- *
- * }
- * </code></pre>
+ * Signifies that this value has upper limit (exclusive).
  */
-@Target({ FIELD })
+@Target(FIELD)
 @Retention(RUNTIME)
 @Documented
-public @interface NamedConfigValue {
+public @interface Max {
+    long value();
 }
