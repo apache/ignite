@@ -16,29 +16,14 @@
 """
 Module contains in-memory rebalance tests.
 """
-from enum import IntEnum
-
 from ducktape.mark import defaults
 
 from ignitetest.services.ignite import IgniteService
-from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
-from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
-from ignitetest.tests.rebalance import preload_data, await_rebalance_start, await_rebalance_complete, \
-    aggregate_rebalance_stats
+from ignitetest.tests.rebalance import preload_data, start_ignite, get_result, TriggerEvent, NUM_NODES
 from ignitetest.utils import cluster, ignite_versions
-from ignitetest.utils.enum import constructible
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import IgniteVersion, DEV_BRANCH, LATEST
-
-
-@constructible
-class TriggerEvent(IntEnum):
-    """
-    Rebalance trigger event.
-    """
-    NODE_JOIN = 0
-    NODE_LEFT = 1
+from ignitetest.utils.version import DEV_BRANCH, LATEST
 
 
 # pylint: disable=W0223
@@ -46,9 +31,6 @@ class RebalanceInMemoryTest(IgniteTest):
     """
     Tests rebalance scenarios in in-memory mode.
     """
-    NUM_NODES = 4
-    DEFAULT_DATA_REGION_SZ = 512 * 1024 * 1024
-
     # pylint: disable=too-many-arguments, too-many-locals
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
@@ -101,48 +83,21 @@ class RebalanceInMemoryTest(IgniteTest):
         :param throttle: rebalanceThrottle config property.
         :return: Rebalance and data preload stats.
         """
-        node_count = len(self.test_context.cluster) - preloaders
-
-        node_config = IgniteConfiguration(
-            version=IgniteVersion(ignite_version),
-            data_storage=DataStorageConfiguration(
-                default=DataRegionConfiguration(max_size=max(
-                    cache_count * entry_count * entry_size * (backups + 1),
-                    self.DEFAULT_DATA_REGION_SZ))),
-            metric_exporter="org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi",
-            rebalance_thread_pool_size=thread_pool_size,
-            rebalance_batch_size=batch_size,
-            rebalance_batches_prefetch_count=batches_prefetch_count,
-            rebalance_throttle=throttle)
-
-        ignites = IgniteService(self.test_context, config=node_config,
-                                num_nodes=node_count if trigger_event else node_count - 1)
-        ignites.start()
+        ignites = start_ignite(self.test_context, ignite_version, trigger_event, backups, cache_count,
+                               entry_count, entry_size, preloaders, thread_pool_size, batch_size,
+                               batches_prefetch_count, throttle)
 
         preload_time = preload_data(
             self.test_context,
-            node_config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites)),
+            ignites.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites)),
             preloaders, backups, cache_count, entry_count, entry_size)
 
         if trigger_event:
-            ignites.stop_node(ignites.nodes[node_count - 1])
+            ignites.stop_node(ignites.nodes[-1])
             ignite = ignites
         else:
-            ignite = IgniteService(self.test_context, node_config._replace(discovery_spi=from_ignite_cluster(ignites)),
-                                   num_nodes=1)
+            ignite = IgniteService(self.test_context,
+                                   ignites.config._replace(discovery_spi=from_ignite_cluster(ignites)), num_nodes=1)
             ignite.start()
 
-        start_node, _ = await_rebalance_start(ignite)
-
-        await_rebalance_complete(ignite, start_node, cache_count)
-
-        rebalance_nodes = ignite.nodes[:-1] if trigger_event else ignite.nodes
-
-        stats = aggregate_rebalance_stats(rebalance_nodes, cache_count)
-
-        return {
-            "rebalance_nodes": len(rebalance_nodes),
-            "rebalance_stats": stats,
-            "preload_time": int(preload_time * 1000),
-            "preloaded_bytes": cache_count * entry_count * entry_size
-        }
+        return get_result(ignite, trigger_event, preload_time, cache_count, entry_count, entry_size)

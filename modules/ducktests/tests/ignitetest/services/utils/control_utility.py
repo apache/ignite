@@ -87,12 +87,13 @@ class ControlUtility:
 
         return self.__parse_cluster_state(result)
 
-    def remove_from_baseline(self, nodes):
+    def remove_from_baseline(self, nodes, node=None):
         """
         :param nodes: Nodes that should be removed to baseline.
+        :param node: The node on which the command will be executed.
         """
         result = self.__run(
-            f"--baseline remove {','.join([node.account.externally_routable_ip for node in nodes])} --yes")
+            f"--baseline remove {','.join([node.account.externally_routable_ip for node in nodes])} --yes", node)
 
         return self.__parse_cluster_state(result)
 
