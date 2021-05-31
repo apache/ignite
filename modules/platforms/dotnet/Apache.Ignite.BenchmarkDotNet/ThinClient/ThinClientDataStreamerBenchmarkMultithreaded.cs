@@ -25,40 +25,11 @@ namespace Apache.Ignite.BenchmarkDotNet.ThinClient
     /// <summary>
     /// Thin vs Thick client data streamer benchmark.
     /// <para />
-    /// Results on Core i7-9700K, Ubuntu 20.04, .NET Core 5.0.5:
-    /// Thin Client: new streamer for every batch.
-    /// Volatile buffers:
-    /// |            Method |       Mean |     Error |    StdDev | Ratio | RatioSD |      Gen 0 |      Gen 1 |     Gen 2 | Allocated |
-    /// |------------------ |-----------:|----------:|----------:|------:|--------:|-----------:|-----------:|----------:|----------:|
-    /// |  StreamThinClient | 3,092.8 ms | 197.78 ms | 583.17 ms |  9.41 |    1.87 | 83000.0000 | 17000.0000 | 3000.0000 | 457.62 MB |
-    /// | StreamThickClient |   328.3 ms |   6.54 ms |  11.80 ms |  1.00 |    0.00 | 10000.0000 |  2000.0000 |         - |  63.24 MB |
-    /// CAS buffers:
+    /// Results on Core i7-9700K, Ubuntu 20.04, .NET 5.0.5:
     /// |            Method |      Mean |    Error |   StdDev | Ratio | RatioSD |     Gen 0 |     Gen 1 | Gen 2 | Allocated |
     /// |------------------ |----------:|---------:|---------:|------:|--------:|----------:|----------:|------:|----------:|
-    /// |  StreamThinClient | 106.24 ms | 3.138 ms | 9.004 ms |  1.42 |    0.16 | 4000.0000 | 1000.0000 |     - |  23.51 MB |
-    /// | StreamThickClient |  75.23 ms | 1.893 ms | 5.432 ms |  1.00 |    0.00 | 2000.0000 | 1000.0000 |     - |  13.96 MB |
-    /// Array buffers:
-    /// |           Method |     Mean |   Error |  StdDev |     Gen 0 |     Gen 1 | Gen 2 | Allocated |
-    /// |----------------- |---------:|--------:|--------:|----------:|----------:|------:|----------:|
-    /// | StreamThinClient | 108.4 ms | 2.71 ms | 7.82 ms | 3000.0000 | 1000.0000 |     - |  19.79 MB |
-    /// Clear parent links, reduce task alloc:
-    /// | StreamThinClient | 106.6 ms | 2.89 ms | 8.43 ms | 2000.0000 |     - |     - |  16.67 MB |
-    /// Keep open streamers:
-    /// | StreamThinClient | 161.6 ms | 6.09 ms | 17.39 ms | 3000.0000 | 1000.0000 |     - |  18.05 MB |
-    /// Keep open streamers, background init:
-    /// | StreamThinClient | 144.6 ms | 5.73 ms | 16.88 ms | 2000.0000 |     - |     - |  16.69 MB |
-    /// Keep open streamers, do not flush on server when not necessary:
-    /// |            Method |     Mean |    Error |   StdDev | Ratio | RatioSD |     Gen 0 |     Gen 1 | Gen 2 | Allocated |
-    /// |------------------ |---------:|---------:|---------:|------:|--------:|----------:|----------:|------:|----------:|
-    /// |  StreamThinClient | 74.02 ms | 2.036 ms | 5.776 ms |  1.02 |    0.10 | 2000.0000 |         - |     - |  16.58 MB |
-    /// | StreamThickClient | 73.05 ms | 1.458 ms | 3.409 ms |  1.00 |    0.00 | 2000.0000 | 1000.0000 |     - |  13.83 MB |
-    /// Back to stateless:
-    /// |            Method |      Mean |    Error |    StdDev | Ratio | RatioSD |     Gen 0 |     Gen 1 | Gen 2 | Allocated |
-    /// |------------------ |----------:|---------:|----------:|------:|--------:|----------:|----------:|------:|----------:|
-    /// |  StreamThinClient | 109.93 ms | 3.420 ms | 10.030 ms |  1.39 |    0.15 | 3000.0000 | 1000.0000 |     - |  17.35 MB |
-    /// | StreamThickClient |  79.36 ms | 2.333 ms |  6.731 ms |  1.00 |    0.00 | 2000.0000 | 1000.0000 |     - |  13.83 MB |
-    /// Server-side: disable thread buffer, reduce collection alloc:
-    /// | StreamThinClient | 105.2 ms | 3.09 ms | 9.02 ms | 2000.0000 | 1000.0000 |     - |  17.34 MB |
+    /// |  StreamThinClient | 107.65 ms | 2.931 ms | 8.504 ms |  1.45 |    0.14 | 2000.0000 | 1000.0000 |     - |  17.29 MB |
+    /// | StreamThickClient |  74.69 ms | 1.829 ms | 5.278 ms |  1.00 |    0.00 | 2000.0000 | 1000.0000 |     - |  13.85 MB |
     /// </summary>
     [MemoryDiagnoser]
     public class ThinClientDataStreamerBenchmarkMultithreaded : ThinClientBenchmarkBase
