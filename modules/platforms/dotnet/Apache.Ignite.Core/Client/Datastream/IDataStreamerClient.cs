@@ -23,8 +23,9 @@ namespace Apache.Ignite.Core.Client.Datastream
     /// <summary>
     /// Thin client data streamer.
     /// <para />
-    /// Data streamer loads data efficiently into cache. Updates are buffered and mapped to primary nodes
-    /// to ensure minimal data movement and optimal resource utilization. 
+    /// Data streamer is an efficient and fault-tolerant way to load data into cache. Updates are buffered and mapped
+    /// to primary nodes to ensure minimal data movement and optimal resource utilization.
+    /// Update failures caused by cluster topology changes are retried automatically.
     /// <para />
     /// Note that streamer send data to remote nodes asynchronously, so cache updates can be reordered.
     /// <para />
