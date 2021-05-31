@@ -55,7 +55,7 @@ namespace Apache.Ignite.Examples.Thick.Cache.DataStreamer
 
                     for (int i = 0; i < EntryCount; i++)
                     {
-                        ldr.AddData(i, new Account(i, i));
+                        ldr.Add(i, new Account(i, i));
 
                         // Print out progress while loading cache.
                         if (i > 0 && i % 10000 == 0)
