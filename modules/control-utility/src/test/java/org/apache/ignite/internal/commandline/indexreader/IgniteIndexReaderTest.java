@@ -72,6 +72,8 @@ import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.internal.commandline.indexreader.IgniteIndexReader.ERROR_PREFIX;
 import static org.apache.ignite.internal.commandline.indexreader.IgniteIndexReader.HORIZONTAL_SCAN_NAME;
 import static org.apache.ignite.internal.commandline.indexreader.IgniteIndexReader.RECURSIVE_TRAVERSE_NAME;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
@@ -272,13 +274,36 @@ public class IgniteIndexReaderTest extends GridCommonAbstractTest {
 
         ByteBuffer buf = GridUnsafe.allocateBuffer(PAGE_SIZE);
 
-        long addr = GridUnsafe.bufferAddress(buf);
-
         try (FileChannel c = new RandomAccessFile(file, "rw").getChannel()) {
             byte[] trash = new byte[PAGE_SIZE];
 
             ThreadLocalRandom.current().nextBytes(trash);
 
+            int pageIdx = realPageIdxInFile(c, pageIdxCorrupt);
+
+            buf.rewind();
+            buf.put(trash);
+            buf.rewind();
+
+            c.write(buf, pageIdx * PAGE_SIZE);
+        }
+        finally {
+            GridUnsafe.freeBuffer(buf);
+        }
+    }
+
+    /**
+     * @param c Opened file channel.
+     * @param pageIdxToFind Page index to find. May be different in snapshot files.
+     * @return Page index.
+     * @throws IOException If failed.
+     */
+    protected int realPageIdxInFile(FileChannel c, int pageIdxToFind) throws IOException {
+        ByteBuffer buf = GridUnsafe.allocateBuffer(PAGE_SIZE);
+
+        long addr = GridUnsafe.bufferAddress(buf);
+
+        try {
             int pageCnt = 0;
 
             while (true) {
@@ -287,27 +312,22 @@ public class IgniteIndexReaderTest extends GridCommonAbstractTest {
                 if (c.read(buf) == -1)
                     break;
 
-                pageCnt++;
-
                 buf.rewind();
 
                 long pageId = PageIO.getPageId(addr);
                 int pageIdx = PageIdUtils.pageIndex(pageId);
 
-                if (pageIdx != pageIdxCorrupt)
-                    continue;
+                if (pageIdx == pageIdxToFind)
+                    return pageCnt;
 
-                buf.put(trash);
-                buf.rewind();
-
-                c.write(buf, (pageCnt - 1) * PAGE_SIZE);
-
-                return;
+                pageCnt++;
             }
         }
         finally {
             GridUnsafe.freeBuffer(buf);
         }
+
+        return -1;
     }
 
     /**

@@ -766,7 +766,14 @@ public class IgniteIndexReader implements AutoCloseable {
                         data.forEach((k, v) -> {
                             List<Long> listIds = LongStream.of(v.array()).map(IgniteIndexReader::normalizePageId).boxed().collect(toList());
 
-                            listIds.forEach(listId -> allPages.addAll(getPageList(listId, pageListStat)));
+                            for (Long listId : listIds) {
+                                try {
+                                    allPages.addAll(getPageList(listId, pageListStat));
+                                }
+                                catch (Exception e) {
+                                    errors.put(listId, singletonList(e));
+                                }
+                            }
 
                             bucketsData.put(new IgniteBiTuple<>(fNextMetaId, k), listIds);
                         });
