@@ -153,6 +153,54 @@ BOOST_AUTO_TEST_CASE(TestByteArrayParamInsert)
     BOOST_REQUIRE_EQUAL_COLLECTIONS(out.i8ArrayField.begin(), out.i8ArrayField.end(), paramData.begin(), paramData.end());
 }
 
+BOOST_AUTO_TEST_CASE(TestStingParamNullLen)
+{
+    SQLRETURN ret;
+
+    TestType in;
+    in.i8Field = 45;
+    in.strField = "Lorem Ipsum";
+
+    testCache.Put(1, in);
+
+    SQLLEN colLen = 0;
+    SQLCHAR colData = 0;
+
+    ret = SQLBindCol(stmt, 1, SQL_C_TINYINT, &colData, sizeof(colData), &colLen);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    SQLCHAR request[] = "SELECT i8Field FROM TestType WHERE strField = ?";
+
+    ret = SQLPrepare(stmt, request, SQL_NTS);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    std::vector<SQLCHAR> paramData(in.strField.begin(), in.strField.end());
+    SQLLEN paramLen = static_cast<SQLLEN>(paramData.size());
+
+    ret = SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_VARCHAR,
+       paramData.size(), 0, &paramData[0], paramLen, 0);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLExecute(stmt);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    ret = SQLFetch(stmt);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    BOOST_REQUIRE_EQUAL(colData, in.i8Field);
+    BOOST_REQUIRE_EQUAL(colLen, sizeof(colData));
+
+    ret = SQLFetch(stmt);
+    BOOST_REQUIRE(ret == SQL_NO_DATA);
+}
+
 BOOST_AUTO_TEST_CASE(TestByteParamInsert)
 {
     SQLRETURN ret;
