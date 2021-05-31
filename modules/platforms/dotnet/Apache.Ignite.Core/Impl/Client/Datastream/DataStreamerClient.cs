@@ -659,12 +659,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 return true;
             }
 
-            // TODO: Improve this logic when streamer gets closed due to grid stop.
-            if (exception.Message == "Data streamer has been closed.")
-            {
-                return true;
-            }
-
             var clientEx = exception as IgniteClientException;
 
             if (clientEx != null && clientEx.StatusCode == ClientStatusCode.InvalidNodeState)
