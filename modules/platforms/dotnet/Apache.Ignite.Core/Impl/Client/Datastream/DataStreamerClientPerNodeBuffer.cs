@@ -18,12 +18,15 @@
 namespace Apache.Ignite.Core.Impl.Client.Datastream
 {
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Threading;
     using System.Threading.Tasks;
 
     /// <summary>
     /// Manages per-node buffers and flush operations.
     /// </summary>
+    [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable",
+        Justification = "WaitHandle is not used in SemaphoreSlim and ReaderWriterLockSlim, no need to dispose.")]
     internal sealed class DataStreamerClientPerNodeBuffer<TK, TV>
     {
         /** */

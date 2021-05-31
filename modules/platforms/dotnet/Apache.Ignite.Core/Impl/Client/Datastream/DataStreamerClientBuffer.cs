@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 {
     using System;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Impl.Common;
@@ -26,6 +27,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     /// <summary>
     /// Client data streamer buffer.
     /// </summary>
+    [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable",
+        Justification = "WaitHandle is not used in ReaderWriterLockSlim, no need to dispose.")]
     internal sealed class DataStreamerClientBuffer<TK, TV>
     {
         /** Array vs concurrent data structures:
