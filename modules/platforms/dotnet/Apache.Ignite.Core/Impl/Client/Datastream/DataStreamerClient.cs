@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Net.Sockets;
     using System.Threading;
@@ -392,6 +393,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /// <summary>
         /// Flushes the specified buffer asynchronously.
         /// </summary>
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
+            Justification = "Any exception should be propagated to TaskCompletionSource.")]
         private void FlushBufferInternalAsync(
             DataStreamerClientBuffer<TK, TV> buffer,
             ClientSocket socket,
@@ -449,6 +452,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /// <summary>
         /// Retries the buffer flush operation.
         /// </summary>
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
+            Justification = "Any exception should be propagated to TaskCompletionSource.")]
         private void FlushBufferRetry(
             DataStreamerClientBuffer<TK, TV> buffer,
             ClientSocket failedSocket,
@@ -608,6 +613,9 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /// <summary>
         /// Performs timer-based automatic flush.
         /// </summary>
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
+            Justification = "Streamer will be closed if an exception occurs during automated flush. " +
+                            "Timer thread should not throw.")]
         private void AutoFlush()
         {
             if (_exception != null)
