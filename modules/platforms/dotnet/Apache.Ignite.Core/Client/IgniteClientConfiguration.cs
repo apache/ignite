@@ -72,6 +72,7 @@ namespace Apache.Ignite.Core.Client
             TcpNoDelay = DefaultTcpNoDelay;
             SocketTimeout = DefaultSocketTimeout;
             Logger = new ConsoleLogger();
+            EnablePartitionAwareness = true;
         }
 
         /// <summary>
@@ -217,10 +218,11 @@ namespace Apache.Ignite.Core.Client
         /// <summary>
         /// Gets or sets a value indicating whether partition awareness should be enabled.
         /// <para />
-        /// Default is false: only one connection is established at a given moment to a random server node.
-        /// When true: for cache operations, Ignite client attempts to send the request directly to
+        /// Default is true: for cache operations, Ignite client attempts to send the request directly to
         /// the primary node for the given cache key.
         /// To do so, connection is established to every known server node at all times.
+        /// <para />
+        /// When false: only one connection is established at a given moment to a random server node.
         /// </summary>
         public bool EnablePartitionAwareness { get; set; }
 
