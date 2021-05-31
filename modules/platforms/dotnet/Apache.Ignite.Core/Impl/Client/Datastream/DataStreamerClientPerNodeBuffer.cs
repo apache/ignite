@@ -145,5 +145,12 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         {
             return _client.FlushBufferAsync(buffer, _socket, _semaphore);
         }
+
+        /** <inheritdoc /> */
+        public override string ToString()
+        {
+            return string.Format("{0} [Socket={1}, Closed={2}, Buffer={3}]", GetType(), _socket.RemoteEndPoint, _closed,
+                _buffer);
+        }
     }
 }

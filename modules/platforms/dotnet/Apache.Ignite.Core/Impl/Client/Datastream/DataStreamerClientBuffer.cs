@@ -208,7 +208,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /** <inheritdoc /> */
         public override string ToString()
         {
-            return string.Format("{0} [Count={1}, Flushing={2}, Flushed={3}]", GetType(), Count, _flushing, _flushed);
+            return string.Format("{0} [Count={1}, Flushing={2}, Flushed={3}, Previous={4}]", GetType(), Count,
+                _flushing, _flushed, _previous);
         }
 
         /// <summary>
