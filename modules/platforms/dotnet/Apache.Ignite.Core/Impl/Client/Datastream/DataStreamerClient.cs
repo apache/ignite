@@ -259,14 +259,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         }
 
         /// <summary>
-        /// Gets the buffers.
-        /// </summary>
-        internal IEnumerable<DataStreamerClientPerNodeBuffer<TK, TV>> Buffers
-        {
-            get { return _buffers.Values; }
-        }
-
-        /// <summary>
         /// Gets the pooled entry array.
         /// </summary>
         internal DataStreamerClientEntry<TK, TV>[] GetPooledArray()

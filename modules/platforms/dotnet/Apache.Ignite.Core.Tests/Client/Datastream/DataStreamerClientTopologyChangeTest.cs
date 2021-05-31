@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -143,7 +142,6 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
             var id = 0;
             var cancel = false;
-            var topologyLog = new List<bool>();
 
             var adderTask = Task.Factory.StartNew(() =>
             {
@@ -169,12 +167,10 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 if (nodes.Count <= 2 || (nodes.Count < maxNodes && TestUtils.Random.Next(2) == 0))
                 {
                     nodes.Enqueue(StartServer());
-                    topologyLog.Add(true);
                 }
                 else
                 {
                     nodes.Dequeue().Dispose();
-                    topologyLog.Add(false);
                 }
             }
 
@@ -186,13 +182,9 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
             TestUtils.WaitForTrueCondition(
                 () => id == cache.GetSize(),
-                () =>
-                {
-                    return string.Format("Expected: {0}, actual: {1}, sent: {2}, alloc: {3}, pool: {4}, log: ({5}), buffers: {6}", id,
-                        cache.GetSize(), streamerImpl.EntriesSent, streamerImpl.ArraysAllocated,
-                        streamerImpl.ArraysPooled, string.Concat(topologyLog.Select(x => x ? "+" : "-")),
-                        string.Join(", ", streamerImpl.Buffers.Select(b => b.ToString())));
-                },
+                () => string.Format("Expected: {0}, actual: {1}, sent: {2}, alloc: {3}, pool: {4}", id,
+                    cache.GetSize(), streamerImpl.EntriesSent, streamerImpl.ArraysAllocated,
+                    streamerImpl.ArraysPooled),
                 timeout: 3000);
 
             DataStreamerClientTest.CheckArrayPoolLeak(streamer);
