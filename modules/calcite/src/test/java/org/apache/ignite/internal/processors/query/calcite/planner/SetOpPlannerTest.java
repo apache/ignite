@@ -292,15 +292,27 @@ public class SetOpPlannerTest extends AbstractPlannerTest {
             "   SELECT * FROM random_tbl2" +
             ")";
 
-        assertPlan(sql, publicSchema, isInstanceOf(setOp.single)
-            .and(input(0, isTableScan("broadcast_tbl1")))
-            .and(input(1, isInstanceOf(setOp.reduce)
-                .and(hasChildThat(isInstanceOf(setOp.map)
-                    .and(input(0, isTableScan("random_tbl1")))
-                    .and(input(1, isTableScan("random_tbl2")))
+        if (setOp == SetOp.EXCEPT) {
+            assertPlan(sql, publicSchema, isInstanceOf(setOp.single)
+                .and(input(0, isTableScan("broadcast_tbl1")))
+                .and(input(1, isInstanceOf(setOp.reduce)
+                    .and(hasChildThat(isInstanceOf(setOp.map)
+                        .and(input(0, isTableScan("random_tbl1")))
+                        .and(input(1, isTableScan("random_tbl2")))
+                    ))
                 ))
-            ))
-        );
+            );
+        }
+        else {
+            // INTERSECT operator is commutative and can be merged.
+            assertPlan(sql, publicSchema, isInstanceOf(setOp.reduce)
+                .and(hasChildThat(isInstanceOf(setOp.map)
+                    .and(input(0, nodeOrAnyChild(isTableScan("broadcast_tbl1"))))
+                    .and(input(1, isTableScan("random_tbl1")))
+                    .and(input(2, isTableScan("random_tbl2")))
+                ))
+            );
+        }
     }
 
     /**

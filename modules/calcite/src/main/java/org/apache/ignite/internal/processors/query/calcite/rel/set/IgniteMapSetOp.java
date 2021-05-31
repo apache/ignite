@@ -63,12 +63,12 @@ public interface IgniteMapSetOp extends IgniteSetOp {
         if (inputTraits.stream().allMatch(t -> TraitUtils.distribution(t).satisfies(IgniteDistributions.single())))
             return ImmutableList.of(); // If all distributions are single or broadcast IgniteSingleMinus should be used.
 
-        if (inputTraits.stream().anyMatch(t -> TraitUtils.distribution(t) == IgniteDistributions.single()))
-            return ImmutableList.of(); // Mixing of single and random is prohibited.
-
         return ImmutableList.of(
             Pair.of(nodeTraits.replace(IgniteDistributions.random()), Commons.transform(inputTraits,
-                t -> t.replace(IgniteDistributions.random())))
+                t -> TraitUtils.distribution(t) == IgniteDistributions.broadcast() ?
+                    // Allow broadcast with trim-exchange to be used in map-reduce set-op.
+                    t.replace(IgniteDistributions.hash(ImmutableList.of(0))) :
+                    t.replace(IgniteDistributions.random())))
         );
     }
 
