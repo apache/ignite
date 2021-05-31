@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -308,6 +309,19 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
         n1.destroyCache(DEFAULT_CACHE_NAME + 1);
         assertTrue(indexRebuildStateStorage(n1).completed(DEFAULT_CACHE_NAME + 1));
 
+        assertFalse(indexRebuildStateStorage(n1).completed(DEFAULT_CACHE_NAME + 2));
+        assertFalse(indexRebuildStateStorage(n1).completed(DEFAULT_CACHE_NAME + 3));
+
+        forceCheckpoint(n1);
+
+        ConcurrentMap<String, Object> states = getFieldValue(indexRebuildStateStorage(n1), "states");
+
+        assertFalse(states.containsKey(DEFAULT_CACHE_NAME + 0));
+        assertFalse(states.containsKey(DEFAULT_CACHE_NAME + 1));
+
+        assertTrue(states.containsKey(DEFAULT_CACHE_NAME + 2));
+        assertTrue(states.containsKey(DEFAULT_CACHE_NAME + 3));
+
         stopGrid(1);
         awaitPartitionMapExchange();
 
@@ -323,6 +337,13 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
 
         assertTrue(indexRebuildStateStorage(n1).completed(DEFAULT_CACHE_NAME + 2));
         assertTrue(indexRebuildStateStorage(n1).completed(DEFAULT_CACHE_NAME + 3));
+
+        forceCheckpoint(n1);
+
+        states = getFieldValue(indexRebuildStateStorage(n1), "states");
+
+        assertFalse(states.containsKey(DEFAULT_CACHE_NAME + 2));
+        assertFalse(states.containsKey(DEFAULT_CACHE_NAME + 3));
     }
 
     /**
