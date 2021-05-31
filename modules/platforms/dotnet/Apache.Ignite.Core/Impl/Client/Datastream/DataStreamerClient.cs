@@ -278,10 +278,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             if (_arrayPool.TryPop(out res))
             {
                 // Reset buffer and return.
-                for (int i = 0; i < res.Length; i++)
-                {
-                    res[i] = new DataStreamerClientEntry<TK, TV>();
-                }
+                Array.Clear(res, 0, res.Length);
 
                 return res;
             }
