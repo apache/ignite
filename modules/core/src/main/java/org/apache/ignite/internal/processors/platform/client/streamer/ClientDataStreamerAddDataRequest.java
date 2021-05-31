@@ -68,11 +68,13 @@ public class ClientDataStreamerAddDataRequest extends ClientRequest {
         if (entries != null)
             dataStreamer.addData(entries);
 
+        if ((flags & FLUSH) != 0)
+            dataStreamer.flush();
+
         if ((flags & CLOSE) != 0) {
             dataStreamer.close();
             ctx.resources().release(streamerId);
-        } else if ((flags & FLUSH) != 0)
-            dataStreamer.flush();
+        }
 
         return new ClientResponse(requestId());
     }
