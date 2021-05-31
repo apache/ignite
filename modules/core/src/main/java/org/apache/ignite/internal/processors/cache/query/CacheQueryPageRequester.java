@@ -227,6 +227,10 @@ public abstract class CacheQueryPageRequester {
             sendLocal(req);
     }
 
-    /** Send and handle request to local node. */
+    /**
+     * Handle cache query request locally.
+     *
+     * @param req Query request.
+     */
     protected abstract void sendLocal(GridCacheQueryRequest req);
 }

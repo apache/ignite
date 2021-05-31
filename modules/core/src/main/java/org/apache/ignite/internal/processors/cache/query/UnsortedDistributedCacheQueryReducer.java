@@ -82,7 +82,7 @@ class UnsortedDistributedCacheQueryReducer<R> extends AbstractCacheQueryReducer<
         this.reqId = reqId;
         this.pageRequester = pageRequester;
 
-        synchronized (sharedLock()) {
+        synchronized (queueLock()) {
             for (ClusterNode node : nodes)
                 subgrid.add(node.id());
         }
@@ -123,7 +123,7 @@ class UnsortedDistributedCacheQueryReducer<R> extends AbstractCacheQueryReducer<
         Collection<ClusterNode> allNodes = cctx.discovery().allNodes();
         Collection<ClusterNode> nodes;
 
-        synchronized (sharedLock()) {
+        synchronized (queueLock()) {
             nodes = F.retain(allNodes, true,
                 new P1<ClusterNode>() {
                     @Override public boolean apply(ClusterNode node) {
@@ -143,11 +143,11 @@ class UnsortedDistributedCacheQueryReducer<R> extends AbstractCacheQueryReducer<
 
     /** {@inheritDoc} */
     @Override protected void loadPage() {
-        assert !Thread.holdsLock(sharedLock());
+        assert !Thread.holdsLock(queueLock());
 
         Collection<UUID> nodes = null;
 
-        synchronized (sharedLock()) {
+        synchronized (queueLock()) {
             // Loads only queue is empty to avoid memory consumption on additional pages.
             if (!pageStream.queue.isEmpty())
                 return;
@@ -165,13 +165,13 @@ class UnsortedDistributedCacheQueryReducer<R> extends AbstractCacheQueryReducer<
 
     /** {@inheritDoc} */
     @Override public void loadAll() throws IgniteInterruptedCheckedException {
-        assert !Thread.holdsLock(sharedLock());
+        assert !Thread.holdsLock(queueLock());
 
         U.await(firstPageLatch);
 
         Collection<UUID> nodes = null;
 
-        synchronized (sharedLock()) {
+        synchronized (queueLock()) {
             if (loadAllowed && !subgrid.isEmpty())
                 nodes = new ArrayList<>(subgrid);
         }
@@ -182,7 +182,7 @@ class UnsortedDistributedCacheQueryReducer<R> extends AbstractCacheQueryReducer<
 
     /** {@inheritDoc} */
     @Override public boolean onPage(@Nullable UUID nodeId, boolean last) {
-        assert Thread.holdsLock(sharedLock());
+        assert Thread.holdsLock(queueLock());
 
         if (nodeId == null)
             nodeId = cctx.localNodeId();
@@ -199,7 +199,7 @@ class UnsortedDistributedCacheQueryReducer<R> extends AbstractCacheQueryReducer<
 
     /** {@inheritDoc} */
     @Override public boolean onNodeLeft(UUID nodeId) {
-        synchronized (sharedLock()) {
+        synchronized (queueLock()) {
             return subgrid.contains(nodeId);
         }
     }

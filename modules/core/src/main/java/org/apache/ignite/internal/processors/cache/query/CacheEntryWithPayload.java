@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.query;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 /** Represents cache key-value pair and additional payload to compare cache entity by custom rule. */
@@ -41,7 +42,7 @@ public class CacheEntryWithPayload<K, V, P> extends IgniteBiTuple<K, V> {
     }
 
     /** */
-    public Object payload() {
+    public P payload() {
         return payload;
     }
 
@@ -61,10 +62,7 @@ public class CacheEntryWithPayload<K, V, P> extends IgniteBiTuple<K, V> {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "CacheEntryWithPayload{" +
-            "entry=" + super.toString() +
-            ", payload=" + payload +
-            '}';
+        return S.toString(CacheEntryWithPayload.class, this);
     }
 }
 

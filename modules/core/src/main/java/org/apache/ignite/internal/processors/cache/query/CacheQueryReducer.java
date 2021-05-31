@@ -42,11 +42,6 @@ public interface CacheQueryReducer<T> {
     public boolean hasNext() throws IgniteCheckedException;
 
     /**
-     * Lock object shares between {@link GridCacheQueryFutureAdapter} and this reducer.
-     */
-    public Object sharedLock();
-
-    /**
      * Offer query result page for reduce. Note that the data collection may contain extension of type T.
      * In such cases it stores additional payload for custom reducer logic.
      *

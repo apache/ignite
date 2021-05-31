@@ -40,7 +40,7 @@ public abstract class AbstractCacheQueryReducer<R> implements CacheQueryReducer<
     private final long timeoutTime;
 
     /** Lock shared between this reducer and future. */
-    private final Object sharedLock;
+    private final Object queueLock;
 
     /**
      * @param fut Cache query future relates to this query. Future is done when last page is delivered to reducer.
@@ -49,12 +49,14 @@ public abstract class AbstractCacheQueryReducer<R> implements CacheQueryReducer<
         qry = fut.qry.query();
         timeoutTime = fut.endTime();
         // The only reason to use lock in 2 places is the deduplication mechanism.
-        sharedLock = fut.lock;
+        queueLock = fut.lock;
     }
 
-    /** {@inheritDoc} */
-    @Override public Object sharedLock() {
-        return sharedLock;
+    /**
+     * Lock object shares between {@link GridCacheQueryFutureAdapter} and this reducer.
+     */
+    protected Object queueLock() {
+        return queueLock;
     }
 
     /** {@inheritDoc} */
@@ -74,7 +76,7 @@ public abstract class AbstractCacheQueryReducer<R> implements CacheQueryReducer<
 
         /** Add new query result page of data. */
         void addPage(Collection<R> data) {
-            assert Thread.holdsLock(sharedLock);
+            assert Thread.holdsLock(queueLock);
 
             queue.add(data);
         }
@@ -107,7 +109,7 @@ public abstract class AbstractCacheQueryReducer<R> implements CacheQueryReducer<
                 Collection<R> c;
 
                 // Check current page iterator.
-                synchronized (sharedLock) {
+                synchronized (queueLock) {
                     it = iter;
 
                     if (it != null && it.hasNext())
@@ -144,10 +146,10 @@ public abstract class AbstractCacheQueryReducer<R> implements CacheQueryReducer<
                         break;
                     }
 
-                    synchronized (sharedLock) {
+                    synchronized (queueLock) {
                         try {
                             if (queue.isEmpty() && !allPagesReady())
-                                sharedLock.wait(waitTime);
+                                queueLock.wait(waitTime);
                         }
                         catch (InterruptedException e) {
                             Thread.currentThread().interrupt();
@@ -170,7 +172,7 @@ public abstract class AbstractCacheQueryReducer<R> implements CacheQueryReducer<
 
         /** Clear all stored data in this stream. */
         protected void clear() {
-            synchronized (sharedLock) {
+            synchronized (queueLock) {
                 queue.clear();
 
                 iter = null;

@@ -63,7 +63,7 @@ public class MergeSortDistributedCacheQueryReducer<R> extends UnsortedDistribute
     ) {
         super(fut, reqId, fetcher, nodes);
 
-        synchronized (sharedLock()) {
+        synchronized (queueLock()) {
             streamsMap = new ConcurrentHashMap<>(nodes.size());
             streams = (NodePageStream[])Array.newInstance(NodePageStream.class, nodes.size());
 
@@ -141,11 +141,11 @@ public class MergeSortDistributedCacheQueryReducer<R> extends UnsortedDistribute
 
     /** {@inheritDoc} */
     @Override protected void loadPage() {
-        assert !Thread.holdsLock(sharedLock());
+        assert !Thread.holdsLock(queueLock());
 
         List<UUID> nodes;
 
-        synchronized (sharedLock()) {
+        synchronized (queueLock()) {
             if (!loadAllowed)
                 return;
 
@@ -184,7 +184,7 @@ public class MergeSortDistributedCacheQueryReducer<R> extends UnsortedDistribute
 
     /** {@inheritDoc} */
     @Override public void addPage(@Nullable UUID nodeId, Collection<R> data) {
-        assert Thread.holdsLock(sharedLock());
+        assert Thread.holdsLock(queueLock());
 
         // Local node.
         if (nodeId == null) {
