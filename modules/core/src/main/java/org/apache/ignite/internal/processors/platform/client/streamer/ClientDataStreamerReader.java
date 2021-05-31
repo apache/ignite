@@ -28,13 +28,14 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 
 /**
- *
+ * Data streamer deserialization helpers.
  */
 class ClientDataStreamerReader {
     /**
+     * Reads an entry.
      *
-     * @param reader
-     * @return
+     * @param reader Data reader.
+     * @return Streamer entry.
      */
     public static Collection<DataStreamerEntry> read(BinaryReaderExImpl reader) {
         int entriesCnt = reader.readInt();

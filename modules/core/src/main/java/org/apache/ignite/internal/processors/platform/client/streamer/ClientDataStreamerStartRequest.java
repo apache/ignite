@@ -93,30 +93,32 @@ public class ClientDataStreamerStartRequest extends ClientRequest {
                 ctx.kernalContext().grid().<KeyCacheObject, CacheObject>dataStreamer(cacheName);
 
         // Don't use thread buffer for a one-off streamer operation.
-        boolean useThreadBuffer = !close();
+        boolean close = (flags & CLOSE) != 0;
+        boolean keepBinary = (flags & KEEP_BINARY) != 0;
+        boolean useThreadBuffer = !close;
 
         if (perNodeBufferSize >= 0)
             dataStreamer.perNodeBufferSize(perNodeBufferSize);
-        else if (entries != null && !entries.isEmpty() && close())
+        else if (entries != null && !entries.isEmpty() && close)
             dataStreamer.perNodeBufferSize(entries.size());
 
         if (perThreadBufferSize >= 0 && useThreadBuffer)
             dataStreamer.perThreadBufferSize(perThreadBufferSize);
 
-        dataStreamer.allowOverwrite(allowOverwrite());
-        dataStreamer.skipStore(skipStore());
-        dataStreamer.keepBinary(keepBinary());
+        dataStreamer.allowOverwrite((flags & ALLOW_OVERWRITE) != 0);
+        dataStreamer.skipStore((flags & SKIP_STORE) != 0);
+        dataStreamer.keepBinary(keepBinary);
 
         if (receiverObj != null)
-            dataStreamer.receiver(createReceiver(ctx.kernalContext(), receiverObj, receiverPlatform, keepBinary()));
+            dataStreamer.receiver(createReceiver(ctx.kernalContext(), receiverObj, receiverPlatform, keepBinary));
 
         if (entries != null)
             dataStreamer.addDataInternal(entries, useThreadBuffer);
 
-        if (flush())
+        if ((flags & FLUSH) != 0)
             dataStreamer.flush();
 
-        if (close()) {
+        if (close) {
             dataStreamer.close();
 
             return new ClientLongResponse(requestId(), 0);
@@ -125,26 +127,6 @@ public class ClientDataStreamerStartRequest extends ClientRequest {
 
             return new ClientLongResponse(requestId(), rsrcId);
         }
-    }
-
-    private boolean close() {
-        return (flags & CLOSE) != 0;
-    }
-
-    private boolean flush() {
-        return (flags & FLUSH) != 0;
-    }
-
-    private boolean allowOverwrite() {
-        return (flags & ALLOW_OVERWRITE) != 0;
-    }
-
-    private boolean skipStore() {
-        return (flags & SKIP_STORE) != 0;
-    }
-
-    private boolean keepBinary() {
-        return (flags & KEEP_BINARY) != 0;
     }
 
     /**

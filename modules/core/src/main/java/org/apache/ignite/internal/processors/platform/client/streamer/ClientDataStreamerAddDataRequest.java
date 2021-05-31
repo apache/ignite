@@ -32,7 +32,7 @@ import static org.apache.ignite.internal.processors.platform.client.streamer.Cli
 import static org.apache.ignite.internal.processors.platform.client.streamer.ClientDataStreamerFlags.FLUSH;
 
 /**
- *
+ * Adds data to the existing streamer.
  */
 public class ClientDataStreamerAddDataRequest extends ClientRequest {
     /** */
@@ -41,11 +41,14 @@ public class ClientDataStreamerAddDataRequest extends ClientRequest {
     /** */
     private final byte flags;
 
-    /**
-     * Data entries.
-     */
+    /** */
     private final Collection<DataStreamerEntry> entries;
 
+    /**
+     * Constructor.
+     *
+     * @param reader Data reader.
+     */
     public ClientDataStreamerAddDataRequest(BinaryReaderExImpl reader) {
         super(reader);
 
