@@ -1200,7 +1200,11 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @return Started grid.
      * @throws Exception If anything failed.
      */
-    protected Ignite startGrid(String igniteInstanceName, UnaryOperator<IgniteConfiguration> cfgOp, GridSpringResourceContext ctx) throws Exception {
+    protected Ignite startGrid(
+        String igniteInstanceName,
+        UnaryOperator<IgniteConfiguration> cfgOp,
+        GridSpringResourceContext ctx
+    ) throws Exception {
         IgniteConfiguration cfg = optimize(getConfiguration(igniteInstanceName));
 
         if (cfgOp != null)

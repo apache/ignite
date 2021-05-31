@@ -62,7 +62,8 @@ public class KMeansClusterizationExample {
             try {
                 dataCache = new SandboxMLCache(ignite).fillCacheWith(MLSandboxDatasets.TWO_CLASSED_IRIS);
 
-                Vectorizer<Integer, Vector, Integer, Double> vectorizer = new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
+                Vectorizer<Integer, Vector, Integer, Double> vectorizer =
+                    new DummyVectorizer<Integer>().labeled(Vectorizer.LabelCoordinate.FIRST);
 
                 KMeansTrainer trainer = new KMeansTrainer();
 

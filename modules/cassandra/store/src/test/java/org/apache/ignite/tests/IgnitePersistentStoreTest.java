@@ -442,8 +442,10 @@ public class IgnitePersistentStoreTest {
         Map<SimplePersonId, SimplePerson> personMap6 = TestsHelper.generateSimplePersonIdsPersonsMap();
 
         try (Ignite ignite = Ignition.start("org/apache/ignite/tests/persistence/pojo/ignite-config.xml")) {
-            IgniteCache<SimplePersonId, SimplePerson> personCache5 = ignite.getOrCreateCache(new CacheConfiguration<SimplePersonId, SimplePerson>("cache5"));
-            IgniteCache<SimplePersonId, SimplePerson> personCache6 = ignite.getOrCreateCache(new CacheConfiguration<SimplePersonId, SimplePerson>("cache6"));
+            IgniteCache<SimplePersonId, SimplePerson> personCache5 =
+                ignite.getOrCreateCache(new CacheConfiguration<SimplePersonId, SimplePerson>("cache5"));
+            IgniteCache<SimplePersonId, SimplePerson> personCache6 =
+                ignite.getOrCreateCache(new CacheConfiguration<SimplePersonId, SimplePerson>("cache6"));
 
             LOGGER.info("Running single operation write tests");
 
@@ -466,8 +468,10 @@ public class IgnitePersistentStoreTest {
         try (Ignite ignite = Ignition.start("org/apache/ignite/tests/persistence/pojo/ignite-config.xml")) {
             LOGGER.info("Running POJO strategy read tests for simple objects");
 
-            IgniteCache<SimplePersonId, SimplePerson> personCache5 = ignite.getOrCreateCache(new CacheConfiguration<SimplePersonId, SimplePerson>("cache5"));
-            IgniteCache<SimplePersonId, SimplePerson> personCache6 = ignite.getOrCreateCache(new CacheConfiguration<SimplePersonId, SimplePerson>("cache6"));
+            IgniteCache<SimplePersonId, SimplePerson> personCache5 =
+                ignite.getOrCreateCache(new CacheConfiguration<SimplePersonId, SimplePerson>("cache5"));
+            IgniteCache<SimplePersonId, SimplePerson> personCache6 =
+                ignite.getOrCreateCache(new CacheConfiguration<SimplePersonId, SimplePerson>("cache6"));
 
             LOGGER.info("Running single operation read tests");
 

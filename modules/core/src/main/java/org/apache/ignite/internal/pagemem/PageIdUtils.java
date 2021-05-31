@@ -58,8 +58,13 @@ public final class PageIdUtils {
     /** */
     private static final long EFFECTIVE_PAGE_ID_MASK = ~(-1L << (PAGE_IDX_SIZE + PART_ID_SIZE));
 
+    /**
+     * Offset of a Rotation ID inside a Page ID.
+     */
+    private static final long ROTATION_ID_OFFSET = PAGE_IDX_SIZE + PART_ID_SIZE + FLAG_SIZE;
+
     /** */
-    private static final long PAGE_ID_MASK = ~(-1L << (PAGE_IDX_SIZE + PART_ID_SIZE + FLAG_SIZE));
+    private static final long PAGE_ID_MASK = ~(-1L << ROTATION_ID_OFFSET);
 
     /** Max itemid number. */
     public static final int MAX_ITEMID_NUM = 0xFE;
@@ -86,9 +91,9 @@ public final class PageIdUtils {
      */
     public static long link(long pageId, int itemId) {
         assert itemId >= 0 && itemId <= MAX_ITEMID_NUM : itemId;
-        assert (pageId >> (FLAG_SIZE + PART_ID_SIZE + PAGE_IDX_SIZE)) == 0 : U.hexLong(pageId);
+        assert (pageId >> ROTATION_ID_OFFSET) == 0 : U.hexLong(pageId);
 
-        return pageId | (((long)itemId) << (FLAG_SIZE + PART_ID_SIZE + PAGE_IDX_SIZE));
+        return pageId | (((long)itemId) << ROTATION_ID_OFFSET);
     }
 
     /**
@@ -134,7 +139,7 @@ public final class PageIdUtils {
      * @return Offset in 8-byte words.
      */
     public static int itemId(long link) {
-        return (int)((link >> (PAGE_IDX_SIZE + PART_ID_SIZE + FLAG_SIZE)) & OFFSET_MASK);
+        return (int)((link >> ROTATION_ID_OFFSET) & OFFSET_MASK);
     }
 
     /**
@@ -179,17 +184,23 @@ public final class PageIdUtils {
     }
 
     /**
+     * Returns the Rotation ID of a page identified by the given ID.
+     */
+    public static long rotationId(long pageId) {
+        return pageId >>> ROTATION_ID_OFFSET;
+    }
+
+    /**
      * @param pageId Page ID.
      * @return New page ID.
      */
     public static long rotatePageId(long pageId) {
-        long updatedRotationId = (pageId >>> PAGE_IDX_SIZE + PART_ID_SIZE + FLAG_SIZE) + 1;
+        long updatedRotationId = rotationId(pageId) + 1;
 
         if (updatedRotationId > MAX_ITEMID_NUM)
             updatedRotationId = 1; // We always want non-zero updatedRotationId
 
-        return (pageId & PAGE_ID_MASK) |
-            (updatedRotationId << (PAGE_IDX_SIZE + PART_ID_SIZE + FLAG_SIZE));
+        return (pageId & PAGE_ID_MASK) | (updatedRotationId << ROTATION_ID_OFFSET);
     }
 
     /**

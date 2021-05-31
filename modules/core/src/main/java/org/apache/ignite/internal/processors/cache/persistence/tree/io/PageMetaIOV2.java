@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.tree.io;
 
 import org.apache.ignite.internal.pagemem.PageUtils;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
 
 /**
  * IO for index partition metadata page.
@@ -83,8 +84,8 @@ public class PageMetaIOV2 extends PageMetaIO {
     }
 
     /** {@inheritDoc} */
-    @Override public void initNewPage(long pageAddr, long pageId, int pageSize) {
-        super.initNewPage(pageAddr, pageId, pageSize);
+    @Override public void initNewPage(long pageAddr, long pageId, int pageSize, PageMetrics metrics) {
+        super.initNewPage(pageAddr, pageId, pageSize, metrics);
 
         setEncryptedPageCount(pageAddr, 0);
         setEncryptedPageIndex(pageAddr, 0);

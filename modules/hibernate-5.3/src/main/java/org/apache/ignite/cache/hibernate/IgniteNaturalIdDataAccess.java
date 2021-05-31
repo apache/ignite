@@ -80,7 +80,12 @@ public class IgniteNaturalIdDataAccess extends IgniteCachedDomainDataAccess impl
     }
 
     /** {@inheritDoc} */
-    @Override public boolean afterUpdate(SharedSessionContractImplementor ses, Object key, Object val, SoftLock lock) throws CacheException {
+    @Override public boolean afterUpdate(
+        SharedSessionContractImplementor ses,
+        Object key,
+        Object val,
+        SoftLock lock
+    ) throws CacheException {
         return stgy.afterUpdate(key, val);
     }
 }

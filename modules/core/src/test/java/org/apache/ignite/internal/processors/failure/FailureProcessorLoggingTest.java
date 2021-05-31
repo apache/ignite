@@ -100,7 +100,9 @@ public class FailureProcessorLoggingTest extends GridCommonAbstractTest {
 
         testLog.expectedWarnMessage(IGNORED_FAILURE_LOG_MSG);
 
-        ignite.context().failure().process(new FailureContext(FailureType.SYSTEM_CRITICAL_OPERATION_TIMEOUT, new Throwable("Failure context error")));
+        ignite.context().failure().process(
+            new FailureContext(FailureType.SYSTEM_CRITICAL_OPERATION_TIMEOUT, new Throwable("Failure context error"))
+        );
 
         assertTrue(testLog.warnFlag().get());
 

@@ -132,7 +132,9 @@ public abstract class GridWorker implements Runnable, WorkProgressDispatcher {
         // Catch everything to make sure that it gets logged properly and
         // not to kill any threads from the underlying thread pool.
         catch (Throwable e) {
-            if (!X.hasCause(e, InterruptedException.class) && !X.hasCause(e, IgniteInterruptedCheckedException.class) && !X.hasCause(e, IgniteInterruptedException.class))
+            if (!X.hasCause(e, InterruptedException.class) &&
+                !X.hasCause(e, IgniteInterruptedCheckedException.class) &&
+                !X.hasCause(e, IgniteInterruptedException.class))
                 U.error(log, "Runtime error caught during grid runnable execution: " + this, e);
             else
                 U.warn(log, "Runtime exception occurred during grid runnable execution caused by thread interruption: " + e.getMessage());

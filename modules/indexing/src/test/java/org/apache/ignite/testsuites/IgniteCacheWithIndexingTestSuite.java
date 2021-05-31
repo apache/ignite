@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.internal.metric.IndexPagesMetricsInMemoryTest;
 import org.apache.ignite.internal.processors.cache.BinaryTypeMismatchLoggingTest;
 import org.apache.ignite.internal.processors.cache.BinaryTypeRegistrationTest;
 import org.apache.ignite.internal.processors.cache.CacheBinaryKeyConcurrentQueryTest;
@@ -112,7 +113,9 @@ import org.junit.runners.Suite;
 
     H2TreeCorruptedTreeExceptionTest.class,
 
-    WrongIndexedTypesTest.class
+    WrongIndexedTypesTest.class,
+
+    IndexPagesMetricsInMemoryTest.class
 })
 public class IgniteCacheWithIndexingTestSuite {
 }

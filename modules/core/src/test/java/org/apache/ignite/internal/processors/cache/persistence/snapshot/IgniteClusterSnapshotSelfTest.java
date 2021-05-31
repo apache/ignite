@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsAbstractMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
@@ -888,13 +889,13 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         awaitPartitionMapExchange();
 
-        for (Ignite grid : Arrays.asList(grid(1), grid(2))) {
-            ((IgniteEx)grid).context().cache().context().exchange()
+        for (IgniteEx grid : Arrays.asList(grid(1), grid(2))) {
+            grid.context().cache().context().exchange()
                 .registerExchangeAwareComponent(new PartitionsExchangeAware() {
                     /** {@inheritDoc} */
                     @Override public void onInitBeforeTopologyLock(GridDhtPartitionsExchangeFuture fut) {
                         try {
-                            block.await();
+                            block.await(TIMEOUT, TimeUnit.MILLISECONDS);
                         }
                         catch (InterruptedException e) {
                             fail("Must not catch exception here: " + e.getMessage());
@@ -907,7 +908,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             TestRecordingCommunicationSpi.spi(grid)
                 .blockMessages((node, msg) -> {
                     if (msg instanceof GridDhtPartitionsSingleMessage)
-                        return ((GridDhtPartitionsSingleMessage)msg).exchangeId() != null;
+                        return ((GridDhtPartitionsAbstractMessage)msg).exchangeId() != null;
 
                     return false;
                 });
@@ -981,6 +982,9 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
                 .registerExchangeAwareComponent(new PartitionsExchangeAware() {
                     /** {@inheritDoc} */
                     @Override public void onInitBeforeTopologyLock(GridDhtPartitionsExchangeFuture fut) {
+                        if (!(fut.firstEvent() instanceof DiscoveryCustomEvent))
+                            return;
+
                         try {
                             exchFuts.add(new T2<>(fut.exchangeId(), fut.rebalanced()));
                             latch.countDown();
