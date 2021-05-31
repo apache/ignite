@@ -83,7 +83,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
                     if (buffer.Add(entry))
                     {
-                        break;
+                        return true;
                     }
 
                     var entryArray = _client.GetPooledArray();
@@ -96,8 +96,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                     }
 #pragma warning restore 0420 // A reference to a volatile field will not be treated as volatile
                 }
-
-                return true;
             }
             finally
             {

@@ -169,7 +169,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         }
 
         /// <summary>
-        /// Returns true if flushing has started as a result of this call or before that.
+        /// Initiates the flush operation.
         /// </summary>
         public void ScheduleFlush()
         {
