@@ -241,9 +241,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         /// </summary>
         private void StartFlush()
         {
-            // TODO: This is not necessary during normal operation - can we get rid of this if no one listens
-            // for completions?
-
             // NOTE: Continuation runs on socket thread - set result on thread pool.
             _parent.FlushBufferAsync(this).ContinueWith(
                 t => ThreadPool.QueueUserWorkItem(buf =>
@@ -314,7 +311,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         }
 
         /// <summary>
-        /// Sets task completion source status. 
+        /// Sets task completion source status.
         /// </summary>
         private static void TrySetResultOrException(TaskCompletionSource<object> tcs, Exception exception)
         {
