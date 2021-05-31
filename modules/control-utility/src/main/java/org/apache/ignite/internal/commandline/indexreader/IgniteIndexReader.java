@@ -300,7 +300,7 @@ public class IgniteIndexReader implements AutoCloseable {
     }
 
     /** */
-    private static long normalizePageId(long pageId) {
+    static long normalizePageId(long pageId) {
         return pageId(partId(pageId), flag(pageId), pageIndex(pageId));
     }
 
@@ -321,6 +321,29 @@ public class IgniteIndexReader implements AutoCloseable {
             throw new IgniteException("Failed to read page, id=" + pageId + ", idx=" + pageIndex(pageId) +
                 ", file=" + store.getFileAbsolutePath());
         }
+    }
+
+    /**
+     * @return Tuple consisting of meta tree root page and pages list root page.
+     * @throws IgniteCheckedException If failed.
+     */
+    IgniteBiTuple<Long, Long> partitionRoots(long pageMetaPageId) throws IgniteCheckedException {
+        AtomicLong pageListMetaPageId = new AtomicLong();
+        AtomicLong metaTreeRootId = new AtomicLong();
+
+        doWithBuffer((buf, addr) -> {
+            readPage(filePageStore(partId(pageMetaPageId)), pageMetaPageId, buf);
+
+            PageMetaIO pageMetaIO = PageIO.getPageIO(addr);
+
+            pageListMetaPageId.set(normalizePageId(pageMetaIO.getReuseListRoot(addr)));
+
+            metaTreeRootId.set(normalizePageId(pageMetaIO.getTreeRoot(addr)));
+
+            return null;
+        });
+
+        return new IgniteBiTuple<>(metaTreeRootId.get(), pageListMetaPageId.get());
     }
 
     /**
@@ -350,38 +373,27 @@ public class IgniteIndexReader implements AutoCloseable {
         List<Throwable> errors;
 
         try {
-            long pageMetaPageId = partMetaPageId(INDEX_PARTITION, FLAG_IDX);
+            IgniteBiTuple<Long, Long> indexPartitionRoots = partitionRoots(partMetaPageId(INDEX_PARTITION, FLAG_IDX));
 
-            AtomicLong pageListMetaPageId = new AtomicLong(-1);
+            long metaTreeRootId = indexPartitionRoots.get1();
+            long pageListMetaPageId = indexPartitionRoots.get2();
 
             // Traversing trees.
-            doWithBuffer((buf, addr) -> {
-                readPage(idxStore, pageMetaPageId, buf);
+            treeInfo.set(traverseAllTrees("Index trees traversal", metaTreeRootId, CountOnlyStorage::new, this::traverseTree));
 
-                PageMetaIO pageMetaIO = PageIO.getPageIO(addr);
+            treeInfo.get().forEach((name, info) -> {
+                pageIds.addAll(info.innerPageIds);
 
-                pageListMetaPageId.set(pageMetaIO.getReuseListRoot(addr));
-
-                long metaTreeRootId = normalizePageId(pageMetaIO.getTreeRoot(addr));
-
-                treeInfo.set(traverseAllTrees("Index trees traversal", metaTreeRootId, CountOnlyStorage::new, this::traverseTree));
-
-                treeInfo.get().forEach((name, info) -> {
-                    pageIds.addAll(info.innerPageIds);
-
-                    pageIds.add(info.rootPageId);
-                });
-
-                Supplier<ItemStorage> itemStorageFactory = checkParts ? LinkStorage::new : CountOnlyStorage::new;
-
-                horizontalScans.set(traverseAllTrees("Scan index trees horizontally", metaTreeRootId, itemStorageFactory, this::horizontalTreeScan));
-
-                return null;
+                pageIds.add(info.rootPageId);
             });
 
+            Supplier<ItemStorage> itemStorageFactory = checkParts ? LinkStorage::new : CountOnlyStorage::new;
+
+            horizontalScans.set(traverseAllTrees("Scan index trees horizontally", metaTreeRootId, itemStorageFactory, this::horizontalTreeScan));
+
             // Scanning page reuse lists.
-            if (pageListMetaPageId.get() != -1)
-                pageListsInfo.set(getPageListsInfo(pageListMetaPageId.get()));
+            if (pageListMetaPageId != 0)
+                pageListsInfo.set(getPageListsInfo(pageListMetaPageId));
 
             ProgressPrinter progressPrinter = new ProgressPrinter(System.out, "Reading pages sequentially", pagesNum);
 
@@ -590,7 +602,7 @@ public class IgniteIndexReader implements AutoCloseable {
                     long cacheDataTreeRoot = partMetaIO.getTreeRoot(addr);
 
                     TreeTraversalInfo cacheDataTreeInfo =
-                        horizontalTreeScan(partStore, cacheDataTreeRoot, "dataTree-" + partId, new ItemsListStorage());
+                        horizontalTreeScan(cacheDataTreeRoot, "dataTree-" + partId, new ItemsListStorage());
 
                     for (Object dataTreeItem : cacheDataTreeInfo.itemStorage) {
                         CacheAwareLink cacheAwareLink = (CacheAwareLink)dataTreeItem;
@@ -654,7 +666,7 @@ public class IgniteIndexReader implements AutoCloseable {
      * @param flag Flag.
      * @return Id of partition meta page.
      */
-    private long partMetaPageId(int partId, byte flag) {
+    public static long partMetaPageId(int partId, byte flag) {
         return PageIdUtils.pageId(partId, flag, 0);
     }
 
@@ -868,7 +880,7 @@ public class IgniteIndexReader implements AutoCloseable {
         Map<String, TreeTraversalInfo> treeInfos = new LinkedHashMap<>();
 
         TreeTraversalInfo metaTreeTraversalInfo =
-            traverseProc.traverse(idxStore, metaTreeRoot, META_TREE_NAME, new ItemsListStorage<IndexStorageImpl.IndexItem>());
+            traverseProc.traverse(metaTreeRoot, META_TREE_NAME, new ItemsListStorage<IndexStorageImpl.IndexItem>());
 
         treeInfos.put(META_TREE_NAME, metaTreeTraversalInfo);
 
@@ -884,7 +896,7 @@ public class IgniteIndexReader implements AutoCloseable {
                 return;
 
             TreeTraversalInfo treeTraversalInfo =
-                traverseProc.traverse(idxStore, normalizePageId(idxItem.pageId()), idxItem.nameString(), itemStorageFactory.get());
+                traverseProc.traverse(normalizePageId(idxItem.pageId()), idxItem.nameString(), itemStorageFactory.get());
 
             treeInfos.put(idxItem.toString(), treeTraversalInfo);
         });
@@ -1047,22 +1059,22 @@ public class IgniteIndexReader implements AutoCloseable {
     /**
      * Traverse single index tree from root to leafs.
      *
-     * @param store File page store.
      * @param rootPageId Root page id.
      * @param treeName Tree name.
+     * @param innerCb Inner pages callback.
+     * @param itemCb Items callback.
      * @param itemStorage Items storage.
      * @return Tree traversal info.
      */
-    private TreeTraversalInfo traverseTree(FilePageStore store, long rootPageId, String treeName, ItemStorage itemStorage) {
+    TreeTraversalInfo traverseTree(long rootPageId, String treeName, PageCallback innerCb, ItemCallback itemCb,
+        ItemStorage itemStorage) {
+        FilePageStore store = filePageStore(partId(rootPageId));
+
         Map<Class, Long> ioStat = new HashMap<>();
 
         Map<Long, List<Throwable>> errors = new HashMap<>();
 
         Set<Long> innerPageIds = new HashSet<>();
-
-        PageCallback innerCb = (content, pageId) -> innerPageIds.add(normalizePageId(pageId));
-
-        ItemCallback itemCb = (currPageId, item, link) -> itemStorage.add(item);
 
         getTreeNode(rootPageId, new TreeTraverseContext(treeName, store, ioStat, errors, innerCb, null, itemCb));
 
@@ -1070,20 +1082,40 @@ public class IgniteIndexReader implements AutoCloseable {
     }
 
     /**
+     * Traverse single index tree from root to leafs.
+     *
+     * @param rootPageId Root page id.
+     * @param treeName Tree name.
+     * @param itemStorage Items storage.
+     * @return Tree traversal info.
+     */
+    TreeTraversalInfo traverseTree(long rootPageId, String treeName, ItemStorage itemStorage) {
+        Set<Long> innerPageIds = new HashSet<>();
+
+        return traverseTree(
+            rootPageId,
+            treeName,
+            (content, pageId) -> innerPageIds.add(normalizePageId(pageId)),
+            (currPageId, item, link) -> itemStorage.add(item),
+            itemStorage
+        );
+    }
+
+    /**
      * Traverse single index tree by each level horizontally.
      *
-     * @param store File page store.
      * @param rootPageId Root page id.
      * @param treeName Tree name.
      * @param itemStorage Items storage.
      * @return Tree traversal info.
      */
     private TreeTraversalInfo horizontalTreeScan(
-        FilePageStore store,
         long rootPageId,
         String treeName,
         ItemStorage itemStorage
     ) {
+        FilePageStore store = filePageStore(partId(rootPageId));
+
         Map<Long, List<Throwable>> errors = new HashMap<>();
 
         Map<Class, Long> ioStat = new HashMap<>();
@@ -1155,6 +1187,14 @@ public class IgniteIndexReader implements AutoCloseable {
         }
 
         return new TreeTraversalInfo(ioStat, errors, null, rootPageId, itemStorage);
+    }
+
+    /**
+     * @param partId Partition id.
+     * @return File page store of given partition.
+     */
+    private FilePageStore filePageStore(int partId) {
+        return partId == INDEX_PARTITION ? idxStore : partStores[partId];
     }
 
     /**
@@ -1363,7 +1403,7 @@ public class IgniteIndexReader implements AutoCloseable {
      */
     private interface TraverseProc {
         /** */
-        TreeTraversalInfo traverse(FilePageStore store, long rootId, String treeName, ItemStorage itemStorage);
+        TreeTraversalInfo traverse(long rootId, String treeName, ItemStorage itemStorage);
     }
 
     /**

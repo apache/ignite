@@ -30,7 +30,7 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.pageIndex;
  * Stores links to data pages.
  */
 class LinkStorage implements ItemStorage<CacheAwareLink> {
-    /** */
+    /** Map cacheId -> (map partId -> (map item -> set of page indexes))*/
     private final Map<Integer, Map<Integer, Map<Byte, IntSet>>> store = new HashMap<>();
 
     /** */
