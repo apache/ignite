@@ -188,9 +188,10 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 () => id == cache.GetSize(),
                 () =>
                 {
-                    return string.Format("Expected: {0}, actual: {1}, sent: {2}, alloc: {3}, pool: {4}, log: ({5})", id,
+                    return string.Format("Expected: {0}, actual: {1}, sent: {2}, alloc: {3}, pool: {4}, log: ({5}), buffers: {6}", id,
                         cache.GetSize(), streamerImpl.EntriesSent, streamerImpl.ArraysAllocated,
-                        streamerImpl.ArraysPooled, string.Concat(topologyLog.Select(x => x ? "+" : "-")));
+                        streamerImpl.ArraysPooled, string.Concat(topologyLog.Select(x => x ? "+" : "-")),
+                        string.Join(", ", streamerImpl.Buffers.Select(b => b.ToString())));
                 },
                 timeout: 3000);
 

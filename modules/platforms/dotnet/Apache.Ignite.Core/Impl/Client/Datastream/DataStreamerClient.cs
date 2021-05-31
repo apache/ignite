@@ -237,14 +237,6 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         }
 
         /// <summary>
-        /// Gets the count of allocated arrays.
-        /// </summary>
-        internal int ArraysAllocated
-        {
-            get { return Interlocked.CompareExchange(ref _arraysAllocated, -1, -1); }
-        }
-
-        /// <summary>
         /// Gets the count of sent entries.
         /// </summary>
         internal long EntriesSent
@@ -253,11 +245,27 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         }
 
         /// <summary>
+        /// Gets the count of allocated arrays.
+        /// </summary>
+        internal int ArraysAllocated
+        {
+            get { return Interlocked.CompareExchange(ref _arraysAllocated, -1, -1); }
+        }
+
+        /// <summary>
         /// Gets the count of pooled arrays.
         /// </summary>
         internal int ArraysPooled
         {
             get { return _arrayPool.Count; }
+        }
+
+        /// <summary>
+        /// Gets the buffers.
+        /// </summary>
+        internal IEnumerable<DataStreamerClientPerNodeBuffer<TK, TV>> Buffers
+        {
+            get { return _buffers.Values; }
         }
 
         /// <summary>
