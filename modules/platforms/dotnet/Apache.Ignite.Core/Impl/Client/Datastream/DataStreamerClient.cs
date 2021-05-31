@@ -478,8 +478,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                     }
                 }
 
-                // TODO: If flush was caused by full buffer, we don't need to force flush everything here -
-                // just re-add entries to other buffers.
+                // Note: if initial flush was caused by full buffer, not requested by the user,
+                // we don't need to force flush everything here - just re-add entries to other buffers.
                 FlushInternalAsync().ContinueWith(flushTask => flushTask.SetAsResult(tcs));
             }
             catch (Exception e)
