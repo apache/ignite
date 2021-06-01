@@ -19,8 +19,8 @@ package org.apache.ignite.internal.commandline.indexreader;
 import java.util.List;
 import java.util.Map;
 
-import jdk.internal.jline.internal.Nullable;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.commandline.indexreader.IgniteIndexReader.getCacheId;
 
