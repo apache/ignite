@@ -100,4 +100,4 @@ class RebalanceInMemoryTest(IgniteTest):
                                    ignites.config._replace(discovery_spi=from_ignite_cluster(ignites)), num_nodes=1)
             ignite.start()
 
-        return get_result(ignite, trigger_event, preload_time, cache_count, entry_count, entry_size)
+        return get_result(ignite.nodes, preload_time, cache_count, entry_count, entry_size)

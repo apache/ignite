@@ -28,13 +28,14 @@ from ignitetest.services.ignite_app import IgniteApplicationService
 
 
 # pylint: disable=too-many-arguments
+from ignitetest.services.utils.ignite_aware import IgniteAwareService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
 from ignitetest.utils.enum import constructible
 from ignitetest.utils.version import IgniteVersion
 
 NUM_NODES = 4
-DEFAULT_DATA_REGION_SZ = 512 * 1024 * 1024
+DEFAULT_DATA_REGION_SZ = 1024 * 1024 * 1024
 
 
 @constructible
@@ -101,33 +102,33 @@ def preload_data(context, config, preloaders, backups, cache_count, entry_count,
             min(map(lambda app: app.get_init_time(), apps))).total_seconds()
 
 
-def await_rebalance_start(ignite, timeout=30):
+def await_rebalance_start(nodes, timeout=30):
     """
     Awaits rebalance starting on any test-cache on any node.
-    :param ignite: IgniteService instance.
+    :param nodes: Ignite nodes in which rebalance start will be awaited.
     :param timeout: Rebalance start await timeout.
     :return: dictionary of two keypairs with keys "node" and "time",
     where "node" contains the first node on which rebalance start was detected
     and "time" contains the time when rebalance was started.
     """
-    for node in ignite.nodes:
+    for node in nodes:
         try:
-            rebalance_start_time = ignite.get_event_time_on_node(
-                node, "Starting rebalance routine \\[test-cache-",
+            rebalance_start_time = IgniteAwareService.get_event_time_on_node(
+                node,
+                "Starting rebalance routine \\[test-cache-",
                 timeout=timeout)
         except TimeoutError:
             continue
         else:
-            return node, rebalance_start_time
+            return rebalance_start_time
 
     raise RuntimeError("Rebalance start was not detected on any node")
 
 
-def await_rebalance_complete(ignite, node=None, cache_count=1, timeout=300):
+def await_rebalance_complete(nodes, cache_count=1, timeout=300):
     """
     Awaits rebalance complete on each test-cache.
-    :param ignite: IgniteService instance.
-    :param node: Ignite node in which rebalance will be awaited. If None, the first node in ignite will be used.
+    :param nodes: Ignite nodes in which rebalance will be awaited.
     :param cache_count: The count of test caches to wait for rebalance completion.
     :param timeout: Rebalance completion timeout.
     :return: The time of rebalance completion.
@@ -135,11 +136,13 @@ def await_rebalance_complete(ignite, node=None, cache_count=1, timeout=300):
     rebalance_complete_times = []
 
     for cache_idx in range(cache_count):
-        rebalance_complete_times.append(ignite.get_event_time_on_node(
-            node if node else ignite.nodes[0],
-            "Completed rebalance future: RebalanceFuture \\[%s \\[grp=test-cache-%d" %
-            ("state=STARTED, grp=CacheGroupContext", cache_idx + 1),
-            timeout=timeout))
+        cache_grp = "test-cache-%d" % (cache_idx + 1)
+        for node in nodes:
+            rebalance_complete_times.append(IgniteAwareService.get_event_time_on_node(
+                node,
+                "Completed rebalance future: RebalanceFuture \\[state=STARTED, grp=CacheGroupContext \\[grp=%s"
+                % cache_grp,
+                timeout=timeout))
 
     return max(rebalance_complete_times)
 
@@ -258,23 +261,20 @@ def start_ignite(test_context, ignite_version, trigger_event, backups, cache_cou
 
 
 # pylint: disable=too-many-arguments, too-many-locals
-def get_result(ignite, trigger_event, preload_time, cache_count, entry_count, entry_size):
+def get_result(rebalance_nodes: dict, preload_time: int, cache_count: int, entry_count: int, entry_size: int):
     """
 
-    :param ignite:
-    :param trigger_event:
-    :param preload_time:
-    :param cache_count:
-    :param entry_count:
-    :param entry_size:
-    :return:
+    :param rebalance_nodes: Ignite nodes in which rebalance will be awaited.
+    :param preload_time: Preload time.
+    :param cache_count: Cache count.
+    :param entry_count: Cache entry count.
+    :param entry_size: Cache entry size.
+    :return: Rebalance result with aggregated rebalance stats dictionary
     """
 
-    start_node, _ = await_rebalance_start(ignite)
+    await_rebalance_start(rebalance_nodes)
 
-    await_rebalance_complete(ignite, start_node, cache_count)
-
-    rebalance_nodes = ignite.nodes[:-1] if trigger_event else ignite.nodes
+    await_rebalance_complete(rebalance_nodes, cache_count)
 
     stats = aggregate_rebalance_stats(rebalance_nodes, cache_count)
 
@@ -284,3 +284,17 @@ def get_result(ignite, trigger_event, preload_time, cache_count, entry_count, en
         "preload_time": int(preload_time * 1000),
         "preloaded_bytes": cache_count * entry_count * entry_size
     }
+
+#
+# def _do_rebalance_trigger_event(test_context, trigger_event, ignites, node_config):
+#     if trigger_event:  # TriggerEvent.NODE_LEFT
+#         left = ignites.nodes[len(ignites.nodes) - 1]
+#         test_context.logger.info("Stopping node %s.." % left.name)
+#         ignites.stop_node(left)
+#         return ignites.nodes[:-1]
+#
+#     # TriggerEvent.NODE_JOIN
+#     ignite = IgniteService(test_context, node_config._replace(discovery_spi=from_ignite_cluster(ignites)),
+#                            num_nodes=1)
+#     ignite.start()
+#     return ignite.nodes

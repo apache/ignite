@@ -16,13 +16,16 @@
 """
 Module contains persistent rebalance tests.
 """
+import os
+
 from ducktape.mark import defaults
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.utils.control_utility import ControlUtility
+from ignitetest.services.utils.ignite_aware import IgniteAwareService
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
-from ignitetest.tests.rebalance import preload_data, get_result, start_ignite, TriggerEvent, await_rebalance_start, \
-    await_rebalance_complete, NUM_NODES
+from ignitetest.tests.rebalance import preload_data, get_result, start_ignite, TriggerEvent, NUM_NODES, \
+    await_rebalance_start, await_rebalance_complete
 from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST
@@ -36,7 +39,7 @@ class RebalancePersistentTest(IgniteTest):
     # pylint: disable=too-many-arguments, too-many-locals
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @defaults(backups=[1], cache_count=[1], entry_count=[15_000], entry_size=[50_000], preloaders=[1],
+    @defaults(backups=[1], cache_count=[1], entry_count=[50_000], entry_size=[50_000], preloaders=[1],
               thread_pool_size=[None], batch_size=[None], batches_prefetch_count=[None], throttle=[None])
     def test_node_join(self, ignite_version, backups, cache_count, entry_count, entry_size, preloaders,
                        thread_pool_size, batch_size, batches_prefetch_count, throttle):
@@ -56,13 +59,15 @@ class RebalancePersistentTest(IgniteTest):
             ignites.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites)),
             preloaders, backups, cache_count, entry_count, entry_size)
 
+        self.logger.warn(f'db size: {get_database_size_mb(ignites)}')
+
         new_node = IgniteService(self.test_context, ignites.config._replace(discovery_spi=from_ignite_cluster(ignites)),
                                  num_nodes=1)
         new_node.start()
 
         control_utility.add_to_baseline(new_node.nodes)
 
-        return get_result(new_node, TriggerEvent.NODE_JOIN, preload_time, cache_count, entry_count, entry_size)
+        return get_result(new_node.nodes, preload_time, cache_count, entry_count, entry_size)
 
     # pylint: disable=too-many-arguments, too-many-locals
     @cluster(num_nodes=NUM_NODES)
@@ -87,17 +92,20 @@ class RebalancePersistentTest(IgniteTest):
             ignites.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites)),
             preloaders, backups, cache_count, entry_count, entry_size)
 
+        self.logger.warn(f'db size: {get_database_size_mb(ignites)}')
+
         node = ignites.nodes[-1]
 
         ignites.stop_node(node)
+        ignites.wait_node(node, 30)
 
         control_utility.remove_from_baseline([node])
 
-        return get_result(ignites, TriggerEvent.NODE_LEFT, preload_time, cache_count, entry_count, entry_size)
+        return get_result(ignites.nodes[:-1], preload_time, cache_count, entry_count, entry_size)
 
-    @cluster(num_nodes=NUM_NODES)
+    @cluster(num_nodes=NUM_NODES+1)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @defaults(backups=[1], cache_count=[1], entry_count=[15_000], entry_size=[50_000], preloaders=[1],
+    @defaults(backups=[1], cache_count=[1], entry_count=[50_000], entry_size=[50_000], preloaders=[1],
               thread_pool_size=[None], batch_size=[None], batches_prefetch_count=[None], throttle=[None])
     def test_node_left_during_rebalance_on_join_node(self, ignite_version, backups, cache_count, entry_count,
                                                      entry_size, preloaders, thread_pool_size, batch_size,
@@ -125,13 +133,13 @@ class RebalancePersistentTest(IgniteTest):
 
         control_utility.add_to_baseline(new_node.nodes)
 
-        start_node, _ = await_rebalance_start(new_node)
+        await_rebalance_start(new_node.nodes)
 
         ignites.stop_node(ignites.nodes[-1])
 
-        await_rebalance_complete(new_node, start_node, cache_count)
+        await_rebalance_complete(new_node.nodes, cache_count)
 
-        return get_result(new_node, TriggerEvent.NODE_JOIN, preload_time, cache_count, entry_count, entry_size)
+        return get_result(new_node.nodes, preload_time, cache_count, entry_count, entry_size)
 
     @cluster(num_nodes=NUM_NODES + 1)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
@@ -157,9 +165,12 @@ class RebalancePersistentTest(IgniteTest):
             ignites.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites)),
             preloaders, backups, cache_count, entry_count, entry_size)
 
+        self.logger.warn(f'db size: {get_database_size_mb(ignites)}')
+
         node = ignites.nodes[-1]
 
         ignites.stop_node(node)
+        ignites.wait_node(node, 30)
 
         control_utility.remove_from_baseline([node], ignites.nodes[0])
 
@@ -171,4 +182,20 @@ class RebalancePersistentTest(IgniteTest):
 
         await_rebalance_complete(ignites, start_node, cache_count)
 
-        return get_result(new_node, TriggerEvent.NODE_LEFT, preload_time, cache_count, entry_count, entry_size)
+        return get_result(new_node.nodes, preload_time, cache_count, entry_count, entry_size)
+
+
+def get_database_size_mb(ignites, check_error=True):
+    """Executes the command passed on the self.nodes and returns out result as dict."""
+    res = {}
+    for node in ignites.nodes:
+        cons_id = node.account.hostname.replace('.', '_').replace('-', '_')
+        cmd = "du -ms %s | awk {'print $1'}" % os.path.join(ignites.database_dir, cons_id)
+        out, err = IgniteAwareService.exec_command_ex(node, cmd)
+
+        if check_error:
+            assert len(err) == 0, f"Command failed: '{cmd}'.\nError: '{err}'"
+
+        res[node.account.hostname] = out.replace('\n', 'mb.')
+
+    return res
