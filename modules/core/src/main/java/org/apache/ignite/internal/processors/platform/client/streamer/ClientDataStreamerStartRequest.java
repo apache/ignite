@@ -43,7 +43,7 @@ import static org.apache.ignite.internal.processors.platform.client.streamer.Cli
 import static org.apache.ignite.internal.processors.platform.client.streamer.ClientDataStreamerFlags.SKIP_STORE;
 
 /**
- *
+ * Starts the data streamer.
  */
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class ClientDataStreamerStartRequest extends ClientDataStreamerRequest {
