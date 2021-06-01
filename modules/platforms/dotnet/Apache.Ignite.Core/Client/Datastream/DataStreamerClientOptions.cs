@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Client.Datastream
     public class DataStreamerClientOptions
     {
         /// <summary>
-        /// The default client-side per-node buffer size,
+        /// The default client-side per-node buffer size (cache entries count),
         /// see <see cref="DataStreamerClientOptions.PerNodeBufferSize"/>.
         /// </summary>
         public const int DefaultPerNodeBufferSize = 512;
@@ -109,7 +109,7 @@ namespace Apache.Ignite.Core.Client.Datastream
         public bool SkipStore { get; set; }
 
         /// <summary>
-        /// Gets or sets the size of per node entry buffer.
+        /// Gets or sets the size (entry count) of per node buffer.
         /// <para />
         /// Default is <see cref="DefaultPerNodeBufferSize"/>.
         /// </summary>
