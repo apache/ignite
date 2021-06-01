@@ -108,8 +108,8 @@ public class WALRecordsConsumer<K, V> {
     public void start() throws IgniteCheckedException {
         consumer.start();
 
-        if (log.isInfoEnabled())
-            log.info("WalRecordsConsumer started[consumer=" + consumer.getClass() + ']');
+        if (log.isDebugEnabled())
+            log.debug("WalRecordsConsumer started [consumer=" + consumer.getClass() + ']');
     }
 
     /**

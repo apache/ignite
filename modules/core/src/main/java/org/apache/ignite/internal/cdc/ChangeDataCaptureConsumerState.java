@@ -36,7 +36,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer.POINTER_SIZE;
 
 /**
- * CDC Consumer state.
+ * Change Data Capture Consumer state.
  *
  * Each time {@link ChangeDataCaptureConsumer#onEvents(Iterator)} returns {@code true}
  * current offset in WAL segment saved to file.

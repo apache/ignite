@@ -22,7 +22,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.persistence.FileLockHolder;
 
 /**
- * Lock file holder for CDC application.
+ * Lock file holder for Change Data Capture application.
  *
  * @see ChangeDataCapture
  * @see ChangeDataCaptureConsumerState

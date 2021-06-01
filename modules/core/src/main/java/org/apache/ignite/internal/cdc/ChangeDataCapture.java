@@ -307,7 +307,7 @@ public class ChangeDataCapture implements Runnable {
     /** Reads all available records from segment. */
     private void consumeSegment(Path segment) {
         if (log.isInfoEnabled())
-            log.info("Processing WAL segment[segment=" + segment + ']');
+            log.info("Processing WAL segment [segment=" + segment + ']');
 
         IgniteWalIteratorFactory.IteratorParametersBuilder builder =
             new IgniteWalIteratorFactory.IteratorParametersBuilder()
@@ -322,10 +322,8 @@ public class ChangeDataCapture implements Runnable {
             long segmentIdx = segmentIndex(segment);
 
             if (segmentIdx > initState.index()) {
-                log.error("Found segment greater then saved state. Some events are missed. Exiting!" +
+                throw new IgniteException("Found segment greater then saved state. Some events are missed. Exiting! " +
                     "[state=" + initState + ",segment=" + segmentIdx + ']');
-
-                throw new IgniteException("Some data missed.");
             }
 
             if (segmentIdx < initState.index()) {
