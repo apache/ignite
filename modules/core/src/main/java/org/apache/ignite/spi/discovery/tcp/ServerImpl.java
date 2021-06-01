@@ -299,8 +299,8 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** Time of last sent and acknowledged message. */
     private volatile long lastRingMsgSentTime;
 
-    /** Time of last failed message. */
-    private volatile long lastRingMsgSendFailTime;
+    /** Time of first failed message. */
+    private volatile long firstFailedRingMsgTime;
 
     /** */
     private volatile boolean nodeCompactRepresentationSupported =
@@ -398,7 +398,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         lastRingMsgSentTime = 0;
 
-        lastRingMsgSendFailTime = 0;
+        firstFailedRingMsgTime = 0;
 
         // Foundumental timeout value for actions related to connection check.
         connCheckTick = effectiveExchangeTimeout() / 3;
@@ -3877,9 +3877,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 if (!sent) {
                     if (sndState == null && spi.getEffectiveConnectionRecoveryTimeout() > 0) {
-                        lastRingMsgSendFailTime = System.nanoTime();
+                        firstFailedRingMsgTime = System.nanoTime();
 
-                        sndState = new CrossRingMessageSendState(lastRingMsgSendFailTime);
+                        sndState = new CrossRingMessageSendState(firstFailedRingMsgTime);
                     }
                     else if (sndState != null && sndState.checkTimeout()) {
                         segmentLocalNodeOnSendFail(failedNodes);
@@ -6522,13 +6522,12 @@ class ServerImpl extends TcpDiscoveryImpl {
      * Segment local node if ring connection failed while incoming traffic is present.
      */
     private void checkOutgoingConnection() {
-        // Skip if there is no msg sending failure or wait for ping comming after the failure.
-        if (lastRingMsgSendFailTime == 0 || lastRingMsgReceivedTime < lastRingMsgSendFailTime + U.millisToNanos(connCheckInterval))
-            return;
-
-        synchronized (mux) {
-            if (spiState == CONNECTED && failedNodes.size() > 1 && ring.serverNodes(failedNodes.keySet()).size() == 1)
-                segmentLocalNodeOnSendFail(failedNodes.keySet());
+        if (firstFailedRingMsgTime > 0 && lastRingMsgReceivedTime > firstFailedRingMsgTime +
+            U.millisToNanos(connCheckInterval)) {
+            synchronized (mux) {
+                if (spiState == CONNECTED)
+                    segmentLocalNodeOnSendFail(failedNodes.keySet());
+            }
         }
     }
 
@@ -6587,7 +6586,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
     /** Fixates time of last sent message. */
     private void updateLastSentMessageTime() {
-        lastRingMsgSendFailTime = 0;
+        firstFailedRingMsgTime = 0;
 
         lastRingMsgSentTime = System.nanoTime();
     }
