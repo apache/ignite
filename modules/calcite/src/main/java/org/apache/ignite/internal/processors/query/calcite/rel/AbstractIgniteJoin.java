@@ -71,7 +71,8 @@ public abstract class AbstractIgniteJoin extends Join implements TraitsAwareIgni
     /** {@inheritDoc} */
     @Override public RelWriter explainTerms(RelWriter pw) {
         return super.explainTerms(pw)
-            .itemIf("variablesSet", Commons.transform(variablesSet.asList(), CorrelationId::getId), pw.getDetailLevel() == SqlExplainLevel.ALL_ATTRIBUTES);
+            .itemIf("variablesSet", Commons.transform(variablesSet.asList(), CorrelationId::getId),
+                pw.getDetailLevel() == SqlExplainLevel.ALL_ATTRIBUTES);
     }
 
     /** {@inheritDoc} */

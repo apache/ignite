@@ -39,9 +39,9 @@ namespace ignite
          * @see TransactionConcurrency and TransactionIsolation for details on
          * the supported isolation levels and concurrency models.
          *
-         * This class implemented as a reference to an implementation so copying
+         * This class is implemented as a reference to an implementation so copying
          * of this class instance will only create another reference to the same
-         * underlying object. Underlying object released automatically once all
+         * underlying object. Underlying object will be released automatically once all
          * the instances are destructed.
          */
         class IGNITE_FRIEND_EXPORT Transaction

@@ -337,12 +337,14 @@ public abstract class WALRecord {
         INTERNAL,
         /**
          * Physical records are needed for correct recovering physical state of {@link org.apache.ignite.internal.pagemem.PageMemory}.
-         * {@link org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager#restoreBinaryMemory(org.apache.ignite.lang.IgnitePredicate, org.apache.ignite.lang.IgniteBiPredicate)}.
+         * {@link org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager#restoreBinaryMemory(
+         * org.apache.ignite.lang.IgnitePredicate, org.apache.ignite.lang.IgniteBiPredicate)}.
          */
         PHYSICAL,
         /**
          * Logical records are needed to replay logical updates since last checkpoint.
-         * {@link GridCacheDatabaseSharedManager#applyLogicalUpdates(CheckpointStatus, org.apache.ignite.lang.IgnitePredicate, org.apache.ignite.lang.IgniteBiPredicate, boolean)}
+         * {@link GridCacheDatabaseSharedManager#applyLogicalUpdates(CheckpointStatus, org.apache.ignite.lang.IgnitePredicate,
+         * org.apache.ignite.lang.IgniteBiPredicate, boolean)}
          */
         LOGICAL,
         /**

@@ -621,10 +621,10 @@ public abstract class JdbcThinStreamingAbstractSelfTest extends JdbcStreamingSel
 
         /** {@inheritDoc} */
         @Override public List<Long> streamBatchedUpdateQuery(String schemaName, String qry, List<Object[]> params,
-            SqlClientContext cliCtx) throws IgniteCheckedException {
+            SqlClientContext cliCtx, String qryInitiatorId) throws IgniteCheckedException {
             IndexingWithContext.cliCtx = cliCtx;
 
-            return super.streamBatchedUpdateQuery(schemaName, qry, params, cliCtx);
+            return super.streamBatchedUpdateQuery(schemaName, qry, params, cliCtx, qryInitiatorId);
         }
 
         /** {@inheritDoc} */

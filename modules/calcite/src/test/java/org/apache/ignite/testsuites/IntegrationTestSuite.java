@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.query.calcite.LimitOffsetTest;
 import org.apache.ignite.internal.processors.query.calcite.SqlFieldsQueryUsageTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.AggregatesIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.CalciteErrorHandlilngIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.IndexSpoolIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.MetadataIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.SortAggregateIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.TableDdlIntegrationTest;
@@ -59,6 +60,7 @@ import org.junit.runners.Suite;
     FunctionsTest.class,
     TableDmlIntegrationTest.class,
     DataTypesTest.class,
+    IndexSpoolIntegrationTest.class,
 })
 public class IntegrationTestSuite {
 }

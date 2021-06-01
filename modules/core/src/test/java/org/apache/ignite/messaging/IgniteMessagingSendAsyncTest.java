@@ -427,7 +427,7 @@ public class IgniteMessagingSendAsyncTest extends GridCommonAbstractTest impleme
     private <T> void sendOrdered(
             final IgniteMessaging igniteMsg,
             final List<T> msgs,
-            final IgniteBiInClosure<List<T>,List<Thread>> cls
+            final IgniteBiInClosure<List<T>, List<Thread>> cls
     ) throws Exception {
         final CountDownLatch latch = new CountDownLatch(msgs.size());
 

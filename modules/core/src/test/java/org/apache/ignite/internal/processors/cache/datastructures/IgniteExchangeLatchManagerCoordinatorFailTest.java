@@ -256,7 +256,9 @@ public class IgniteExchangeLatchManagerCoordinatorFailTest extends GridCommonAbs
      * @param nodeScenarios Node scenarios.
      * @throws Exception If failed.
      */
-    private void doTestCoordinatorFail(List<IgniteBiClosure<ExchangeLatchManager, CountDownLatch, Boolean>> nodeScenarios) throws Exception {
+    private void doTestCoordinatorFail(
+        List<IgniteBiClosure<ExchangeLatchManager, CountDownLatch, Boolean>> nodeScenarios
+    ) throws Exception {
         IgniteEx latchCrd = grid(LATCH_CRD_INDEX);
 
         // Latch to synchronize node states.

@@ -22,7 +22,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -30,6 +29,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
@@ -37,7 +37,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.CorruptedTre
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryStartRequest;
-import org.apache.ignite.internal.processors.query.h2.database.H2Tree;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -95,7 +94,8 @@ public class CalciteErrorHandlilngIntegrationTest extends GridCommonAbstractTest
 
         sql(client, "create table test (id int primary key, val varchar)");
 
-        String sql = "select /*+ DISABLE_RULE('NestedLoopJoinConverter', 'MergeJoinConverter') */ t1.id from test t1, test t2 where t1.id = t2.id";
+        String sql = "select /*+ DISABLE_RULE('NestedLoopJoinConverter', 'MergeJoinConverter') */ t1.id " +
+            "from test t1, test t2 where t1.id = t2.id";
 
         Throwable t = GridTestUtils.assertThrowsWithCause(() -> sql(client, sql), AssertionError.class);
         assertEquals(CNLJ_NOT_SUPPORTED_JOIN_ASSERTION_MSG, t.getCause().getMessage());
@@ -174,7 +174,7 @@ public class CalciteErrorHandlilngIntegrationTest extends GridCommonAbstractTest
                         BPlusTree.Result res =
                             delegate.run(cacheId, pageId, page, pageAddr, io, walPlc, arg, intArg, statHolder);
 
-                        if (shouldThrow.get() && (tree instanceof H2Tree))
+                        if (shouldThrow.get() && (tree instanceof InlineIndexTree))
                             throw new RuntimeException("test exception");
 
                         return res;

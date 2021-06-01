@@ -126,7 +126,7 @@ public final class Commons {
     /**
      * Transforms a given list using map function.
      */
-    public static <T,R> List<R> transform(@NotNull List<T> src, @NotNull Function<T,R> mapFun) {
+    public static <T, R> List<R> transform(@NotNull List<T> src, @NotNull Function<T, R> mapFun) {
         if (F.isEmpty(src))
             return Collections.emptyList();
 

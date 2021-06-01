@@ -41,7 +41,6 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformWriterBiClosure;
 import org.apache.ignite.internal.processors.platform.utils.PlatformWriterClosure;
 import org.apache.ignite.internal.processors.service.GridServiceProxy;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -271,6 +270,8 @@ public class PlatformServices extends PlatformAbstractTarget {
                 assert arg != null;
                 assert arg instanceof ServiceProxyHolder;
 
+                ServiceProxyHolder svc = (ServiceProxyHolder)arg;
+
                 String mthdName = reader.readString();
 
                 Object[] args;
@@ -279,17 +280,17 @@ public class PlatformServices extends PlatformAbstractTarget {
                     args = new Object[reader.readInt()];
 
                     for (int i = 0; i < args.length; i++)
-                        args[i] = reader.readObjectDetached();
+                        args[i] = reader.readObjectDetached(!srvKeepBinary && !svc.isPlatformService());
                 }
                 else
                     args = null;
 
                 try {
-                    Object result = ((ServiceProxyHolder)arg).invoke(mthdName, srvKeepBinary, args);
+                    Object result = svc.invoke(mthdName, srvKeepBinary, args);
 
                     PlatformUtils.writeInvocationResult(writer, result, null);
                 }
-                catch (Exception e) {
+                catch (Throwable e) {
                     PlatformUtils.writeInvocationResult(writer, null, e);
                 }
 
@@ -608,9 +609,8 @@ public class PlatformServices extends PlatformAbstractTarget {
          * @throws IgniteCheckedException On error.
          * @throws NoSuchMethodException On error.
          */
-        public Object invoke(String mthdName, boolean srvKeepBinary, Object[] args)
-            throws IgniteCheckedException, NoSuchMethodException {
-            if (proxy instanceof PlatformService)
+        public Object invoke(String mthdName, boolean srvKeepBinary, Object[] args) throws Throwable {
+            if (isPlatformService())
                 return ((PlatformService)proxy).invokeMethod(mthdName, srvKeepBinary, args);
             else {
                 assert proxy instanceof GridServiceProxy;
@@ -622,12 +622,7 @@ public class PlatformServices extends PlatformAbstractTarget {
                 Method mtd = getMethod(serviceClass, mthdName, args);
                 convertArrayArgs(args, mtd);
 
-                try {
-                    return ((GridServiceProxy)proxy).invokeMethod(mtd, args);
-                }
-                catch (Throwable t) {
-                    throw IgniteUtils.cast(t);
-                }
+                return ((GridServiceProxy)proxy).invokeMethod(mtd, args);
             }
         }
 
@@ -714,6 +709,11 @@ public class PlatformServices extends PlatformAbstractTarget {
          */
         private static Class wrap(Class c) {
             return c.isPrimitive() ? PRIMITIVES_TO_WRAPPERS.get(c) : c;
+        }
+
+        /** @return {@code True} if service is platform service. */
+        public boolean isPlatformService() {
+            return proxy instanceof PlatformService;
         }
     }
 

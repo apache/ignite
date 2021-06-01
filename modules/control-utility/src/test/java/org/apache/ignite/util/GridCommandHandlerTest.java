@@ -97,6 +97,7 @@ import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelo
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
+import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.warmup.BlockedWarmUpConfiguration;
 import org.apache.ignite.internal.processors.cache.warmup.BlockedWarmUpStrategy;
@@ -155,6 +156,7 @@ import static org.apache.ignite.internal.commandline.encryption.EncryptionSubcom
 import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTER_KEY_NAME_2;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.doSnapshotCancellationTest;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METRICS;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
@@ -1015,7 +1017,11 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
             List<String> nodesInfo = findBaselineNodesInfo();
             assertEquals(1, nodesInfo.size());
-            assertContains(log, nodesInfo.get(0), "Addresses=188.166.164.247.hostname/188.166.164.247,10.19.112.175.hostname/10.19.112.175");
+            assertContains(
+                log,
+                nodesInfo.get(0),
+                "Addresses=188.166.164.247.hostname/188.166.164.247,10.19.112.175.hostname/10.19.112.175"
+            );
         }
 
         { // empty resolved addresses
@@ -1994,28 +2000,21 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         node.cluster().active(true);
 
-        IgniteCache cache = node.createCache(new CacheConfiguration<>()
+        IgniteCache<Integer, Integer> cache = node.getOrCreateCache(new CacheConfiguration<Integer, Integer>()
             .setAffinity(new RendezvousAffinityFunction(false, 32))
             .setBackups(1)
-            .setName(DEFAULT_CACHE_NAME)
-        );
+            .setName(DEFAULT_CACHE_NAME));
 
         AtomicBoolean stopFlag = new AtomicBoolean();
 
-        Thread loadThread = new Thread(() -> {
+        IgniteInternalFuture<?> loadFut = GridTestUtils.runMultiThreadedAsync(() -> {
             ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-            while (!stopFlag.get()) {
+            while (!stopFlag.get() && !Thread.currentThread().isInterrupted())
                 cache.put(rnd.nextInt(1000), rnd.nextInt(1000));
-
-                if (Thread.interrupted())
-                    break;
-            }
-        });
+        }, 5, "load-thread-");
 
         try {
-            loadThread.start();
-
             doSleep(checkpointFreq);
 
             injectTestSystemOut();
@@ -2027,12 +2026,12 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
             stopFlag.set(true);
 
-            loadThread.join();
+            loadFut.get();
         }
 
         String out = testOut.toString();
 
-        assertContains(log, out, "idle_verify failed");
+        assertContains(log, out, "The check procedure failed");
         assertContains(log, out, "See log for additional information.");
 
         String logFileName = (out.split("See log for additional information. ")[1]).split(".txt")[0];
@@ -2136,7 +2135,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         String out = testOut.toString();
 
-        assertContains(log, out, "idle_verify failed on 1 node.");
+        assertContains(log, out, "The check procedure failed on 1 node.");
         assertContains(log, out, "See log for additional information.");
     }
 
@@ -2156,8 +2155,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         String outputStr = testOut.toString();
 
-        assertContains(log,outputStr, "idle_verify failed on 1 node.");
-        assertContains(log, outputStr, "idle_verify check has finished, no conflicts have been found.");
+        assertContains(log, outputStr, "The check procedure failed on 1 node.");
+        assertContains(log, outputStr, "The check procedure has finished, no conflicts have been found.");
     }
 
     /** */
@@ -2219,7 +2218,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         if (fileNameMatcher.find()) {
             String dumpWithConflicts = new String(Files.readAllBytes(Paths.get(fileNameMatcher.group(1))));
 
-            assertContains(log, dumpWithConflicts, "Idle verify failed on nodes:");
+            assertContains(log, dumpWithConflicts, "The check procedure failed on nodes:");
 
             assertContains(log, dumpWithConflicts, "Node ID: " + unstableNodeId);
         }
@@ -2553,7 +2552,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
                         doSleep(3000);
 
-                        try (Transaction tx = grid(0).transactions().withLabel("label1").txStart(PESSIMISTIC, READ_COMMITTED, Integer.MAX_VALUE, 0)) {
+                        try (Transaction tx =
+                                 grid(0).transactions().withLabel("label1").txStart(PESSIMISTIC, READ_COMMITTED, Integer.MAX_VALUE, 0)) {
                             grid(0).cache(DEFAULT_CACHE_NAME).putAll(generate(200, 110));
 
                             grid(0).cache(DEFAULT_CACHE_NAME).put(0, 0);
@@ -3084,6 +3084,30 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         doSnapshotCancellationTest(startCli, Collections.singletonList(srv), startCli.cache(DEFAULT_CACHE_NAME),
             snpName -> assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "cancel", snpName)));
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testCheckSnapshot() throws Exception {
+        String snpName = "snapshot_02052020";
+
+        IgniteEx ig = startGrid(0);
+        ig.cluster().state(ACTIVE);
+
+        createCacheAndPreload(ig, 1000);
+
+        snp(ig).createSnapshot(snpName)
+            .get();
+
+        CommandHandler h = new CommandHandler();
+
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "check", snpName));
+
+        StringBuilder sb = new StringBuilder();
+
+        ((IdleVerifyResultV2)h.getLastOperationResult()).print(sb::append, true);
+
+        assertContains(log, sb.toString(), "The check procedure has finished, no conflicts have been found");
     }
 
     /**

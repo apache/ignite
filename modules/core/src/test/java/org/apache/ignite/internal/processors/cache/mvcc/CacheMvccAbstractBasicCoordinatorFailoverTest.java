@@ -265,7 +265,10 @@ public abstract class CacheMvccAbstractBasicCoordinatorFailoverTest extends Cach
                                     res = readAllByMode(cache, vals.keySet(), readMode, INTEGER_CODEC);
 
                                 if (readInTx) { // TODO IGNITE-8841
-                                    assertTrue("res.size=" + (res == null ? 0 : res.size()) + ", res=" + res, res == null || vals.size() == res.size());
+                                    assertTrue(
+                                        "res.size=" + (res == null ? 0 : res.size()) + ", res=" + res,
+                                        res == null || vals.size() == res.size()
+                                    );
                                 }
                                 else {
                                     assertEquals(vals.size(), res.size());
@@ -462,7 +465,7 @@ public abstract class CacheMvccAbstractBasicCoordinatorFailoverTest extends Cach
         WriteMode writeMode) throws Exception {
         for (boolean readInTx : new boolean[]{false, true}) {
             for (int i = 1; i <= 3; i++) {
-                readInProgressCoordinatorFailsSimple(fromClient, i, readInTx,cfgC, readMode, writeMode);
+                readInProgressCoordinatorFailsSimple(fromClient, i, readInTx, cfgC, readMode, writeMode);
 
                 afterTest();
             }

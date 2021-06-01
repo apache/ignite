@@ -33,10 +33,7 @@ public class PagePartitionMetaIOV2 extends PagePartitionMetaIO {
     private static final int PART_META_REUSE_LIST_ROOT_OFF = PENDING_TREE_ROOT_OFF + 8;
 
     /** */
-    private static final int GAPS_LINK = PART_META_REUSE_LIST_ROOT_OFF + 8;
-
-    /** */
-    public static final int END_OF_PARTITION_PAGE_META_V2 = GAPS_LINK + 8;
+    protected static final int GAPS_LINK = PART_META_REUSE_LIST_ROOT_OFF + 8;
 
     /**
      * @param ver Version.
@@ -51,7 +48,7 @@ public class PagePartitionMetaIOV2 extends PagePartitionMetaIO {
 
         setPendingTreeRoot(pageAddr, 0L);
         setPartitionMetaStoreReuseListRoot(pageAddr, 0L);
-        setGapsLink(pageAddr, 0);
+        setGapsLink(pageAddr, 0L);
     }
 
     /** {@inheritDoc} */
@@ -83,7 +80,7 @@ public class PagePartitionMetaIOV2 extends PagePartitionMetaIO {
      * @param pageAddr Page address.
      * @return Partition size.
      */
-    public long getGapsLink(long pageAddr) {
+    @Override public long getGapsLink(long pageAddr) {
         return PageUtils.getLong(pageAddr, GAPS_LINK);
     }
 
@@ -93,7 +90,7 @@ public class PagePartitionMetaIOV2 extends PagePartitionMetaIO {
      *
      * @return {@code true} if value has changed as a result of this method's invocation.
      */
-    public boolean setGapsLink(long pageAddr, long link) {
+    @Override public boolean setGapsLink(long pageAddr, long link) {
         if (getGapsLink(pageAddr) == link)
             return false;
 
@@ -106,15 +103,9 @@ public class PagePartitionMetaIOV2 extends PagePartitionMetaIO {
     @Override protected void printFields(long pageAddr, GridStringBuilder sb) {
         super.printFields(pageAddr, sb);
 
-        sb.a("\ttreeRoot=").a(getReuseListRoot(pageAddr));
-        sb.a(",\n\tpendingTreeRoot=").a(getLastSuccessfulFullSnapshotId(pageAddr));
-        sb.a(",\n\tlastSuccessfulFullSnapshotId=").a(getLastSuccessfulFullSnapshotId(pageAddr));
-        sb.a(",\n\tlastSuccessfulSnapshotId=").a(getLastSuccessfulSnapshotId(pageAddr));
-        sb.a(",\n\tnextSnapshotTag=").a(getNextSnapshotTag(pageAddr));
-        sb.a(",\n\tlastSuccessfulSnapshotTag=").a(getLastSuccessfulSnapshotTag(pageAddr));
-        sb.a(",\n\tlastAllocatedPageCount=").a(getLastAllocatedPageCount(pageAddr));
-        sb.a(",\n\tcandidatePageCount=").a(getCandidatePageCount(pageAddr));
-        sb.a(",\n\tcntrUpdDataPageId=").a(getGapsLink(pageAddr));
+        sb.a(",\n\tpendingTreeRoot=").a(getPendingTreeRoot(pageAddr))
+            .a(",\n\tpartitionMetaStoreReuseListRoot=").a(getPartitionMetaStoreReuseListRoot(pageAddr))
+            .a(",\n\tcntrUpdDataPageId=").a(getGapsLink(pageAddr));
     }
 
     /**

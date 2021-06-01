@@ -182,10 +182,18 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
             affFields.add(descriptorsMap.get(typeDesc.affinityKey()).fieldIndex());
         else if (!F.isEmpty(typeDesc.keyFieldAlias()))
             affFields.add(descriptorsMap.get(typeDesc.keyFieldAlias()).fieldIndex());
-        else {
+        else if (!F.isEmpty(typeDesc.primaryKeyFields())) {
             affFields.addAll(
                 descriptors.stream()
                     .filter(desc -> typeDesc.primaryKeyFields().contains(desc.name()))
+                    .map(ColumnDescriptor::fieldIndex)
+                    .collect(Collectors.toList())
+            );
+        }
+        else {
+            affFields.addAll(
+                descriptors.stream()
+                    .filter(desc -> typeDesc.fields().containsKey(desc.name()) && typeDesc.property(desc.name()).key())
                     .map(ColumnDescriptor::fieldIndex)
                     .collect(Collectors.toList())
             );
@@ -208,11 +216,6 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
     /** {@inheritDoc} */
     @Override public RelDataType insertRowType(IgniteTypeFactory factory) {
         return rowType(factory, insertFields);
-    }
-
-    /** {@inheritDoc} */
-    @Override public RelDataType selectForUpdateRowType(IgniteTypeFactory factory) {
-        return rowType(factory, ImmutableBitSet.of(keyField, valField));
     }
 
     /** {@inheritDoc} */
@@ -444,12 +447,14 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
         Object key = Objects.requireNonNull(handler.get(QueryUtils.KEY_COL, row));
         Object val = clone(Objects.requireNonNull(handler.get(QueryUtils.VAL_COL, row)));
 
+        int offset = descriptorsMap.size();
+
         for (int i = 0; i < updateColList.size(); i++) {
             final ColumnDescriptor desc = Objects.requireNonNull(descriptorsMap.get(updateColList.get(i)));
 
             assert !desc.key();
 
-            Object fieldVal = handler.get(i + 2, row);
+            Object fieldVal = handler.get(i + offset, row);
 
             if (desc.field())
                 desc.set(val, TypeUtils.fromInternal(ectx, fieldVal, desc.storageType()));

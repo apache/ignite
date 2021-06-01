@@ -30,6 +30,7 @@ import org.apache.ignite.internal.util.nio.GridNioServerListener;
 import org.apache.ignite.internal.util.nio.GridTcpNioCommunicationClient;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -38,18 +39,12 @@ import org.junit.Test;
  * Tests case when connection is closed only for one side, when other is not notified.
  */
 public class TcpCommunicationSpiHalfOpenedConnectionTest extends GridCommonAbstractTest {
-    /** Client spi. */
-    private TcpCommunicationSpi clientSpi;
-
     /** Paired connections. */
     private boolean pairedConnections;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        if (igniteInstanceName.contains("client"))
-            clientSpi = (TcpCommunicationSpi)cfg.getCommunicationSpi();
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setUsePairedConnections(pairedConnections);
 
@@ -68,7 +63,7 @@ public class TcpCommunicationSpiHalfOpenedConnectionTest extends GridCommonAbstr
     public void testReconnect() throws Exception {
         pairedConnections = false;
 
-        checkReconnect();
+        checkReconnect(false);
     }
 
     /**
@@ -78,32 +73,71 @@ public class TcpCommunicationSpiHalfOpenedConnectionTest extends GridCommonAbstr
     public void testReconnectPaired() throws Exception {
         pairedConnections = true;
 
-        checkReconnect();
+        checkReconnect(false);
     }
 
     /**
      * @throws Exception If failed.
      */
-    private void checkReconnect() throws Exception {
-        Ignite srv = startGrid("server");
-        Ignite client = startClientGrid("client");
+    @Test
+    public void testReverseReconnect() throws Exception {
+        pairedConnections = false;
 
-        UUID nodeId = srv.cluster().localNode().id();
+        checkReconnect(true);
+    }
 
-        System.out.println(">> Server ID: " + nodeId);
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testReverseReconnectPaired() throws Exception {
+        pairedConnections = true;
 
-        ClusterGroup srvGrp = client.cluster().forNodeId(nodeId);
+        checkReconnect(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void checkReconnect(boolean reverseReconnect) throws Exception {
+        Ignite srv = startGrid(0);
+        Ignite client = startClientGrid(1);
+
+        UUID srvNodeId = srv.cluster().localNode().id();
+        UUID clientNodeId = client.cluster().localNode().id();
+
+        System.out.println(">> Server ID: " + srvNodeId);
+        System.out.println(">> Client ID: " + clientNodeId);
+
+        ClusterGroup srvGrp = client.cluster().forNodeId(srvNodeId);
+        ClusterGroup clientGrp = srv.cluster().forNodeId(clientNodeId);
 
         System.out.println(">> Send job");
 
         // Establish connection
         client.compute(srvGrp).run(F.noop());
 
-        ConcurrentMap<UUID, GridCommunicationClient[]> clients = GridTestUtils.getFieldValue(clientSpi, "clientPool", "clients");
-        ConcurrentMap<?, GridNioRecoveryDescriptor> recoveryDescs = GridTestUtils.getFieldValue(clientSpi, "nioSrvWrapper", "recoveryDescs");
-        ConcurrentMap<?, GridNioRecoveryDescriptor> outRecDescs = GridTestUtils.getFieldValue(clientSpi, "nioSrvWrapper", "outRecDescs");
-        ConcurrentMap<?, GridNioRecoveryDescriptor> inRecDescs = GridTestUtils.getFieldValue(clientSpi, "nioSrvWrapper", "inRecDescs");
-        GridNioServerListener<Message> lsnr = GridTestUtils.getFieldValue(clientSpi, "nioSrvWrapper", "srvLsnr");
+        if (reverseReconnect)
+            reconnect(srv, client, clientGrp);
+        else
+            reconnect(client, srv, srvGrp);
+    }
+
+    /**
+     * Reconnects the {@code srcNode} to the {@code targetNode}.
+     *
+     * @param srcNode Source node.
+     * @param targetNode Target node.
+     * @param targetGrp Target cluster group.
+     */
+    private void reconnect(Ignite srcNode, Ignite targetNode, ClusterGroup targetGrp) {
+        CommunicationSpi commSpi = srcNode.configuration().getCommunicationSpi();
+
+        ConcurrentMap<UUID, GridCommunicationClient[]> clients = GridTestUtils.getFieldValue(commSpi, "clientPool", "clients");
+        ConcurrentMap<?, GridNioRecoveryDescriptor> recoveryDescs = GridTestUtils.getFieldValue(commSpi, "nioSrvWrapper", "recoveryDescs");
+        ConcurrentMap<?, GridNioRecoveryDescriptor> outRecDescs = GridTestUtils.getFieldValue(commSpi, "nioSrvWrapper", "outRecDescs");
+        ConcurrentMap<?, GridNioRecoveryDescriptor> inRecDescs = GridTestUtils.getFieldValue(commSpi, "nioSrvWrapper", "inRecDescs");
+        GridNioServerListener<Message> lsnr = GridTestUtils.getFieldValue(commSpi, "nioSrvWrapper", "srvLsnr");
 
         Iterator<GridNioRecoveryDescriptor> it = F.concat(
             recoveryDescs.values().iterator(),
@@ -122,7 +156,7 @@ public class TcpCommunicationSpiHalfOpenedConnectionTest extends GridCommonAbstr
         // Remove client to avoid calling close(), in that case server
         // will close connection too, but we want to keep the server
         // uninformed and force ping old connection.
-        GridCommunicationClient[] clients0 = clients.remove(nodeId);
+        GridCommunicationClient[] clients0 = clients.remove(targetNode.cluster().localNode().id());
 
         for (GridCommunicationClient commClient : clients0)
             lsnr.onDisconnected(((GridTcpNioCommunicationClient)commClient).session(), new IOException("Test exception"));
@@ -130,7 +164,7 @@ public class TcpCommunicationSpiHalfOpenedConnectionTest extends GridCommonAbstr
         info(">> Removed client");
 
         // Reestablish connection
-        client.compute(srvGrp).run(F.noop());
+        srcNode.compute(targetGrp).run(F.noop());
 
         info(">> Sent second job");
     }

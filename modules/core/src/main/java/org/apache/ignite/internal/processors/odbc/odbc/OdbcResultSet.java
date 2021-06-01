@@ -54,7 +54,7 @@ public class OdbcResultSet {
 
         if (this.cursor.isQuery()) {
             iter = this.cursor.iterator();
-            meta = OdbcUtils.convertMetadata(this.cursor.fieldsMeta(), ver);
+            meta = OdbcUtils.convertMetadata(this.cursor.fieldsMeta());
         }
         else {
             iter = null;

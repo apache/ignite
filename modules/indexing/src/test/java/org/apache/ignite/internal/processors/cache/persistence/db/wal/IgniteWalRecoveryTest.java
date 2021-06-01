@@ -130,6 +130,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Assert;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CHECKPOINT_FREQ;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
@@ -1803,7 +1804,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
      * Tests a scenario when a coordinator has failed after recovery during activation.
      */
     @Test
-    @WithSystemProperty(key = "IGNITE_DISABLE_WAL_DURING_REBALANCING", value = "false")
+    @WithSystemProperty(key = IGNITE_DISABLE_WAL_DURING_REBALANCING, value = "false")
     public void testRecoveryAfterRestart_Activate() throws Exception {
         IgniteEx crd = startGrid(1);
         crd.cluster().active(true);

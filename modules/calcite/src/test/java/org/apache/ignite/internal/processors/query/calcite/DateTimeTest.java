@@ -68,10 +68,14 @@ public class DateTimeTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, DateTimeEntry> dateTimeCache = grid.createCache(cfg);
 
-        dateTimeCache.put(1, new DateTimeEntry(1, javaDate("2020-10-01 12:00:00.000"), sqlDate("2020-10-01"), sqlTime("12:00:00"), sqlTimestamp("2020-10-01 12:00:00.000")));
-        dateTimeCache.put(2, new DateTimeEntry(2, javaDate("2020-12-01 00:10:20.000"), sqlDate("2020-12-01"), sqlTime("00:10:20"), sqlTimestamp("2020-12-01 00:10:20.000")));
-        dateTimeCache.put(3, new DateTimeEntry(3, javaDate("2020-10-20 13:15:00.000"), sqlDate("2020-10-20"), sqlTime("13:15:00"), sqlTimestamp("2020-10-20 13:15:00.000")));
-        dateTimeCache.put(4, new DateTimeEntry(4, javaDate("2020-01-01 22:40:00.000"), sqlDate("2020-01-01"), sqlTime("22:40:00"), sqlTimestamp("2020-01-01 22:40:00.000")));
+        dateTimeCache.put(1, new DateTimeEntry(1, javaDate("2020-10-01 12:00:00.000"),
+            sqlDate("2020-10-01"), sqlTime("12:00:00"), sqlTimestamp("2020-10-01 12:00:00.000")));
+        dateTimeCache.put(2, new DateTimeEntry(2, javaDate("2020-12-01 00:10:20.000"),
+            sqlDate("2020-12-01"), sqlTime("00:10:20"), sqlTimestamp("2020-12-01 00:10:20.000")));
+        dateTimeCache.put(3, new DateTimeEntry(3, javaDate("2020-10-20 13:15:00.000"),
+            sqlDate("2020-10-20"), sqlTime("13:15:00"), sqlTimestamp("2020-10-20 13:15:00.000")));
+        dateTimeCache.put(4, new DateTimeEntry(4, javaDate("2020-01-01 22:40:00.000"),
+            sqlDate("2020-01-01"), sqlTime("22:40:00"), sqlTimestamp("2020-01-01 22:40:00.000")));
 
         queryEngine = Commons.lookupComponent(((IgniteEx)grid).context(), QueryEngine.class);
 

@@ -27,7 +27,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerAbstractConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
@@ -114,13 +113,14 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
     /**
      * Constructor.
      * @param ctx Kernal Context.
+     * @param ses Client's NIO session.
      * @param busyLock Shutdown busy lock.
      * @param connId Connection ID.
      * @param maxCursors Maximum allowed cursors.
      */
-    public JdbcConnectionContext(GridKernalContext ctx, GridSpinBusyLock busyLock, long connId,
+    public JdbcConnectionContext(GridKernalContext ctx, GridNioSession ses, GridSpinBusyLock busyLock, long connId,
         int maxCursors) {
-        super(ctx, connId);
+        super(ctx, ses, connId);
 
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
@@ -155,7 +155,6 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
         boolean useExperimentalQueryEngine = false;
 
         NestedTxMode nestedTxMode = NestedTxMode.DEFAULT;
-        AuthorizationContext actx = null;
 
         if (ver.compareTo(VER_2_1_5) >= 0)
             lazyExec = reader.readBoolean();
@@ -211,10 +210,12 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
                 throw new IgniteCheckedException("Handshake error: " + e.getMessage(), e);
             }
 
-            actx = authenticate(ses, user, passwd);
+            authenticate(ses, user, passwd);
         }
 
         protoCtx = new JdbcProtocolContext(ver, features, true);
+
+        initClientDescriptor("jdbc-thin");
 
         parser = new JdbcMessageParser(ctx, protoCtx);
 
@@ -231,7 +232,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
         handler = new JdbcRequestHandler(busyLock, sender, maxCursors, distributedJoins, enforceJoinOrder,
             collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, useExperimentalQueryEngine, nestedTxMode,
-            dataPageScanEnabled, updateBatchSize, actx, ver, this);
+            dataPageScanEnabled, updateBatchSize, ver, this);
 
         handler.start();
     }

@@ -237,6 +237,7 @@ public interface GridCachePreloader {
      * Finish preloading for given topology version.
      *
      * @param topVer Topology version.
+     * @param rebalanceId Rebalance id.
      */
-    public void finishPreloading(AffinityTopologyVersion topVer);
+    public void finishPreloading(AffinityTopologyVersion topVer, long rebalanceId);
 }

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.rel.agg;
 
 import java.util.List;
-
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
@@ -52,6 +51,15 @@ public abstract class IgniteMapAggregateBase extends IgniteAggregate implements 
     /** {@inheritDoc} */
     protected IgniteMapAggregateBase(RelInput input) {
         super(TraitUtils.changeTraits(input, IgniteConvention.INSTANCE));
+    }
+
+    /** {@inheritDoc} */
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughDistribution(RelTraitSet nodeTraits,
+        List<RelTraitSet> inTraits) {
+        if (TraitUtils.distribution(nodeTraits).satisfies(IgniteDistributions.single()))
+            return null;
+        else
+            return TraitsAwareIgniteRel.super.passThroughDistribution(nodeTraits, inTraits);
     }
 
     /** {@inheritDoc} */

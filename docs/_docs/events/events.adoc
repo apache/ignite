@@ -325,6 +325,36 @@ They allow you to get notification about different stages of transaction executi
 | EVT_TX_RESUMED | A transaction is resumed. |The node where the transaction was started.
 |===
 
+== Snapshot Events
+
+All snapshot events are instances of the link:{events_url}/SnapshotEvent.html[SnapshotEvent] class. The snapshot events
+are always triggered at the node initiated a snapshot operation. They are also associated with the particular snapshot operation name.
+These events can notify you about the states and the result of the cluster snapshot operation, which can be used for further processing in
+your custom procedures.
+
+
+[cols="2,5,3",opts="header"]
+|===
+| Event Type | Event Description | Where Event is Fired
+| EVT_CLUSTER_SNAPSHOT_STARTED | A cluster snapshot operation is started. | The node where the snapshot operation was initiated.
+| EVT_CLUSTER_SNAPSHOT_FINISHED | A cluster snapshot operation is finished. The event is fired when the snapshot operation is finished on all the cluster nodes. |  The node where the snapshot operation was finished.
+| EVT_CLUSTER_SNAPSHOT_FAILED | A cluster snapshot operation is failed. | The node where the snapshot operation was initiated. Note that the message will contain a failure description from another node. You may check the logs for details.
+|===
+
+== Node Validation Failure Events
+
+These events are triggered when a new node cannot join the Ignite cluster because some of the cluster member nodes failed to validate it.
+Validation should be understood as the configuration and state compatibility check between the joining node and the cluster member nodes.
+Node validation failure events provide information about the node that tried to join the cluster and the reason for the validation failure.
+
+Events related to node validation failures are instances of the link:{events_url}/NodeValidationFailedEvent.html[NodeValidationFailedEvent] class.
+
+[cols="2,5,3",opts="header"]
+|===
+|Event Type | Event Description | Where Event Is Fired
+|EVT_NODE_VALIDATION_FAILED | Node validation failed. | The cluster member node that failed to validate new node that tried to join the cluster.
+|===
+
 
 ////
 == Management Task Events

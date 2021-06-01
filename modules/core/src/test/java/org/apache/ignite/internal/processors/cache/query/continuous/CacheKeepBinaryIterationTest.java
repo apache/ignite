@@ -84,7 +84,7 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
      */
     @Test
     public void testTxOnHeap() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,1, TRANSACTIONAL);
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, TRANSACTIONAL);
 
         doTestScanQuery(ccfg, true, true);
         doTestScanQuery(ccfg, true, false);
@@ -97,7 +97,7 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
      */
     @Test
     public void testMvccTxOnHeap() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,1, TRANSACTIONAL_SNAPSHOT);
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, 1, TRANSACTIONAL_SNAPSHOT);
 
         doTestScanQuery(ccfg, true, true);
         doTestScanQuery(ccfg, true, false);

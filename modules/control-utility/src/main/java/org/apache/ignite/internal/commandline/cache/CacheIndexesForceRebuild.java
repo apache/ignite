@@ -84,8 +84,13 @@ public class CacheIndexesForceRebuild extends AbstractCommand<CacheIndexesForceR
         final UUID nodeId = args.nodeId;
 
         try (GridClient client = Command.startClient(clientCfg)) {
-            taskRes = TaskExecutor.executeTaskByNameOnNode(client, IndexForceRebuildTask.class.getName(), taskArg,
-                nodeId, clientCfg);
+            taskRes = TaskExecutor.executeTaskByNameOnNode(
+                client,
+                IndexForceRebuildTask.class.getName(),
+                taskArg,
+                nodeId,
+                clientCfg
+            );
         }
 
         printResult(taskRes, logger);
@@ -207,7 +212,7 @@ public class CacheIndexesForceRebuild extends AbstractCommand<CacheIndexesForceR
             IndexForceRebuildCommandArg arg = CommandArgUtils.of(nextArg, IndexForceRebuildCommandArg.class);
 
             if (arg == null)
-                throw new IllegalArgumentException("Unknown argument: " + arg.argName());
+                throw new IllegalArgumentException("Unknown argument: " + nextArg);
 
             switch (arg) {
                 case NODE_ID:

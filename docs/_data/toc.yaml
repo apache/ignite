@@ -139,12 +139,14 @@
       url: persistence/swap
     - title: Implementing Custom Cache Store
       url: persistence/custom-cache-store
-    - title: Cluster Snapshots
-      url: persistence/snapshots
+    - title: Configuring Snapshot Directory
+      url: persistence/snapshot-directory
     - title: Disk Compression
       url: persistence/disk-compression
     - title: Tuning Persistence
       url: persistence/persistence-tuning
+- title: Cluster Snapshots
+  url: snapshots/snapshots
 - title: Configuring Caches
   items:
     - title: Cache Configuration 
@@ -378,6 +380,8 @@
       url: net-specific/net-deployment-options
     - title: Standalone Nodes
       url: net-specific/net-standalone-nodes
+    - title: Asynchronous APIs
+      url: net-specific/net-async
     - title: Logging
       url: net-specific/net-logging
     - title: LINQ
@@ -436,6 +440,8 @@
           url: monitoring-metrics/new-metrics
     - title: System Views
       url: monitoring-metrics/system-views
+    - title: Performance Statistics
+      url: monitoring-metrics/performance-statistics
     - title: Tracing
       url: monitoring-metrics/tracing
 - title: Working with Events
@@ -473,6 +479,8 @@
           url: security/tde
         - title: Master key rotation
           url: security/master-key-rotation
+        - title: Cache encryption key rotation
+          url: security/cache-encryption-key-rotation
     - title: Sandbox
       url: security/sandbox
 - title: Extensions and Integrations
@@ -485,6 +493,8 @@
           url: extensions-and-integrations/spring/spring-data
         - title: Spring Caching
           url: extensions-and-integrations/spring/spring-caching
+        - title: Spring Transactions
+          url: extensions-and-integrations/spring/spring-tx
     - title: Ignite for Spark
       items:
         - title: Overview
@@ -537,6 +547,8 @@
           url: extensions-and-integrations/cassandra/ddl-generator
     - title: PHP PDO
       url: extensions-and-integrations/php-pdo
+    - title: Performance Statistics
+      url: extensions-and-integrations/performance-statistics
 - title: Plugins
   url: plugins
 - title: Performance and Troubleshooting

@@ -22,8 +22,10 @@ import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
+import org.apache.ignite.internal.processors.configuration.distributed.SimpleDistributedProperty;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -123,6 +125,43 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
 
             assertTrue(disabledFuncs.contains("LENGTH"));
             assertTrue(disabledFuncs.contains("SESSION_ID"));
+        }
+    }
+
+    /**
+     * Checks the set command for property 'checkpoint.deviation'.
+     */
+    @Test
+    public void testPropertyCheckpointDeviation() {
+        for (Ignite ign : G.allGrids()) {
+            if (ign.configuration().isClientMode())
+                continue;
+
+            SimpleDistributedProperty<Integer> cpFreqDeviation = U.field(((IgniteEx)ign).context().cache().context().database(),
+                "cpFreqDeviation");
+
+            assertNull(cpFreqDeviation.get());
+        }
+
+        assertEquals(
+            EXIT_CODE_OK,
+            execute(
+                "--property", "set",
+                "--name", "checkpoint.deviation",
+                "--val", "20"
+            )
+        );
+
+        for (Ignite ign : G.allGrids()) {
+            if (ign.configuration().isClientMode())
+                continue;
+
+            SimpleDistributedProperty<Integer> cpFreqDeviation = U.field(((IgniteEx)ign).context().cache().context().database(),
+                "cpFreqDeviation");
+
+            assertNotNull(cpFreqDeviation.get());
+
+            assertEquals(20, cpFreqDeviation.get().intValue());
         }
     }
 

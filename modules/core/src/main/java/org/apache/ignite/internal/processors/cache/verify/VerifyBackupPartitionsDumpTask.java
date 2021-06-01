@@ -220,14 +220,14 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
 
             int size = exceptions.size();
 
-            writer.write("idle_verify failed on " + size + " node" + (size == 1 ? "" : "s") + ".\n");
+            writer.write("The check procedure failed on " + size + " node" + (size == 1 ? "" : "s") + ".\n");
 
             if (noMatchingCaches)
                 writer.write("There are no caches matching given filter options.");
         }
 
         if (!partitions.isEmpty())
-            writer.write("idle_verify check has finished, found " + partitions.size() + " partitions\n");
+            writer.write("The check procedure has finished, found " + partitions.size() + " partitions\n");
 
         logParsedArgs(taskArg, writer::write);
 
@@ -245,7 +245,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
 
             writer.write("\n\n-----------------------------------\n\n");
 
-            conflictRes.print(writer::write);
+            conflictRes.print(writer::write, true);
         }
     }
 
@@ -284,7 +284,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
      * @param logConsumer Logger.
      */
     public static void logParsedArgs(VisorIdleVerifyTaskArg args, Consumer<String> logConsumer) {
-        SB options = new SB("idle_verify task was executed with the following args: ");
+        SB options = new SB("The check procedure task was executed with the following args: ");
 
         options
             .a("caches=[")

@@ -28,6 +28,7 @@ import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.SingleRel;
 import org.apache.calcite.rel.core.Aggregate.Group;
 import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -162,5 +163,12 @@ public abstract class IgniteReduceAggregateBase extends SingleRel implements Tra
     ) {
         return ImmutableList.of(Pair.of(nodeTraits.replace(TraitUtils.correlation(inTraits.get(0))),
             inTraits));
+    }
+
+    /** {@inheritDoc} */
+    @Override public double estimateRowCount(RelMetadataQuery mq) {
+        // Reduce aggregate doesn't change result's row count until we don't use
+        // cluster parallelism at the model (devide source rows by nodes for partitioned data).
+        return mq.getRowCount(getInput());
     }
 }

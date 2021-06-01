@@ -49,7 +49,7 @@ public class HashAggregateNode<Row> extends AbstractNode<Row> implements SingleN
     /** */
     private final AggregateType type;
 
-    /** */
+    /** May be {@code null} when there are not accumulators (DISTINCT aggregate node). */
     private final Supplier<List<AccumulatorWrapper<Row>>> accFactory;
 
     /** */
@@ -155,6 +155,11 @@ public class HashAggregateNode<Row> extends AbstractNode<Row> implements SingleN
             throw new IndexOutOfBoundsException();
 
         return this;
+    }
+
+    /** */
+    private boolean hasAccumulators() {
+        return accFactory != null;
     }
 
     /** */
@@ -287,7 +292,7 @@ public class HashAggregateNode<Row> extends AbstractNode<Row> implements SingleN
             GroupKey grpKey = (GroupKey)handler.get(1, row);
 
             List<AccumulatorWrapper<Row>> wrappers = groups.computeIfAbsent(grpKey, this::create);
-            List<Accumulator> accums = (List<Accumulator>)handler.get(2, row);
+            List<Accumulator> accums = hasAccumulators() ? (List<Accumulator>)handler.get(2, row) : Collections.emptyList();
 
             for (int i = 0; i < wrappers.size(); i++) {
                 AccumulatorWrapper<Row> wrapper = wrappers.get(i);
@@ -310,7 +315,10 @@ public class HashAggregateNode<Row> extends AbstractNode<Row> implements SingleN
                 GroupKey grpKey = entry.getKey();
                 List<Accumulator> accums = Commons.transform(entry.getValue(), AccumulatorWrapper::accumulator);
 
-                res.add(rowFactory.create(grpId, grpKey, accums));
+                Row row = hasAccumulators() ? rowFactory.create(grpId, grpKey, accums) : rowFactory.create(grpId, grpKey);
+
+                res.add(row);
+
                 it.remove();
             }
 
@@ -349,6 +357,9 @@ public class HashAggregateNode<Row> extends AbstractNode<Row> implements SingleN
 
         /** */
         private List<AccumulatorWrapper<Row>> create(GroupKey key) {
+            if (accFactory == null)
+                return Collections.emptyList();
+
             return accFactory.get();
         }
 

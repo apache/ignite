@@ -200,11 +200,14 @@ public class BinaryUtils {
         PLAIN_CLASS_TO_FLAG.put(boolean.class, GridBinaryMarshaller.BOOLEAN);
 
         for (byte b : new byte[] {
-            GridBinaryMarshaller.BYTE, GridBinaryMarshaller.SHORT, GridBinaryMarshaller.INT, GridBinaryMarshaller.LONG, GridBinaryMarshaller.FLOAT, GridBinaryMarshaller.DOUBLE,
-            GridBinaryMarshaller.CHAR, GridBinaryMarshaller.BOOLEAN, GridBinaryMarshaller.DECIMAL, GridBinaryMarshaller.STRING, GridBinaryMarshaller.UUID, GridBinaryMarshaller.DATE, GridBinaryMarshaller.TIMESTAMP, GridBinaryMarshaller.TIME,
-            GridBinaryMarshaller.BYTE_ARR, GridBinaryMarshaller.SHORT_ARR, GridBinaryMarshaller.INT_ARR, GridBinaryMarshaller.LONG_ARR, GridBinaryMarshaller.FLOAT_ARR, GridBinaryMarshaller.DOUBLE_ARR, GridBinaryMarshaller.TIME_ARR,
-            GridBinaryMarshaller.CHAR_ARR, GridBinaryMarshaller.BOOLEAN_ARR, GridBinaryMarshaller.DECIMAL_ARR, GridBinaryMarshaller.STRING_ARR, GridBinaryMarshaller.UUID_ARR, GridBinaryMarshaller.DATE_ARR, GridBinaryMarshaller.TIMESTAMP_ARR,
-            GridBinaryMarshaller.ENUM, GridBinaryMarshaller.ENUM_ARR, GridBinaryMarshaller.NULL}) {
+            GridBinaryMarshaller.BYTE, GridBinaryMarshaller.SHORT, GridBinaryMarshaller.INT, GridBinaryMarshaller.LONG,
+            GridBinaryMarshaller.FLOAT, GridBinaryMarshaller.DOUBLE, GridBinaryMarshaller.CHAR, GridBinaryMarshaller.BOOLEAN,
+            GridBinaryMarshaller.DECIMAL, GridBinaryMarshaller.STRING, GridBinaryMarshaller.UUID, GridBinaryMarshaller.DATE,
+            GridBinaryMarshaller.TIMESTAMP, GridBinaryMarshaller.TIME, GridBinaryMarshaller.BYTE_ARR, GridBinaryMarshaller.SHORT_ARR,
+            GridBinaryMarshaller.INT_ARR, GridBinaryMarshaller.LONG_ARR, GridBinaryMarshaller.FLOAT_ARR, GridBinaryMarshaller.DOUBLE_ARR,
+            GridBinaryMarshaller.TIME_ARR, GridBinaryMarshaller.CHAR_ARR, GridBinaryMarshaller.BOOLEAN_ARR,
+            GridBinaryMarshaller.DECIMAL_ARR, GridBinaryMarshaller.STRING_ARR, GridBinaryMarshaller.UUID_ARR, GridBinaryMarshaller.DATE_ARR,
+            GridBinaryMarshaller.TIMESTAMP_ARR, GridBinaryMarshaller.ENUM, GridBinaryMarshaller.ENUM_ARR, GridBinaryMarshaller.NULL}) {
 
             PLAIN_TYPE_FLAG[b] = true;
         }
@@ -1853,6 +1856,15 @@ public class BinaryUtils {
      */
     @Nullable public static Object unmarshal(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles, boolean detach) throws BinaryObjectException {
+        return unmarshal(in, ctx, ldr, handles, detach, false);
+    }
+
+    /**
+     * @return Unmarshalled value.
+     * @throws BinaryObjectException In case of error.
+     */
+    @Nullable public static Object unmarshal(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
+        BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize) throws BinaryObjectException {
         int start = in.position();
 
         byte flag = in.readByte();
@@ -1871,7 +1883,7 @@ public class BinaryUtils {
 
                     in.position(handlePos);
 
-                    obj = unmarshal(in, ctx, ldr, handles, detach);
+                    obj = unmarshal(in, ctx, ldr, handles, detach, deserialize);
 
                     in.position(retPos);
                 }
@@ -1992,13 +2004,13 @@ public class BinaryUtils {
                 return doReadTimeArray(in);
 
             case GridBinaryMarshaller.OBJ_ARR:
-                return doReadObjectArray(in, ctx, ldr, handles, detach, false);
+                return doReadObjectArray(in, ctx, ldr, handles, detach, deserialize);
 
             case GridBinaryMarshaller.COL:
-                return doReadCollection(in, ctx, ldr, handles, detach, false, null);
+                return doReadCollection(in, ctx, ldr, handles, detach, deserialize, null);
 
             case GridBinaryMarshaller.MAP:
-                return doReadMap(in, ctx, ldr, handles, detach, false, null);
+                return doReadMap(in, ctx, ldr, handles, detach, deserialize, null);
 
             case GridBinaryMarshaller.BINARY_OBJ:
                 return doReadBinaryObject(in, ctx, detach);
@@ -2190,7 +2202,7 @@ public class BinaryUtils {
      */
     private static Object deserializeOrUnmarshal(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles, boolean detach, boolean deserialize) {
-        return deserialize ? doReadObject(in, ctx, ldr, handles) : unmarshal(in, ctx, ldr, handles, detach);
+        return deserialize ? doReadObject(in, ctx, ldr, handles) : unmarshal(in, ctx, ldr, handles, detach, deserialize);
     }
 
     /**

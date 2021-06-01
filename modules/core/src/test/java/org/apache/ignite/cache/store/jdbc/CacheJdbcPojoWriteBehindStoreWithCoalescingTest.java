@@ -469,7 +469,7 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
 
                         t1Count.decrementAndGet();
                     }
-                } catch (CacheException e) {
+                } catch (CacheException ignore) {
                     //ignore
                 }
             }
@@ -491,7 +491,7 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
 
                         t2Count.decrementAndGet();
                     }
-                } catch (CacheException e) {
+                } catch (CacheException ignore) {
                     //ignore
                 }
             }
@@ -544,7 +544,7 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
 
                         t1Count.decrementAndGet();
                     }
-                } catch (CacheException e) {
+                } catch (CacheException ignore) {
                     //ignore
                 }
             }
@@ -566,7 +566,7 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
 
                         t2Count.decrementAndGet();
                     }
-                } catch (CacheException e) {
+                } catch (CacheException ignore) {
                     //ignore
                 }
             }
@@ -612,7 +612,7 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
 
                         t1Count.decrementAndGet();
                     }
-                } catch (CacheException e) {
+                } catch (CacheException ignore) {
                     //ignore
                 }
             }
@@ -634,7 +634,7 @@ public class CacheJdbcPojoWriteBehindStoreWithCoalescingTest extends GridCommonA
 
                         t2Count.decrementAndGet();
                     }
-                } catch (CacheException e) {
+                } catch (CacheException ignore) {
                     //ignore
                 }
             }

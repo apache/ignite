@@ -315,7 +315,10 @@ public class SparkModelParser {
         }
 
         String ignitePathToMdlMetaData = mdlRsrc2.getPath();
-        learningEnvironment.logger().log(MLLogger.VerboseLevel.LOW, "Starting loading model metadata by the path: " + ignitePathToMdlMetaData);
+        learningEnvironment.logger().log(
+            MLLogger.VerboseLevel.LOW,
+            "Starting loading model metadata by the path: " + ignitePathToMdlMetaData
+        );
 
         switch (parsedSparkMdl) {
             case GRADIENT_BOOSTED_TREES:

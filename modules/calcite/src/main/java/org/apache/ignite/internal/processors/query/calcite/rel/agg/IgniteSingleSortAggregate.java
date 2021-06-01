@@ -71,7 +71,8 @@ public class IgniteSingleSortAggregate extends IgniteSingleAggregateBase impleme
     }
 
     /** {@inheritDoc} */
-    @Override public Aggregate copy(RelTraitSet traitSet, RelNode input, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
+    @Override public Aggregate copy(RelTraitSet traitSet, RelNode input, ImmutableBitSet groupSet,
+        List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
         return new IgniteSingleSortAggregate(getCluster(), traitSet, input, groupSet, groupSets, aggCalls);
     }
 

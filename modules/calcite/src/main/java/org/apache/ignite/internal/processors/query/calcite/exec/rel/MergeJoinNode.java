@@ -1083,7 +1083,8 @@ public abstract class MergeJoinNode<Row> extends AbstractNode<Row> {
         @Override protected void join() throws Exception {
             inLoop = true;
             try {
-                while (requested > 0 && (left != null || !leftInBuf.isEmpty()) && !(right == null && rightInBuf.isEmpty() && waitingRight != NOT_WAITING)) {
+                while (requested > 0 && (left != null || !leftInBuf.isEmpty()) &&
+                    !(right == null && rightInBuf.isEmpty() && waitingRight != NOT_WAITING)) {
                     checkState();
 
                     if (left == null)
