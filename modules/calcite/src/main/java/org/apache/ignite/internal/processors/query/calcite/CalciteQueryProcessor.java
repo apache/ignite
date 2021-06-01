@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.List;
+
 import org.apache.calcite.config.Lex;
 import org.apache.calcite.plan.Contexts;
-import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.hint.HintStrategyTable;
 import org.apache.calcite.sql.fun.SqlLibrary;
@@ -48,7 +48,6 @@ import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistry;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutorImpl;
-import org.apache.ignite.internal.processors.query.calcite.fun.IgniteSqlFunctions;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
@@ -61,6 +60,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCach
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolderImpl;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlParserImpl;
+import org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteSqlOperatorTable;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.processors.query.calcite.util.LifecycleAware;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
@@ -103,7 +103,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                     SqlLibrary.POSTGRESQL,
                     SqlLibrary.ORACLE,
                     SqlLibrary.MYSQL),
-            CalciteCatalogReader.operatorTable(IgniteSqlFunctions.class.getName())))
+            IgniteSqlOperatorTable.instance()))
         // Context provides a way to store data within the planner session that can be accessed in planner rules.
         .context(Contexts.empty())
         // Custom cost factory to use during optimization
