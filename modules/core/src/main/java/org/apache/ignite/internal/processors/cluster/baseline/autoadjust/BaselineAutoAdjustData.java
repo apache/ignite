@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cluster.baseline.autoadjust;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 /**
  * Container of required data for changing baseline.
  */
@@ -28,10 +30,10 @@ class BaselineAutoAdjustData {
     private final long targetTopologyVersion;
 
     /** {@code true} If this data don't actual anymore and it setting should be skipped. */
-    private volatile boolean invalidated = false;
+    private volatile boolean invalidated;
 
     /** {@code true} If this data was adjusted. */
-    private volatile boolean adjusted = false;
+    private volatile boolean adjusted;
 
     /**
      * @param targetTopologyVersion Topology version nodes of which should be set by this task.
@@ -96,5 +98,10 @@ class BaselineAutoAdjustData {
         onInvalidate();
 
         return new BaselineAutoAdjustData(targetTopologyVersion);
+    }
+
+    /** {@inheritDoc */
+    @Override public String toString() {
+        return S.toString(BaselineAutoAdjustData.class, this);
     }
 }

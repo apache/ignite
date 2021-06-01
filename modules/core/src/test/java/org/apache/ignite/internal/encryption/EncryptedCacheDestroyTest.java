@@ -114,7 +114,7 @@ public class EncryptedCacheDestroyTest extends AbstractEncryptionTest {
 
         int grpId = CU.cacheGroupId(encCacheName, grpName);
 
-        GroupKey encKey = grid.context().encryption().groupKey(grpId);
+        GroupKey encKey = grid.context().encryption().getActiveKey(grpId);
         MetaStorage metaStore = grid.context().cache().context().database().metaStorage();
 
         if (keyShouldBeEmpty) {

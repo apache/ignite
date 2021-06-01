@@ -136,7 +136,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     private GridEventStorageManager evtMgr;
 
     /** */
-    private GridCachePartitionExchangeManager<?,?> exchangeMgr;
+    private GridCachePartitionExchangeManager<?, ?> exchangeMgr;
 
     /** */
     private QueryPlanCache qryPlanCache;
@@ -353,7 +353,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     /**
      * @param exchangeMgr Exchange manager.
      */
-    public void exchangeManager(GridCachePartitionExchangeManager<?,?> exchangeMgr) {
+    public void exchangeManager(GridCachePartitionExchangeManager<?, ?> exchangeMgr) {
         this.exchangeMgr = exchangeMgr;
     }
 
@@ -448,9 +448,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
     /** {@inheritDoc} */
     @Override public void init() {
-        messageService().register((n,m) -> onMessage(n, (QueryStartRequest) m), MessageType.QUERY_START_REQUEST);
-        messageService().register((n,m) -> onMessage(n, (QueryStartResponse) m), MessageType.QUERY_START_RESPONSE);
-        messageService().register((n,m) -> onMessage(n, (ErrorMessage) m), MessageType.QUERY_ERROR_MESSAGE);
+        messageService().register((n, m) -> onMessage(n, (QueryStartRequest) m), MessageType.QUERY_START_REQUEST);
+        messageService().register((n, m) -> onMessage(n, (QueryStartResponse) m), MessageType.QUERY_START_RESPONSE);
+        messageService().register((n, m) -> onMessage(n, (ErrorMessage) m), MessageType.QUERY_ERROR_MESSAGE);
 
         eventManager().addDiscoveryEventListener(discoLsnr, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
 
@@ -831,7 +831,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         assert nodeId != null && msg != null;
 
         try {
-            PlanningContext pctx = createContext(Contexts.empty(), msg.topologyVersion(), nodeId, msg.schema(), msg.root(), msg.parameters());
+            PlanningContext pctx = createContext(Contexts.empty(), msg.topologyVersion(), nodeId, msg.schema(),
+                msg.root(), msg.parameters());
 
             List<QueryPlan> qryPlans = queryPlanCache().queryPlan(
                 pctx,

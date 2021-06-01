@@ -162,13 +162,14 @@ public class CacheContinuousWithTransformerFailoverTest extends GridCommonAbstra
                 }
             });
 
-            qry.setRemoteTransformerFactory(FactoryBuilder.factoryOf(new IgniteClosure<CacheEntryEvent<? extends Integer, ? extends Integer>, Integer>() {
-                @Override public Integer apply(CacheEntryEvent<? extends Integer, ? extends Integer> evt) {
-                    latch.countDown();
+            qry.setRemoteTransformerFactory(FactoryBuilder.factoryOf(
+                new IgniteClosure<CacheEntryEvent<? extends Integer, ? extends Integer>, Integer>() {
+                    @Override public Integer apply(CacheEntryEvent<? extends Integer, ? extends Integer> evt) {
+                        latch.countDown();
 
-                    throw new RuntimeException("Test error.");
-                }
-            }));
+                        throw new RuntimeException("Test error.");
+                    }
+                }));
 
             qry.setRemoteFilterFactory(FactoryBuilder.factoryOf(new CacheEntryEventSerializableFilter<Integer, Integer>() {
                 @Override public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends Integer> evt) {

@@ -35,14 +35,10 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest.BlockingIndexing;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Assert;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
@@ -57,9 +53,6 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
 
     /** */
     private static final String CACHE_NAME = "cache1";
-
-    /** */
-    private static final String GROUP_NAME_2 = "group2";
 
     /** */
     private static final String OBJECT_NAME = "MyObject";
@@ -87,7 +80,7 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         for (CacheConfiguration cacheCfg : cfg.getCacheConfiguration()) {
-            if (GROUP_NAME.equals(cacheCfg.getGroupName()) || GROUP_NAME_2.equals(cacheCfg.getGroupName())) {
+            if (GROUP_NAME.equals(cacheCfg.getGroupName()) && CACHE_NAME.equals(cacheCfg.getName())) {
                 QueryEntity qryEntity = new QueryEntity(Long.class.getCanonicalName(), OBJECT_NAME);
 
                 qryEntity.setKeyFieldName(KEY_NAME);
@@ -129,8 +122,6 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
         stopAllGrids();
 
         cleanPersistenceDir();
-
-        GridQueryProcessor.idxCls = null;
     }
 
     /**
@@ -140,23 +131,22 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
     public void testIndexRebuildCountPartitionsLeft() throws Exception {
         pds = true;
 
-        GridQueryProcessor.idxCls = BlockingIndexing.class;
-
-        IgniteEx ignite = startGrid(0);
+        Ignite ignite = startGrid(0);
 
         ignite.cluster().active(true);
 
-        String cacheName2 = "cache2";
-        String cacheName3 = "cache3";
+        IgniteCache<Object, Object> cache1 = ignite.cache(CACHE_NAME);
 
-        IgniteCache<Long, Object> cache2 = ignite.cache(cacheName2);
-        IgniteCache<Long, Object> cache3 = ignite.cache(cacheName3);
+        for (int i = 0; i < 100_000; i++) {
+            Long id = (long)i;
 
-        cache2.put(1L, 1L);
-        cache3.put(1L, 1L);
+            BinaryObjectBuilder o = ignite.binary().builder(OBJECT_NAME)
+                .setField(KEY_NAME, id)
+                .setField(COLUMN1_NAME, i / 2)
+                .setField(COLUMN2_NAME, "str" + Integer.toHexString(i));
 
-        int parts2 = ignite.cachex(cacheName2).configuration().getAffinity().partitions();
-        int parts3 = ignite.cachex(cacheName3).configuration().getAffinity().partitions();
+            cache1.put(id, o.build());
+        }
 
         ignite.cluster().active(false);
 
@@ -171,28 +161,15 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
 
         ignite.cluster().active(true);
 
-        BlockingIndexing blockingIndexing = (BlockingIndexing)ignite.context().query().getIndexing();
+        MetricRegistry metrics = cacheGroupMetrics(0, GROUP_NAME).get2();
 
-        while (!blockingIndexing.isBlock(cacheName2) || !blockingIndexing.isBlock(cacheName3))
-            U.sleep(10);
+        LongMetric idxBuildCntPartitionsLeft = metrics.findMetric("IndexBuildCountPartitionsLeft");
 
-        MetricRegistry grpMreg = cacheGroupMetrics(0, GROUP_NAME_2).get2();
+        assertTrue("Timeout wait start rebuild index",
+            waitForCondition(() -> idxBuildCntPartitionsLeft.value() > 0, 30_000));
 
-        LongMetric indexBuildCountPartitionsLeft = grpMreg.findMetric("IndexBuildCountPartitionsLeft");
-
-        assertEquals(parts2 + parts3, indexBuildCountPartitionsLeft.value());
-
-        blockingIndexing.stopBlock(cacheName2);
-
-        ignite.cache(cacheName2).indexReadyFuture().get(30_000);
-
-        assertEquals(parts3, indexBuildCountPartitionsLeft.value());
-
-        blockingIndexing.stopBlock(cacheName3);
-
-        ignite.cache(cacheName3).indexReadyFuture().get(30_000);
-
-        assertEquals(0, indexBuildCountPartitionsLeft.value());
+        assertTrue("Timeout wait finished rebuild index",
+            GridTestUtils.waitForCondition(() -> idxBuildCntPartitionsLeft.value() == 0, 30_000));
     }
 
     /**
@@ -224,7 +201,7 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
             cache1.put(id, o.build());
         }
 
-        MetricRegistry grpMreg = cacheGroupMetrics(0, GROUP_NAME).get2();
+        MetricRegistry metrics = cacheGroupMetrics(0, GROUP_NAME).get2();
 
         GridTestUtils.runAsync(() -> {
             String createIdxSql = "CREATE INDEX " + INDEX_NAME + " ON " + TABLE + "(" + COLUMN3_NAME + ")";
@@ -235,15 +212,152 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
 
             List<List<?>> all = cache1.query(new SqlFieldsQuery(selectIdxSql)).getAll();
 
-            Assert.assertEquals("Index not found", 1, all.size());
+            assertEquals("Index not found", 1, all.size());
         });
 
-        LongMetric indexBuildCountPartitionsLeft = grpMreg.findMetric("IndexBuildCountPartitionsLeft");
+        LongMetric idxBuildCntPartitionsLeft = metrics.findMetric("IndexBuildCountPartitionsLeft");
 
-        Assert.assertTrue("Timeout wait start rebuild index",
-            waitForCondition(() -> indexBuildCountPartitionsLeft.value() > 0, 30_000));
+        assertTrue("Timeout wait start build index",
+            waitForCondition(() -> idxBuildCntPartitionsLeft.value() > 0, 30_000));
 
-        Assert.assertTrue("Timeout wait finished rebuild index",
-            waitForCondition(() -> indexBuildCountPartitionsLeft.value() == 0, 30_000));
+        assertTrue("Timeout wait finished build index",
+            waitForCondition(() -> idxBuildCntPartitionsLeft.value() == 0, 30_000));
+    }
+
+    /**
+     * Test number of partitions need to finished indexes rebuilding.
+     * <p>Case:
+     * <ul>
+     *     <li>Start cluster, load data with indexes</li>
+     *     <li>Kill single node, delete index.bin, start node.</li>
+     *     <li>Make sure that index rebuild count is in range of total new index size and 0 and decreasing</li>
+     *     <li>Wait until rebuild finished, assert that no index errors</li>
+     * </ul>
+     * </p>
+     */
+    @Test
+    public void testIndexRebuildCountPartitionsLeftInCluster() throws Exception {
+        pds = true;
+
+        Ignite ignite = startGrid(0);
+
+        startGrid(1);
+
+        ignite.cluster().active(true);
+
+        IgniteCache<Object, Object> cache1 = ignite.cache(CACHE_NAME);
+
+        for (int i = 0; i < 100_000; i++) {
+            Long id = (long)i;
+
+            BinaryObjectBuilder o = ignite.binary().builder(OBJECT_NAME)
+                    .setField(KEY_NAME, id)
+                    .setField(COLUMN1_NAME, i / 2)
+                    .setField(COLUMN2_NAME, "str" + Integer.toHexString(i));
+
+            cache1.put(id, o.build());
+        }
+
+        String consistentId = ignite.cluster().localNode().consistentId().toString();
+
+        stopGrid(0);
+
+        File dir = U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false);
+
+        IOFileFilter filter = FileFilterUtils.nameFileFilter("index.bin");
+
+        Collection<File> idxBinFiles = FileUtils.listFiles(dir, filter, TrueFileFilter.TRUE);
+
+        for (File indexBin : idxBinFiles)
+            if (indexBin.getAbsolutePath().contains(consistentId))
+                U.delete(indexBin);
+
+        startGrid(0);
+
+        MetricRegistry metrics = cacheGroupMetrics(0, GROUP_NAME).get2();
+
+        LongMetric idxBuildCntPartitionsLeft = metrics.findMetric("IndexBuildCountPartitionsLeft");
+
+        assertTrue("Timeout wait start rebuild index",
+                waitForCondition(() -> idxBuildCntPartitionsLeft.value() > 0, 30_000));
+
+        assertTrue("Timeout wait finished rebuild index",
+                GridTestUtils.waitForCondition(() -> idxBuildCntPartitionsLeft.value() == 0, 30_000));
+    }
+
+    /**
+     * Test number of partitions need to finished create indexes.
+     * <p>Case:
+     * <ul>
+     *     <li>Start cluster, load data with indexes</li>
+     *     <li>Kill single node, create new index, start node.</li>
+     *     <li>Make sure that index rebuild count is in range of total new index size and 0 and decreasing</li>
+     *     <li>Wait until rebuild finished, assert that no index errors</li>
+     * </ul>
+     * </p>
+     */
+    @Test
+    public void testIndexCreateCountPartitionsLeftInCluster() throws Exception {
+        pds = true;
+
+        Ignite ignite = startGrid(0);
+
+        startGrid(1);
+
+        ignite.cluster().active(true);
+
+        IgniteCache<Object, Object> cache1 = ignite.cache(CACHE_NAME);
+
+        String addColSql = "ALTER TABLE " + TABLE + " ADD COLUMN " + COLUMN3_NAME + " BIGINT";
+
+        cache1.query(new SqlFieldsQuery(addColSql)).getAll();
+
+        for (int i = 0; i < 100_000; i++) {
+            Long id = (long)i;
+
+            BinaryObjectBuilder o = ignite.binary().builder(OBJECT_NAME)
+                    .setField(KEY_NAME, id)
+                    .setField(COLUMN1_NAME, i / 2)
+                    .setField(COLUMN2_NAME, "str" + Integer.toHexString(i))
+                    .setField(COLUMN3_NAME, id * 10);
+
+            cache1.put(id, o.build());
+        }
+
+        stopGrid(1);
+
+        MetricRegistry metrics = cacheGroupMetrics(0, GROUP_NAME).get2();
+
+        GridTestUtils.runAsync(() -> {
+            String createIdxSql = "CREATE INDEX " + INDEX_NAME + " ON " + TABLE + "(" + COLUMN3_NAME + ")";
+
+            cache1.query(new SqlFieldsQuery(createIdxSql)).getAll();
+
+            String selectIdxSql = "select * from information_schema.indexes where index_name='" + INDEX_NAME + "'";
+
+            List<List<?>> all = cache1.query(new SqlFieldsQuery(selectIdxSql)).getAll();
+
+            assertEquals("Index not found", 1, all.size());
+        });
+
+        final LongMetric idxBuildCntPartitionsLeft0 = metrics.findMetric("IndexBuildCountPartitionsLeft");
+
+        assertTrue("Timeout wait start build index",
+                waitForCondition(() -> idxBuildCntPartitionsLeft0.value() > 0, 30_000));
+
+        assertTrue("Timeout wait finished build index",
+                waitForCondition(() -> idxBuildCntPartitionsLeft0.value() == 0, 30_000));
+
+        startGrid(1);
+
+        metrics = cacheGroupMetrics(1, GROUP_NAME).get2();
+
+        final LongMetric idxBuildCntPartitionsLeft1 = metrics.findMetric("IndexBuildCountPartitionsLeft");
+
+        assertTrue("Timeout wait start build index",
+            waitForCondition(() -> idxBuildCntPartitionsLeft1.value() > 0, 30_000));
+
+        assertTrue("Timeout wait finished build index",
+            waitForCondition(() -> idxBuildCntPartitionsLeft1.value() == 0, 30_000));
     }
 }

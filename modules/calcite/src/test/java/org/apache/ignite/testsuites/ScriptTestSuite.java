@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.query.calcite.logical.ScriptRunnerTestsEnvironment;
 import org.apache.ignite.internal.processors.query.calcite.logical.ScriptTestRunner;
+import org.junit.Ignore;
 import org.junit.runner.RunWith;
 
 /**
@@ -35,5 +36,6 @@ import org.junit.runner.RunWith;
  */
 @RunWith(ScriptTestRunner.class)
 @ScriptRunnerTestsEnvironment(scriptsRoot = "src/test/sql")
+@Ignore
 public class ScriptTestSuite {
 }

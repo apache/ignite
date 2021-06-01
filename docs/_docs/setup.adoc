@@ -203,6 +203,7 @@ adding @Gridify annotation to it.
 
 |ignite-aws |Cluster discovery on AWS S3. Refer to link:clustering/discovery-in-the-cloud#amazon-s3-ip-finder[Amazon S3 IP Finder] for details.
 
+|ignite-azure| Ignite Azure provides Azure Blob Storage-based implementation of IP finder for TCP discovery.
 
 |ignite-cassandra-serializers | The Ignite Cassandra Serializers module provides additional serializers to store objects as BLOBs in Cassandra. The module could be used as in conjunction with the Ignite Cassandra Store module.
 
@@ -276,6 +277,67 @@ by the Pax Logging API - the logging framework used by Apache Karaf.
 directory to discover other Ignite nodes.
 
 |=======================================================================
+
+
+== Setting JVM Options
+
+There are several ways you can set JVM options when starting a node with the `ignite.sh` script.
+These ways are described in the following sections.
+
+=== JVM_OPTS System Variable
+
+You can set the `JVM_OPTS` environment variable:
+
+[source, shell]
+----
+export JVM_OPTS="$JVM_OPTS -Xmx6G -DIGNITE_TO_STRING_INCLUDE_SENSITIVE=false"; $IGNITE_HOME/bin/ignite.sh
+----
+
+=== Command Line Arguments
+
+You can also pass JVM options by using the `-J` prefix:
+
+[tabs]
+--
+tab:Unix[]
+[source, shell]
+----
+./ignite.sh -J-Xmx6G -J-DIGNITE_TO_STRING_INCLUDE_SENSITIVE=false
+----
+tab:Windows[]
+[source, shell]
+----
+.\ignite.bat -J-Xmx6G -J-DIGNITE_TO_STRING_INCLUDE_SENSITIVE=false
+----
+--
+
+== Setting Ignite System Properties
+
+In addition to public configuration settings, you can adjust specific, usually low-level, Ignite behavior with internal system properties. You can find all the properties with their descriptions and default values by using the command below:
+
+[tabs]
+--
+tab:Unix[]
+[source, shell]
+----
+./ignite.sh -systemProps
+----
+tab:Windows[]
+[source, shell]
+----
+.\ignite.bat -systemProps
+----
+--
+
+Example of the output:
+
+[source, text]
+ignite.sh -systemProps
+IGNITE_AFFINITY_HISTORY_SIZE                                    - [Integer] Maximum size for affinity assignment history. Default is 25.
+IGNITE_ALLOW_ATOMIC_OPS_IN_TX                                   - [Boolean] Allows atomic operations inside transactions. Default is true.
+IGNITE_ALLOW_DML_INSIDE_TRANSACTION                             - [Boolean] When set to true, Ignite will allow executing DML operation (MERGE|INSERT|UPDATE|DELETE) within transactions for non MVCC mode. Default is false.
+IGNITE_ALLOW_START_CACHES_IN_PARALLEL                           - [Boolean] Allows to start multiple caches in parallel. Default is true.
+...
 
 
 == Configuration Recommendations

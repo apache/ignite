@@ -39,7 +39,8 @@ import org.apache.ignite.ml.structures.LabeledVector;
  *
  * This preprocessor can transform multiple columns which indices are handled during training process.
  *
- * Each one-hot encoded binary vector adds its cells to the end of the current feature vector according the order of handled categorial features.
+ * Each one-hot encoded binary vector adds its cells to the end of the current feature vector
+ * according the order of handled categorial features.
  *
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
@@ -96,7 +97,8 @@ public final class OneHotEncoderPreprocessor<K, V> extends EncoderPreprocessor<K
                     if (encodingValues[i].containsKey(key)) {
                         final Integer indexedVal = encodingValues[i].get(key);
 
-                        res[tmp.size() - amountOfCategorialFeatures + getIdxOffset(categorialFeatureCntr, indexedVal, encodingValues)] = 1.0;
+                        res[tmp.size() - amountOfCategorialFeatures + getIdxOffset(categorialFeatureCntr, indexedVal, encodingValues)] =
+                            1.0;
 
                     } else
                         throw new UnknownCategorialValueException(tmpObj.toString());

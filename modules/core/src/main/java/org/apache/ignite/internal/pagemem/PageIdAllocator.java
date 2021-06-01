@@ -51,12 +51,6 @@ public interface PageIdAllocator {
     /** Special partition reserved for index space. */
     public static final int INDEX_PARTITION = 0xFFFF;
 
-    /** Old special partition reserved for metastore space. */
-    public static final int OLD_METASTORE_PARTITION = 0x0;
-
-    /** Special partition reserved for metastore space. */
-    public static final int METASTORE_PARTITION = 0x1;
-
     /** Cache group meta page id. */
     public static final long META_PAGE_ID = pageId(INDEX_PARTITION, FLAG_IDX, 0);
 

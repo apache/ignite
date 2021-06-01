@@ -188,7 +188,9 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         assert exchFut == null ||
             exchFut.context().events().topologyVersion().equals(top.readyTopologyVersion()) ||
-            exchFut.context().events().topologyVersion().equals(ctx.exchange().lastAffinityChangedTopologyVersion(top.readyTopologyVersion())) :
+            exchFut.context().events().topologyVersion().equals(
+                ctx.exchange().lastAffinityChangedTopologyVersion(top.readyTopologyVersion())
+            ) :
             "Topology version mismatch [exchId=" + exchId +
                 ", grp=" + grp.name() +
                 ", topVer=" + top.readyTopologyVersion() + ']';
@@ -558,12 +560,12 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void finishPreloading(AffinityTopologyVersion topVer) {
+    @Override public void finishPreloading(AffinityTopologyVersion topVer, long rebalanceId) {
         if (!enterBusy())
             return;
 
         try {
-            demander.finishPreloading(topVer);
+            demander.finishPreloading(topVer, rebalanceId);
         }
         finally {
             leaveBusy();

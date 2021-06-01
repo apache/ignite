@@ -61,7 +61,7 @@ import static org.apache.ignite.internal.processors.query.calcite.util.TypeUtils
 /** */
 public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrapper<Row>>> {
     /** */
-    private static final LoadingCache<Pair<RelDataType,RelDataType>, Function<Object,Object>> CACHE =
+    private static final LoadingCache<Pair<RelDataType, RelDataType>, Function<Object, Object>> CACHE =
         CacheBuilder.newBuilder().build(CacheLoader.from(AccumulatorsFactory::cast0));
 
     /** */
@@ -88,7 +88,7 @@ public class AccumulatorsFactory<Row> implements Supplier<List<AccumulatorWrappe
     }
 
     /** */
-    private static Function<Object, Object> cast0(Pair<RelDataType,RelDataType> types) {
+    private static Function<Object, Object> cast0(Pair<RelDataType, RelDataType> types) {
         IgniteTypeFactory typeFactory = PlanningContext.empty().typeFactory();
 
         RelDataType from = types.left;

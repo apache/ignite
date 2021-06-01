@@ -34,6 +34,7 @@ import org.apache.ignite.util.GridCommandHandlerIndexingClusterByClassTest;
 import org.apache.ignite.util.GridCommandHandlerIndexingClusterByClassWithSSLTest;
 import org.apache.ignite.util.GridCommandHandlerIndexingTest;
 import org.apache.ignite.util.GridCommandHandlerIndexingWithSSLTest;
+import org.apache.ignite.util.GridCommandHandlerInterruptCommandTest;
 import org.apache.ignite.util.GridCommandHandlerMetadataTest;
 import org.apache.ignite.util.GridCommandHandlerPropertiesTest;
 import org.apache.ignite.util.GridCommandHandlerSslTest;
@@ -42,6 +43,7 @@ import org.apache.ignite.util.GridCommandHandlerTracingConfigurationTest;
 import org.apache.ignite.util.GridCommandHandlerWithSSLTest;
 import org.apache.ignite.util.KillCommandsCommandShTest;
 import org.apache.ignite.util.MetricCommandTest;
+import org.apache.ignite.util.PerformanceStatisticsCommandTest;
 import org.apache.ignite.util.SystemViewCommandTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -68,6 +70,7 @@ import org.junit.runners.Suite;
     GridCommandHandlerIndexingClusterByClassWithSSLTest.class,
     GridCommandHandlerIndexingCheckSizeTest.class,
     GridCommandHandlerCheckIndexesInlineSizeTest.class,
+    GridCommandHandlerInterruptCommandTest.class,
     GridCommandHandlerMetadataTest.class,
 
     KillCommandsCommandShTest.class,
@@ -86,7 +89,8 @@ import org.junit.runners.Suite;
     GridCommandHandlerDefragmentationTest.class,
 
     SystemViewCommandTest.class,
-    MetricCommandTest.class
+    MetricCommandTest.class,
+    PerformanceStatisticsCommandTest.class
 })
 public class IgniteControlUtilityTestSuite {
 }

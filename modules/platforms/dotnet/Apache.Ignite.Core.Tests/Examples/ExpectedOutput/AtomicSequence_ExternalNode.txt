@@ -1,0 +1,44 @@
+>>> Atomic sequence example started.
+>>> Atomic sequence initial value: 0
+>>> AtomicSequence value has been incremented: 1
+>>> AtomicSequence value has been incremented: 2
+>>> AtomicSequence value has been incremented: 3
+>>> AtomicSequence value has been incremented: 4
+>>> AtomicSequence value has been incremented: 5
+>>> AtomicSequence value has been incremented: 6
+>>> AtomicSequence value has been incremented: 7
+>>> AtomicSequence value has been incremented: 8
+>>> AtomicSequence value has been incremented: 9
+>>> AtomicSequence value has been incremented: 10
+>>> AtomicSequence value has been incremented: 11
+>>> AtomicSequence value has been incremented: 12
+>>> AtomicSequence value has been incremented: 13
+>>> AtomicSequence value has been incremented: 14
+>>> AtomicSequence value has been incremented: 15
+>>> AtomicSequence value has been incremented: 16
+>>> AtomicSequence value has been incremented: 17
+>>> AtomicSequence value has been incremented: 18
+>>> AtomicSequence value has been incremented: 19
+>>> AtomicSequence value has been incremented: 20
+>>> AtomicSequence value has been incremented: 1001
+>>> AtomicSequence value has been incremented: 1002
+>>> AtomicSequence value has been incremented: 1003
+>>> AtomicSequence value has been incremented: 1004
+>>> AtomicSequence value has been incremented: 1005
+>>> AtomicSequence value has been incremented: 1006
+>>> AtomicSequence value has been incremented: 1007
+>>> AtomicSequence value has been incremented: 1008
+>>> AtomicSequence value has been incremented: 1009
+>>> AtomicSequence value has been incremented: 1010
+>>> AtomicSequence value has been incremented: 1011
+>>> AtomicSequence value has been incremented: 1012
+>>> AtomicSequence value has been incremented: 1013
+>>> AtomicSequence value has been incremented: 1014
+>>> AtomicSequence value has been incremented: 1015
+>>> AtomicSequence value has been incremented: 1016
+>>> AtomicSequence value has been incremented: 1017
+>>> AtomicSequence value has been incremented: 1018
+>>> AtomicSequence value has been incremented: 1019
+>>> AtomicSequence value has been incremented: 1020
+
+>>> Atomic sequence current value: 20

@@ -409,7 +409,8 @@ public class RexUtils {
     }
 
     /** */
-    public static List<RexNode> asBound(RelOptCluster cluster, Iterable<RexNode> idxCond, RelDataType rowType, @Nullable Mappings.TargetMapping mapping) {
+    public static List<RexNode> asBound(RelOptCluster cluster, Iterable<RexNode> idxCond, RelDataType rowType,
+        @Nullable Mappings.TargetMapping mapping) {
         if (F.isEmpty(idxCond))
             return null;
 

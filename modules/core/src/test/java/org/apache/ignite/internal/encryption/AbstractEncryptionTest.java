@@ -172,7 +172,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
 
             assertTrue(encrypted1.configuration().isEncryptionEnabled());
 
-            GroupKey grpKey0 = grid0.context().encryption().groupKey(grpId);
+            GroupKey grpKey0 = grid0.context().encryption().getActiveKey(grpId);
 
             assertNotNull(grpKey0);
 
@@ -182,7 +182,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
             assertNotNull(encKey0.key());
 
             if (!grid1.configuration().isClientMode()) {
-                GroupKey grpKey1 = grid1.context().encryption().groupKey(grpId);
+                GroupKey grpKey1 = grid1.context().encryption().getActiveKey(grpId);
 
                 assertNotNull(grpKey1);
 
@@ -194,7 +194,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
                 assertEquals(encKey0.key(), encKey1.key());
             }
             else
-                assertNull(grid1.context().encryption().groupKey(grpId));
+                assertNull(grid1.context().encryption().getActiveKey(grpId));
         }
 
         checkData(grid0);
@@ -388,7 +388,7 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
 
             GridEncryptionManager encryption = grid.context().encryption();
 
-            assertEquals(grid.localNode().id().toString(), (byte)expKeyId, encryption.groupKey(grpId).id());
+            assertEquals(grid.localNode().id().toString(), (byte)expKeyId, encryption.getActiveKey(grpId).id());
 
             IgniteInternalFuture<Void> fut = encryption.reencryptionFuture(grpId);
 
@@ -409,6 +409,8 @@ public abstract class AbstractEncryptionTest extends GridCommonAbstractTest {
             }, timeout);
 
             assertTrue(fut.isDone());
+
+            assertEquals(0, encryption.getBytesLeftForReencryption(grpId));
 
             List<Integer> parts = IntStream.range(0, grp.shared().affinity().affinity(grpId).partitions())
                 .boxed().collect(Collectors.toList());

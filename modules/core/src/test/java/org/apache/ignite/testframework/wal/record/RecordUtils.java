@@ -159,7 +159,8 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.processors.cache.tree.DataInnerIO.VERSIONS;
 
 /**
- * Class contains builder methods for at least one record of each type{@link org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType}.
+ * Class contains builder methods for at least one record of each type
+ * {@link org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType}.
  * NOTE!!: It is better to rewrite these builder methods to the builder of each record for flexible use where it is
  * required.
  */

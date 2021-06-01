@@ -213,8 +213,11 @@ public class DdlCommandHandler {
             if (F.isEmpty(keyTypeName))
                 keyTypeName = QueryUtils.createTableKeyTypeName(valTypeName);
 
-            if (!F.isEmpty(cmd.primaryKeyColumns()))
+            if (!F.isEmpty(cmd.primaryKeyColumns())) {
                 res.setKeyFields(new LinkedHashSet<>(cmd.primaryKeyColumns()));
+
+                res = new QueryEntityEx(res).setPreserveKeysOrder(true);
+            }
         }
         else if (!F.isEmpty(cmd.primaryKeyColumns()) && cmd.primaryKeyColumns().size() == 1) {
             String pkFieldName = cmd.primaryKeyColumns().get(0);

@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
@@ -43,6 +42,7 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.GridBoundedConcurrentOrderedSet;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
+import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
@@ -92,7 +92,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     private Collection<Long> cancelled = new GridBoundedConcurrentOrderedSet<>(MAX_CANCEL_IDS);
 
     /** Query response handler. */
-    private IgniteBiInClosure<UUID,GridCacheQueryResponse> resHnd = new CI2<UUID, GridCacheQueryResponse>() {
+    private IgniteBiInClosure<UUID, GridCacheQueryResponse> resHnd = new CI2<UUID, GridCacheQueryResponse>() {
         @Override public void apply(UUID nodeId, GridCacheQueryResponse res) {
             processQueryResponse(nodeId, res);
         }
@@ -894,7 +894,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         }
 
         if (locNode != null) {
-            cctx.closures().callLocalSafe(new Callable<Object>() {
+            cctx.closures().callLocalSafe(new GridPlainCallable<Object>() {
                 @Override public Object call() throws Exception {
                     req.beforeLocalExecution(cctx);
 

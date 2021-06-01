@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -31,7 +30,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -59,7 +57,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  * Communication channel with failover and partition awareness.
  */
-final class ReliableChannel implements AutoCloseable, NotificationListener {
+final class ReliableChannel implements AutoCloseable {
     /** Do nothing helper function. */
     private static final Consumer<Integer> DO_NOTHING = (v) -> {};
 
@@ -83,12 +81,6 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
 
     /** Node channels. */
     private final Map<UUID, ClientChannelHolder> nodeChannels = new ConcurrentHashMap<>();
-
-    /** Notification listeners. */
-    private final Collection<NotificationListener> notificationLsnrs = new CopyOnWriteArrayList<>();
-
-    /** Listeners of channel close events. */
-    private final Collection<Consumer<ClientChannel>> channelCloseLsnrs = new CopyOnWriteArrayList<>();
 
     /** Channels reinit was scheduled. */
     private final AtomicBoolean scheduledChannelsReinit = new AtomicBoolean();
@@ -385,42 +377,6 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
         }
 
         return serviceAsync(op, payloadWriter, payloadReader);
-    }
-
-    /**
-     * Add notification listener.
-     *
-     * @param lsnr Listener.
-     */
-    public void addNotificationListener(NotificationListener lsnr) {
-        notificationLsnrs.add(lsnr);
-    }
-
-    /**
-     * Add listener of channel close event.
-     *
-     * @param lsnr Listener.
-     */
-    public void addChannelCloseListener(Consumer<ClientChannel> lsnr) {
-        channelCloseLsnrs.add(lsnr);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void acceptNotification(
-        ClientChannel ch,
-        ClientOperation op,
-        long rsrcId,
-        ByteBuffer payload,
-        Exception err
-    ) {
-        for (NotificationListener lsnr : notificationLsnrs) {
-            try {
-                lsnr.acceptNotification(ch, op, rsrcId, payload, err);
-            }
-            catch (Exception ignore) {
-                // No-op.
-            }
-        }
     }
 
     /**
@@ -922,7 +878,6 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
 
                     if (channel.serverNodeId() != null) {
                         channel.addTopologyChangeListener(ReliableChannel.this::onTopologyChanged);
-                        channel.addNotificationListener(ReliableChannel.this);
 
                         UUID prevId = serverNodeId;
 
@@ -951,9 +906,6 @@ final class ReliableChannel implements AutoCloseable, NotificationListener {
         private synchronized void closeChannel() {
             if (ch != null) {
                 U.closeQuiet(ch);
-
-                for (Consumer<ClientChannel> lsnr : channelCloseLsnrs)
-                    lsnr.accept(ch);
 
                 ch = null;
             }

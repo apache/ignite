@@ -188,7 +188,7 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
         if (F.isEmpty(tuples) || !force && tuples.size() < MODIFY_BATCH_SIZE)
             return;
 
-        List<IgniteBiTuple<?,?>> tuples = this.tuples;
+        List<IgniteBiTuple<?, ?>> tuples = this.tuples;
         this.tuples = new ArrayList<>(MODIFY_BATCH_SIZE);
 
         GridCacheContext<Object, Object> cctg = desc.cacheContext();
@@ -211,7 +211,7 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
     }
 
     /** */
-    private Map<Object, EntryProcessor<Object, Object, Long>> invokeMap(List<IgniteBiTuple<?,?>> tuples) {
+    private Map<Object, EntryProcessor<Object, Object, Long>> invokeMap(List<IgniteBiTuple<?, ?>> tuples) {
         Map<Object, EntryProcessor<Object, Object, Long>> procMap = U.newLinkedHashMap(tuples.size());
 
         switch (op) {

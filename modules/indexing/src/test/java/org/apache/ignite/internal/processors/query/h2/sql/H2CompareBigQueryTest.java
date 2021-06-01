@@ -104,8 +104,18 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
 
         cfg.setCacheConfiguration(
             cacheConfiguration("custord", CacheMode.PARTITIONED, Integer.class, CustOrder.class),
-            cacheConfiguration("replord", CacheMode.PARTITIONED, useColocatedData() ? AffinityKey.class : Integer.class, ReplaceOrder.class),
-            cacheConfiguration("ordparam", CacheMode.PARTITIONED, useColocatedData() ? AffinityKey.class : Integer.class, OrderParams.class),
+            cacheConfiguration(
+                "replord",
+                CacheMode.PARTITIONED,
+                useColocatedData() ? AffinityKey.class : Integer.class,
+                ReplaceOrder.class
+            ),
+            cacheConfiguration(
+                "ordparam",
+                CacheMode.PARTITIONED,
+                useColocatedData() ? AffinityKey.class : Integer.class,
+                OrderParams.class
+            ),
             cacheConfiguration("cancel", CacheMode.PARTITIONED, useColocatedData() ? AffinityKey.class : Integer.class, Cancel.class),
             cacheConfiguration("exec", CacheMode.REPLICATED, useColocatedData() ? AffinityKey.class : Integer.class, Exec.class));
 
@@ -236,7 +246,7 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
             for (CustOrder o : orders) {
                 if (o.orderId % 9 == 0) {
                     Cancel c = new Cancel(idGen.incrementAndGet(), o.orderId,
-                        new Date(o.date.getTime() + 12 * 60 * 60 * 1000));// Plus a half of day.
+                        new Date(o.date.getTime() + 12 * 60 * 60 * 1000)); // Plus a half of day.
 
                     add(c);
 

@@ -100,9 +100,11 @@ import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.GridSpiCloseableIteratorWrapper;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridIterator;
+import org.apache.ignite.internal.util.lang.IgniteClosureX;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -127,6 +129,7 @@ import org.apache.ignite.spi.IgniteSpiCloseableIterator;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
 import org.apache.ignite.spi.indexing.IndexingSpi;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
@@ -179,7 +182,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         QRY_DETAIL_METRICS_MERGE_FX = GridCacheQueryDetailMetricsAdapter::aggregate;
 
     /** */
-    private final boolean isIndexingSpiAllowsBinary = !IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI);
+    private final boolean isIndexingSpiAllowsBinary =
+        !IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI);
 
     /** */
     private GridQueryProcessor qryProc;
@@ -1841,12 +1845,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
-     * Gets SQL metadata.
+     * Gets SQL metadata asynchronously.
      *
-     * @return SQL metadata.
+     * @return SQL metadata future.
      * @throws IgniteCheckedException In case of error.
      */
-    public Collection<GridCacheSqlMetadata> sqlMetadata() throws IgniteCheckedException {
+    public IgniteInternalFuture<Collection<GridCacheSqlMetadata>> sqlMetadataAsync() throws IgniteCheckedException {
         if (!enterBusy())
             throw new IllegalStateException("Failed to get metadata (grid is stopping).");
 
@@ -1867,39 +1871,67 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             // Get local metadata.
             IgniteInternalFuture<Collection<CacheSqlMetadata>> locFut = cctx.closures().callLocalSafe(job, true);
 
-            if (rmtFut != null)
-                res.addAll(rmtFut.get());
-
             res.add(locFut.get());
 
-            Map<String, Collection<CacheSqlMetadata>> map = new HashMap<>();
+            if (rmtFut == null)
+                return new GridFinishedFuture<>(convertMetadata(res));
 
-            for (Collection<CacheSqlMetadata> col : res) {
-                for (CacheSqlMetadata meta : col) {
-                    String name = meta.cacheName();
+            return rmtFut.chain(
+                new IgniteClosureX<IgniteInternalFuture<Collection<Collection<CacheSqlMetadata>>>, Collection<GridCacheSqlMetadata>>() {
+                    @Override public Collection<GridCacheSqlMetadata> applyx(
+                        IgniteInternalFuture<Collection<Collection<CacheSqlMetadata>>> fut) throws IgniteCheckedException {
+                        res.addAll(fut.get());
 
-                    Collection<CacheSqlMetadata> cacheMetas = map.get(name);
-
-                    if (cacheMetas == null)
-                        map.put(name, cacheMetas = new LinkedList<>());
-
-                    cacheMetas.add(meta);
+                        return convertMetadata(res);
+                    }
                 }
-            }
-
-            Collection<GridCacheSqlMetadata> col = new ArrayList<>(map.size());
-
-            // Metadata for current cache must be first in list.
-            col.add(new CacheSqlMetadata(map.remove(cacheName)));
-
-            for (Collection<CacheSqlMetadata> metas : map.values())
-                col.add(new CacheSqlMetadata(metas));
-
-            return col;
+            );
         }
         finally {
             leaveBusy();
         }
+    }
+
+    /**
+     * Transforms collections of {@link CacheSqlMetadata} collected from nodes into collection of {@link
+     * GridCacheSqlMetadata}.
+     *
+     * @param res collections of metadata from nodes.
+     * @return collection of aggregated metadata.
+     */
+    @NotNull private Collection<GridCacheSqlMetadata> convertMetadata(
+        Collection<Collection<CacheSqlMetadata>> res) {
+        Map<String, Collection<CacheSqlMetadata>> map = new HashMap<>();
+
+        for (Collection<CacheSqlMetadata> col : res) {
+            for (CacheSqlMetadata meta : col) {
+                String name = meta.cacheName();
+
+                Collection<CacheSqlMetadata> cacheMetas = map.computeIfAbsent(name, k -> new LinkedList<>());
+
+                cacheMetas.add(meta);
+            }
+        }
+
+        Collection<GridCacheSqlMetadata> col = new ArrayList<>(map.size());
+
+        // Metadata for current cache must be first in list.
+        col.add(new CacheSqlMetadata(map.remove(cacheName)));
+
+        for (Collection<CacheSqlMetadata> metas : map.values())
+            col.add(new CacheSqlMetadata(metas));
+
+        return col;
+    }
+
+    /**
+     * Gets SQL metadata.
+     *
+     * @return SQL metadata.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public Collection<GridCacheSqlMetadata> sqlMetadata() throws IgniteCheckedException {
+        return sqlMetadataAsync().get();
     }
 
     /**

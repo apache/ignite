@@ -206,7 +206,8 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testIndexLoopJoin() {
         assertQuery("" +
-            "SELECT /*+ DISABLE_RULE('MergeJoinConverter', 'NestedLoopJoinConverter') */ d1.name, d2.name FROM Developer d1, Developer d2 WHERE d1.id = d2.id")
+            "SELECT /*+ DISABLE_RULE('MergeJoinConverter', 'NestedLoopJoinConverter') */ d1.name, d2.name " +
+            "FROM Developer d1, Developer d2 WHERE d1.id = d2.id")
             .matches(containsSubPlan("IgniteCorrelatedNestedLoopJoin"))
             .returns("Bach", "Bach")
             .returns("Beethoven", "Beethoven")
@@ -238,7 +239,8 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
     @Test
     public void testMergeJoin() {
         assertQuery("" +
-            "SELECT /*+ DISABLE_RULE('CorrelatedNestedLoopJoin') */ d1.name, d2.name FROM Developer d1, Developer d2 WHERE d1.depId = d2.depId")
+            "SELECT /*+ DISABLE_RULE('CorrelatedNestedLoopJoin') */ d1.name, d2.name FROM Developer d1, Developer d2 " +
+            "WHERE d1.depId = d2.depId")
             .matches(containsSubPlan("IgniteMergeJoin"))
             .returns("Bach", "Bach")
             .returns("Beethoven", "Beethoven")

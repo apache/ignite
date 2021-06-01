@@ -240,7 +240,21 @@ public abstract class PageHandler<X, R> {
         PageLockListener lsnr,
         IoStatisticsHolder statHolder
     ) throws IgniteCheckedException {
-        Boolean res = writePage(pageMem, grpId, pageId, lsnr, PageHandler.NO_OP, init, wal, null, null, 0, FALSE, statHolder, DEFAULT_PAGE_IO_RESOLVER);
+        Boolean res = writePage(
+            pageMem,
+            grpId,
+            pageId,
+            lsnr,
+            PageHandler.NO_OP,
+            init,
+            wal,
+            null,
+            null,
+            0,
+            FALSE,
+            statHolder,
+            DEFAULT_PAGE_IO_RESOLVER
+        );
 
         assert res != FALSE;
     }

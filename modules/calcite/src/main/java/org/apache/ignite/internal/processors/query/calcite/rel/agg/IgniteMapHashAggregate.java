@@ -60,7 +60,8 @@ public class IgniteMapHashAggregate extends IgniteMapAggregateBase implements Ig
     }
 
     /** {@inheritDoc} */
-    @Override public Aggregate copy(RelTraitSet traitSet, RelNode input, ImmutableBitSet groupSet, List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
+    @Override public Aggregate copy(RelTraitSet traitSet, RelNode input, ImmutableBitSet groupSet,
+        List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
         return new IgniteMapHashAggregate(getCluster(), traitSet, input, groupSet, groupSets, aggCalls);
     }
 

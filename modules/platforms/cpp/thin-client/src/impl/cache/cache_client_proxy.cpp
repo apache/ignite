@@ -149,6 +149,14 @@ namespace ignite
                 {
                     GetCacheImpl(impl).GetAndPutIfAbsent(key, valIn, valOut);
                 }
+
+                ignite::thin::cache::query::QueryFieldsCursor CacheClientProxy::Query(
+                        const ignite::thin::cache::query::SqlFieldsQuery &qry)
+                {
+                    query::SP_QueryFieldsCursorImpl cursorImpl = GetCacheImpl(impl).Query(qry);
+
+                    return ignite::thin::cache::query::QueryFieldsCursor(cursorImpl);
+                }
             }
         }
     }

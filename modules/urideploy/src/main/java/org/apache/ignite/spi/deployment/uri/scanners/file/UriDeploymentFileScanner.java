@@ -124,7 +124,7 @@ public class UriDeploymentFileScanner implements UriDeploymentScanner {
     private static String getFileUri(String name) {
         assert name != null;
 
-        name = name.replace("\\","/");
+        name = name.replace("\\", "/");
 
         return "file://" + (name.charAt(0) == '/' ? "" : '/') + name;
     }

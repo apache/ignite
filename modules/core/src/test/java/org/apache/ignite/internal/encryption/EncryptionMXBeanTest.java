@@ -125,11 +125,11 @@ public class EncryptionMXBeanTest extends AbstractEncryptionTest {
 
         int grpId = CU.cacheId(cacheName());
 
-        assertEquals(INITIAL_KEY_ID, ignite.context().encryption().groupKey(grpId).id());
+        assertEquals(INITIAL_KEY_ID, ignite.context().encryption().getActiveKey(grpId).id());
 
         mBean.changeCacheGroupKey(cacheName());
 
-        assertEquals(INITIAL_KEY_ID + 1, ignite.context().encryption().groupKey(grpId).id());
+        assertEquals(INITIAL_KEY_ID + 1, ignite.context().encryption().getActiveKey(grpId).id());
 
         checkGroupKey(grpId, INITIAL_KEY_ID + 1, getTestTimeout());
     }

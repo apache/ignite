@@ -630,13 +630,17 @@ public class FileHandleManagerImpl implements FileHandleManager {
             }
         }
 
-        /** Shutted down the worker. */
-        private void shutdown() {
+        /**
+         * Shutted down the worker.
+         *
+         * @throws IgniteInterruptedCheckedException If the worker was interrupted while waiting for shutting down.
+         */
+        private void shutdown() throws IgniteInterruptedCheckedException {
             synchronized (this) {
                 U.cancel(this);
             }
 
-            U.join(this, log);
+            U.join(runner());
         }
 
         /**

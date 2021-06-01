@@ -115,8 +115,9 @@ public class P2PCacheOperationIntoComputeTest extends GridCommonAbstractTest {
     ) throws Exception {
         Constructor personCtor = getExternalClassLoader().loadClass(PERSON_CLASS_NAME).getConstructor(String.class);
 
-        IgniteCallable<Double> avgSalaryClosure = (IgniteCallable<Double>)getExternalClassLoader().loadClass(AVERAGE_PERSON_SALARY_CLOSURE_NAME)
-            .getConstructor(String.class, int.class, int.class).newInstance(cacheName, 0, 10);
+        IgniteCallable<Double> avgSalaryClosure =
+            (IgniteCallable<Double>)getExternalClassLoader().loadClass(AVERAGE_PERSON_SALARY_CLOSURE_NAME)
+                .getConstructor(String.class, int.class, int.class).newInstance(cacheName, 0, 10);
 
         IgniteCache cache = client.cache(cacheName);
 

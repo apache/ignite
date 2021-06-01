@@ -107,7 +107,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             log.Warn("{0}: Type '{1}' maps to Java type '{2}' using unchecked conversion. " +
                      "This may cause issues in SQL queries. " +
                      "You can use '{3}' instead to achieve direct mapping.",
-                logInfo, type, NetToJava[type], directType);
+                logInfo, type, NetToJava[directType], directType);
         }
 
         /// <summary>

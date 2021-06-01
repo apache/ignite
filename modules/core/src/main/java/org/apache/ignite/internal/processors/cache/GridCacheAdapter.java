@@ -122,6 +122,8 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridClosureException;
+import org.apache.ignite.internal.util.lang.GridPlainCallable;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.C2;
@@ -1257,8 +1259,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Clear future.
      */
     private IgniteInternalFuture<?> clearLocallyAsync(@Nullable final Set<? extends K> keys) {
-        return ctx.closures().callLocalSafe(new Callable<Object>() {
-            @Override public Object call() throws Exception {
+        return ctx.closures().callLocalSafe(new GridPlainCallable<Object>() {
+            @Override public Object call() {
                 if (keys == null)
                     clearLocally(true, false, false);
                 else
@@ -2883,7 +2885,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                 assert ret != null;
 
-                return ret.value() != null ? ret.<Map<K, EntryProcessorResult<T>>>value() : Collections.<K, EntryProcessorResult<T>>emptyMap();
+                return ret.value() != null ? ret.value() : Collections.emptyMap();
             }
         });
     }
@@ -2931,7 +2933,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                 assert ret != null;
 
-                return ret.value() != null ? ret.<Map<K, EntryProcessorResult<T>>>value() : Collections.<K, EntryProcessorResult<T>>emptyMap();
+                return ret.value() != null
+                    ? ret.<Map<K, EntryProcessorResult<T>>>value()
+                    : Collections.<K, EntryProcessorResult<T>>emptyMap();
             }
         });
     }
@@ -3876,7 +3880,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @Override public IgniteInternalFuture<?> localLoadCacheAsync(final IgniteBiPredicate<K, V> p,
         final Object[] args) {
         return ctx.closures().callLocalSafe(
-            ctx.projectSafe(new Callable<Object>() {
+            ctx.projectSafe(new GridPlainCallable<Object>() {
                 @Nullable @Override public Object call() throws IgniteCheckedException {
                     localLoadCache(p, args);
 
@@ -4588,7 +4592,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     (IgniteOutClosure<IgniteInternalFuture>)() -> {
                         GridFutureAdapter resFut = new GridFutureAdapter();
 
-                        ctx.kernalContext().closure().runLocalSafe(() -> {
+                        ctx.kernalContext().closure().runLocalSafe((GridPlainRunnable)() -> {
                             IgniteInternalFuture fut0;
 
                             if (ctx.kernalContext().isStopping())
@@ -5135,7 +5139,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         assert orig == null || orig.optimistic() || orig.readCommitted() || /*contains*/ skipVals;
 
         // Async check and recover if necessary.
-        return ctx.kernalContext().closure().callLocalSafe(new Callable<Void>() {
+        return ctx.kernalContext().closure().callLocalSafe(new GridPlainCallable<Void>() {
             @Override public Void call() throws IgniteCheckedException {
                 CacheOperationContext prevOpCtx = ctx.operationContextPerCall();
 
@@ -5365,12 +5369,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> preloadPartitionAsync(int part) throws IgniteCheckedException {
         if (isLocal()) {
-            return ctx.kernalContext().closure().runLocalSafe(() -> {
-                try {
-                    ctx.offheap().preloadPartition(part);
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
+            return ctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
+                @Override public void run() {
+                    try {
+                        ctx.offheap().preloadPartition(part);
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
                 }
             });
         }
@@ -6840,7 +6846,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                     fut.listen(new CI1<IgniteInternalFuture<?>>() {
                         @Override public void apply(IgniteInternalFuture<?> t) {
-                            ignite.context().closure().runLocalSafe(new Runnable() {
+                            ignite.context().closure().runLocalSafe(new GridPlainRunnable() {
                                 @Override public void run() {
                                     jobCtx.callcc();
                                 }

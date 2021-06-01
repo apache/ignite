@@ -90,7 +90,7 @@ public class EncryptedCacheCreateTest extends AbstractEncryptionTest {
 
         assertNotNull(enc);
 
-        GroupKey grpKey = grid.context().encryption().groupKey(CU.cacheGroupId(ENCRYPTED_CACHE, null));
+        GroupKey grpKey = grid.context().encryption().getActiveKey(CU.cacheGroupId(ENCRYPTED_CACHE, null));
 
         assertNotNull(grpKey);
 

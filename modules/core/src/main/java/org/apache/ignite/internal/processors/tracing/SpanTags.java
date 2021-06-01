@@ -81,6 +81,9 @@ public class SpanTags {
     /** */
     public static final String MESSAGE = "message";
 
+    /** Number of bytes that were written to the socket. */
+    public static final String SOCKET_WRITE_BYTES = "socket.write.bytes";
+
     /** */
     public static final String MESSAGE_CLASS = "message.class";
 
@@ -104,6 +107,12 @@ public class SpanTags {
 
     /** Number of cache entries to be updated as a result of DML query. */
     public static final String SQL_CACHE_UPDATES = "sql.cache.updates";
+
+    /** Whether parsing of the SQL query was skipped due to the cached result. */
+    public static final String SQL_PARSER_CACHE_HIT = "sql.parser.cache.hit";
+
+    /** Query identifier. */
+    public static final String SQL_QRY_ID = "sql.query.id";
 
     /** */
     private SpanTags() {}

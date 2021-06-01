@@ -367,7 +367,8 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
         return new DatasetTrainer<M, L1>() {
             private <K, V> Preprocessor<K, V> getNewExtractor(
                 Preprocessor<K, V> extractor) {
-                IgniteFunction<LabeledVector<L1>, LabeledVector<L>> func = lv -> new LabeledVector<>(lv.features(), new2Old.apply(lv.label()));
+                IgniteFunction<LabeledVector<L1>, LabeledVector<L>> func =
+                    lv -> new LabeledVector<>(lv.features(), new2Old.apply(lv.label()));
                 return new PatchedPreprocessor<>(func, extractor);
             }
 
@@ -383,7 +384,11 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
                 return old.updateModel(mdl, datasetBuilder, getNewExtractor(preprocessor));
             }
 
-            @Override public <K, V> M fitWithInitializedDeployingContext(DatasetBuilder<K, V> datasetBuilder, Preprocessor<K, V> preprocessor) {
+            /** {@inheritDoc} */
+            @Override public <K, V> M fitWithInitializedDeployingContext(
+                DatasetBuilder<K, V> datasetBuilder,
+                Preprocessor<K, V> preprocessor
+            ) {
                 return old.fit(datasetBuilder, getNewExtractor(preprocessor));
             }
 
