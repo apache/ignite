@@ -74,5 +74,4 @@ class ClientDataStreamerReader {
 
         return isKey ? (T) new KeyCacheObjectImpl(obj, objBytes, -1) : (T) new CacheObjectImpl(obj, objBytes);
     }
-
 }
