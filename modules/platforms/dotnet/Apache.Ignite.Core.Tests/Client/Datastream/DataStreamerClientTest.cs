@@ -91,15 +91,18 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
 
             var options = new DataStreamerClientOptions {AllowOverwrite = true};
 
-            using (var streamer = Client.GetDataStreamer<int, int>(cache.Name, options))
+            using (var streamer = Client.GetDataStreamer<int, object>(cache.Name, options))
             {
                 streamer.Add(1, 11);
                 streamer.Add(20, 20);
 
-                foreach (var key in new[] {2, 4, 6, 7, 8, 9, 10})
+                foreach (var key in new[] {2, 4, 6, 7, 8, 9})
                 {
                     streamer.Remove(key);
                 }
+
+                // Remove with null
+                streamer.Add(10, null);
             }
 
             var resKeys = cache.GetAll(Enumerable.Range(1, 30))

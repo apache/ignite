@@ -60,7 +60,7 @@ namespace Apache.Ignite.Core.Client.Datastream
         /// exceeds <see cref="DataStreamerClientOptions.PerNodeParallelOperations"/>.
         /// </summary>
         /// <param name="key">Key.</param>
-        /// <param name="val">Value.</param>
+        /// <param name="val">Value. When null, cache entry will be removed.</param>
         void Add(TK key, TV val);
 
         /// <summary>
