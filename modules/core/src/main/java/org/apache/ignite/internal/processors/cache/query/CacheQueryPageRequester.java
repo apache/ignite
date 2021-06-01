@@ -149,19 +149,17 @@ public abstract class CacheQueryPageRequester {
             // Process cancel query directly (without sending) for local node.
             sendLocal(req);
 
-            if (!nodes.isEmpty()) {
-                for (ClusterNode node : nodes) {
-                    try {
-                        cctx.io().send(node, req, cctx.ioPolicy());
+            for (ClusterNode node : nodes) {
+                try {
+                    cctx.io().send(node, req, cctx.ioPolicy());
+                }
+                catch (IgniteCheckedException e) {
+                    if (cctx.io().checkNodeLeft(node.id(), e, false)) {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to send cancel request, node failed: " + node);
                     }
-                    catch (IgniteCheckedException e) {
-                        if (cctx.io().checkNodeLeft(node.id(), e, false)) {
-                            if (log.isDebugEnabled())
-                                log.debug("Failed to send cancel request, node failed: " + node);
-                        }
-                        else
-                            U.error(log, "Failed to send cancel request [node=" + node + ']', e);
-                    }
+                    else
+                        U.error(log, "Failed to send cancel request [node=" + node + ']', e);
                 }
             }
         }

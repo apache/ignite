@@ -63,16 +63,14 @@ public class MergeSortDistributedCacheQueryReducer<R> extends UnsortedDistribute
     ) {
         super(fut, reqId, fetcher, nodes);
 
-        synchronized (queueLock()) {
-            streamsMap = new ConcurrentHashMap<>(nodes.size());
-            streams = (NodePageStream[])Array.newInstance(NodePageStream.class, nodes.size());
+        streamsMap = new ConcurrentHashMap<>(nodes.size());
+        streams = (NodePageStream[])Array.newInstance(NodePageStream.class, nodes.size());
 
-            int i = 0;
+        int i = 0;
 
-            for (ClusterNode node : nodes) {
-                streams[i] = new NodePageStream(node.id());
-                streamsMap.put(node.id(), streams[i++]);
-            }
+        for (ClusterNode node : nodes) {
+            streams[i] = new NodePageStream(node.id());
+            streamsMap.put(node.id(), streams[i++]);
         }
 
         streamCmp = (o1, o2) -> {
@@ -184,26 +182,20 @@ public class MergeSortDistributedCacheQueryReducer<R> extends UnsortedDistribute
 
     /** {@inheritDoc} */
     @Override public void addPage(@Nullable UUID nodeId, Collection<R> data) {
-        assert Thread.holdsLock(queueLock());
-
-        // Local node.
+        // For distributed queries nodeId equals to NULL means error. Notify all streams.
         if (nodeId == null) {
-            nodeId = cctx.localNodeId();
+            assert data.isEmpty();
 
-            // If nodeId is NULL and query doesn't execute on local node, then it is error, notify all streams.
-            if (!streamsMap.containsKey(nodeId)) {
-                assert data.isEmpty();
+            for (PageStream stream: streamsMap.values())
+                stream.addPage(data);
 
-                for (PageStream stream: streamsMap.values())
-                    stream.addPage(data);
-
-                return;
-            }
+            return;
         }
 
-        assert streamsMap.containsKey(nodeId) : "Get result from unexpected node: " + nodeId;
+        NodePageStream stream = streamsMap.get(nodeId);
 
-        streamsMap.get(nodeId).addPage(data);
+        if (stream != null)
+            stream.addPage(data);
     }
 
     /** {@inheritDoc} */

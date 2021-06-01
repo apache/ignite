@@ -165,8 +165,6 @@ public class GridCacheFullTextQueryPagesTest extends GridCommonAbstractTest {
 
         assertEquals(NODES - 1, nodeToCancel.size());
 
-        System.out.println("Cancels=" + nodeToCancel);
-
         for (Integer cancelIdx: nodeToCancel.values())
             assertTrue("Cancels=" + nodeToCancel, expCancelPageIdx <= cancelIdx);
     }

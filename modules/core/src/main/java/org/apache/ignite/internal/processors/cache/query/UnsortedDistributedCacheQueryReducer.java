@@ -189,7 +189,7 @@ class UnsortedDistributedCacheQueryReducer<R> extends AbstractCacheQueryReducer<
 
         rcvd.add(nodeId);
 
-        if (!loadAllowed && rcvd.containsAll(subgrid) ) {
+        if (!loadAllowed && rcvd.containsAll(subgrid)) {
             firstPageLatch.countDown();
             loadAllowed = true;
         }
