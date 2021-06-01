@@ -726,7 +726,8 @@ namespace Apache.Ignite.Core.Tests.Client
             {
                 UserName = "ignite",
                 Password = "ignite",
-                SocketTimeout = TimeSpan.FromSeconds(10)
+                SocketTimeout = TimeSpan.FromSeconds(10),
+                EnablePartitionAwareness = false
             };
         }
 
