@@ -340,7 +340,7 @@ public class TrackingPageIOTest {
 
                 fail();
             }
-            catch (TrackingPageIsCorruptedException e) {
+            catch (TrackingPageIsCorruptedException ignore) {
                 //ignore
             }
         }

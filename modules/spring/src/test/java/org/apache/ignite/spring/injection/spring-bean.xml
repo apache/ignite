@@ -26,7 +26,8 @@
         <constructor-arg value="111" type="int"/>
     </bean>
 
-    <bean id="cacheStore" class="org.apache.ignite.spring.injection.IgniteSpringBeanSpringResourceInjectionTest.IgniteCacheStoreWithSpringResource"/>
+    <bean id="cacheStore"
+          class="org.apache.ignite.spring.injection.IgniteSpringBeanSpringResourceInjectionTest.IgniteCacheStoreWithSpringResource"/>
 
     <bean id="serviceWithSpringResource"
           class="org.apache.ignite.spring.injection.IgniteSpringBeanSpringResourceInjectionTest.ServiceWithSpringResourceImpl"/>

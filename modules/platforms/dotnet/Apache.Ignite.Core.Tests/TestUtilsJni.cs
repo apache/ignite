@@ -95,6 +95,15 @@ namespace Apache.Ignite.Core.Tests
             CallVoidMethod(ClassPlatformProcessUtils, "destroyProcess", "()V");
         }
 
+        /// <summary>
+        /// Gets the Java thread name.
+        /// </summary>
+        /// <returns></returns>
+        public static string GetJavaThreadName()
+        {
+            return CallStringMethod(ClassPlatformThreadUtils, "getThreadName", "()Ljava/lang/String;");
+        }
+
         /** */
         private static unsafe void CallStringMethod(string className, string methodName, string methodSig, string arg)
         {
@@ -120,6 +129,18 @@ namespace Apache.Ignite.Core.Tests
             {
                 var methodId = env.GetStaticMethodId(cls, methodName, methodSig);
                 env.CallStaticVoidMethod(cls, methodId);
+            }
+        }
+
+        /** */
+        private static unsafe string CallStringMethod(string className, string methodName, string methodSig)
+        {
+            var env = Jvm.Get().AttachCurrentThread();
+            using (var cls = env.FindClass(className))
+            {
+                var methodId = env.GetStaticMethodId(cls, methodName, methodSig);
+                var res = env.CallStaticObjectMethod(cls, methodId);
+                return env.JStringToString(res.Target);
             }
         }
     }

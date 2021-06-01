@@ -28,7 +28,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -270,25 +269,5 @@ public class WalArchiveConsistencyTest extends GridCommonAbstractTest {
             log.info("Fill [keys=" + i + ", totalKeys=" + key.get() +
                 ", segNum=" + segments + ", currSeg=" + walMgr(n).currentSegment() + ']');
         }
-    }
-
-    /**
-     * Getting WAL manager of node.
-     *
-     * @param n Node.
-     * @return WAL manager.
-     */
-    private FileWriteAheadLogManager walMgr(IgniteEx n) {
-        return (FileWriteAheadLogManager)n.context().cache().context().wal();
-    }
-
-    /**
-     * Getting db manager of node.
-     *
-     * @param n Node.
-     * @return Db manager.
-     */
-    private GridCacheDatabaseSharedManager dbMgr(IgniteEx n) {
-        return (GridCacheDatabaseSharedManager)n.context().cache().context().database();
     }
 }

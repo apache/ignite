@@ -197,7 +197,8 @@ public class ConnectionClientPool {
      */
     public GridCommunicationClient reserveClient(ClusterNode node, int connIdx) throws IgniteCheckedException {
         assert node != null;
-        assert (connIdx >= 0 && connIdx < cfg.connectionsPerNode()) || !(cfg.usePairedConnections() && usePairedConnections(node, attrs.pairedConnection())) : connIdx;
+        assert (connIdx >= 0 && connIdx < cfg.connectionsPerNode())
+            || !(cfg.usePairedConnections() && usePairedConnections(node, attrs.pairedConnection())) : connIdx;
 
         if (locNodeSupplier.get().isClient()) {
             if (node.isClient()) {
@@ -304,8 +305,12 @@ public class ConnectionClientPool {
                     catch (IgniteFutureTimeoutCheckedException ignored) {
                         currTimeout += clientReserveWaitTimeout;
 
-                        if (log.isDebugEnabled())
-                            log.debug("Still waiting for reestablishing connection to node [nodeId=" + node.id() + ", waitingTime=" + currTimeout + "ms]");
+                        if (log.isDebugEnabled()) {
+                            log.debug(
+                                "Still waiting for reestablishing connection to node " +
+                                    "[nodeId=" + node.id() + ", waitingTime=" + currTimeout + "ms]"
+                            );
+                        }
 
                         if (registry != null) {
                             GridWorker wrkr = registry.worker(Thread.currentThread().getName());
@@ -342,8 +347,8 @@ public class ConnectionClientPool {
     }
 
     /**
-     * Handles {@link NodeUnreachableException}. This means that the method will try to trigger client itself to open
-     * connection. The only possible way of doing this is to use {@link TcpCommunicationConfiguration#connectionRequestor()}'s trigger and wait.
+     * Handles {@link NodeUnreachableException}. This means that the method will try to trigger client itself to open connection.
+     * The only possible way of doing this is to use {@link TcpCommunicationConfiguration#connectionRequestor()}'s trigger and wait.
      * Specifics of triggers implementation technically should be considered unknown, but for now it's not true and we
      * expect that {@link NodeUnreachableException} won't be thrown in {@link IgniteDiscoveryThread}.
      *
@@ -364,6 +369,8 @@ public class ConnectionClientPool {
         if (cfg.connectionRequestor() != null) {
             ConnectFuture fut0 = (ConnectFuture)fut;
 
+            final ConnectionKey key = new ConnectionKey(node.id(), connIdx, -1);
+
             ConnectionRequestFuture triggerFut = new ConnectionRequestFuture();
 
             triggerFut.listen(f -> {
@@ -373,9 +380,12 @@ public class ConnectionClientPool {
                 catch (Throwable t) {
                     fut0.onDone(t);
                 }
+                finally {
+                    clientFuts.remove(key, triggerFut);
+                }
             });
 
-            clientFuts.put(new ConnectionKey(node.id(), connIdx, -1), triggerFut);
+            clientFuts.put(key, triggerFut);
 
             fut = triggerFut;
 
@@ -387,18 +397,18 @@ public class ConnectionClientPool {
                     : cfg.connectionTimeout();
 
                     fut.get(failTimeout);
+            }
+            catch (Throwable triggerException) {
+                if (forcibleNodeKillEnabled
+                    && node.isClient()
+                    && triggerException instanceof IgniteFutureTimeoutCheckedException
+                ) {
+                    CommunicationTcpUtils.failNode(node, tcpCommSpi.getSpiContext(), triggerException, log);
                 }
-                catch (Throwable triggerException) {
-                    if (forcibleNodeKillEnabled
-                        && node.isClient()
-                        && triggerException instanceof IgniteFutureTimeoutCheckedException
-                    ) {
-                        CommunicationTcpUtils.failNode(node, tcpCommSpi.getSpiContext(), triggerException, log);
-                    }
 
-                    IgniteSpiException spiE = new IgniteSpiException(e);
+                IgniteSpiException spiE = new IgniteSpiException(e);
 
-                spiE.addSuppressed(e);
+                spiE.addSuppressed(triggerException);
 
                 String msg = "Failed to wait for establishing inverse communication connection from node " + node;
 
@@ -614,8 +624,12 @@ public class ConnectionClientPool {
         assert cfg.connectionsPerNode() > 0 : cfg.connectionsPerNode();
         assert connIdx == addClient.connectionIndex() : addClient;
 
-        if (log.isDebugEnabled())
-            log.debug("The node client is going to create a connection [nodeId=" + node.id() + ", connIdx=" + connIdx + ", client=" + addClient + "]");
+        if (log.isDebugEnabled()) {
+            log.debug(
+                "The node client is going to create a connection " +
+                    "[nodeId=" + node.id() + ", connIdx=" + connIdx + ", client=" + addClient + "]"
+            );
+        }
 
         if (connIdx >= cfg.connectionsPerNode()) {
             assert !(cfg.usePairedConnections() && usePairedConnections(node, attrs.pairedConnection()));
@@ -665,7 +679,9 @@ public class ConnectionClientPool {
         for (; ; ) {
             GridCommunicationClient[] curClients = clients.get(nodeId);
 
-            if (curClients == null || rmvClient.connectionIndex() >= curClients.length || curClients[rmvClient.connectionIndex()] != rmvClient)
+            if (curClients == null
+                || rmvClient.connectionIndex() >= curClients.length
+                || curClients[rmvClient.connectionIndex()] != rmvClient)
                 return false;
 
             GridCommunicationClient[] newClients = Arrays.copyOf(curClients, curClients.length);

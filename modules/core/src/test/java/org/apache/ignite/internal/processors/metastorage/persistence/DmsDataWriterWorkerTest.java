@@ -18,12 +18,14 @@
 package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThread;
 import org.junit.After;
 import org.junit.Assert;
@@ -37,15 +39,9 @@ import static org.apache.ignite.internal.processors.metastorage.persistence.Dist
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.versionKey;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageVersion.INITIAL_VERSION;
 import static org.apache.ignite.internal.processors.metastorage.persistence.DmsDataWriterWorker.DUMMY_VALUE;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 
 /** */
-public class DmsDataWriterWorkerTest {
-    /** */
-    private static IgniteLogger log = new GridTestLog4jLogger(true).getLogger(DmsDataWriterWorkerTest.class);
-
+public class DmsDataWriterWorkerTest extends GridCommonAbstractTest {
     /** */
     private Thread testThread;
 
@@ -57,6 +53,9 @@ public class DmsDataWriterWorkerTest {
 
     /** */
     private DmsDataWriterWorker worker;
+
+    /** */
+    private final AtomicReference<Throwable> errHnd = new AtomicReference<>();
 
     /** */
     @Before
@@ -71,7 +70,7 @@ public class DmsDataWriterWorkerTest {
             DmsDataWriterWorkerTest.class.getSimpleName(),
             log,
             lock,
-            throwable -> {}
+            errHnd::set
         );
 
         worker.setMetaStorage(metastorage);
@@ -103,7 +102,7 @@ public class DmsDataWriterWorkerTest {
 
         startWorker();
 
-        worker.cancel(true);
+        worker.cancel(false);
 
         assertEquals(1, metastorage.cache.size());
         assertEquals(INITIAL_VERSION, metastorage.read(versionKey()));
@@ -290,23 +289,21 @@ public class DmsDataWriterWorkerTest {
     @Test
     public void testHalt() throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
-        AtomicBoolean await = new AtomicBoolean(true);
+
+        LinkedBlockingQueue<RunnableFuture<?>> queue = GridTestUtils.getFieldValue(worker, DmsDataWriterWorker.class,
+            "updateQueue");
 
         metastorage = new MyReadWriteMetaStorageMock() {
             @Override public void writeRaw(String key, byte[] data) {
                 try {
-                    if (await.get())
-                        latch.countDown();
+                    assertTrue(GridTestUtils.waitForCondition(() -> queue.size() == 3, getTestTimeout()));
 
-                    while (worker.status() != DmsWorkerStatus.HALT) {
-                        //noinspection BusyWait
-                        Thread.sleep(0);
-                    }
+                    latch.countDown();
+
+                    assertTrue(GridTestUtils.waitForCondition(() -> queue.size() == 1, getTestTimeout()));
                 }
                 catch (Exception ignore) {
                 }
-
-                await.set(false);
 
                 super.writeRaw(key, data);
             }
@@ -318,10 +315,14 @@ public class DmsDataWriterWorkerTest {
 
         worker.update(histItem("key1", "val1"));
         worker.update(histItem("key2", "val2"));
+        worker.update(histItem("key3", "val3"));
+        worker.update(histItem("key4", "val4"));
 
         latch.await();
 
         worker.cancel(true);
+
+        assertNull(errHnd.get());
 
         // ver, val, hist.
         assertEquals(3, metastorage.cache.size());

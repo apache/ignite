@@ -151,8 +151,10 @@ public class MLPTest {
             withAddedLayer(layerWithBiasNeuronsCnt, true, Activators.SIGMOID).
             withAddedLayer(layerWithoutBiasNeuronsCnt, false, Activators.SIGMOID);
 
-        Assert.assertEquals(layerWithBiasNeuronsCnt * inputSize + layerWithBiasNeuronsCnt + (layerWithoutBiasNeuronsCnt * layerWithBiasNeuronsCnt),
-            conf.parametersCount());
+        Assert.assertEquals(
+            layerWithBiasNeuronsCnt * inputSize + layerWithBiasNeuronsCnt + (layerWithoutBiasNeuronsCnt * layerWithBiasNeuronsCnt),
+            conf.parametersCount()
+        );
     }
 
     /**

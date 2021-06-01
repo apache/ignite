@@ -164,6 +164,19 @@ public class IndexStorageImpl implements IndexStorage {
     }
 
     /** {@inheritDoc} */
+    @Override public @Nullable RootPage findCacheIndex(Integer cacheId, String idxName, int segment)
+        throws IgniteCheckedException
+    {
+        idxName = maskCacheIndexName(cacheId, idxName, segment);
+
+        byte[] idxNameBytes = idxName.getBytes(StandardCharsets.UTF_8);
+
+        final IndexItem row = metaTree.findOne(new IndexItem(idxNameBytes, 0));
+
+        return row != null ? new RootPage(new FullPageId(row.pageId, grpId), false) : null;
+    }
+
+    /** {@inheritDoc} */
     @Override public RootPage dropCacheIndex(Integer cacheId, String idxName, int segment)
         throws IgniteCheckedException {
         String maskedIdxName = maskCacheIndexName(cacheId, idxName, segment);

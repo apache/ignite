@@ -234,7 +234,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             // Inject row cache cleaner on store creation
             // Used in case the cache with enabled SqlOnheapCache is single cache at the cache group
             if (ctx.kernalContext().query().moduleEnabled()) {
-                GridQueryRowCacheCleaner cleaner = ctx.kernalContext().query().getIndexing()
+                GridQueryRowCacheCleaner cleaner = ctx.kernalContext().indexProcessor()
                     .rowCacheCleaner(grp.groupId());
 
                 if (store != null && cleaner != null)

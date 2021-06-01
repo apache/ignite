@@ -148,11 +148,13 @@ public interface ThreadPoolMXBean {
     public boolean isTerminating();
 
     /**
-     * Returns the class name of current rejection handler.
+     * The class name of the handler for tasks that cannot be executed.
+     * This may occur when no more threads or queue slots are available because their bounds would be exceeded,
+     * or upon shutdown of the Executor.
      *
-     * @return Class name of current rejection handler.
+     * @return Class name of the handler for tasks that cannot be executed by the thread pool.
      */
-    @MXBeanDescription("Class name of current rejection handler.")
+    @MXBeanDescription("Returns the class name of the handler for tasks that cannot be executed by the thread pool.")
     public String getRejectedExecutionHandlerClass();
 
     /**

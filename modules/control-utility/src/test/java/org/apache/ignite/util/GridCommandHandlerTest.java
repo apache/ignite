@@ -1017,7 +1017,11 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
             List<String> nodesInfo = findBaselineNodesInfo();
             assertEquals(1, nodesInfo.size());
-            assertContains(log, nodesInfo.get(0), "Addresses=188.166.164.247.hostname/188.166.164.247,10.19.112.175.hostname/10.19.112.175");
+            assertContains(
+                log,
+                nodesInfo.get(0),
+                "Addresses=188.166.164.247.hostname/188.166.164.247,10.19.112.175.hostname/10.19.112.175"
+            );
         }
 
         { // empty resolved addresses
@@ -2151,7 +2155,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         String outputStr = testOut.toString();
 
-        assertContains(log,outputStr, "The check procedure failed on 1 node.");
+        assertContains(log, outputStr, "The check procedure failed on 1 node.");
         assertContains(log, outputStr, "The check procedure has finished, no conflicts have been found.");
     }
 
@@ -2548,7 +2552,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
                         doSleep(3000);
 
-                        try (Transaction tx = grid(0).transactions().withLabel("label1").txStart(PESSIMISTIC, READ_COMMITTED, Integer.MAX_VALUE, 0)) {
+                        try (Transaction tx =
+                                 grid(0).transactions().withLabel("label1").txStart(PESSIMISTIC, READ_COMMITTED, Integer.MAX_VALUE, 0)) {
                             grid(0).cache(DEFAULT_CACHE_NAME).putAll(generate(200, 110));
 
                             grid(0).cache(DEFAULT_CACHE_NAME).put(0, 0);

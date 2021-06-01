@@ -136,7 +136,7 @@ public class IgnitePdsSporadicDataRecordsOnBackupTest extends GridCommonAbstract
 
         stopAllGrids();
 
-        assertEquals(0,findSporadicDataRecords(nodeFolderName0) + findSporadicDataRecords(nodeFolderName1));
+        assertEquals(0, findSporadicDataRecords(nodeFolderName0) + findSporadicDataRecords(nodeFolderName1));
     }
 
     /**

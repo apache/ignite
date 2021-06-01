@@ -692,8 +692,8 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_LOG_DIR = "IGNITE_LOG_DIR";
 
     /**
-     * Environment variable to set work directory. The property {@link org.apache.ignite.configuration.IgniteConfiguration#setWorkDirectory} has higher
-     * priority.
+     * Environment variable to set work directory.
+     * The property {@link org.apache.ignite.configuration.IgniteConfiguration#setWorkDirectory} has higher priority.
      */
     @SystemProperty(value = "Work directory. The property IgniteConfiguration.setWorkDirectory has higher priority",
         type = String.class)
@@ -1013,9 +1013,8 @@ public final class IgniteSystemProperties {
      * When set to {@code true} fields are written by BinaryMarshaller in sorted order. Otherwise
      * the natural order is used.
      * <p>
-     * @deprecated Should be removed in Apache Ignite 2.0.
+     * NOTICE: Should be the default in Apache Ignite 3.0
      */
-    @Deprecated
     @SystemProperty("Enables fields to be written by BinaryMarshaller in sorted order. " +
         "By default, the natural order is used")
     public static final String IGNITE_BINARY_SORT_OBJECT_FIELDS = "IGNITE_BINARY_SORT_OBJECT_FIELDS";
@@ -1449,7 +1448,8 @@ public final class IgniteSystemProperties {
     @SystemProperty("When property is set false each next exchange will try to compare with previous. " +
         "If last rebalance is equivalent with new possible one, new rebalance does not trigger. " +
         "Set the property true and each exchange will try to trigger new rebalance")
-    public static final String IGNITE_DISABLE_REBALANCING_CANCELLATION_OPTIMIZATION = "IGNITE_DISABLE_REBALANCING_CANCELLATION_OPTIMIZATION";
+    public static final String IGNITE_DISABLE_REBALANCING_CANCELLATION_OPTIMIZATION =
+        "IGNITE_DISABLE_REBALANCING_CANCELLATION_OPTIMIZATION";
 
     /**
      * Sets timeout for TCP client recovery descriptor reservation.
@@ -1620,7 +1620,8 @@ public final class IgniteSystemProperties {
      * Default is {@code false}.
      */
     @SystemProperty("Disables cache interceptor triggering in case of conflicts")
-    public static final String IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT = "IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT";
+    public static final String IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT =
+        "IGNITE_DISABLE_TRIGGERING_CACHE_INTERCEPTOR_ON_CONFLICT";
 
     /**
      * Sets default {@link CacheConfiguration#setDiskPageCompression disk page compression}.

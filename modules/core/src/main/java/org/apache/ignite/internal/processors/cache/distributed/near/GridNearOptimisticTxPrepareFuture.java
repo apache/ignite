@@ -282,7 +282,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         Throwable err0 = err;
 
         if ((!tx.onePhaseCommit() || tx.mappings().get(cctx.localNodeId()) == null) &&
-                (err0 == null || tx.needCheckBackup()))
+            (err0 == null || tx.needCheckBackup()))
             tx.state(PREPARED);
 
         if (super.onDone(tx, err0)) {
@@ -749,7 +749,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                                 "transaction [timeout=" + tx.timeout() + ", tx=" + CU.txString(tx) + ']',
                                 deadlock != null ? new TransactionDeadlockException(deadlock.toString(cctx)) : null);
 
-                            if (!ERR_UPD.compareAndSet(GridNearOptimisticTxPrepareFuture.this, null, e) && err instanceof IgniteTxTimeoutCheckedException) {
+                            if (!ERR_UPD.compareAndSet(GridNearOptimisticTxPrepareFuture.this, null, e)
+                                && err instanceof IgniteTxTimeoutCheckedException) {
                                 err = e;
                             }
                         }

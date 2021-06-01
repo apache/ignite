@@ -74,7 +74,7 @@ public class JdbcStreamingSelfTest extends JdbcThinAbstractSelfTest {
     private IgniteConfiguration getConfiguration0(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        CacheConfiguration<?,?> cache = defaultCacheConfiguration();
+        CacheConfiguration<?, ?> cache = defaultCacheConfiguration();
 
         cache.setCacheMode(PARTITIONED);
         cache.setBackups(1);
@@ -326,7 +326,7 @@ public class JdbcStreamingSelfTest extends JdbcThinAbstractSelfTest {
 
                 return null;
             }
-        }, SQLException.class,"Streaming mode supports only INSERT commands without subqueries.");
+        }, SQLException.class, "Streaming mode supports only INSERT commands without subqueries.");
     }
 
     /**

@@ -103,7 +103,8 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
  *     <li>Joining node:
  *     <ul>
  *         <li>1. Collects and send all stored group keys to coordinator.</li>
- *         <li>2. Generate(but doesn't store locally!) and send keys for all statically configured groups in case the not presented in metastore.</li>
+ *         <li>2. Generate(but doesn't store locally!)
+ *         and send keys for all statically configured groups in case the not presented in metastore.</li>
  *         <li>3. Store all keys received from coordinator to local store.</li>
  *     </ul>
  *     </li>
@@ -907,6 +908,14 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     public void onDestroyPartitionStore(CacheGroupContext grp, int partId) {
         if (pageScanner.excludePartition(grp.groupId(), partId))
             setEncryptionState(grp, partId, 0, 0);
+    }
+
+    /**
+     * @param grp Cache group.
+     * @param partId Partition ID.
+     */
+    public void onCancelDestroyPartitionStore(CacheGroupContext grp, int partId) {
+        pageScanner.includePartition(grp.groupId(), partId);
     }
 
     /**

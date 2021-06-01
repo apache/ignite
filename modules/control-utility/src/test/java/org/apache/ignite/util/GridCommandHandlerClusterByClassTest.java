@@ -567,7 +567,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     public void testCacheIdleVerifyDump() throws Exception {
         IgniteEx ignite = crd;
 
-        int keysCount = 20;//less than parts number for ability to check skipZeros flag.
+        int keysCount = 20; //less than parts number for ability to check skipZeros flag.
 
         createCacheAndPreload(ignite, keysCount);
 
@@ -780,7 +780,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         while (partIdMatcher.find()) {
             assertEquals(i++, Integer.parseInt(partIdMatcher.group(1)));
-            assertTrue(primaryMatcher.find());//primary node should be first in every line
+            assertTrue(primaryMatcher.find()); //primary node should be first in every line
         }
 
         assertEquals(expectedPartsCount, i);
@@ -1454,7 +1454,8 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
                         doSleep(3000);
 
-                        try (Transaction tx = grid(0).transactions().withLabel("label1").txStart(PESSIMISTIC, READ_COMMITTED, Integer.MAX_VALUE, 0)) {
+                        try (Transaction tx =
+                                 grid(0).transactions().withLabel("label1").txStart(PESSIMISTIC, READ_COMMITTED, Integer.MAX_VALUE, 0)) {
                             grid(0).cache(DEFAULT_CACHE_NAME).putAll(generate(200, 110));
 
                             grid(0).cache(DEFAULT_CACHE_NAME).put(0, 0);

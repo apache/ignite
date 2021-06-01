@@ -655,7 +655,7 @@ public class QueryUtils {
             d.addProperty(prop, false);
         }
 
-        if (!isKeyClsSqlType)
+        if (!isKeyClsSqlType && qryEntity instanceof QueryEntityEx && ((QueryEntityEx)qryEntity).isPreserveKeysOrder())
             d.primaryKeyFields(keyFields);
 
         // Sql-typed key/value doesn't have field property, but they may have precision and scale constraints.
@@ -889,7 +889,7 @@ public class QueryUtils {
      * @throws IgniteCheckedException If failed.
      */
     public static QueryClassProperty buildClassProperty(Class<?> keyCls, Class<?> valCls, String pathStr,
-        Class<?> resType, Map<String,String> aliases, boolean notNull, CacheObjectContext coCtx)
+        Class<?> resType, Map<String, String> aliases, boolean notNull, CacheObjectContext coCtx)
         throws IgniteCheckedException {
         QueryClassProperty res = buildClassProperty(false, valCls, pathStr, resType, aliases, notNull, coCtx);
 
@@ -916,7 +916,7 @@ public class QueryUtils {
      * @throws IgniteCheckedException If failed.
      */
     public static GridQueryProperty buildProperty(Class<?> keyCls, Class<?> valCls, String keyFieldName,
-        String valueFieldName, String pathStr, Class<?> resType, Map<String,String> aliases, boolean notNull,
+        String valueFieldName, String pathStr, Class<?> resType, Map<String, String> aliases, boolean notNull,
         CacheObjectContext coCtx) throws IgniteCheckedException {
         if (pathStr.equals(keyFieldName))
             return new KeyOrValProperty(true, pathStr, keyCls);
@@ -961,7 +961,7 @@ public class QueryUtils {
      */
     @SuppressWarnings("ConstantConditions")
     public static QueryClassProperty buildClassProperty(boolean key, Class<?> cls, String pathStr, Class<?> resType,
-        Map<String,String> aliases, boolean notNull, CacheObjectContext coCtx) {
+        Map<String, String> aliases, boolean notNull, CacheObjectContext coCtx) {
         String[] path = pathStr.split("\\.");
 
         QueryClassProperty res = null;
@@ -1211,7 +1211,7 @@ public class QueryUtils {
      * @param ccfg Cache configuration.
      * @return {@code true} If query index must be enabled for this cache.
      */
-    public static boolean isEnabled(CacheConfiguration<?,?> ccfg) {
+    public static boolean isEnabled(CacheConfiguration<?, ?> ccfg) {
         return !F.isEmpty(ccfg.getIndexedTypes()) ||
             !F.isEmpty(ccfg.getQueryEntities());
     }

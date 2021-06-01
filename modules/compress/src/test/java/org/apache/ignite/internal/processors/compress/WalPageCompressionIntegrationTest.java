@@ -74,8 +74,8 @@ public class WalPageCompressionIntegrationTest extends AbstractPageCompressionIn
             .setAtomicityMode(ATOMIC)
             .setIndexedTypes(Integer.class, TestVal.class);
 
-        IgniteCache<Integer,TestVal> cache0 = ignite0.getOrCreateCache(ccfg);
-        IgniteCache<Integer,TestVal> cache1 = ignite1.getOrCreateCache(ccfg);
+        IgniteCache<Integer, TestVal> cache0 = ignite0.getOrCreateCache(ccfg);
+        IgniteCache<Integer, TestVal> cache1 = ignite1.getOrCreateCache(ccfg);
 
         int cnt = 20_000;
 

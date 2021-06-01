@@ -56,8 +56,8 @@ public class IgniteCacheMvccTestSuite7 {
         ignoredTests.add(PageEvictionMultinodeMixedRegionsTest.class);
 
         // Other non-tx tests.
-        ignoredTests.add(CheckpointBufferDeadlockTest.class);//
-        ignoredTests.add(AuthenticationConfigurationClusterTest.class);//
+        ignoredTests.add(CheckpointBufferDeadlockTest.class); //
+        ignoredTests.add(AuthenticationConfigurationClusterTest.class); //
         ignoredTests.add(AuthenticationProcessorSelfTest.class);
         ignoredTests.add(AuthenticationOnNotActiveClusterTest.class);
         ignoredTests.add(AuthenticationProcessorNodeRestartTest.class);

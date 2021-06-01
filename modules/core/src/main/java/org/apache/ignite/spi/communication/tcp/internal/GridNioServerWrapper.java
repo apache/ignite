@@ -540,7 +540,8 @@ public class GridNioServerWrapper {
                         ses = null;
                     }
 
-                    eRegistrySupplier.get().onException("Handshake timed out (will retry with increased timeout) [connTimeoutStrategy=" + connTimeoutStgy +
+                    eRegistrySupplier.get().onException(
+                        "Handshake timed out (will retry with increased timeout) [connTimeoutStrategy=" + connTimeoutStgy +
                         ", addr=" + addr + ']', e);
 
                     if (log.isDebugEnabled())
@@ -669,7 +670,7 @@ public class GridNioServerWrapper {
      * @return {@code True} if exception shows that client is unreachable, {@code false} otherwise.
      */
     private boolean isNodeUnreachableException(Exception e) {
-        return e instanceof SocketTimeoutException;
+        return e instanceof NodeUnreachableException || e instanceof SocketTimeoutException;
     }
 
     /**

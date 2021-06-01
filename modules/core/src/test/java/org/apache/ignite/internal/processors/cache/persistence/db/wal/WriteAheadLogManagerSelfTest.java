@@ -21,29 +21,39 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+import org.apache.ignite.internal.processors.cache.WalStateManager.WALDisableContext;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static java.util.Collections.emptyList;
 import static java.util.concurrent.ThreadLocalRandom.current;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
-import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 
 /**
  * Class for testing WAL manager.
@@ -68,6 +78,7 @@ public class WriteAheadLogManagerSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
+            .setFailureHandler(new StopNodeFailureHandler())
             .setCacheConfiguration(new CacheConfiguration<>(DEFAULT_CACHE_NAME))
             .setDataStorageConfiguration(
                 new DataStorageConfiguration()
@@ -79,7 +90,7 @@ public class WriteAheadLogManagerSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteEx startGrids(int cnt) throws Exception {
         IgniteEx n = super.startGrids(cnt);
 
-        n.cluster().state(ClusterState.ACTIVE);
+        n.cluster().state(ACTIVE);
         awaitPartitionMapExchange();
 
         return n;
@@ -176,33 +187,116 @@ public class WriteAheadLogManagerSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testAutoArchiveWithoutNullPointerException() throws Exception {
-        LogListener logLsnr = LogListener.matches(
+        setRootLoggerDebugLevel();
+
+        LogListener logLsnr0 = LogListener.matches("Checking if WAL rollover required").build();
+
+        LogListener logLsnr1 = LogListener.matches(
             Pattern.compile("Rollover segment \\[\\d+ to \\d+\\], recordType=null")).build();
 
         IgniteEx n = startGrid(0, cfg -> {
-            cfg.setGridLogger(new ListeningTestLogger(cfg.getGridLogger(), logLsnr))
-                .getDataStorageConfiguration().setWalAutoArchiveAfterInactivity(200);
+            cfg.setGridLogger(new ListeningTestLogger(log, logLsnr0, logLsnr1))
+                .getDataStorageConfiguration().setWalAutoArchiveAfterInactivity(100_000);
         });
 
-        n.cluster().state(ClusterState.ACTIVE);
+        n.cluster().state(ACTIVE);
         awaitPartitionMapExchange();
 
-        assertNotNull(GridTestUtils.getFieldValue(walMgr(n), "nextAutoArchiveTimeoutObj"));
+        GridTimeoutObject timeoutObj = timeoutRollover(n);
+        assertNotNull(timeoutObj);
 
-        assertTrue(waitForCondition(() -> {
-            n.cache(DEFAULT_CACHE_NAME).put(current().nextInt(), new byte[16]);
+        n.cache(DEFAULT_CACHE_NAME).put(current().nextInt(), new byte[16]);
 
-            return logLsnr.check();
-        }, getTestTimeout()));
+        disableWal(n);
+
+        lastRecordLoggedMs(n).set(1);
+
+        timeoutObj.onTimeout();
+
+        assertTrue(logLsnr0.check());
+        assertTrue(logLsnr1.check());
     }
 
     /**
-     * Getting WAL manager.
+     * Checking the absence of a race between the deactivation of the VAL and
+     * automatic archiving, which may lead to a fail of the node.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testNoRaceAutoArchiveAndDeactivation() throws Exception {
+        for (int i = 0; i < 10; i++) {
+            if (log.isInfoEnabled())
+                log.info(">>> Test iteration:" + i);
+
+            IgniteEx n = startGrid(0, cfg -> {
+                cfg.getDataStorageConfiguration().setWalAutoArchiveAfterInactivity(10);
+            });
+
+            n.cluster().state(ACTIVE);
+            awaitPartitionMapExchange();
+
+            GridTimeoutObject timeoutObj = timeoutRollover(n);
+            assertNotNull(timeoutObj);
+
+            n.cache(DEFAULT_CACHE_NAME).put(current().nextInt(), new byte[16]);
+
+            CountDownLatch l = new CountDownLatch(1);
+            AtomicBoolean stop = new AtomicBoolean();
+
+            IgniteInternalFuture<Object> fut = runAsync(() -> {
+                l.countDown();
+
+                while (!stop.get())
+                    lastRecordLoggedMs(n).set(1);
+            });
+
+            assertTrue(l.await(getTestTimeout(), MILLISECONDS));
+
+            walMgr(n).onDeActivate(n.context());
+            stop.set(true);
+
+            fut.get(getTestTimeout());
+
+            assertEquals(1, G.allGrids().size());
+
+            stopAllGrids();
+            cleanPersistenceDir();
+        }
+    }
+
+    /**
+     * Getting {@code FileWriteAheadLogManager#lastRecordLoggedMs}
      *
      * @param n Node.
-     * @return WAL manager.
+     * @return Container with last WAL record logged timestamp.
      */
-    private FileWriteAheadLogManager walMgr(IgniteEx n) {
-        return (FileWriteAheadLogManager)n.context().cache().context().wal();
+    private AtomicLong lastRecordLoggedMs(IgniteEx n) {
+        return getFieldValue(walMgr(n), "lastRecordLoggedMs");
+    }
+
+    /**
+     * Disable WAL.
+     *
+     * @param n Node.
+     */
+    private void disableWal(IgniteEx n) throws Exception {
+        WALDisableContext walDisableCtx = n.context().cache().context().walState().walDisableContext();
+        assertNotNull(walDisableCtx);
+
+        setFieldValue(walDisableCtx, "disableWal", true);
+
+        assertTrue(walDisableCtx.check());
+        assertNull(walMgr(n).log(new DataRecord(emptyList())));
+    }
+
+    /**
+     * Getting {@code FileWriteAheadLogManager#timeoutRollover};
+     *
+     * @param n Node.
+     * @return Timeout object.
+     */
+    @Nullable private GridTimeoutObject timeoutRollover(IgniteEx n) {
+        return getFieldValue(walMgr(n), "timeoutRollover");
     }
 }

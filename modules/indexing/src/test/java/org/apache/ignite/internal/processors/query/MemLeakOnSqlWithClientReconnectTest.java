@@ -190,7 +190,7 @@ public class MemLeakOnSqlWithClientReconnectTest extends AbstractIndexingCommonT
      */
     private void runQuery(IgniteEx ign, int iters, boolean repl) {
         for (int i = 0; i < iters; ++i)
-            sql(ign, repl ? REPL_SCHEMA : PART_SCHEMA,"SELECT * FROM test").getAll();
+            sql(ign, repl ? REPL_SCHEMA : PART_SCHEMA, "SELECT * FROM test").getAll();
     }
 
     /**

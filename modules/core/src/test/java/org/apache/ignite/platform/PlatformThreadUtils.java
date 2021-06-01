@@ -48,4 +48,13 @@ public class PlatformThreadUtils {
             }
         }
     }
+
+    /**
+     * Gets the thread name.
+     *
+     * @return Thread name.
+     */
+    public static String getThreadName() {
+        return Thread.currentThread().getName();
+    }
 }

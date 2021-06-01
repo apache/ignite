@@ -51,6 +51,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.store.PageWriteListener;
@@ -63,10 +64,12 @@ import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkp
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
+import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -77,7 +80,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirName;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.copy;
@@ -147,6 +149,9 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
      */
     private final Map<Integer, Set<Integer>> parts;
 
+    /** {@code true} if all metastorage data must be also included into snapshot. */
+    private final boolean withMetaStorage;
+
     /** Cache group and corresponding partitions collected under the checkpoint write lock. */
     private final Map<Integer, Set<Integer>> processed = new HashMap<>();
 
@@ -186,6 +191,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
         startedFut.onDone(e);
         onDone(e);
         parts = null;
+        withMetaStorage = false;
         ioFactory = null;
         locBuff = null;
     }
@@ -204,14 +210,17 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
         FileIOFactory ioFactory,
         SnapshotSender snpSndr,
         Map<Integer, Set<Integer>> parts,
+        boolean withMetaStorage,
         ThreadLocal<ByteBuffer> locBuff
     ) {
         assert snpName != null : "Snapshot name cannot be empty or null.";
         assert snpSndr != null : "Snapshot sender which handles execution tasks must be not null.";
         assert snpSndr.executor() != null : "Executor service must be not null.";
         assert cctx.pageStore() instanceof FilePageStoreManager : "Snapshot task can work only with physical files.";
+        assert !parts.containsKey(MetaStorage.METASTORAGE_CACHE_ID) : "The withMetaStorage must be used instead.";
 
         this.parts = parts;
+        this.withMetaStorage = withMetaStorage;
         this.cctx = cctx;
         this.pageStore = (FilePageStoreManager)cctx.pageStore();
         this.log = cctx.logger(SnapshotFutureTask.class);
@@ -296,10 +305,10 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
     }
 
     /**
-     * @throws IgniteCheckedException If fails.
+     * @return Started future.
      */
-    public void awaitStarted() throws IgniteCheckedException {
-        startedFut.get();
+    public IgniteInternalFuture<?> started() {
+        return startedFut;
     }
 
     /**
@@ -339,8 +348,14 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
                     throw new IgniteCheckedException("Encrypted cache groups are not allowed to be snapshot: " + grpId);
 
                 // Create cache group snapshot directory on start in a single thread.
-                U.ensureDirectory(cacheWorkDir(tmpConsIdDir, cacheDirName(gctx.config())),
+                U.ensureDirectory(cacheWorkDir(tmpConsIdDir, FilePageStoreManager.cacheDirName(gctx.config())),
                     "directory for snapshotting cache group",
+                    log);
+            }
+
+            if (withMetaStorage) {
+                U.ensureDirectory(cacheWorkDir(tmpConsIdDir, MetaStorage.METASTORAGE_DIR_NAME),
+                    "directory for snapshotting metastorage",
                     log);
             }
 
@@ -366,7 +381,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
     }
 
     /** {@inheritDoc} */
-    @Override public void beforeCheckpointBegin(Context ctx) {
+    @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
         if (stopping())
             return;
 
@@ -376,6 +391,15 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
             else
                 cpEndFut.completeExceptionally(f.error());
         });
+
+        if (withMetaStorage) {
+            try {
+                U.get(((DistributedMetaStorageImpl)cctx.kernalContext().distributedMetastorage()).flush());
+            }
+            catch (IgniteCheckedException ignore) {
+                // Flushing may be cancelled or interrupted due to the local node stopping.
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -453,28 +477,23 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
 
                 CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
 
-                if (gctx == null) {
-                    throw new IgniteCheckedException("Cache group context has not found " +
-                        "due to the cache group is stopped: " + grpId);
-                }
-
-                for (int partId : e.getValue()) {
-                    GroupPartitionId pair = new GroupPartitionId(grpId, partId);
-
-                    PageStore store = pageStore.getStore(grpId, partId);
-
-                    partDeltaWriters.put(pair,
-                        new PageStoreSerialWriter(store,
-                            partDeltaFile(cacheWorkDir(tmpConsIdDir, cacheDirName(gctx.config())), partId)));
-
-                    partFileLengths.put(pair, store.size());
-                }
+                if (gctx == null)
+                    throw new IgniteCheckedException("Cache group is stopped : " + grpId);
 
                 ccfgs.add(gctx.config());
+                addPartitionWriters(grpId, e.getValue(), FilePageStoreManager.cacheDirName(gctx.config()));
+            }
+
+            if (withMetaStorage) {
+                processed.put(MetaStorage.METASTORAGE_CACHE_ID, MetaStorage.METASTORAGE_PARTITIONS);
+
+                addPartitionWriters(MetaStorage.METASTORAGE_CACHE_ID, MetaStorage.METASTORAGE_PARTITIONS,
+                    MetaStorage.METASTORAGE_DIR_NAME);
             }
 
             pageStore.readConfigurationFiles(ccfgs,
-                (ccfg, ccfgFile) -> ccfgSndrs.add(new CacheConfigurationSender(ccfg.getName(), cacheDirName(ccfg), ccfgFile)));
+                (ccfg, ccfgFile) -> ccfgSndrs.add(new CacheConfigurationSender(ccfg.getName(),
+                    FilePageStoreManager.cacheDirName(ccfg), ccfgFile)));
         }
         catch (IgniteCheckedException e) {
             acceptException(e);
@@ -525,76 +544,88 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
         for (CacheConfigurationSender ccfgSndr : ccfgSndrs)
             futs.add(CompletableFuture.runAsync(wrapExceptionIfStarted(ccfgSndr::sendCacheConfig), snpSndr.executor()));
 
-        for (Map.Entry<Integer, Set<Integer>> e : processed.entrySet()) {
-            int grpId = e.getKey();
+        try {
+            for (Map.Entry<Integer, Set<Integer>> e : processed.entrySet()) {
+                int grpId = e.getKey();
+                String cacheDirName = pageStore.cacheDirName(grpId);
 
-            CacheGroupContext gctx = cctx.cache().cacheGroup(grpId);
+                // Process partitions for a particular cache group.
+                for (int partId : e.getValue()) {
+                    GroupPartitionId pair = new GroupPartitionId(grpId, partId);
 
-            if (gctx == null) {
-                acceptException(new IgniteCheckedException("Cache group context has not found " +
-                    "due to the cache group is stopped: " + grpId));
+                    Long partLen = partFileLengths.get(pair);
 
-                break;
-            }
-
-            // Process partitions for a particular cache group.
-            for (int partId : e.getValue()) {
-                GroupPartitionId pair = new GroupPartitionId(grpId, partId);
-
-                CacheConfiguration<?, ?> ccfg = gctx.config();
-
-                assert ccfg != null : "Cache configuration cannot be empty on snapshot creation: " + pair;
-
-                String cacheDirName = cacheDirName(ccfg);
-                Long partLen = partFileLengths.get(pair);
-
-                CompletableFuture<Void> fut0 = CompletableFuture.runAsync(
-                    wrapExceptionIfStarted(() -> {
-                        snpSndr.sendPart(
-                            getPartitionFile(pageStore.workDir(), cacheDirName, partId),
-                            cacheDirName,
-                            pair,
-                            partLen);
-
-                        // Stop partition writer.
-                        partDeltaWriters.get(pair).markPartitionProcessed();
-                    }),
-                    snpSndr.executor())
-                    // Wait for the completion of both futures - checkpoint end, copy partition.
-                    .runAfterBothAsync(cpEndFut,
+                    CompletableFuture<Void> fut0 = CompletableFuture.runAsync(
                         wrapExceptionIfStarted(() -> {
-                            File delta = partDeltaWriters.get(pair).deltaFile;
+                            snpSndr.sendPart(
+                                getPartitionFile(pageStore.workDir(), cacheDirName, partId),
+                                cacheDirName,
+                                pair,
+                                partLen);
 
-                            try {
-                                // Atomically creates a new, empty delta file if and only if
-                                // a file with this name does not yet exist.
-                                delta.createNewFile();
-                            }
-                            catch (IOException ex) {
-                                throw new IgniteCheckedException(ex);
-                            }
-
-                            snpSndr.sendDelta(delta, cacheDirName, pair);
-
-                            boolean deleted = delta.delete();
-
-                            assert deleted;
+                            // Stop partition writer.
+                            partDeltaWriters.get(pair).markPartitionProcessed();
                         }),
-                        snpSndr.executor());
+                        snpSndr.executor())
+                        // Wait for the completion of both futures - checkpoint end, copy partition.
+                        .runAfterBothAsync(cpEndFut,
+                            wrapExceptionIfStarted(() -> {
+                                File delta = partDeltaWriters.get(pair).deltaFile;
 
-                futs.add(fut0);
+                                try {
+                                    // Atomically creates a new, empty delta file if and only if
+                                    // a file with this name does not yet exist.
+                                    delta.createNewFile();
+                                }
+                                catch (IOException ex) {
+                                    throw new IgniteCheckedException(ex);
+                                }
+
+                                snpSndr.sendDelta(delta, cacheDirName, pair);
+
+                                boolean deleted = delta.delete();
+
+                                assert deleted;
+                            }),
+                            snpSndr.executor());
+
+                    futs.add(fut0);
+                }
             }
+
+            int futsSize = futs.size();
+
+            CompletableFuture.allOf(futs.toArray(new CompletableFuture[futsSize]))
+                .whenComplete((res, t) -> {
+                    assert t == null : "Exception must never be thrown since a wrapper is used " +
+                        "for each snapshot task: " + t;
+
+                    closeAsync();
+                });
         }
+        catch (IgniteCheckedException e) {
+            acceptException(e);
+        }
+    }
 
-        int futsSize = futs.size();
+    /**
+     * @param grpId Cache group id.
+     * @param parts Set of partitions to be processed.
+     * @param dirName Directory name to init.
+     * @throws IgniteCheckedException If fails.
+     */
+    private void addPartitionWriters(int grpId, Set<Integer> parts, String dirName) throws IgniteCheckedException {
+        for (int partId : parts) {
+            GroupPartitionId pair = new GroupPartitionId(grpId, partId);
 
-        CompletableFuture.allOf(futs.toArray(new CompletableFuture[futsSize]))
-            .whenComplete((res, t) -> {
-                assert t == null : "Exception must never be thrown since a wrapper is used " +
-                    "for each snapshot task: " + t;
+            PageStore store = pageStore.getStore(grpId, partId);
 
-                closeAsync();
-            });
+            partDeltaWriters.put(pair,
+                new PageStoreSerialWriter(store,
+                    partDeltaFile(cacheWorkDir(tmpConsIdDir, dirName), partId)));
+
+            partFileLengths.put(pair, store.size());
+        }
     }
 
     /**

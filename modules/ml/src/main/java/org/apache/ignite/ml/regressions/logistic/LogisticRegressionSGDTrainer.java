@@ -107,7 +107,8 @@ public class LogisticRegressionSGDTrainer extends SingleLabelDatasetTrainer<Logi
 
         MultilayerPerceptron mlp;
 
-        IgniteFunction<LabeledVector<Double>, LabeledVector<double[]>> func = lv -> new LabeledVector<>(lv.features(), new double[] { lv.label()});
+        IgniteFunction<LabeledVector<Double>, LabeledVector<double[]>> func =
+            lv -> new LabeledVector<>(lv.features(), new double[] { lv.label()});
 
         PatchedPreprocessor<K, V, Double, double[]> patchedPreprocessor = new PatchedPreprocessor<>(func, extractor);
 

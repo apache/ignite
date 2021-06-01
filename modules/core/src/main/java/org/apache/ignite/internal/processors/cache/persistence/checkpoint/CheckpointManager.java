@@ -327,9 +327,7 @@ public class CheckpointManager {
         checkpointMarkersStorage.cleanupCheckpointDirectory();
     }
 
-    /**
-     *
-     */
+    /** Current checkpointer implementation. */
     public Checkpointer getCheckpointer() {
         return checkpointer;
     }
@@ -370,12 +368,12 @@ public class CheckpointManager {
     /**
      * @param grpId Group ID.
      * @param partId Partition ID.
+     * @return {@code True} if the request to destroy the partition was canceled.
      */
-    public void cancelOrWaitPartitionDestroy(int grpId, int partId) throws IgniteCheckedException {
+    public boolean cancelOrWaitPartitionDestroy(int grpId, int partId) throws IgniteCheckedException {
         Checkpointer cp = checkpointer;
 
-        if (cp != null)
-            checkpointer.cancelOrWaitPartitionDestroy(grpId, partId);
+        return cp != null && cp.cancelOrWaitPartitionDestroy(grpId, partId);
     }
 
     /**

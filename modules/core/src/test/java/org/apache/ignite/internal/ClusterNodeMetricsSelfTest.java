@@ -115,7 +115,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
 
         DataRegion dataRegion = getDefaultDataRegion(ignite);
 
-        DataRegionMetricsImpl memMetrics = dataRegion.memoryMetrics();
+        DataRegionMetricsImpl memMetrics = dataRegion.metrics();
 
         memMetrics.enableMetrics();
 
@@ -480,7 +480,10 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
          * @param cfg Ignite configuration.
          * @throws MalformedObjectNameException Thrown in case of any errors.
          */
-        private JmxClusterMetricsHelper(IgniteConfiguration cfg, Class<? extends ClusterMetricsMXBean> clazz) throws MalformedObjectNameException {
+        private JmxClusterMetricsHelper(
+            IgniteConfiguration cfg,
+            Class<? extends ClusterMetricsMXBean> clazz
+        ) throws MalformedObjectNameException {
             this.mbeanSrv = cfg.getMBeanServer();
 
             this.mbean = U.makeMBeanName(cfg.getIgniteInstanceName(), "Kernal", clazz.getSimpleName());

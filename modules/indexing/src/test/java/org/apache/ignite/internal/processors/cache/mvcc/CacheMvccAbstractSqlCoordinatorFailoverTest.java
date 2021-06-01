@@ -202,7 +202,7 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
 
         IgniteCache<Integer, Integer> cache = node.cache(DEFAULT_CACHE_NAME);
 
-        cache.put(1,1);
+        cache.put(1, 1);
 
         Semaphore sem = new Semaphore(0);
 
@@ -240,8 +240,8 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
 
         assert crd.local() && crd.initialized();
 
-        cache.put(1,2);
-        cache.put(1,3);
+        cache.put(1, 2);
+        cache.put(1, 3);
 
         sem.release(2);
 
@@ -351,7 +351,9 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
 
             GridTestUtils.assertThrows(log, new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    clientCache.query(new SqlFieldsQuery("UPDATE Integer SET _val=42 WHERE _key IN (SELECT DISTINCT _val FROM INTEGER)")).getAll();
+                    clientCache.query(
+                        new SqlFieldsQuery("UPDATE Integer SET _val=42 WHERE _key IN (SELECT DISTINCT _val FROM INTEGER)")
+                    ).getAll();
 
                     return null;
                 }
