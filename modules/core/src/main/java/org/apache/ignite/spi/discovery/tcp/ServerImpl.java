@@ -299,7 +299,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** Time of last sent and acknowledged message. */
     private volatile long lastRingMsgSentTime;
 
-    /** Time of first not sent message. */
+    /** Time of first failed message sending in the sequence of failed messages. */
     private volatile long firstRingMsgSendFailedTime;
 
     /** */
