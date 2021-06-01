@@ -23,11 +23,9 @@ import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
@@ -153,7 +151,7 @@ public class ChangeDataCapture implements Runnable {
     private volatile boolean stopped;
 
     /** Already processed segments. */
-    private final List<Path> processed = new ArrayList<>();
+    private final Set<Path> processed = new HashSet<>();
 
     /**
      * @param igniteCfg Ignite configuration.
@@ -446,9 +444,6 @@ public class ChangeDataCapture implements Runnable {
         // Set Ignite home.
         if (igniteHome == null)
             igniteHome = U.getIgniteHome();
-        else
-            // If user provided IGNITE_HOME - set it as a system property.
-            U.setIgniteHome(igniteHome);
 
         String userProvidedWorkDir = cfg.getWorkDirectory();
 
@@ -526,9 +521,9 @@ public class ChangeDataCapture implements Runnable {
             ">>> Ignite documentation: " + "http://" + SITE + NL +
             ">>> Consumer: " + consumer.toString() + NL +
             ">>> ConsistentId: " + igniteCfg.getConsistentId() + NL +
-            ">>> Change Data Capture : " + cdcDir + NL +
-            ">>> Ignite node Binary meta : " + binaryMeta + NL +
-            ">>> Ignite node Marshaller : " + marshaller + NL
+            ">>> Change Data Capture: " + cdcDir + NL +
+            ">>> Ignite node Binary meta: " + binaryMeta + NL +
+            ">>> Ignite node Marshaller: " + marshaller + NL
         );
     }
 }
