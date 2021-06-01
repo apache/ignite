@@ -1,11 +1,12 @@
 /*
- * Copyright 2019 GridGain Systems, Inc. and Contributors.
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
  *
- * Licensed under the GridGain Community Edition License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,6 +16,7 @@
  */
 package org.apache.ignite.internal.commandline.indexreader;
 
+import jdk.internal.jline.internal.Nullable;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 
 import java.util.List;
@@ -42,23 +44,23 @@ class TreeTraverseContext {
     final Map<Long, List<Throwable>> errors;
 
     /** Callback that is called for each inner node page. */
-    final PageCallback innerCb;
+    @Nullable final PageCallback innerCb;
 
     /** Callback that is called for each leaf node page.*/
-    final PageCallback leafCb;
+    @Nullable final PageCallback leafCb;
 
     /** Callback that is called for each leaf item. */
-    final ItemCallback itemCb;
+    @Nullable final ItemCallback itemCb;
 
     /** */
     public TreeTraverseContext(
-            String treeName,
-            FilePageStore store,
-            Map<Class, Long> ioStat,
-            Map<Long, List<Throwable>> errors,
-            PageCallback innerCb,
-            PageCallback leafCb,
-            ItemCallback itemCb
+        String treeName,
+        FilePageStore store,
+        Map<Class, Long> ioStat,
+        Map<Long, List<Throwable>> errors,
+        @Nullable PageCallback innerCb,
+        @Nullable PageCallback leafCb,
+        @Nullable ItemCallback itemCb
     ) {
         this.treeName = treeName;
         this.cacheId = getCacheId(treeName);

@@ -1,11 +1,12 @@
 /*
- * Copyright 2019 GridGain Systems, Inc. and Contributors.
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
  *
- * Licensed under the GridGain Community Edition License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,7 +27,6 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -57,7 +57,6 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
@@ -77,9 +76,9 @@ import static org.apache.ignite.internal.commandline.indexreader.IgniteIndexRead
 import static org.apache.ignite.internal.commandline.indexreader.IgniteIndexReader.RECURSIVE_TRAVERSE_NAME;
 import static org.apache.ignite.internal.commandline.indexreader.IgniteIndexReader.normalizePageId;
 import static org.apache.ignite.internal.commandline.indexreader.IgniteIndexReader.partMetaPageId;
-import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
+import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageIndex;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.partId;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
@@ -280,33 +279,22 @@ public class IgniteIndexReaderTest extends GridCommonAbstractTest {
 
             ItemsListStorage<CacheAwareLink> linkStorage = new ItemsListStorage<>();
 
-            TreeTraversalInfo traversalInfo =
-                reader.traverseTree(normalizePageId(idxItem.pageId()), idxItem.nameString(), linkStorage);
+            // Take any inner page from tree.
+            AtomicLong anyLeafId = new AtomicLong();
+
+            reader.traverseTree(
+                normalizePageId(idxItem.pageId()),
+                idxItem.nameString(),
+                null,
+                (c, pageId) -> anyLeafId.set(pageId),
+                null,
+                linkStorage
+            );
 
             // Take any link.
             long link = linkStorage.store.get(0).link;
 
-            // Take any inner page from tree.
-            long innerPageId = traversalInfo.innerPageIds.iterator().next();
-
-            return new IgniteBiTuple<>(innerPageId, link);
-        }
-    }
-
-    private long findPageOfCacheDataTree(File workDir, String cacheGrp) throws IgniteCheckedException {
-        File dir = new File(workDir, dataDir(cacheGrp));
-
-        try (IgniteIndexReader reader = new IgniteIndexReader(null, false, null, createFilePageStoreFactory(dir))) {
-            IgniteBiTuple<Long, Long> partitionRoots = reader.partitionRoots(partMetaPageId(0, FLAG_DATA));
-
-            AtomicLong anyLeafId = new AtomicLong();
-
-            reader.traverseTree(partitionRoots.get1(), "CacheDataTree", (c, p) -> {}, (id, i, l) -> anyLeafId.set(id),
-                new CountOnlyStorage()
-            );
-
-            // Take any inner page from tree.
-            return partitionRoots.get1();
+            return new IgniteBiTuple<>(anyLeafId.get(), link);
         }
     }
 
@@ -579,6 +567,7 @@ public class IgniteIndexReaderTest extends GridCommonAbstractTest {
      * @param output Output.
      * @param treesCnt Count of b+ trees.
      * @param travErrCnt Count of errors that can occur during traversal.
+     * @param horizScanErrCnt Count of errors that can occur during horizontal scan.
      * @param pageListsErrCnt Count of errors that can occur during page lists scan.
      * @param seqErrCnt Count of errors that can occur during sequential scan.
      * @param partReadingErr partition file reading errors should be present.
@@ -597,7 +586,7 @@ public class IgniteIndexReaderTest extends GridCommonAbstractTest {
         assertContains(log, output, RECURSIVE_TRAVERSE_NAME + "Total trees: " + treesCnt);
         assertContains(log, output, HORIZONTAL_SCAN_NAME + "Total trees: " + treesCnt);
         assertContains(log, output, RECURSIVE_TRAVERSE_NAME + "Total errors during trees traversal: " + travErrCnt);
-        //assertContains(log, output, HORIZONTAL_SCAN_NAME + "Total errors during trees traversal: " + travErrCnt);
+        assertContains(log, output, HORIZONTAL_SCAN_NAME + "Total errors during trees traversal: " + travErrCnt);
         assertContains(log, output, "Total errors during lists scan: " + pageListsErrCnt);
 
         if (idxSizeConsistent)
@@ -902,7 +891,7 @@ public class IgniteIndexReaderTest extends GridCommonAbstractTest {
             boolean idxReadingErr = isReportIdxAndPartFilesReadingErr();
             boolean partReadingErr = isReportIdxAndPartFilesReadingErr();
 
-            checkOutput(output, 19, 22, 0, 1, idxReadingErr, partReadingErr, false);
+            checkOutput(output, 19, 24, 0, 1, idxReadingErr, partReadingErr, false);
 
             for (int i = 0; i < CREATED_TABLES_CNT; i++)
                 checkIdxs(output, TableInfo.generate(i), true);
@@ -959,10 +948,9 @@ public class IgniteIndexReaderTest extends GridCommonAbstractTest {
         A.ensure(nonNull(workDirs) && !workDirs.isEmpty(), "empty workDirs");
 
         try {
-            for (File dir : workDirs) {
-                long pageToCorrupt = findPageOfCacheDataTree(dir, CACHE_GROUP_NAME);
-
-                corruptFile(dir, pageToCorrupt);
+            for (int i = 31; i < 35; i++) {
+                for (File dir : workDirs)
+                    corruptFile(dir, pageId(INDEX_PARTITION, FLAG_IDX, i));
             }
 
             String output = runIndexReader(workDirs.get(0), CACHE_GROUP_NAME, null, true);

@@ -1,11 +1,12 @@
 /*
- * Copyright 2019 GridGain Systems, Inc. and Contributors.
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
  *
- * Licensed under the GridGain Community Edition License (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.gridgain.com/products/software/community-edition/gridgain-community-edition-license
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -1062,12 +1063,19 @@ public class IgniteIndexReader implements AutoCloseable {
      * @param rootPageId Root page id.
      * @param treeName Tree name.
      * @param innerCb Inner pages callback.
+     * @param leafCb Leaf pages callback.
      * @param itemCb Items callback.
      * @param itemStorage Items storage.
      * @return Tree traversal info.
      */
-    TreeTraversalInfo traverseTree(long rootPageId, String treeName, PageCallback innerCb, ItemCallback itemCb,
-        ItemStorage itemStorage) {
+    TreeTraversalInfo traverseTree(
+        long rootPageId,
+        String treeName,
+        @Nullable PageCallback innerCb,
+        @Nullable PageCallback leafCb,
+        @Nullable ItemCallback itemCb,
+        ItemStorage itemStorage
+    ) {
         FilePageStore store = filePageStore(partId(rootPageId));
 
         Map<Class, Long> ioStat = new HashMap<>();
@@ -1076,7 +1084,21 @@ public class IgniteIndexReader implements AutoCloseable {
 
         Set<Long> innerPageIds = new HashSet<>();
 
-        getTreeNode(rootPageId, new TreeTraverseContext(treeName, store, ioStat, errors, innerCb, null, itemCb));
+        PageCallback innerCb0 = (content, pageId) -> {
+            if (innerCb != null)
+                innerCb.cb(content, pageId);
+
+            innerPageIds.add(normalizePageId(pageId));
+        };
+
+        ItemCallback itemCb0 = (currPageId, item, link) -> {
+            if (itemCb != null)
+                itemCb.cb(currPageId, item, link);
+
+            itemStorage.add(item);
+        };
+
+        getTreeNode(rootPageId, new TreeTraverseContext(treeName, store, ioStat, errors, innerCb0, leafCb, itemCb0));
 
         return new TreeTraversalInfo(ioStat, errors, innerPageIds, rootPageId, itemStorage);
     }
@@ -1090,15 +1112,7 @@ public class IgniteIndexReader implements AutoCloseable {
      * @return Tree traversal info.
      */
     TreeTraversalInfo traverseTree(long rootPageId, String treeName, ItemStorage itemStorage) {
-        Set<Long> innerPageIds = new HashSet<>();
-
-        return traverseTree(
-            rootPageId,
-            treeName,
-            (content, pageId) -> innerPageIds.add(normalizePageId(pageId)),
-            (currPageId, item, link) -> itemStorage.add(item),
-            itemStorage
-        );
+        return traverseTree(rootPageId, treeName, null, null, null, itemStorage);
     }
 
     /**
