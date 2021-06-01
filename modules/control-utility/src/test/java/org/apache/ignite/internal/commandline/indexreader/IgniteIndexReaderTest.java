@@ -948,9 +948,10 @@ public class IgniteIndexReaderTest extends GridCommonAbstractTest {
         A.ensure(nonNull(workDirs) && !workDirs.isEmpty(), "empty workDirs");
 
         try {
-            for (int i = 31; i < 35; i++) {
-                for (File dir : workDirs)
-                    corruptFile(dir, pageId(INDEX_PARTITION, FLAG_IDX, i));
+            for (File dir : workDirs) {
+                IgniteBiTuple<Long, Long> pagesToCorrupt = findPagesForAnyCacheKey(dir, CACHE_GROUP_NAME);
+
+                corruptFile(dir, pagesToCorrupt.get1());
             }
 
             String output = runIndexReader(workDirs.get(0), CACHE_GROUP_NAME, null, true);
