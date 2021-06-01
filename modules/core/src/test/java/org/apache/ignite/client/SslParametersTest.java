@@ -64,15 +64,11 @@ public class SslParametersTest extends GridCommonAbstractTest {
      * @return Client config.
      */
     protected ClientConfiguration getClientConfiguration() {
-        ClientConfiguration cfg = new ClientConfiguration();
-
-        cfg.setAddresses("127.0.0.1:10800");
-
-        cfg.setSslMode(SslMode.REQUIRED);
-
-        cfg.setSslContextFactory(createSslFactory());
-
-        return cfg;
+        return new ClientConfiguration()
+                .setAddresses("127.0.0.1:10800")
+                .setSslMode(SslMode.REQUIRED)
+                .setSslContextFactory(createSslFactory())
+                .setPartitionAwarenessEnabled(false);
     }
 
     /**
