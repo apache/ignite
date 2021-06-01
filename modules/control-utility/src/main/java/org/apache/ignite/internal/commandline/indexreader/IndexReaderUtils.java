@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.commandline.indexreader;
 
-import org.apache.ignite.internal.util.typedef.internal.U;
-
 import java.io.File;
+
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static java.lang.String.format;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;

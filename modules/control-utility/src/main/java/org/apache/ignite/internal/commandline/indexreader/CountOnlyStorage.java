@@ -16,9 +16,9 @@
  */
 package org.apache.ignite.internal.commandline.indexreader;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.util.Iterator;
+
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Imitates item storage, but stores only items count. It can be used when storing each item is not necessary.

@@ -16,11 +16,11 @@
  */
 package org.apache.ignite.internal.commandline.indexreader;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Stores all index items.

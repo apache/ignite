@@ -16,12 +16,12 @@
  */
 package org.apache.ignite.internal.commandline.indexreader;
 
-import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListMetaIO;
-import org.apache.ignite.lang.IgniteBiTuple;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListMetaIO;
+import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
  *

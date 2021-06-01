@@ -74,7 +74,8 @@ public class IgniteIndexReaderFilePageStoreFactoryImpl implements IgniteIndexRea
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public FilePageStore createFilePageStore(int partId, byte type, Collection<Throwable> errors) throws IgniteCheckedException {
+    @Override @Nullable public FilePageStore createFilePageStore(int partId, byte type, Collection<Throwable> errors)
+        throws IgniteCheckedException {
         File file = getFile(dir, partId, null);
 
         return !file.exists() ? null : (FilePageStore)storeFactory.createPageStore(type, file, allocationTracker::add);

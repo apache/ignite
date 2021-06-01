@@ -390,7 +390,9 @@ public class IgniteIndexReader implements AutoCloseable {
 
             Supplier<ItemStorage> itemStorageFactory = checkParts ? LinkStorage::new : CountOnlyStorage::new;
 
-            horizontalScans.set(traverseAllTrees("Scan index trees horizontally", metaTreeRootId, itemStorageFactory, this::horizontalTreeScan));
+            horizontalScans.set(
+                traverseAllTrees("Scan index trees horizontally", metaTreeRootId, itemStorageFactory, this::horizontalTreeScan)
+            );
 
             // Scanning page reuse lists.
             if (pageListMetaPageId != 0)

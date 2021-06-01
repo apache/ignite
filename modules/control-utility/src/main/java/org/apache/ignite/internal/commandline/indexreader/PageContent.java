@@ -16,9 +16,9 @@
  */
 package org.apache.ignite.internal.commandline.indexreader;
 
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-
 import java.util.List;
+
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 
 /**
  * Content of the deserialized page. When content is gained, we can free the page buffer.

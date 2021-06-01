@@ -16,16 +16,18 @@
  */
 package org.apache.ignite.internal.commandline.indexreader;
 
-import org.apache.ignite.internal.util.collection.BitSetIntSet;
-import org.apache.ignite.internal.util.collection.IntSet;
-import org.jetbrains.annotations.NotNull;
-
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import static org.apache.ignite.internal.pagemem.PageIdUtils.*;
+import org.apache.ignite.internal.util.collection.BitSetIntSet;
+import org.apache.ignite.internal.util.collection.IntSet;
+import org.jetbrains.annotations.NotNull;
+
+import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageIndex;
+import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
+import static org.apache.ignite.internal.pagemem.PageIdUtils.partId;
 
 /**
  * Stores links to data pages.
