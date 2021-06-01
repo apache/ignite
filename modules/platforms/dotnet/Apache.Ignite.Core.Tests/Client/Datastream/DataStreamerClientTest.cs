@@ -168,7 +168,6 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 Assert.AreEqual(2, cache[2]);
 
                 streamer.Flush();
-                Thread.Sleep(500);
 
                 Assert.AreEqual(3, cache.GetSize());
                 Assert.AreEqual(3, cache[3]);
