@@ -45,7 +45,6 @@ import org.junit.rules.Timeout;
 import org.mockito.Mockito;
 
 import static java.lang.Thread.State.TIMED_WAITING;
-import static org.apache.ignite.internal.processors.database.DataRegionMetricsSelfTest.NO_OP_METRICS;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -82,10 +81,7 @@ public class IgniteThrottlingUnitTest {
         ctx.add(new GridMetricManager(ctx));
         ctx.add(new PerformanceStatisticsProcessor(ctx));
 
-        DataRegionMetricsImpl metrics = new DataRegionMetricsImpl(new DataRegionConfiguration(),
-            ctx.metric(),
-            ctx.performanceStatistics(),
-            NO_OP_METRICS);
+        DataRegionMetricsImpl metrics = new DataRegionMetricsImpl(new DataRegionConfiguration(), ctx);
 
         when(pageMemory2g.metrics()).thenReturn(metrics);
     }
