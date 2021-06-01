@@ -221,7 +221,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void add(Object... args) {
-            BigDecimal in = (BigDecimal) args[0];
+            BigDecimal in = (BigDecimal)args[0];
 
             if (in == null)
                 return;
@@ -232,7 +232,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
-            DecimalAvg other0 = (DecimalAvg) other;
+            DecimalAvg other0 = (DecimalAvg)other;
 
             sum = sum.add(other0.sum);
             cnt = cnt.add(other0.cnt);
@@ -267,7 +267,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void add(Object... args) {
-            Double in = (Double) args[0];
+            Double in = (Double)args[0];
 
             if (in == null)
                 return;
@@ -278,7 +278,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
-            DoubleAvg other0 = (DoubleAvg) other;
+            DoubleAvg other0 = (DoubleAvg)other;
 
             sum += other0.sum;
             cnt += other0.cnt;
@@ -318,7 +318,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
-            LongCount other0 = (LongCount) other;
+            LongCount other0 = (LongCount)other;
             cnt += other0.cnt;
         }
 
@@ -351,7 +351,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void add(Object... args) {
-            Double in = (Double) args[0];
+            Double in = (Double)args[0];
 
             if (in == null)
                 return;
@@ -362,7 +362,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
-            DoubleSum other0 = (DoubleSum) other;
+            DoubleSum other0 = (DoubleSum)other;
 
             if (other0.empty)
                 return;
@@ -400,7 +400,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void add(Object... args) {
-            Integer in = (Integer) args[0];
+            Integer in = (Integer)args[0];
 
             if (in == null)
                 return;
@@ -411,7 +411,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
-            IntSum other0 = (IntSum) other;
+            IntSum other0 = (IntSum)other;
 
             if (other0.empty)
                 return;
@@ -449,7 +449,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void add(Object... args) {
-            Long in = (Long) args[0];
+            Long in = (Long)args[0];
 
             if (in == null)
                 return;
@@ -460,7 +460,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
-            LongSum other0 = (LongSum) other;
+            LongSum other0 = (LongSum)other;
 
             if (other0.empty)
                 return;
@@ -495,7 +495,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void add(Object... args) {
-            BigDecimal in = (BigDecimal) args[0];
+            BigDecimal in = (BigDecimal)args[0];
 
             if (in == null)
                 return;
@@ -505,7 +505,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
-            DecimalSum other0 = (DecimalSum) other;
+            DecimalSum other0 = (DecimalSum)other;
 
             if (other0.sum == null)
                 return;
@@ -539,7 +539,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void add(Object... args) {
-            Double in = (Double) args[0];
+            Double in = (Double)args[0];
 
             if (in == null)
                 return;
@@ -549,7 +549,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
-            DoubleSumEmptyIsZero other0 = (DoubleSumEmptyIsZero) other;
+            DoubleSumEmptyIsZero other0 = (DoubleSumEmptyIsZero)other;
 
             sum += other0.sum;
         }
@@ -580,7 +580,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void add(Object... args) {
-            Integer in = (Integer) args[0];
+            Integer in = (Integer)args[0];
 
             if (in == null)
                 return;
@@ -590,7 +590,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
-            IntSumEmptyIsZero other0 = (IntSumEmptyIsZero) other;
+            IntSumEmptyIsZero other0 = (IntSumEmptyIsZero)other;
 
             sum += other0.sum;
         }
@@ -622,7 +622,7 @@ public class Accumulators {
         /** */
         /** {@inheritDoc} */
         @Override public void add(Object... args) {
-            Long in = (Long) args[0];
+            Long in = (Long)args[0];
 
             if (in == null)
                 return;
@@ -632,7 +632,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
-            LongSumEmptyIsZero other0 = (LongSumEmptyIsZero) other;
+            LongSumEmptyIsZero other0 = (LongSumEmptyIsZero)other;
 
             sum += other0.sum;
         }
@@ -663,7 +663,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void add(Object... args) {
-            BigDecimal in = (BigDecimal) args[0];
+            BigDecimal in = (BigDecimal)args[0];
 
             if (in == null)
                 return;
@@ -673,7 +673,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
-            DecimalSumEmptyIsZero other0 = (DecimalSumEmptyIsZero) other;
+            DecimalSumEmptyIsZero other0 = (DecimalSumEmptyIsZero)other;
 
             sum = sum == null ? other0.sum : sum.add(other0.sum);
         }
@@ -718,7 +718,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void add(Object... args) {
-            Double in = (Double) args[0];
+            Double in = (Double)args[0];
 
             if (in == null)
                 return;
@@ -729,7 +729,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
-            DoubleMinMax other0 = (DoubleMinMax) other;
+            DoubleMinMax other0 = (DoubleMinMax)other;
 
             if (other0.empty)
                 return;
@@ -866,7 +866,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void add(Object... args) {
-            Integer in = (Integer) args[0];
+            Integer in = (Integer)args[0];
 
             if (in == null)
                 return;
@@ -877,7 +877,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
-            IntMinMax other0 = (IntMinMax) other;
+            IntMinMax other0 = (IntMinMax)other;
 
             if (other0.empty)
                 return;
@@ -926,7 +926,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void add(Object... args) {
-            Long in = (Long) args[0];
+            Long in = (Long)args[0];
 
             if (in == null)
                 return;
@@ -937,7 +937,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
-            LongMinMax other0 = (LongMinMax) other;
+            LongMinMax other0 = (LongMinMax)other;
 
             if (other0.empty)
                 return;
@@ -983,7 +983,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void add(Object... args) {
-            BigDecimal in = (BigDecimal) args[0];
+            BigDecimal in = (BigDecimal)args[0];
 
             if (in == null)
                 return;
@@ -993,7 +993,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
-            DecimalMinMax other0 = (DecimalMinMax) other;
+            DecimalMinMax other0 = (DecimalMinMax)other;
 
             if (other0.val == null)
                 return;
@@ -1042,7 +1042,7 @@ public class Accumulators {
 
         /** {@inheritDoc} */
         @Override public void apply(Accumulator other) {
-            DistinctAccumulator other0 = (DistinctAccumulator) other;
+            DistinctAccumulator other0 = (DistinctAccumulator)other;
 
             set.addAll(other0.set);
         }
