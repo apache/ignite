@@ -109,6 +109,9 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         List<AggregateCall> calls,
         RelDataType rowType
     ) {
+        if (calls.isEmpty())
+            return null;
+
         return new AccumulatorsFactory<>(ctx, type, calls, rowType);
     }
 

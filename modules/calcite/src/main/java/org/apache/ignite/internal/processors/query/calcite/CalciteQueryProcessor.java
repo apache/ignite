@@ -21,6 +21,8 @@ import java.util.List;
 import org.apache.calcite.config.Lex;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.prepare.CalciteCatalogReader;
+import org.apache.calcite.rel.core.Aggregate;
+import org.apache.calcite.rel.hint.HintStrategyTable;
 import org.apache.calcite.sql.fun.SqlLibrary;
 import org.apache.calcite.sql.fun.SqlLibraryOperatorTableFactory;
 import org.apache.calcite.sql.parser.SqlParser;
@@ -77,7 +79,14 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             // so it's better to disable such rewriting right now
             // TODO: remove this after IGNITE-14277
             .withInSubQueryThreshold(Integer.MAX_VALUE)
-            .withDecorrelationEnabled(true))
+            .withDecorrelationEnabled(true)
+            .withHintStrategyTable(
+                HintStrategyTable.builder()
+                    .hintStrategy("DISABLE_RULE", (hint, rel) -> true)
+                    .hintStrategy("EXPAND_DISTINCT_AGG", (hint, rel) -> rel instanceof Aggregate)
+                    .build()
+            )
+        )
         .parserConfig(
             SqlParser.config()
                 .withParserFactory(IgniteSqlParserImpl.FACTORY)

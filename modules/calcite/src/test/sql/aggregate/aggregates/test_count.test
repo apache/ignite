@@ -19,13 +19,15 @@ CREATE TABLE integers(i INTEGER);
 statement ok
 INSERT INTO integers VALUES (1), (2), (NULL)
 
-query IIII
-SELECT COUNT(*), COUNT(1), COUNT(i), COUNT(COALESCE(i, 1)) FROM integers
+query IIIIII
+SELECT COUNT(*), COUNT(1), COUNT(i), COUNT(COALESCE(i, 1)), COUNT(DISTINCT i), COUNT(DISTINCT 1) FROM integers
 ----
 3
 3
 2
 3
+2
+1
 
 # ordered aggregates are not supported
 statement error
