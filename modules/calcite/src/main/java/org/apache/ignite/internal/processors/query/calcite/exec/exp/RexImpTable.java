@@ -1688,10 +1688,12 @@ public class RexImpTable {
                 return Expressions.call(BuiltInMethod.LOCAL_TIME.method, root);
             else if (op == SYSTEM_RANGE) {
                 if (call.getOperands().size() == 2)
-                    return createTableFunctionImplementor(IgniteBuiltInMethod.SYSTEM_RANGE2.method).implement(translator, call, NullAs.NULL);
+                    return createTableFunctionImplementor(IgniteBuiltInMethod.SYSTEM_RANGE2.method)
+                        .implement(translator, call, NullAs.NULL);
 
                 if (call.getOperands().size() == 3)
-                    return createTableFunctionImplementor(IgniteBuiltInMethod.SYSTEM_RANGE3.method).implement(translator, call, NullAs.NULL);
+                    return createTableFunctionImplementor(IgniteBuiltInMethod.SYSTEM_RANGE3.method)
+                        .implement(translator, call, NullAs.NULL);
             }
 
             throw new AssertionError("unknown function " + op);
@@ -2092,9 +2094,9 @@ public class RexImpTable {
         @Override public RexToLixTranslator.Result implement(final RexToLixTranslator translator,
             final RexCall call, final List<RexToLixTranslator.Result> arguments) {
             final List<Expression> argIsNullList = new ArrayList<>();
-            for (RexToLixTranslator.Result result : arguments) {
+            for (RexToLixTranslator.Result result : arguments)
                 argIsNullList.add(result.isNullVariable);
-            }
+
             final List<Expression> nullAsTrue =
                 arguments.stream()
                     .map(result ->
@@ -2152,9 +2154,9 @@ public class RexImpTable {
         @Override public RexToLixTranslator.Result implement(final RexToLixTranslator translator,
             final RexCall call, final List<RexToLixTranslator.Result> arguments) {
             final List<Expression> argIsNullList = new ArrayList<>();
-            for (RexToLixTranslator.Result result : arguments) {
+            for (RexToLixTranslator.Result result : arguments)
                 argIsNullList.add(result.isNullVariable);
-            }
+
             final List<Expression> nullAsFalse =
                 arguments.stream()
                     .map(result ->
@@ -2545,7 +2547,8 @@ public class RexImpTable {
         final NullPolicy nullPolicy,
         final boolean harmonize) {
         return (translator, call, nullAs) -> {
-            final RexImpTable.RexCallImplementor rexCallImplementor = createRexCallImplementor(implementor, nullPolicy, harmonize);
+            final RexImpTable.RexCallImplementor rexCallImplementor
+                = createRexCallImplementor(implementor, nullPolicy, harmonize);
             final List<RexToLixTranslator.Result> arguments = translator.getCallOperandResult(call);
             assert arguments != null;
             final RexToLixTranslator.Result result = rexCallImplementor.implement(translator, call, arguments);
