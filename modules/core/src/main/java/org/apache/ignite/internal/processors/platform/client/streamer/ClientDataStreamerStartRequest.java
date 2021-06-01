@@ -92,9 +92,13 @@ public class ClientDataStreamerStartRequest extends ClientDataStreamerRequest {
                 ctx.kernalContext().grid().<KeyCacheObject, CacheObject>dataStreamer(cacheName);
 
         try {
-            // Don't use thread buffer for a one-off streamer operation.
             boolean close = (flags & CLOSE) != 0;
             boolean keepBinary = (flags & KEEP_BINARY) != 0;
+            boolean flush = (flags & FLUSH) != 0;
+            boolean allowOverwrite = (flags & ALLOW_OVERWRITE) != 0;
+            boolean skipStore = (flags & SKIP_STORE) != 0;
+
+            // Don't use thread buffer for a one-off streamer operation.
             boolean useThreadBuffer = !close;
 
             if (perNodeBufferSize >= 0)
@@ -105,8 +109,8 @@ public class ClientDataStreamerStartRequest extends ClientDataStreamerRequest {
             if (perThreadBufferSize >= 0 && useThreadBuffer)
                 dataStreamer.perThreadBufferSize(perThreadBufferSize);
 
-            dataStreamer.allowOverwrite((flags & ALLOW_OVERWRITE) != 0);
-            dataStreamer.skipStore((flags & SKIP_STORE) != 0);
+            dataStreamer.allowOverwrite(allowOverwrite);
+            dataStreamer.skipStore(skipStore);
             dataStreamer.keepBinary(keepBinary);
 
             if (receiverObj != null)
@@ -115,7 +119,7 @@ public class ClientDataStreamerStartRequest extends ClientDataStreamerRequest {
             if (entries != null)
                 dataStreamer.addDataInternal(entries, useThreadBuffer);
 
-            if ((flags & FLUSH) != 0)
+            if (flush)
                 dataStreamer.flush();
 
             if (close) {
