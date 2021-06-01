@@ -55,6 +55,11 @@ namespace Apache.Ignite.Core.Client
         public const bool DefaultTcpNoDelay = true;
 
         /// <summary>
+        /// Default value of <see cref="EnablePartitionAwareness" /> property.
+        /// </summary>
+        public const bool DefaultEnablePartitionAwareness = true;
+
+        /// <summary>
         /// Default socket timeout.
         /// </summary>
         public static readonly TimeSpan DefaultSocketTimeout = TimeSpan.FromMilliseconds(5000);
@@ -72,7 +77,7 @@ namespace Apache.Ignite.Core.Client
             TcpNoDelay = DefaultTcpNoDelay;
             SocketTimeout = DefaultSocketTimeout;
             Logger = new ConsoleLogger();
-            EnablePartitionAwareness = true;
+            EnablePartitionAwareness = DefaultEnablePartitionAwareness;
         }
 
         /// <summary>
@@ -224,6 +229,7 @@ namespace Apache.Ignite.Core.Client
         /// <para />
         /// When false: only one connection is established at a given moment to a random server node.
         /// </summary>
+        [DefaultValue(DefaultEnablePartitionAwareness)]
         public bool EnablePartitionAwareness { get; set; }
 
         /// <summary>
