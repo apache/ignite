@@ -300,7 +300,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     private volatile long lastRingMsgSentTime;
 
     /** Time of last failed message. */
-    private volatile long lastRingMsgFailTime;
+    private volatile long lastRingMsgSendFailTime;
 
     /** */
     private volatile boolean nodeCompactRepresentationSupported =
@@ -398,7 +398,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         lastRingMsgSentTime = 0;
 
-        lastRingMsgFailTime = 0;
+        lastRingMsgSendFailTime = 0;
 
         // Foundumental timeout value for actions related to connection check.
         connCheckTick = effectiveExchangeTimeout() / 3;
@@ -3877,9 +3877,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 if (!sent) {
                     if (sndState == null && spi.getEffectiveConnectionRecoveryTimeout() > 0) {
-                        lastRingMsgFailTime = System.nanoTime();
+                        lastRingMsgSendFailTime = System.nanoTime();
 
-                        sndState = new CrossRingMessageSendState(lastRingMsgFailTime);
+                        sndState = new CrossRingMessageSendState(lastRingMsgSendFailTime);
                     }
                     else if (sndState != null && sndState.checkTimeout()) {
                         segmentLocalNodeOnSendFail(failedNodes);
@@ -6523,7 +6523,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      */
     private void checkOutgoingConnection() {
         // Skip if there is no msg sending failure or wait for ping comming after the failure.
-        if (lastRingMsgFailTime == 0 || lastRingMsgReceivedTime < lastRingMsgFailTime + U.millisToNanos(connCheckInterval))
+        if (lastRingMsgSendFailTime == 0 || lastRingMsgReceivedTime < lastRingMsgSendFailTime + U.millisToNanos(connCheckInterval))
             return;
 
         synchronized (mux) {
@@ -6587,7 +6587,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
     /** Fixates time of last sent message. */
     private void updateLastSentMessageTime() {
-        lastRingMsgFailTime = 0;
+        lastRingMsgSendFailTime = 0;
 
         lastRingMsgSentTime = System.nanoTime();
     }
