@@ -16,13 +16,11 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.sql.fun;
 
-import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlFunctionCategory;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperatorBinding;
 import org.apache.calcite.sql.SqlTableFunction;
-import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.ReturnTypes;
 import org.apache.calcite.sql.type.SqlReturnTypeInference;
@@ -48,21 +46,6 @@ public class SqlSystemRangeFunction extends SqlFunction implements SqlTableFunct
                 OperandTypes.family(SqlTypeFamily.NUMERIC, SqlTypeFamily.NUMERIC, SqlTypeFamily.NUMERIC)
             ),
             SqlFunctionCategory.USER_DEFINED_TABLE_FUNCTION);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec) {
-        final SqlWriter.Frame frame = writer.startFunCall(getName());
-        call.operand(0).unparse(writer, leftPrec, rightPrec);
-        writer.sep(", ");
-        call.operand(1).unparse(writer, leftPrec, rightPrec);
-
-        if (3 == call.operandCount()) {
-            writer.sep(", ");
-            call.operand(2).unparse(writer, leftPrec, rightPrec);
-        }
-
-        writer.endFunCall(frame);
     }
 
     /** {@inheritDoc} */
