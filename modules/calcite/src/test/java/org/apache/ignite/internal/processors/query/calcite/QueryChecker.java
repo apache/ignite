@@ -356,7 +356,7 @@ public abstract class QueryChecker {
      * @param act Actual collection.
      */
     private void assertEqualsCollections(Collection<?> exp, Collection<?> act) {
-        assertEquals("Collections sizes are not equal:", exp.size(), act.size());
+        assertEquals("Collections sizes are not equal:\nExpected: " + exp + "\nActual:   " + act, exp.size(), act.size());
 
         Iterator<?> it1 = exp.iterator();
         Iterator<?> it2 = act.iterator();

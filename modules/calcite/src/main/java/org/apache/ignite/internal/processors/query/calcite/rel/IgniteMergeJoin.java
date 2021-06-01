@@ -18,11 +18,8 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -32,6 +29,7 @@ import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
+import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
@@ -40,6 +38,7 @@ import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.externalize.RelInputEx;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
@@ -47,9 +46,11 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteC
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
-import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.createCollation;
-import static org.apache.ignite.internal.processors.query.calcite.util.Commons.isPrefix;
-import static org.apache.ignite.internal.processors.query.calcite.util.Commons.maxPrefix;
+import static org.apache.calcite.rel.RelCollations.EMPTY;
+import static org.apache.calcite.rel.RelCollations.containsOrderless;
+import static org.apache.calcite.rel.core.JoinRelType.FULL;
+import static org.apache.calcite.rel.core.JoinRelType.LEFT;
+import static org.apache.calcite.rel.core.JoinRelType.RIGHT;
 
 /** */
 public class IgniteMergeJoin extends AbstractIgniteJoin {
@@ -114,7 +115,7 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
     @Override public Join copy(RelTraitSet traitSet, RexNode condition, RelNode left, RelNode right,
         JoinRelType joinType, boolean semiJoinDone) {
         return new IgniteMergeJoin(getCluster(), traitSet, left, right, condition, variablesSet, joinType,
-            leftCollation, rightCollation);
+            left.getTraitSet().getCollation(), right.getTraitSet().getCollation());
     }
 
     /** {@inheritDoc} */
@@ -136,22 +137,25 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
         RelTraitSet left = inputTraits.get(0), right = inputTraits.get(1);
         RelCollation leftCollation = TraitUtils.collation(left), rightCollation = TraitUtils.collation(right);
 
-        List<Integer> newLeftCollation, newRightCollation;
+        if (containsOrderless(leftCollation, joinInfo.leftKeys)) // preserve left collation
+            rightCollation = leftCollation.apply(buildTransposeMapping(true));
 
-        if (isPrefix(leftCollation.getKeys(), joinInfo.leftKeys)) // preserve left collation
-            rightCollation = leftCollation.apply(buildProjectionMapping(true));
-
-        else if (isPrefix(rightCollation.getKeys(), joinInfo.rightKeys))// preserve right collation
-            leftCollation = rightCollation.apply(buildProjectionMapping(false));
+        else if (containsOrderless(rightCollation, joinInfo.rightKeys)) // preserve right collation
+            leftCollation = rightCollation.apply(buildTransposeMapping(false));
 
         else { // generate new collations
             leftCollation = RelCollations.of(joinInfo.leftKeys);
             rightCollation = RelCollations.of(joinInfo.rightKeys);
         }
 
+        RelCollation desiredCollation = leftCollation;
+
+        if (joinType == RIGHT || joinType == FULL)
+            desiredCollation = RelCollations.EMPTY;
+
         return ImmutableList.of(
             Pair.of(
-                nodeTraits.replace(leftCollation),
+                nodeTraits.replace(desiredCollation),
                 ImmutableList.of(
                     left.replace(leftCollation),
                     right.replace(rightCollation)
@@ -162,74 +166,82 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
 
     /** {@inheritDoc} */
     @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughCollation(
-        RelTraitSet nodeTraits,
+        RelTraitSet required,
         List<RelTraitSet> inputTraits
     ) {
-        RelCollation collation = TraitUtils.collation(nodeTraits);
-        RelTraitSet left = inputTraits.get(0), right = inputTraits.get(1);
+        RelCollation collation = TraitUtils.collation(required);
+        RelTraitSet left = inputTraits.get(0);
+        RelTraitSet right = inputTraits.get(1);
 
-        int rightOff = this.left.getRowType().getFieldCount();
+        if (joinType == FULL)
+            return passThroughDefaultCollation(required, left, right);
 
-        Map<Integer, Integer> rightToLeft = joinInfo.pairs().stream()
-            .collect(Collectors.toMap(p -> p.target, p -> p.source));
+        int leftInputFieldCount = this.left.getRowType().getFieldCount();
 
-        List<Integer> collationLeftPrj = new ArrayList<>();
+        List<Integer> reqKeys = RelCollations.ordinals(collation);
+        List<Integer> leftKeys = joinInfo.leftKeys.toIntegerList();
+        List<Integer> rightKeys = joinInfo.rightKeys.incr(leftInputFieldCount).toIntegerList();
 
-        for (Integer c : collation.getKeys()) {
-            collationLeftPrj.add(
-                c >= rightOff ? rightToLeft.get(c - rightOff) : c
-            );
+        ImmutableBitSet reqKeySet = ImmutableBitSet.of(reqKeys);
+        ImmutableBitSet leftKeySet = ImmutableBitSet.of(joinInfo.leftKeys);
+        ImmutableBitSet rightKeySet = ImmutableBitSet.of(rightKeys);
+
+        RelCollation nodeCollation;
+        RelCollation leftCollation;
+        RelCollation rightCollation;
+
+        if (reqKeySet.equals(leftKeySet)) {
+            if (joinType == RIGHT)
+                return passThroughDefaultCollation(required, left, right);
+
+            nodeCollation = collation;
+            leftCollation = collation;
+            rightCollation = collation.apply(buildTransposeMapping(true));
         }
+        else if (containsOrderless(leftKeys, collation)) {
+            if (joinType == RIGHT)
+                return passThroughDefaultCollation(required, left, right);
 
-        boolean preserveNodeCollation = false;
-
-        List<Integer> newLeftCollation, newRightCollation;
-
-        Map<Integer, Integer> leftToRight = joinInfo.pairs().stream()
-            .collect(Collectors.toMap(p -> p.source, p -> p.target));
-
-        if (isPrefix(collationLeftPrj, joinInfo.leftKeys)) { // preserve collation
-            newLeftCollation = new ArrayList<>();
-            newRightCollation = new ArrayList<>();
-
-            int ind = 0;
-            for (Integer c : collation.getKeys()) {
-                if (c < rightOff) {
-                    newLeftCollation.add(c);
-
-                    if (ind < joinInfo.leftKeys.size())
-                        newRightCollation.add(leftToRight.get(c));
-                }
-                else {
-                    c -= rightOff;
-                    newRightCollation.add(c);
-
-                    if (ind < joinInfo.leftKeys.size())
-                        newLeftCollation.add(rightToLeft.get(c));
-                }
-
-                ind++;
-            }
-
-            preserveNodeCollation = true;
+            // if sort keys are subset of left join keys, we can extend collations to make sure all join
+            // keys are sorted.
+            nodeCollation = collation;
+            leftCollation = extendCollation(collation, leftKeys);
+            rightCollation = leftCollation.apply(buildTransposeMapping(true));
         }
-        else { // generate new collations
-            newLeftCollation = maxPrefix(collationLeftPrj, joinInfo.leftKeys);
+        else if (containsOrderless(collation, leftKeys) && reqKeys.stream().allMatch(i -> i < leftInputFieldCount)) {
+            if (joinType == RIGHT)
+                return passThroughDefaultCollation(required, left, right);
 
-            Set<Integer> tail = new HashSet<>(joinInfo.leftKeys);
-
-            tail.removeAll(newLeftCollation);
-
-            newLeftCollation.addAll(tail);
-
-            newRightCollation = newLeftCollation.stream().map(leftToRight::get).collect(Collectors.toList());
+            // if sort keys are superset of left join keys, and left join keys is prefix of sort keys
+            // (order not matter), also sort keys are all from left join input.
+            nodeCollation = collation;
+            leftCollation = collation;
+            rightCollation = leftCollation.apply(buildTransposeMapping(true));
         }
+        else if (reqKeySet.equals(rightKeySet)) {
+            if (joinType == LEFT)
+                return passThroughDefaultCollation(required, left, right);
 
-        RelCollation leftCollation = createCollation(newLeftCollation);
-        RelCollation rightCollation = createCollation(newRightCollation);
+            nodeCollation = collation;
+            rightCollation = RelCollations.shift(collation, -leftInputFieldCount);
+            leftCollation = rightCollation.apply(buildTransposeMapping(false));
+        }
+        else if (containsOrderless(rightKeys, collation)) {
+            if (joinType == LEFT)
+                return passThroughDefaultCollation(required, left, right);
+
+            nodeCollation = collation;
+            rightCollation = RelCollations.shift(extendCollation(collation, rightKeys), -leftInputFieldCount);
+            leftCollation = rightCollation.apply(buildTransposeMapping(false));
+        }
+        else {
+            nodeCollation = EMPTY;
+            leftCollation = RelCollations.of(joinInfo.leftKeys);
+            rightCollation = RelCollations.of(joinInfo.rightKeys);
+        }
 
         return Pair.of(
-            nodeTraits.replace(preserveNodeCollation ? collation : leftCollation),
+            required.replace(nodeCollation),
             ImmutableList.of(
                 left.replace(leftCollation),
                 right.replace(rightCollation)
@@ -276,5 +288,37 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
      */
     public RelCollation rightCollation() {
         return rightCollation;
+    }
+
+    /** Creates pair with default collation for parent in simple collation for children nodes. */
+    private Pair<RelTraitSet, List<RelTraitSet>> passThroughDefaultCollation(
+        RelTraitSet nodeTraits,
+        RelTraitSet leftInputTraits,
+        RelTraitSet rightInputTraits
+    ) {
+        return Pair.of(
+            nodeTraits.replace(EMPTY),
+            ImmutableList.of(
+                leftInputTraits.replace(RelCollations.of(joinInfo.leftKeys)),
+                rightInputTraits.replace(RelCollations.of(joinInfo.rightKeys))
+            )
+        );
+    }
+
+    /**
+     * This function extends collation by appending new collation fields defined on keys.
+     */
+    private static RelCollation extendCollation(RelCollation collation, List<Integer> keys) {
+        List<RelFieldCollation> fieldsForNewCollation = new ArrayList<>(keys.size());
+        fieldsForNewCollation.addAll(collation.getFieldCollations());
+
+        ImmutableBitSet keysBitset = ImmutableBitSet.of(keys);
+        ImmutableBitSet colKeysBitset = ImmutableBitSet.of(collation.getKeys());
+        ImmutableBitSet exceptBitset = keysBitset.except(colKeysBitset);
+
+        for (Integer i : exceptBitset)
+            fieldsForNewCollation.add(new RelFieldCollation(i));
+
+        return RelCollations.of(fieldsForNewCollation);
     }
 }

@@ -90,7 +90,7 @@ public abstract class AbstractIgniteJoin extends Join implements TraitsAwareIgni
         // TODO set NullDirection.LAST for insufficient fields instead of erasing collation.
         if (joinType == RIGHT || joinType == JoinRelType.FULL) {
             for (RelFieldCollation field : collation.getFieldCollations()) {
-                if (RelFieldCollation.NullDirection.LAST != field.nullDirection) {
+                if (RelFieldCollation.NullDirection.LAST.nullComparison != field.nullDirection.nullComparison) {
                     collation = RelCollations.EMPTY;
                     break;
                 }
@@ -143,8 +143,8 @@ public abstract class AbstractIgniteJoin extends Join implements TraitsAwareIgni
         IgniteDistribution leftDistr = TraitUtils.distribution(left);
         IgniteDistribution rightDistr = TraitUtils.distribution(right);
 
-        IgniteDistribution left2rightProjectedDistr = leftDistr.apply(buildProjectionMapping(true));
-        IgniteDistribution right2leftProjectedDistr = rightDistr.apply(buildProjectionMapping(false));
+        IgniteDistribution left2rightProjectedDistr = leftDistr.apply(buildTransposeMapping(true));
+        IgniteDistribution right2leftProjectedDistr = rightDistr.apply(buildTransposeMapping(false));
 
         RelTraitSet outTraits;
         RelTraitSet leftTraits;
@@ -223,7 +223,7 @@ public abstract class AbstractIgniteJoin extends Join implements TraitsAwareIgni
             collation = RelCollations.EMPTY;
         else if (joinType == RIGHT || joinType == JoinRelType.FULL) {
             for (RelFieldCollation field : collation.getFieldCollations()) {
-                if (RelFieldCollation.NullDirection.LAST != field.nullDirection) {
+                if (RelFieldCollation.NullDirection.LAST.nullComparison != field.nullDirection.nullComparison) {
                     collation = RelCollations.EMPTY;
                     break;
                 }
@@ -301,7 +301,7 @@ public abstract class AbstractIgniteJoin extends Join implements TraitsAwareIgni
     }
 
     /** Creates mapping from left join keys to the right and vice versa with regards to {@code left2Right}. */
-    protected Mappings.TargetMapping buildProjectionMapping(boolean left2Right) {
+    protected Mappings.TargetMapping buildTransposeMapping(boolean left2Right) {
         ImmutableIntList sourceKeys = left2Right ? joinInfo.leftKeys : joinInfo.rightKeys;
         ImmutableIntList targetKeys = left2Right ? joinInfo.rightKeys : joinInfo.leftKeys;
 

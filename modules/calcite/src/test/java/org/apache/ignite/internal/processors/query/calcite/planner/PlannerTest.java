@@ -1327,61 +1327,6 @@ public class PlannerTest extends AbstractPlannerTest {
 
     /** */
     @Test
-    public void testMergeJoin() throws Exception {
-        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
-
-        TestTable emp = new TestTable(
-            new RelDataTypeFactory.Builder(f)
-                .add("ID", f.createJavaType(Integer.class))
-                .add("NAME", f.createJavaType(String.class))
-                .add("DEPTNO", f.createJavaType(Integer.class))
-                .build()) {
-
-            @Override public IgniteDistribution distribution() {
-                return IgniteDistributions.broadcast();
-            }
-        };
-
-        emp.addIndex(new IgniteIndex(RelCollations.of(ImmutableIntList.of(1, 2)), "emp_idx", null, emp));
-
-        TestTable dept = new TestTable(
-            new RelDataTypeFactory.Builder(f)
-                .add("DEPTNO", f.createJavaType(Integer.class))
-                .add("NAME", f.createJavaType(String.class))
-                .build()) {
-
-            @Override public IgniteDistribution distribution() {
-                return IgniteDistributions.broadcast();
-            }
-        };
-
-        dept.addIndex(new IgniteIndex(RelCollations.of(ImmutableIntList.of(1, 0)), "dep_idx", null, dept));
-
-        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
-
-        publicSchema.addTable("EMP", emp);
-        publicSchema.addTable("DEPT", dept);
-
-        SchemaPlus schema = createRootSchema(false)
-            .add("PUBLIC", publicSchema);
-
-        String sql = "select * from dept d join emp e on d.deptno = e.deptno and e.name = d.name order by e.name, d.deptno";
-
-        IgniteRel phys = physicalPlan(sql, publicSchema);
-
-        assertNotNull(phys);
-        assertEquals("" +
-                "IgniteMergeJoin(condition=[AND(=($0, $4), =($3, $1))], joinType=[inner], leftCollation=[[0, 1]], " +
-                "rightCollation=[[2, 1]])\n" +
-                "  IgniteIndexScan(table=[[PUBLIC, DEPT]], index=[dep_idx])\n" +
-                "  IgniteIndexScan(table=[[PUBLIC, EMP]], index=[emp_idx])\n",
-            RelOptUtil.toString(phys));
-
-        checkSplitAndSerialization(phys, publicSchema);
-    }
-
-    /** */
-    @Test
     public void testMergeJoinIsNotAppliedForNonEquiJoin() throws Exception {
         IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 

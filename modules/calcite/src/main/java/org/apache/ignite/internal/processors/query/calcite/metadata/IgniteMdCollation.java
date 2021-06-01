@@ -548,9 +548,9 @@ public class IgniteMdCollation implements MetadataHandler<BuiltInMetadata.Collat
             case FULL:
                 for (RelCollation collation : leftCollations) {
                     for (RelFieldCollation field : collation.getFieldCollations()) {
-                        if (!(RelFieldCollation.NullDirection.LAST == field.nullDirection)) {
+                        if (!(RelFieldCollation.NullDirection.LAST.nullComparison ==
+                            field.nullDirection.nullComparison))
                             return ImmutableList.of();
-                        }
                     }
                 }
                 return leftCollations;

@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelFieldCollation;
@@ -247,8 +248,11 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
             boolean descending = idxDesc.descending(idxField);
             int fieldIdx = fieldDesc.fieldIndex();
 
-            RelFieldCollation collation = new RelFieldCollation(fieldIdx,
-                descending ? RelFieldCollation.Direction.DESCENDING : RelFieldCollation.Direction.ASCENDING);
+            RelFieldCollation collation = new RelFieldCollation(
+                fieldIdx,
+                descending ? RelFieldCollation.Direction.DESCENDING : RelFieldCollation.Direction.ASCENDING,
+                RelFieldCollation.NullDirection.FIRST
+            );
 
             collations.add(collation);
         }
