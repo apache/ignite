@@ -66,7 +66,7 @@ public class PageEvictionMetricTest extends PageEvictionAbstractTest {
         IgniteEx ignite = startGrid(0);
 
         DataRegionMetricsImpl metrics =
-            ignite.context().cache().context().database().dataRegion(null).memoryMetrics();
+            ignite.context().cache().context().database().dataRegion(null).metrics();
 
         metrics.enableMetrics();
 

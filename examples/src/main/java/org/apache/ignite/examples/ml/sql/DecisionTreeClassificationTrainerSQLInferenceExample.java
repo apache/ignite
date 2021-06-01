@@ -118,8 +118,8 @@ public class DecisionTreeClassificationTrainerSQLInferenceExample {
                 System.out.println("Inference...");
                 try (QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery("select " +
                     "survived as truth, " +
-                    "predict('titanic_model_tree', pclass, age, sibsp, parch, fare, case sex when 'male' then 1 else 0 end) as prediction " +
-                    "from titanic_train"))) {
+                    "predict('titanic_model_tree', pclass, age, sibsp, parch, fare, case sex when 'male' then 1 else 0 end) as prediction" +
+                    " from titanic_train"))) {
                     // Print inference result.
                     System.out.println("| Truth | Prediction |");
                     System.out.println("|--------------------|");

@@ -128,7 +128,8 @@ public class GridCachePartitionsStateValidatorSelfTest extends GridCommonAbstrac
         GridDhtPartitionsStateValidator validator = new GridDhtPartitionsStateValidator(cctxMock);
 
         // (partId, (nodeId, updateCounter))
-        Map<Integer, Map<UUID, Long>> result = validator.validatePartitionsUpdateCounters(topologyMock, messages, Sets.newHashSet(ignoreNode));
+        Map<Integer, Map<UUID, Long>> result =
+            validator.validatePartitionsUpdateCounters(topologyMock, messages, Sets.newHashSet(ignoreNode));
 
         // Check that validation result contains all necessary information.
         Assert.assertEquals(2, result.size());

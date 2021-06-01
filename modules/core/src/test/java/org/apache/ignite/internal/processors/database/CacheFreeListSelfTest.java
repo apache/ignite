@@ -52,7 +52,6 @@ import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -63,8 +62,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-
-import static org.apache.ignite.internal.processors.database.DataRegionMetricsSelfTest.NO_OP_METRICS;
 
 /**
  *
@@ -485,13 +482,14 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
     /**
      * @return Page memory.
      */
-    protected PageMemory createPageMemory(int pageSize, DataRegionConfiguration plcCfg) throws Exception {
-        PageMemory pageMem = new PageMemoryNoStoreImpl(log,
+    protected PageMemory createPageMemory(int pageSize, DataRegionConfiguration plcCfg) {
+        PageMemory pageMem = new PageMemoryNoStoreImpl(
+            log,
             new UnsafeMemoryProvider(log),
             null,
             pageSize,
             plcCfg,
-            new LongAdderMetric("NO_OP", null),
+            new DataRegionMetricsImpl(plcCfg, new GridTestKernalContext(log())),
             true);
 
         pageMem.start();
@@ -520,17 +518,13 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
         ctx.add(new GridMetricManager(ctx));
         ctx.add(new PerformanceStatisticsProcessor(ctx));
 
-        DataRegionMetricsImpl regionMetrics = new DataRegionMetricsImpl(plcCfg,
-            ctx.metric(),
-            ctx.performanceStatistics(),
-            NO_OP_METRICS);
+        DataRegionMetricsImpl regionMetrics = new DataRegionMetricsImpl(plcCfg, ctx);
 
         DataRegion dataRegion = new DataRegion(pageMem, plcCfg, regionMetrics, new NoOpPageEvictionTracker());
 
         return new CacheFreeList(
             1,
             "freelist",
-            regionMetrics,
             dataRegion,
             null,
             metaPageId,
@@ -726,7 +720,7 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public int valueBytesLength(CacheObjectContext ctx) throws IgniteCheckedException {
+        @Override public int valueBytesLength(CacheObjectContext ctx) {
             return data.length;
         }
 

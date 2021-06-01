@@ -5284,7 +5284,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 else if (res.resultType() == ResultType.LOCKED) {
                     entry.unlockEntry();
 
-                    IgniteInternalFuture<?> lockFuture = cctx.kernalContext().coordinators().waitForLock(cctx, mvccVer, res.resultVersion());
+                    IgniteInternalFuture<?> lockFuture =
+                        cctx.kernalContext().coordinators().waitForLock(cctx, mvccVer, res.resultVersion());
 
                     lockFuture.listen(this);
 
@@ -7022,7 +7023,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @return Common serialization error.
      */
     private static IgniteTxSerializationCheckedException serializationError() {
-        return new IgniteTxSerializationCheckedException("Cannot serialize transaction due to write conflict (transaction is marked for rollback)");
+        return new IgniteTxSerializationCheckedException(
+            "Cannot serialize transaction due to write conflict (transaction is marked for rollback)"
+        );
     }
 
     /**

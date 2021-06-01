@@ -171,7 +171,10 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
     @Test
     public void testRecoveringOnCheckpointBeginFail() throws Exception {
         // Fail to write checkpoint start marker tmp file at the second checkpoint. Pass only initial checkpoint.
-        ioFactory = new FilteringFileIOFactory("START.bin" + FilePageStoreManager.TMP_SUFFIX, new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), 20));
+        ioFactory = new FilteringFileIOFactory(
+            "START.bin" + FilePageStoreManager.TMP_SUFFIX,
+            new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), 20)
+        );
 
         final IgniteEx grid = startGrid(0);
         grid.cluster().active(true);
@@ -285,7 +288,10 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
     @Test
     public void testRecoveringOnWALWritingFail2() throws Exception {
         // Fail somewhere on the second wal segment.
-        ioFactory = new FilteringFileIOFactory(".wal", new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), (long) (1.5 * WAL_SEGMENT_SIZE)));
+        ioFactory = new FilteringFileIOFactory(
+            ".wal",
+            new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), (long) (1.5 * WAL_SEGMENT_SIZE))
+        );
 
         System.setProperty(IGNITE_WAL_MMAP, "false");
 

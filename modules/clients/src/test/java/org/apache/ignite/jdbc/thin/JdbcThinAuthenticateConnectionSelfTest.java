@@ -69,11 +69,9 @@ public class JdbcThinAuthenticateConnectionSelfTest extends JdbcThinAbstractSelf
 
         grid(0).cluster().active(true);
 
-        AutoCloseable secCtxsHnd = withSecurityContextOnAllNodes(authenticate(grid(0), "ignite", "ignite"));
-
-        grid(0).context().security().createUser("another_user", "passwd".toCharArray());
-
-        secCtxsHnd.close();
+        try (AutoCloseable ignored = withSecurityContextOnAllNodes(authenticate(grid(0), "ignite", "ignite"))) {
+            grid(0).context().security().createUser("another_user", "passwd".toCharArray());
+        }
     }
 
     /** {@inheritDoc} */
