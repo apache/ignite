@@ -24,10 +24,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cdc.AbstractChangeDataCaptureTest;
 import org.apache.ignite.cdc.ChangeDataCaptureConfiguration;
 import org.apache.ignite.cdc.ChangeDataCaptureConsumer;
 import org.apache.ignite.cdc.ChangeDataCaptureEvent;
-import org.apache.ignite.cdc.ChangeDataCaptureSelfTest.ChangeEventType;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -37,20 +37,17 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.cdc.ChangeDataCaptureSelfTest.ChangeEventType.DELETE;
-import static org.apache.ignite.cdc.ChangeDataCaptureSelfTest.ChangeEventType.UPDATE;
-import static org.apache.ignite.cdc.ChangeDataCaptureSelfTest.WAL_ARCHIVE_TIMEOUT;
+import static org.apache.ignite.cdc.AbstractChangeDataCaptureTest.ChangeEventType.DELETE;
+import static org.apache.ignite.cdc.AbstractChangeDataCaptureTest.ChangeEventType.UPDATE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheAbstractTransformWriteThroughSelfTest.KEYS_CNT;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
-public class SQLChangeDataCaptureTest extends GridCommonAbstractTest {
+public class SQLChangeDataCaptureTest extends AbstractChangeDataCaptureTest {
     /** */
     private static final String JOHN = "John Connor";
 
@@ -85,11 +82,6 @@ public class SQLChangeDataCaptureTest extends GridCommonAbstractTest {
                 .setPersistenceEnabled(true)));
 
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        cleanPersistenceDir();
     }
 
     /** Simplest CDC test. */

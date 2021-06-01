@@ -25,8 +25,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cdc.ChangeDataCaptureSelfTest.TestCDCConsumer;
-import org.apache.ignite.cdc.ChangeDataCaptureSelfTest.User;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -63,6 +61,9 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 public class ChangeDataCaptureOrderTest extends AbstractChangeDataCaptureTest {
     /** */
     public static final String FOR_OTHER_DR_ID = "for-other-dr-id";
+
+    /** */
+    public static final byte DFLT_DR_ID = 1;
 
     /** */
     public static final byte OTHER_DR_ID = 2;
@@ -112,10 +113,7 @@ public class ChangeDataCaptureOrderTest extends AbstractChangeDataCaptureTest {
 
         IgniteEx ign = startGrid(cfg);
 
-        byte drId = (byte)1;
-
-        ign.context().cache().context().versions().dataCenterId(drId);
-
+        ign.context().cache().context().versions().dataCenterId(DFLT_DR_ID);
         ign.cluster().state(ACTIVE);
 
         TestCDCConsumer cnsmr = new TestCDCConsumer();
@@ -124,7 +122,7 @@ public class ChangeDataCaptureOrderTest extends AbstractChangeDataCaptureTest {
 
         IgniteCache<Integer, User> cache = ign.getOrCreateCache(FOR_OTHER_DR_ID);
 
-        cnsmr.drId = 1;
+        cnsmr.drId = DFLT_DR_ID;
         cnsmr.otherDrId = OTHER_DR_ID;
 
         addAndWaitForConsumption(cnsmr, cdc, cache, null, this::addConflictData, 0, KEYS_CNT * 2, getTestTimeout());
@@ -187,7 +185,7 @@ public class ChangeDataCaptureOrderTest extends AbstractChangeDataCaptureTest {
         try {
             IgniteEx ign = (IgniteEx)G.allGrids().get(0);
 
-            IgniteInternalCache intCache = ign.cachex(cache.getName());
+            IgniteInternalCache<Integer, User> intCache = ign.cachex(cache.getName());
 
             Map<KeyCacheObject, GridCacheDrInfo> drMap = new HashMap<>();
 

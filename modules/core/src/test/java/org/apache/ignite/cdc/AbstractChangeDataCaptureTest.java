@@ -17,8 +17,12 @@
 
 package org.apache.ignite.cdc;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -26,15 +30,17 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cdc.ChangeDataCapture;
 import org.apache.ignite.internal.util.typedef.CI3;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.cdc.ChangeDataCaptureSelfTest.ChangeEventType.UPDATE;
+import static org.apache.ignite.cdc.AbstractChangeDataCaptureTest.ChangeEventType.DELETE;
+import static org.apache.ignite.cdc.AbstractChangeDataCaptureTest.ChangeEventType.UPDATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
-abstract class AbstractChangeDataCaptureTest extends GridCommonAbstractTest {
+public abstract class AbstractChangeDataCaptureTest extends GridCommonAbstractTest {
     /** */
     public static final int WAL_ARCHIVE_TIMEOUT = 5_000;
 
@@ -109,5 +115,105 @@ abstract class AbstractChangeDataCaptureTest extends GridCommonAbstractTest {
         cdcCfg.setKeepBinary(false);
 
         return cdcCfg;
+    }
+
+    /** */
+    public static class TestCDCConsumer implements ChangeDataCaptureConsumer {
+        /** Keys */
+        final ConcurrentMap<IgniteBiTuple<ChangeEventType, Integer>, List<Integer>> cacheKeys =
+            new ConcurrentHashMap<>();
+
+        /** */
+        volatile boolean stopped;
+
+        /** */
+        volatile byte drId = -1;
+
+        /** */
+        volatile byte otherDrId = -1;
+
+        /** {@inheritDoc} */
+        @Override public void start() {
+            stopped = false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void stop() {
+            stopped = true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean onEvents(Iterator<ChangeDataCaptureEvent> evts) {
+            evts.forEachRemaining(evt -> {
+                if (!evt.primary())
+                    return;
+
+                cacheKeys.computeIfAbsent(
+                    F.t(evt.value() == null ? DELETE : UPDATE, evt.cacheId()),
+                    k -> new ArrayList<>()).add((Integer)evt.key()
+                );
+
+                if (drId != -1)
+                    assertEquals(drId, evt.version().dataCenterId());
+
+                if (otherDrId != -1)
+                    assertEquals(otherDrId, evt.version().otherDataCenterOrder().dataCenterId());
+
+                if (evt.value() != null) {
+                    assertTrue(((User)evt.value()).getName().startsWith("John Connor"));
+                    assertTrue(((User)evt.value()).getAge() >= 42);
+                }
+            });
+
+            return commit();
+        }
+
+        /** */
+        protected boolean commit() {
+            return true;
+        }
+
+        /** @return Read keys. */
+        public List<Integer> keys(ChangeEventType op, int cacheId) {
+            return cacheKeys.get(F.t(op, cacheId));
+        }
+    }
+
+    /** */
+    public static class User {
+        /** */
+        private final String name;
+
+        /** */
+        private final int age;
+
+        /** */
+        private final byte[] payload;
+
+        /** */
+        public User(String name, int age, byte[] payload) {
+            this.name = name;
+            this.age = age;
+            this.payload = payload;
+        }
+
+        /** */
+        public String getName() {
+            return name;
+        }
+
+        /** */
+        public int getAge() {
+            return age;
+        }
+
+        /** */
+        public byte[] getPayload() {
+            return payload;
+        }
+    }
+
+    public enum ChangeEventType {
+        UPDATE, DELETE
     }
 }
