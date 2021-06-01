@@ -41,7 +41,6 @@ import org.apache.ignite.cdc.ChangeDataCaptureEvent;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
@@ -169,9 +168,19 @@ public class ChangeDataCapture implements Runnable {
         this.ctx = ctx;
         this.cdcCfg = cdcCfg;
 
-        initWorkDir(this.igniteCfg);
+        try {
+            initWorkDir(this.igniteCfg);
 
-        log = logger(this.igniteCfg);
+            log = U.initLogger(
+                igniteCfg.getGridLogger(),
+                "ignite-cdc",
+                igniteCfg.getNodeId() != null ? igniteCfg.getNodeId() : UUID.randomUUID(),
+                igniteCfg.getWorkDirectory()
+            );
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
 
         consumer = new WALRecordsConsumer<>(cdcCfg.getConsumer(), log);
 
@@ -206,8 +215,10 @@ public class ChangeDataCapture implements Runnable {
         PdsFolderSettings<ChangeDataCaptureFileLockHolder> settings =
             new PdsFolderResolver<>(igniteCfg, log, null, this::tryLock).resolve();
 
-        if (settings == null)
-            throw new IgniteException("Can't find PDS folder!");
+        if (settings == null) {
+            throw new IgniteException("Can't find folder to read WAL segments from based on provided configuration! " +
+                "[workDir=" + igniteCfg.getWorkDirectory() + ",consistentId=" + igniteCfg.getConsistentId() + ']');
+        }
 
         ChangeDataCaptureFileLockHolder lock = settings.getLockedFileLockHolder();
 
@@ -217,7 +228,7 @@ public class ChangeDataCapture implements Runnable {
             lock = tryLock(consIdDir);
 
             if (lock == null)
-                throw new IgniteException("Can't lock Change Data Capture dir " + consIdDir.getAbsolutePath());
+                throw new IgniteException("Can't lock Change Data Capture [dir=" + consIdDir.getAbsolutePath() + ']');
         }
 
         try {
@@ -377,7 +388,7 @@ public class ChangeDataCapture implements Runnable {
      */
     private ChangeDataCaptureFileLockHolder tryLock(File dbStoreDirWithSubdirectory) {
         if (!dbStoreDirWithSubdirectory.exists()) {
-            log.warning(dbStoreDirWithSubdirectory + " not exists.");
+            log.warning("DB store directory not exists [dir=" + dbStoreDirWithSubdirectory + ']');
 
             return null;
         }
@@ -392,8 +403,8 @@ public class ChangeDataCapture implements Runnable {
         }
 
         if (!cdcRoot.exists()) {
-            log.warning(cdcRoot + " not exists. Should be created by Ignite Node. " +
-                "Is Change Data Capture enabled in IgniteConfiguration?");
+            log.warning("CDC root directory not exists. Should be created by Ignite Node. " +
+                "Is Change Data Capture enabled in IgniteConfiguration? [dir=" + cdcRoot + ']');
 
             return null;
         }
@@ -401,8 +412,8 @@ public class ChangeDataCapture implements Runnable {
         Path cdcDir = Paths.get(cdcRoot.getAbsolutePath(), dbStoreDirWithSubdirectory.getName());
 
         if (!Files.exists(cdcDir)) {
-            log.warning(cdcRoot + " not exists. Should be create by Ignite Node. " +
-                "Is Change Data Capture enabled in IgniteConfiguration?");
+            log.warning("CDC directory not exists. Should be created by Ignite Node. " +
+                "Is Change Data Capture enabled in IgniteConfiguration? [dir=" + cdcDir + ']');
 
             return null;
         }
@@ -419,52 +430,30 @@ public class ChangeDataCapture implements Runnable {
         catch (IgniteCheckedException e) {
             U.closeQuiet(lock);
 
-            if (log.isInfoEnabled())
-                log.info("Unable to acquire lock to file [" + cdcRoot + "], reason: " + e.getMessage());
+            if (log.isInfoEnabled()) {
+                log.info("Unable to acquire lock to file [dir=" + cdcRoot + "]" + NL +
+                    "Reason: " + e.getMessage());
+            }
 
             return null;
         }
     }
 
-    /**
-     * Initialize logger.
-     *
-     * @param cfg Configuration.
-     */
-    private static IgniteLogger logger(IgniteConfiguration cfg) {
-        try {
-            return IgnitionEx.IgniteNamedInstance.initLogger(
-                cfg.getGridLogger(),
-                "ignite-cdc",
-                cfg.getNodeId() != null ? cfg.getNodeId() : UUID.randomUUID(),
-                cfg.getWorkDirectory()
-            );
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
-    }
-
     /** Resolves work directory. */
-    private static void initWorkDir(IgniteConfiguration cfg) {
-        try {
-            String igniteHome = cfg.getIgniteHome();
+    private static void initWorkDir(IgniteConfiguration cfg) throws IgniteCheckedException {
+        String igniteHome = cfg.getIgniteHome();
 
-            // Set Ignite home.
-            if (igniteHome == null)
-                igniteHome = U.getIgniteHome();
-            else
-                // If user provided IGNITE_HOME - set it as a system property.
-                U.setIgniteHome(igniteHome);
+        // Set Ignite home.
+        if (igniteHome == null)
+            igniteHome = U.getIgniteHome();
+        else
+            // If user provided IGNITE_HOME - set it as a system property.
+            U.setIgniteHome(igniteHome);
 
-            String userProvidedWorkDir = cfg.getWorkDirectory();
+        String userProvidedWorkDir = cfg.getWorkDirectory();
 
-            // Correctly resolve work directory and set it back to configuration.
-            cfg.setWorkDirectory(U.workDirectory(userProvidedWorkDir, igniteHome));
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+        // Correctly resolve work directory and set it back to configuration.
+        cfg.setWorkDirectory(U.workDirectory(userProvidedWorkDir, igniteHome));
     }
 
     /**

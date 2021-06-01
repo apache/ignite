@@ -56,7 +56,7 @@ public class WALRecordsConsumer<K, V> {
     /** Operations filter. */
     private static final IgnitePredicate<? super DataEntry> OPERATIONS_FILTER = e -> {
         if (!(e instanceof UnwrappedDataEntry))
-            throw new IllegalStateException("Unexpected data entry type[" + e.getClass().getName());
+            throw new IllegalStateException("Unexpected data entry [type=" + e.getClass().getName() + ']');
 
         if ((e.flags() & DataEntry.PRELOAD_FLAG) != 0 ||
             (e.flags() & DataEntry.FROM_STORE_FLAG) != 0)

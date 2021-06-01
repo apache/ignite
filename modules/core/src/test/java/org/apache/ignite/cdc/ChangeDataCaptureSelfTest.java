@@ -40,12 +40,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cdc.ChangeDataCapture;
-import org.apache.ignite.internal.util.typedef.CI3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -60,7 +57,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
 @RunWith(Parameterized.class)
-public class ChangeDataCaptureSelfTest extends GridCommonAbstractTest {
+public class ChangeDataCaptureSelfTest extends AbstractChangeDataCaptureTest {
     /** */
     public static final String TX_CACHE_NAME = "tx-cache";
 
@@ -115,15 +112,6 @@ public class ChangeDataCaptureSelfTest extends GridCommonAbstractTest {
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        stopAllGrids();
-
-        cleanPersistenceDir();
-
-        super.beforeTest();
     }
 
     /** Simplest CDC test. */
@@ -517,22 +505,6 @@ public class ChangeDataCaptureSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public static boolean waitForSize(
-        int expSz,
-        String cacheName,
-        ChangeEventType evtType,
-        long timeout,
-        TestCDCConsumer... cnsmrs
-    ) throws IgniteInterruptedCheckedException {
-        return waitForCondition(
-            () -> {
-                int sum = Arrays.stream(cnsmrs).mapToInt(c -> F.size(c.keys(evtType, cacheId(cacheName)))).sum();
-                return sum >= expSz;
-            },
-            timeout);
-    }
-
-    /** */
     public static void addData(IgniteCache<Integer, User> cache, int from, int to) {
         for (int i = from; i < to; i++) {
             byte[] bytes = new byte[1024];
@@ -547,41 +519,6 @@ public class ChangeDataCaptureSelfTest extends GridCommonAbstractTest {
     private void removeData(IgniteCache<Integer, ?> cache, int from, int to) {
         for (int i = from; i < to; i++)
             cache.remove(i);
-    }
-
-    /** */
-    public static void addAndWaitForConsumption(
-        TestCDCConsumer cnsmr,
-        ChangeDataCapture cdc,
-        IgniteCache<Integer, User> cache,
-        IgniteCache<Integer, User> txCache,
-        CI3<IgniteCache<Integer, User>, Integer, Integer> addData,
-        int from,
-        int to,
-        long timeout
-    ) throws IgniteCheckedException {
-        IgniteInternalFuture<?> fut = runAsync(cdc);
-
-        addData.apply(cache, from, to);
-
-        if (txCache != null)
-            addData.apply(txCache, from, to);
-
-        assertTrue(waitForSize(to - from, cache.getName(), UPDATE, timeout, cnsmr));
-
-        if (txCache != null)
-            assertTrue(waitForSize(to - from, txCache.getName(), UPDATE, timeout, cnsmr));
-
-        fut.cancel();
-
-        List<Integer> keys = cnsmr.keys(UPDATE, cacheId(cache.getName()));
-
-        assertEquals(to - from, keys.size());
-
-        for (int i = from; i < to; i++)
-            assertTrue(Integer.toString(i), keys.contains(i));
-
-        assertTrue(cnsmr.stopped);
     }
 
     /** */
@@ -678,16 +615,6 @@ public class ChangeDataCaptureSelfTest extends GridCommonAbstractTest {
         public byte[] getPayload() {
             return payload;
         }
-    }
-
-    /** */
-    public static ChangeDataCaptureConfiguration cdcConfig(ChangeDataCaptureConsumer cnsmr) {
-        ChangeDataCaptureConfiguration cdcCfg = new ChangeDataCaptureConfiguration();
-
-        cdcCfg.setConsumer(cnsmr);
-        cdcCfg.setKeepBinary(false);
-
-        return cdcCfg;
     }
 
     public enum ChangeEventType {

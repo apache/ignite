@@ -51,21 +51,16 @@ import org.apache.ignite.plugin.AbstractCachePluginProvider;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
-import static org.apache.ignite.cdc.ChangeDataCaptureSelfTest.KEYS_CNT;
-import static org.apache.ignite.cdc.ChangeDataCaptureSelfTest.WAL_ARCHIVE_TIMEOUT;
-import static org.apache.ignite.cdc.ChangeDataCaptureSelfTest.addAndWaitForConsumption;
-import static org.apache.ignite.cdc.ChangeDataCaptureSelfTest.cdcConfig;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.configuration.WALMode.FSYNC;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
-public class ChangeDataCaptureOrderTest extends GridCommonAbstractTest {
+public class ChangeDataCaptureOrderTest extends AbstractChangeDataCaptureTest {
     /** */
     public static final String FOR_OTHER_DR_ID = "for-other-dr-id";
 
@@ -108,15 +103,6 @@ public class ChangeDataCaptureOrderTest extends GridCommonAbstractTest {
         });
 
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        stopAllGrids();
-
-        cleanPersistenceDir();
-
-        super.beforeTest();
     }
 
     /** Simplest CDC test with usage of {@link IgniteInternalCache#putAllConflict(Map)}. */
@@ -229,15 +215,17 @@ public class ChangeDataCaptureOrderTest extends GridCommonAbstractTest {
     /** */
     public static class TestCacheConflictResolutionManager<K, V> extends GridCacheManagerAdapter<K, V>
         implements CacheConflictResolutionManager<K, V> {
+
+        /** {@inheritDoc} */
         @Override public CacheVersionConflictResolver conflictResolver() {
             return new CacheVersionConflictResolver() {
-                @Override public <K, V> GridCacheVersionConflictContext<K, V> resolve(
+                @Override public <K1, V1> GridCacheVersionConflictContext<K1, V1> resolve(
                     CacheObjectValueContext ctx,
-                    GridCacheVersionedEntryEx<K, V> oldEntry,
-                    GridCacheVersionedEntryEx<K, V> newEntry,
+                    GridCacheVersionedEntryEx<K1, V1> oldEntry,
+                    GridCacheVersionedEntryEx<K1, V1> newEntry,
                     boolean atomicVerComparator
                 ) {
-                    GridCacheVersionConflictContext<K, V> res =
+                    GridCacheVersionConflictContext<K1, V1> res =
                         new GridCacheVersionConflictContext<>(ctx, oldEntry, newEntry);
 
                     res.useNew();
