@@ -140,6 +140,10 @@ public class ClientDataStreamerStartRequest extends ClientDataStreamerRequest {
     /**
      * Creates the receiver.
      *
+     * @param ctx Kernal context.
+     * @param receiverObj Receiver.
+     * @param platform Platform code.
+     * @param keepBinary Keep binary flag.
      * @return Receiver.
      */
     private static StreamReceiver createReceiver(GridKernalContext ctx,
