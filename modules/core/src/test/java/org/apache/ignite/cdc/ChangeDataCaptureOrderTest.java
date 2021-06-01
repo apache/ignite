@@ -53,7 +53,6 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.configuration.WALMode.FSYNC;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -76,7 +75,6 @@ public class ChangeDataCaptureOrderTest extends AbstractChangeDataCaptureTest {
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setChangeDataCaptureEnabled(true)
-            .setWalMode(FSYNC)
             .setMaxWalArchiveSize(10 * segmentSz)
             .setWalSegmentSize(segmentSz)
             .setWalForceArchiveTimeout(WAL_ARCHIVE_TIMEOUT)

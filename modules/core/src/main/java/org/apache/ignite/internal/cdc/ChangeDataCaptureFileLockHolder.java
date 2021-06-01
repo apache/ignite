@@ -44,13 +44,12 @@ public class ChangeDataCaptureFileLockHolder extends FileLockHolder {
     /** {@inheritDoc} */
     @Override public String lockInfo() {
         return "[consumerId=" + consumerId + ",proc=" + ManagementFactory.getRuntimeMXBean().getName() + ']';
-
     }
 
     /** {@inheritDoc} */
-    @Override protected String warningMessage(String lockId) {
+    @Override protected String warningMessage(String lockInfo) {
         return "Failed to acquire file lock. Will try again in 1s " +
-            "[proc=" + ManagementFactory.getRuntimeMXBean().getName() + ", holder=" + lockId +
+            "[proc=" + ManagementFactory.getRuntimeMXBean().getName() + ", holder=" + lockInfo +
             ", path=" + lockPath() + ']';
     }
 }
