@@ -299,7 +299,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     private volatile long lastRingMsgSentTime;
 
     /** Time of last failed message. */
-    private volatile long msgNotSentNanos;
+    private volatile long lastRingMsgFailTime;
 
     /** */
     private volatile boolean nodeCompactRepresentationSupported =
@@ -397,7 +397,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         lastRingMsgSentTime = 0;
 
-        msgNotSentNanos = 0;
+        lastRingMsgFailTime = 0;
 
         // Foundumental timeout value for actions related to connection check.
         connCheckTick = effectiveExchangeTimeout() / 3;
@@ -3869,9 +3869,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 if (!sent) {
                     if (sndState == null && spi.getEffectiveConnectionRecoveryTimeout() > 0) {
-                        msgNotSentNanos = System.nanoTime();
+                        lastRingMsgFailTime = System.nanoTime();
 
-                        sndState = new CrossRingMessageSendState(msgNotSentNanos);
+                        sndState = new CrossRingMessageSendState(lastRingMsgFailTime);
                     }
                     else if (sndState != null && sndState.checkTimeout()) {
                         segmentLocalNodeOnSendFail(failedNodes);
@@ -6509,7 +6509,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      */
     private void checkOutgoingConnection() {
         // Skip if there is no msg sending failure or wait for ping comming after the failure.
-        if (msgNotSentNanos == 0 || lastRingMsgReceivedTime < msgNotSentNanos + U.millisToNanos(connCheckInterval))
+        if (lastRingMsgFailTime == 0 || lastRingMsgReceivedTime < lastRingMsgFailTime + U.millisToNanos(connCheckInterval))
             return;
 
         synchronized (mux) {
@@ -6573,7 +6573,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
     /** Fixates time of last sent message. */
     private void updateLastSentMessageTime() {
-        msgNotSentNanos = 0;
+        lastRingMsgFailTime = 0;
 
         lastRingMsgSentTime = System.nanoTime();
     }
