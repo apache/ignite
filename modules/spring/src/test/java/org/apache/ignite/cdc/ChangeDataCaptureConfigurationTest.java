@@ -66,6 +66,7 @@ public class ChangeDataCaptureConfigurationTest extends GridCommonAbstractTest {
         assertThrows(null, cdc::run, IgniteException.class, ERR_MSG);
     }
 
+    /** */
     @Test
     public void testInjectResources() throws Exception {
         ChangeDataCapture cdc =
@@ -92,17 +93,22 @@ public class ChangeDataCaptureConfigurationTest extends GridCommonAbstractTest {
 
     /** */
     public static class TestCDCConsumer implements ChangeDataCaptureConsumer {
+        /** */
         @LoggerResource
         private IgniteLogger log;
 
+        /** */
         @SpringResource(resourceName = "springString")
         private String springString;
 
+        /** */
         private String springString2;
 
+        /** */
         @SpringApplicationContextResource
         private ApplicationContext ctx;
 
+        /** */
         public CountDownLatch startLatch = new CountDownLatch(1);
 
         /** {@inheritDoc} */

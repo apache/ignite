@@ -102,7 +102,7 @@ public abstract class AbstractChangeDataCaptureTest extends GridCommonAbstractTe
         return waitForCondition(
             () -> {
                 int sum = Arrays.stream(cnsmrs).mapToInt(c -> F.size(c.keys(evtType, cacheId(cacheName)))).sum();
-                return sum >= expSz;
+                return sum == expSz;
             },
             timeout);
     }
@@ -213,6 +213,7 @@ public abstract class AbstractChangeDataCaptureTest extends GridCommonAbstractTe
         }
     }
 
+    /** */
     public enum ChangeEventType {
         UPDATE, DELETE
     }

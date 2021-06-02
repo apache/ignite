@@ -78,8 +78,7 @@ public class ChangeDataCaptureOrderTest extends AbstractChangeDataCaptureTest {
             .setMaxWalArchiveSize(10 * segmentSz)
             .setWalSegmentSize(segmentSz)
             .setWalForceArchiveTimeout(WAL_ARCHIVE_TIMEOUT)
-            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setPersistenceEnabled(true)));
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)));
 
         cfg.setPluginProviders(new AbstractTestPluginProvider() {
             @Override public String name() {

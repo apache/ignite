@@ -19,6 +19,7 @@ package org.apache.ignite.internal.cdc;
 
 import java.util.EnumSet;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cdc.ChangeDataCaptureConsumer;
@@ -26,7 +27,6 @@ import org.apache.ignite.cdc.ChangeDataCaptureEvent;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.UnwrappedDataEntry;
-import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -80,24 +80,63 @@ public class WALRecordsConsumer<K, V> {
      * started from it on CDC application fail/restart.
      *
      * @param recs WAL records iterator.
-     * @param <T> Record type.
      * @return {@code True} if current offset in WAL should be commited.
      */
-    public <T extends WALRecord> boolean onRecords(Iterator<T> recs) {
-        recs = F.iterator(recs, r -> r, true, r -> r.type() == WALRecord.RecordType.DATA_RECORD_V2);
+    public boolean onRecords(Iterator<DataRecord> recs) {
+        Iterator<ChangeDataCaptureEvent> evts = new Iterator<ChangeDataCaptureEvent>() {
+            /** */
+            private Iterator<ChangeDataCaptureEvent> entries;
 
-        return consumer.onEvents(F.concat(F.iterator(recs, r -> F.iterator(((DataRecord)r).writeEntries(), e -> {
-            UnwrappedDataEntry ue = (UnwrappedDataEntry)e;
+            @Override public boolean hasNext() {
+                advance();
 
-            return new ChangeDataCaptureEventImpl(
-                ue.unwrappedKey(),
-                ue.unwrappedValue(),
-                (e.flags() & DataEntry.PRIMARY_FLAG) != 0,
-                e.partitionId(),
-                e.writeVersion(),
-                e.cacheId()
-            );
-        }, true, OPERATIONS_FILTER), true)));
+                return hasCurrent();
+            }
+
+            @Override public ChangeDataCaptureEvent next() {
+                advance();
+
+                if (!hasCurrent())
+                    throw new NoSuchElementException();
+
+                return entries.next();
+            }
+
+            private void advance() {
+                if (hasCurrent())
+                    return;
+
+                while (recs.hasNext()) {
+                    entries =
+                        F.iterator(recs.next().writeEntries().iterator(), this::transform, true, OPERATIONS_FILTER);
+
+                    if (entries.hasNext())
+                        break;
+
+                    entries = null;
+                }
+            }
+
+            private boolean hasCurrent() {
+                return entries != null && entries.hasNext();
+            }
+
+            /** */
+            private ChangeDataCaptureEvent transform(DataEntry e) {
+                UnwrappedDataEntry ue = (UnwrappedDataEntry)e;
+
+                return new ChangeDataCaptureEventImpl(
+                    ue.unwrappedKey(),
+                    ue.unwrappedValue(),
+                    (e.flags() & DataEntry.PRIMARY_FLAG) != 0,
+                    e.partitionId(),
+                    e.writeVersion(),
+                    e.cacheId()
+                );
+            }
+        };
+
+        return consumer.onEvents(evts);
     }
 
     /**

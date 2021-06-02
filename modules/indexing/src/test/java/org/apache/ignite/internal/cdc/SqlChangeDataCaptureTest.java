@@ -31,7 +31,6 @@ import org.apache.ignite.cdc.ChangeDataCaptureEvent;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -47,7 +46,7 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
-public class SQLChangeDataCaptureTest extends AbstractChangeDataCaptureTest {
+public class SqlChangeDataCaptureTest extends AbstractChangeDataCaptureTest {
     /** */
     private static final String JOHN = "John Connor";
 
@@ -74,12 +73,10 @@ public class SQLChangeDataCaptureTest extends AbstractChangeDataCaptureTest {
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setChangeDataCaptureEnabled(true)
-            .setWalMode(WALMode.FSYNC)
             .setMaxWalArchiveSize(10 * segmentSz)
             .setWalSegmentSize(segmentSz)
             .setWalForceArchiveTimeout(WAL_ARCHIVE_TIMEOUT)
-            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setPersistenceEnabled(true)));
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)));
 
         return cfg;
     }
@@ -98,7 +95,6 @@ public class SQLChangeDataCaptureTest extends AbstractChangeDataCaptureTest {
         ChangeDataCaptureConfiguration cdcCfg = new ChangeDataCaptureConfiguration();
 
         cdcCfg.setConsumer(cnsmr);
-        cdcCfg.setKeepBinary(true);
 
         ChangeDataCapture cdc = new ChangeDataCapture(cfg, null, cdcCfg);
 

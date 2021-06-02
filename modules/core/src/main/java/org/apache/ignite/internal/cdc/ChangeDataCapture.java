@@ -41,6 +41,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
@@ -52,7 +53,6 @@ import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.resources.SpringApplicationContextResource;
 import org.apache.ignite.resources.SpringResource;
@@ -350,8 +350,12 @@ public class ChangeDataCapture implements Runnable {
         }
 
         try (WALIterator it = factory.iterator(builder)) {
-            while (it.hasNext()) {
-                boolean commit = consumer.onRecords(F.iterator(it.iterator(), IgniteBiTuple::get2, true));
+            boolean interrupted = Thread.interrupted();
+
+            while (it.hasNext() && !interrupted) {
+                Iterator<DataRecord> iterator = F.iterator(it.iterator(), t -> (DataRecord)t.get2(), true);
+
+                boolean commit = consumer.onRecords(iterator);
 
                 if (commit) {
                     assert it.lastRead().isPresent();
@@ -362,18 +366,28 @@ public class ChangeDataCapture implements Runnable {
                     if (!processed.isEmpty()) {
                         // WAL segment is a hard link to a segment file in a specifal Change Data Capture folder.
                         // So we can safely delete it after success processing.
-                        for (Path prevSegment : processed)
+                        for (Path prevSegment : processed) {
+                            // Can't delete current segment, because state points to it.
+                            if (prevSegment.equals(segment))
+                                continue;
+
                             Files.delete(prevSegment);
+                        }
 
                         processed.clear();
                     }
                 }
+
+                interrupted = Thread.interrupted();
             }
+
+            if (interrupted)
+                throw new IgniteException("Change Data Capture Application interrupted");
+
+            processed.add(segment);
         } catch (IgniteCheckedException | IOException e) {
             throw new IgniteException(e);
         }
-
-        processed.add(segment);
     }
 
     /**
@@ -517,7 +531,7 @@ public class ChangeDataCapture implements Runnable {
             ">>> " + COPYRIGHT + NL +
             ">>> " + NL +
             ">>> Ignite documentation: " + "http://" + SITE + NL +
-            ">>> Consumer: " + consumer.toString() + NL +
+            ">>> Consumer: " + consumer.consumer().toString() + NL +
             ">>> ConsistentId: " + igniteCfg.getConsistentId() + NL +
             ">>> Change Data Capture: " + cdcDir + NL +
             ">>> Ignite node Binary meta: " + binaryMeta + NL +

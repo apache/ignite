@@ -17,18 +17,20 @@
 
 package org.apache.ignite.cdc;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -38,6 +40,7 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cdc.ChangeDataCapture;
+import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -100,11 +103,11 @@ public class ChangeDataCaptureSelfTest extends AbstractChangeDataCaptureTest {
             .setMaxWalArchiveSize(10 * segmentSz)
             .setWalSegmentSize(segmentSz)
             .setWalForceArchiveTimeout(WAL_ARCHIVE_TIMEOUT)
-            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setPersistenceEnabled(true)));
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)));
 
-        cfg.setCacheConfiguration(new CacheConfiguration<>(TX_CACHE_NAME)
-            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
+        cfg.setCacheConfiguration(
+            new CacheConfiguration<>(TX_CACHE_NAME).setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+        );
 
         return cfg;
     }
@@ -112,20 +115,51 @@ public class ChangeDataCaptureSelfTest extends AbstractChangeDataCaptureTest {
     /** Simplest CDC test. */
     @Test
     public void testReadAllKeys() throws Exception {
+        // Read all records from iterator.
+        readAll(new TestCDCConsumer());
+
+        // Read one record per call.
+        readAll(new TestCDCConsumer() {
+            @Override public boolean onEvents(Iterator<ChangeDataCaptureEvent> evts) {
+                super.onEvents(Collections.singleton(evts.next()).iterator());
+
+                return false;
+            }
+        });
+
+        // Read one record per call and commit.
+        readAll(new TestCDCConsumer() {
+            @Override public boolean onEvents(Iterator<ChangeDataCaptureEvent> evts) {
+                super.onEvents(Collections.singleton(evts.next()).iterator());
+
+                return true;
+            }
+        });
+    }
+
+    /** */
+    private void readAll(TestCDCConsumer cnsmr) throws Exception {
         IgniteConfiguration cfg = getConfiguration("ignite-0");
 
         Ignite ign = startGrid(cfg);
 
         ign.cluster().state(ACTIVE);
 
-        TestCDCConsumer cnsmr = new TestCDCConsumer();
-
         ChangeDataCapture cdc = new ChangeDataCapture(cfg, null, cdcConfig(cnsmr));
 
         IgniteCache<Integer, User> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
         IgniteCache<Integer, User> txCache = ign.getOrCreateCache(TX_CACHE_NAME);
 
-        addAndWaitForConsumption(cnsmr, cdc, cache, txCache, ChangeDataCaptureSelfTest::addData, 0, KEYS_CNT * 2, getTestTimeout());
+        addAndWaitForConsumption(
+            cnsmr,
+            cdc,
+            cache,
+            txCache,
+            ChangeDataCaptureSelfTest::addData,
+            0,
+            KEYS_CNT * 2,
+            getTestTimeout()
+        );
 
         removeData(cache, 0, KEYS_CNT);
 
@@ -136,6 +170,10 @@ public class ChangeDataCaptureSelfTest extends AbstractChangeDataCaptureTest {
         rmvFut.cancel();
 
         assertTrue(cnsmr.stopped);
+
+        stopGrid("ignite-0");
+
+        cleanPersistenceDir();
     }
 
     /** */
@@ -267,68 +305,6 @@ public class ChangeDataCaptureSelfTest extends AbstractChangeDataCaptureTest {
             for (int i = 0; i < cnt.get(); i++)
                 assertTrue(keys.contains(i));
         }
-
-    }
-
-    /** Simplest CDC test. */
-    @Test
-    public void testRestoreStateAfterStop() throws Exception {
-        IgniteConfiguration cfg = getConfiguration("ignite-0");
-
-        Ignite ign = startGrid(cfg);
-
-        ign.cluster().state(ACTIVE);
-
-        TestCDCConsumer cnsmr = new TestCDCConsumer();
-
-        ChangeDataCapture cdc = new ChangeDataCapture(cfg, null, cdcConfig(cnsmr));
-
-        IgniteInternalFuture<?> runFut = runAsync(cdc);
-
-        IgniteCache<Integer, User> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
-        IgniteCache<Integer, User> txCache = ign.getOrCreateCache(TX_CACHE_NAME);
-
-        addData(cache, 0, KEYS_CNT);
-        addData(txCache, 0, KEYS_CNT);
-
-        CountDownLatch latch = new CountDownLatch(2);
-
-        IgniteInternalFuture<?> restartFut = runAsync(() -> {
-            try {
-                assertTrue(waitForSize(2, DEFAULT_CACHE_NAME, UPDATE, getTestTimeout(), cnsmr));
-                assertTrue(waitForSize(2, TX_CACHE_NAME, UPDATE, getTestTimeout(), cnsmr));
-
-                runFut.cancel();
-
-                assertTrue(cnsmr.stopped);
-
-                latch.countDown();
-                latch.await(getTestTimeout(), TimeUnit.MILLISECONDS);
-
-                cdc.run();
-            }
-            catch (IgniteCheckedException | InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        });
-
-        latch.countDown();
-        latch.await(getTestTimeout(), TimeUnit.MILLISECONDS);
-
-        addData(cache, KEYS_CNT, KEYS_CNT * 2);
-        addData(txCache, KEYS_CNT, KEYS_CNT * 2);
-
-        assertTrue(waitForSize(KEYS_CNT * 2, DEFAULT_CACHE_NAME, UPDATE, getTestTimeout(), cnsmr));
-        assertTrue(waitForSize(KEYS_CNT * 2, TX_CACHE_NAME, UPDATE, getTestTimeout(), cnsmr));
-
-        restartFut.cancel();
-
-        List<Integer> keys = cnsmr.keys(UPDATE, cacheId(DEFAULT_CACHE_NAME));
-
-        for (int i = 0; i < KEYS_CNT * 2; i++)
-            assertTrue(keys.contains(i));
-
-        assertTrue(cnsmr.stopped);
     }
 
     /** */
@@ -382,7 +358,7 @@ public class ChangeDataCaptureSelfTest extends AbstractChangeDataCaptureTest {
         IgniteInternalFuture<?> rmvFut1 = runAsync(cdc1);
         IgniteInternalFuture<?> rmvFut2 = runAsync(cdc2);
 
-        assertTrue(waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, DELETE, getTestTimeout(), cnsmr1, cnsmr2));
+        assertTrue(waitForSize(KEYS_CNT * 2, DEFAULT_CACHE_NAME, DELETE, getTestTimeout(), cnsmr1, cnsmr2));
 
         rmvFut1.cancel();
         rmvFut2.cancel();
@@ -455,25 +431,35 @@ public class ChangeDataCaptureSelfTest extends AbstractChangeDataCaptureTest {
             assertTrue(cnsmr.stopped);
         }
 
-        AtomicInteger expSz = new AtomicInteger(KEYS_CNT);
+        AtomicBoolean consumeHalf = new AtomicBoolean(true);
+        AtomicBoolean commited = new AtomicBoolean(false);
+
+        int half = KEYS_CNT / 2;
 
         TestCDCConsumer cnsmr = new TestCDCConsumer() {
-            @Override protected boolean commit() {
-                // Commiting on the half of the data.
-                List<Integer> keys = keys(UPDATE, cacheId(DEFAULT_CACHE_NAME));
+            @Override public boolean onEvents(Iterator<ChangeDataCaptureEvent> evts) {
+                if (consumeHalf.get() && F.size(keys(UPDATE, cacheId(DEFAULT_CACHE_NAME))) == half) {
+                    commited.set(true);
 
-                if (keys == null)
                     return false;
-
-                int sz = keys.size();
-
-                if (sz >= KEYS_CNT / 2) {
-                    expSz.set(KEYS_CNT - sz);
-
-                    return true;
                 }
 
-                return false;
+                while (evts.hasNext()) {
+                    ChangeDataCaptureEvent evt = evts.next();
+
+                    if (!evt.primary())
+                        continue;
+
+                    cacheKeys.computeIfAbsent(
+                        F.t(evt.value() == null ? DELETE : UPDATE, evt.cacheId()),
+                        k -> new ArrayList<>()).add((Integer)evt.key()
+                    );
+
+                    if (consumeHalf.get())
+                        return F.size(keys(UPDATE, cacheId(DEFAULT_CACHE_NAME))) == half;
+                }
+
+                return true;
             }
         };
 
@@ -481,7 +467,9 @@ public class ChangeDataCaptureSelfTest extends AbstractChangeDataCaptureTest {
 
         IgniteInternalFuture<?> fut = runAsync(cdc);
 
-        waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, UPDATE, getTestTimeout(), cnsmr);
+        waitForSize(half, DEFAULT_CACHE_NAME, UPDATE, getTestTimeout(), cnsmr);
+
+        waitForCondition(commited::get, getTestTimeout());
 
         fut.cancel();
 
@@ -489,9 +477,11 @@ public class ChangeDataCaptureSelfTest extends AbstractChangeDataCaptureTest {
 
         removeData(cache, 0, KEYS_CNT);
 
+        consumeHalf.set(false);
+
         fut = runAsync(cdc);
 
-        waitForSize(expSz.get(), DEFAULT_CACHE_NAME, UPDATE, getTestTimeout(), cnsmr);
+        waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, UPDATE, getTestTimeout(), cnsmr);
         waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, DELETE, getTestTimeout(), cnsmr);
 
         fut.cancel();
