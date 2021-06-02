@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.type;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
-
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
