@@ -52,7 +52,7 @@ public class CorrelatedNestedLoopJoinRule extends ConverterRule {
     /** */
     public static final RelOptRule INSTANCE = Config.DEFAULT.toRule();
 
-    /** Todo: https://issues.apache.org/jira/browse/IGNITE-14757 */
+    /** TODO: https://issues.apache.org/jira/browse/IGNITE-14757 */
     public static final RelOptRule INSTANCE_BATCHED = Config.DEFAULT.withBatchSize(100).toRule();
 
     /** */

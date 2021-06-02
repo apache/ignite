@@ -1044,6 +1044,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
         assertThat(qCur.fieldsMeta().get(3).fieldTypeName(), equalTo(String.class.getName()));
     }
 
+    /** Quantified predicates test. */
     @Test
     public void quantifiedCompTest() throws InterruptedException {
         populateTables();
@@ -1070,6 +1071,11 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             .returns(13d)
             .returns(13d)
             .returns(13d)
+            .check();
+
+        assertQuery(client, "select salary from account where salary <> ALL (12, 13) ORDER BY salary")
+            .returns(10d)
+            .returns(11d)
             .check();
     }
 
