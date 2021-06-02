@@ -53,6 +53,8 @@ import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.IgnitePortProtocol;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+
 /**
  * TCP binary protocol implementation.
  */
@@ -63,8 +65,8 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     /** NIO server listener. */
     private GridTcpRestNioListener lsnr;
 
-    /** The name of the metric group associated with the REST TCP connector. */
-    public static final String REST_CONNECTOR_METRIC_GROUP_NAME = "client.connector.rest.tcp";
+    /** The name of the metric registry associated with the REST TCP connector. */
+    public static final String REST_CONNECTOR_METRIC_REGISTRY_NAME = metricName("client", "connector", "rest", "tcp");
 
     /** @param ctx Context. */
     public GridTcpRestProtocol(GridKernalContext ctx) {
@@ -248,7 +250,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
                 .sendQueueLimit(cfg.getSendQueueLimit())
                 .filters(filters)
                 .directMode(false)
-                .metricRegistry(ctx.metric().registry(REST_CONNECTOR_METRIC_GROUP_NAME))
+                .metricRegistry(ctx.metric().registry(REST_CONNECTOR_METRIC_REGISTRY_NAME))
                 .build();
 
             srv.idleTimeout(cfg.getIdleTimeout());

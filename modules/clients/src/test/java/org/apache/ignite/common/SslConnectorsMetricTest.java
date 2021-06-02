@@ -49,8 +49,8 @@ import static java.sql.DriverManager.getConnection;
 import static org.apache.ignite.Ignition.startClient;
 import static org.apache.ignite.internal.client.GridClientFactory.start;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.DISCO_METRICS;
-import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLIENT_CONNECTOR_METRIC_GROUP_NAME;
-import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridTcpRestProtocol.REST_CONNECTOR_METRIC_GROUP_NAME;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLIENT_CONNECTOR_METRIC_REGISTRY_NAME;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridTcpRestProtocol.REST_CONNECTOR_METRIC_REGISTRY_NAME;
 import static org.apache.ignite.internal.util.nio.GridNioServer.SESSIONS_CNT_METRIC_NAME;
 import static org.apache.ignite.internal.util.nio.GridNioServer.SSL_ENABLED_METRIC_NAME;
 import static org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter.SSL_HANDSHAKE_DURATION_HISTOGRAM_METRIC_NAME;
@@ -92,34 +92,35 @@ public class SslConnectorsMetricTest extends GridCommonAbstractTest {
 
         assertFalse(mreg(srv, DISCO_METRICS).<BooleanMetric>findMetric(SSL_ENABLED_METRIC_NAME).value());
         assertFalse(mreg(srv, COMMUNICATION_METRICS_GROUP_NAME).<BooleanMetric>findMetric(SSL_ENABLED_METRIC_NAME).value());
-        assertFalse(mreg(srv, CLIENT_CONNECTOR_METRIC_GROUP_NAME).<BooleanMetric>findMetric(SSL_ENABLED_METRIC_NAME).value());
-        assertNull(mreg(srv, REST_CONNECTOR_METRIC_GROUP_NAME).<BooleanMetric>findMetric(SSL_ENABLED_METRIC_NAME));
+        assertFalse(mreg(srv, CLIENT_CONNECTOR_METRIC_REGISTRY_NAME).<BooleanMetric>findMetric(SSL_ENABLED_METRIC_NAME).value());
+        assertNull(mreg(srv, REST_CONNECTOR_METRIC_REGISTRY_NAME).<BooleanMetric>findMetric(SSL_ENABLED_METRIC_NAME));
 
         assertNull(mreg(srv, DISCO_METRICS).<BooleanMetric>findMetric(SSL_REJECTED_CONNECTIONS_CNT_METRIC_NAME));
         assertNull(mreg(srv, COMMUNICATION_METRICS_GROUP_NAME).<BooleanMetric>findMetric(SSL_REJECTED_SESSIONS_CNT_METRIC_NAME));
-        assertNull(mreg(srv, CLIENT_CONNECTOR_METRIC_GROUP_NAME).<BooleanMetric>findMetric(SSL_REJECTED_SESSIONS_CNT_METRIC_NAME));
-        assertNull(mreg(srv, REST_CONNECTOR_METRIC_GROUP_NAME).<BooleanMetric>findMetric(SSL_REJECTED_SESSIONS_CNT_METRIC_NAME));
+        assertNull(mreg(srv, CLIENT_CONNECTOR_METRIC_REGISTRY_NAME).<BooleanMetric>findMetric(SSL_REJECTED_SESSIONS_CNT_METRIC_NAME));
+        assertNull(mreg(srv, REST_CONNECTOR_METRIC_REGISTRY_NAME).<BooleanMetric>findMetric(SSL_REJECTED_SESSIONS_CNT_METRIC_NAME));
 
         assertNull(mreg(srv, COMMUNICATION_METRICS_GROUP_NAME).<BooleanMetric>findMetric(SSL_HANDSHAKE_DURATION_HISTOGRAM_METRIC_NAME));
-        assertNull(mreg(srv, CLIENT_CONNECTOR_METRIC_GROUP_NAME).<BooleanMetric>findMetric(SSL_HANDSHAKE_DURATION_HISTOGRAM_METRIC_NAME));
-        assertNull(mreg(srv, REST_CONNECTOR_METRIC_GROUP_NAME).<BooleanMetric>findMetric(SSL_HANDSHAKE_DURATION_HISTOGRAM_METRIC_NAME));
+        assertNull(mreg(srv, CLIENT_CONNECTOR_METRIC_REGISTRY_NAME)
+            .<BooleanMetric>findMetric(SSL_HANDSHAKE_DURATION_HISTOGRAM_METRIC_NAME));
+        assertNull(mreg(srv, REST_CONNECTOR_METRIC_REGISTRY_NAME).<BooleanMetric>findMetric(SSL_HANDSHAKE_DURATION_HISTOGRAM_METRIC_NAME));
 
         assertNotNull(mreg(srv, COMMUNICATION_METRICS_GROUP_NAME).<BooleanMetric>findMetric(SESSIONS_CNT_METRIC_NAME));
-        assertNotNull(mreg(srv, CLIENT_CONNECTOR_METRIC_GROUP_NAME).<BooleanMetric>findMetric(SESSIONS_CNT_METRIC_NAME));
-        assertNull(mreg(srv, REST_CONNECTOR_METRIC_GROUP_NAME).<BooleanMetric>findMetric(SESSIONS_CNT_METRIC_NAME));
+        assertNotNull(mreg(srv, CLIENT_CONNECTOR_METRIC_REGISTRY_NAME).<BooleanMetric>findMetric(SESSIONS_CNT_METRIC_NAME));
+        assertNull(mreg(srv, REST_CONNECTOR_METRIC_REGISTRY_NAME).<BooleanMetric>findMetric(SESSIONS_CNT_METRIC_NAME));
 
         stopAllGrids();
 
         srv = startGrid(getConfiguration().setConnectorConfiguration(new ConnectorConfiguration()));
 
-        assertFalse(mreg(srv, REST_CONNECTOR_METRIC_GROUP_NAME).<BooleanMetric>findMetric(SSL_ENABLED_METRIC_NAME).value());
-        assertNotNull(mreg(srv, REST_CONNECTOR_METRIC_GROUP_NAME).<BooleanMetric>findMetric(SESSIONS_CNT_METRIC_NAME));
+        assertFalse(mreg(srv, REST_CONNECTOR_METRIC_REGISTRY_NAME).<BooleanMetric>findMetric(SSL_ENABLED_METRIC_NAME).value());
+        assertNotNull(mreg(srv, REST_CONNECTOR_METRIC_REGISTRY_NAME).<BooleanMetric>findMetric(SESSIONS_CNT_METRIC_NAME));
     }
 
     /** Tests SSL metrics produced by JDBC connection. */
     @Test
     public void testJdbc() throws Exception {
-        MetricRegistry reg = mreg(startClusterNode(0), CLIENT_CONNECTOR_METRIC_GROUP_NAME);
+        MetricRegistry reg = mreg(startClusterNode(0), CLIENT_CONNECTOR_METRIC_REGISTRY_NAME);
 
         try (Connection ignored = getConnection(jdbcConfiguration("thinClient", "trusttwo", CIPHER_SUITE, "TLSv1.2"))) {
             assertSslCommunicationMetrics(reg, 1, 1, 0);
@@ -147,7 +148,7 @@ public class SslConnectorsMetricTest extends GridCommonAbstractTest {
     /** Tests SSL metrics produced by REST TCP client connection. */
     @Test
     public void testRestClientConnector() throws Exception {
-        MetricRegistry reg = mreg(startClusterNode(0), REST_CONNECTOR_METRIC_GROUP_NAME);
+        MetricRegistry reg = mreg(startClusterNode(0), REST_CONNECTOR_METRIC_REGISTRY_NAME);
 
         try (
             GridClient ignored = start(gridClientConfiguration("connectorClient", "trustthree", CIPHER_SUITE, "TLSv1.2"))
@@ -227,7 +228,7 @@ public class SslConnectorsMetricTest extends GridCommonAbstractTest {
     /** Tests SSL metrics produced by thin client connection. */
     @Test
     public void testClientConnector() throws Exception {
-        MetricRegistry reg = mreg(startClusterNode(0), CLIENT_CONNECTOR_METRIC_GROUP_NAME);
+        MetricRegistry reg = mreg(startClusterNode(0), CLIENT_CONNECTOR_METRIC_REGISTRY_NAME);
 
         try (IgniteClient ignored = startClient(clientConfiguration("thinClient", "trusttwo", CIPHER_SUITE, "TLSv1.2"))) {
             assertSslCommunicationMetrics(reg, 1, 1, 0);
