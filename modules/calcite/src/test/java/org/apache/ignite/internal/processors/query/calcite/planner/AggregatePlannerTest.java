@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -25,6 +26,8 @@ import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.Join;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.fun.SqlAvgAggFunction;
 import org.apache.calcite.util.ImmutableIntList;
@@ -44,9 +47,12 @@ import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteSingleS
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.util.typedef.F;
 import org.hamcrest.core.IsInstanceOf;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -268,6 +274,116 @@ public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
             findNodes(phys, byClass(algo.single)).stream()
                 .noneMatch(n -> ((IgniteSingleAggregateBase)n).getAggCallList().isEmpty())
         );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void singleSumTypes() throws Exception {
+        IgniteSchema schema = createSchema(
+            createTable(
+                "TEST", IgniteDistributions.broadcast(),
+                "ID", Integer.class,
+                "GRP", Integer.class,
+                "VAL_TINYINT", Byte.class,
+                "VAL_SMALLINT", Short.class,
+                "VAL_INT", Integer.class,
+                "VAL_BIGINT", Long.class,
+                "VAL_DECIMAL", BigDecimal.class,
+                "VAL_FLOAT", Float.class,
+                "VAL_DOUBLE", Double.class
+            )
+        );
+
+        String sql = "SELECT " +
+            "SUM(VAL_TINYINT), " +
+            "SUM(VAL_SMALLINT), " +
+            "SUM(VAL_INT), " +
+            "SUM(VAL_BIGINT), " +
+            "SUM(VAL_DECIMAL), " +
+            "SUM(VAL_FLOAT), " +
+            "SUM(VAL_DOUBLE) " +
+            "FROM test GROUP BY grp";
+
+        IgniteRel phys = physicalPlan(
+            sql,
+            schema,
+            algo.rulesToDisable
+        );
+
+        checkSplitAndSerialization(phys, schema);
+
+        IgniteSingleAggregateBase agg = findFirstNode(phys, byClass(algo.single));
+
+        assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), agg);
+
+        RelDataType rowTypes = agg.getRowType();
+
+        RelDataTypeFactory tf = phys.getCluster().getTypeFactory();
+
+        assertEquals(tf.createJavaType(Long.class), rowTypes.getFieldList().get(1).getType());
+        assertEquals(tf.createJavaType(Long.class), rowTypes.getFieldList().get(2).getType());
+        assertEquals(tf.createJavaType(BigDecimal.class), rowTypes.getFieldList().get(3).getType());
+        assertEquals(tf.createJavaType(BigDecimal.class), rowTypes.getFieldList().get(4).getType());
+        assertEquals(tf.createJavaType(BigDecimal.class), rowTypes.getFieldList().get(5).getType());
+        assertEquals(tf.createJavaType(Double.class), rowTypes.getFieldList().get(6).getType());
+        assertEquals(tf.createJavaType(Double.class), rowTypes.getFieldList().get(7).getType());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void mapReduceSumTypes() throws Exception {
+        IgniteSchema schema = createSchema(
+            createTable(
+                "TEST", IgniteDistributions.random(),
+                "ID", Integer.class,
+                "GRP", Integer.class,
+                "VAL_TINYINT", Byte.class,
+                "VAL_SMALLINT", Short.class,
+                "VAL_INT", Integer.class,
+                "VAL_BIGINT", Long.class,
+                "VAL_DECIMAL", BigDecimal.class,
+                "VAL_FLOAT", Float.class,
+                "VAL_DOUBLE", Double.class
+            )
+        );
+
+        String sql = "SELECT " +
+            "SUM(VAL_TINYINT), " +
+            "SUM(VAL_SMALLINT), " +
+            "SUM(VAL_INT), " +
+            "SUM(VAL_BIGINT), " +
+            "SUM(VAL_DECIMAL), " +
+            "SUM(VAL_FLOAT), " +
+            "SUM(VAL_DOUBLE) " +
+            "FROM test GROUP BY grp";
+
+        IgniteRel phys = physicalPlan(
+            sql,
+            schema,
+            algo.rulesToDisable
+        );
+
+        checkSplitAndSerialization(phys, schema);
+
+        IgniteReduceAggregateBase agg = findFirstNode(phys, byClass(algo.reduce));
+
+        assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), agg);
+
+        RelDataType rowTypes = agg.getRowType();
+
+        RelDataTypeFactory tf = phys.getCluster().getTypeFactory();
+
+        assertEquals(tf.createJavaType(Long.class), rowTypes.getFieldList().get(1).getType());
+        assertEquals(tf.createJavaType(Long.class), rowTypes.getFieldList().get(2).getType());
+        assertEquals(tf.createJavaType(BigDecimal.class), rowTypes.getFieldList().get(3).getType());
+        assertEquals(tf.createJavaType(BigDecimal.class), rowTypes.getFieldList().get(4).getType());
+        assertEquals(tf.createJavaType(BigDecimal.class), rowTypes.getFieldList().get(5).getType());
+        assertEquals(tf.createJavaType(Double.class), rowTypes.getFieldList().get(6).getType());
+        assertEquals(tf.createJavaType(Double.class), rowTypes.getFieldList().get(7).getType());
     }
 
     /** */

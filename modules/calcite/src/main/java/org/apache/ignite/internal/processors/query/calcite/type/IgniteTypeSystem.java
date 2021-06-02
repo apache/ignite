@@ -18,7 +18,10 @@
 package org.apache.ignite.internal.processors.query.calcite.type;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rel.type.RelDataTypeSystemImpl;
 
@@ -36,5 +39,27 @@ public class IgniteTypeSystem extends RelDataTypeSystemImpl implements Serializa
     /** {@inheritDoc} */
     @Override public int getMaxNumericPrecision() {
         return Short.MAX_VALUE;
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelDataType deriveSumType(RelDataTypeFactory typeFactory, RelDataType argumentType) {
+        switch (argumentType.getSqlTypeName()) {
+            case TINYINT:
+            case SMALLINT:
+                return typeFactory.createJavaType(Long.class);
+
+            case INTEGER:
+            case BIGINT:
+            case DECIMAL:
+                return typeFactory.createJavaType(BigDecimal.class);
+
+            case REAL:
+            case FLOAT:
+            case DOUBLE:
+                return typeFactory.createJavaType(Double.class);
+
+            default:
+                return super.deriveSumType(typeFactory, argumentType);
+        }
     }
 }

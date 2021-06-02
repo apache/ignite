@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -108,10 +109,10 @@ public class SortAggregateIntegrationTest extends GridCommonAbstractTest {
         assertEquals(ROWS / 10, res.size());
 
         res.forEach(r -> {
-            Integer s0 = (Integer)r.get(0);
-            Integer s1 = (Integer)r.get(1);
+            BigDecimal s0 = (BigDecimal)r.get(0);
+            BigDecimal s1 = (BigDecimal)r.get(1);
 
-            assertEquals(s0 * 2, (int)s1);
+            assertEquals(s0.multiply(new BigDecimal(2)), s1);
         });
     }
 
