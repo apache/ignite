@@ -455,7 +455,7 @@ public class ChangeDataCaptureSelfTest extends AbstractChangeDataCaptureTest {
             assertTrue(cnsmr.stopped);
         }
 
-        final int[] expSz = {KEYS_CNT};
+        AtomicInteger expSz = new AtomicInteger(KEYS_CNT);
 
         TestCDCConsumer cnsmr = new TestCDCConsumer() {
             @Override protected boolean commit() {
@@ -468,7 +468,7 @@ public class ChangeDataCaptureSelfTest extends AbstractChangeDataCaptureTest {
                 int sz = keys.size();
 
                 if (sz >= KEYS_CNT / 2) {
-                    expSz[0] = KEYS_CNT - sz;
+                    expSz.set(KEYS_CNT - sz);
 
                     return true;
                 }
@@ -491,7 +491,7 @@ public class ChangeDataCaptureSelfTest extends AbstractChangeDataCaptureTest {
 
         fut = runAsync(cdc);
 
-        waitForSize(expSz[0], DEFAULT_CACHE_NAME, UPDATE, getTestTimeout(), cnsmr);
+        waitForSize(expSz.get(), DEFAULT_CACHE_NAME, UPDATE, getTestTimeout(), cnsmr);
         waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, DELETE, getTestTimeout(), cnsmr);
 
         fut.cancel();
