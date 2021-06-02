@@ -269,15 +269,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
                 CheckArrayPoolLeak(streamer);
             }
 
-            var size = cache.GetSize();
-            if (size != count)
-            {
-                Thread.Sleep(3000);
-                var newSize = cache.GetSize();
-
-                Assert.AreEqual(size, count, "After 3 seconds: " + newSize);
-            }
-
+            Assert.AreEqual(count, cache.GetSize());
             Assert.AreEqual(4, cache[2]);
             Assert.AreEqual(22, cache[20]);
         }
