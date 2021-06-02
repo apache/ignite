@@ -312,7 +312,7 @@ public abstract class H2IndexCostedBase extends BaseIndex {
      * @return {@code true} if column value should be null, {@code falce} otherwise (or if it not sure).
      */
     private boolean isNotNullFilter(Session ses, Column column, TableFilter filter) {
-        // TODO: check not null expression (TableFilter contains only fullCondition without getter to check it)
+        // TODO:  IGNITE-14813 check not null expression (TableFilter contains only fullCondition without getter to check it)
         return false;
     }
 

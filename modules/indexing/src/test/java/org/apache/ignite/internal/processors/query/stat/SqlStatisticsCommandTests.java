@@ -98,7 +98,6 @@ public class SqlStatisticsCommandTests extends StatisticsAbstractTest {
      */
     @Test
     public void testRefreshStatistics() throws IgniteCheckedException {
-        // TODO after GG-32420 test schema
         testStatistics(SCHEMA, "TEST", true);
         testStatistics(SCHEMA, "TEST2", true);
 
@@ -157,7 +156,6 @@ public class SqlStatisticsCommandTests extends StatisticsAbstractTest {
      */
     @Test
     public void testDropStatistics() throws IgniteInterruptedCheckedException {
-        // TODO after GG-32420 test schema
         sql("ANALYZE PUBLIC.TEST, test2");
 
         testStatistics(SCHEMA, "TEST", false);

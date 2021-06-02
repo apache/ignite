@@ -129,8 +129,6 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
 
     /** */
     protected IgniteEx startGridAndChangeBaseline(int nodeIdx) throws Exception {
-        System.out.println("+++ START " + nodeIdx);
-
         IgniteEx ign = startGrid(nodeIdx);
 
         ign.cluster().state(ClusterState.ACTIVE);
@@ -145,8 +143,6 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
 
     /** */
     protected void stopGridAndChangeBaseline(int nodeIdx) {
-        System.out.println("+++ STOP " + nodeIdx);
-
         stopGrid(nodeIdx);
 
         if (persist)
@@ -354,7 +350,7 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
 
         dropSmallTable(null);
 
-        // TODO: remove after fix IGN-TBD
+        // TODO: remove after fix IGNITE-14814
         if (persist)
             statisticsMgr(0).dropStatistics(SMALL_TARGET);
 
