@@ -1,7 +1,6 @@
 # name: test/sql/aggregate/aggregates/test_aggregate_types_scalar.test
 # description: Test scalar aggregates with many different types
 # group: [aggregates]
-# Ignore: https://issues.apache.org/jira/browse/IGNITE-14597
 # Ignore: https://issues.apache.org/jira/browse/IGNITE-14636
 
 query IIIII
@@ -64,15 +63,15 @@ statement error
 SELECT MAX(1, 2)
 
 query IIRTTTT
-SELECT FIRST(1), FIRST(NULL), FIRST(33.3), FIRST('hello'), FIRST(True), FIRST(DATE '1992-02-02'), FIRST(TIMESTAMP '2008-01-01 00:00:01')
+SELECT FIRST_VALUE(1), FIRST_VALUE(NULL), FIRST_VALUE(33.3), FIRST_VALUE('hello'), FIRST_VALUE(True), FIRST_VALUE(DATE '1992-02-02'), FIRST_VALUE(TIMESTAMP '2008-01-01 00:00:01')
 ----
 1	NULL	33.300000	hello	true	1992-02-02	2008-01-01 00:00:01.0
 
 statement error
-SELECT FIRST()
+SELECT FIRST_VALUE()
 
 statement error
-SELECT FIRST(1, 2)
+SELECT FIRST_VALUE(1, 2)
 
 query RRR
 SELECT AVG(1), AVG(NULL), AVG(33.3)

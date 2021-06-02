@@ -112,4 +112,24 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
 
         assertQuery("SELECT t._key, (SELECT x FROM TABLE(system_range(t._key, t._key))) FROM person t").check();
     }
+
+    /** */
+    @Test
+    public void testFirstLastValAggr() {
+        createAndPopulateTable();
+
+        assertQuery("select first_value(name), last_value(name) from person")
+            .returns("Igor", "Roma")
+            .check();
+
+        // Test with grouping.
+        String hints = "/*+ DISABLE_RULE('HashMapReduceAggregateConverterRule', 'HashSingleAggregateConverterRule') */";
+
+        // Nested grouping required to ensure ordering.
+        assertQuery("select " + hints + " salary, first_value(name), last_value(name) from " +
+            "(select salary, _key, name from person group by salary, _key, name) group by salary")
+            .returns(10d, "Igor", "Roma")
+            .returns(15d, "Ilya", "Ilya")
+            .check();
+    }
 }

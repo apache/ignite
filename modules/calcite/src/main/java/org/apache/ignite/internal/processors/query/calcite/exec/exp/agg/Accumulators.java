@@ -68,6 +68,10 @@ public class Accumulators {
                 return maxFactory(call);
             case "SINGLE_VALUE":
                 return SingleVal.FACTORY;
+            case "FIRST_VALUE":
+                return FirstVal.FACTORY;
+            case "LAST_VALUE":
+                return LastVal.FACTORY;
             default:
                 throw new AssertionError(call.getAggregation().getName());
         }
@@ -190,6 +194,82 @@ public class Accumulators {
             assert holder == null : "sudden apply for: " + other + " on SingleVal";
 
             holder = ((SingleVal)other).holder;
+        }
+
+        /** */
+        @Override public Object end() {
+            return holder;
+        }
+
+        /** */
+        @Override public List<RelDataType> argumentTypes(IgniteTypeFactory typeFactory) {
+            return F.asList(typeFactory.createTypeWithNullability(typeFactory.createSqlType(ANY), true));
+        }
+
+        /** */
+        @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
+            return typeFactory.createSqlType(ANY);
+        }
+    }
+
+    /** */
+    private static class FirstVal implements Accumulator {
+        /** */
+        private Object holder;
+
+        /** */
+        public static final Supplier<Accumulator> FACTORY = FirstVal::new;
+
+        /** */
+        @Override public void add(Object... args) {
+            assert args.length == 1 : args.length;
+
+            if (holder == null)
+                holder = args[0];
+        }
+
+        /** */
+        @Override public void apply(Accumulator other) {
+            if (holder == null)
+                holder = ((FirstVal)other).holder;
+        }
+
+        /** */
+        @Override public Object end() {
+            return holder;
+        }
+
+        /** */
+        @Override public List<RelDataType> argumentTypes(IgniteTypeFactory typeFactory) {
+            return F.asList(typeFactory.createTypeWithNullability(typeFactory.createSqlType(ANY), true));
+        }
+
+        /** */
+        @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
+            return typeFactory.createSqlType(ANY);
+        }
+    }
+
+    /** */
+    private static class LastVal implements Accumulator {
+        /** */
+        private Object holder;
+
+        /** */
+        public static final Supplier<Accumulator> FACTORY = LastVal::new;
+
+        /** */
+        @Override public void add(Object... args) {
+            assert args.length == 1 : args.length;
+
+            if (args[0] != null)
+                holder = args[0];
+        }
+
+        /** */
+        @Override public void apply(Accumulator other) {
+            if (((LastVal)other).holder != null)
+                holder = ((LastVal)other).holder;
         }
 
         /** */
