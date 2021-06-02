@@ -71,12 +71,8 @@ public class ChangeDataCaptureOrderTest extends AbstractChangeDataCaptureTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        int segmentSz = 10 * 1024 * 1024;
-
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setChangeDataCaptureEnabled(true)
-            .setMaxWalArchiveSize(10 * segmentSz)
-            .setWalSegmentSize(segmentSz)
             .setWalForceArchiveTimeout(WAL_ARCHIVE_TIMEOUT)
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)));
 

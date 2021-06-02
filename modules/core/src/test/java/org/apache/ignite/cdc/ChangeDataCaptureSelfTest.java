@@ -95,13 +95,9 @@ public class ChangeDataCaptureSelfTest extends AbstractChangeDataCaptureTest {
         if (specificConsistentId)
             cfg.setConsistentId(consistentId);
 
-        int segmentSz = 10 * 1024 * 1024;
-
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setChangeDataCaptureEnabled(true)
             .setWalMode(walMode)
-            .setMaxWalArchiveSize(10 * segmentSz)
-            .setWalSegmentSize(segmentSz)
             .setWalForceArchiveTimeout(WAL_ARCHIVE_TIMEOUT)
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)));
 
