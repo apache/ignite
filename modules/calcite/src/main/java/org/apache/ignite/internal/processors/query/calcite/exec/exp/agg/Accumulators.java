@@ -68,6 +68,8 @@ public class Accumulators {
                 return maxFactory(call);
             case "SINGLE_VALUE":
                 return SingleVal.FACTORY;
+            case "ANY_VALUE":
+                return AnyVal.FACTORY;
             default:
                 throw new AssertionError(call.getAggregation().getName());
         }
@@ -190,6 +192,44 @@ public class Accumulators {
             assert holder == null : "sudden apply for: " + other + " on SingleVal";
 
             holder = ((SingleVal)other).holder;
+        }
+
+        /** */
+        @Override public Object end() {
+            return holder;
+        }
+
+        /** */
+        @Override public List<RelDataType> argumentTypes(IgniteTypeFactory typeFactory) {
+            return F.asList(typeFactory.createTypeWithNullability(typeFactory.createSqlType(ANY), true));
+        }
+
+        /** */
+        @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
+            return typeFactory.createSqlType(ANY);
+        }
+    }
+
+    /** */
+    private static class AnyVal implements Accumulator {
+        /** */
+        private Object holder;
+
+        /** */
+        public static final Supplier<Accumulator> FACTORY = AnyVal::new;
+
+        /** */
+        @Override public void add(Object... args) {
+            assert args.length == 1 : args.length;
+
+            if (holder == null)
+                holder = args[0];
+        }
+
+        /** */
+        @Override public void apply(Accumulator other) {
+            if (holder == null)
+                holder = ((AnyVal)other).holder;
         }
 
         /** */

@@ -281,6 +281,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             case AVG:
             case MIN:
             case MAX:
+            case ANY_VALUE:
 
                 return;
             default:
