@@ -202,35 +202,41 @@ public abstract class StatisticsViewsTest extends StatisticsAbstractTest {
     }
 
     /**
+     * Check statistics rowCount=size, analyze with overridden values and check values.
+     *
+     * @throws Exception in case of error.
      */
     @Test
     public void testEnforceStatisticValues() throws Exception {
         long size = SMALL_SIZE;
-        sql("DROP STATISTICS SMALL");
-        Thread.sleep(999);
-
-        System.err.println("ANALYZE AGAIN");
-        sql("ANALYZE SMALL (A) WITH \"DISTINCT=5,NULLS=6,TOTAL=7,SIZE=8\"");
-        sql("ANALYZE SMALL (B) WITH \"DISTINCT=6,NULLS=7,TOTAL=8\"");
-        sql("ANALYZE SMALL (C)");
-
-        System.err.println("GET RESULT");
-
-        checkSqlResult("select * from SYS.STATISTICS_LOCAL_DATA where NAME = 'SMALL'", null,
-            list -> !list.isEmpty());
 
         ObjectStatisticsImpl smallStat = (ObjectStatisticsImpl)statisticsMgr(0).getLocalStatistics(SMALL_KEY);
 
         assertNotNull(smallStat);
+        assertEquals(size, smallStat.rowCount());
+
+        sql("DROP STATISTICS SMALL");
+
+        sql("ANALYZE SMALL (A) WITH \"DISTINCT=5,NULLS=6,TOTAL=7,SIZE=8\"");
+        sql("ANALYZE SMALL (B) WITH \"DISTINCT=6,NULLS=7,TOTAL=8\"");
+        sql("ANALYZE SMALL (C)");
+
+        checkSqlResult("select * from SYS.STATISTICS_LOCAL_DATA where NAME = 'SMALL'", null,
+            list -> !list.isEmpty());
+
+        smallStat = (ObjectStatisticsImpl)statisticsMgr(0).getLocalStatistics(SMALL_KEY);
+
+        assertNotNull(smallStat);
+        assertEquals(8, smallStat.rowCount());
 
         Timestamp tsA = new Timestamp(smallStat.columnStatistics("A").createdAt());
         Timestamp tsB = new Timestamp(smallStat.columnStatistics("B").createdAt());
         Timestamp tsC = new Timestamp(smallStat.columnStatistics("C").createdAt());
 
         List<List<Object>> localData = Arrays.asList(
-            Arrays.asList(SCHEMA, "TABLE", "SMALL", "A", size, 5L, 6L, 7L, 8, 3L, tsA.toString()),
-            Arrays.asList(SCHEMA, "TABLE", "SMALL", "B", size, 6L, 7L, 8L, 4, 3L, tsB.toString()),
-            Arrays.asList(SCHEMA, "TABLE", "SMALL", "C", size, 10L, 0L, size, 4, 3L, tsC.toString())
+            Arrays.asList(SCHEMA, "TABLE", "SMALL", "A", 8L, 5L, 6L, 7L, 8, 3L, tsA.toString()),
+            Arrays.asList(SCHEMA, "TABLE", "SMALL", "B", 8L, 6L, 7L, 8L, 4, 3L, tsB.toString()),
+            Arrays.asList(SCHEMA, "TABLE", "SMALL", "C", 8L, 10L, 0L, size, 4, 3L, tsC.toString())
         );
 
         checkSqlResult("select * from SYS.STATISTICS_LOCAL_DATA where NAME = 'SMALL'", null,

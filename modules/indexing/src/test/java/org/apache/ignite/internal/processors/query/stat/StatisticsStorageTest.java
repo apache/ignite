@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.stat;
 
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -149,7 +149,7 @@ public abstract class StatisticsStorageTest extends StatisticsStorageAbstractTes
         GridTestUtils.assertThrows(
             log,
             () -> statisticsMgr(0).dropStatistics(SMALL_TARGET),
-            IgniteSQLException.class,
+            IgniteException.class,
             "Statistic doesn't exist for [schema=PUBLIC, obj=SMALL]"
         );
 
@@ -178,7 +178,7 @@ public abstract class StatisticsStorageTest extends StatisticsStorageAbstractTes
         GridTestUtils.assertThrows(
             log,
             () -> statisticsMgr(0).dropStatistics(new StatisticsTarget(SCHEMA, "SMALL", "B")),
-            IgniteSQLException.class,
+            IgniteException.class,
             "Statistic doesn't exist for [schema=PUBLIC, obj=SMALL, col=B]"
         );
 

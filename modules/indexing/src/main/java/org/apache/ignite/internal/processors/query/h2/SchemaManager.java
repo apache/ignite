@@ -373,7 +373,7 @@ public class SchemaManager {
                 try {
                     tbl.table().setRemoveIndexOnDestroy(rmvIdx);
 
-                    dropTable(tbl);
+                    dropTable(tbl, rmvIdx);
                 }
                 catch (Exception e) {
                     U.error(log, "Failed to drop table on cache stop (will ignore): " + tbl.fullTableName(), e);
@@ -564,8 +564,9 @@ public class SchemaManager {
      * Drops table form h2 database and clear all related indexes (h2 text, lucene).
      *
      * @param tbl Table to unregister.
+     * @param destroy {@code true} when table destroyed (cache destroyed) otherwise {@code false}.
      */
-    private void dropTable(H2TableDescriptor tbl) {
+    private void dropTable(H2TableDescriptor tbl, boolean destroy) {
         assert tbl != null;
 
         if (log.isDebugEnabled())
@@ -584,7 +585,8 @@ public class SchemaManager {
 
                 stmt.executeUpdate(sql);
 
-                afterDropTable(tbl.schemaName(), tbl.tableName());
+                if (destroy)
+                    afterDropTable(tbl.schemaName(), tbl.tableName());
             }
             catch (SQLException e) {
                 throw new IgniteSQLException("Failed to drop database index table [type=" + tbl.type().name() +

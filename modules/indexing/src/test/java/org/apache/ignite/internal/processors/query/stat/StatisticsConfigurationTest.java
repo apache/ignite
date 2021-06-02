@@ -354,7 +354,7 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
 
         dropSmallTable(null);
 
-        // TODO: must be removed after fix GG-32766
+        // TODO: remove after fix IGN-TBD
         if (persist)
             statisticsMgr(0).dropStatistics(SMALL_TARGET);
 
