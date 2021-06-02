@@ -17,48 +17,52 @@
 
 package org.apache.ignite.internal.table.distributed.command;
 
+import java.util.HashSet;
+import java.util.Set;
 import org.apache.ignite.internal.schema.BinaryRow;
-import org.apache.ignite.internal.schema.ByteBufferRow;
 import org.apache.ignite.raft.client.ReadCommand;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * The command gets a value by key specified.
+ * This is a command for the batch get operation.
  */
-public class GetCommand implements ReadCommand {
-    /** Binary key row. */
-    private transient BinaryRow keyRow;
+public class GetAllCommand implements ReadCommand {
+    /** Binary key rows. */
+    private transient Set<BinaryRow> keyRows;
 
     /*
      * Row bytes.
      * It is a temporary solution, before network have not implement correct serialization BinaryRow.
      * TODO: Remove the field after (IGNITE-14793).
      */
-    private byte[] keyRowBytes;
+    private byte[] keyRowsBytes;
 
     /**
-     * Creates a new instance of GetCommand with the given key to be got.
-     * The {@code keyRow} should not be {@code null}.
+     * Creates a new instance of GetAllCommand with the given keys to be got.
+     * The {@code keyRows} should not be {@code null} or empty.
      *
-     * @param keyRow Binary key row.
+     * @param keyRows Binary key rows.
      */
-    public GetCommand(@NotNull BinaryRow keyRow) {
-        assert keyRow != null;
+    public GetAllCommand(@NotNull Set<BinaryRow> keyRows) {
+        assert keyRows != null && !keyRows.isEmpty();
 
-        this.keyRow = keyRow;
+        this.keyRows = keyRows;
 
-        CommandUtils.rowToBytes(keyRow, bytes -> keyRowBytes = bytes);
+        CommandUtils.rowsToBytes(keyRows, bytes -> keyRowsBytes = bytes);
     }
 
     /**
-     * Gets a binary key row to be got.
+     * Gets a set of binary key rows to be got.
      *
-     * @return Binary key.
+     * @return Binary keys.
      */
-    public BinaryRow getKeyRow() {
-        if (keyRow == null)
-            keyRow = new ByteBufferRow(keyRowBytes);
+    public Set<BinaryRow> getKeyRows() {
+        if (keyRows == null && keyRowsBytes != null) {
+            keyRows = new HashSet<>();
 
-        return keyRow;
+            CommandUtils.readRows(keyRowsBytes, keyRows::add);
+        }
+
+        return keyRows;
     }
 }

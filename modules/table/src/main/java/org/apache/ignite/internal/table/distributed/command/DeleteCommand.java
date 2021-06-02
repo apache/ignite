@@ -17,12 +17,8 @@
 
 package org.apache.ignite.internal.table.distributed.command;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.function.Consumer;
 import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.internal.schema.ByteBufferRow;
-import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.raft.client.WriteCommand;
 import org.jetbrains.annotations.NotNull;
 
@@ -30,55 +26,34 @@ import org.jetbrains.annotations.NotNull;
  * The command deletes a entry by passed key.
  */
 public class DeleteCommand implements WriteCommand {
-    /** The logger. */
-    private static final IgniteLogger LOG = IgniteLogger.forClass(DeleteCommand.class);
-
-    /** Key row. */
+    /** Binary key row. */
     private transient BinaryRow keyRow;
 
     /*
      * Row bytes.
      * It is a temporary solution, before network have not implement correct serialization BinaryRow.
-     * TODO: Remove the field after.
+     * TODO: Remove the field after (IGNITE-14793).
      */
     private byte[] keyRowBytes;
 
     /**
-     * @param keyRow Key row.
+     * Creates a new instance of DeleteCommand with the given key to be deleted.
+     * The {@code keyRow} should not be {@code null}.
+     *
+     * @param keyRow Binary key row.
      */
     public DeleteCommand(@NotNull BinaryRow keyRow) {
         assert keyRow != null;
 
         this.keyRow = keyRow;
 
-        rowToBytes(keyRow, bytes -> keyRowBytes = bytes);
+        CommandUtils.rowToBytes(keyRow, bytes -> keyRowBytes = bytes);
     }
 
     /**
-     * Writes a row to byte array.
+     * Gets a binary key row to be deleted.
      *
-     * @param row Row.
-     * @param consumer Byte array consumer.
-     */
-    private void rowToBytes(BinaryRow row, Consumer<byte[]> consumer) {
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-            row.writeTo(baos);
-
-            baos.flush();
-
-            consumer.accept(baos.toByteArray());
-        }
-        catch (IOException e) {
-            LOG.error("Could not write row to stream [row=" + row + ']', e);
-
-            consumer.accept(null);
-        }
-    }
-
-    /**
-     * Gets a key row.
-     *
-     * @return Key row.
+     * @return Binary key.
      */
     public BinaryRow getKeyRow() {
         if (keyRow == null)

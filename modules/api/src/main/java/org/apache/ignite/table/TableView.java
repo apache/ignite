@@ -34,285 +34,321 @@ public interface TableView<R> {
     /**
      * Gets a record with same key columns values as given one from the table.
      *
-     * @param keyRec Record with key columns set.
-     * @return Record with all columns filled from the table.
+     * @param keyRec A record with key columns set.
+     * The record cannot be {@code null}.
+     * @return A record with all columns filled from the table.
      */
-    R get(R keyRec);
+    R get(@NotNull R keyRec);
 
     /**
      * Asynchronously gets a record with same key columns values as given one from the table.
      *
-     * @param keyRec Record with key columns set.
+     * @param keyRec A record with key columns set.
+     * The record cannot be {@code null}.
      * @return Future representing pending completion of the operation.
      */
-    @NotNull CompletableFuture<R> getAsync(R keyRec);
+    @NotNull CompletableFuture<R> getAsync(@NotNull R keyRec);
 
     /**
      * Get records from the table.
      *
      * @param keyRecs Records with key columns set.
+     * The records cannot be {@code null}.
      * @return Records with all columns filled from the table.
      */
-    Collection<R> getAll(Collection<R> keyRecs);
+    Collection<R> getAll(@NotNull Collection<R> keyRecs);
 
     /**
      * Asynchronously get records from the table.
      *
      * @param keyRecs Records with key columns set.
+     * The records cannot be {@code null}.
      * @return Future representing pending completion of the operation.
      */
-    @NotNull CompletableFuture<Collection<R>> getAllAsync(Collection<R> keyRecs);
+    @NotNull CompletableFuture<Collection<R>> getAllAsync(@NotNull Collection<R> keyRecs);
 
     /**
      * Inserts a record into the table if does not exist or replaces the existed one.
      *
-     * @param rec Record to insert into the table.
+     * @param rec A record to insert into the table.
+     * The record cannot be {@code null}.
      */
-    void upsert(R rec);
+    void upsert(@NotNull R rec);
 
     /**
      * Asynchronously inserts a record into the table if does not exist or replaces the existed one.
      *
-     * @param rec Record to insert into the table.
+     * @param rec A record to insert into the table.
+     * The record cannot be {@code null}.
      * @return Future representing pending completion of the operation.
      */
-    @NotNull CompletableFuture<Void> upsertAsync(R rec);
+    @NotNull CompletableFuture<Void> upsertAsync(@NotNull R rec);
 
     /**
      * Insert records into the table if does not exist or replaces the existed one.
      *
      * @param recs Records to insert into the table.
+     * The records cannot be {@code null}.
      */
-    void upsertAll(Collection<R> recs);
+    void upsertAll(@NotNull Collection<R> recs);
 
     /**
      * Asynchronously inserts a record into the table if does not exist or replaces the existed one.
      *
      * @param recs Records to insert into the table.
+     * The records cannot be {@code null}.
      * @return Future representing pending completion of the operation.
      */
-    @NotNull CompletableFuture<Void> upsertAllAsync(Collection<R> recs);
+    @NotNull CompletableFuture<Void> upsertAllAsync(@NotNull Collection<R> recs);
 
     /**
      * Inserts a record into the table or replaces if exists and return replaced previous record.
      *
-     * @param rec Record to insert into the table.
+     * @param rec A record to insert into the table.
+     * The record cannot be {@code null}.
      * @return Replaced record or {@code null} if not existed.
      */
-    R getAndUpsert(R rec);
+    R getAndUpsert(@NotNull R rec);
 
     /**
      * Asynchronously inserts a record into the table or replaces if exists and return replaced previous record.
      *
-     * @param rec Record to insert into the table.
+     * @param rec A record to insert into the table.
+     * The record cannot be {@code null}.
      * @return Future representing pending completion of the operation.
      */
-    @NotNull CompletableFuture<R> getAndUpsertAsync(R rec);
+    @NotNull CompletableFuture<R> getAndUpsertAsync(@NotNull R rec);
 
     /**
      * Inserts a record into the table if not exists.
      *
-     * @param rec Record to insert into the table.
+     * @param rec A record to insert into the table.
+     * The record cannot be {@code null}.
      * @return {@code True} if successful, {@code false} otherwise.
      */
-    boolean insert(R rec);
+    boolean insert(@NotNull R rec);
 
     /**
      * Asynchronously inserts a record into the table if not exists.
      *
-     * @param rec Record to insert into the table.
+     * @param rec A record to insert into the table.
+     * The record cannot be {@code null}.
      * @return Future representing pending completion of the operation.
      */
-    @NotNull CompletableFuture<Boolean> insertAsync(R rec);
+    @NotNull CompletableFuture<Boolean> insertAsync(@NotNull R rec);
 
     /**
      * Insert records into the table which do not exist, skipping existed ones.
      *
      * @param recs Records to insert into the table.
+     * The records cannot be {@code null}.
      * @return Skipped records.
      */
-    Collection<R> insertAll(Collection<R> recs);
+    Collection<R> insertAll(@NotNull Collection<R> recs);
 
     /**
      * Asynchronously insert records into the table which do not exist, skipping existed ones.
      *
      * @param recs Records to insert into the table.
+     * The records cannot be {@code null}.
      * @return Future representing pending completion of the operation.
      */
-    @NotNull CompletableFuture<Collection<R>> insertAllAsync(Collection<R> recs);
+    @NotNull CompletableFuture<Collection<R>> insertAllAsync(@NotNull Collection<R> recs);
 
     /**
      * Replaces an existed record associated with the same key columns values as the given one has.
      *
-     * @param rec Record to replace with.
+     * @param rec A record to replace with.
+     * The record cannot be {@code null}.
      * @return {@code True} if old record was found and replaced successfully, {@code false} otherwise.
      */
-    boolean replace(R rec);
+    boolean replace(@NotNull R rec);
 
     /**
      * Asynchronously replaces an existed record associated with the same key columns values as the given one has.
      *
-     * @param rec Record to replace with.
+     * @param rec A record to replace with.
+     * The record cannot be {@code null}.
      * @return Future representing pending completion of the operation.
      */
-    @NotNull CompletableFuture<Boolean> replaceAsync(R rec);
+    @NotNull CompletableFuture<Boolean> replaceAsync(@NotNull R rec);
 
     /**
      * Replaces an expected record in the table with the given new one.
      *
-     * @param oldRec Record to replace.
-     * @param newRec Record to replace with.
+     * @param oldRec A record to replace.
+     * The record cannot be {@code null}.
+     * @param newRec A record to replace with.
+     * The record cannot be {@code null}.
      * @return {@code True} if the old record replaced successfully, {@code false} otherwise.
      */
-    boolean replace(R oldRec, R newRec);
+    boolean replace(@NotNull R oldRec, @NotNull R newRec);
 
     /**
      * Asynchronously replaces an expected record in the table with the given new one.
      *
-     * @param oldRec Record to replace.
-     * @param newRec Record to replace with.
+     * @param oldRec A record to replace.
+     * The record cannot be {@code null}.
+     * @param newRec A record to replace with.
+     * The record cannot be {@code null}.
      * @return Future representing pending completion of the operation.
      */
-    @NotNull CompletableFuture<Boolean> replaceAsync(R oldRec, R newRec);
+    @NotNull CompletableFuture<Boolean> replaceAsync(@NotNull R oldRec, @NotNull R newRec);
 
     /**
      * Gets an existed record associated with the same key columns values as the given one has,
      * then replaces with the given one.
      *
-     * @param rec Record to replace with.
+     * @param rec A record to replace with.
+     * The record cannot be {@code null}.
      * @return Replaced record or {@code null} if not existed.
      */
-    R getAndReplace(R rec);
+    R getAndReplace(@NotNull R rec);
 
     /**
      * Asynchronously gets an existed record associated with the same key columns values as the given one has,
      * then replaces with the given one.
      *
-     * @param rec Record to replace with.
+     * @param rec A record to replace with.
+     * The record cannot be {@code null}.
      * @return Future representing pending completion of the operation.
      */
-    @NotNull CompletableFuture<R> getAndReplaceAsync(R rec);
+    @NotNull CompletableFuture<R> getAndReplaceAsync(@NotNull R rec);
 
     /**
      * Deletes a record with the same key columns values as the given one from the table.
      *
-     * @param keyRec Record with key columns set.
+     * @param keyRec A record with key columns set.
+     * The record cannot be {@code null}.
      * @return {@code True} if removed successfully, {@code false} otherwise.
      */
-    boolean delete(R keyRec);
+    boolean delete(@NotNull R keyRec);
 
     /**
      * Asynchronously deletes a record with the same key columns values as the given one from the table.
      *
-     * @param keyRec Record with key columns set.
+     * @param keyRec A record with key columns set.
+     * The record cannot be {@code null}.
      * @return Future representing pending completion of the operation.
      */
-    @NotNull CompletableFuture<Boolean> deleteAsync(R keyRec);
+    @NotNull CompletableFuture<Boolean> deleteAsync(@NotNull R keyRec);
 
     /**
      * Deletes the given record from the table.
      *
-     * @param rec Record to delete.
+     * @param rec A record to delete.
+     * The record cannot be {@code null}.
      * @return {@code True} if removed successfully, {@code false} otherwise.
      */
-    boolean deleteExact(R rec);
+    boolean deleteExact(@NotNull R rec);
 
     /**
      * Asynchronously deletes given record from the table.
      *
-     * @param rec Record to delete.
+     * @param rec A record to delete.
+     * The record cannot be {@code null}.
      * @return Future representing pending completion of the operation.
      */
-    @NotNull CompletableFuture<Boolean> deleteExactAsync(R rec);
+    @NotNull CompletableFuture<Boolean> deleteExactAsync(@NotNull R rec);
 
     /**
      * Gets then deletes a record with the same key columns values from the table.
      *
-     * @param rec Record with key columns set.
+     * @param rec A record with key columns set.
+     * The record cannot be {@code null}.
      * @return Removed record or {@code null} if not existed.
      */
-    R getAndDelete(R rec);
+    R getAndDelete(@NotNull R rec);
 
     /**
      * Asynchronously gets then deletes a record with the same key columns values from the table.
      *
-     * @param rec Record with key columns set.
+     * @param rec A record with key columns set.
+     * The record cannot be {@code null}.
      * @return Future representing pending completion of the operation.
      */
-    @NotNull CompletableFuture<R> getAndDeleteAsync(R rec);
+    @NotNull CompletableFuture<R> getAndDeleteAsync(@NotNull R rec);
 
     /**
      * Remove records with the same key columns values as the given one has from the table.
      *
      * @param recs Records with key columns set.
+     * The records cannot be {@code null}.
      * @return Records with key columns set that were not exists.
      */
-    Collection<R> deleteAll(Collection<R> recs);
+    Collection<R> deleteAll(@NotNull Collection<R> recs);
 
     /**
      * Asynchronously remove records with the same key columns values as the given one has from the table.
      *
      * @param recs Records with key columns set.
+     * The records cannot be {@code null}.
      * @return Future representing pending completion of the operation.
      */
-    @NotNull CompletableFuture<Collection<R>> deleteAllAsync(Collection<R> recs);
+    @NotNull CompletableFuture<Collection<R>> deleteAllAsync(@NotNull Collection<R> recs);
 
     /**
      * Remove given records from the table.
      *
      * @param recs Records to delete.
+     * The records cannot be {@code null}.
      * @return Records that were not deleted.
      */
-    Collection<R> deleteAllExact(Collection<R> recs);
+    Collection<R> deleteAllExact(@NotNull Collection<R> recs);
 
     /**
      * Asynchronously remove given records from the table.
      *
      * @param recs Records to delete.
+     * The records cannot be {@code null}.
      * @return Future representing pending completion of the operation.
      */
-    @NotNull CompletableFuture<Collection<R>> deleteAllExactAsync(Collection<R> recs);
+    @NotNull CompletableFuture<Collection<R>> deleteAllExactAsync(@NotNull Collection<R> recs);
 
     /**
      * Executes an InvokeProcessor code against a record with the same key columns values as the given one has.
      *
-     * @param keyRec Record with key columns set.
+     * @param keyRec A record with key columns set.
+     * The record cannot be {@code null}.
      * @param proc Invoke processor.
      * @param <T> InvokeProcessor result type.
      * @return Results of the processing.
      */
-    <T extends Serializable> T invoke(R keyRec, InvokeProcessor<R, R, T> proc);
+    <T extends Serializable> T invoke(@NotNull R keyRec, InvokeProcessor<R, R, T> proc);
 
     /**
      * Asynchronously executes an InvokeProcessor code against a record
      * with the same key columns values as the given one has.
      *
-     * @param keyRec Record with key columns set.
+     * @param keyRec A record with key columns set.
+     * The record cannot be {@code null}.
      * @param proc Invoke processor.
      * @param <T> InvokeProcessor result type.
      * @return Future representing pending completion of the operation.
      */
-    @NotNull <T extends Serializable> CompletableFuture<T> invokeAsync(R keyRec, InvokeProcessor<R, R, T> proc);
+    @NotNull <T extends Serializable> CompletableFuture<T> invokeAsync(@NotNull R keyRec, InvokeProcessor<R, R, T> proc);
 
     /**
      * Executes an InvokeProcessor code against records with the same key columns values as the given ones has.
      *
      * @param keyRecs Records with key columns set.
+     * The records cannot be {@code null}.
      * @param proc Invoke processor.
      * @param <T> InvokeProcessor result type.
      * @return Results of the processing.
      */
-    <T extends Serializable> Map<R, T> invokeAll(Collection<R> keyRecs, InvokeProcessor<R, R, T> proc);
+    <T extends Serializable> Map<R, T> invokeAll(@NotNull Collection<R> keyRecs, InvokeProcessor<R, R, T> proc);
 
     /**
      * Asynchronously executes an InvokeProcessor against records with the same key columns values as the given ones
      * has.
      *
      * @param keyRecs Records with key columns set.
+     * The records cannot be {@code null}.
      * @param proc Invoke processor.
      * @param <T> InvokeProcessor result type.
      * @return Results of the processing.
      */
-    @NotNull <T extends Serializable> CompletableFuture<Map<R, T>> invokeAllAsync(Collection<R> keyRecs,
+    @NotNull <T extends Serializable> CompletableFuture<Map<R, T>> invokeAllAsync(@NotNull Collection<R> keyRecs,
         InvokeProcessor<R, R, T> proc);
 }

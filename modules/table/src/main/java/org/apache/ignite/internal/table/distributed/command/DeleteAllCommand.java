@@ -17,48 +17,52 @@
 
 package org.apache.ignite.internal.table.distributed.command;
 
+import java.util.HashSet;
+import java.util.Set;
 import org.apache.ignite.internal.schema.BinaryRow;
-import org.apache.ignite.internal.schema.ByteBufferRow;
-import org.apache.ignite.raft.client.ReadCommand;
+import org.apache.ignite.raft.client.WriteCommand;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * The command gets a value by key specified.
+ * The command deletes entries by the passed keys.
  */
-public class GetCommand implements ReadCommand {
-    /** Binary key row. */
-    private transient BinaryRow keyRow;
+public class DeleteAllCommand implements WriteCommand {
+    /** Binary rows. */
+    private transient Set<BinaryRow> rows;
 
     /*
      * Row bytes.
      * It is a temporary solution, before network have not implement correct serialization BinaryRow.
      * TODO: Remove the field after (IGNITE-14793).
      */
-    private byte[] keyRowBytes;
+    private byte[] rowsBytes;
 
     /**
-     * Creates a new instance of GetCommand with the given key to be got.
-     * The {@code keyRow} should not be {@code null}.
+     * Creates a new instance of DeleteAllCommand with the given set of keys to be deleted.
+     * The {@code keyRows} should not be {@code null} or empty.
      *
-     * @param keyRow Binary key row.
+     * @param keyRows Collection of binary row keys to be deleted.
      */
-    public GetCommand(@NotNull BinaryRow keyRow) {
-        assert keyRow != null;
+    public DeleteAllCommand(@NotNull Set<BinaryRow> keyRows) {
+        assert keyRows != null && !keyRows.isEmpty();
 
-        this.keyRow = keyRow;
+        this.rows = keyRows;
 
-        CommandUtils.rowToBytes(keyRow, bytes -> keyRowBytes = bytes);
+        CommandUtils.rowsToBytes(keyRows, bytes -> rowsBytes = bytes);
     }
 
     /**
-     * Gets a binary key row to be got.
+     * Returns a set of binary key rows to be deleted.
      *
-     * @return Binary key.
+     * @return Binary keys.
      */
-    public BinaryRow getKeyRow() {
-        if (keyRow == null)
-            keyRow = new ByteBufferRow(keyRowBytes);
+    public Set<BinaryRow> getRows() {
+        if (rows == null && rowsBytes != null) {
+            rows = new HashSet<>();
 
-        return keyRow;
+            CommandUtils.readRows(rowsBytes, rows::add);
+        }
+
+        return rows;
     }
 }

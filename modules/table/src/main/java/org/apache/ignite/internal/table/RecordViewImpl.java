@@ -66,12 +66,12 @@ public class RecordViewImpl<R> extends AbstractTableView implements RecordView<R
     }
 
     /** {@inheritDoc} */
-    @Override public R get(R keyRec) {
+    @Override public R get(@NotNull R keyRec) {
         return sync(getAsync(keyRec));
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<R> getAsync(R keyRec) {
+    @Override public @NotNull CompletableFuture<R> getAsync(@NotNull R keyRec) {
         Objects.requireNonNull(keyRec);
 
         RecordSerializer<R> marsh = serializer();
@@ -84,159 +84,161 @@ public class RecordViewImpl<R> extends AbstractTableView implements RecordView<R
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<R> getAll(Collection<R> keyRecs) {
+    @Override public Collection<R> getAll(@NotNull Collection<R> keyRecs) {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Collection<R>> getAllAsync(Collection<R> keyRecs) {
+    @Override public @NotNull CompletableFuture<Collection<R>> getAllAsync(@NotNull Collection<R> keyRecs) {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 
     /** {@inheritDoc} */
-    @Override public void upsert(R rec) {
+    @Override public void upsert(@NotNull R rec) {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Void> upsertAsync(R rec) {
+    @Override public @NotNull CompletableFuture<Void> upsertAsync(@NotNull R rec) {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 
     /** {@inheritDoc} */
-    @Override public void upsertAll(Collection<R> recs) {
+    @Override public void upsertAll(@NotNull Collection<R> recs) {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Void> upsertAllAsync(Collection<R> recs) {
+    @Override public @NotNull CompletableFuture<Void> upsertAllAsync(@NotNull Collection<R> recs) {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 
     /** {@inheritDoc} */
-    @Override public R getAndUpsert(R rec) {
+    @Override public R getAndUpsert(@NotNull R rec) {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<R> getAndUpsertAsync(R rec) {
+    @Override public @NotNull CompletableFuture<R> getAndUpsertAsync(@NotNull R rec) {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 
     /** {@inheritDoc} */
-    @Override public boolean insert(R rec) {
+    @Override public boolean insert(@NotNull R rec) {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Boolean> insertAsync(R rec) {
+    @Override public @NotNull CompletableFuture<Boolean> insertAsync(@NotNull R rec) {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<R> insertAll(Collection<R> recs) {
+    @Override public Collection<R> insertAll(@NotNull Collection<R> recs) {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Collection<R>> insertAllAsync(Collection<R> recs) {
+    @Override public @NotNull CompletableFuture<Collection<R>> insertAllAsync(@NotNull Collection<R> recs) {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 
     /** {@inheritDoc} */
-    @Override public boolean replace(R rec) {
+    @Override public boolean replace(@NotNull R rec) {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Boolean> replaceAsync(R rec) {
+    @Override public @NotNull CompletableFuture<Boolean> replaceAsync(@NotNull R rec) {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 
     /** {@inheritDoc} */
-    @Override public boolean replace(R oldRec, R newRec) {
+    @Override public boolean replace(@NotNull R oldRec, @NotNull R newRec) {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Boolean> replaceAsync(R oldRec, R newRec) {
+    @Override public @NotNull CompletableFuture<Boolean> replaceAsync(@NotNull R oldRec, @NotNull R newRec) {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 
     /** {@inheritDoc} */
-    @Override public R getAndReplace(R rec) {
+    @Override public R getAndReplace(@NotNull R rec) {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<R> getAndReplaceAsync(R rec) {
+    @Override public @NotNull CompletableFuture<R> getAndReplaceAsync(@NotNull R rec) {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 
     /** {@inheritDoc} */
-    @Override public boolean delete(R keyRec) {
+    @Override public boolean delete(@NotNull R keyRec) {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Boolean> deleteAsync(R keyRec) {
+    @Override public @NotNull CompletableFuture<Boolean> deleteAsync(@NotNull R keyRec) {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 
     /** {@inheritDoc} */
-    @Override public boolean deleteExact(R rec) {
+    @Override public boolean deleteExact(@NotNull R rec) {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Boolean> deleteExactAsync(R rec) {
+    @Override public @NotNull CompletableFuture<Boolean> deleteExactAsync(@NotNull R rec) {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 
     /** {@inheritDoc} */
-    @Override public R getAndDelete(R rec) {
+    @Override public R getAndDelete(@NotNull R rec) {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<R> getAndDeleteAsync(R rec) {
+    @Override public @NotNull CompletableFuture<R> getAndDeleteAsync(@NotNull R rec) {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<R> deleteAll(Collection<R> recs) {
+    @Override public Collection<R> deleteAll(@NotNull Collection<R> recs) {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Collection<R>> deleteAllAsync(Collection<R> recs) {
+    @Override public @NotNull CompletableFuture<Collection<R>> deleteAllAsync(@NotNull Collection<R> recs) {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<R> deleteAllExact(Collection<R> recs) {
+    @Override public Collection<R> deleteAllExact(@NotNull Collection<R> recs) {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Collection<R>> deleteAllExactAsync(Collection<R> recs) {
+    @Override public @NotNull CompletableFuture<Collection<R>> deleteAllExactAsync(@NotNull Collection<R> recs) {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends Serializable> T invoke(R keyRec, InvokeProcessor<R, R, T> proc) {
+    @Override public <T extends Serializable> T invoke(@NotNull R keyRec, InvokeProcessor<R, R, T> proc) {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull <T extends Serializable> CompletableFuture<T> invokeAsync(R keyRec,
-        InvokeProcessor<R, R, T> proc) {
+    @Override public @NotNull <T extends Serializable> CompletableFuture<T> invokeAsync(
+        @NotNull R keyRec,
+        InvokeProcessor<R, R, T> proc
+    ) {
         throw new UnsupportedOperationException("Not implemented yet.");
     }
 
     /** {@inheritDoc} */
     @Override public <T extends Serializable> Map<R, T> invokeAll(
-        Collection<R> keyRecs,
+        @NotNull Collection<R> keyRecs,
         InvokeProcessor<R, R, T> proc
     ) {
         throw new UnsupportedOperationException("Not implemented yet.");
@@ -244,7 +246,7 @@ public class RecordViewImpl<R> extends AbstractTableView implements RecordView<R
 
     /** {@inheritDoc} */
     @Override public @NotNull <T extends Serializable> CompletableFuture<Map<R, T>> invokeAllAsync(
-        Collection<R> keyRecs,
+        @NotNull Collection<R> keyRecs,
         InvokeProcessor<R, R, T> proc
     ) {
         throw new UnsupportedOperationException("Not implemented yet.");

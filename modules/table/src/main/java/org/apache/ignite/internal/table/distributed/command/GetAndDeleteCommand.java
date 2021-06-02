@@ -19,13 +19,13 @@ package org.apache.ignite.internal.table.distributed.command;
 
 import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.internal.schema.ByteBufferRow;
-import org.apache.ignite.raft.client.ReadCommand;
+import org.apache.ignite.raft.client.WriteCommand;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * The command gets a value by key specified.
+ * This is a command to get a value before delete it.
  */
-public class GetCommand implements ReadCommand {
+public class GetAndDeleteCommand implements WriteCommand {
     /** Binary key row. */
     private transient BinaryRow keyRow;
 
@@ -37,12 +37,12 @@ public class GetCommand implements ReadCommand {
     private byte[] keyRowBytes;
 
     /**
-     * Creates a new instance of GetCommand with the given key to be got.
+     * Creates a new instance of GetAndDeleteCommand with the given key to be got and deleted.
      * The {@code keyRow} should not be {@code null}.
      *
      * @param keyRow Binary key row.
      */
-    public GetCommand(@NotNull BinaryRow keyRow) {
+    public GetAndDeleteCommand(@NotNull BinaryRow keyRow) {
         assert keyRow != null;
 
         this.keyRow = keyRow;
@@ -51,7 +51,7 @@ public class GetCommand implements ReadCommand {
     }
 
     /**
-     * Gets a binary key row to be got.
+     * Gets a binary key row to be got and deleted.
      *
      * @return Binary key.
      */

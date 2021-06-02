@@ -17,12 +17,8 @@
 
 package org.apache.ignite.internal.table.distributed.command;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.function.Consumer;
 import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.internal.schema.ByteBufferRow;
-import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.raft.client.WriteCommand;
 import org.jetbrains.annotations.NotNull;
 
@@ -30,55 +26,34 @@ import org.jetbrains.annotations.NotNull;
  * The command inserts a row.
  */
 public class InsertCommand implements WriteCommand {
-    /** The logger. */
-    private static final IgniteLogger LOG = IgniteLogger.forClass(GetCommand.class);
-
-    /** Row. */
+    /** Binary row. */
     private transient BinaryRow row;
 
     /*
      * Row bytes.
      * It is a temporary solution, before network have not implement correct serialization BinaryRow.
-     * TODO: Remove the field after.
+     * TODO: Remove the field after (IGNITE-14793).
      */
     private byte[] rowBytes;
 
     /**
-     * @param row Row.
+     * Creates a new instance of InsertCommand with the given row to be inserted.
+     * The {@code row} should not be {@code null}.
+     *
+     * @param row Binary row.
      */
     public InsertCommand(@NotNull BinaryRow row) {
         assert row != null;
 
         this.row = row;
 
-        rowToBytes(row, bytes -> rowBytes = bytes);
+        CommandUtils.rowToBytes(row, bytes -> rowBytes = bytes);
     }
 
     /**
-     * Writes a row to byte array.
+     * Gets a binary row to be inserted.
      *
-     * @param row Row.
-     * @param consumer Byte array consumer.
-     */
-    private void rowToBytes(BinaryRow row, Consumer<byte[]> consumer) {
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-            row.writeTo(baos);
-
-            baos.flush();
-
-            consumer.accept(baos.toByteArray());
-        }
-        catch (IOException e) {
-            LOG.error("Could not write row to stream [row=" + row + ']', e);
-
-            consumer.accept(null);
-        }
-    }
-
-    /**
-     * Gets a data row.
-     *
-     * @return Data row.
+     * @return Binary row.
      */
     public BinaryRow getRow() {
         if (row == null)

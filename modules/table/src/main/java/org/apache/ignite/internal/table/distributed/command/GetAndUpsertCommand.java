@@ -19,13 +19,13 @@ package org.apache.ignite.internal.table.distributed.command;
 
 import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.internal.schema.ByteBufferRow;
-import org.apache.ignite.raft.client.ReadCommand;
+import org.apache.ignite.raft.client.WriteCommand;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * The command gets a value by key specified.
+ * This is a command to get a value before upsert it.
  */
-public class GetCommand implements ReadCommand {
+public class GetAndUpsertCommand implements WriteCommand {
     /** Binary key row. */
     private transient BinaryRow keyRow;
 
@@ -37,21 +37,21 @@ public class GetCommand implements ReadCommand {
     private byte[] keyRowBytes;
 
     /**
-     * Creates a new instance of GetCommand with the given key to be got.
-     * The {@code keyRow} should not be {@code null}.
+     * Creates a new instance of GetAndUpsertCommand with the given row to be got and upserted.
+     * The {@code row} should not be {@code null}.
      *
-     * @param keyRow Binary key row.
+     * @param row Binary row.
      */
-    public GetCommand(@NotNull BinaryRow keyRow) {
-        assert keyRow != null;
+    public GetAndUpsertCommand(@NotNull BinaryRow row) {
+        assert row != null;
 
-        this.keyRow = keyRow;
+        this.keyRow = row;
 
-        CommandUtils.rowToBytes(keyRow, bytes -> keyRowBytes = bytes);
+        CommandUtils.rowToBytes(row, bytes -> keyRowBytes = bytes);
     }
 
     /**
-     * Gets a binary key row to be got.
+     * Gets a binary key row to be got and upserted.
      *
      * @return Binary key.
      */

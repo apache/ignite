@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.internal.schema.Row;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
@@ -35,9 +36,6 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Key-value view implementation for binary user-object representation.
- *
- * @implNote Key-value {@link Tuple}s represents marshalled user-objects
- * regarding the binary object concept.
  */
 public class KVBinaryViewImpl extends AbstractTableView implements KeyValueBinaryView {
     /** Marshaller. */
@@ -56,12 +54,12 @@ public class KVBinaryViewImpl extends AbstractTableView implements KeyValueBinar
     }
 
     /** {@inheritDoc} */
-    @Override public Tuple get(Tuple key) {
+    @Override public Tuple get(@NotNull Tuple key) {
         return sync(getAsync(key));
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Tuple> getAsync(Tuple key) {
+    @Override public @NotNull CompletableFuture<Tuple> getAsync(@NotNull Tuple key) {
         Objects.requireNonNull(key);
 
         Row kRow = marshaller().marshal(key, null); // Convert to portable format to pass TX/storage layer.
@@ -72,27 +70,31 @@ public class KVBinaryViewImpl extends AbstractTableView implements KeyValueBinar
     }
 
     /** {@inheritDoc} */
-    @Override public Map<Tuple, Tuple> getAll(Collection<Tuple> keys) {
-        throw new UnsupportedOperationException("Not implemented yet.");
+    @Override public Map<Tuple, Tuple> getAll(@NotNull Collection<Tuple> keys) {
+        return sync(getAllAsync(keys));
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Map<Tuple, Tuple>> getAllAsync(Collection<Tuple> keys) {
-        throw new UnsupportedOperationException("Not implemented yet.");
+    @Override public @NotNull CompletableFuture<Map<Tuple, Tuple>> getAllAsync(@NotNull Collection<Tuple> keys) {
+        Objects.requireNonNull(keys);
+
+        return tbl.getAll(keys.stream().map(k -> marsh.marshal(k, null)).collect(Collectors.toList()))
+            .thenApply(this::wrap)
+            .thenApply(ts -> ts.stream().filter(Objects::nonNull).collect(Collectors.toMap(TableRow::keyChunk, TableRow::valueChunk)));
     }
 
     /** {@inheritDoc} */
-    @Override public boolean contains(Tuple key) {
-        throw new UnsupportedOperationException("Not implemented yet.");
+    @Override public boolean contains(@NotNull Tuple key) {
+        return get(key) != null;
     }
 
     /** {@inheritDoc} */
-    @Override public void put(Tuple key, Tuple val) {
+    @Override public void put(@NotNull Tuple key, Tuple val) {
         sync(putAsync(key, val));
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Void> putAsync(Tuple key, Tuple val) {
+    @Override public @NotNull CompletableFuture<Void> putAsync(@NotNull Tuple key, Tuple val) {
         Objects.requireNonNull(key);
 
         Row row = marshaller().marshal(key, val); // Convert to portable format to pass TX/storage layer.
@@ -101,22 +103,27 @@ public class KVBinaryViewImpl extends AbstractTableView implements KeyValueBinar
     }
 
     /** {@inheritDoc} */
-    @Override public void putAll(Map<Tuple, Tuple> pairs) {
-        throw new UnsupportedOperationException("Not implemented yet.");
+    @Override public void putAll(@NotNull Map<Tuple, Tuple> pairs) {
+        sync(putAllAsync(pairs));
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Void> putAllAsync(Map<Tuple, Tuple> pairs) {
-        throw new UnsupportedOperationException("Not implemented yet.");
+    @Override public @NotNull CompletableFuture<Void> putAllAsync(@NotNull Map<Tuple, Tuple> pairs) {
+        Objects.requireNonNull(pairs);
+
+        return tbl.upsertAll(pairs.entrySet()
+            .stream()
+            .map(this::marshalPair)
+            .collect(Collectors.toList()));
     }
 
     /** {@inheritDoc} */
-    @Override public Tuple getAndPut(Tuple key, Tuple val) {
+    @Override public Tuple getAndPut(@NotNull Tuple key, Tuple val) {
         return sync(getAndPutAsync(key, val));
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Tuple> getAndPutAsync(Tuple key, Tuple val) {
+    @Override public @NotNull CompletableFuture<Tuple> getAndPutAsync(@NotNull Tuple key, Tuple val) {
         Objects.requireNonNull(key);
 
         Row row = marshaller().marshal(key, val); // Convert to portable format to pass TX/storage layer.
@@ -127,14 +134,13 @@ public class KVBinaryViewImpl extends AbstractTableView implements KeyValueBinar
     }
 
     /** {@inheritDoc} */
-    @Override public boolean putIfAbsent(Tuple key, Tuple val) {
+    @Override public boolean putIfAbsent(@NotNull Tuple key, @NotNull Tuple val) {
         return sync(putIfAbsentAsync(key, val));
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Boolean> putIfAbsentAsync(Tuple key, Tuple val) {
+    @Override public @NotNull CompletableFuture<Boolean> putIfAbsentAsync(@NotNull Tuple key, Tuple val) {
         Objects.requireNonNull(key);
-        Objects.requireNonNull(val);
 
         Row row = marshaller().marshal(key, val); // Convert to portable format to pass TX/storage layer.
 
@@ -142,12 +148,12 @@ public class KVBinaryViewImpl extends AbstractTableView implements KeyValueBinar
     }
 
     /** {@inheritDoc} */
-    @Override public boolean remove(Tuple key) {
+    @Override public boolean remove(@NotNull Tuple key) {
         return sync(removeAsync(key));
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Boolean> removeAsync(Tuple key) {
+    @Override public @NotNull CompletableFuture<Boolean> removeAsync(@NotNull Tuple key) {
         Objects.requireNonNull(key);
 
         Row row = marshaller().marshal(key, null); // Convert to portable format to pass TX/storage layer.
@@ -156,12 +162,12 @@ public class KVBinaryViewImpl extends AbstractTableView implements KeyValueBinar
     }
 
     /** {@inheritDoc} */
-    @Override public boolean remove(Tuple key, Tuple val) {
+    @Override public boolean remove(@NotNull Tuple key, @NotNull Tuple val) {
         return sync(removeAsync(key, val));
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Boolean> removeAsync(Tuple key, Tuple val) {
+    @Override public @NotNull CompletableFuture<Boolean> removeAsync(@NotNull Tuple key, @NotNull Tuple val) {
         Objects.requireNonNull(key);
         Objects.requireNonNull(val);
 
@@ -171,32 +177,44 @@ public class KVBinaryViewImpl extends AbstractTableView implements KeyValueBinar
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Tuple> removeAll(Collection<Tuple> keys) {
-        throw new UnsupportedOperationException("Not implemented yet.");
+    @Override public Collection<Tuple> removeAll(@NotNull Collection<Tuple> keys) {
+        Objects.requireNonNull(keys);
+
+        return sync(removeAllAsync(keys));
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Tuple> removeAllAsync(Collection<Tuple> keys) {
-        throw new UnsupportedOperationException("Not implemented yet.");
+    @Override public @NotNull CompletableFuture<Collection<Tuple>> removeAllAsync(@NotNull Collection<Tuple> keys) {
+        Objects.requireNonNull(keys);
+
+        return tbl.deleteAll(keys.stream().map(k -> marsh.marshal(k, null)).collect(Collectors.toList()))
+            .thenApply(this::wrap)
+            .thenApply(t -> t.stream().filter(Objects::nonNull).map(TableRow::valueChunk).collect(Collectors.toList()));
     }
 
     /** {@inheritDoc} */
-    @Override public Tuple getAndRemove(Tuple key) {
-        throw new UnsupportedOperationException("Not implemented yet.");
+    @Override public Tuple getAndRemove(@NotNull Tuple key) {
+        Objects.requireNonNull(key);
+
+        return sync(getAndRemoveAsync(key));
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Tuple> getAndRemoveAsync(Tuple key) {
-        throw new UnsupportedOperationException("Not implemented yet.");
+    @Override public @NotNull CompletableFuture<Tuple> getAndRemoveAsync(@NotNull Tuple key) {
+        Objects.requireNonNull(key);
+
+        return tbl.getAndDelete(marsh.marshal(key, null))
+            .thenApply(this::wrap)
+            .thenApply(t -> t == null ? null : t.valueChunk());
     }
 
     /** {@inheritDoc} */
-    @Override public boolean replace(Tuple key, Tuple val) {
+    @Override public boolean replace(@NotNull Tuple key, Tuple val) {
         return sync(replaceAsync(key, val));
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Boolean> replaceAsync(Tuple key, Tuple val) {
+    @Override public @NotNull CompletableFuture<Boolean> replaceAsync(@NotNull Tuple key, Tuple val) {
         Objects.requireNonNull(key);
 
         Row row = marshaller().marshal(key, val); // Convert to portable format to pass TX/storage layer.
@@ -205,12 +223,12 @@ public class KVBinaryViewImpl extends AbstractTableView implements KeyValueBinar
     }
 
     /** {@inheritDoc} */
-    @Override public boolean replace(Tuple key, Tuple oldVal, Tuple newVal) {
+    @Override public boolean replace(@NotNull Tuple key, Tuple oldVal, Tuple newVal) {
         return sync(replaceAsync(key, oldVal, newVal));
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Boolean> replaceAsync(Tuple key, Tuple oldVal, Tuple newVal) {
+    @Override public @NotNull CompletableFuture<Boolean> replaceAsync(@NotNull Tuple key, Tuple oldVal, Tuple newVal) {
         Objects.requireNonNull(key);
 
         Row oldRow = marshaller().marshal(key, oldVal); // Convert to portable format to pass TX/storage layer.
@@ -220,18 +238,22 @@ public class KVBinaryViewImpl extends AbstractTableView implements KeyValueBinar
     }
 
     /** {@inheritDoc} */
-    @Override public Tuple getAndReplace(Tuple key, Tuple val) {
-        throw new UnsupportedOperationException("Not implemented yet.");
+    @Override public Tuple getAndReplace(@NotNull Tuple key, Tuple val) {
+        return sync(getAndReplaceAsync(key, val));
     }
 
     /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Tuple> getAndReplaceAsync(Tuple key, Tuple val) {
-        throw new UnsupportedOperationException("Not implemented yet.");
+    @Override public @NotNull CompletableFuture<Tuple> getAndReplaceAsync(@NotNull Tuple key, Tuple val) {
+        Objects.requireNonNull(key);
+
+        return tbl.getAndReplace(marsh.marshal(key, val))
+            .thenApply(this::wrap)
+            .thenApply(t -> t == null ? null : t.valueChunk());
     }
 
     /** {@inheritDoc} */
     @Override public <R extends Serializable> R invoke(
-        Tuple key,
+        @NotNull Tuple key,
         InvokeProcessor<Tuple, Tuple, R> proc,
         Serializable... args
     ) {
@@ -240,7 +262,7 @@ public class KVBinaryViewImpl extends AbstractTableView implements KeyValueBinar
 
     /** {@inheritDoc} */
     @Override public @NotNull <R extends Serializable> CompletableFuture<R> invokeAsync(
-        Tuple key,
+        @NotNull Tuple key,
         InvokeProcessor<Tuple, Tuple, R> proc,
         Serializable... args
     ) {
@@ -249,7 +271,7 @@ public class KVBinaryViewImpl extends AbstractTableView implements KeyValueBinar
 
     /** {@inheritDoc} */
     @Override public <R extends Serializable> Map<Tuple, R> invokeAll(
-        Collection<Tuple> keys,
+        @NotNull Collection<Tuple> keys,
         InvokeProcessor<Tuple, Tuple, R> proc,
         Serializable... args
     ) {
@@ -258,7 +280,7 @@ public class KVBinaryViewImpl extends AbstractTableView implements KeyValueBinar
 
     /** {@inheritDoc} */
     @Override public @NotNull <R extends Serializable> CompletableFuture<Map<Tuple, R>> invokeAllAsync(
-        Collection<Tuple> keys,
+        @NotNull Collection<Tuple> keys,
         InvokeProcessor<Tuple, Tuple, R> proc,
         Serializable... args
     ) {
@@ -288,5 +310,28 @@ public class KVBinaryViewImpl extends AbstractTableView implements KeyValueBinar
         final SchemaDescriptor schema = schemaReg.schema(row.schemaVersion());
 
         return new TableRow(schema, new Row(schema, row));
+    }
+
+    /**
+     * Marshals a key-value pairs into the table row collection.
+     *
+     * @param rows Binary rows.
+     * @return Table rows.
+     */
+    private Collection<TableRow> wrap(Collection<BinaryRow> rows) {
+        if (rows == null)
+            return null;
+
+        return rows.stream().map(this::wrap).collect(Collectors.toSet());
+    }
+
+    /**
+     * Marshals a key-value pair into the table row.
+     *
+     * @param pair A map entry represents the key-value pair.
+     * @return Row.
+     */
+    private Row marshalPair(Map.Entry<Tuple, Tuple> pair) {
+        return marshaller().marshal(pair.getKey(), pair.getValue());
     }
 }

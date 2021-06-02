@@ -19,46 +19,47 @@ package org.apache.ignite.internal.table.distributed.command;
 
 import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.internal.schema.ByteBufferRow;
-import org.apache.ignite.raft.client.ReadCommand;
+import org.apache.ignite.raft.client.WriteCommand;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * The command gets a value by key specified.
+ * The command deletes an entry that is exact the same as the row passed.
  */
-public class GetCommand implements ReadCommand {
-    /** Binary key row. */
-    private transient BinaryRow keyRow;
+public class DeleteExactCommand implements WriteCommand {
+    /** Binary row. */
+    private transient BinaryRow row;
 
     /*
      * Row bytes.
      * It is a temporary solution, before network have not implement correct serialization BinaryRow.
      * TODO: Remove the field after (IGNITE-14793).
      */
-    private byte[] keyRowBytes;
+    private byte[] rowBytes;
 
     /**
-     * Creates a new instance of GetCommand with the given key to be got.
-     * The {@code keyRow} should not be {@code null}.
+     * Creates a new instance of DeleteExactCommand with the given row to be deleted.
+     * The {@code row} should not be {@code null}.
      *
-     * @param keyRow Binary key row.
+     * @param row Binary row.
      */
-    public GetCommand(@NotNull BinaryRow keyRow) {
-        assert keyRow != null;
+    public DeleteExactCommand(@NotNull BinaryRow row) {
+        assert row != null;
 
-        this.keyRow = keyRow;
+        this.row = row;
 
-        CommandUtils.rowToBytes(keyRow, bytes -> keyRowBytes = bytes);
+        CommandUtils.rowToBytes(row, bytes -> rowBytes = bytes);
     }
 
     /**
      * Gets a binary key row to be got.
      *
-     * @return Binary key.
+     * @return Binary row.
      */
-    public BinaryRow getKeyRow() {
-        if (keyRow == null)
-            keyRow = new ByteBufferRow(keyRowBytes);
+    public BinaryRow getRow() {
+        if (row == null)
+            row = new ByteBufferRow(rowBytes);
 
-        return keyRow;
+        return row;
     }
+
 }
