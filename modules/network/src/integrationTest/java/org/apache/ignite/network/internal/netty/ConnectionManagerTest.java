@@ -98,6 +98,8 @@ public class ConnectionManagerTest {
     public void testReuseIncomingConnection() throws Exception {
         String msgText = "test";
 
+        TestMessage testMessage = TestMessageFactory.testMessage().msg("test").build();
+
         int port1 = 4000;
         int port2 = 4001;
 
@@ -110,8 +112,17 @@ public class ConnectionManagerTest {
 
         NettySender senderFrom1to2 = manager1.channel(null, new InetSocketAddress(port2)).get(3, TimeUnit.SECONDS);
 
-        // Ensure a handshake has finished on both sides.
-        senderFrom1to2.send(TestMessageFactory.testMessage().msg("test").build()).get(3, TimeUnit.SECONDS);
+        // Ensure a handshake has finished on both sides by sending a message.
+        // TODO: IGNITE-14085 When the recovery protocol is implemented replace this with simple
+        // CompletableFuture#get called on the send future.
+        var messageReceivedOn2 = new CompletableFuture<Void>();
+
+        // If the message is received, that means that the handshake was successfully performed.
+        manager2.addListener((address, message) -> messageReceivedOn2.complete(null));
+
+        senderFrom1to2.send(testMessage);
+
+        messageReceivedOn2.get(3, TimeUnit.SECONDS);
 
         NettySender senderFrom2to1 = manager2.channel(manager1.consistentId(), new InetSocketAddress(port1)).get(3, TimeUnit.SECONDS);
 
@@ -120,8 +131,6 @@ public class ConnectionManagerTest {
         InetSocketAddress clientRemoteAddress = (InetSocketAddress) senderFrom2to1.channel().remoteAddress();
 
         assertEquals(clientLocalAddress, clientRemoteAddress);
-
-        TestMessage testMessage = TestMessageFactory.testMessage().msg("test").build();
 
         senderFrom2to1.send(testMessage).get(3, TimeUnit.SECONDS);
 
