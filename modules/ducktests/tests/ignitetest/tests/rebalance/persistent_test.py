@@ -72,7 +72,7 @@ class RebalancePersistentTest(IgniteTest):
     # pylint: disable=too-many-arguments, too-many-locals
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
-    @defaults(backups=[1], cache_count=[1], entry_count=[15_000], entry_size=[50_000], preloaders=[1],
+    @defaults(backups=[1], cache_count=[1], entry_count=[50_000], entry_size=[50_000], preloaders=[1],
               thread_pool_size=[None], batch_size=[None], batches_prefetch_count=[None], throttle=[None])
     def test_node_left(self, ignite_version, backups, cache_count, entry_count, entry_size, preloaders,
                        thread_pool_size, batch_size, batches_prefetch_count, throttle):
@@ -127,6 +127,8 @@ class RebalancePersistentTest(IgniteTest):
             ignites.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites)),
             preloaders, backups, cache_count, entry_count, entry_size)
 
+        self.logger.warn(f'db size: {get_database_size_mb(ignites)}')
+
         new_node = IgniteService(self.test_context, ignites.config._replace(discovery_spi=from_ignite_cluster(ignites)),
                                  num_nodes=1)
         new_node.start()
@@ -169,20 +171,22 @@ class RebalancePersistentTest(IgniteTest):
 
         node = ignites.nodes[-1]
 
+        reb_nodes = ignites.nodes[:-1]
+
         ignites.stop_node(node)
         ignites.wait_node(node, 30)
 
         control_utility.remove_from_baseline([node], ignites.nodes[0])
 
-        start_node, _ = await_rebalance_start(ignites)
+        await_rebalance_start(reb_nodes)
 
         new_node = IgniteService(self.test_context, ignites.config._replace(discovery_spi=from_ignite_cluster(ignites)),
                                  num_nodes=1)
         new_node.start()
 
-        await_rebalance_complete(ignites, start_node, cache_count)
+        await_rebalance_complete(reb_nodes, cache_count)
 
-        return get_result(new_node.nodes, preload_time, cache_count, entry_count, entry_size)
+        return get_result(reb_nodes, preload_time, cache_count, entry_count, entry_size)
 
 
 def get_database_size_mb(ignites, check_error=True):
