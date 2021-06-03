@@ -55,7 +55,7 @@ public class ChangeDataCaptureConfiguration {
      * This frequency specify amount of time application sleeps between subsequent checks when no new files available.
      * Default is {@code 1000 ms}.
      */
-    private long checkFrequency = DFLT_CHECK_FREQ;
+    private long checkFreq = DFLT_CHECK_FREQ;
 
     /** @return CDC consumer. */
     public ChangeDataCaptureConsumer getConsumer() {
@@ -89,14 +89,14 @@ public class ChangeDataCaptureConfiguration {
 
     /** @return Amount of time application sleeps between subsequent checks when no new files available. */
     public long getCheckFrequency() {
-        return checkFrequency;
+        return checkFreq;
     }
 
     /**
-     * @param checkFrequency Amount of time application sleeps between subsequent checks when no new
+     * @param checkFreq Amount of time application sleeps between subsequent checks when no new
      *                                           files available.
      */
-    public void setCheckFrequency(long checkFrequency) {
-        this.checkFrequency = checkFrequency;
+    public void setCheckFrequency(long checkFreq) {
+        this.checkFreq = checkFreq;
     }
 }

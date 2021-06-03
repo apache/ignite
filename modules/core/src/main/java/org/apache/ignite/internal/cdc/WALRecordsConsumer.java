@@ -159,7 +159,7 @@ public class WALRecordsConsumer<K, V> {
         consumer.stop();
 
         if (log.isInfoEnabled())
-            log.info("WalRecordsConsumer stoped[consumer=" + consumer.getClass() + ']');
+            log.info("WalRecordsConsumer stopped [consumer=" + consumer.getClass() + ']');
     }
 
     /** @return Change Data Capture Consumer. */

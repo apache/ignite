@@ -215,7 +215,7 @@ public class ChangeDataCapture implements Runnable {
 
         if (settings == null) {
             throw new IgniteException("Can't find folder to read WAL segments from based on provided configuration! " +
-                "[workDir=" + igniteCfg.getWorkDirectory() + ",consistentId=" + igniteCfg.getConsistentId() + ']');
+                "[workDir=" + igniteCfg.getWorkDirectory() + ", consistentId=" + igniteCfg.getConsistentId() + ']');
         }
 
         ChangeDataCaptureFileLockHolder lock = settings.getLockedFileLockHolder();
@@ -225,8 +225,11 @@ public class ChangeDataCapture implements Runnable {
 
             lock = tryLock(consIdDir);
 
-            if (lock == null)
-                throw new IgniteException("Can't lock Change Data Capture [dir=" + consIdDir.getAbsolutePath() + ']');
+            if (lock == null) {
+                throw new IgniteException(
+                    "Can't acquire lock for Change Data Capture folder [dir=" + consIdDir.getAbsolutePath() + ']'
+                );
+            }
         }
 
         try {
@@ -258,7 +261,7 @@ public class ChangeDataCapture implements Runnable {
                 consumer.stop();
 
                 if (log.isInfoEnabled())
-                    log.info("Ignite Change Data Capture Application stoped.");
+                    log.info("Ignite Change Data Capture Application stopped.");
             }
         }
         finally {
@@ -266,7 +269,7 @@ public class ChangeDataCapture implements Runnable {
         }
     }
 
-    /** Waits and consumes new WAL segments until stoped. */
+    /** Waits and consumes new WAL segments until stopped. */
     public void consumeWalSegmentsUntilStopped() {
         try {
             Set<Path> seen = new HashSet<>();
@@ -323,13 +326,13 @@ public class ChangeDataCapture implements Runnable {
 
             if (segmentIdx > initState.index()) {
                 throw new IgniteException("Found segment greater then saved state. Some events are missed. Exiting! " +
-                    "[state=" + initState + ",segment=" + segmentIdx + ']');
+                    "[state=" + initState + ", segment=" + segmentIdx + ']');
             }
 
             if (segmentIdx < initState.index()) {
                 if (log.isInfoEnabled()) {
                     log.info("Already processed segment found. Skipping and deleting the file [segment=" +
-                        segmentIdx + ",state=" + initState.index() + ']');
+                        segmentIdx + ", state=" + initState.index() + ']');
                 }
 
                 // WAL segment is a hard link to a segment file in the special Change Data Capture folder.

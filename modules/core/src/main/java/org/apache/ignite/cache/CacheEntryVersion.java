@@ -35,8 +35,11 @@ import org.apache.ignite.lang.IgniteExperimental;
  */
 @IgniteExperimental
 public interface CacheEntryVersion extends Comparable<CacheEntryVersion>, Serializable {
-    /** @return Topology version plus number of seconds from the start time of the first grid node. */
-    public int topologyVersion();
+    /**
+     * Order of the update. Value is an incremental counter value. Scope of counter is node.
+     * @return Version order.
+     */
+    public long order();
 
     /** @return Node order on which this version was assigned. */
     public int nodeOrder();
@@ -50,11 +53,8 @@ public interface CacheEntryVersion extends Comparable<CacheEntryVersion>, Serial
      */
     public byte dataReplicationId();
 
-    /**
-     * Order of the update. Value is an incremental counter value. Scope of counter is node.
-     * @return Version order.
-     */
-    public long order();
+    /** @return Topology version plus number of seconds from the start time of the first grid node. */
+    public int topologyVersion();
 
     /**
      * If source of the update is "local" cluster then {@code this} will be returned.

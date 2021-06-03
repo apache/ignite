@@ -25,7 +25,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -265,14 +264,10 @@ public class ChangeDataCaptureSelfTest extends AbstractChangeDataCaptureTest {
                 IgniteCache<Integer, User> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
 
                 while (true) {
-                    byte[] bytes = new byte[1024];
-
-                    ThreadLocalRandom.current().nextBytes(bytes);
-
                     int key = cnt.getAndIncrement();
 
                     try {
-                        cache.put(key, new User("John Connor " + key, 42 + key, bytes));
+                        cache.put(key, createUser(key));
                     }
                     catch (Exception e) {
                         cnt.decrementAndGet();
@@ -487,13 +482,8 @@ public class ChangeDataCaptureSelfTest extends AbstractChangeDataCaptureTest {
 
     /** */
     public static void addData(IgniteCache<Integer, User> cache, int from, int to) {
-        for (int i = from; i < to; i++) {
-            byte[] bytes = new byte[1024];
-
-            ThreadLocalRandom.current().nextBytes(bytes);
-
-            cache.put(i, new User("John Connor " + i, 42 + i, bytes));
-        }
+        for (int i = from; i < to; i++)
+            cache.put(i, createUser(i));
     }
 
     /** */

@@ -48,9 +48,6 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /** */
 public class SqlChangeDataCaptureTest extends AbstractChangeDataCaptureTest {
     /** */
-    private static final String JOHN = "John Connor";
-
-    /** */
     private static final String SARAH = "Sarah Connor";
 
     /** */

@@ -20,7 +20,6 @@ package org.apache.ignite.cdc;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -166,7 +165,7 @@ public class ChangeDataCaptureOrderTest extends AbstractChangeDataCaptureTest {
         IgniteInternalFuture<?> fut = runAsync(cdc);
 
         for (int i = 0; i < KEYS_CNT; i++)
-            cache.put(key, new User("John Connor " + i, 42 + i, null));
+            cache.put(key, createUser(i));
 
         assertTrue(waitForCondition(() -> updCntr.get() == KEYS_CNT, getTestTimeout()));
 
@@ -183,13 +182,9 @@ public class ChangeDataCaptureOrderTest extends AbstractChangeDataCaptureTest {
             Map<KeyCacheObject, GridCacheDrInfo> drMap = new HashMap<>();
 
             for (int i = from; i < to; i++) {
-                byte[] bytes = new byte[1024];
-
-                ThreadLocalRandom.current().nextBytes(bytes);
-
                 KeyCacheObject key = new KeyCacheObjectImpl(i, null, intCache.affinity().partition(i));
                 CacheObject val =
-                    new CacheObjectImpl(new User("John Connor " + i, 42 + i, bytes), null);
+                    new CacheObjectImpl(createUser(i), null);
 
                 val.prepareMarshal(intCache.context().cacheObjectContext());
 

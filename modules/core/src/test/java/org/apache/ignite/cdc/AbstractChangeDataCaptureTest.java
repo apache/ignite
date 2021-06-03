@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -41,6 +42,9 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
 public abstract class AbstractChangeDataCaptureTest extends GridCommonAbstractTest {
+    /** */
+    public static final String JOHN = "John Connor";
+
     /** */
     public static final int WAL_ARCHIVE_TIMEOUT = 5_000;
 
@@ -159,10 +163,8 @@ public abstract class AbstractChangeDataCaptureTest extends GridCommonAbstractTe
                 if (otherDrId != -1)
                     assertEquals(otherDrId, evt.version().otherDataCenterVersion().dataReplicationId());
 
-                if (evt.value() != null) {
-                    assertTrue(((User)evt.value()).getName().startsWith("John Connor"));
-                    assertTrue(((User)evt.value()).getAge() >= 42);
-                }
+                if (evt.value() != null)
+                    checkUser((User)evt.value());
             });
 
             return commit();
@@ -177,6 +179,21 @@ public abstract class AbstractChangeDataCaptureTest extends GridCommonAbstractTe
         public List<Integer> keys(ChangeEventType op, int cacheId) {
             return cacheKeys.get(F.t(op, cacheId));
         }
+    }
+
+    /** */
+    protected static User createUser(int i) {
+        byte[] bytes = new byte[1024];
+
+        ThreadLocalRandom.current().nextBytes(bytes);
+
+        return new User(JOHN + " " + i, 42 + i, bytes);
+    }
+
+    /** */
+    protected static void checkUser(User user) {
+        assertTrue(user.getName().startsWith(JOHN));
+        assertTrue(user.getAge() >= 42);
     }
 
     /** */
