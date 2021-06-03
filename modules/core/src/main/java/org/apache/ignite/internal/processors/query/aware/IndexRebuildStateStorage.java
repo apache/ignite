@@ -82,7 +82,7 @@ public class IndexRebuildStateStorage implements MetastorageLifecycleListener, C
     /**
      * Callback on start of {@link GridQueryProcessor}.
      */
-    public void onQueryStart() {
+    public void start() {
         ctx.internalSubscriptionProcessor().registerMetastorageListener(this);
     }
 
