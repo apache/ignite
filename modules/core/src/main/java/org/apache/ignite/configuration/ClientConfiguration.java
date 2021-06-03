@@ -106,12 +106,8 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * Whether partition awareness should be enabled.
-     *
-     * When {@code true} client attempts to send the request directly to the primary node for the given cache key.
-     * To do so, connection is established to every known server node.
-     * By default {@code false} only one connection is established at a given moment to a random server node.
      */
-    private boolean partitionAwarenessEnabled;
+    private boolean partitionAwarenessEnabled = true;
 
     /**
      * Reconnect throttling period (in milliseconds). There are no more than {@code reconnectThrottlingRetries}
@@ -478,14 +474,24 @@ public final class ClientConfiguration implements Serializable {
     }
 
     /**
-     * @return Whether partition awareness should be enabled.
+     * Gets a value indicating whether partition awareness should be enabled.
+     * <p>
+     * Default is {@code true}: client sends requests directly to the primary node for the given cache key.
+     * To do so, connection is established to every known server node.
+     * <p>
+     * When {@code false}, only one connection is established at a given moment to a random server node.
      */
     public boolean isPartitionAwarenessEnabled() {
         return partitionAwarenessEnabled;
     }
 
     /**
-     * Enable or disable partition awareness.
+     * Sets a value indicating whether partition awareness should be enabled.
+     * <p>
+     * Default is {@code true}: client sends requests directly to the primary node for the given cache key.
+     * To do so, connection is established to every known server node.
+     * <p>
+     * When {@code false}, only one connection is established at a given moment to a random server node.
      *
      * @return {@code this} for chaining.
      */
