@@ -114,8 +114,8 @@ public class ChangeDataCaptureOrderTest extends AbstractChangeDataCaptureTest {
 
         IgniteCache<Integer, User> cache = ign.getOrCreateCache(FOR_OTHER_DC_ID);
 
-        cnsmr.drId = DFLT_DC_ID;
-        cnsmr.otherDrId = OTHER_DC_ID;
+        cnsmr.dcId = DFLT_DC_ID;
+        cnsmr.otherDcId = OTHER_DC_ID;
 
         addAndWaitForConsumption(cnsmr, cdc, cache, null, this::addConflictData, 0, KEYS_CNT * 2, getTestTimeout());
     }

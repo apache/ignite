@@ -131,10 +131,10 @@ public abstract class AbstractChangeDataCaptureTest extends GridCommonAbstractTe
         volatile boolean stopped;
 
         /** */
-        volatile byte drId = -1;
+        volatile byte dcId = -1;
 
         /** */
-        volatile byte otherDrId = -1;
+        volatile byte otherDcId = -1;
 
         /** {@inheritDoc} */
         @Override public void start() {
@@ -157,11 +157,11 @@ public abstract class AbstractChangeDataCaptureTest extends GridCommonAbstractTe
                     k -> new ArrayList<>()).add((Integer)evt.key()
                 );
 
-                if (drId != -1)
-                    assertEquals(drId, evt.version().dataCenterId());
+                if (dcId != -1)
+                    assertEquals(dcId, evt.version().dataCenterId());
 
-                if (otherDrId != -1)
-                    assertEquals(otherDrId, evt.version().otherDataCenterVersion().dataCenterId());
+                if (otherDcId != -1)
+                    assertEquals(otherDcId, evt.version().otherDataCenterVersion().dataCenterId());
 
                 if (evt.value() != null)
                     checkUser((User)evt.value());
