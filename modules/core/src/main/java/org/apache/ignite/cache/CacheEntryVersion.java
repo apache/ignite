@@ -30,8 +30,7 @@ import org.apache.ignite.lang.IgniteExperimental;
  * Greater value means that event occurs later.
  *
  * @see CacheConflictResolutionManager
- * @see GridCacheVersionManager#dataCenterId() 
- * @see GridCacheVersionManager#dataCenterId(byte) 
+ * @see GridCacheVersionManager#dataCenterId(byte)
  */
 @IgniteExperimental
 public interface CacheEntryVersion extends Comparable<CacheEntryVersion>, Serializable {
@@ -45,11 +44,11 @@ public interface CacheEntryVersion extends Comparable<CacheEntryVersion>, Serial
     public int nodeOrder();
 
     /**
-     * Data center id is a value to distinguish updates in case user wants to aggregate and sort updates from several
-     * Ignite clusters. {@code dataCenterId} id can be set for the node using
+     * Cluster id is a value to distinguish updates in case user wants to aggregate and sort updates from several
+     * Ignite clusters. {@code clusterId} id can be set for the node using
      * {@link GridCacheVersionManager#dataCenterId(byte)}.
      *
-     * @return Data center id.
+     * @return Cluster id.
      */
     public byte clusterId();
 
