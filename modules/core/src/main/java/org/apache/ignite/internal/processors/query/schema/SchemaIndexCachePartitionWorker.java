@@ -53,7 +53,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.CacheDataR
  */
 public class SchemaIndexCachePartitionWorker extends GridWorker {
     /** Count of rows, being processed within a single checkpoint lock. */
-    private static final int BATCH_SIZE = 1000;
+    public static volatile int BATCH_SIZE = 1000;
 
     /** Cache context. */
     private final GridCacheContext cctx;
