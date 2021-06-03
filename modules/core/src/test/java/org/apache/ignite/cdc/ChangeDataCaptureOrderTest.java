@@ -58,13 +58,13 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /** */
 public class ChangeDataCaptureOrderTest extends AbstractChangeDataCaptureTest {
     /** */
-    public static final String FOR_OTHER_DR_ID = "for-other-dr-id";
+    public static final String FOR_OTHER_DC_ID = "for-other-dc-id";
 
     /** */
-    public static final byte DFLT_DR_ID = 1;
+    public static final byte DFLT_DC_ID = 1;
 
     /** */
-    public static final byte OTHER_DR_ID = 2;
+    public static final byte OTHER_DC_ID = 2;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -81,7 +81,7 @@ public class ChangeDataCaptureOrderTest extends AbstractChangeDataCaptureTest {
             }
 
             @Override public CachePluginProvider createCacheProvider(CachePluginContext ctx) {
-                if (!ctx.igniteCacheConfiguration().getName().equals(FOR_OTHER_DR_ID))
+                if (!ctx.igniteCacheConfiguration().getName().equals(FOR_OTHER_DC_ID))
                     return null;
 
                 return new AbstractCachePluginProvider() {
@@ -105,17 +105,17 @@ public class ChangeDataCaptureOrderTest extends AbstractChangeDataCaptureTest {
 
         IgniteEx ign = startGrid(cfg);
 
-        ign.context().cache().context().versions().dataCenterId(DFLT_DR_ID);
+        ign.context().cache().context().versions().dataCenterId(DFLT_DC_ID);
         ign.cluster().state(ACTIVE);
 
         TestCDCConsumer cnsmr = new TestCDCConsumer();
 
         ChangeDataCapture cdc = new ChangeDataCapture(cfg, null, cdcConfig(cnsmr));
 
-        IgniteCache<Integer, User> cache = ign.getOrCreateCache(FOR_OTHER_DR_ID);
+        IgniteCache<Integer, User> cache = ign.getOrCreateCache(FOR_OTHER_DC_ID);
 
-        cnsmr.drId = DFLT_DR_ID;
-        cnsmr.otherDrId = OTHER_DR_ID;
+        cnsmr.drId = DFLT_DC_ID;
+        cnsmr.otherDrId = OTHER_DC_ID;
 
         addAndWaitForConsumption(cnsmr, cdc, cache, null, this::addConflictData, 0, KEYS_CNT * 2, getTestTimeout());
     }
@@ -188,7 +188,7 @@ public class ChangeDataCaptureOrderTest extends AbstractChangeDataCaptureTest {
 
                 val.prepareMarshal(intCache.context().cacheObjectContext());
 
-                drMap.put(key, new GridCacheDrInfo(val, new GridCacheVersion(1, i, 1, OTHER_DR_ID)));
+                drMap.put(key, new GridCacheDrInfo(val, new GridCacheVersion(1, i, 1, OTHER_DC_ID)));
             }
 
             intCache.putAllConflict(drMap);

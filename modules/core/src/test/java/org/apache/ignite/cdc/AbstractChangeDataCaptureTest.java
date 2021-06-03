@@ -158,10 +158,10 @@ public abstract class AbstractChangeDataCaptureTest extends GridCommonAbstractTe
                 );
 
                 if (drId != -1)
-                    assertEquals(drId, evt.version().dataReplicationId());
+                    assertEquals(drId, evt.version().dataCenterId());
 
                 if (otherDrId != -1)
-                    assertEquals(otherDrId, evt.version().otherDataCenterVersion().dataReplicationId());
+                    assertEquals(otherDrId, evt.version().otherDataCenterVersion().dataCenterId());
 
                 if (evt.value() != null)
                     checkUser((User)evt.value());
