@@ -48,22 +48,20 @@ public interface CacheEntryVersion extends Comparable<CacheEntryVersion>, Serial
      *
      * @return Data center id.
      */
-    public byte dataCenterId();
+    public byte dataReplicationId();
 
     /**
-     * Order of the entry update.
-     * Value is an incremental counter value.
-     *
+     * Order of the update. Value is an incremental counter value. Scope of counter is node.
      * @return Version order.
      */
     public long order();
 
     /**
      * If source of the update is "local" cluster then {@code this} will be returned.
-     * If updated comes from the other cluster using
+     * If updated comes from the other cluster using {@link IgniteInternalCache#putAllConflict(Map)} then
      * @return Replication version.
      * @see IgniteInternalCache#putAllConflict(Map)
      * @see IgniteInternalCache#removeAllConflict(Map)
      */
-    public CacheEntryVersion otherDataCenterOrder();
+    public CacheEntryVersion otherDataCenterVersion();
 }

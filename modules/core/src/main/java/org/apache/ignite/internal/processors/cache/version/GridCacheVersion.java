@@ -115,7 +115,7 @@ public class GridCacheVersion implements Message, Externalizable, CacheEntryVers
     }
 
     /** {@inheritDoc} */
-    @Override public CacheEntryVersion otherDataCenterOrder() {
+    @Override public CacheEntryVersion otherDataCenterVersion() {
         return conflictVersion();
     }
 
@@ -124,10 +124,15 @@ public class GridCacheVersion implements Message, Externalizable, CacheEntryVers
         return nodeOrderDrId & NODE_ORDER_MASK;
     }
 
+    /** {@inheritDoc} */
+    @Override public byte dataReplicationId() {
+        return dataCenterId();
+    }
+
     /**
      * @return DR mask.
      */
-    @Override public byte dataCenterId() {
+    public byte dataCenterId() {
         return (byte)((nodeOrderDrId >> DR_ID_SHIFT) & DR_ID_MASK);
     }
 
