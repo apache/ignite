@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import java.math.BigDecimal;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -65,8 +66,8 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
             .check();
 
         assertQuery("select salary, count(1), sum(1) from person group by salary order by salary")
-            .returns(10d, 3L, 3)
-            .returns(15d, 2L, 2)
+            .returns(10d, 3L, new BigDecimal(3))
+            .returns(15d, 2L, new BigDecimal(2))
             .check();
 
         assertQuery("select salary, name, count(1), sum(salary) from person group by salary, name order by salary")
