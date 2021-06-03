@@ -17,14 +17,29 @@
 package org.apache.ignite.network;
 
 /**
- * Message for exchange information in cluster.
+ * Message for exchanging information in a cluster.
  */
 public interface NetworkMessage {
-    /** Size of the direct type. */
-    static final int DIRECT_TYPE_SIZE = 2;
+    /** Size of the message type (in bytes), used during (de-)serialization. */
+    static final int MSG_TYPE_SIZE_BYTES = 4;
 
     /**
-     * @return Message type.
+     * Message type. Must be <b>distinct</b> among all messages in a <i>message group</i>. Only positive values are
+     * allowed.
+     * <p>
+     * Message types are not required to be universally unique among multiple groups.
+     *
+     * @return message type.
      */
-    public abstract short directType();
+    short messageType();
+
+    /**
+     * Message group type. Must be the <b>same</b> for all messages in a <i>message group</i>. Only positive values are
+     * allowed.
+     * <p>
+     * Message group types are required to be universally unique among all groups.
+     *
+     * @return group type.
+     */
+    short groupType();
 }

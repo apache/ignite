@@ -18,33 +18,18 @@
 package org.apache.ignite.network.internal.recovery.message;
 
 import java.util.UUID;
+import org.apache.ignite.network.NetworkMessageTypes;
 import org.apache.ignite.network.NetworkMessage;
-import org.apache.ignite.network.processor.annotations.AutoSerializable;
+import org.apache.ignite.network.annotations.Transferable;
 
 /**
  * Handshake start message.
  */
-@AutoSerializable(messageFactory = HandshakeMessageFactory.class)
+@Transferable(NetworkMessageTypes.HANDSHAKE_START)
 public interface HandshakeStartMessage extends NetworkMessage {
-    /** */
-    public static final byte TYPE = 2;
-
     /** Launch id. */
     UUID launchId();
 
     /** Consistent id. */
     String consistentId();
-
-    interface Builder {
-        HandshakeStartMessage.Builder launchId(UUID launchId);
-
-        HandshakeStartMessage.Builder consistentId(String consistentId);
-
-        HandshakeStartMessage build();
-    }
-
-    /** {@inheritDoc} */
-    @Override default short directType() {
-        return TYPE;
-    }
 }

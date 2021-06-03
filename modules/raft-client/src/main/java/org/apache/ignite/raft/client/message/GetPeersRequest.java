@@ -19,8 +19,10 @@ package org.apache.ignite.raft.client.message;
 
 import java.io.Serializable;
 import org.apache.ignite.network.NetworkMessage;
+import org.apache.ignite.network.annotations.Transferable;
 
 /** Get peers. */
+@Transferable(value = RaftClientMessageGroup.GET_PEERS_REQUEST, autoSerializable = false)
 public interface GetPeersRequest extends NetworkMessage, Serializable {
     /**
      * @return Group id.
@@ -31,25 +33,4 @@ public interface GetPeersRequest extends NetworkMessage, Serializable {
      * @return {@code True} to list only alive nodes.
      */
     boolean onlyAlive();
-
-    /** */
-    public interface Builder {
-        /**
-         * @param groupId Group id.
-         * @return The builder.
-         */
-        Builder groupId(String groupId);
-
-        /**
-         * @param onlyGetAlive {@code True} to list only alive nodes.
-         * @return The builder.
-         */
-        Builder onlyAlive(boolean onlyGetAlive);
-
-        /**
-         * @return The complete message.
-         * @throws IllegalStateException If the message is not in valid state.
-         */
-        GetPeersRequest build();
-    }
 }

@@ -1,1 +1,1 @@
-org.apache.ignite.network.processor.internal.AutoSerializableProcessor
+org.apache.ignite.network.processor.internal.TransferableObjectProcessor

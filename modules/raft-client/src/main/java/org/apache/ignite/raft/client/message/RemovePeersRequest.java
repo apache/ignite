@@ -20,11 +20,13 @@ package org.apache.ignite.raft.client.message;
 import java.io.Serializable;
 import java.util.List;
 import org.apache.ignite.network.NetworkMessage;
+import org.apache.ignite.network.annotations.Transferable;
 import org.apache.ignite.raft.client.Peer;
 
 /**
  * Remove peers.
  */
+@Transferable(value = RaftClientMessageGroup.REMOVE_PEERS_REQUEST, autoSerializable = false)
 public interface RemovePeersRequest extends NetworkMessage, Serializable {
     /**
      * @return Group id.
@@ -35,25 +37,4 @@ public interface RemovePeersRequest extends NetworkMessage, Serializable {
      * @return Peers to remove.
      */
     List<Peer> peers();
-
-    /** */
-    interface Builder {
-        /**
-         * @param groupId Group id.
-         * @return The builder.
-         */
-        Builder groupId(String groupId);
-
-        /**
-         * @param peers Peers to remove.
-         * @return The builder.
-         */
-        Builder peers(List<Peer> peers);
-
-        /**
-         * @return The complete message.
-         * @throws IllegalStateException If the message is not in valid state.
-         */
-        RemovePeersRequest build();
-    }
 }

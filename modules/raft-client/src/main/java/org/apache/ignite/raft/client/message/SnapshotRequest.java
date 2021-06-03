@@ -19,28 +19,15 @@ package org.apache.ignite.raft.client.message;
 
 import java.io.Serializable;
 import org.apache.ignite.network.NetworkMessage;
+import org.apache.ignite.network.annotations.Transferable;
 
 /**
  * Take a local snapshot on the peer.
  */
+@Transferable(value = RaftClientMessageGroup.SNAPSHOT_REQUEST, autoSerializable = false)
 public interface SnapshotRequest extends NetworkMessage, Serializable {
     /**
      * @return Group id.
      */
     String groupId();
-
-    /** */
-    public interface Builder {
-        /**
-         * @param groupId Group id.
-         * @return The builder.
-         */
-        Builder groupId(String groupId);
-
-        /**
-         * @return The complete message.
-         * @throws IllegalStateException If the message is not in valid state.
-         */
-        SnapshotRequest build();
-    }
 }

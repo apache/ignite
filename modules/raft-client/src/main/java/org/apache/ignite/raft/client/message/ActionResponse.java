@@ -19,28 +19,15 @@ package org.apache.ignite.raft.client.message;
 
 import java.io.Serializable;
 import org.apache.ignite.network.NetworkMessage;
+import org.apache.ignite.network.annotations.Transferable;
 
 /**
  * The result of an action.
  */
-public interface ActionResponse<T> extends NetworkMessage, Serializable {
+@Transferable(value = RaftClientMessageGroup.ACTION_RESPONSE, autoSerializable = false)
+public interface ActionResponse extends NetworkMessage, Serializable {
     /**
      * @return A result for this request, can be of any type.
      */
-    T result();
-
-    /** */
-    public interface Builder<T> {
-        /**
-         * @param result A result for this request.
-         * @return The builder.
-         */
-        Builder result(T result);
-
-        /**
-         * @return The complete message.
-         * @throws IllegalStateException If the message is not in valid state.
-         */
-        ActionResponse build();
-    }
+    Object result();
 }

@@ -20,11 +20,13 @@ package org.apache.ignite.raft.client.message;
 import java.io.Serializable;
 import java.util.List;
 import org.apache.ignite.network.NetworkMessage;
+import org.apache.ignite.network.annotations.Transferable;
 import org.apache.ignite.raft.client.Peer;
 
 /**
  *
  */
+@Transferable(value = RaftClientMessageGroup.GET_PEERS_RESPONSE, autoSerializable = false)
 public interface GetPeersResponse extends NetworkMessage, Serializable {
     /**
      * @return Current peers.
@@ -35,25 +37,4 @@ public interface GetPeersResponse extends NetworkMessage, Serializable {
      * @return Current leaners.
      */
     List<Peer> learners();
-
-    /** */
-    public interface Builder {
-        /**
-         * @param peers Current peers.
-         * @return The builder.
-         */
-        Builder peers(List<Peer> peers);
-
-        /**
-         * @param learners Current learners.
-         * @return The builder.
-         */
-        Builder learners(List<Peer> learners);
-
-        /**
-         * @return The complete message.
-         * @throws IllegalStateException If the message is not in valid state.
-         */
-        GetPeersResponse build();
-    }
 }

@@ -18,17 +18,15 @@
 package org.apache.ignite.network.internal.recovery.message;
 
 import java.util.UUID;
+import org.apache.ignite.network.NetworkMessageTypes;
 import org.apache.ignite.network.NetworkMessage;
-import org.apache.ignite.network.processor.annotations.AutoSerializable;
+import org.apache.ignite.network.annotations.Transferable;
 
 /**
  * Handshake start response message.
  */
-@AutoSerializable(messageFactory = HandshakeMessageFactory.class)
+@Transferable(NetworkMessageTypes.HANDSHAKE_START_RESPONSE)
 public interface HandshakeStartResponseMessage extends NetworkMessage {
-    /** */
-    public static final byte TYPE = 3;
-
     /** Launch id. */
     UUID launchId();
 
@@ -40,21 +38,4 @@ public interface HandshakeStartResponseMessage extends NetworkMessage {
 
     /** Connections count. */
     long connectionsCount();
-
-    interface Builder {
-        HandshakeStartResponseMessage.Builder launchId(UUID launchId);
-
-        HandshakeStartResponseMessage.Builder consistentId(String consistentId);
-
-        HandshakeStartResponseMessage.Builder receivedCount(long receivedCount);
-
-        HandshakeStartResponseMessage.Builder connectionsCount(long connectionsCount);
-
-        HandshakeStartResponseMessage build();
-    }
-
-    /** {@inheritDoc} */
-    @Override default short directType() {
-        return TYPE;
-    }
 }

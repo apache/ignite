@@ -19,11 +19,13 @@ package org.apache.ignite.raft.client.message;
 
 import java.io.Serializable;
 import org.apache.ignite.network.NetworkMessage;
+import org.apache.ignite.network.annotations.Transferable;
 import org.apache.ignite.raft.client.Peer;
 
 /**
  * Transfer a leadership to receiving peer.
  */
+@Transferable(value = RaftClientMessageGroup.TRANSFER_LEADERSHIP_REQUEST, autoSerializable = false)
 public interface TransferLeadershipRequest extends NetworkMessage, Serializable {
     /**
      * @return Group id.
@@ -34,25 +36,4 @@ public interface TransferLeadershipRequest extends NetworkMessage, Serializable 
      * @return New leader.
      */
     Peer newLeader();
-
-    /** */
-    public interface Builder {
-        /**
-         * @param groupId Group id.
-         * @return The builder.
-         */
-        Builder groupId(String groupId);
-
-        /**
-         * @param newLeader New leader.
-         * @return The builder.
-         */
-        Builder peer(Peer newLeader);
-
-        /**
-         * @return The complete message.
-         * @throws IllegalStateException If the message is not in valid state.
-         */
-        TransferLeadershipRequest build();
-    }
 }

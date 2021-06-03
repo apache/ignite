@@ -38,6 +38,7 @@ import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 import org.apache.ignite.network.serialization.MessageSerializer;
 import org.apache.ignite.network.serialization.MessageWriter;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.util.ArrayUtils.BOOLEAN_ARRAY;
 import static org.apache.ignite.internal.util.ArrayUtils.BYTE_ARRAY;
@@ -87,10 +88,23 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     /** */
     private int tmpArrBytes;
 
-    /** */
-    private boolean msgTypeDone;
+    /**
+     * When {@code true}, this flag indicates that {@link #msgGroupType} contains a valid part of the currently read
+     * message header. {@code false} means that {@link #msgGroupType} might contain some leftover data from previous
+     * reads and can be discarded.
+     */
+    private boolean msgGroupTypeRead;
+
+    /**
+     * Group type of the message that is currently being received.
+     * <p>
+     * This field saves the partial message header, because it is not received in one piece, but rather in two:
+     * message group type and message type.
+     */
+    private short msgGroupType;
 
     /** */
+    @Nullable
     private MessageDeserializer<NetworkMessage> msgDeserializer;
 
     /** */
@@ -534,7 +548,8 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
 
                     writer.setCurrentWriteClass(msg.getClass());
 
-                    MessageSerializer<NetworkMessage> serializer = serializationRegistry.createSerializer(msg.directType());
+                    MessageSerializer<NetworkMessage> serializer =
+                        serializationRegistry.createSerializer(msg.groupType(), msg.messageType());
 
                     writer.setBuffer(buf);
 
@@ -1027,21 +1042,41 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends NetworkMessage> T readMessage(MessageReader reader) {
-        if (!msgTypeDone) {
-            if (buf.remaining() < NetworkMessage.DIRECT_TYPE_SIZE) {
-                lastFinished = false;
+    @Override
+    @Nullable
+    public <T extends NetworkMessage> T readMessage(MessageReader reader) {
+        // if the deserialzer is null then we haven't finished reading the message header
+        if (msgDeserializer == null) {
+            // read the message group type
+            if (!msgGroupTypeRead) {
+                msgGroupType = readShort();
+
+                if (!lastFinished)
+                    return null;
+
+                // save current progress, because we can read the header in two chunks
+                msgGroupTypeRead = true;
+            }
+
+            // message group type will be equal to Short.MIN_VALUE if a nested message is null
+            if (msgGroupType == Short.MIN_VALUE) {
+                lastFinished = true;
+                msgGroupTypeRead = false;
 
                 return null;
             }
 
-            short type = readShort();
+            // read the message type
+            short msgType = readShort();
 
-            msgDeserializer = type == Short.MIN_VALUE ? null : serializationRegistry.createDeserializer(type);
+            if (!lastFinished)
+                return null;
 
-            msgTypeDone = true;
+            msgDeserializer = serializationRegistry.createDeserializer(msgGroupType, msgType);
         }
 
+        // if the deserializer is not null then we have definitely finished parsing the header and can read the message
+        // body
         if (msgDeserializer != null) {
             try {
                 reader.beforeInnerMessageRead();
@@ -1055,16 +1090,14 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
                 reader.afterInnerMessageRead(lastFinished);
             }
         }
-        else
-            lastFinished = true;
 
         if (lastFinished) {
-            NetworkMessage msg0 = msgDeserializer != null ? msgDeserializer.getMessage() : null;
+            T result = (T) msgDeserializer.getMessage();
 
-            msgTypeDone = false;
+            msgGroupTypeRead = false;
             msgDeserializer = null;
 
-            return (T)msg0;
+            return result;
         }
         else
             return null;

@@ -23,13 +23,11 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.network.NetworkMessage;
-import org.apache.ignite.network.processor.annotations.AutoSerializable;
+import org.apache.ignite.network.TestMessageTypes;
+import org.apache.ignite.network.annotations.Transferable;
 
-@AutoSerializable(messageFactory = AllTypesMessageFactory.class)
+@Transferable(TestMessageTypes.ALL_TYPES)
 public interface AllTypesMessage extends NetworkMessage {
-    /** Direct type. */
-    public static final short TYPE = 1;
-
     byte a();
 
     short b();
@@ -77,63 +75,4 @@ public interface AllTypesMessage extends NetworkMessage {
     Collection<NetworkMessage> w();
 
     Map<String, NetworkMessage> x();
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override public default short directType() {
-        return TYPE;
-    }
-
-    interface Builder {
-        AllTypesMessage build();
-
-        Builder a(byte a);
-
-        Builder b(short b);
-
-        Builder c(int c);
-
-        Builder d(long d);
-
-        Builder e(float e);
-
-        Builder f(double f);
-
-        Builder g(char g);
-
-        Builder h(boolean h);
-
-        Builder i(byte[] i);
-
-        Builder j(short[] j);
-
-        Builder k(int[] k);
-
-        Builder l(long[] l);
-
-        Builder m(float[] m);
-
-        Builder n(double[] n);
-
-        Builder o(char[] o);
-
-        Builder p(boolean[] p);
-
-        Builder q(String q);
-
-        Builder r(BitSet r);
-
-        Builder s(UUID s);
-
-        Builder t(IgniteUuid t);
-
-        Builder u(NetworkMessage u);
-
-        Builder v(NetworkMessage[] v);
-
-        Builder w(Collection<NetworkMessage> w);
-
-        Builder x(Map<String, NetworkMessage> x);
-    }
 }

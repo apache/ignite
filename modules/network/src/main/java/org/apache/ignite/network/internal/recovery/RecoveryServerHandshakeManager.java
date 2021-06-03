@@ -21,13 +21,13 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import org.apache.ignite.network.NetworkMessagesFactory;
 import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.internal.handshake.HandshakeAction;
 import org.apache.ignite.network.internal.handshake.HandshakeException;
 import org.apache.ignite.network.internal.handshake.HandshakeManager;
 import org.apache.ignite.network.internal.netty.NettySender;
 import org.apache.ignite.network.internal.netty.NettyUtils;
-import org.apache.ignite.network.internal.recovery.message.HandshakeMessageFactory;
 import org.apache.ignite.network.internal.recovery.message.HandshakeStartMessage;
 import org.apache.ignite.network.internal.recovery.message.HandshakeStartResponseMessage;
 
@@ -44,15 +44,21 @@ public class RecoveryServerHandshakeManager implements HandshakeManager {
     /** Handshake completion future. */
     private final CompletableFuture<NettySender> handshakeCompleteFuture = new CompletableFuture<>();
 
+    /** Message factory. */
+    private final NetworkMessagesFactory messageFactory;
+
     /**
      * Constructor.
      *
      * @param launchId Launch id.
      * @param consistentId Consistent id.
      */
-    public RecoveryServerHandshakeManager(UUID launchId, String consistentId) {
+    public RecoveryServerHandshakeManager(
+        UUID launchId, String consistentId, NetworkMessagesFactory messageFactory
+    ) {
         this.launchId = launchId;
         this.consistentId = consistentId;
+        this.messageFactory = messageFactory;
     }
 
     /** {@inheritDoc} */
@@ -62,7 +68,7 @@ public class RecoveryServerHandshakeManager implements HandshakeManager {
 
     /** {@inheritDoc} */
     @Override public HandshakeAction onConnectionOpen(Channel channel) {
-        HandshakeStartMessage handshakeStartMessage = HandshakeMessageFactory.handshakeStartMessage()
+        HandshakeStartMessage handshakeStartMessage = messageFactory.handshakeStartMessage()
             .launchId(launchId)
             .consistentId(consistentId)
             .build();

@@ -33,17 +33,10 @@ import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.ClusterServiceFactory;
-import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.TestMessage;
-import org.apache.ignite.network.TestMessageFactory;
-import org.apache.ignite.network.TestMessageSerializationFactory;
+import org.apache.ignite.network.TestMessageSerializationRegistryImpl;
+import org.apache.ignite.network.TestMessagesFactory;
 import org.apache.ignite.network.TopologyEventHandler;
-import org.apache.ignite.network.internal.recovery.message.HandshakeStartMessage;
-import org.apache.ignite.network.internal.recovery.message.HandshakeStartMessageSerializationFactory;
-import org.apache.ignite.network.internal.recovery.message.HandshakeStartResponseMessage;
-import org.apache.ignite.network.internal.recovery.message.HandshakeStartResponseMessageSerializationFactory;
-import org.apache.ignite.network.scalecube.message.ScaleCubeMessage;
-import org.apache.ignite.network.scalecube.message.ScaleCubeMessageSerializationFactory;
 import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -63,6 +56,9 @@ class ITScaleCubeNetworkMessagingTest {
      */
     private Cluster testCluster;
 
+    /** Message factory. */
+    private final TestMessagesFactory messageFactory = new TestMessagesFactory();
+
     /** */
     @AfterEach
     public void afterEach() {
@@ -74,7 +70,7 @@ class ITScaleCubeNetworkMessagingTest {
      */
     @Test
     public void messageWasSentToAllMembersSuccessfully() throws Exception {
-        Map<String, NetworkMessage> messageStorage = new ConcurrentHashMap<>();
+        Map<String, TestMessage> messageStorage = new ConcurrentHashMap<>();
 
         var messageReceivedLatch = new CountDownLatch(3);
 
@@ -83,7 +79,7 @@ class ITScaleCubeNetworkMessagingTest {
         for (ClusterService member : testCluster.members) {
             member.messagingService().addMessageHandler(
                 (message, sender, correlationId) -> {
-                    messageStorage.put(member.localConfiguration().getName(), message);
+                    messageStorage.put(member.localConfiguration().getName(), (TestMessage)message);
                     messageReceivedLatch.countDown();
                 }
             );
@@ -91,7 +87,7 @@ class ITScaleCubeNetworkMessagingTest {
 
         testCluster.startAwait();
 
-        var testMessage = TestMessageFactory.testMessage().msg("Message from Alice").build();
+        var testMessage = messageFactory.testMessage().msg("Message from Alice").build();
 
         ClusterService alice = testCluster.members.get(0);
 
@@ -105,7 +101,7 @@ class ITScaleCubeNetworkMessagingTest {
         testCluster.members.stream()
             .map(member -> member.localConfiguration().getName())
             .map(messageStorage::get)
-            .forEach(msg -> assertThat(msg, is(testMessage)));
+            .forEach(msg -> assertThat(msg.msg(), is(testMessage.msg())));
     }
 
     /**
@@ -139,13 +135,13 @@ class ITScaleCubeNetworkMessagingTest {
         ClusterNode self = member.topologyService().localMember();
 
         class Data {
-            private final NetworkMessage message;
+            private final TestMessage message;
 
             private final ClusterNode sender;
 
             private final String correlationId;
 
-            private Data(NetworkMessage message, ClusterNode sender, String correlationId) {
+            private Data(TestMessage message, ClusterNode sender, String correlationId) {
                 this.message = message;
                 this.sender = sender;
                 this.correlationId = correlationId;
@@ -155,17 +151,17 @@ class ITScaleCubeNetworkMessagingTest {
         var dataFuture = new CompletableFuture<Data>();
 
         member.messagingService().addMessageHandler(
-            (message, sender, correlationId) -> dataFuture.complete(new Data(message, sender, correlationId))
+            (message, sender, correlationId) -> dataFuture.complete(new Data((TestMessage)message, sender, correlationId))
         );
 
-        var requestMessage = TestMessageFactory.testMessage().msg("request").build();
+        var requestMessage = messageFactory.testMessage().msg("request").build();
         var correlationId = "foobar";
 
         member.messagingService().send(self, requestMessage, correlationId);
 
         Data actualData = dataFuture.get(3, TimeUnit.SECONDS);
 
-        assertThat(actualData.message, is(requestMessage));
+        assertThat(actualData.message.msg(), is(requestMessage.msg()));
         assertThat(actualData.sender, is(self));
         assertThat(actualData.correlationId, is(correlationId));
     }
@@ -182,8 +178,8 @@ class ITScaleCubeNetworkMessagingTest {
 
         ClusterNode self = member.topologyService().localMember();
 
-        var requestMessage = TestMessageFactory.testMessage().msg("request").build();
-        var responseMessage = TestMessageFactory.testMessage().msg("response").build();
+        var requestMessage = messageFactory.testMessage().msg("request").build();
+        var responseMessage = messageFactory.testMessage().msg("response").build();
 
         member.messagingService().addMessageHandler((message, sender, correlationId) -> {
             if (message.equals(requestMessage))
@@ -195,7 +191,7 @@ class ITScaleCubeNetworkMessagingTest {
             .thenApply(TestMessage.class::cast)
             .get(3, TimeUnit.SECONDS);
 
-        assertThat(actualResponseMessage, is(responseMessage));
+        assertThat(actualResponseMessage.msg(), is(responseMessage.msg()));
     }
 
     /**
@@ -268,11 +264,7 @@ class ITScaleCubeNetworkMessagingTest {
         private final ClusterServiceFactory networkFactory = new TestScaleCubeClusterServiceFactory();
 
         /** */
-        private final MessageSerializationRegistry serializationRegistry = new MessageSerializationRegistry()
-            .registerFactory(ScaleCubeMessage.TYPE, new ScaleCubeMessageSerializationFactory())
-            .registerFactory(HandshakeStartMessage.TYPE, new HandshakeStartMessageSerializationFactory())
-            .registerFactory(HandshakeStartResponseMessage.TYPE, new HandshakeStartResponseMessageSerializationFactory())
-            .registerFactory(TestMessage.TYPE, new TestMessageSerializationFactory());
+        private final MessageSerializationRegistry serializationRegistry = new TestMessageSerializationRegistryImpl();
 
         /** */
         final List<ClusterService> members;

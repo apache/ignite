@@ -23,17 +23,12 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import io.netty.channel.Channel;
 import org.apache.ignite.network.NetworkMessage;
-import org.apache.ignite.network.TestMessage;
-import org.apache.ignite.network.TestMessageFactory;
-import org.apache.ignite.network.TestMessageSerializationFactory;
+import org.apache.ignite.network.NetworkMessagesFactory;
+import org.apache.ignite.network.TestMessageSerializationRegistryImpl;
+import org.apache.ignite.network.TestMessagesFactory;
 import org.apache.ignite.network.internal.handshake.HandshakeAction;
 import org.apache.ignite.network.internal.netty.ConnectionManager;
 import org.apache.ignite.network.internal.netty.NettySender;
-import org.apache.ignite.network.internal.recovery.message.HandshakeStartMessage;
-import org.apache.ignite.network.internal.recovery.message.HandshakeStartMessageSerializationFactory;
-import org.apache.ignite.network.internal.recovery.message.HandshakeStartResponseMessage;
-import org.apache.ignite.network.internal.recovery.message.HandshakeStartResponseMessageSerializationFactory;
-import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -59,6 +54,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 public class RecoveryHandshakeTest {
     /** Started connection managers. */
     private final List<ConnectionManager> startedManagers = new ArrayList<>();
+
+    private final TestMessagesFactory messageFactory = new TestMessagesFactory();
 
     /** */
     @AfterEach
@@ -106,7 +103,7 @@ public class RecoveryHandshakeTest {
         assertNotNull(from2to1);
 
         // Ensure the handshake has finished on both sides.
-        from2to1.send(TestMessageFactory.testMessage().msg("test").build()).get(3, TimeUnit.SECONDS);
+        from2to1.send(messageFactory.testMessage().msg("test").build()).get(3, TimeUnit.SECONDS);
 
         NettySender from1to2 = manager1.channel(manager2.consistentId(), manager2.getLocalAddress()).get(3, TimeUnit.SECONDS);
 
@@ -193,9 +190,10 @@ public class RecoveryHandshakeTest {
         private FailingRecoveryServerHandshakeManager(
             UUID launchId,
             String consistentId,
-            ServerStageFail failAtStage
+            ServerStageFail failAtStage,
+            NetworkMessagesFactory messageFactory
         ) {
-            super(launchId, consistentId);
+            super(launchId, consistentId, messageFactory);
             this.failAtStage = failAtStage;
         }
 
@@ -258,9 +256,10 @@ public class RecoveryHandshakeTest {
         private FailingRecoveryClientHandshakeManager(
             UUID launchId,
             String consistentId,
-            ClientStageFail failAtStage
+            ClientStageFail failAtStage,
+            NetworkMessagesFactory messageFactory
         ) {
-            super(launchId, consistentId);
+            super(launchId, consistentId, messageFactory);
             this.failAtStage = failAtStage;
         }
 
@@ -323,10 +322,9 @@ public class RecoveryHandshakeTest {
         ServerStageFail serverHandshakeFailAt,
         ClientStageFail clientHandshakeFailAt
     ) {
-        var registry = new MessageSerializationRegistry()
-            .registerFactory(HandshakeStartMessage.TYPE, new HandshakeStartMessageSerializationFactory())
-            .registerFactory(HandshakeStartResponseMessage.TYPE, new HandshakeStartResponseMessageSerializationFactory())
-            .registerFactory(TestMessage.TYPE, new TestMessageSerializationFactory());
+        var registry = new TestMessageSerializationRegistryImpl();
+
+        var messageFactory = new NetworkMessagesFactory();
 
         UUID launchId = UUID.randomUUID();
         String consistentId = UUID.randomUUID().toString();
@@ -335,8 +333,8 @@ public class RecoveryHandshakeTest {
             port,
             registry,
             consistentId,
-            () -> new FailingRecoveryServerHandshakeManager(launchId, consistentId, serverHandshakeFailAt),
-            () -> new FailingRecoveryClientHandshakeManager(launchId, consistentId, clientHandshakeFailAt)
+            () -> new FailingRecoveryServerHandshakeManager(launchId, consistentId, serverHandshakeFailAt, messageFactory),
+            () -> new FailingRecoveryClientHandshakeManager(launchId, consistentId, clientHandshakeFailAt, messageFactory)
         );
 
         manager.start();

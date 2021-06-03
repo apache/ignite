@@ -19,7 +19,7 @@ package org.apache.ignite.network.processor.internal;
 
 import java.io.Serializable;
 import org.apache.ignite.network.NetworkMessage;
-import org.apache.ignite.network.processor.annotations.AutoSerializable;
+import org.apache.ignite.network.annotations.Transferable;
 
 interface NetworkMessage1 extends NetworkMessage {
 
@@ -33,36 +33,7 @@ interface NetworkMessage2 extends NetworkMessage1, Serializable, FakeInterface {
 
 }
 
-@AutoSerializable(messageFactory = TransitiveMessageFactory.class)
+@Transferable(2)
 public interface TransitiveMessage extends NetworkMessage2 {
-    short TYPE = 123;
-
     int x();
-
-    interface Builder {
-        Builder x(int x);
-
-        TransitiveMessage build();
-    }
-}
-
-class TransitiveMessageImpl implements TransitiveMessage, TransitiveMessage.Builder {
-    private int x;
-
-    @Override public int x() {
-        return x;
-    }
-
-    @Override public short directType() {
-        return 0;
-    }
-
-    @Override public Builder x(int x) {
-        this.x = x;
-        return this;
-    }
-
-    @Override public TransitiveMessage build() {
-        return this;
-    }
 }

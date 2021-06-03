@@ -27,11 +27,12 @@ import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.network.NetworkMessage;
-import org.apache.ignite.network.internal.direct.DirectMarshallingUtils;
 import org.apache.ignite.network.internal.direct.DirectMessageReader;
 import org.apache.ignite.network.serialization.MessageDeserializer;
 import org.apache.ignite.network.serialization.MessageReader;
 import org.apache.ignite.network.serialization.MessageSerializationRegistry;
+
+import static org.apache.ignite.network.internal.direct.DirectMarshallingUtils.getShort;
 
 /**
  * Decodes {@link ByteBuf}s into {@link NetworkMessage}s.
@@ -59,7 +60,7 @@ public class InboundDecoder extends ByteToMessageDecoder {
     }
 
     /** {@inheritDoc} */
-    @Override public void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
+    @Override public void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
         ByteBuffer buffer = in.nioBuffer();
 
         Attribute<MessageReader> readerAttr = ctx.channel().attr(READER_KEY);
@@ -80,8 +81,8 @@ public class InboundDecoder extends ByteToMessageDecoder {
             try {
                 // Read message type.
                 if (msg == null) {
-                    if (buffer.remaining() >= NetworkMessage.DIRECT_TYPE_SIZE)
-                        msg = serializationRegistry.createDeserializer(DirectMarshallingUtils.getMessageType(buffer));
+                    if (buffer.remaining() >= NetworkMessage.MSG_TYPE_SIZE_BYTES)
+                        msg = serializationRegistry.createDeserializer(getShort(buffer), getShort(buffer));
                     else
                         break;
                 }

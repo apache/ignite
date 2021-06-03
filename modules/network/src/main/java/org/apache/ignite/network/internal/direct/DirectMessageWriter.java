@@ -56,10 +56,12 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeHeader(short type, byte fieldCnt) {
+    @Override public boolean writeHeader(short groupType, short messageType, byte fieldCnt) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeShort(type);
+        // TODO: compress these values https://issues.apache.org/jira/browse/IGNITE-14818
+        stream.writeShort(groupType);
+        stream.writeShort(messageType);
 
         return stream.lastFinished();
     }
@@ -345,9 +347,6 @@ public class DirectMessageWriter implements MessageWriter {
 
         /** */
         private boolean hdrWritten;
-
-        /** */
-        private MessageSerializationRegistry registry;
 
         /**
          * @param registry Serialization registry.

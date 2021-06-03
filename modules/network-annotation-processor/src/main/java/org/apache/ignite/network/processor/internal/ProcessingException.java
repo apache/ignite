@@ -17,12 +17,39 @@
 
 package org.apache.ignite.network.processor.internal;
 
+import javax.lang.model.element.Element;
+import org.jetbrains.annotations.Nullable;
+
 /**
  * Exception used by all annotation-processor related classes to gracefully display processing errors.
  */
-class ProcessingException extends RuntimeException {
+public class ProcessingException extends RuntimeException {
     /** */
-    ProcessingException(String message) {
-        super(message);
+    @Nullable
+    private final Element element;
+
+    /** */
+    public ProcessingException(String message) {
+        this(message, null, null);
+    }
+
+    /** */
+    public ProcessingException(String message, @Nullable Throwable cause) {
+        this(message, cause, null);
+    }
+
+    /** */
+    public ProcessingException(String message, @Nullable Throwable cause, @Nullable Element element) {
+        super(message, cause);
+
+        this.element = element;
+    }
+
+    /**
+     * An element which processing triggered the exception.
+     */
+    @Nullable
+    public Element getElement() {
+        return element;
     }
 }

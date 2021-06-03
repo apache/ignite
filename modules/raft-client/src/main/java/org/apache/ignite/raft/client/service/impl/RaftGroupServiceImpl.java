@@ -41,7 +41,7 @@ import org.apache.ignite.raft.client.message.GetLeaderRequest;
 import org.apache.ignite.raft.client.message.GetLeaderResponse;
 import org.apache.ignite.raft.client.message.GetPeersRequest;
 import org.apache.ignite.raft.client.message.GetPeersResponse;
-import org.apache.ignite.raft.client.message.RaftClientMessageFactory;
+import org.apache.ignite.raft.client.message.RaftClientMessagesFactory;
 import org.apache.ignite.raft.client.message.RaftErrorResponse;
 import org.apache.ignite.raft.client.message.RemoveLearnersRequest;
 import org.apache.ignite.raft.client.message.RemovePeersRequest;
@@ -64,13 +64,13 @@ public class RaftGroupServiceImpl implements RaftGroupService {
     private static final IgniteLogger LOG = IgniteLogger.forClass(RaftGroupServiceImpl.class);
 
     /** */
-    private volatile int timeout;
+    private volatile long timeout;
 
     /** */
     private final String groupId;
 
     /** */
-    private final RaftClientMessageFactory factory;
+    private final RaftClientMessagesFactory factory;
 
     /** */
     private volatile Peer leader;
@@ -106,7 +106,7 @@ public class RaftGroupServiceImpl implements RaftGroupService {
     public RaftGroupServiceImpl(
         String groupId,
         ClusterService cluster,
-        RaftClientMessageFactory factory,
+        RaftClientMessagesFactory factory,
         int timeout,
         List<Peer> peers,
         boolean refreshLeader,
@@ -146,7 +146,7 @@ public class RaftGroupServiceImpl implements RaftGroupService {
 
     /** {@inheritDoc} */
     @Override public void timeout(long newTimeout) {
-        this.timeout = timeout;
+        this.timeout = newTimeout;
     }
 
     /** {@inheritDoc} */
@@ -227,7 +227,7 @@ public class RaftGroupServiceImpl implements RaftGroupService {
         if (leader == null)
             return refreshLeader().thenCompose(res -> removePeers(peers));
 
-        RemovePeersRequest req = factory.removePeerRequest().groupId(groupId).peers(peers).build();
+        RemovePeersRequest req = factory.removePeersRequest().groupId(groupId).peers(peers).build();
 
         CompletableFuture<ChangePeersResponse> fut = new CompletableFuture<>();
 
@@ -306,7 +306,7 @@ public class RaftGroupServiceImpl implements RaftGroupService {
         if (leader == null)
             return refreshLeader().thenCompose(res -> transferLeadership(newLeader));
 
-        TransferLeadershipRequest req = factory.transferLeaderRequest().groupId(groupId).peer(newLeader).build();
+        TransferLeadershipRequest req = factory.transferLeadershipRequest().groupId(groupId).newLeader(newLeader).build();
 
         CompletableFuture<?> fut = cluster.messagingService().invoke(newLeader.address(), req, timeout);
 
@@ -322,11 +322,11 @@ public class RaftGroupServiceImpl implements RaftGroupService {
 
         ActionRequest req = factory.actionRequest().command(cmd).groupId(groupId).readOnlySafe(true).build();
 
-        CompletableFuture<ActionResponse<R>> fut = new CompletableFuture<>();
+        CompletableFuture<ActionResponse> fut = new CompletableFuture<>();
 
         sendWithRetry(leader, req, currentTimeMillis() + timeout, fut);
 
-        return fut.thenApply(resp -> resp.result());
+        return fut.thenApply(resp -> (R) resp.result());
     }
 
     /**
@@ -335,9 +335,9 @@ public class RaftGroupServiceImpl implements RaftGroupService {
     @Override public <R> CompletableFuture<R> run(Peer peer, ReadCommand cmd) {
         ActionRequest req = factory.actionRequest().command(cmd).groupId(groupId).readOnlySafe(false).build();
 
-        CompletableFuture fut = cluster.messagingService().invoke(peer.address(), req, timeout);
+        CompletableFuture<?> fut = cluster.messagingService().invoke(peer.address(), req, timeout);
 
-        return fut.thenApply(resp -> ((ActionResponse) resp).result());
+        return fut.thenApply(resp -> (R) ((ActionResponse) resp).result());
     }
 
     /** {@inheritDoc} */
@@ -349,7 +349,7 @@ public class RaftGroupServiceImpl implements RaftGroupService {
     /**
      * Retries request until success or timeout.
      *
-     * @param addr Target address.
+     * @param peer Target peer.
      * @param req The request.
      * @param stopTime Stop time.
      * @param fut The future.
@@ -362,7 +362,7 @@ public class RaftGroupServiceImpl implements RaftGroupService {
             return;
         }
 
-        CompletableFuture fut0 = cluster.messagingService().invoke(peer.address(), (NetworkMessage) req, timeout);
+        CompletableFuture<?> fut0 = cluster.messagingService().invoke(peer.address(), (NetworkMessage) req, timeout);
 
         fut0.whenComplete(new BiConsumer<Object, Throwable>() {
             @Override public void accept(Object resp, Throwable err) {

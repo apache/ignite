@@ -22,8 +22,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.raft.client.Peer;
-import org.apache.ignite.raft.client.message.RaftClientMessageFactory;
-import org.apache.ignite.raft.client.message.impl.RaftClientMessageFactoryImpl;
+import org.apache.ignite.raft.client.message.RaftClientMessagesFactory;
 import org.apache.ignite.raft.client.service.RaftGroupListener;
 import org.apache.ignite.raft.client.service.RaftGroupService;
 import org.apache.ignite.raft.client.service.impl.RaftGroupServiceImpl;
@@ -35,7 +34,7 @@ import org.apache.ignite.raft.server.impl.RaftServerImpl;
  */
 public class Loza {
     /** Factory. */
-    private static RaftClientMessageFactory FACTORY = new RaftClientMessageFactoryImpl();
+    private static final RaftClientMessagesFactory FACTORY = new RaftClientMessagesFactory();
 
     /** Timeout. */
     private static final int TIMEOUT = 1000;
@@ -47,7 +46,7 @@ public class Loza {
     private final ClusterService clusterNetSvc;
 
     /** Raft server. */
-    private RaftServer raftServer;
+    private final RaftServer raftServer;
 
     /**
      * Constructor.

@@ -49,6 +49,10 @@ import org.mockito.verification.VerificationMode;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyShort;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Tests for {@link NettyServer}.
@@ -170,46 +174,32 @@ public class NettyServerTest {
      */
     @Test
     public void testHandshakeManagerInvoked() throws Exception {
-        HandshakeManager handshakeManager = Mockito.mock(HandshakeManager.class);
+        HandshakeManager handshakeManager = mock(HandshakeManager.class);
 
-        Mockito.doReturn(CompletableFuture.completedFuture(Mockito.mock(NettySender.class)))
-            .when(handshakeManager).handshakeFuture();
+        when(handshakeManager.handshakeFuture()).thenReturn(CompletableFuture.completedFuture(mock(NettySender.class)));
+        when(handshakeManager.init(any())).thenReturn(HandshakeAction.NOOP);
+        when(handshakeManager.onConnectionOpen(any())).thenReturn(HandshakeAction.NOOP);
+        when(handshakeManager.onMessage(any(), any())).thenReturn(HandshakeAction.NOOP);
 
-        Mockito.doReturn(HandshakeAction.NOOP)
-            .when(handshakeManager).init(Mockito.any());
+        MessageSerializationRegistry registry = mock(MessageSerializationRegistry.class);
 
-        Mockito.doReturn(HandshakeAction.NOOP)
-            .when(handshakeManager).onConnectionOpen(Mockito.any());
+        when(registry.createDeserializer(anyShort(), anyShort()))
+            .thenReturn(new MessageDeserializer<>() {
+                /** {@inheritDoc} */
+                @Override public boolean readMessage(MessageReader reader) throws MessageMappingException {
+                    return true;
+                }
 
-        Mockito.doReturn(HandshakeAction.NOOP)
-            .when(handshakeManager).onMessage(Mockito.any(), Mockito.any());
+                /** {@inheritDoc} */
+                @Override public Class<NetworkMessage> klass() {
+                    return NetworkMessage.class;
+                }
 
-        MessageSerializationRegistry registry = new MessageSerializationRegistry() {
-            /** {@inheritDoc} */
-            @Override public <T extends NetworkMessage> MessageDeserializer<T> createDeserializer(short type) {
-                return (MessageDeserializer<T>) new MessageDeserializer<>() {
-                    /** {@inheritDoc} */
-                    @Override public boolean readMessage(MessageReader reader) throws MessageMappingException {
-                        return true;
-                    }
-
-                    /** {@inheritDoc} */
-                    @Override public Class<NetworkMessage> klass() {
-                        return NetworkMessage.class;
-                    }
-
-                    /** {@inheritDoc} */
-                    @Override public NetworkMessage getMessage() {
-                        return new NetworkMessage() {
-                            /** {@inheritDoc} */
-                            @Override public short directType() {
-                                return 0;
-                            }
-                        };
-                    }
-                };
-            }
-        };
+                /** {@inheritDoc} */
+                @Override public NetworkMessage getMessage() {
+                    return mock(NetworkMessage.class);
+                }
+            });
 
         server = new NettyServer(4000, handshakeManager, sender -> {}, (socketAddress, message) -> {}, registry);
 
@@ -233,7 +223,7 @@ public class NettyServerTest {
         ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
 
         // One message only.
-        for (int i = 0; i < (NetworkMessage.DIRECT_TYPE_SIZE + 1); i++)
+        for (int i = 0; i < (NetworkMessage.MSG_TYPE_SIZE_BYTES + 1); i++)
             buffer.writeByte(1);
 
         channel.writeAndFlush(buffer).get(3, TimeUnit.SECONDS);
@@ -242,10 +232,10 @@ public class NettyServerTest {
 
         InOrder order = Mockito.inOrder(handshakeManager);
 
-        order.verify(handshakeManager, timeout()).init(Mockito.any());
+        order.verify(handshakeManager, timeout()).init(any());
         order.verify(handshakeManager, timeout()).handshakeFuture();
-        order.verify(handshakeManager, timeout()).onConnectionOpen(Mockito.any());
-        order.verify(handshakeManager, timeout()).onMessage(Mockito.any(), Mockito.any());
+        order.verify(handshakeManager, timeout()).onConnectionOpen(any());
+        order.verify(handshakeManager, timeout()).onMessage(any(), any());
     }
 
     /**
@@ -268,7 +258,7 @@ public class NettyServerTest {
 
         Mockito.doReturn(future).when(bootstrap).bind(Mockito.anyInt());
 
-        var server = new NettyServer(bootstrap, 0, Mockito.mock(HandshakeManager.class), null, null, null);
+        var server = new NettyServer(bootstrap, 0, mock(HandshakeManager.class), null, null, null);
 
         try {
             server.start().get(3, TimeUnit.SECONDS);

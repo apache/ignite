@@ -20,31 +20,16 @@ package org.apache.ignite.network.scalecube.message;
 import java.util.Map;
 import io.scalecube.cluster.transport.api.Message;
 import org.apache.ignite.network.NetworkMessage;
-import org.apache.ignite.network.processor.annotations.AutoSerializable;
+import org.apache.ignite.network.NetworkMessageTypes;
+import org.apache.ignite.network.annotations.Transferable;
 
 /**
  * Wrapper for ScaleCube's {@link Message}.
  * {@link Message#data} is stored in {@link #array} and {@link Message#headers} are stored in {@link #headers}.
  */
-@AutoSerializable(messageFactory = ScaleCubeMessageFactory.class)
+@Transferable(NetworkMessageTypes.SCALE_CUBE_MESSAGE)
 public interface ScaleCubeMessage extends NetworkMessage {
-    /** Direct type. */
-    public static final short TYPE = 1;
-
     byte[] array();
 
     Map<String, String> headers();
-
-    interface Builder {
-        Builder array(byte[] array);
-
-        Builder headers(Map<String, String> headers);
-
-        ScaleCubeMessage build();
-    }
-
-    /** {@inheritDoc} */
-    @Override public default short directType() {
-        return TYPE;
-    }
 }

@@ -37,8 +37,8 @@ import org.apache.ignite.raft.client.WriteCommand;
 import org.apache.ignite.raft.client.message.ActionRequest;
 import org.apache.ignite.raft.client.message.GetLeaderRequest;
 import org.apache.ignite.raft.client.message.GetLeaderResponse;
-import org.apache.ignite.raft.client.message.RaftClientMessageFactory;
 import org.apache.ignite.raft.client.message.RaftErrorResponse;
+import org.apache.ignite.raft.client.message.RaftClientMessagesFactory;
 import org.apache.ignite.raft.client.service.CommandClosure;
 import org.apache.ignite.raft.client.service.RaftGroupListener;
 import org.apache.ignite.raft.server.RaftServer;
@@ -55,7 +55,7 @@ public class RaftServerImpl implements RaftServer {
     private static final IgniteLogger LOG = IgniteLogger.forClass(RaftServerImpl.class);
 
     /** */
-    private final RaftClientMessageFactory clientMsgFactory;
+    private final RaftClientMessagesFactory clientMsgFactory;
 
     /** */
     private final ClusterService service;
@@ -85,7 +85,7 @@ public class RaftServerImpl implements RaftServer {
      */
     public RaftServerImpl(
         ClusterService service,
-        RaftClientMessageFactory clientMsgFactory,
+        RaftClientMessagesFactory clientMsgFactory,
         boolean reuse
     ) {
         Objects.requireNonNull(service);
@@ -105,9 +105,9 @@ public class RaftServerImpl implements RaftServer {
                 service.messagingService().send(sender, resp, correlationId);
             }
             else if (message instanceof ActionRequest) {
-                ActionRequest<?> req0 = (ActionRequest<?>)message;
+                ActionRequest req0 = (ActionRequest)message;
 
-                RaftGroupListener lsnr = RaftServerImpl.this.listeners.get(req0.groupId());
+                RaftGroupListener lsnr = listeners.get(req0.groupId());
 
                 if (lsnr == null) {
                     sendError(sender, correlationId, RaftErrorCode.ILLEGAL_STATE);
@@ -134,7 +134,7 @@ public class RaftServerImpl implements RaftServer {
         writeWorker.setDaemon(true);
         writeWorker.start();
 
-        LOG.info("Started replication server [node=" + service.toString() + ']');
+        LOG.info("Started replication server [node=" + service + ']');
     }
 
     /** {@inheritDoc} */
@@ -186,7 +186,7 @@ public class RaftServerImpl implements RaftServer {
      */
     private <T extends Command> void handleActionRequest(
         ClusterNode sender,
-        ActionRequest<?> req,
+        ActionRequest req,
         String corellationId,
         BlockingQueue<CommandClosureEx<T>> queue,
         RaftGroupListener lsnr

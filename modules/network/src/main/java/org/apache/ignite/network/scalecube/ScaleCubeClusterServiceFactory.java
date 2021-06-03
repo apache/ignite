@@ -33,6 +33,7 @@ import io.scalecube.cluster.membership.MembershipEvent;
 import io.scalecube.cluster.transport.api.Message;
 import io.scalecube.net.Address;
 import org.apache.ignite.network.AbstractClusterService;
+import org.apache.ignite.network.NetworkMessagesFactory;
 import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.ClusterServiceFactory;
@@ -55,6 +56,8 @@ public class ScaleCubeClusterServiceFactory implements ClusterServiceFactory {
 
         var messagingService = new ScaleCubeMessagingService(topologyService);
 
+        var messageFactory = new NetworkMessagesFactory();
+
         MessageSerializationRegistry registry = context.getSerializationRegistry();
 
         UUID launchId = UUID.randomUUID();
@@ -63,11 +66,11 @@ public class ScaleCubeClusterServiceFactory implements ClusterServiceFactory {
             context.getPort(),
             registry,
             consistentId,
-            () -> new RecoveryServerHandshakeManager(launchId, consistentId),
-            () -> new RecoveryClientHandshakeManager(launchId, consistentId)
+            () -> new RecoveryServerHandshakeManager(launchId, consistentId, messageFactory),
+            () -> new RecoveryClientHandshakeManager(launchId, consistentId, messageFactory)
         );
 
-        ScaleCubeDirectMarshallerTransport transport = new ScaleCubeDirectMarshallerTransport(connectionManager, topologyService);
+        var transport = new ScaleCubeDirectMarshallerTransport(connectionManager, topologyService, messageFactory);
 
         var cluster = new ClusterImpl(defaultConfig())
             .handler(cl -> new ClusterMessageHandler() {

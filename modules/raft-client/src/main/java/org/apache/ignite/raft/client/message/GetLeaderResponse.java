@@ -19,29 +19,16 @@ package org.apache.ignite.raft.client.message;
 
 import java.io.Serializable;
 import org.apache.ignite.network.NetworkMessage;
+import org.apache.ignite.network.annotations.Transferable;
 import org.apache.ignite.raft.client.Peer;
 
 /**
  * A current leader.
  */
+@Transferable(value = RaftClientMessageGroup.GET_LEADER_RESPONSE, autoSerializable = false)
 public interface GetLeaderResponse extends NetworkMessage, Serializable {
     /**
      * @return The leader.
      */
     Peer leader();
-
-    /** */
-    public interface Builder {
-        /**
-         * @param leader Leader
-         * @return The builder.
-         */
-        Builder leader(Peer leader);
-
-        /**
-         * @return The complete message.
-         * @throws IllegalStateException If the message is not in valid state.
-         */
-        GetLeaderResponse build();
-    }
 }

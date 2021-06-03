@@ -23,42 +23,19 @@ import org.apache.ignite.network.NetworkMessage;
 /**
  * Container that maps message types to {@link MessageSerializationFactory} instances.
  */
-public class MessageSerializationRegistry {
-    /** message type -> MessageSerializerProvider instance */
-    private final MessageSerializationFactory<?>[] factories = new MessageSerializationFactory<?>[Short.MAX_VALUE << 1];
-
+public interface MessageSerializationRegistry {
     /**
      * Registers message serialization factory by message type.
      *
-     * @param type Direct type of a message.
+     * @param groupType Message group type.
+     * @param messageType Message type.
      * @param factory Message's serialization factory.
      * @return This registry.
      * @throws NetworkConfigurationException If there is an already registered factory for the given type.
      */
-    public MessageSerializationRegistry registerFactory(short type,
-        MessageSerializationFactory<?> factory) {
-        if (this.factories[type] != null)
-            throw new NetworkConfigurationException("Message serialization factory for direct type " + type + " is already defined");
-
-        this.factories[type] = factory;
-
-        return this;
-    }
-
-    /**
-     * Gets a {@link MessageSerializationFactory} for the given message type.
-     *
-     * @param <T> Type of a message.
-     * @param type Direct type of a message.
-     * @return Message's serialization factory.
-     */
-    private <T extends NetworkMessage> MessageSerializationFactory<T> getFactory(short type) {
-        var provider = factories[type];
-
-        assert provider != null : "No serializer provider defined for type " + type;
-
-        return (MessageSerializationFactory<T>) provider;
-    }
+    MessageSerializationRegistry registerFactory(
+        short groupType, short messageType, MessageSerializationFactory<?> factory
+    );
 
     /**
      * Creates a {@link MessageSerializer} for the given message type.
@@ -68,13 +45,11 @@ public class MessageSerializationRegistry {
      * method.
      *
      * @param <T> Type of a message.
-     * @param type Direct type of a message.
+     * @param groupType Group type of a message.
+     * @param messageType Message type.
      * @return Message's serializer.
      */
-    public <T extends NetworkMessage> MessageSerializer<T> createSerializer(short type) {
-        MessageSerializationFactory<T> factory = getFactory(type);
-        return factory.createSerializer();
-    }
+    <T extends NetworkMessage> MessageSerializer<T> createSerializer(short groupType, short messageType);
 
     /**
      * Creates a {@link MessageDeserializer} for the given message type.
@@ -84,11 +59,9 @@ public class MessageSerializationRegistry {
      * method.
      *
      * @param <T> Type of a message.
-     * @param type Direct type of a message.
+     * @param groupType Group type of a message.
+     * @param messageType Message type.
      * @return Message's deserializer.
      */
-    public <T extends NetworkMessage> MessageDeserializer<T> createDeserializer(short type) {
-        MessageSerializationFactory<T> factory = getFactory(type);
-        return factory.createDeserializer();
-    }
+    <T extends NetworkMessage> MessageDeserializer<T> createDeserializer(short groupType, short messageType);
 }
