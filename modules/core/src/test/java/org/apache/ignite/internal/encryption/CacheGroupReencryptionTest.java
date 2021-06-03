@@ -649,11 +649,19 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
         node0.encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get();
 
-        assertTrue(isReencryptionInProgress(Collections.singleton(cacheName())));
+        int grpId = CU.cacheId(cacheName());
+
+        assertFalse("Re-encryption must be started.", node0.context().encryption().reencryptionFuture(grpId).isDone());
+        assertFalse("Re-encryption must be started.", node1.context().encryption().reencryptionFuture(grpId).isDone());
 
         node0.cluster().state(ClusterState.INACTIVE);
 
-        assertFalse(isReencryptionInProgress(Collections.singleton(cacheName())));
+        // Check node join to inactive cluster.
+        stopGrid(GRID_1);
+        node1 = startGrid(GRID_1);
+
+        assertTrue("Re-encryption should not start ", node0.context().encryption().reencryptionFuture(grpId).isDone());
+        assertTrue("Re-encryption should not start ", node1.context().encryption().reencryptionFuture(grpId).isDone());
 
         node0.context().encryption().setReencryptionRate(DFLT_REENCRYPTION_RATE_MBPS);
         node1.context().encryption().setReencryptionRate(DFLT_REENCRYPTION_RATE_MBPS);
