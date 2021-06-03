@@ -125,7 +125,7 @@ public class TableSpoolExecutionTest extends AbstractExecutionTest {
         int inBufSize = U.field(AbstractNode.class, "IN_BUFFER_SIZE");
 
         int[] sizes = {1, inBufSize / 2 - 1, inBufSize / 2, inBufSize / 2 + 1, inBufSize, inBufSize + 1, inBufSize * 4};
-//        int[] sizes = {inBufSize * 4};
+
         int rewindCnts = 32;
 
         for (int size : sizes) {

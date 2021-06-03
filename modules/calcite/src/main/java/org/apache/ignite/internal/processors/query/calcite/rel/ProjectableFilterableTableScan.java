@@ -131,7 +131,8 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
         if (condition != null)
             cost += rows * IgniteCost.ROW_COMPARISON_COST;
 
-        return planner.getCostFactory().makeCost(rows, cost, 0);
+        // additional tiny cost for preventing equality with index scan.
+        return planner.getCostFactory().makeCost(rows, cost, 0).plus(planner.getCostFactory().makeTinyCost());
     }
 
     /** {@inheritDoc} */

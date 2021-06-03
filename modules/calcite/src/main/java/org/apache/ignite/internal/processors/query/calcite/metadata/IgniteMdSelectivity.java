@@ -214,6 +214,7 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
                 return BigDecimal.valueOf(val.getTimestamp().getTime());
 
             case Value.BYTES:
+            case Value.UUID:
                 BigInteger bigInteger = new BigInteger(1, val.getBytes());
                 return new BigDecimal(bigInteger);
 
@@ -224,10 +225,6 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
             case Value.JAVA_OBJECT:
             case Value.GEOMETRY:
                 return null;
-
-            case Value.UUID:
-                BigInteger bigInt = new BigInteger(1, val.getBytes());
-                return new BigDecimal(bigInt);
 
             default:
                 throw new IllegalStateException("Unsupported H2 type: " + val.getType());

@@ -53,6 +53,7 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
             "HUGE",
             new TestTable(
                 new RelDataTypeFactory.Builder(f)
+                    .add("FOO", f.createJavaType(Boolean.class))
                     .add("ID", f.createJavaType(Integer.class))
                     .build(), 1_000) {
 
@@ -66,6 +67,7 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
             "SMALL",
             new TestTable(
                 new RelDataTypeFactory.Builder(f)
+                    .add("FOO", f.createJavaType(String.class))
                     .add("ID", f.createJavaType(Integer.class))
                     .build(), 10) {
 
@@ -90,7 +92,7 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
 
         IgniteProject proj = findFirstNode(phys, byClass(IgniteProject.class));
 
-        assertNotNull(proj);
+        assertNotNull("current plan:\n" + RelOptUtil.toString(phys), proj);
 
         assertEquals(JoinRelType.LEFT, join.getJoinType());
 
@@ -101,9 +103,7 @@ public class JoinCommutePlannerTest extends AbstractPlannerTest {
 
         RelOptCost costWithCommute = pl.getCost(phys, phys.getCluster().getMetadataQuery());
 
-        System.out.println("plan: " + RelOptUtil.toString(phys));
-
-        assertNotNull(phys);
+        assertNotNull("current plan:\n" + RelOptUtil.toString(phys), phys);
 
         phys = physicalPlan(sql, publicSchema,
             "MergeJoinConverter", "CorrelatedNestedLoopJoin", "JoinCommuteRule");

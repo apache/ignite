@@ -155,8 +155,7 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
             cost += rows * (IgniteCost.ROW_COMPARISON_COST + IgniteCost.ROW_PASS_THROUGH_COST);
         }
 
-        // additional tiny cost for preventing equality with table scan.
-        return planner.getCostFactory().makeCost(rows, cost, 0).plus(planner.getCostFactory().makeTinyCost());
+        return planner.getCostFactory().makeCost(rows, cost, 0);
     }
 
     /** */

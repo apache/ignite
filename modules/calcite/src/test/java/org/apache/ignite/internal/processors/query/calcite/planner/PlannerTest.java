@@ -1266,8 +1266,9 @@ public class PlannerTest extends AbstractPlannerTest {
                 "IgniteSort(sort0=[$3], sort1=[$0], dir0=[ASC-nulls-first], dir1=[ASC-nulls-first])\n" +
                 "  IgniteProject(DEPTNO=[$3], NAME=[$4], ID=[$0], NAME0=[$1])\n" +
                 "    IgniteNestedLoopJoin(condition=[AND(=($3, $2), >=($1, $4))], joinType=[inner])\n" +
-                "      IgniteTableScan(table=[[PUBLIC, EMP]])\n" +
-                "      IgniteTableScan(table=[[PUBLIC, DEPT]])\n",
+                "      IgniteIndexScan(table=[[PUBLIC, EMP]], index=[emp_idx])\n" +
+                "      IgniteTableSpool(readType=[LAZY], writeType=[EAGER])\n" +
+                "        IgniteIndexScan(table=[[PUBLIC, DEPT]], index=[dep_idx])\n",
             RelOptUtil.toString(phys));
     }
 

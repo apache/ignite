@@ -17,15 +17,20 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
+import java.util.Set;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.PhysicalNode;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.CorrelationId;
+import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNLJRightSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJoin;
 
 /**
@@ -44,12 +49,17 @@ public class NestedLoopJoinConverterRule extends AbstractIgniteConverterRule<Log
 
     /** {@inheritDoc} */
     @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, LogicalJoin rel) {
+        final Set<CorrelationId> corrIds = RelOptUtil.getVariablesUsed(rel.getRight());
+
+        if (!corrIds.isEmpty())
+            return null;
+
         RelOptCluster cluster = rel.getCluster();
         RelTraitSet outTraits = cluster.traitSetOf(IgniteConvention.INSTANCE);
         RelTraitSet leftInTraits = cluster.traitSetOf(IgniteConvention.INSTANCE);
         RelTraitSet rightInTraits = cluster.traitSetOf(IgniteConvention.INSTANCE);
         RelNode left = convert(rel.getLeft(), leftInTraits);
-        RelNode right = convert(rel.getRight(), rightInTraits);
+        RelNode right = new IgniteNLJRightSpool(rel.getCluster(), rightInTraits, Spool.Type.LAZY, rel.getRight());
 
         return new IgniteNestedLoopJoin(cluster, outTraits, left, right, rel.getCondition(), rel.getVariablesSet(), rel.getJoinType());
     }

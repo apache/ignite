@@ -107,6 +107,9 @@ public class IgniteSortedIndexSpool extends Spool implements IgniteRel {
     @Override public RelWriter explainTerms(RelWriter pw) {
         RelWriter writer = super.explainTerms(pw);
 
+        writer.item("readType", readType.name());
+        writer.item("writeType", writeType.name());
+
         writer.item("condition", condition);
         writer.item("collation", collation);
 

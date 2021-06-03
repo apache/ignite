@@ -44,6 +44,9 @@ public abstract class AbstractNode<Row> implements Node<Row> {
     /** */
     protected static final int IO_BATCH_CNT = IgniteSystemProperties.getInteger("IGNITE_CALCITE_EXEC_IO_BATCH_CNT", 4);
 
+    /** Special value to highlights that all row were received and we are not waiting any more. */
+    protected static final int NOT_WAITING = -1;
+
     /** for debug purpose */
     private volatile Thread thread;
 
