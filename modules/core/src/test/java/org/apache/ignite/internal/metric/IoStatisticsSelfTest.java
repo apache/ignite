@@ -227,7 +227,7 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
 
         ignite.cluster().active(true);
 
-        ignite.createCache(new CacheConfiguration<String, String>(DEFAULT_CACHE_NAME));
+        ignite.createCache(new CacheConfiguration<Long, Long>(DEFAULT_CACHE_NAME));
 
         return ignite;
     }
