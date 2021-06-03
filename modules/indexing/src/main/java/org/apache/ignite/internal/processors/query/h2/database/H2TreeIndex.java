@@ -29,6 +29,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
+import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexSearchRowImpl;
@@ -212,26 +213,6 @@ public class H2TreeIndex extends H2TreeIndexBase {
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCursor<H2Row> find(
-        H2Row lower,
-        H2Row upper,
-        IndexQueryContext qctx
-    ) {
-        try {
-            int seg = 0; // TODO segments support
-
-            T2<IndexRow, IndexRow> key = prepareIndexKeys(lower, upper);
-
-            GridCursor<IndexRow> cursor = queryIndex.find(key.get1(), key.get2(), seg, qctx);
-
-            return new IndexValueCursor<>(cursor, this::mapIndexRow);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
         }
     }
 
@@ -684,5 +665,13 @@ public class H2TreeIndex extends H2TreeIndexBase {
      */
     public long size() throws IgniteCheckedException {
         return queryIndex.totalCount();
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T extends Index> T unwrap(Class<T> clazz) {
+        if (clazz.isInstance(queryIndex))
+            return clazz.cast(queryIndex);
+
+        return super.unwrap(clazz);
     }
 }

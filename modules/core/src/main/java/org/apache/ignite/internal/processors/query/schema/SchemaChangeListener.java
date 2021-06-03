@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.schema;
 
+import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
-import org.apache.ignite.internal.processors.query.GridIndex;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.jetbrains.annotations.Nullable;
@@ -32,23 +32,14 @@ public interface SchemaChangeListener {
      *
      * @param schemaName Schema name.
      */
-    void onSchemaCreated(String schemaName);
+    public void onSchemaCreated(String schemaName);
 
     /**
      * Callback method.
      *
      * @param schemaName Schema name.
      */
-    void onSchemaDropped(String schemaName);
-
-    /**
-     * Callback method.
-     *
-     * @param schemaName Schema name.
-     * @param typeDesc Type descriptor.
-     * @param cacheInfo Cache info.
-     */
-    void onSqlTypeCreated(String schemaName, GridQueryTypeDescriptor typeDesc, GridCacheContextInfo<?, ?> cacheInfo);
+    public void onSchemaDropped(String schemaName);
 
     /**
      * Callback method.
@@ -57,7 +48,18 @@ public interface SchemaChangeListener {
      * @param typeDesc Type descriptor.
      * @param cacheInfo Cache info.
      */
-    void onSqlTypeUpdated(String schemaName, GridQueryTypeDescriptor typeDesc, GridCacheContextInfo<?, ?> cacheInfo);
+    public void onSqlTypeCreated(String schemaName, GridQueryTypeDescriptor typeDesc,
+        GridCacheContextInfo<?, ?> cacheInfo);
+
+    /**
+     * Callback method.
+     *
+     * @param schemaName Schema name.
+     * @param typeDesc Type descriptor.
+     * @param cacheInfo Cache info.
+     */
+    public void onSqlTypeUpdated(String schemaName, GridQueryTypeDescriptor typeDesc,
+        GridCacheContextInfo<?, ?> cacheInfo);
 
     /**
      * Callback method.
@@ -65,7 +67,7 @@ public interface SchemaChangeListener {
      * @param schemaName Schema name.
      * @param typeDesc Type descriptor.
      */
-    void onSqlTypeDropped(String schemaName, GridQueryTypeDescriptor typeDesc);
+    public void onSqlTypeDropped(String schemaName, GridQueryTypeDescriptor typeDesc);
 
     /**
      * Callback on index creation.
@@ -76,7 +78,8 @@ public interface SchemaChangeListener {
      * @param idxDesc Index descriptor.
      * @param idx Index.
      */
-    void onIndexCreated(String schemaName, String tblName, String idxName, GridQueryIndexDescriptor idxDesc, @Nullable GridIndex<?> idx);
+    public void onIndexCreated(String schemaName, String tblName, String idxName, GridQueryIndexDescriptor idxDesc,
+        @Nullable Index idx);
 
     /**
      * Callback on index drop.
@@ -85,5 +88,5 @@ public interface SchemaChangeListener {
      * @param tblName Table name.
      * @param idxName Index name.
      */
-    void onIndexDropped(String schemaName, String tblName, String idxName);
+    public void onIndexDropped(String schemaName, String tblName, String idxName);
 }

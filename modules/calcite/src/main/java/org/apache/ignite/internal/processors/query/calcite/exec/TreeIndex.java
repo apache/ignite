@@ -14,17 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.query;
+package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.util.lang.GridCursor;
 
 /**
- * Index interface.
+ * Tree index interface.
  *
  * @param <R> Indexing row type.
  */
-public interface GridIndex<R> {
+public interface TreeIndex<R> {
     /**
      * Index lookup method.
      *
@@ -33,5 +33,5 @@ public interface GridIndex<R> {
      * @param qctx Index query context.
      * @return Cursor over the rows within bounds.
      */
-    GridCursor<R> find(R lower, R upper, IndexQueryContext qctx);
+    public GridCursor<R> find(R lower, R upper, IndexQueryContext qctx);
 }
