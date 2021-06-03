@@ -303,7 +303,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 ctxs.queries().evictDetailMetrics();
         }, QRY_DETAIL_METRICS_EVICTION_FREQ, QRY_DETAIL_METRICS_EVICTION_FREQ);
 
-        idxRebuildStateStorage.onQueryStart();
+        idxRebuildStateStorage.start();
     }
 
     /** {@inheritDoc} */
@@ -326,7 +326,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         busyLock.block();
 
-        idxRebuildStateStorage.onKernalStop();
+        idxRebuildStateStorage.stop();
     }
 
     /** {@inheritDoc} */

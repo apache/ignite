@@ -137,7 +137,9 @@ public class StopRebuildIndexTest extends AbstractRebuildIndexTest {
     public void testInternalIndexingRebuildFuture() throws Exception {
         prepareBeforeNodeStart();
 
-        IgniteEx n = prepareCluster(10);
+        IgniteEx n = startGrid(0);
+
+        populate(n.cache(DEFAULT_CACHE_NAME), 10);
 
         GridCacheContext<?, ?> cacheCtx = n.cachex(DEFAULT_CACHE_NAME).context();
 
@@ -188,7 +190,10 @@ public class StopRebuildIndexTest extends AbstractRebuildIndexTest {
         prepareBeforeNodeStart();
 
         int keys = 100_000;
-        IgniteEx n = prepareCluster(keys);
+
+        IgniteEx n = startGrid(0);
+
+        populate(n.cache(DEFAULT_CACHE_NAME), keys);
 
         GridCacheContext<?, ?> cacheCtx = n.cachex(DEFAULT_CACHE_NAME).context();
 

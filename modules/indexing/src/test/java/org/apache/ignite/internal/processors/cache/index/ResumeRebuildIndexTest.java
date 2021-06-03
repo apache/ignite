@@ -49,7 +49,10 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
     @Test
     public void testNormalFlowIndexRebuildStateStorage() throws Exception {
         prepareBeforeNodeStart();
-        IgniteEx n = prepareCluster(1_000);
+
+        IgniteEx n = startGrid(0);
+
+        populate(n.cache(DEFAULT_CACHE_NAME), 1_000);
 
         GridCacheContext<?, ?> cacheCtx = n.cachex(DEFAULT_CACHE_NAME).context();
 
@@ -85,7 +88,10 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
     @Test
     public void testErrorFlowIndexRebuildStateStorage() throws Exception {
         prepareBeforeNodeStart();
-        IgniteEx n = prepareCluster(1_000);
+
+        IgniteEx n = startGrid(0);
+
+        populate(n.cache(DEFAULT_CACHE_NAME), 1_000);
 
         GridCacheContext<?, ?> cacheCtx = n.cachex(DEFAULT_CACHE_NAME).context();
 
@@ -140,7 +146,10 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
     @Test
     public void testRestartNodeFlowIndexRebuildStateStorage() throws Exception {
         prepareBeforeNodeStart();
-        IgniteEx n = prepareCluster(1_000);
+
+        IgniteEx n = startGrid(0);
+
+        populate(n.cache(DEFAULT_CACHE_NAME), 1_000);
 
         GridCacheContext<?, ?> cacheCtx = n.cachex(DEFAULT_CACHE_NAME).context();
 
@@ -365,7 +374,9 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
 
         prepareBeforeNodeStart();
 
-        IgniteEx n = prepareCluster(10_000);
+        IgniteEx n = startGrid(0);
+
+        populate(n.cache(DEFAULT_CACHE_NAME), 10_000);
 
         populate(n.getOrCreateCache(cacheCfg(DEFAULT_CACHE_NAME + 0, null)), 10_000);
 

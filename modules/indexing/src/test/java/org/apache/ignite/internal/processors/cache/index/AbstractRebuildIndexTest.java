@@ -90,24 +90,6 @@ public abstract class AbstractRebuildIndexTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Prepare cluster for test.
-     *
-     * @param keys Key count.
-     * @return Coordinator.
-     * @throws Exception If failed.
-     */
-    protected IgniteEx prepareCluster(int keys) throws Exception {
-        IgniteEx n = startGrid(0);
-
-        if (n.cluster().state() != ACTIVE)
-            n.cluster().state(ACTIVE);
-
-        populate(n.cache(DEFAULT_CACHE_NAME), keys);
-
-        return n;
-    }
-
-    /**
      * Registering a {@link StopRebuildIndexConsumer} for cache.
      *
      * @param n Node.

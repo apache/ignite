@@ -43,7 +43,9 @@ public class ForceRebuildIndexTest extends AbstractRebuildIndexTest {
     public void testSequentialForceRebuildIndexes() throws Exception {
         prepareBeforeNodeStart();
 
-        IgniteEx n = prepareCluster(100);
+        IgniteEx n = startGrid(0);
+
+        populate(n.cache(DEFAULT_CACHE_NAME), 100);
 
         GridCacheContext<?, ?> cacheCtx = n.cachex(DEFAULT_CACHE_NAME).context();
 
@@ -92,7 +94,9 @@ public class ForceRebuildIndexTest extends AbstractRebuildIndexTest {
      */
     @Test
     public void testForceRebuildIndexesAfterExchange() throws Exception {
-        IgniteEx n = prepareCluster(100);
+        IgniteEx n = startGrid(0);
+
+        populate(n.cache(DEFAULT_CACHE_NAME), 100);
 
         stopAllGridsWithDeleteIndexBin();
 
@@ -148,7 +152,9 @@ public class ForceRebuildIndexTest extends AbstractRebuildIndexTest {
      */
     @Test
     public void testSequentialRebuildIndexesOnExchange() throws Exception {
-        IgniteEx n = prepareCluster(100);
+        IgniteEx n = startGrid(0);
+
+        populate(n.cache(DEFAULT_CACHE_NAME), 100);
 
         stopAllGridsWithDeleteIndexBin();
 
