@@ -339,8 +339,9 @@ namespace Apache.Ignite.Core.Impl.Client
             Justification = "There is no finalizer.")]
         public void Dispose()
         {
-            lock (_socketLock)
+            // Lock order: same as in OnAffinityTopologyVersionChange. 
             lock (_topologyUpdateLock)
+            lock (_socketLock)
             {
                 _disposed = true;
 
