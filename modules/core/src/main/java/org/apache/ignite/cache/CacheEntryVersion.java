@@ -63,5 +63,5 @@ public interface CacheEntryVersion extends Comparable<CacheEntryVersion>, Serial
      * @see IgniteInternalCache#putAllConflict(Map)
      * @see IgniteInternalCache#removeAllConflict(Map)
      */
-    public CacheEntryVersion otherDataCenterVersion();
+    public CacheEntryVersion otherClusterVersion();
 }
