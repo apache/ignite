@@ -51,7 +51,7 @@ public interface CacheEntryVersion extends Comparable<CacheEntryVersion>, Serial
      *
      * @return Data center id.
      */
-    public byte dataCenterId();
+    public byte clusterId();
 
     /** @return Topology version plus number of seconds from the start time of the first grid node. */
     public int topologyVersion();
