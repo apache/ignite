@@ -100,7 +100,7 @@ public class IndexRebuildStateStorage implements MetastorageLifecycleListener, C
     /**
      * Callback on kernel stop.
      */
-    public void onKernalStop() {
+    public void stop() {
         stopNodeLock.block();
     }
 
