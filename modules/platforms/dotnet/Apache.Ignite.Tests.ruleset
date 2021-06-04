@@ -60,5 +60,17 @@
     <!-- Do not nest types. -->
     <Rule Id="CA1034" Action="None" />
 
+    <!-- StartsWith locale. -->
+    <Rule Id="CA1310" Action="None" />
+
+    <!-- Underscores in names. -->
+    <Rule Id="CA1707" Action="None" />
+
+    <!-- Call Dispose. -->
+    <Rule Id="CA2000" Action="None" />
+
+    <!-- ConfigureAwait. -->
+    <Rule Id="CA2007" Action="None" />
+
   </Rules>
 </RuleSet>
