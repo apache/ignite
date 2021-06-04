@@ -78,5 +78,8 @@
     <!-- Inspections should be public. -->
     <Rule Id="CA1064" Action="None" />
 
+    <!-- Remove static ctor. -->
+    <Rule Id="CA1810" Action="None" />
+
   </Rules>
 </RuleSet>

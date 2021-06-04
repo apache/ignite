@@ -141,7 +141,7 @@ namespace Apache.Ignite.Benchmarks
                     var sb = new StringBuilder("Operations: ");
 
                     foreach (var opName in opNames)
-                        sb.Append(opName).Append(" ");
+                        sb.Append(opName).Append(' ');
 
                     return sb.ToString();
                 });
