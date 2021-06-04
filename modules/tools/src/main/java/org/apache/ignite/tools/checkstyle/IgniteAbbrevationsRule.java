@@ -17,12 +17,62 @@
 
 package org.apache.ignite.tools.checkstyle;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import com.puppycrawl.tools.checkstyle.api.AbstractCheck;
 
 /**
- *
+ * Rule that check Ignite abbervations used through project source code.
+ * @see <a href="https://cwiki.apache.org/confluence/display/IGNITE/Abbreviation+Rules#AbbreviationRules-VariableAbbreviation">
+ *     Ignite abbrevation rules</a>
  */
 public class IgniteAbbrevationsRule extends AbstractCheck {
+    /** */
+    public static final String ABBREVS_FILE = "abbrevations.csv";
+
+    /** */
+    public static final char DELIM = ',';
+
+    /**
+     * Key is wrong term that should be replaced with abbrevations.
+     * Value is array of possible substitute to generate self-explained error message.
+     */
+    private final Map<String, String[]> abbrevs = new HashMap<>();
+
+    /** */
+    public IgniteAbbrevationsRule() {
+        try {
+            List<String> strs =
+                Files.readAllLines(new File(getClass().getClassLoader().getResource(ABBREVS_FILE).getFile()).toPath());
+
+            for (String str : strs) {
+                int firstDelim = str.indexOf(DELIM);
+
+                assert firstDelim > 0;
+
+                String term = str.substring(0, firstDelim);
+                String[] substitutions = str.substring(firstDelim + 1).split("" + DELIM);
+
+                System.out.println(term);
+
+                assert substitutions.length > 0;
+
+                abbrevs.put(term, substitutions);
+            }
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void main(String[] args) {
+        new IgniteAbbrevationsRule();
+    }
+
     @Override public int[] getDefaultTokens() {
         return new int[0];
     }
