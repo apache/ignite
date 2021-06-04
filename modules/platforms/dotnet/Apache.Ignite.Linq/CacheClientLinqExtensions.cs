@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Linq
 {
+    using System;
     using System.Linq;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -34,7 +35,7 @@ namespace Apache.Ignite.Linq
         /// <summary>
         /// Gets an <see cref="IQueryable{T}"/> instance over this cache.
         /// <para />
-        /// Resulting query will be translated to cache SQL query and executed over the cache instance 
+        /// Resulting query will be translated to cache SQL query and executed over the cache instance
         /// via either <see cref="ICacheClient{TK,TV}.Query(SqlFieldsQuery)"/>.
         /// <para />
         /// Result of this method (and subsequent query) can be cast to <see cref="ICacheQueryable"/>
@@ -56,7 +57,7 @@ namespace Apache.Ignite.Linq
         /// <summary>
         /// Gets an <see cref="IQueryable{T}"/> instance over this cache.
         /// <para />
-        /// Resulting query will be translated to cache SQL query and executed over the cache instance 
+        /// Resulting query will be translated to cache SQL query and executed over the cache instance
         /// via either <see cref="ICacheClient{TK,TV}.Query(SqlFieldsQuery)"/>.
         /// <para />
         /// Result of this method (and subsequent query) can be cast to <see cref="ICacheQueryable"/> for introspection.
@@ -64,7 +65,7 @@ namespace Apache.Ignite.Linq
         /// <typeparam name="TKey">The type of the key.</typeparam>
         /// <typeparam name="TValue">The type of the value.</typeparam>
         /// <param name="cache">The cache.</param>
-        /// <param name="local">Local flag. When set query will be executed only on local node, so only local 
+        /// <param name="local">Local flag. When set query will be executed only on local node, so only local
         /// entries will be returned as query result.</param>
         /// <returns><see cref="IQueryable{T}"/> instance over this cache.</returns>
         public static IQueryable<ICacheEntry<TKey, TValue>> AsCacheQueryable<TKey, TValue>(
@@ -78,7 +79,7 @@ namespace Apache.Ignite.Linq
         /// <summary>
         /// Gets an <see cref="IQueryable{T}" /> instance over this cache.
         /// <para />
-        /// Resulting query will be translated to cache SQL query and executed over the cache instance 
+        /// Resulting query will be translated to cache SQL query and executed over the cache instance
         /// via either <see cref="ICacheClient{TK,TV}.Query(SqlFieldsQuery)"/>.
         /// <para />
         /// Result of this method (and subsequent query) can be cast to <see cref="ICacheQueryable" /> for introspection.
@@ -86,13 +87,13 @@ namespace Apache.Ignite.Linq
         /// <typeparam name="TKey">The type of the key.</typeparam>
         /// <typeparam name="TValue">The type of the value.</typeparam>
         /// <param name="cache">The cache.</param>
-        /// <param name="local">Local flag. When set query will be executed only on local node, so only local 
+        /// <param name="local">Local flag. When set query will be executed only on local node, so only local
         /// entries will be returned as query result.</param>
         /// <param name="tableName">
         /// Name of the table.
         /// <para />
         /// Table name is equal to short class name of a cache value.
-        /// When a cache has only one type of values, or only one <see cref="QueryEntity"/> defined, 
+        /// When a cache has only one type of values, or only one <see cref="QueryEntity"/> defined,
         /// table name will be inferred and can be omitted.
         /// </param>
         /// <returns><see cref="IQueryable{T}" /> instance over this cache.</returns>
@@ -107,7 +108,7 @@ namespace Apache.Ignite.Linq
         /// <summary>
         /// Gets an <see cref="IQueryable{T}" /> instance over this cache.
         /// <para />
-        /// Resulting query will be translated to cache SQL query and executed over the cache instance 
+        /// Resulting query will be translated to cache SQL query and executed over the cache instance
         /// via either <see cref="ICacheClient{TK,TV}.Query(SqlFieldsQuery)"/>.
         /// <para />
         /// Result of this method (and subsequent query) can be cast to <see cref="ICacheQueryable" /> for introspection.
@@ -125,7 +126,14 @@ namespace Apache.Ignite.Linq
             IgniteArgumentCheck.NotNull(cache, "cache");
             IgniteArgumentCheck.NotNull(queryOptions, "queryOptions");
 
-            return new CacheQueryable<TKey, TValue>((ICacheInternal) cache, queryOptions);
+            var cacheInternal = cache as ICacheInternal;
+
+            if (cacheInternal == null)
+            {
+                throw new NotSupportedException("Unsupported ICacheClient implementation: " + cache.GetType());
+            }
+
+            return new CacheQueryable<TKey, TValue>(cacheInternal, queryOptions);
         }
     }
 }
