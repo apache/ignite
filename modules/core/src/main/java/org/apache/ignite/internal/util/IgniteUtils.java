@@ -20,6 +20,8 @@ package org.apache.ignite.internal.util;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 
+import org.jetbrains.annotations.Nullable;
+
 /**
  * Collection of utility methods used throughout the system.
  */
@@ -29,6 +31,9 @@ public class IgniteUtils {
 
     /** Version of the JDK. */
     private static String jdkVer;
+
+    /** Class loader used to load Ignite. */
+    private static final ClassLoader igniteClassLoader = IgniteUtils.class.getClassLoader();
 
     /*
       Initializes enterprise check.
@@ -209,5 +214,43 @@ public class IgniteUtils {
      */
     private static void addByteAsHex(StringBuilder sb, byte b) {
         sb.append(Integer.toHexString(MASK & b >>> 4)).append(Integer.toHexString(MASK & b));
+    }
+
+    /**
+     * Gets absolute value for integer. If integer is {@link Integer#MIN_VALUE}, then {@code 0} is returned.
+     *
+     * @param i Integer.
+     * @return Absolute value.
+     */
+    public static int safeAbs(int i) {
+        i = Math.abs(i);
+
+        return i < 0 ? 0 : i;
+    }
+
+    /**
+     * Returns a first non-null value in a given array, if such is present.
+     *
+     * @param vals Input array.
+     * @return First non-null value, or {@code null}, if array is empty or contains
+     *      only nulls.
+     */
+    @Nullable public static <T> T firstNotNull(@Nullable T... vals) {
+        if (vals == null)
+            return null;
+
+        for (T val : vals) {
+            if (val != null)
+                return val;
+        }
+
+        return null;
+    }
+
+    /**
+     * @return Class loader used to load Ignite itself.
+     */
+    public static ClassLoader igniteClassLoader() {
+        return igniteClassLoader;
     }
 }

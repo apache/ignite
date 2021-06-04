@@ -38,6 +38,7 @@
         <module>modules/api</module>
         <module>modules/baseline</module>
         <module>modules/bytecode</module>
+        <module>modules/calcite</module>
         <module>modules/cli</module>
         <module>modules/cli-common</module>
         <module>modules/configuration</module>

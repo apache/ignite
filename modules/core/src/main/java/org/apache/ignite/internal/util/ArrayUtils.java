@@ -17,10 +17,15 @@
 
 package org.apache.ignite.internal.util;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 import org.apache.ignite.lang.IgniteInternalException;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Utility class provides various method for manupulating arrays.
+ * Utility class provides various method for manipulating arrays.
  */
 @SuppressWarnings("SwitchStatementWithTooFewBranches")
 public final class ArrayUtils {
@@ -186,6 +191,44 @@ public final class ArrayUtils {
      */
     public static <T> boolean nullOrEmpty(T[] arr) {
         return arr == null || arr.length == 0;
+    }
+
+    /**
+     * Converts array to {@link List}. Note that resulting list cannot
+     * be altered in size, as it it based on the passed in array -
+     * only current elements can be changed.
+     * <p>
+     * Note that unlike {@link Arrays#asList(Object[])}, this method is
+     * {@code null}-safe. If {@code null} is passed in, then empty list
+     * will be returned.
+     *
+     * @param vals Array of values
+     * @param <T> Array type.
+     * @return {@link List} instance for array.
+     */
+    public static <T> List<T> asList(@Nullable T... vals) {
+        return nullOrEmpty(vals) ? Collections.emptyList() : Arrays.asList(vals);
+    }
+
+    /**
+     * Concatenates an elements to an array.
+     *
+     * @param arr Array.
+     * @param obj One or more elements.
+     * @return Concatenated array.
+     */
+    public static <T> T[] concat(@Nullable T[] arr, T... obj) {
+        T[] newArr;
+
+        if (arr == null || arr.length == 0)
+            newArr = obj;
+        else {
+            newArr = Arrays.copyOf(arr, arr.length + obj.length);
+
+            System.arraycopy(obj, 0, newArr, arr.length, obj.length);
+        }
+
+        return newArr;
     }
 
     /**
