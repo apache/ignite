@@ -103,7 +103,7 @@ public class SqlChangeDataCaptureTest extends AbstractChangeDataCaptureTest {
             "CREATE TABLE CITY(id int, name varchar, zip_code varchar(6), PRIMARY KEY (id)) WITH \"CACHE_NAME=city\""
         );
 
-        for (int i = 0; i < KEYS_CNT * 2; i++) {
+        for (int i = 0; i < KEYS_CNT; i++) {
             executeSql(
                 ign,
                 "INSERT INTO USER VALUES(?, ?, ?)",
@@ -119,13 +119,13 @@ public class SqlChangeDataCaptureTest extends AbstractChangeDataCaptureTest {
                 Integer.toString(127000 + i));
         }
 
-        assertTrue(waitForSize(KEYS_CNT * 2, USER, UPDATE, cnsmr));
-        assertTrue(waitForSize(KEYS_CNT * 2, CITY, UPDATE, cnsmr));
+        assertTrue(waitForSize(KEYS_CNT, USER, UPDATE, cnsmr));
+        assertTrue(waitForSize(KEYS_CNT, CITY, UPDATE, cnsmr));
 
         fut.cancel();
 
-        assertEquals(KEYS_CNT * 2, cnsmr.data(UPDATE, cacheId(USER)).size());
-        assertEquals(KEYS_CNT * 2, cnsmr.data(UPDATE, cacheId(CITY)).size());
+        assertEquals(KEYS_CNT, cnsmr.data(UPDATE, cacheId(USER)).size());
+        assertEquals(KEYS_CNT, cnsmr.data(UPDATE, cacheId(CITY)).size());
 
         assertTrue(cnsmr.stopped);
 

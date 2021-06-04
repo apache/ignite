@@ -19,7 +19,7 @@ package org.apache.ignite.platform.plugin;
 
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.platform.PlatformPluginExtension;
-import org.apache.ignite.plugin.AbstractCachePluginProvider;
+import org.apache.ignite.platform.plugin.cache.PlatformTestCachePluginProvider;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
@@ -54,8 +54,6 @@ public class PlatformTestPluginProvider extends AbstractTestPluginProvider {
 
     /** {@inheritDoc} */
     @Override public CachePluginProvider createCacheProvider(CachePluginContext ctx) {
-        return new AbstractCachePluginProvider() {
-            // No-op.
-        };
+        return new PlatformTestCachePluginProvider();
     }
 }

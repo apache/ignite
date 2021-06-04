@@ -232,6 +232,10 @@ public abstract class AbstractChangeDataCaptureTest extends GridCommonAbstractTe
 
     /** */
     public enum ChangeEventType {
-        UPDATE, DELETE
+        /** */
+        UPDATE,
+
+        /** */
+        DELETE
     }
 }

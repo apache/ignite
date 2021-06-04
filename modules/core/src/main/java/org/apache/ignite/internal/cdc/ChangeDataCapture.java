@@ -66,10 +66,10 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
 
 /**
- * Change Data Capture(CDC) application.
- * Application run independently of Ignite node process and provide ability for the {@link ChangeDataCaptureConsumer}
- * to consume events({@link ChangeDataCaptureEvent}) from WAL segments.
- * User should responsible {@link ChangeDataCaptureConsumer} implementation with custom consumption logic.
+ * Change Data Capture (CDC) application.
+ * The application runs independently of Ignite node process and provides the ability
+ * for the {@link ChangeDataCaptureConsumer} to consume events({@link ChangeDataCaptureEvent}) from WAL segments.
+ * The user should provide {@link ChangeDataCaptureConsumer} implementation with custom consumption logic.
  *
  * Ignite node should be explicitly configured for using {@link ChangeDataCapture}.
  * <ol>
@@ -94,10 +94,10 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWr
  * Application works as follows:
  * <ol>
  *     <li>Search node work directory based on provided {@link IgniteConfiguration}.</li>
- *     <li>Await for creation of CDC directory if it not exists.</li>
+ *     <li>Await for the creation of CDC directory if it not exists.</li>
  *     <li>Acquire file lock to ensure exclusive consumption.</li>
  *     <li>Loads state of consumption if it exists.</li>
- *     <li>Infinetely wait for new available segment and process it.</li>
+ *     <li>Infinitely waits for new available segment and processes it.</li>
  * </ol>
  *
  * @see DataStorageConfiguration#setChangeDataCaptureEnabled(boolean)
@@ -127,7 +127,7 @@ public class ChangeDataCapture implements Runnable {
     private final IgniteWalIteratorFactory factory;
 
     /** Events consumer. */
-    private final WALRecordsConsumer<?, ?> consumer;
+    private final WalRecordsConsumer<?, ?> consumer;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -151,7 +151,7 @@ public class ChangeDataCapture implements Runnable {
     private volatile boolean stopped;
 
     /** Already processed segments. */
-    private final Set<Path> processed = new HashSet<>();
+    private final Set<Path> processedSegments = new HashSet<>();
 
     /**
      * @param igniteCfg Ignite configuration.
@@ -180,7 +180,7 @@ public class ChangeDataCapture implements Runnable {
             throw new IgniteException(e);
         }
 
-        consumer = new WALRecordsConsumer<>(cdcCfg.getConsumer(), log);
+        consumer = new WalRecordsConsumer<>(cdcCfg.getConsumer(), log);
 
         factory = new IgniteWalIteratorFactory(log);
     }
@@ -356,9 +356,9 @@ public class ChangeDataCapture implements Runnable {
             boolean interrupted = Thread.interrupted();
 
             while (it.hasNext() && !interrupted) {
-                Iterator<DataRecord> iterator = F.iterator(it.iterator(), t -> (DataRecord)t.get2(), true);
+                Iterator<DataRecord> iter = F.iterator(it.iterator(), t -> (DataRecord)t.get2(), true);
 
-                boolean commit = consumer.onRecords(iterator);
+                boolean commit = consumer.onRecords(iter);
 
                 if (commit) {
                     assert it.lastRead().isPresent();
@@ -366,18 +366,18 @@ public class ChangeDataCapture implements Runnable {
                     state.save(it.lastRead().get());
 
                     // Can delete after new file state save.
-                    if (!processed.isEmpty()) {
+                    if (!processedSegments.isEmpty()) {
                         // WAL segment is a hard link to a segment file in a specifal Change Data Capture folder.
                         // So we can safely delete it after success processing.
-                        for (Path prevSegment : processed) {
+                        for (Path processedSegment : processedSegments) {
                             // Can't delete current segment, because state points to it.
-                            if (prevSegment.equals(segment))
+                            if (processedSegment.equals(segment))
                                 continue;
 
-                            Files.delete(prevSegment);
+                            Files.delete(processedSegment);
                         }
 
-                        processed.clear();
+                        processedSegments.clear();
                     }
                 }
 
@@ -387,7 +387,7 @@ public class ChangeDataCapture implements Runnable {
             if (interrupted)
                 throw new IgniteException("Change Data Capture Application interrupted");
 
-            processed.add(segment);
+            processedSegments.add(segment);
         } catch (IgniteCheckedException | IOException e) {
             throw new IgniteException(e);
         }
@@ -444,7 +444,7 @@ public class ChangeDataCapture implements Runnable {
             U.closeQuiet(lock);
 
             if (log.isInfoEnabled()) {
-                log.info("Unable to acquire lock to file [dir=" + cdcRoot + "]" + NL +
+                log.info("Unable to acquire lock to lock CDC folder [dir=" + cdcRoot + "]" + NL +
                     "Reason: " + e.getMessage());
             }
 

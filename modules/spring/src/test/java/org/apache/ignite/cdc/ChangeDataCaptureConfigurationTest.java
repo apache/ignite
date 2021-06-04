@@ -24,7 +24,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cdc.ChangeDataCapture;
-import org.apache.ignite.internal.cdc.WALRecordsConsumer;
+import org.apache.ignite.internal.cdc.WalRecordsConsumer;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.resources.SpringApplicationContextResource;
 import org.apache.ignite.resources.SpringResource;
@@ -73,7 +73,7 @@ public class ChangeDataCaptureConfigurationTest extends GridCommonAbstractTest {
             loadChangeDataCapture("modules/spring/src/test/config/cdc/correct-cdc-config.xml");
 
         TestCDCConsumer cnsmr =
-            (TestCDCConsumer)((WALRecordsConsumer<?, ?>)getFieldValue(cdc, "consumer")).consumer();
+            (TestCDCConsumer)((WalRecordsConsumer<?, ?>)getFieldValue(cdc, "consumer")).consumer();
 
         assertNotNull(cnsmr);
 

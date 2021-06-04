@@ -26,8 +26,8 @@ import org.apache.ignite.resources.LoggerResource;
 
 /**
  * Consumer of WAL data change events.
- * This consumer will receive event of data changes during {@link ChangeDataCapture} application invocation.
- * Lifecycle of consumer is the following:
+ * This consumer will receive data change events during {@link ChangeDataCapture} application invocation.
+ * The lifecycle of the consumer is the following:
  * <ul>
  *     <li>Start of the consumer {@link #start()}.</li>
  *     <li>Notification of the consumer by the {@link #onEvents(Iterator)} call.</li>
@@ -44,8 +44,8 @@ import org.apache.ignite.resources.LoggerResource;
  * }
  * }</pre>
  *
- * Note, consumption of the {@link ChangeDataCaptureEvent} will started from the last saved offset.
- * Offset of consumptions is saved on the disk every time {@link #onEvents(Iterator)} returns {@code true}.
+ * Note, consumption of the {@link ChangeDataCaptureEvent} will be started from the last saved offset.
+ * The offset of consumptions is saved on the disk every time {@link #onEvents(Iterator)} returns {@code true}.
  *
  * @see ChangeDataCapture
  * @see ChangeDataCaptureEvent
@@ -60,11 +60,12 @@ public interface ChangeDataCaptureConsumer {
 
     /**
      * Handles entry changes events.
-     * If this method return {@code true} then current offset will be stored and ongoing notifications after CDC application fail/restart
-     * will be started from it.
+     * If this method return {@code true} then current offset will be stored
+     * and ongoing notifications after CDC application fail/restart will be started from it.
      *
      * @param events Entry change events.
-     * @return {@code True} if current offset should be saved on the disk to continue from it in case any failures or restart.
+     * @return {@code True} if current offset should be saved on the disk
+     * to continue from it in case any failures or restart.
      */
     public boolean onEvents(Iterator<ChangeDataCaptureEvent> events);
 

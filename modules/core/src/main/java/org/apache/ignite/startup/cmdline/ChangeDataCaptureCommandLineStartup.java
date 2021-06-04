@@ -112,7 +112,7 @@ public class ChangeDataCaptureCommandLineStartup {
      * @param cfgUrl String configuration URL.
      * @param spring Ignite spring helper.
      * @return CDC consumer defined in spring configuration.
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException in case of load error.
      */
     private static ChangeDataCaptureConfiguration consumerConfig(
         URL cfgUrl,

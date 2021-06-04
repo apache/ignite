@@ -43,7 +43,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPD
  * @see ChangeDataCapture
  * @see ChangeDataCaptureConsumer
  */
-public class WALRecordsConsumer<K, V> {
+public class WalRecordsConsumer<K, V> {
     /** Ignite logger. */
     private final IgniteLogger log;
 
@@ -69,7 +69,7 @@ public class WALRecordsConsumer<K, V> {
      * @param consumer User provided CDC consumer.
      * @param log Logger.
      */
-    public WALRecordsConsumer(ChangeDataCaptureConsumer consumer, IgniteLogger log) {
+    public WalRecordsConsumer(ChangeDataCaptureConsumer consumer, IgniteLogger log) {
         this.consumer = consumer;
         this.log = log;
     }
@@ -169,6 +169,6 @@ public class WALRecordsConsumer<K, V> {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(WALRecordsConsumer.class, this);
+        return S.toString(WalRecordsConsumer.class, this);
     }
 }

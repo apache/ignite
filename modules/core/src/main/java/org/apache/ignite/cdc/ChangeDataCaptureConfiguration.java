@@ -23,8 +23,7 @@ import org.apache.ignite.lang.IgniteExperimental;
 
 /**
  * This class defines {@link ChangeDataCapture} runtime configuration.
- * This configuration is passed to {@link ChangeDataCapture} constructor.
- * It defines all configuration
+ * Configuration is passed to {@link ChangeDataCapture} constructor.
  */
 @IgniteExperimental
 public class ChangeDataCaptureConfiguration {

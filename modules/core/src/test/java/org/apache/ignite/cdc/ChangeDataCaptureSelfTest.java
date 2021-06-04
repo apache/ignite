@@ -72,7 +72,8 @@ public class ChangeDataCaptureSelfTest extends AbstractChangeDataCaptureTest {
     @Parameterized.Parameter(1)
     public WALMode walMode;
 
-    @Parameterized.Parameters(name = "specificConsistentId={0},walMode={1}")
+    /** */
+    @Parameterized.Parameters(name = "specificConsistentId={0}, walMode={1}")
     public static Collection<?> parameters() {
         return Arrays.asList(new Object[][] {
             {true, WALMode.FSYNC},
@@ -166,7 +167,7 @@ public class ChangeDataCaptureSelfTest extends AbstractChangeDataCaptureTest {
 
         assertTrue(cnsmr.stopped);
 
-        stopGrid("ignite-0");
+        stopAllGrids();
 
         cleanPersistenceDir();
     }
@@ -180,27 +181,15 @@ public class ChangeDataCaptureSelfTest extends AbstractChangeDataCaptureTest {
 
         ign.cluster().state(ACTIVE);
 
-        CountDownLatch startLatch = new CountDownLatch(1);
-        CountDownLatch onChangeLatch1 = new CountDownLatch(1);
-        CountDownLatch onChangeLatch2 = new CountDownLatch(1);
+        CountDownLatch cnsmrStarted = new CountDownLatch(1);
+        CountDownLatch startProcEvts = new CountDownLatch(1);
 
         TestCDCConsumer cnsmr = new TestCDCConsumer() {
-            @Override public void start() {
-                try {
-                    startLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS);
-                }
-                catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-
-                super.start();
-            }
-
             @Override public boolean onEvents(Iterator<ChangeDataCaptureEvent> evts) {
-                onChangeLatch1.countDown();
+                cnsmrStarted.countDown();
 
                 try {
-                    onChangeLatch2.await(getTestTimeout(), TimeUnit.MILLISECONDS);
+                    startProcEvts.await(getTestTimeout(), TimeUnit.MILLISECONDS);
                 }
                 catch (InterruptedException e) {
                     throw new RuntimeException(e);
@@ -218,19 +207,18 @@ public class ChangeDataCaptureSelfTest extends AbstractChangeDataCaptureTest {
 
         addData(cache, 0, KEYS_CNT);
 
+        // Make sure all streamed data will become available for consumption.
         Thread.sleep(2 * WAL_ARCHIVE_TIMEOUT);
 
-        startLatch.countDown();
+        cnsmrStarted.await(getTestTimeout(), TimeUnit.MILLISECONDS);
 
-        onChangeLatch1.await(getTestTimeout(), TimeUnit.MILLISECONDS);
-
+        // Initiate graceful shutdown.
         cdc.stop();
 
-        onChangeLatch1.await(getTestTimeout(), TimeUnit.MILLISECONDS);
-        onChangeLatch2.countDown();
+        startProcEvts.countDown();
 
         assertTrue(waitForSize(KEYS_CNT, DEFAULT_CACHE_NAME, UPDATE, getTestTimeout(), cnsmr));
-        assertTrue(cnsmr.stopped);
+        assertTrue(waitForCondition(() -> cnsmr.stopped, getTestTimeout()));
 
         List<Integer> keys = cnsmr.keys(UPDATE, cacheId(DEFAULT_CACHE_NAME));
 
@@ -300,7 +288,7 @@ public class ChangeDataCaptureSelfTest extends AbstractChangeDataCaptureTest {
 
     /** */
     @Test
-    public void testTwoGrids() throws Exception {
+    public void testMultiNodeConsumption() throws Exception {
         IgniteEx ign1 = startGrid(0);
 
         if (specificConsistentId)
@@ -324,7 +312,6 @@ public class ChangeDataCaptureSelfTest extends AbstractChangeDataCaptureTest {
         ChangeDataCapture cdc2 = new ChangeDataCapture(cfg2, null, cdcConfig(cnsmr2));
 
         IgniteInternalFuture<?> fut1 = runAsync(cdc1);
-
         IgniteInternalFuture<?> fut2 = runAsync(cdc2);
 
         addDataFut.get(getTestTimeout());
@@ -360,7 +347,7 @@ public class ChangeDataCaptureSelfTest extends AbstractChangeDataCaptureTest {
 
     /** */
     @Test
-    public void testOneOfConcurrentRunsFail() throws Exception {
+    public void testCDCSingleton() throws Exception {
         IgniteEx ign = startGrid(0);
 
         TestCDCConsumer cnsmr1 = new TestCDCConsumer();
@@ -371,20 +358,14 @@ public class ChangeDataCaptureSelfTest extends AbstractChangeDataCaptureTest {
 
         assertTrue(waitForCondition(() -> fut1.isDone() || fut2.isDone(), getTestTimeout()));
 
+        assertEquals(fut1.error() == null, fut2.error() != null);
+
         if (fut1.isDone()) {
-            assertNotNull(fut1.error());
-
-            assertFalse(fut2.isDone());
-
             fut2.cancel();
 
             assertTrue(cnsmr2.stopped);
         }
         else {
-            assertNotNull(fut2.error());
-
-            assertFalse(fut1.isDone());
-
             fut1.cancel();
 
             assertTrue(cnsmr1.stopped);
@@ -393,7 +374,7 @@ public class ChangeDataCaptureSelfTest extends AbstractChangeDataCaptureTest {
 
     /** */
     @Test
-    public void testReReadIfNoCommit() throws Exception {
+    public void testReReadWhenStateWasNotStored() throws Exception {
         IgniteConfiguration cfg = getConfiguration("ignite-0");
 
         IgniteEx ign = startGrid(cfg);
@@ -423,14 +404,15 @@ public class ChangeDataCaptureSelfTest extends AbstractChangeDataCaptureTest {
         }
 
         AtomicBoolean consumeHalf = new AtomicBoolean(true);
-        AtomicBoolean commited = new AtomicBoolean(false);
+        AtomicBoolean halfCommitted = new AtomicBoolean(false);
 
         int half = KEYS_CNT / 2;
 
         TestCDCConsumer cnsmr = new TestCDCConsumer() {
             @Override public boolean onEvents(Iterator<ChangeDataCaptureEvent> evts) {
                 if (consumeHalf.get() && F.size(keys(UPDATE, cacheId(DEFAULT_CACHE_NAME))) == half) {
-                    commited.set(true);
+                    // This means that state committed as a result of the previous call.
+                    halfCommitted.set(true);
 
                     return false;
                 }
@@ -460,7 +442,7 @@ public class ChangeDataCaptureSelfTest extends AbstractChangeDataCaptureTest {
 
         waitForSize(half, DEFAULT_CACHE_NAME, UPDATE, getTestTimeout(), cnsmr);
 
-        waitForCondition(commited::get, getTestTimeout());
+        waitForCondition(halfCommitted::get, getTestTimeout());
 
         fut.cancel();
 

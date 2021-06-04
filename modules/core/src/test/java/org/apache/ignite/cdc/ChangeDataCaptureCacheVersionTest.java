@@ -120,7 +120,7 @@ public class ChangeDataCaptureCacheVersionTest extends AbstractChangeDataCapture
         cnsmr.dcId = DFLT_DC_ID;
         cnsmr.otherDcId = OTHER_DC_ID;
 
-        addAndWaitForConsumption(cnsmr, cdc, cache, null, this::addConflictData, 0, KEYS_CNT * 2, getTestTimeout());
+        addAndWaitForConsumption(cnsmr, cdc, cache, null, this::addConflictData, 0, KEYS_CNT, getTestTimeout());
     }
 
     /** */
