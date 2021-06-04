@@ -15,41 +15,24 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.BenchmarkDotNet.ThinClient
+namespace Apache.Ignite.Core.Tests.Client.Datastream
 {
-    using Apache.Ignite.Core;
-    using Apache.Ignite.Core.Client;
-    using global::BenchmarkDotNet.Attributes;
+    using Apache.Ignite.Core.Client.Datastream;
+    using NUnit.Framework;
 
     /// <summary>
-    /// Base class for thin client benchmarks.
+    /// Tests for <see cref="IDataStreamerClient{TK,TV}"/>.
     /// </summary>
-    public abstract class ThinClientBenchmarkBase
+    [TestFixture]
+    public class DataStreamerClientTestPartitionAware : DataStreamerClientTest
     {
-        /** */
-        public IIgnite Ignite { get; set; }
-
-        /** */
-        public IIgniteClient Client { get; set; }
-
         /// <summary>
-        /// Sets up the benchmark.
+        /// Initializes a new instance of <see cref="DataStreamerClientTest"/>.
         /// </summary>
-        [GlobalSetup]
-        public virtual void GlobalSetup()
+        public DataStreamerClientTestPartitionAware()
+            : base(enablePartitionAwareness: true)
         {
-            Ignite = Ignition.Start(Utils.GetIgniteConfiguration());
-            Client = Ignition.StartClient(Utils.GetIgniteClientConfiguration());
-        }
-
-        /// <summary>
-        /// Cleans up the benchmark.
-        /// </summary>
-        [GlobalCleanup]
-        public virtual void GlobalCleanup()
-        {
-            Client.Dispose();
-            Ignition.StopAll(true);
+            // No-op.
         }
     }
 }

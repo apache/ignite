@@ -258,7 +258,7 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Checks the disposed state.
         /// </summary>
-        private ClientSocket GetSocket()
+        internal ClientSocket GetSocket()
         {
             var tx = _transactions.Tx;
             if (tx != null)
@@ -279,7 +279,7 @@ namespace Apache.Ignite.Core.Impl.Client
             }
         }
 
-        private ClientSocket GetAffinitySocket<TKey>(int cacheId, TKey key)
+        internal ClientSocket GetAffinitySocket<TKey>(int cacheId, TKey key)
         {
             ThrowIfDisposed();
 
