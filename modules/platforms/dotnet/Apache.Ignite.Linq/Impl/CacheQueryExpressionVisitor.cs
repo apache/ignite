@@ -70,7 +70,7 @@ namespace Apache.Ignite.Linq.Impl
         /// for the whole-table select as well as _key, _val.
         /// </param>
         /// <param name="visitEntireSubQueryModel">
-        /// Flag indicating that subquery 
+        /// Flag indicating that subquery
         /// should be visited as full query
         /// </param>
         public CacheQueryExpressionVisitor(CacheQueryModelVisitor modelVisitor, bool useStar, bool includeAllFields,
@@ -161,7 +161,7 @@ namespace Apache.Ignite.Linq.Impl
             Visit(expression.Left);
             ResultBuilder.Append(", ");
             Visit(expression.Right);
-            ResultBuilder.Append(")");
+            ResultBuilder.Append(')');
 
             return true;
         }
@@ -414,14 +414,14 @@ namespace Apache.Ignite.Linq.Impl
                     return e;
                 }
             }
-            
+
             return null;
         }
 
         /// <summary>
         /// Gets the name of the member field.
         /// </summary>
-        [SuppressMessage("Microsoft.Globalization", "CA1308:NormalizeStringsToUppercase", 
+        [SuppressMessage("Microsoft.Globalization", "CA1308:NormalizeStringsToUppercase",
             Justification = "Not applicable.")]
         private static string GetMemberFieldName(MemberInfo member)
         {
@@ -552,7 +552,7 @@ namespace Apache.Ignite.Linq.Impl
             var contains = subQueryModel.ResultOperators.FirstOrDefault() as ContainsResultOperator;
 
             // Check if IEnumerable.Contains is used.
-            if (subQueryModel.ResultOperators.Count == 1 && contains != null) 
+            if (subQueryModel.ResultOperators.Count == 1 && contains != null)
             {
                 VisitContains(subQueryModel, contains);
             }
@@ -595,7 +595,7 @@ namespace Apache.Ignite.Linq.Impl
                 {
                     _modelVisitor.VisitQueryModel(subQueryModel);
                 }
-                
+
                 ResultBuilder.Append(")");
             }
             else

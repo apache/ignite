@@ -36,13 +36,13 @@ namespace Apache.Ignite
         private static readonly IList<string> Help = new List<string> { "/help", "-help", "--help" };
 
         /** Argument meaning that this is service call. */
-        private const string Svc = "/service";
+        public const string Svc = "/service";
 
         /** Service install command. */
-        private const string SvcInstall = "/install";
+        public const string SvcInstall = "/install";
 
         /** Service uninstall command. */
-        private const string SvcUninstall = "/uninstall";
+        public const string SvcUninstall = "/uninstall";
 
         /// <summary>
         /// Application entry point.
