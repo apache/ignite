@@ -2,5 +2,24 @@
 <RuleSet Name="Rules for Apache.Ignite.Core" Description="Code analysis rules for Apache.Ignite.Core.csproj." ToolsVersion="14.0">
   <Include Path="Apache.Ignite.ruleset" Action="Default" />
   <Rules AnalyzerId="Microsoft.Analyzers.ManagedCodeAnalysis" RuleNamespace="Microsoft.Rules.Managed">
+
+    <!-- Class never instantiated. -->
+    <Rule Id="CA1812" Action="None" />
+
+    <!-- Member can be marked static. -->
+    <Rule Id="CA1822" Action="None" />
+
+    <!-- Class owns disposable fields but is not disposable. -->
+    <Rule Id="CA1001" Action="None" />
+
+    <!-- ToLower locale. -->
+    <Rule Id="CA1304" Action="None" />
+
+    <!-- Validate arguments of public methods. -->
+    <Rule Id="CA1062" Action="None" />
+
+    <!-- Do not catch general exception types. -->
+    <Rule Id="CA1031" Action="None" />
+
   </Rules>
 </RuleSet>
