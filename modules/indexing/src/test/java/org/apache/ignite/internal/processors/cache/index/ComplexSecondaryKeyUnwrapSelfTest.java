@@ -103,23 +103,24 @@ public class ComplexSecondaryKeyUnwrapSelfTest extends AbstractIndexingCommonTes
      *
      * @param tblName name of table which should be checked to using secondary indexes.
      * @param nameVal Value for name param.
-     * @param expResCnt Expceted result count.
-     * @param assertLabel Assert label.
+     * @param expResCnt Expected number of elements in result plan.
+     * @param assertLbl Assert label.
      */
-    private void checkUsingIndexes(String tblName, String nameVal, int expResCnt, String assertLabel) {
+    private void checkUsingIndexes(String tblName, String nameVal, int expResCnt, String assertLbl) {
         String explainSQL = "explain SELECT * FROM " + tblName + " WHERE ";
 
         List<List<?>> results = executeSql(explainSQL + "id=1");
 
-        assertUsingSecondaryIndex(results, 2, assertLabel); // always merge_scan for non key (or affinity) fields condition
+        // Always used merge_scan for non key (or affinity) fields condition.
+        assertUsingSecondaryIndex(results, 2, assertLbl);
 
         results = executeSql(explainSQL + "id=1 and name=" + nameVal);
 
-        assertUsingSecondaryIndex(results, expResCnt, assertLabel);
+        assertUsingSecondaryIndex(results, expResCnt, assertLbl);
 
         results = executeSql(explainSQL + "id=1 and name=" + nameVal + " and age=0");
 
-        assertUsingSecondaryIndex(results, expResCnt, assertLabel);
+        assertUsingSecondaryIndex(results, expResCnt, assertLbl);
     }
 
     /**
@@ -127,10 +128,10 @@ public class ComplexSecondaryKeyUnwrapSelfTest extends AbstractIndexingCommonTes
      *
      * @param results result of execut explain plan query.
      * @param expResCnt Expceted result count.
-     * @param assertLabel Assert label.
+     * @param assertLbl Assert label.
      */
-    private void assertUsingSecondaryIndex(List<List<?>> results, int expResCnt, String assertLabel) {
-        assertEquals(assertLabel, expResCnt, results.size());
+    private void assertUsingSecondaryIndex(List<List<?>> results, int expResCnt, String assertLbl) {
+        assertEquals(assertLbl, expResCnt, results.size());
 
         String explainPlan = (String)results.get(0).get(0);
 
