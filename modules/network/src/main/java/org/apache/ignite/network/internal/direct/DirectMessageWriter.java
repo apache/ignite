@@ -56,11 +56,20 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
+    // TODO: compress the header https://issues.apache.org/jira/browse/IGNITE-14818
     @Override public boolean writeHeader(short groupType, short messageType, byte fieldCnt) {
         DirectByteBufferStream stream = state.item().stream;
 
-        // TODO: compress these values https://issues.apache.org/jira/browse/IGNITE-14818
-        stream.writeShort(groupType);
+        // first part of the header might have already been sent in a previous write attempt
+        if (!state.item().partialHdrWritten) {
+            stream.writeShort(groupType);
+
+            if (stream.lastFinished())
+                state.item().partialHdrWritten = true;
+            else
+                return false;
+        }
+
         stream.writeShort(messageType);
 
         return stream.lastFinished();
@@ -345,7 +354,14 @@ public class DirectMessageWriter implements MessageWriter {
         /** */
         private int state;
 
-        /** */
+        /**
+         * Flag indicating that the first part of the message header has been written.
+         */
+        private boolean partialHdrWritten;
+
+        /**
+         * Flag indicating that the whole message header has been written.
+         */
         private boolean hdrWritten;
 
         /**
@@ -367,6 +383,7 @@ public class DirectMessageWriter implements MessageWriter {
         /** {@inheritDoc} */
         @Override public void reset() {
             state = 0;
+            partialHdrWritten = false;
             hdrWritten = false;
         }
     }

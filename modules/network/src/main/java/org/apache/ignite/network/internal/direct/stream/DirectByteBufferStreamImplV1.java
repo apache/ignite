@@ -1054,16 +1054,13 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
                 if (!lastFinished)
                     return null;
 
+                // message group type will be equal to Short.MIN_VALUE if a nested message is null
+                if (msgGroupType == Short.MIN_VALUE)
+                    // lastFinished is "true" here, so no further parsing will be required
+                    return null;
+
                 // save current progress, because we can read the header in two chunks
                 msgGroupTypeRead = true;
-            }
-
-            // message group type will be equal to Short.MIN_VALUE if a nested message is null
-            if (msgGroupType == Short.MIN_VALUE) {
-                lastFinished = true;
-                msgGroupTypeRead = false;
-
-                return null;
             }
 
             // read the message type
@@ -1077,18 +1074,17 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
 
         // if the deserializer is not null then we have definitely finished parsing the header and can read the message
         // body
-        if (msgDeserializer != null) {
-            try {
-                reader.beforeInnerMessageRead();
+        reader.beforeInnerMessageRead();
 
-                reader.setCurrentReadClass(msgDeserializer.klass());
+        try {
+            reader.setCurrentReadClass(msgDeserializer.klass());
 
-                reader.setBuffer(buf);
-                lastFinished = msgDeserializer.readMessage(reader);
-            }
-            finally {
-                reader.afterInnerMessageRead(lastFinished);
-            }
+            reader.setBuffer(buf);
+
+            lastFinished = msgDeserializer.readMessage(reader);
+        }
+        finally {
+            reader.afterInnerMessageRead(lastFinished);
         }
 
         if (lastFinished) {
