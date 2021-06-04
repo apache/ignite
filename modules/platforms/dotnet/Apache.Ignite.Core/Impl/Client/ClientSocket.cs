@@ -237,7 +237,7 @@ namespace Apache.Ignite.Core.Impl.Client
             // Decode.
             if (syncCallback)
             {
-                return task.ContinueWith(responseTask => DecodeResponse(responseTask.Result, readFunc, errorFunc),
+                return task.ContWith(responseTask => DecodeResponse(responseTask.Result, readFunc, errorFunc),
                     TaskContinuationOptions.ExecuteSynchronously);
             }
 
@@ -995,7 +995,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 {
                     return;
                 }
-                
+
                 // Set disposed state before ending requests so that request continuations see disconnected socket.
                 _isDisposed = true;
 
