@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /** Classpath separator. */
         [SuppressMessage("Microsoft.Performance", "CA1802:UseLiteralsWhereAppropriate")]
         private static readonly string ClasspathSeparator = Os.IsWindows ? ";" : ":";
-        
+
         /** Excluded modules from test classpath */
         private static readonly string[] TestExcludedModules = { "rest-http" };
 
@@ -63,7 +63,7 @@ namespace Apache.Ignite.Core.Impl.Common
             {
                 cpStr.Append(classPath);
 
-                if (!classPath.EndsWith(ClasspathSeparator))
+                if (!classPath.EndsWith(ClasspathSeparator, StringComparison.Ordinal))
                     cpStr.Append(ClasspathSeparator);
             }
 
@@ -76,7 +76,7 @@ namespace Apache.Ignite.Core.Impl.Common
             }
 
             var res = cpStr.ToString();
-            res = res.StartsWith(ClasspathPrefix) ? res : ClasspathPrefix + res;
+            res = res.StartsWith(ClasspathPrefix, StringComparison.Ordinal) ? res : ClasspathPrefix + res;
 
             return res;
         }
@@ -108,7 +108,7 @@ namespace Apache.Ignite.Core.Impl.Common
             {
                 foreach (string dir in Directory.EnumerateDirectories(ggLibs))
                 {
-                    if (!dir.EndsWith("optional"))
+                    if (!dir.EndsWith("optional", StringComparison.Ordinal))
                         AppendJars(dir, cpStr);
                 }
             }
@@ -137,9 +137,9 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <param name="cp">Classpath builder.</param>
         private static void AppendTestClasses0(string path, StringBuilder cp)
         {
-            var shouldExcluded = TestExcludedModules.Any(excl => 
+            var shouldExcluded = TestExcludedModules.Any(excl =>
                 path.IndexOf(excl, StringComparison.OrdinalIgnoreCase) >= 0);
-            
+
             if (shouldExcluded)
                 return;
 
