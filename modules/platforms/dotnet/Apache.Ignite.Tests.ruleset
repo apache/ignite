@@ -117,5 +117,11 @@
     <!-- CancellationToken forwarding. -->
     <Rule Id="CA2016" Action="None" />
 
+    <!-- Method and property with the same name. -->
+    <Rule Id="CA1721" Action="None" />
+
+    <!-- Use Uri instead of String. -->
+    <Rule Id="CA1054" Action="None" />
+
   </Rules>
 </RuleSet>
