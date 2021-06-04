@@ -166,6 +166,8 @@ public class ChangeDataCaptureOrderTest extends AbstractChangeDataCaptureTest {
 
         IgniteInternalFuture<?> fut = runAsync(cdc);
 
+        // Update the same key several time.
+        // Expect {@link CacheEntryVersion#order()} will monotically increase.
         for (int i = 0; i < KEYS_CNT; i++)
             cache.put(KEY_TO_UPD, createUser(i));
 
