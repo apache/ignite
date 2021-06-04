@@ -20,7 +20,7 @@ package org.apache.ignite.testsuites;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import org.apache.ignite.cdc.ChangeDataCaptureOrderTest;
+import org.apache.ignite.cdc.ChangeDataCaptureCacheVersionTest;
 import org.apache.ignite.cdc.ChangeDataCaptureSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.HistoricalRebalanceHeuristicsTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteDataStorageMetricsSelfTest;
@@ -212,7 +212,7 @@ public class IgnitePdsTestSuite2 {
 
         // CDC tests.
         GridTestUtils.addTestIfNeeded(suite, ChangeDataCaptureSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, ChangeDataCaptureOrderTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, ChangeDataCaptureCacheVersionTest.class, ignoredTests);
 
         // new style folders with generated consistent ID test
         GridTestUtils.addTestIfNeeded(suite, IgniteUidAsConsistentIdMigrationTest.class, ignoredTests);

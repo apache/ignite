@@ -56,7 +56,7 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
-public class ChangeDataCaptureOrderTest extends AbstractChangeDataCaptureTest {
+public class ChangeDataCaptureCacheVersionTest extends AbstractChangeDataCaptureTest {
     /** */
     public static final String FOR_OTHER_DC_ID = "for-other-dc-id";
 
