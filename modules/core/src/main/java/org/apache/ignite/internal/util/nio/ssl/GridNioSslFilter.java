@@ -49,6 +49,12 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     /** SSL handshake future metadata key. */
     public static final int HANDSHAKE_FUT_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
+    /** The name of the metric that provides histogram of SSL handshake duration. */
+    public static final String SSL_HANDSHAKE_DURATION_HISTOGRAM_METRIC_NAME = "SslHandshakeDurationHistogram";
+
+    /** The name of the metric that provides number of rejected session due to SSL errors. */
+    public static final String SSL_REJECTED_SESSIONS_CNT_METRIC_NAME = "SslRejectedSessionsCount";
+
     /** Logger to use. */
     private IgniteLogger log;
 
@@ -75,12 +81,6 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
 
     /** Whether direct mode is used. */
     private boolean directMode;
-
-    /** The name of the metric that provides histogram of SSL handshake duration. */
-    public static final String SSL_HANDSHAKE_DURATION_HISTOGRAM_METRIC_NAME = "sslHandshakeDurationHistogram";
-
-    /** The name of the metric that provides number of rejected session due to SSL errors. */
-    public static final String SSL_REJECTED_SESSIONS_CNT_METRIC_NAME = "sslRejectedSessionsCount";
 
     /** Metric that indicates the number of rejected sessions due to SSL errors. */
     @Nullable private LongAdderMetric rejectedSesMetric;
@@ -237,7 +237,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
                 if (fut == null) {
                     fut = new GridNioFutureImpl<>(null);
 
-                   ses.addMeta(HANDSHAKE_FUT_META_KEY, fut);
+                    ses.addMeta(HANDSHAKE_FUT_META_KEY, fut);
                 }
 
                 final long handshakeStartTime = System.nanoTime();

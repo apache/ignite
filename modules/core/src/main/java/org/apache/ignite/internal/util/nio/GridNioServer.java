@@ -164,10 +164,10 @@ public class GridNioServer<T> {
     public static final String SENT_BYTES_METRIC_DESC = "Total number of bytes sent by current node";
 
     /** The name of the metric that indicates whether SSL is enabled for the connector. */
-    public static final String SSL_ENABLED_METRIC_NAME = "sslEnabled";
+    public static final String SSL_ENABLED_METRIC_NAME = "SslEnabled";
 
     /** The name of the metric that provides the number of active TCP sessions. */
-    public static final String SESSIONS_CNT_METRIC_NAME = "activeSessionsCount";
+    public static final String SESSIONS_CNT_METRIC_NAME = "ActiveSessionsCount";
 
     /** Defines how many times selector should do {@code selectNow()} before doing {@code select(long)}. */
     private long selectorSpins;

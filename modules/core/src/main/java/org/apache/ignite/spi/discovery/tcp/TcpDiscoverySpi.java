@@ -311,6 +311,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /** Ssl message pattern for StreamCorruptedException. */
     private static Pattern sslMsgPattern = Pattern.compile("invalid stream header: 150\\d0\\d00");
 
+    /** The name of the metric that provides number of rejected connections due to SSL errors. */
+    public static final String SSL_REJECTED_CONNECTIONS_CNT_METRIC_NAME = "SslRejectedConnectionsCount";
+
     /** Local address. */
     protected String locAddr;
 
@@ -467,9 +470,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /** For test purposes. */
     private boolean skipAddrsRandomization = false;
-
-    /** The name of the metric that provides number of rejected connections due to SSL errors. */
-    public static final String SSL_REJECTED_CONNECTIONS_CNT_METRIC_NAME = "sslRejectedConnectionsCount";
 
     /**
      * Gets current SPI state.

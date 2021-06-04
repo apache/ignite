@@ -72,6 +72,9 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     /** */
     public static final String CLI_CONN_VIEW_DESC = "Client connections";
 
+    /** The name of the metric registry associated with the thin client connector. */
+    public static final String CLIENT_CONNECTOR_METRIC_REGISTRY_NAME = metricName("client", "connector", "tcp");
+
     /** Default client connector configuration. */
     public static final ClientConnectorConfiguration DFLT_CLI_CFG = new ClientConnectorConfigurationEx();
 
@@ -95,9 +98,6 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
     /** Executor service. */
     private ExecutorService execSvc;
-
-    /** The name of the metric registry associated with the thin client connector. */
-    public static final String CLIENT_CONNECTOR_METRIC_REGISTRY_NAME = metricName("client", "connector", "tcp");
 
     /**
      * @param ctx Kernal context.

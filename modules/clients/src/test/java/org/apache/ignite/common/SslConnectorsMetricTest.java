@@ -125,23 +125,27 @@ public class SslConnectorsMetricTest extends GridCommonAbstractTest {
         try (Connection ignored = getConnection(jdbcConfiguration("thinClient", "trusttwo", CIPHER_SUITE, "TLSv1.2"))) {
             assertSslCommunicationMetrics(reg, 1, 1, 0);
         }
+
         assertSslCommunicationMetrics(reg, 1, 0, 0);
 
         // Tests untrusted certificate.
         assertThrowsWithCause(() ->
             getConnection(jdbcConfiguration("client", "trusttwo", CIPHER_SUITE, "TLSv1.2")),
             SQLException.class);
+
         assertSslCommunicationMetrics(reg, 2, 0, 1);
 
         // Tests unsupported cipher suite.
         assertThrowsWithCause(() ->
             getConnection(jdbcConfiguration("thinClient", "trusttwo", UNSUPPORTED_CIPHER_SUITE, "TLSv1.2")),
             SQLException.class);
+
         assertSslCommunicationMetrics(reg, 3, 0, 2);
 
         assertThrowsWithCause(() ->
             getConnection(jdbcConfiguration("thinClient", "trusttwo", null, "TLSv1.1")),
             SQLException.class);
+
         assertSslCommunicationMetrics(reg, 4, 0, 3);
     }
 
@@ -155,12 +159,14 @@ public class SslConnectorsMetricTest extends GridCommonAbstractTest {
         ) {
             assertSslCommunicationMetrics(reg, 1, 1, 0);
         }
+
         assertSslCommunicationMetrics(reg, 1, 0, 0);
 
         // Tests untrusted certificate.
         try (GridClient ignored = start(gridClientConfiguration("client", "trustthree", CIPHER_SUITE, "TLSv1.2"))) {
             // GridClient makes 2 additional silent connection attempts if an SSL error occurs.
         }
+
         assertSslCommunicationMetrics(reg, 4, 0, 3);
 
         // Tests unsupported cipher suite.
@@ -170,12 +176,14 @@ public class SslConnectorsMetricTest extends GridCommonAbstractTest {
         ) {
             // GridClient makes 2 additional silent connection attempts if an SSL error occurs.
         }
+
         assertSslCommunicationMetrics(reg, 7, 0, 6);
 
         // Tests mismatched protocol versions.
         try (GridClient ignored = start(gridClientConfiguration("connectorClient", "trustthree", null, "TLSv1.1"))) {
             // GridClient makes 2 additional  silent connection attempts if an SSL error occurs.
         }
+
         assertSslCommunicationMetrics(reg, 10, 0, 9);
     }
 
@@ -233,12 +241,14 @@ public class SslConnectorsMetricTest extends GridCommonAbstractTest {
         try (IgniteClient ignored = startClient(clientConfiguration("thinClient", "trusttwo", CIPHER_SUITE, "TLSv1.2"))) {
             assertSslCommunicationMetrics(reg, 1, 1, 0);
         }
+
         assertSslCommunicationMetrics(reg, 1, 0, 0);
 
         // Tests untrusted certificate.
         assertThrowsWithCause(() ->
             startClient(clientConfiguration("client", "trustboth", CIPHER_SUITE, "TLSv1.2")),
             ClientConnectionException.class);
+
         assertSslCommunicationMetrics(reg, 2, 0, 1);
 
         // Tests unsupported cipher suites.
@@ -246,6 +256,7 @@ public class SslConnectorsMetricTest extends GridCommonAbstractTest {
             startClient(clientConfiguration("thinClient", "trusttwo", UNSUPPORTED_CIPHER_SUITE, "TLSv1.2")),
             ClientConnectionException.class
         );
+
         assertSslCommunicationMetrics(reg, 3, 0, 2);
 
         // Tests mismatched protocol versions.
@@ -253,6 +264,7 @@ public class SslConnectorsMetricTest extends GridCommonAbstractTest {
             startClient(clientConfiguration("thinClient", "trusttwo", null, "TLSv1.1")),
             ClientConnectionException.class
         );
+
         assertSslCommunicationMetrics(reg, 4, 0, 3);
     }
 
