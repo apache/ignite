@@ -1785,8 +1785,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (ptr == null)
                 return false;
 
-            if (oldestWALPointerToReserve == null ||
-                ptr.index() < oldestWALPointerToReserve.index())
+            if (oldestWALPointerToReserve == null || ptr.compareTo(oldestWALPointerToReserve) < 0)
                 oldestWALPointerToReserve = ptr;
         }
 
