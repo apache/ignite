@@ -74,6 +74,8 @@ namespace Apache.Ignite.Core.Impl.Client
         private const byte ClientType = 2;
 
         /** Underlying socket. */
+        [SuppressMessage("Microsoft.Design", "CA2213:DisposableFieldsShouldBeDisposed",
+            Justification = "Disposed by _stream.Close call.")]
         private readonly Socket _socket;
 
         /** Underlying socket stream. */
