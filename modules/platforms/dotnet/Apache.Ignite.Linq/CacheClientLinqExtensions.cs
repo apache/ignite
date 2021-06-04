@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Linq
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -120,6 +121,7 @@ namespace Apache.Ignite.Linq
         /// <returns>
         ///   <see cref="IQueryable{T}" /> instance over this cache.
         /// </returns>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods", Justification = "False positive")]
         public static IQueryable<ICacheEntry<TKey, TValue>> AsCacheQueryable<TKey, TValue>(
             this ICacheClient<TKey, TValue> cache, QueryOptions queryOptions)
         {

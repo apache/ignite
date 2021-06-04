@@ -213,6 +213,7 @@ namespace Apache.Ignite.Linq
         /// <param name="query">The query.</param>
         /// <param name="updateDescription">The update description.</param>
         /// <returns>Affected row count.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods", Justification = "False positive")]
         public static int UpdateAll<TKey, TValue>(this IQueryable<ICacheEntry<TKey, TValue>> query,
             Expression<Func<IUpdateDescriptor<TKey,TValue>, IUpdateDescriptor<TKey,TValue>>> updateDescription)
         {
