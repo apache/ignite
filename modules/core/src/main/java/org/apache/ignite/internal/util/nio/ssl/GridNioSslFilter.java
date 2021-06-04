@@ -28,7 +28,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
-import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
 import org.apache.ignite.internal.util.nio.GridNioException;
 import org.apache.ignite.internal.util.nio.GridNioFilterAdapter;
 import org.apache.ignite.internal.util.nio.GridNioFinishedFuture;
@@ -83,7 +83,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     private boolean directMode;
 
     /** Metric that indicates the number of rejected sessions due to SSL errors. */
-    @Nullable private LongAdderMetric rejectedSesMetric;
+    @Nullable private IntMetricImpl rejectedSesMetric;
 
     /** Histogram that provides distribution of SSL handshake duration. */
     @Nullable private HistogramMetricImpl handshakeDurationHistogram;
@@ -113,7 +113,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
             "Histogram of SSL handshake duration in milliseconds."
         );
 
-        rejectedSesMetric = mreg.longAdderMetric(
+        rejectedSesMetric = mreg.intMetric(
             SSL_REJECTED_SESSIONS_CNT_METRIC_NAME,
             "The number of rejected TCP sessions due to SSL errors."
         );

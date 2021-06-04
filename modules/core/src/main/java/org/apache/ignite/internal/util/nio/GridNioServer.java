@@ -95,6 +95,7 @@ import static org.apache.ignite.internal.processors.tracing.SpanType.COMMUNICATI
 import static org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesTable.traceName;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MSG_WRITER;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.NIO_OPERATION;
+import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.COMMUNICATION_METRICS_GROUP_NAME;
 
 /**
  * TCP NIO server. Due to asynchronous nature of connections processing
@@ -447,16 +448,17 @@ public class GridNioServer<T> {
 
         this.mreg = mreg;
 
-        rcvdBytesCntMetric = mreg == null ?
+        rcvdBytesCntMetric = mreg == null || !COMMUNICATION_METRICS_GROUP_NAME.equals(mreg.name()) ?
             null : mreg.longAdderMetric(RECEIVED_BYTES_METRIC_NAME, RECEIVED_BYTES_METRIC_DESC);
 
-        sentBytesCntMetric = mreg == null ?
+        sentBytesCntMetric = mreg == null || !COMMUNICATION_METRICS_GROUP_NAME.equals(mreg.name()) ?
             null : mreg.longAdderMetric(SENT_BYTES_METRIC_NAME, SENT_BYTES_METRIC_DESC);
 
-        outboundMessagesQueueSizeMetric = mreg == null ? null : mreg.longAdderMetric(
-            OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_NAME,
-            OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_DESC
-        );
+        outboundMessagesQueueSizeMetric = mreg == null || !COMMUNICATION_METRICS_GROUP_NAME.equals(mreg.name()) ?
+            null : mreg.longAdderMetric(
+                OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_NAME,
+                OUTBOUND_MESSAGES_QUEUE_SIZE_METRIC_DESC
+            );
 
         if (mreg != null) {
             GridNioSslFilter sslFilter;

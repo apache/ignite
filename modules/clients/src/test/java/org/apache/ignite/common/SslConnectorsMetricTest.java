@@ -39,7 +39,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.metric.IntMetric;
-import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -56,7 +55,6 @@ import static org.apache.ignite.internal.util.nio.GridNioServer.SSL_ENABLED_METR
 import static org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter.SSL_HANDSHAKE_DURATION_HISTOGRAM_METRIC_NAME;
 import static org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter.SSL_REJECTED_SESSIONS_CNT_METRIC_NAME;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.COMMUNICATION_METRICS_GROUP_NAME;
-import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.SSL_REJECTED_CONNECTIONS_CNT_METRIC_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.keyStorePassword;
 import static org.apache.ignite.testframework.GridTestUtils.keyStorePath;
@@ -90,31 +88,32 @@ public class SslConnectorsMetricTest extends GridCommonAbstractTest {
     public void testSslDisabled() throws Exception {
         IgniteEx srv = startGrid();
 
-        assertFalse(mreg(srv, DISCO_METRICS).<BooleanMetric>findMetric(SSL_ENABLED_METRIC_NAME).value());
+        assertFalse(mreg(srv, DISCO_METRICS).<BooleanMetric>findMetric("SslEnabled").value());
         assertFalse(mreg(srv, COMMUNICATION_METRICS_GROUP_NAME).<BooleanMetric>findMetric(SSL_ENABLED_METRIC_NAME).value());
         assertFalse(mreg(srv, CLIENT_CONNECTOR_METRIC_REGISTRY_NAME).<BooleanMetric>findMetric(SSL_ENABLED_METRIC_NAME).value());
         assertNull(mreg(srv, REST_CONNECTOR_METRIC_REGISTRY_NAME).<BooleanMetric>findMetric(SSL_ENABLED_METRIC_NAME));
 
-        assertNull(mreg(srv, DISCO_METRICS).<BooleanMetric>findMetric(SSL_REJECTED_CONNECTIONS_CNT_METRIC_NAME));
-        assertNull(mreg(srv, COMMUNICATION_METRICS_GROUP_NAME).<BooleanMetric>findMetric(SSL_REJECTED_SESSIONS_CNT_METRIC_NAME));
-        assertNull(mreg(srv, CLIENT_CONNECTOR_METRIC_REGISTRY_NAME).<BooleanMetric>findMetric(SSL_REJECTED_SESSIONS_CNT_METRIC_NAME));
-        assertNull(mreg(srv, REST_CONNECTOR_METRIC_REGISTRY_NAME).<BooleanMetric>findMetric(SSL_REJECTED_SESSIONS_CNT_METRIC_NAME));
+        assertNotNull(mreg(srv, DISCO_METRICS).<IntMetric>findMetric("SslRejectedConnectionsCount"));
+        assertNull(mreg(srv, COMMUNICATION_METRICS_GROUP_NAME).<IntMetric>findMetric(SSL_REJECTED_SESSIONS_CNT_METRIC_NAME));
+        assertNull(mreg(srv, CLIENT_CONNECTOR_METRIC_REGISTRY_NAME).<IntMetric>findMetric(SSL_REJECTED_SESSIONS_CNT_METRIC_NAME));
+        assertNull(mreg(srv, REST_CONNECTOR_METRIC_REGISTRY_NAME).<IntMetric>findMetric(SSL_REJECTED_SESSIONS_CNT_METRIC_NAME));
 
-        assertNull(mreg(srv, COMMUNICATION_METRICS_GROUP_NAME).<BooleanMetric>findMetric(SSL_HANDSHAKE_DURATION_HISTOGRAM_METRIC_NAME));
+        assertNull(mreg(srv, COMMUNICATION_METRICS_GROUP_NAME).<HistogramMetric>findMetric(SSL_HANDSHAKE_DURATION_HISTOGRAM_METRIC_NAME));
         assertNull(mreg(srv, CLIENT_CONNECTOR_METRIC_REGISTRY_NAME)
-            .<BooleanMetric>findMetric(SSL_HANDSHAKE_DURATION_HISTOGRAM_METRIC_NAME));
-        assertNull(mreg(srv, REST_CONNECTOR_METRIC_REGISTRY_NAME).<BooleanMetric>findMetric(SSL_HANDSHAKE_DURATION_HISTOGRAM_METRIC_NAME));
+            .<HistogramMetric>findMetric(SSL_HANDSHAKE_DURATION_HISTOGRAM_METRIC_NAME));
+        assertNull(mreg(srv, REST_CONNECTOR_METRIC_REGISTRY_NAME)
+            .<HistogramMetric>findMetric(SSL_HANDSHAKE_DURATION_HISTOGRAM_METRIC_NAME));
 
-        assertNotNull(mreg(srv, COMMUNICATION_METRICS_GROUP_NAME).<BooleanMetric>findMetric(SESSIONS_CNT_METRIC_NAME));
-        assertNotNull(mreg(srv, CLIENT_CONNECTOR_METRIC_REGISTRY_NAME).<BooleanMetric>findMetric(SESSIONS_CNT_METRIC_NAME));
-        assertNull(mreg(srv, REST_CONNECTOR_METRIC_REGISTRY_NAME).<BooleanMetric>findMetric(SESSIONS_CNT_METRIC_NAME));
+        assertNotNull(mreg(srv, COMMUNICATION_METRICS_GROUP_NAME).<IntMetric>findMetric(SESSIONS_CNT_METRIC_NAME));
+        assertNotNull(mreg(srv, CLIENT_CONNECTOR_METRIC_REGISTRY_NAME).<IntMetric>findMetric(SESSIONS_CNT_METRIC_NAME));
+        assertNull(mreg(srv, REST_CONNECTOR_METRIC_REGISTRY_NAME).<IntMetric>findMetric(SESSIONS_CNT_METRIC_NAME));
 
         stopAllGrids();
 
         srv = startGrid(getConfiguration().setConnectorConfiguration(new ConnectorConfiguration()));
 
         assertFalse(mreg(srv, REST_CONNECTOR_METRIC_REGISTRY_NAME).<BooleanMetric>findMetric(SSL_ENABLED_METRIC_NAME).value());
-        assertNotNull(mreg(srv, REST_CONNECTOR_METRIC_REGISTRY_NAME).<BooleanMetric>findMetric(SESSIONS_CNT_METRIC_NAME));
+        assertNotNull(mreg(srv, REST_CONNECTOR_METRIC_REGISTRY_NAME).<IntMetric>findMetric(SESSIONS_CNT_METRIC_NAME));
     }
 
     /** Tests SSL metrics produced by JDBC connection. */
@@ -194,8 +193,8 @@ public class SslConnectorsMetricTest extends GridCommonAbstractTest {
 
         startGrid(nodeConfiguration(1, true, "client", "trustone", CIPHER_SUITE, "TLSv1.2"));
 
-        assertTrue(reg.<BooleanMetric>findMetric(SSL_ENABLED_METRIC_NAME).value());
-        assertEquals(0, reg.<LongMetric>findMetric(SSL_REJECTED_CONNECTIONS_CNT_METRIC_NAME).value());
+        assertTrue(reg.<BooleanMetric>findMetric("SslEnabled").value());
+        assertEquals(0, reg.<IntMetric>findMetric("SslRejectedConnectionsCount").value());
 
         // Tests untrusted certificate.
         assertNodeJoinFails(2, true, "thinClient", "trusttwo", CIPHER_SUITE, "TLSv1.2");
@@ -210,7 +209,7 @@ public class SslConnectorsMetricTest extends GridCommonAbstractTest {
 
         // In case of an SSL error, the client and server nodes make 2 additional connection attempts.
         assertTrue(waitForCondition(() ->
-            18 == reg.<LongMetric>findMetric(SSL_REJECTED_CONNECTIONS_CNT_METRIC_NAME).value(),
+            18 == reg.<IntMetric>findMetric("SslRejectedConnectionsCount").value(),
             getTestTimeout()));
     }
 
@@ -371,8 +370,8 @@ public class SslConnectorsMetricTest extends GridCommonAbstractTest {
     private void assertSslCommunicationMetrics(
         MetricRegistry mreg,
         long handshakeCnt,
-        long sesCnt,
-        long rejectedSesCnt
+        int sesCnt,
+        int rejectedSesCnt
     ) throws Exception {
         assertEquals(true, mreg.<BooleanMetric>findMetric(SSL_ENABLED_METRIC_NAME).value());
         assertTrue(waitForCondition(() ->
@@ -384,7 +383,7 @@ public class SslConnectorsMetricTest extends GridCommonAbstractTest {
             ).sum(),
             getTestTimeout()));
         assertTrue(waitForCondition(() ->
-            rejectedSesCnt == mreg.<LongMetric>findMetric(SSL_REJECTED_SESSIONS_CNT_METRIC_NAME).value(),
+            rejectedSesCnt == mreg.<IntMetric>findMetric(SSL_REJECTED_SESSIONS_CNT_METRIC_NAME).value(),
             getTestTimeout()));
     }
 
