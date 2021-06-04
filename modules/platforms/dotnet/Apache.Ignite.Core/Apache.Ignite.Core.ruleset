@@ -25,5 +25,8 @@
 
     <!-- Do not lock on objects with weak identity: we allow this on internal classes that are never exposed to the user. -->
     <Rule Id="CA2002" Action="None" />
+
+    <!-- Use nameof: not applicable for older frameworks that we support. -->
+    <Rule Id="CA1507" Action="None" />
   </Rules>
 </RuleSet>

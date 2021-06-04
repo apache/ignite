@@ -260,7 +260,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
         private void StartFlush()
         {
             // NOTE: Continuation runs on socket thread - set result on thread pool.
-            _parent.FlushBufferAsync(this).ContinueWith(
+            _parent.FlushBufferAsync(this).ContWith(
                 t => ThreadPool.QueueUserWorkItem(buf =>
                     ((DataStreamerClientBuffer<TK, TV>)buf).OnFlushed(t.Exception), this),
                 TaskContinuationOptions.ExecuteSynchronously);
@@ -299,7 +299,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                 }
                 else
                 {
-                    previous.GetChainFlushTask().ContinueWith(
+                    previous.GetChainFlushTask().ContWith(
                         t => TrySetResultOrException(tcs, exception ?? t.Exception),
                         TaskContinuationOptions.ExecuteSynchronously);
                 }
