@@ -15,41 +15,23 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.BenchmarkDotNet.ThinClient
+namespace Apache.Ignite.Core.Tests.Client.Datastream
 {
-    using Apache.Ignite.Core;
-    using Apache.Ignite.Core.Client;
-    using global::BenchmarkDotNet.Attributes;
+    using NUnit.Framework;
 
     /// <summary>
-    /// Base class for thin client benchmarks.
+    /// Tests thin client data streamer with topology changes.
     /// </summary>
-    public abstract class ThinClientBenchmarkBase
+    [TestFixture]
+    [Category(TestUtils.CategoryIntensive)]
+    public class DataStreamerClientTopologyChangeTestPartitionAware : DataStreamerClientTopologyChangeTest
     {
-        /** */
-        public IIgnite Ignite { get; set; }
-
-        /** */
-        public IIgniteClient Client { get; set; }
-
         /// <summary>
-        /// Sets up the benchmark.
+        /// Initializes a new instance of <see cref="DataStreamerClientTopologyChangeTestPartitionAware"/> class.
         /// </summary>
-        [GlobalSetup]
-        public virtual void GlobalSetup()
+        public DataStreamerClientTopologyChangeTestPartitionAware() : base(true)
         {
-            Ignite = Ignition.Start(Utils.GetIgniteConfiguration());
-            Client = Ignition.StartClient(Utils.GetIgniteClientConfiguration());
-        }
-
-        /// <summary>
-        /// Cleans up the benchmark.
-        /// </summary>
-        [GlobalCleanup]
-        public virtual void GlobalCleanup()
-        {
-            Client.Dispose();
-            Ignition.StopAll(true);
+            // No-op.
         }
     }
 }
