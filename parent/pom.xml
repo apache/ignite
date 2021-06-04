@@ -789,9 +789,16 @@
                         <goals>
                             <goal>check</goal>
                         </goals>
-                        <phase>validate</phase>
+                        <phase>compile</phase>
                     </execution>
                 </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.ignite</groupId>
+                        <artifactId>ignite-tools</artifactId>
+                        <version>${project.version}</version>
+                    </dependency>
+                </dependencies>
             </plugin>
         </plugins>
     </build>

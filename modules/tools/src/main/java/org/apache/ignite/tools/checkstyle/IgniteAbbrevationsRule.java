@@ -17,13 +17,18 @@
 
 package org.apache.ignite.tools.checkstyle;
 
-import java.io.File;
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.nio.file.Files;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import com.puppycrawl.tools.checkstyle.api.AbstractCheck;
+import com.puppycrawl.tools.checkstyle.api.DetailAST;
+import com.puppycrawl.tools.checkstyle.api.TokenTypes;
 
 /**
  * Rule that check Ignite abbervations used through project source code.
@@ -31,11 +36,16 @@ import com.puppycrawl.tools.checkstyle.api.AbstractCheck;
  *     Ignite abbrevation rules</a>
  */
 public class IgniteAbbrevationsRule extends AbstractCheck {
-    /** */
-    public static final String ABBREVS_FILE = "abbrevations.csv";
+    /** File with abbrevations. */
+    public static final String ABBREVS_FILE = "/abbrevations.csv";
 
     /** */
     public static final char DELIM = ',';
+
+    /** */
+    private static final int[] TOKENS = new int[] {
+        TokenTypes.VARIABLE_DEF, TokenTypes.PATTERN_VARIABLE_DEF
+    };
 
     /**
      * Key is wrong term that should be replaced with abbrevations.
@@ -45,19 +55,24 @@ public class IgniteAbbrevationsRule extends AbstractCheck {
 
     /** */
     public IgniteAbbrevationsRule() {
-        try {
-            List<String> strs =
-                Files.readAllLines(new File(getClass().getClassLoader().getResource(ABBREVS_FILE).getFile()).toPath());
+        InputStream stream = getClass().getResourceAsStream(ABBREVS_FILE);
 
-            for (String str : strs) {
-                int firstDelim = str.indexOf(DELIM);
+        try (BufferedReader br =
+                 new BufferedReader(new InputStreamReader(stream))) {
+            String line;
+
+            while ((line = br.readLine()) != null) {
+                if (line.startsWith("#"))
+                    continue;
+
+                line = line.toLowerCase();
+
+                int firstDelim = line.indexOf(DELIM);
 
                 assert firstDelim > 0;
 
-                String term = str.substring(0, firstDelim);
-                String[] substitutions = str.substring(firstDelim + 1).split("" + DELIM);
-
-                System.out.println(term);
+                String term = line.substring(0, firstDelim);
+                String[] substitutions = line.substring(firstDelim + 1).split("" + DELIM);
 
                 assert substitutions.length > 0;
 
@@ -69,19 +84,58 @@ public class IgniteAbbrevationsRule extends AbstractCheck {
         }
     }
 
-    public static void main(String[] args) {
-        new IgniteAbbrevationsRule();
+    /** {@inheritDoc} */
+    @Override public void visitToken(DetailAST ast) {
+        DetailAST token = ast.findFirstToken(TokenTypes.IDENT);
+
+        String varName = token.getText();
+
+        List<String> words = words(varName);
+
+        for (String word : words) {
+            if (abbrevs.containsKey(word.toLowerCase())) {
+                String correct = String.join(", ", abbrevs.get(word.toLowerCase()));
+
+                log(
+                    token.getLineNo(),
+                    "Abbrevation should be used for {0}! Please, use {1}, instead of {2}",
+                    varName,
+                    correct,
+                    word
+                );
+            }
+        }
     }
 
+    public static List<String> words(String varName) {
+        if (varName.indexOf('_') != -1)
+            return Arrays.asList(varName.split("_"));
+
+        List<String> words = new ArrayList<>();
+
+        int start = 0;
+        int finish = 0;
+
+        for (int i = 0; i < varName.length(); i++) {
+            if (Character.isUpperCase(varName.charAt(i)))
+                finish = i;
+        }
+
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public int[] getDefaultTokens() {
-        return new int[0];
+        return TOKENS.clone();
     }
 
+    /** {@inheritDoc} */
     @Override public int[] getAcceptableTokens() {
-        return new int[0];
+        return TOKENS.clone();
     }
 
+    /** {@inheritDoc} */
     @Override public int[] getRequiredTokens() {
-        return new int[0];
+        return TOKENS.clone();
     }
 }
