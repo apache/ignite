@@ -32,11 +32,11 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRelVisitor;
 
 /**
- * Physical node for REDUCE phase of MINUS (EXCEPT) operator.
+ * Physical node for REDUCE phase of INTERSECT operator.
  */
-public class IgniteReduceMinus extends IgniteMinus implements IgniteReduceSetOp {
+public class IgniteReduceIntersect extends IgniteIntersect implements IgniteReduceSetOp {
     /** */
-    public IgniteReduceMinus(
+    public IgniteReduceIntersect(
         RelOptCluster cluster,
         RelTraitSet traitSet,
         RelNode input,
@@ -49,7 +49,7 @@ public class IgniteReduceMinus extends IgniteMinus implements IgniteReduceSetOp 
     }
 
     /** */
-    public IgniteReduceMinus(RelInput input) {
+    public IgniteReduceIntersect(RelInput input) {
         this(
             input.getCluster(),
             input.getTraitSet().replace(IgniteConvention.INSTANCE),
@@ -69,12 +69,12 @@ public class IgniteReduceMinus extends IgniteMinus implements IgniteReduceSetOp 
 
     /** {@inheritDoc} */
     @Override public SetOp copy(RelTraitSet traitSet, List<RelNode> inputs, boolean all) {
-        return new IgniteReduceMinus(getCluster(), traitSet, sole(inputs), all, rowType);
+        return new IgniteReduceIntersect(getCluster(), traitSet, sole(inputs), all, rowType);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteReduceMinus clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteReduceMinus(cluster, getTraitSet(), sole(inputs), all, rowType);
+    @Override public IgniteReduceIntersect clone(RelOptCluster cluster, List<IgniteRel> inputs) {
+        return new IgniteReduceIntersect(cluster, getTraitSet(), sole(inputs), all, rowType);
     }
 
     /** {@inheritDoc} */
@@ -84,6 +84,6 @@ public class IgniteReduceMinus extends IgniteMinus implements IgniteReduceSetOp 
 
     /** {@inheritDoc} */
     @Override public int aggregateFieldsCount() {
-        return rowType.getFieldCount() + COUNTER_FIELDS_CNT;
+        return rowType.getFieldCount() + 2 /* At least two fields required for count aggregation. */;
     }
 }

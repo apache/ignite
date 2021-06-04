@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.Aggregate
 import org.apache.ignite.internal.processors.query.calcite.integration.CalciteErrorHandlilngIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.IndexSpoolIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.MetadataIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.SetOpIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.SortAggregateIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.TableDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.TableDmlIntegrationTest;
@@ -61,6 +62,7 @@ import org.junit.runners.Suite;
     TableDmlIntegrationTest.class,
     DataTypesTest.class,
     IndexSpoolIntegrationTest.class,
+    SetOpIntegrationTest.class,
 })
 public class IntegrationTestSuite {
 }

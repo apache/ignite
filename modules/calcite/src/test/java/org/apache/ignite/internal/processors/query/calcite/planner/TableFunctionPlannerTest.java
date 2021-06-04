@@ -33,7 +33,7 @@ import org.junit.Test;
 /**
  * Test table functions.
  */
-public class TableFunctionTest extends AbstractPlannerTest {
+public class TableFunctionPlannerTest extends AbstractPlannerTest {
     /** Public schema. */
     private IgniteSchema publicSchema;
 

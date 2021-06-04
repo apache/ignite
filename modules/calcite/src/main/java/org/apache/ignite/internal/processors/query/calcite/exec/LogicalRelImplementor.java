@@ -26,7 +26,9 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.Intersect;
 import org.apache.calcite.rel.core.JoinRelType;
+import org.apache.calcite.rel.core.Minus;
 import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexLiteral;
@@ -37,11 +39,13 @@ import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFa
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.AbstractSetOpNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.CorrelatedNestedLoopJoinNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.FilterNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.HashAggregateNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.IndexSpoolNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.IntersectNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.LimitNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.MergeJoinNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.MinusNode;
@@ -85,10 +89,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceH
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteSingleHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteSingleSortAggregate;
-import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteMapMinus;
-import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteMinusBase;
-import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteReduceMinus;
-import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteSingleMinus;
+import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteSetOp;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
@@ -432,29 +433,21 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     }
 
     /** {@inheritDoc} */
-    @Override public Node<Row> visit(IgniteSingleMinus rel) {
-        return visit(rel, AggregateType.SINGLE);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Node<Row> visit(IgniteMapMinus rel) {
-        return visit(rel, AggregateType.MAP);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Node<Row> visit(IgniteReduceMinus rel) {
-        return visit(rel, AggregateType.REDUCE);
-    }
-
-    /** Visit IgniteMinus rel. */
-    private Node<Row> visit(IgniteMinusBase rel, AggregateType aggType) {
+    @Override public Node<Row> visit(IgniteSetOp rel) {
         RelDataType rowType = rel.getRowType();
 
         RowFactory<Row> rowFactory = ctx.rowHandler().factory(ctx.getTypeFactory(), rowType);
 
         List<Node<Row>> inputs = Commons.transform(rel.getInputs(), this::visit);
 
-        MinusNode<Row> node = new MinusNode<>(ctx, rowType, aggType, rel.all, rowFactory);
+        AbstractSetOpNode<Row> node;
+
+        if (rel instanceof Minus)
+            node = new MinusNode<>(ctx, rowType, rel.aggregateType(), rel.all(), rowFactory);
+        else if (rel instanceof Intersect)
+            node = new IntersectNode<>(ctx, rowType, rel.aggregateType(), rel.all(), rowFactory, rel.getInputs().size());
+        else
+            throw new AssertionError();
 
         node.register(inputs);
 
