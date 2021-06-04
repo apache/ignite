@@ -124,6 +124,7 @@ namespace Apache.Ignite.Linq
         /// <returns>
         ///   <see cref="IQueryable{T}" /> instance over this cache.
         /// </returns>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods", Justification = "False positive")]
         public static IQueryable<ICacheEntry<TKey, TValue>> AsCacheQueryable<TKey, TValue>(
             this ICache<TKey, TValue> cache, QueryOptions queryOptions)
         {
