@@ -21,5 +21,8 @@
     <!-- Do not catch general exception types. -->
     <Rule Id="CA1031" Action="None" />
 
+    <!-- Do not nest types. -->
+    <Rule Id="CA1034" Action="None" />
+
   </Rules>
 </RuleSet>

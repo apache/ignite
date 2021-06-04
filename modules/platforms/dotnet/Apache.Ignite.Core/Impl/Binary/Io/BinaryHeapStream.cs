@@ -821,7 +821,7 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         }
 
         /// <inheritdoc />
-        /// <exception cref="T:System.ArgumentException">
+        /// <exception cref="System.ArgumentException">
         /// Unsupported seek origin:  + origin
         /// or
         /// Seek before origin:  + newPos
