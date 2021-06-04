@@ -123,5 +123,8 @@
     <!-- Use Uri instead of String. -->
     <Rule Id="CA1054" Action="None" />
 
+    <!-- Server certificates are not validated. -->
+    <Rule Id="CA5359" Action="None" />
+
   </Rules>
 </RuleSet>
