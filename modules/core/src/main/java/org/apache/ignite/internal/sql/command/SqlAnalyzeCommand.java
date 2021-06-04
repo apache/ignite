@@ -17,6 +17,14 @@
 
 package org.apache.ignite.internal.sql.command;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.stat.StatisticsTarget;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsColumnConfiguration;
@@ -27,14 +35,6 @@ import org.apache.ignite.internal.sql.SqlLexer;
 import org.apache.ignite.internal.sql.SqlLexerToken;
 import org.apache.ignite.internal.sql.SqlLexerTokenType;
 import org.apache.ignite.internal.util.typedef.F;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseQualifiedIdentifier;
 import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatchesKeyword;

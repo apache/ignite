@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.sql;
 
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.apache.ignite.internal.processors.query.stat.StatisticsTarget;
 import org.apache.ignite.internal.sql.command.SqlAnalyzeCommand;
 import org.junit.Test;
-
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Tests for sql parser: ANALYZE command.
