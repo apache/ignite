@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.query;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -107,6 +108,11 @@ class UnsortedDistributedCacheQueryReducer<R> extends AbstractCacheQueryReducer<
     /** {@inheritDoc} */
     @Override public void addPage(@Nullable UUID nodeId, Collection<R> data) {
         pageStream.addPage(data);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onErrorPage() {
+        pageStream.addPage(Collections.emptyList());
     }
 
     /** {@inheritDoc} */

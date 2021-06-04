@@ -252,7 +252,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
         try {
             if (err != null)
                 synchronized (lock) {
-                    reducer().addPage(nodeId, Collections.emptyList());
+                    reducer().onErrorPage();
 
                     if (err instanceof IgniteCheckedException)
                         onDone(err);
@@ -325,7 +325,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      */
     private void onPageError(@Nullable UUID nodeId, Throwable e) {
         synchronized (lock) {
-            reducer().addPage(nodeId, Collections.emptyList());
+            reducer().onErrorPage();
 
             onPage(nodeId, true);
 

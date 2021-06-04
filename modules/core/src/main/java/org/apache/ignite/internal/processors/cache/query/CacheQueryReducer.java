@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.query;
 import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * This class is responsible for reducing results of cache query. Query results are delivered with function
@@ -43,12 +42,17 @@ public interface CacheQueryReducer<T> {
 
     /**
      * Offer query result page for reduce. Note that the data collection may contain extension of type T.
-     * In such cases it stores additional payload for custom reducer logic.
+     * In such cases data item contains additional payload for custom reducer logic.
      *
-     * @param nodeId Node ID that sent this page. {@code null} means local node or error page.
+     * @param nodeId Node ID that sent this page.
      * @param data Page data rows.
      */
-    public void addPage(@Nullable UUID nodeId, Collection<T> data);
+    public void addPage(UUID nodeId, Collection<T> data);
+
+    /**
+     * Callback in case of page with error.
+     */
+    public void onErrorPage();
 
     /**
      * Callback that invokes after reducer get last query result page.

@@ -69,7 +69,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
         boolean callOnPage = reducer.onNodeLeft(nodeId);
 
         if (callOnPage)
-            onPage(nodeId, Collections.emptyList(),
+            onPage(nodeId, null,
                 new ClusterTopologyCheckedException("Remote node has left topology: " + nodeId), true);
     }
 

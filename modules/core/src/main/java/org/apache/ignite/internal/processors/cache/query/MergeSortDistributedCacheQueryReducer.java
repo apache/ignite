@@ -21,6 +21,7 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -182,20 +183,18 @@ public class MergeSortDistributedCacheQueryReducer<R> extends UnsortedDistribute
 
     /** {@inheritDoc} */
     @Override public void addPage(@Nullable UUID nodeId, Collection<R> data) {
-        // For distributed queries nodeId equals to NULL means error. Notify all streams.
-        if (nodeId == null) {
-            assert data.isEmpty();
-
-            for (PageStream stream: streamsMap.values())
-                stream.addPage(data);
-
-            return;
-        }
-
         NodePageStream stream = streamsMap.get(nodeId);
 
         if (stream != null)
             stream.addPage(data);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onErrorPage() {
+        Collection<R> e = Collections.emptyList();
+
+        for (PageStream stream: streamsMap.values())
+            stream.addPage(e);
     }
 
     /** {@inheritDoc} */

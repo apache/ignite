@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.query;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 
@@ -44,6 +45,11 @@ public class LocalCacheQueryReducer<R> extends AbstractCacheQueryReducer<R> {
     /** {@inheritDoc} */
     @Override public void addPage(UUID nodeId, Collection<R> data) {
         pageStream.addPage(data);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onErrorPage() {
+        pageStream.addPage(Collections.emptyList());
     }
 
     /** {@inheritDoc} */
