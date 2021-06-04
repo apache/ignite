@@ -27,7 +27,6 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -40,7 +39,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cdc.ChangeDataCapture;
 import org.apache.ignite.internal.util.typedef.F;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -174,7 +172,7 @@ public class ChangeDataCaptureSelfTest extends AbstractChangeDataCaptureTest {
 
     /** */
     @Test
-    public void testReadBeforeStop() throws Exception {
+    public void testReadBeforeGracefulShutdown() throws Exception {
         IgniteConfiguration cfg = getConfiguration("ignite-0");
 
         Ignite ign = startGrid(cfg);
@@ -226,64 +224,6 @@ public class ChangeDataCaptureSelfTest extends AbstractChangeDataCaptureTest {
 
         for (int i = 0; i < KEYS_CNT; i++)
             assertTrue(keys.contains(i));
-    }
-
-    /** */
-    @Test
-    @Ignore("Not implemented yet")
-    public void testReadAfterNodeStop() throws Exception {
-        cleanPersistenceDir();
-
-        AtomicInteger cnt = new AtomicInteger();
-
-        TestCDCConsumer cnsmr = new TestCDCConsumer();
-
-        // Restart node several time to make sure we can continue after gracefull shutdown.
-        for (int restarts = 0; restarts < 2; restarts++) {
-            IgniteConfiguration cfg = getConfiguration("ignite-0");
-
-            Ignite ign = startGrid(cfg);
-
-            ign.cluster().state(ACTIVE);
-
-            long startCnt = cnt.get();
-
-            runAsync(() -> {
-                IgniteCache<Integer, User> cache = ign.getOrCreateCache(DEFAULT_CACHE_NAME);
-
-                while (true) {
-                    int key = cnt.getAndIncrement();
-
-                    try {
-                        cache.put(key, createUser(key));
-                    }
-                    catch (Exception e) {
-                        cnt.decrementAndGet();
-
-                        throw e;
-                    }
-                }
-            });
-
-            waitForCondition(() -> cnt.get() - startCnt > KEYS_CNT, getTestTimeout());
-
-            ign.close();
-
-            ChangeDataCapture cdc = new ChangeDataCapture(cfg, null, cdcConfig(cnsmr));
-
-            IgniteInternalFuture<?> fut = runAsync(cdc);
-
-            assertTrue(waitForSize(cnt.get(), DEFAULT_CACHE_NAME, UPDATE, getTestTimeout(), cnsmr));
-
-            fut.cancel();
-
-            List<Integer> keys = cnsmr.keys(UPDATE, cacheId(DEFAULT_CACHE_NAME));
-
-            assertTrue(cnt.get() <= keys.size());
-
-            for (int i = 0; i < cnt.get(); i++)
-                assertTrue(keys.contains(i));
-        }
     }
 
     /** */

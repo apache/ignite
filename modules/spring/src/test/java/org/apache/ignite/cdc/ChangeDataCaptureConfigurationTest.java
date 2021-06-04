@@ -22,6 +22,8 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cdc.ChangeDataCapture;
 import org.apache.ignite.internal.cdc.WalRecordsConsumer;
@@ -72,23 +74,30 @@ public class ChangeDataCaptureConfigurationTest extends GridCommonAbstractTest {
         ChangeDataCapture cdc =
             loadChangeDataCapture("modules/spring/src/test/config/cdc/correct-cdc-config.xml");
 
-        TestCDCConsumer cnsmr =
-            (TestCDCConsumer)((WalRecordsConsumer<?, ?>)getFieldValue(cdc, "consumer")).consumer();
+        try (IgniteEx ign = startGrid((IgniteConfiguration)getFieldValue(cdc, "igniteCfg"))) {
+            TestCDCConsumer cnsmr =
+                (TestCDCConsumer)((WalRecordsConsumer<?, ?>)getFieldValue(cdc, "consumer")).consumer();
 
-        assertNotNull(cnsmr);
+            assertNotNull(cnsmr);
 
-        CountDownLatch startLatch = cnsmr.startLatch;
+            CountDownLatch startLatch = cnsmr.startLatch;
 
-        IgniteInternalFuture<?> fut = runAsync(cdc::run);
+            IgniteInternalFuture<?> fut = runAsync(cdc::run);
 
-        startLatch.await(getTestTimeout(), MILLISECONDS);
+            startLatch.await(getTestTimeout(), MILLISECONDS);
 
-        assertEquals("someString", cnsmr.springString);
-        assertEquals("someString2", cnsmr.springString2);
-        assertNotNull(cnsmr.log);
-        assertNotNull(cnsmr.ctx);
+            assertEquals("someString", cnsmr.springString);
+            assertEquals("someString2", cnsmr.springString2);
+            assertNotNull(cnsmr.log);
+            assertNotNull(cnsmr.ctx);
 
-        fut.cancel();
+            fut.cancel();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        cleanPersistenceDir();
     }
 
     /** */
