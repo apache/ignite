@@ -81,5 +81,20 @@
     <!-- Remove static ctor. -->
     <Rule Id="CA1810" Action="None" />
 
+    <!-- Implement IEquatable. -->
+    <Rule Id="CA1066" Action="None" />
+
+    <!-- Implement ICollection. -->
+    <Rule Id="CA1010" Action="None" />
+
+    <!-- Don't use multidimensional arrays. -->
+    <Rule Id="CA1814" Action="None" />
+
+    <!-- Use int enums. -->
+    <Rule Id="CA1028" Action="None" />
+
+    <!-- Test for empty strings correctly. -->
+    <Rule Id="CA1820" Action="None" />
+
   </Rules>
 </RuleSet>
