@@ -22,5 +22,8 @@
     <Rule Id="CA2001" Action="None" />
     <Rule Id="CA2204" Action="None" />
     <Rule Id="CA2243" Action="None" />
+
+    <!-- Do not lock on objects with weak identity: we allow this on internal classes that are never exposed to the user. -->
+    <Rule Id="CA2002" Action="None" />
   </Rules>
 </RuleSet>
