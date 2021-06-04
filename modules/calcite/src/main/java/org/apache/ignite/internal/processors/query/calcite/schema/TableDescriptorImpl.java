@@ -27,6 +27,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.type.RelDataType;
@@ -215,11 +216,6 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
     /** {@inheritDoc} */
     @Override public RelDataType insertRowType(IgniteTypeFactory factory) {
         return rowType(factory, insertFields);
-    }
-
-    /** {@inheritDoc} */
-    @Override public RelDataType selectForUpdateRowType(IgniteTypeFactory factory) {
-        return rowType(factory, ImmutableBitSet.of(keyField, valField));
     }
 
     /** {@inheritDoc} */
@@ -451,12 +447,14 @@ public class TableDescriptorImpl extends NullInitializerExpressionFactory
         Object key = Objects.requireNonNull(handler.get(QueryUtils.KEY_COL, row));
         Object val = clone(Objects.requireNonNull(handler.get(QueryUtils.VAL_COL, row)));
 
+        int offset = descriptorsMap.size();
+
         for (int i = 0; i < updateColList.size(); i++) {
             final ColumnDescriptor desc = Objects.requireNonNull(descriptorsMap.get(updateColList.get(i)));
 
             assert !desc.key();
 
-            Object fieldVal = handler.get(i + 2, row);
+            Object fieldVal = handler.get(i + offset, row);
 
             if (desc.field())
                 desc.set(val, TypeUtils.fromInternal(ectx, fieldVal, desc.storageType()));

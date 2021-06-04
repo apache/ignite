@@ -233,7 +233,7 @@ public class TableDmlIntegrationTest extends GridCommonAbstractTest {
 
         assertEqualsCollections(F.asList(0, 0, "Igor", 1), row);
 
-        query = engine.query(null, "PUBLIC", "UPDATE DEVELOPER d SET name = 'Roman' WHERE id = ?", 0);
+        query = engine.query(null, "PUBLIC", "UPDATE DEVELOPER d SET name = name || 'Roman' WHERE id = ?", 0);
 
         assertEquals(1, query.size());
 
@@ -251,7 +251,7 @@ public class TableDmlIntegrationTest extends GridCommonAbstractTest {
 
         assertNotNull(row);
 
-        assertEqualsCollections(F.asList(0, 0, "Roman", 1), row);
+        assertEqualsCollections(F.asList(0, 0, "IgorRoman", 1), row);
 
         query = engine.query(null, "PUBLIC", "DELETE FROM DEVELOPER WHERE id = ?", 0);
 

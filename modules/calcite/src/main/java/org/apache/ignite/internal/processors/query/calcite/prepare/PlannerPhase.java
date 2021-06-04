@@ -23,6 +23,7 @@ import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.logical.LogicalJoin;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.logical.LogicalSort;
+import org.apache.calcite.rel.rules.AggregateExpandDistinctAggregatesRule;
 import org.apache.calcite.rel.rules.AggregateMergeRule;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.rules.FilterJoinRule.FilterIntoJoinRule;
@@ -134,6 +135,8 @@ public enum PlannerPhase {
                                         .predicate(Aggregate::isSimple)
                                         .anyInputs())).toRule(),
 
+                    AggregateExpandDistinctAggregatesRule.Config.JOIN.toRule(),
+
                     SortRemoveRule.Config.DEFAULT
                         .withOperandSupplier(b ->
                             b.operand(LogicalSort.class)
@@ -145,7 +148,9 @@ public enum PlannerPhase {
                     CoreRules.UNION_REMOVE,
                     CoreRules.JOIN_COMMUTE,
                     CoreRules.AGGREGATE_REMOVE,
-                    CoreRules.AGGREGATE_REDUCE_FUNCTIONS,
+
+                    // Useful of this rule is not clear now.
+                    // CoreRules.AGGREGATE_REDUCE_FUNCTIONS,
 
                     PruneEmptyRules.SortFetchZeroRuleConfig.EMPTY
                         .withOperandSupplier(b ->
@@ -178,8 +183,6 @@ public enum PlannerPhase {
                     SetOpConverterRule.MAP_REDUCE_MINUS,
                     SetOpConverterRule.SINGLE_INTERSECT,
                     SetOpConverterRule.MAP_REDUCE_INTERSECT,
-                    MergeJoinConverterRule.INSTANCE,
-                    NestedLoopJoinConverterRule.INSTANCE,
                     ProjectConverterRule.INSTANCE,
                     FilterConverterRule.INSTANCE,
                     TableModifyConverterRule.INSTANCE,

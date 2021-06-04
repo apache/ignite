@@ -2,7 +2,6 @@
 # description: Test aggregates with scalar inputs
 # group: [aggregates]
 # Ignored: https://issues.apache.org/jira/browse/IGNITE-14636
-# Ignored: https://issues.apache.org/jira/browse/IGNITE-14543
 
 # test aggregate on scalar values
 query IIIIT

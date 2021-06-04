@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.ArrayDeque;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.List;
@@ -42,7 +43,7 @@ public class SortAggregateNode<Row> extends AbstractNode<Row> implements SingleN
     /** */
     private final AggregateType type;
 
-    /** */
+    /** May be {@code null} when there are not accumulators (DISTINCT aggregate node). */
     private final Supplier<List<AccumulatorWrapper<Row>>> accFactory;
 
     /** */
@@ -193,6 +194,11 @@ public class SortAggregateNode<Row> extends AbstractNode<Row> implements SingleN
     }
 
     /** */
+    private boolean hasAccumulators() {
+        return accFactory != null;
+    }
+
+    /** */
     private Group newGroup(Row r) {
         final Object[] grpKeys = new Object[grpSet.cardinality()];
         List<Integer> fldIdxs = grpSet.asList();
@@ -233,7 +239,7 @@ public class SortAggregateNode<Row> extends AbstractNode<Row> implements SingleN
         private Group(Object[] grpKeys) {
             this.grpKeys = grpKeys;
 
-            accumWrps = accFactory.get();
+            accumWrps = hasAccumulators() ? accFactory.get() : Collections.emptyList();
 
             handler = context().rowHandler();
         }
@@ -262,7 +268,9 @@ public class SortAggregateNode<Row> extends AbstractNode<Row> implements SingleN
 
         /** */
         private void addOnReducer(Row row) {
-            List<Accumulator> accums = (List<Accumulator>)handler.get(handler.columnCount(row) - 1, row);
+            List<Accumulator> accums = hasAccumulators() ?
+                (List<Accumulator>)handler.get(handler.columnCount(row) - 1, row)
+                : Collections.emptyList();
 
             for (int i = 0; i < accums.size(); i++) {
                 AccumulatorWrapper<Row> wrapper = accumWrps.get(i);
@@ -275,7 +283,7 @@ public class SortAggregateNode<Row> extends AbstractNode<Row> implements SingleN
 
         /** */
         private Row rowOnMapper() {
-            Object[] fields = new Object[grpSet.cardinality() + 1];
+            Object[] fields = new Object[grpSet.cardinality() + (accFactory != null ? 1 : 0)];
 
             int i = 0;
 
@@ -283,7 +291,8 @@ public class SortAggregateNode<Row> extends AbstractNode<Row> implements SingleN
                 fields[i++] = grpKey;
 
             // Last column is the accumulators collection.
-            fields[i] = Commons.transform(accumWrps, AccumulatorWrapper::accumulator);
+            if (hasAccumulators())
+                fields[i] = Commons.transform(accumWrps, AccumulatorWrapper::accumulator);
 
             return rowFactory.create(fields);
         }

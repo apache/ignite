@@ -22,7 +22,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.hint.RelHint;
+import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.ignite.internal.util.typedef.F;
 
 /** */
@@ -30,6 +32,12 @@ public class HintUtils {
     /** */
     private HintUtils() {
         // No-op.
+    }
+
+    /** */
+    public static boolean containsDisabledRules(ImmutableList<RelHint> hints) {
+        return hints.stream()
+            .anyMatch(h -> "DISABLE_RULE".equals(h.hintName) && !h.listOptions.isEmpty());
     }
 
     /** */
@@ -41,5 +49,12 @@ public class HintUtils {
             .filter(h -> "DISABLE_RULE".equals(h.hintName))
             .flatMap(h -> h.listOptions.stream())
             .collect(Collectors.toSet());
+    }
+
+    /** */
+    public static boolean isExpandDistinctAggregate(LogicalAggregate rel) {
+        return rel.getHints().stream()
+            .anyMatch(h -> "EXPAND_DISTINCT_AGG".equals(h.hintName))
+            && rel.getAggCallList().stream().anyMatch(AggregateCall::isDistinct);
     }
 }

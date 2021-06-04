@@ -78,18 +78,20 @@ public class IgniteMapHashAggregate extends IgniteMapAggregateBase implements Ig
 
     /** {@inheritDoc} */
     @Override protected RelDataType deriveRowType() {
-        return rowType(Commons.typeFactory(getCluster()));
+        return rowType(Commons.typeFactory(getCluster()), !aggCalls.isEmpty());
     }
 
     /** */
-    public static RelDataType rowType(RelDataTypeFactory typeFactory) {
+    public static RelDataType rowType(RelDataTypeFactory typeFactory, boolean addData) {
         assert typeFactory instanceof IgniteTypeFactory;
 
         RelDataTypeFactory.Builder builder = new RelDataTypeFactory.Builder(typeFactory);
 
         builder.add("GROUP_ID", typeFactory.createJavaType(byte.class));
         builder.add("GROUP_KEY", typeFactory.createJavaType(GroupKey.class));
-        builder.add("AGG_DATA", typeFactory.createArrayType(typeFactory.createJavaType(Accumulator.class), -1));
+
+        if (addData)
+            builder.add("AGG_DATA", typeFactory.createArrayType(typeFactory.createJavaType(Accumulator.class), -1));
 
         return builder.build();
     }

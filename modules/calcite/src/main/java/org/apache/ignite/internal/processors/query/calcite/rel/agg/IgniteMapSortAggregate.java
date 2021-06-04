@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.rel.agg;
 
 import java.util.List;
 import java.util.Objects;
-
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -123,7 +122,8 @@ public class IgniteMapSortAggregate extends IgniteMapAggregateBase implements Ig
             builder.add(fld);
         });
 
-        builder.add("AGG_DATA", typeFactory.createArrayType(typeFactory.createJavaType(Accumulator.class), -1));
+        if (!aggCalls.isEmpty())
+            builder.add("AGG_DATA", typeFactory.createArrayType(typeFactory.createJavaType(Accumulator.class), -1));
 
         return builder.build();
     }

@@ -171,6 +171,11 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends GridCommonAbstrac
         awaitPartitionMapExchange();
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() {
+        stopAllGrids();
+    }
+
     /** */
     private CacheConfiguration cache(QueryEntity ent) {
         return new CacheConfiguration<>(ent.getTableName())

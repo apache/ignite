@@ -87,7 +87,7 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
 
         ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
 
-        RelDataType mapType = IgniteMapHashAggregate.rowType(tf);
+        RelDataType mapType = IgniteMapHashAggregate.rowType(tf, true);
         HashAggregateNode<Object[]> map = new HashAggregateNode<>(
             ctx,
             mapType,
@@ -145,7 +145,7 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
 
         ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
 
-        RelDataType mapType = IgniteMapHashAggregate.rowType(tf);
+        RelDataType mapType = IgniteMapHashAggregate.rowType(tf, true);
         HashAggregateNode<Object[]> map = new HashAggregateNode<>(ctx, mapType, MAP, grpSets,
             accFactory(ctx, call, MAP, rowType), rowFactory());
         map.register(scan);
@@ -189,7 +189,7 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
 
         ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
 
-        RelDataType mapType = IgniteMapHashAggregate.rowType(tf);
+        RelDataType mapType = IgniteMapHashAggregate.rowType(tf, true);
         HashAggregateNode<Object[]> map = new HashAggregateNode<>(ctx, mapType, MAP, grpSets,
             accFactory(ctx, call, MAP, rowType), rowFactory());
         map.register(scan);
@@ -233,7 +233,7 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
 
         ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
 
-        RelDataType mapType = IgniteMapHashAggregate.rowType(tf);
+        RelDataType mapType = IgniteMapHashAggregate.rowType(tf, true);
         HashAggregateNode<Object[]> map = new HashAggregateNode<>(ctx, mapType, MAP, grpSets,
             accFactory(ctx, call, MAP, rowType), rowFactory());
         map.register(scan);
@@ -277,7 +277,7 @@ public class HashAggregateSingleGroupExecutionTest extends AbstractExecutionTest
 
         ImmutableList<ImmutableBitSet> grpSets = ImmutableList.of(ImmutableBitSet.of());
 
-        RelDataType mapType = IgniteMapHashAggregate.rowType(tf);
+        RelDataType mapType = IgniteMapHashAggregate.rowType(tf, true);
         HashAggregateNode<Object[]> map = new HashAggregateNode<>(ctx, mapType, MAP, grpSets,
             accFactory(ctx, call, MAP, rowType), rowFactory());
         map.register(scan);

@@ -30,6 +30,7 @@ import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Util;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.set.IgniteSetOp;
 import org.apache.ignite.internal.util.typedef.F;
@@ -120,6 +121,13 @@ public class IgniteMdRowCount extends RelMdRowCount {
      * Estimation of row count for set op (MINUS, INTERSECT).
      */
     public double getRowCount(IgniteSetOp rel, RelMetadataQuery mq) {
+        return rel.estimateRowCount(mq);
+    }
+
+    /**
+     * Estimation of row count for Aggregate operator.
+     */
+    public double getRowCount(IgniteAggregate rel, RelMetadataQuery mq) {
         return rel.estimateRowCount(mq);
     }
 }
