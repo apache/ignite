@@ -96,5 +96,26 @@
     <!-- Test for empty strings correctly. -->
     <Rule Id="CA1820" Action="None" />
 
+    <!-- Do not create tasks without passing a TaskScheduler. -->
+    <Rule Id="CA2008" Action="None" />
+
+    <!-- Do not raise exceptions in unexpected places. -->
+    <Rule Id="CA1065" Action="None" />
+
+    <!-- Type name conflicts with namespace. -->
+    <Rule Id="CA1724" Action="None" />
+
+    <!-- HRESULT or error code handling. -->
+    <Rule Id="CA1806" Action="None" />
+
+    <!-- ToLowerInvariant. -->
+    <Rule Id="CA1308" Action="None" />
+
+    <!-- Unused parameter. -->
+    <Rule Id="CA1801" Action="None" />
+
+    <!-- CancellationToken forwarding. -->
+    <Rule Id="CA2016" Action="None" />
+
   </Rules>
 </RuleSet>
