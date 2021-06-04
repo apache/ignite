@@ -9,6 +9,9 @@
     <SignAssembly>true</SignAssembly>
     <DelaySign>false</DelaySign>
     <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
+
+    <!-- netcoreapp2.0 is out of support -->
+    <NoWarn>NETSDK1138</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.4.0" />

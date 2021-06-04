@@ -28,5 +28,8 @@
 
     <!-- Use nameof: not applicable for older frameworks that we support. -->
     <Rule Id="CA1507" Action="None" />
+
+    <!-- Use Array.Empty: not available in older frameworks that we support. -->
+    <Rule Id="CA1825" Action="None" />
   </Rules>
 </RuleSet>
