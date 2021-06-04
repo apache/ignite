@@ -16,8 +16,6 @@
 """
 This module contains client tests.
 """
-from ducktape.mark import matrix
-
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, IgniteThinClientConfiguration
