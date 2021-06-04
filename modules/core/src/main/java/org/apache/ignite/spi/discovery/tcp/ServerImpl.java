@@ -324,7 +324,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         new GridBoundedLinkedHashSet<>(JOINED_NODE_IDS_HISTORY_SIZE);
 
     /** Metric that indicates the number of rejected connections due to SSL errors. */
-    private LongAdderMetric sslRejectedConnectionsMetric;
+    private final LongAdderMetric sslRejectedConnectionsMetric;
 
     /**
      * @param adapter Adapter.
@@ -332,12 +332,10 @@ class ServerImpl extends TcpDiscoveryImpl {
     ServerImpl(TcpDiscoverySpi adapter) {
         super(adapter);
 
-        if (spi.sslEnable) {
-            sslRejectedConnectionsMetric = new LongAdderMetric(
-                MetricUtils.metricName(DISCO_METRICS, SSL_REJECTED_CONNECTIONS_CNT_METRIC_NAME),
-                "The number of rejected TCP discovery connections due to SSL errors."
-            );
-        }
+        sslRejectedConnectionsMetric = spi.sslEnable ? new LongAdderMetric(
+            MetricUtils.metricName(DISCO_METRICS, SSL_REJECTED_CONNECTIONS_CNT_METRIC_NAME),
+            "The number of rejected TCP discovery connections due to SSL errors."
+        ) : null;
     }
 
     /** {@inheritDoc} */
