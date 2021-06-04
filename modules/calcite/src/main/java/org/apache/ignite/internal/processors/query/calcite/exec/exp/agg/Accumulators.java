@@ -92,8 +92,6 @@ public class Accumulators {
         switch (call.type.getSqlTypeName()) {
             case INTEGER:
             case BIGINT:
-                return () -> new Sum(new LongAsDecimalSumEmptyIsZero());
-
             case DECIMAL:
                 return () -> new Sum(new DecimalSumEmptyIsZero());
 
@@ -351,7 +349,7 @@ public class Accumulators {
         private Accumulator acc;
 
         /** */
-        private boolean empty;
+        private boolean empty = true;
 
         /** */
         public Sum(Accumulator acc) {
@@ -394,7 +392,7 @@ public class Accumulators {
         }
     }
 
-        /** */
+    /** */
     private static class DoubleSumEmptyIsZero implements Accumulator {
         /** */
         public static final Supplier<Accumulator> FACTORY = DoubleSumEmptyIsZero::new;
@@ -510,71 +508,6 @@ public class Accumulators {
         /** {@inheritDoc} */
         @Override public List<RelDataType> argumentTypes(IgniteTypeFactory typeFactory) {
             return F.asList(typeFactory.createTypeWithNullability(typeFactory.createSqlType(DECIMAL), true));
-        }
-
-        /** {@inheritDoc} */
-        @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
-            return typeFactory.createTypeWithNullability(typeFactory.createSqlType(DECIMAL), true);
-        }
-    }
-
-    /** */
-    private static class LongAsDecimalSumEmptyIsZero implements Accumulator {
-        /** */
-        public static final Supplier<Accumulator> FACTORY = DecimalSumEmptyIsZero::new;
-
-        /** */
-        private BigDecimal decSum;
-
-        /** */
-        private long longSum;
-
-        /** {@inheritDoc} */
-        @Override public void add(Object... args) {
-            if (args[0] == null)
-                return;
-
-            long v = (long)args[0];
-
-            if (isOveflow(v)) {
-                if (decSum == null)
-                    decSum = new BigDecimal(longSum);
-
-                decSum = decSum.add(new BigDecimal(v));
-            }
-            else
-                longSum += v;
-        }
-
-        /** */
-        private boolean isOveflow(long v) {
-            if (decSum != null)
-                return true;
-            else {
-                long r = longSum + v;
-
-                return ((v ^ r) & (longSum ^ r)) < 0;
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void apply(Accumulator other) {
-            LongAsDecimalSumEmptyIsZero other0 = (LongAsDecimalSumEmptyIsZero)other;
-
-            if (other0.decSum == null)
-                add(other0.longSum);
-            else
-                decSum = decSum == null ? other0.decSum : decSum.add(other0.decSum);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object end() {
-            return decSum != null ? decSum : new BigDecimal(longSum);
-        }
-
-        /** {@inheritDoc} */
-        @Override public List<RelDataType> argumentTypes(IgniteTypeFactory typeFactory) {
-            return F.asList(typeFactory.createTypeWithNullability(typeFactory.createSqlType(BIGINT), true));
         }
 
         /** {@inheritDoc} */
