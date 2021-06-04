@@ -53,6 +53,7 @@ public class ComplexSecondaryKeyUnwrapSelfTest extends AbstractIndexingCommonTes
         executeSql("CREATE INDEX ON " + tblName + "(id, name, city)");
 
         checkUsingIndexes(tblName, "'1'", 2, "Query should be splitted");
+        checkUsingIndexesWithTwoStepPlan(tblName, "Query should be splitted");
     }
 
     /**
@@ -95,6 +96,7 @@ public class ComplexSecondaryKeyUnwrapSelfTest extends AbstractIndexingCommonTes
             executeSql("CREATE INDEX ON " + tblName + "(id, name, city)");
 
             checkUsingIndexes(tblName, val, 1, "Query with type column: " + type);
+            checkUsingIndexesWithTwoStepPlan(tblName, "Query with type column: " + type + " should be splitted");
         }
     }
 
@@ -109,18 +111,28 @@ public class ComplexSecondaryKeyUnwrapSelfTest extends AbstractIndexingCommonTes
     private void checkUsingIndexes(String tblName, String nameVal, int expResCnt, String assertLbl) {
         String explainSQL = "explain SELECT * FROM " + tblName + " WHERE ";
 
-        List<List<?>> results = executeSql(explainSQL + "id=1");
-
-        // Always used merge_scan for non key (or affinity) fields condition.
-        assertUsingSecondaryIndex(results, 2, assertLbl);
-
-        results = executeSql(explainSQL + "id=1 and name=" + nameVal);
+        List<List<?>> results = executeSql(explainSQL + "id=1 and name=" + nameVal);
 
         assertUsingSecondaryIndex(results, expResCnt, assertLbl);
 
         results = executeSql(explainSQL + "id=1 and name=" + nameVal + " and age=0");
 
         assertUsingSecondaryIndex(results, expResCnt, assertLbl);
+    }
+
+    /**
+     * Check using secondary indexes with two-step plan.
+     *
+     * @param tblName name of table which should be checked to using secondary indexes.
+     * @param assertLbl Assert label.
+     */
+    private void checkUsingIndexesWithTwoStepPlan(String tblName, String assertLbl) {
+        String explainSQL = "explain SELECT * FROM " + tblName + " WHERE ";
+
+        List<List<?>> results = executeSql(explainSQL + "id=1");
+
+        // Always used merge_scan for non key (or affinity) fields condition.
+        assertUsingSecondaryIndex(results, 2, assertLbl);
     }
 
     /**
