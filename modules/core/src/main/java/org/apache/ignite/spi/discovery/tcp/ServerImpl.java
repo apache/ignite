@@ -85,6 +85,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMe
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.processors.tracing.Span;
@@ -330,6 +331,13 @@ class ServerImpl extends TcpDiscoveryImpl {
      */
     ServerImpl(TcpDiscoverySpi adapter) {
         super(adapter);
+
+        if (spi.sslEnable) {
+            sslRejectedConnectionsMetric = new LongAdderMetric(
+                MetricUtils.metricName(DISCO_METRICS, SSL_REJECTED_CONNECTIONS_CNT_METRIC_NAME),
+                "The number of rejected TCP discovery connections due to SSL errors."
+            );
+        }
     }
 
     /** {@inheritDoc} */
@@ -495,18 +503,12 @@ class ServerImpl extends TcpDiscoveryImpl {
     @Override public void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
         spiCtx.registerPort(tcpSrvr.port, TCP);
 
-        MetricRegistry mreg = (MetricRegistry)spiCtx.getOrCreateMetricRegistry(DISCO_METRICS);
+        MetricRegistry discoReg = (MetricRegistry)spiCtx.getOrCreateMetricRegistry(DISCO_METRICS);
 
-        boolean sslEnabled = spi.sslEnable;
+        if (sslRejectedConnectionsMetric != null)
+            discoReg.register(sslRejectedConnectionsMetric);
 
-        mreg.booleanMetric(SSL_ENABLED_METRIC_NAME, "Whether SSL is enabled.").value(sslEnabled);
-
-        if (sslEnabled) {
-            sslRejectedConnectionsMetric = mreg.longAdderMetric(
-                SSL_REJECTED_CONNECTIONS_CNT_METRIC_NAME,
-                "The number of rejected TCP discovery connections due to SSL errors."
-            );
-        }
+        discoReg.booleanMetric(SSL_ENABLED_METRIC_NAME, "Whether SSL is enabled.").value(spi.sslEnable);
     }
 
     /** {@inheritDoc} */
