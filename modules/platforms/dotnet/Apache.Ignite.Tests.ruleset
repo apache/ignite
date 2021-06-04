@@ -33,6 +33,15 @@
     <!-- Do not declare visible instance fields. -->
     <Rule Id="CA1051" Action="None" />
 
+    <!-- Non-constant fields should not be visible. -->
+    <Rule Id="CA2211" Action="None" />
+
+    <!-- Exceptions should have constructors. -->
+    <Rule Id="CA1032" Action="None" />
+
+    <!-- Exceptions should be serializable. -->
+    <Rule Id="CA2237" Action="None" />
+
     <!-- Unused field. -->
     <Rule Id="CA1823" Action="None" />
 
