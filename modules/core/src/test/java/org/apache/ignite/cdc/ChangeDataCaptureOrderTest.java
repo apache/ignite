@@ -66,6 +66,9 @@ public class ChangeDataCaptureOrderTest extends AbstractChangeDataCaptureTest {
     /** */
     public static final byte OTHER_DC_ID = 2;
 
+    /** */
+    public static final int KEY_TO_UPD = 42;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -130,14 +133,13 @@ public class ChangeDataCaptureOrderTest extends AbstractChangeDataCaptureTest {
         ign.cluster().state(ACTIVE);
 
         AtomicLong updCntr = new AtomicLong(0);
-        int key = 42;
 
         ChangeDataCaptureConsumer cnsmr = new ChangeDataCaptureConsumer() {
             private long order = -1;
 
             @Override public boolean onEvents(Iterator<ChangeDataCaptureEvent> evts) {
                 evts.forEachRemaining(evt -> {
-                    assertEquals(key, evt.key());
+                    assertEquals(KEY_TO_UPD, evt.key());
 
                     assertTrue(evt.version().order() > order);
 
@@ -165,7 +167,7 @@ public class ChangeDataCaptureOrderTest extends AbstractChangeDataCaptureTest {
         IgniteInternalFuture<?> fut = runAsync(cdc);
 
         for (int i = 0; i < KEYS_CNT; i++)
-            cache.put(key, createUser(i));
+            cache.put(KEY_TO_UPD, createUser(i));
 
         assertTrue(waitForCondition(() -> updCntr.get() == KEYS_CNT, getTestTimeout()));
 
