@@ -27,7 +27,7 @@ import static org.junit.Assert.assertEquals;
 public class IgniteAbbrevationRuleTest {
     /** */
     @Test
-    public void testVarToWords() throws Exception {
+    public void testVarToWords() {
         assertListEquals(
             Arrays.asList("XXX", "YYY", "ZZZ"),
             IgniteAbbrevationsRule.words("XXX_YYY_ZZZ")
@@ -49,12 +49,12 @@ public class IgniteAbbrevationRuleTest {
         );
 
         assertListEquals(
-            Arrays.asList("my", "name"),
+            Arrays.asList("my", "Name"),
             IgniteAbbrevationsRule.words("myName")
         );
 
         assertListEquals(
-            Arrays.asList("my", "name", "and", "other"),
+            Arrays.asList("my", "Name", "And", "Other"),
             IgniteAbbrevationsRule.words("myNameAndOther")
         );
 
@@ -69,11 +69,12 @@ public class IgniteAbbrevationRuleTest {
         );
 
         assertListEquals(
-            Arrays.asList("my", "URL", "and", "other"),
-            IgniteAbbrevationsRule.words("myURLandOther")
+            Arrays.asList("a", "Name"),
+            IgniteAbbrevationsRule.words("aName")
         );
     }
 
+    /** */
     public void assertListEquals(List<String> expected, List<String> actual) {
         if (expected == actual)
             return;

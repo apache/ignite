@@ -35,7 +35,7 @@ import java.util.List;
  */
 final class X {
     /** An empty immutable {@code Object} array. */
-    public static final Object[] EMPTY_OBJECT_ARRAY = new Object[0];
+    public static final Object[] EMPTY_OBJ_ARR = new Object[0];
 
     /** The names of methods commonly used to access a wrapped exception. */
     private static final String[] CAUSE_MTD_NAMES = new String[] {
@@ -109,7 +109,7 @@ final class X {
 
         if (mtd != null && Throwable.class.isAssignableFrom(mtd.getReturnType())) {
             try {
-                return (Throwable)mtd.invoke(throwable, EMPTY_OBJECT_ARRAY);
+                return (Throwable)mtd.invoke(throwable, EMPTY_OBJ_ARR);
             }
             catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException ignored) {
                 // exception ignored

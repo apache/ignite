@@ -44,7 +44,7 @@ public class ClassesGenerator {
     private static final String META_INF = "META-INF/";
 
     /** */
-    private static final String DEFAULT_FILE_PATH = META_INF + "classnames.properties";
+    private static final String DFLT_FILE_PATH = META_INF + "classnames.properties";
 
     /** */
     private static final String[] EXCLUDED_PACKAGES = {
@@ -141,7 +141,7 @@ public class ClassesGenerator {
         }
 
         PrintStream out = new PrintStream(new File(basePath,
-            (fileName == null || fileName.isEmpty()) ? DEFAULT_FILE_PATH : META_INF + fileName));
+            (fileName == null || fileName.isEmpty()) ? DFLT_FILE_PATH : META_INF + fileName));
 
         out.println(hdr);
         out.println();

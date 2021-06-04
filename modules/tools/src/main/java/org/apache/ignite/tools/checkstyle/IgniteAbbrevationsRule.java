@@ -49,9 +49,9 @@ public class IgniteAbbrevationsRule extends AbstractCheck {
 
     /**
      * Key is wrong term that should be replaced with abbrevations.
-     * Value is array of possible substitute to generate self-explained error message.
+     * Value possible substitions to generate self-explained error message.
      */
-    private final Map<String, String[]> abbrevs = new HashMap<>();
+    private final Map<String, String> abbrevs = new HashMap<>();
 
     /** */
     public IgniteAbbrevationsRule() {
@@ -76,7 +76,7 @@ public class IgniteAbbrevationsRule extends AbstractCheck {
 
                 assert substitutions.length > 0;
 
-                abbrevs.put(term, substitutions);
+                abbrevs.put(term, String.join(", ", substitutions));
             }
         }
         catch (IOException e) {
@@ -94,19 +94,18 @@ public class IgniteAbbrevationsRule extends AbstractCheck {
 
         for (String word : words) {
             if (abbrevs.containsKey(word.toLowerCase())) {
-                String correct = String.join(", ", abbrevs.get(word.toLowerCase()));
-
                 log(
                     token.getLineNo(),
                     "Abbrevation should be used for {0}! Please, use {1}, instead of {2}",
                     varName,
-                    correct,
+                    abbrevs.get(word.toLowerCase()),
                     word
                 );
             }
         }
     }
 
+    /** */
     public static List<String> words(String varName) {
         if (varName.indexOf('_') != -1)
             return Arrays.asList(varName.split("_"));
@@ -114,14 +113,24 @@ public class IgniteAbbrevationsRule extends AbstractCheck {
         List<String> words = new ArrayList<>();
 
         int start = 0;
-        int finish = 0;
+        boolean allUpper = Character.isUpperCase(varName.charAt(0));
 
-        for (int i = 0; i < varName.length(); i++) {
-            if (Character.isUpperCase(varName.charAt(i)))
-                finish = i;
+        for (int i = 1; i < varName.length(); i++) {
+            if (Character.isUpperCase(varName.charAt(i))) {
+                if (allUpper)
+                    continue;
+
+                words.add(varName.substring(start, i));
+                start = i;
+                allUpper = true;
+            }
+            else
+                allUpper = false;
         }
 
-        return null;
+        words.add(varName.substring(start));
+
+        return words;
     }
 
     /** {@inheritDoc} */
