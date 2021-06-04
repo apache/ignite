@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
@@ -38,7 +39,7 @@ import org.apache.ignite.configuration.storage.ConfigurationType;
 import org.apache.ignite.configuration.storage.Data;
 import org.apache.ignite.configuration.storage.StorageException;
 import org.apache.ignite.configuration.tree.ConfigurationSource;
-import org.apache.ignite.configuration.tree.ConfigurationVisitor;
+import org.apache.ignite.configuration.tree.ConstructableTreeNode;
 import org.apache.ignite.configuration.tree.InnerNode;
 import org.apache.ignite.configuration.validation.ConfigurationValidationException;
 import org.apache.ignite.configuration.validation.ValidationIssue;
@@ -51,6 +52,7 @@ import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.configuration.internal.util.ConfigurationUtil.addDefaults;
 import static org.apache.ignite.configuration.internal.util.ConfigurationUtil.cleanupMatchingValues;
 import static org.apache.ignite.configuration.internal.util.ConfigurationUtil.fillFromPrefixMap;
+import static org.apache.ignite.configuration.internal.util.ConfigurationUtil.nodePatcher;
 import static org.apache.ignite.configuration.internal.util.ConfigurationUtil.nodeToFlatMap;
 import static org.apache.ignite.configuration.internal.util.ConfigurationUtil.patch;
 import static org.apache.ignite.configuration.internal.util.ConfigurationUtil.toPrefixMap;
@@ -222,8 +224,11 @@ public abstract class ConfigurationChanger {
     /**
      * Initializes the configuration storage - reads data and sets default values for missing configuration properties.
      * @param storageType Storage type.
+     * @throws ConfigurationValidationException If configuration validation failed.
+     * @throws ConfigurationChangeException If configuration framework failed to add default values and save them to
+     *      storage.
      */
-    public void initialize(ConfigurationType storageType) {
+    public void initialize(ConfigurationType storageType) throws ConfigurationValidationException, ConfigurationChangeException {
         ConfigurationStorage configurationStorage = storageInstances.get(storageType);
 
         assert configurationStorage != null : storageType;
@@ -247,7 +252,7 @@ public abstract class ConfigurationChanger {
             throw new ConfigurationValidationException(validationIssues);
 
         try {
-            changeInternally(defaultsNode, storageInstances.get(storageType)).get();
+            changeInternally(nodePatcher(defaultsNode), storageInstances.get(storageType)).get();
         }
         catch (InterruptedException | ExecutionException e) {
             throw new ConfigurationChangeException(
@@ -267,19 +272,24 @@ public abstract class ConfigurationChanger {
         ConfigurationSource source,
         @Nullable ConfigurationStorage storage
     ) {
-        SuperRoot superRoot = new SuperRoot(rootCreator());
-
-        source.descend(superRoot);
-
         Set<ConfigurationType> storagesTypes = new HashSet<>();
 
-        superRoot.traverseChildren(new ConfigurationVisitor<Object>() {
-            @Override public Object visitInnerNode(String key, InnerNode node) {
+        ConstructableTreeNode collector = new ConstructableTreeNode() {
+            @Override public void construct(String key, ConfigurationSource src) throws NoSuchElementException {
                 RootKey<?, ?> rootKey = rootKeys.get(key);
 
-                return storagesTypes.add(rootKey.type());
+                if (rootKey == null)
+                    throw new NoSuchElementException(key);
+
+                storagesTypes.add(rootKey.type());
             }
-        });
+
+            @Override public ConstructableTreeNode copy() {
+                throw new UnsupportedOperationException("copy");
+            }
+        };
+
+        source.descend(collector);
 
         assert !storagesTypes.isEmpty();
 
@@ -299,7 +309,7 @@ public abstract class ConfigurationChanger {
             );
         }
 
-        return changeInternally(superRoot, actualStorage);
+        return changeInternally(source, actualStorage);
     }
 
     /** Stop component. */
@@ -318,30 +328,6 @@ public abstract class ConfigurationChanger {
     }
 
     /**
-     * Change configuration.
-     * @param changes Map of changes by root key.
-     * @return Future that is completed on change completion.
-     */
-    public CompletableFuture<Void> change(Map<RootKey<?, ?>, InnerNode> changes) {
-        if (changes.isEmpty())
-            return completedFuture(null);
-
-        Set<ConfigurationType> storagesTypes = changes.keySet().stream()
-            .map(RootKey::type)
-            .collect(Collectors.toSet());
-
-        assert !storagesTypes.isEmpty();
-
-        if (storagesTypes.size() != 1) {
-            return CompletableFuture.failedFuture(
-                new ConfigurationChangeException("Cannot change configurations belonging to different storages.")
-            );
-        }
-
-        return changeInternally(new SuperRoot(rootCreator(), changes), storageInstances.get(storagesTypes.iterator().next()));
-    }
-
-    /**
      * @return Super root chat contains roots belonging to all storages.
      */
     public SuperRoot mergedSuperRoot() {
@@ -350,12 +336,12 @@ public abstract class ConfigurationChanger {
 
     /**
      * Internal configuration change method that completes provided future.
-     * @param changes Map of changes by root key.
+     * @param src Configuration source.
      * @param storage Storage instance.
      * @return fut Future that will be completed after changes are written to the storage.
      */
     private CompletableFuture<Void> changeInternally(
-        SuperRoot changes,
+        ConfigurationSource src,
         ConfigurationStorage storage
     ) {
         StorageRoots storageRoots = storagesRootsMap.get(storage.type());
@@ -363,6 +349,12 @@ public abstract class ConfigurationChanger {
         return CompletableFuture
             .supplyAsync(() -> {
                 SuperRoot curRoots = storageRoots.roots;
+
+                SuperRoot changes = curRoots.copy();
+
+                src.reset();
+
+                src.descend(changes);
 
                 // It is necessary to reinitialize default values every time.
                 // Possible use case that explicitly requires it: creation of the same named list entry with slightly
@@ -375,7 +367,7 @@ public abstract class ConfigurationChanger {
 
                 SuperRoot patchedChanges = patch(changes, defaultsNode);
 
-                cleanupMatchingValues(curRoots, changes);
+                cleanupMatchingValues(curRoots, patchedChanges);
 
                 Map<String, Serializable> allChanges = nodeToFlatMap(curRoots, patchedChanges);
 
@@ -384,7 +376,7 @@ public abstract class ConfigurationChanger {
                     return null;
 
                 List<ValidationIssue> validationIssues = ValidationUtil.validate(
-                    storageRoots.roots,
+                    curRoots,
                     patch(patchedSuperRoot, defaultsNode),
                     this::getRootNode,
                     cachedAnnotations,
@@ -398,7 +390,7 @@ public abstract class ConfigurationChanger {
             }, pool)
             .thenCompose(allChanges -> {
                 if (allChanges == null)
-                    return CompletableFuture.completedFuture(true);
+                    return completedFuture(true);
                 return storage.write(allChanges, storageRoots.version)
                     .exceptionally(throwable -> {
                         throw new ConfigurationChangeException("Failed to change configuration", throwable);
@@ -417,7 +409,7 @@ public abstract class ConfigurationChanger {
                         return CompletableFuture.failedFuture(e);
                     }
 
-                    return changeInternally(changes, storage);
+                    return changeInternally(src, storage);
                 }
             });
     }

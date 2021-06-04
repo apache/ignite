@@ -269,14 +269,12 @@ public class ConfigurationUtilTest {
     public void nodeToFlatMap() {
         var parentNode = newParentInstance();
 
-        var parentSuperRoot = new SuperRoot(key -> null, Map.of(
-            ParentConfiguration.KEY,
-            parentNode
-        ));
-
         assertEquals(
             emptyMap(),
-            ConfigurationUtil.nodeToFlatMap(null, parentSuperRoot)
+            ConfigurationUtil.nodeToFlatMap(null, new SuperRoot(key -> null, Map.of(
+                ParentConfiguration.KEY,
+                parentNode
+            )))
         );
 
         // No defaults in this test so everything must be initialized explicitly.
@@ -290,12 +288,18 @@ public class ConfigurationUtilTest {
 
         assertEquals(
             singletonMap("root.elements.name.child.str", "foo"),
-            ConfigurationUtil.nodeToFlatMap(null, parentSuperRoot)
+            ConfigurationUtil.nodeToFlatMap(null, new SuperRoot(key -> null, Map.of(
+                ParentConfiguration.KEY,
+                parentNode
+            )))
         );
 
         assertEquals(
             emptyMap(),
-            ConfigurationUtil.nodeToFlatMap(parentSuperRoot, new SuperRoot(key -> null, singletonMap(
+            ConfigurationUtil.nodeToFlatMap(new SuperRoot(key -> null, Map.of(
+                ParentConfiguration.KEY,
+                parentNode
+            )), new SuperRoot(key -> null, singletonMap(
                 ParentConfiguration.KEY,
                 (InnerNode)newParentInstance().changeElements(elements ->
                     elements.delete("void")
@@ -305,7 +309,10 @@ public class ConfigurationUtilTest {
 
         assertEquals(
             singletonMap("root.elements.name.child.str", null),
-            ConfigurationUtil.nodeToFlatMap(parentSuperRoot, new SuperRoot(key -> null, singletonMap(
+            ConfigurationUtil.nodeToFlatMap(new SuperRoot(key -> null, Map.of(
+                ParentConfiguration.KEY,
+                parentNode
+            )), new SuperRoot(key -> null, singletonMap(
                 ParentConfiguration.KEY,
                 (InnerNode)newParentInstance().changeElements(elements ->
                     elements.delete("name")

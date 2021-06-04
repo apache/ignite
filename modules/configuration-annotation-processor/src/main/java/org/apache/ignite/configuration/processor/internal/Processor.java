@@ -307,6 +307,7 @@ public class Processor extends AbstractProcessor {
             .addModifiers(PUBLIC);
 
         TypeSpec.Builder changeClsBuilder = TypeSpec.interfaceBuilder(changeClsName)
+            .addSuperinterface(viewClsName)
             .addModifiers(PUBLIC);
 
         ClassName consumerClsName = ClassName.get(Consumer.class);

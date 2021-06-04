@@ -31,7 +31,6 @@ import org.apache.ignite.configuration.ConfigurationTree;
 import org.apache.ignite.configuration.RootKey;
 import org.apache.ignite.configuration.tree.ConfigurationSource;
 import org.apache.ignite.configuration.tree.ConstructableTreeNode;
-import org.apache.ignite.configuration.tree.InnerNode;
 
 /**
  * This class represents configuration root or node.
@@ -71,30 +70,25 @@ public abstract class DynamicConfiguration<VIEW, CHANGE> extends ConfigurationNo
     @Override public final Future<Void> change(Consumer<CHANGE> change) {
         Objects.requireNonNull(change, "Configuration consumer cannot be null.");
 
-        InnerNode rootNodeChange = changer.createRootNode(rootKey);
+        assert keys instanceof RandomAccess;
 
-        if (keys.size() == 1) {
-            // Current node is a root.
-            change.accept((CHANGE)rootNodeChange);
-        }
-        else {
-            assert keys instanceof RandomAccess;
+        ConfigurationSource src = new ConfigurationSource() {
+            private int level = 0;
 
-            // Transform inner node closure into update tree.
-            rootNodeChange.construct(keys.get(1), new ConfigurationSource() {
-                private int level = 1;
+            @Override public void descend(ConstructableTreeNode node) {
+                if (level == keys.size())
+                    change.accept((CHANGE)node);
+                else
+                    node.construct(keys.get(level++), this);
+            }
 
-                @Override public void descend(ConstructableTreeNode node) {
-                    if (++level == keys.size())
-                        change.accept((CHANGE)node);
-                    else
-                        node.construct(keys.get(level), this);
-                }
-            });
-        }
+            @Override public void reset() {
+                level = 0;
+            }
+        };
 
         // Use resulting tree as update request for the storage.
-        return changer.change(Map.of(rootKey, rootNodeChange));
+        return changer.change(src, null);
     }
 
     /** {@inheritDoc} */

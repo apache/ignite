@@ -19,7 +19,6 @@ package org.apache.ignite.configuration.internal;
 
 import java.io.Serializable;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.RandomAccess;
 import java.util.concurrent.Future;
@@ -28,8 +27,6 @@ import org.apache.ignite.configuration.ConfigurationValue;
 import org.apache.ignite.configuration.RootKey;
 import org.apache.ignite.configuration.tree.ConfigurationSource;
 import org.apache.ignite.configuration.tree.ConstructableTreeNode;
-import org.apache.ignite.configuration.tree.InnerNode;
-import org.apache.ignite.configuration.validation.ConfigurationValidationException;
 
 /**
  * Holder for property value. Expected to be used with numbers, strings and other immutable objects, e.g. IP addresses.
@@ -57,35 +54,36 @@ public class DynamicProperty<T extends Serializable> extends ConfigurationNode<T
     }
 
     /** {@inheritDoc} */
-    @Override public Future<Void> update(T newValue) throws ConfigurationValidationException {
+    @Override public Future<Void> update(T newValue) {
         Objects.requireNonNull(newValue, "Configuration value cannot be null.");
-
-        InnerNode rootNodeChange = changer.createRootNode(rootKey);
 
         assert keys instanceof RandomAccess;
         assert !keys.isEmpty();
 
-        // Transform leaf value into update tree.
-        rootNodeChange.construct(keys.get(1), new ConfigurationSource() {
-            private int level = 1;
+        ConfigurationSource src = new ConfigurationSource() {
+            private int level = 0;
 
             @Override public void descend(ConstructableTreeNode node) {
-                assert level < keys.size() - 1;
+                assert level < keys.size();
 
-                node.construct(keys.get(++level), this);
+                node.construct(keys.get(level++), this);
             }
 
             @Override public <T> T unwrap(Class<T> clazz) {
-                assert level == keys.size() - 1;
+                assert level == keys.size();
 
                 assert clazz.isInstance(newValue);
 
                 return clazz.cast(newValue);
             }
-        });
+
+            @Override public void reset() {
+                level = 0;
+            }
+        };
 
         // Use resulting tree as update request for the storage.
-        return changer.change(Map.of(rootKey, rootNodeChange));
+        return changer.change(src, null);
     }
 
     /** {@inheritDoc} */

@@ -555,14 +555,8 @@ public class ConfigurationAsmGenerator {
             changeBody.append(changeMtd.getThis().setField(fieldDef, newValue));
         }
         else {
-            // @ConfigValue fields might be null and have to be initialized before passing into closure.
-            if (isConfigValue(schemaField)) {
-                // if (this.field == null) this.field = new ValueNode();
-                changeBody.append(new IfStatement()
-                    .condition(isNull(changeMtd.getThis().getField(fieldDef)))
-                    .ifTrue(changeMtd.getThis().setField(fieldDef, newInstance(fieldDef.getType())))
-                );
-            }
+            // this.field = (this.field == null) ? new ValueNode() : (ValueNode)this.field.copy();
+            changeBody.append(copyNodeField(changeMtd, fieldDef));
 
             // change.accept(this.field);
             changeBody.append(changeMtd.getScope().getVariable("change").invoke(
@@ -720,11 +714,7 @@ public class ConfigurationAsmGenerator {
                     .condition(isNull(srcVar))
                     .ifTrue(constructMtd.getThis().setField(fieldDef, constantNull(fieldDef.getType())))
                     .ifFalse(new BytecodeBlock()
-                        .append(constructMtd.getThis().setField(fieldDef, inlineIf(
-                            isNull(constructMtd.getThis().getField(fieldDef)),
-                            newInstance(fieldDef.getType()),
-                            constructMtd.getThis().getField(fieldDef).invoke(COPY).cast(fieldDef.getType())
-                        )))
+                        .append(copyNodeField(constructMtd, fieldDef))
                         .append(srcVar.invoke(DESCEND, constructMtd.getThis().getField(fieldDef)))
                     )
                 );
@@ -829,6 +819,20 @@ public class ConfigurationAsmGenerator {
         );
 
         constructDfltMtd.getBody().append(switchBuilder.build()).ret();
+    }
+
+    /**
+     * Copies field into itself or instantiates it if the field is null.
+     * @param mtd Method definition.
+     * @param fieldDef Field definition.
+     * @return Bytecode expression.
+     */
+    @NotNull private BytecodeExpression copyNodeField(MethodDefinition mtd, FieldDefinition fieldDef) {
+        return mtd.getThis().setField(fieldDef, inlineIf(
+            isNull(mtd.getThis().getField(fieldDef)),
+            newInstance(fieldDef.getType()),
+            mtd.getThis().getField(fieldDef).invoke(COPY).cast(fieldDef.getType())
+        ));
     }
 
     /**

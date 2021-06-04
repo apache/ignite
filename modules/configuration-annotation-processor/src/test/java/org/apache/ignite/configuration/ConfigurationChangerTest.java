@@ -33,6 +33,7 @@ import org.apache.ignite.configuration.storage.ConfigurationType;
 import org.apache.ignite.configuration.storage.Data;
 import org.apache.ignite.configuration.storage.TestConfigurationStorage;
 import org.apache.ignite.configuration.tree.InnerNode;
+import org.apache.ignite.configuration.tree.TraversableTreeNode;
 import org.apache.ignite.configuration.validation.Immutable;
 import org.apache.ignite.configuration.validation.ValidationContext;
 import org.apache.ignite.configuration.validation.ValidationIssue;
@@ -42,10 +43,10 @@ import org.junit.jupiter.api.Test;
 
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
-import static java.util.Collections.singletonMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.configuration.AConfiguration.KEY;
+import static org.apache.ignite.configuration.internal.util.ConfigurationUtil.superRootPatcher;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -116,7 +117,7 @@ public class ConfigurationChangerTest {
             .changeChild(change -> change.changeIntCfg(1).changeStrCfg("1"))
             .changeElements(change -> change.create("a", element -> element.changeStrCfg("1")));
 
-        changer.change(singletonMap(KEY, (InnerNode)data)).get(1, SECONDS);
+        changer.change(superRootPatcher(KEY, (TraversableTreeNode)data), null).get(1, SECONDS);
 
         AView newRoot = (AView)changer.getRootNode(KEY);
 
@@ -144,7 +145,7 @@ public class ConfigurationChangerTest {
             .changeChild(change -> change.changeIntCfg(1).changeStrCfg("1"))
             .changeElements(change -> change.create("a", element -> element.changeStrCfg("1")));
 
-        changer1.change(singletonMap(KEY, (InnerNode)data1)).get(1, SECONDS);
+        changer1.change(superRootPatcher(KEY, (TraversableTreeNode)data1), null).get(1, SECONDS);
 
         AChange data2 = ((AChange)changer2.createRootNode(KEY))
             .changeChild(change -> change.changeIntCfg(2).changeStrCfg("2"))
@@ -153,7 +154,7 @@ public class ConfigurationChangerTest {
                 .create("b", element -> element.changeStrCfg("2"))
             );
 
-        changer2.change(singletonMap(KEY, (InnerNode)data2)).get(1, SECONDS);
+        changer2.change(superRootPatcher(KEY, (TraversableTreeNode)data2), null).get(1, SECONDS);
 
         AView newRoot1 = (AView)changer1.getRootNode(KEY);
 
@@ -189,7 +190,7 @@ public class ConfigurationChangerTest {
             .changeChild(change -> change.changeIntCfg(1).changeStrCfg("1"))
             .changeElements(change -> change.create("a", element -> element.changeStrCfg("1")));
 
-        changer1.change(singletonMap(KEY, (InnerNode)data1)).get(1, SECONDS);
+        changer1.change(superRootPatcher(KEY, (TraversableTreeNode)data1), null).get(1, SECONDS);
 
         changer2.addValidator(MaybeInvalid.class, new Validator<MaybeInvalid, Object>() {
             @Override public void validate(MaybeInvalid annotation, ValidationContext<Object> ctx) {
@@ -204,7 +205,7 @@ public class ConfigurationChangerTest {
                 .create("b", element -> element.changeStrCfg("2"))
             );
 
-        assertThrows(ExecutionException.class, () -> changer2.change(singletonMap(KEY, (InnerNode)data2)).get(1, SECONDS));
+        assertThrows(ExecutionException.class, () -> changer2.change(superRootPatcher(KEY, (TraversableTreeNode)data2), null).get(1, SECONDS));
 
         AView newRoot = (AView)changer2.getRootNode(KEY);
 
@@ -235,7 +236,7 @@ public class ConfigurationChangerTest {
 
         AChange data = ((AChange)changer.createRootNode(KEY)).changeChild(child -> child.changeIntCfg(1));
 
-        assertThrows(ExecutionException.class, () -> changer.change(singletonMap(KEY, (InnerNode)data)).get(1, SECONDS));
+        assertThrows(ExecutionException.class, () -> changer.change(superRootPatcher(KEY, (TraversableTreeNode)data), null).get(1, SECONDS));
 
         storage.fail(false);
 
@@ -298,7 +299,7 @@ public class ConfigurationChangerTest {
             childs.create("name", child -> {})
         );
 
-        changer.change(Map.of(DefaultsConfiguration.KEY, (InnerNode)change)).get(1, SECONDS);
+        changer.change(superRootPatcher(DefaultsConfiguration.KEY, (TraversableTreeNode)change), null).get(1, SECONDS);
 
         root = (DefaultsView)changer.getRootNode(DefaultsConfiguration.KEY);
 

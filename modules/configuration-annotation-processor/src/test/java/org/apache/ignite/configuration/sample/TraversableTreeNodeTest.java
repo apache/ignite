@@ -33,6 +33,7 @@ import org.apache.ignite.configuration.tree.NamedListNode;
 import org.apache.ignite.configuration.tree.NamedListView;
 import org.apache.ignite.configuration.tree.TraversableTreeNode;
 import org.apache.ignite.configuration.validation.Immutable;
+import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -43,8 +44,8 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /** */
@@ -162,8 +163,7 @@ public class TraversableTreeNodeTest {
 
         parentNode.changeChild(child -> child.changeStrCfg("value"));
 
-        // Assert that change method applied its closure to the same object instead of creating a new one.
-        assertSame(childNode, parentNode.child());
+        assertNotSame(childNode, parentNode.child());
     }
 
     /**
@@ -180,8 +180,7 @@ public class TraversableTreeNodeTest {
 
         parentNode.changeElements(elements -> elements.update("key", element -> {}));
 
-        // Assert that change method applied its closure to the same object instead of creating a new one.
-        assertSame(elementsNode, parentNode.elements());
+        assertNotSame(elementsNode, parentNode.elements());
     }
 
     /**
@@ -205,13 +204,18 @@ public class TraversableTreeNodeTest {
 
         ((NamedListChange<NamedElementChange>)elementsNode).update("keyPut", element -> element.changeStrCfg("val"));
 
-        // Assert that consecutive put methods don't create new object every time.
-        assertSame(elementNode, elementsNode.get("keyPut"));
+        // Assert that consecutive put methods create new object every time.
+        assertNotSame(elementNode, elementsNode.get("keyPut"));
+
+        elementNode = elementsNode.get("keyPut");
 
         assertEquals("val", elementNode.strCfg());
 
-        // Assert that once you put something into list, removing it makes no sense and hence prohibited.
-        assertThrows(IllegalStateException.class, () -> ((NamedListChange<?>)elementsNode).delete("keyPut"));
+        ((NamedListChange<?>)elementsNode).delete("keyPut");
+
+        assertThat(elementsNode.namedListKeys(), CoreMatchers.hasItem("keyPut"));
+
+        assertNull(elementsNode.get("keyPut"));
 
         ((NamedListChange<?>)elementsNode).delete("keyRemove");
 

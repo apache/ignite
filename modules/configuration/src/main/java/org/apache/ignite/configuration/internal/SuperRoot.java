@@ -17,6 +17,7 @@
 
 package org.apache.ignite.configuration.internal;
 
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -58,7 +59,7 @@ public final class SuperRoot extends InnerNode {
         this.nodeCreator = nodeCreator;
 
         for (Map.Entry<RootKey<?, ?>, InnerNode> entry : roots.entrySet())
-            this.roots.put(entry.getKey().key(), entry.getValue());
+            this.roots.put(entry.getKey().key(), entry.getValue().copy());
     }
 
     /**
@@ -94,8 +95,8 @@ public final class SuperRoot extends InnerNode {
 
     /** {@inheritDoc} */
     @Override public <T> void traverseChildren(ConfigurationVisitor<T> visitor) {
-        for (Map.Entry<String, InnerNode> entry : roots.entrySet())
-            visitor.visitInnerNode(entry.getKey(), entry.getValue());
+        for (String key : new LinkedHashSet<>(roots.keySet()))
+            visitor.visitInnerNode(key, roots.get(key));
     }
 
     /** {@inheritDoc} */
@@ -110,7 +111,11 @@ public final class SuperRoot extends InnerNode {
 
     /** {@inheritDoc} */
     @Override public void construct(String key, ConfigurationSource src) throws NoSuchElementException {
-        assert src != null;
+        if (src == null) {
+            roots.remove(key);
+
+            return;
+        }
 
         InnerNode root = roots.get(key);
 

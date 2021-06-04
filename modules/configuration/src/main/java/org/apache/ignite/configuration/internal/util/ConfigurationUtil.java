@@ -21,12 +21,14 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.RandomAccess;
 import java.util.stream.Collectors;
+import org.apache.ignite.configuration.RootKey;
 import org.apache.ignite.configuration.internal.SuperRoot;
 import org.apache.ignite.configuration.tree.ConfigurationSource;
 import org.apache.ignite.configuration.tree.ConfigurationVisitor;
@@ -391,6 +393,43 @@ public class ConfigurationUtil {
     }
 
     /**
+     * Convert tree node into patching configuration source.
+     *
+     * @param changes Tree node that contains prepared changes.
+     * @return Configuration source.
+     */
+    public static ConfigurationSource nodePatcher(TraversableTreeNode changes) {
+        var scrVisitor = new ConfigurationVisitor<ConfigurationSource>() {
+            @Override public ConfigurationSource visitInnerNode(String key, InnerNode node) {
+                return new PatchInnerConfigurationSource(node);
+            }
+
+            @Override public <N extends InnerNode> ConfigurationSource visitNamedListNode(String key, NamedListNode<N> node) {
+                return new PatchNamedListConfigurationSource(node);
+            }
+        };
+
+        return changes.accept(null, scrVisitor);
+    }
+
+    /**
+     * Convert root node into patching configuration source for the super root.
+     *
+     * @param rootKey Root key.
+     * @param changes Root node.
+     * @return Configuration source.
+     */
+    public static ConfigurationSource superRootPatcher(RootKey rootKey, TraversableTreeNode changes) {
+        ConfigurationSource rootSrc = nodePatcher(changes);
+
+        return new ConfigurationSource() {
+            @Override public void descend(ConstructableTreeNode node) {
+                node.construct(rootKey.key(), rootSrc);
+            }
+        };
+    }
+
+    /**
      * Apply changes on top of existing node. Creates completely new object while reusing parts of the original tree
      * that weren't modified.
      *
@@ -402,17 +441,7 @@ public class ConfigurationUtil {
     public static <C extends ConstructableTreeNode> C patch(C root, TraversableTreeNode changes) {
         assert root.getClass() == changes.getClass(); // Yes.
 
-        var scrVisitor = new ConfigurationVisitor<ConfigurationSource>() {
-            @Override public ConfigurationSource visitInnerNode(String key, InnerNode node) {
-                return new PatchInnerConfigurationSource(node);
-            }
-
-            @Override public <N extends InnerNode> ConfigurationSource visitNamedListNode(String key, NamedListNode<N> node) {
-                return new PatchNamedListConfigurationSource(node);
-            }
-        };
-
-        ConfigurationSource src = changes.accept(null, scrVisitor);
+        ConfigurationSource src = nodePatcher(changes);
 
         assert src != null;
 
@@ -534,7 +563,12 @@ public class ConfigurationUtil {
 
             /** {@inheritDoc} */
             @Override public Void visitInnerNode(String key, InnerNode newInnerNode) {
-                cleanupMatchingValues(curNode.traverseChild(key, innerNodeVisitor()), newInnerNode);
+                InnerNode oldInnerNode = curNode.traverseChild(key, innerNodeVisitor());
+
+                if (oldInnerNode == newInnerNode)
+                    newNode.construct(key, null);
+                else
+                    cleanupMatchingValues(oldInnerNode, newInnerNode);
 
                 return null;
             }
@@ -543,8 +577,21 @@ public class ConfigurationUtil {
             @Override public <N extends InnerNode> Void visitNamedListNode(String key, NamedListNode<N> newNamedList) {
                 NamedListNode<?> curNamedList = curNode.traverseChild(key, namedListNodeVisitor());
 
-                for (String name : newNamedList.namedListKeys())
-                    cleanupMatchingValues(curNamedList.get(name), newNamedList.get(name));
+                if (curNamedList == newNamedList) {
+                    newNode.construct(key, null);
+
+                    return null;
+                }
+
+                for (String name : new LinkedHashSet<>(newNamedList.namedListKeys())) {
+                    InnerNode oldElement = curNamedList.get(name);
+                    N newElement = newNamedList.get(name);
+
+                    if (oldElement == newElement)
+                        newNamedList.forceDelete(name);
+                    else
+                        cleanupMatchingValues(oldElement, newElement);
+                }
 
                 return null;
             }

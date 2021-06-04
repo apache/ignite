@@ -39,4 +39,10 @@ public interface ConfigurationSource {
      */
     default void descend(ConstructableTreeNode node) {
     }
+
+    /**
+     * Reset internal state, preparing this configuration source for reuse.
+     */
+    default void reset() {
+    }
 }

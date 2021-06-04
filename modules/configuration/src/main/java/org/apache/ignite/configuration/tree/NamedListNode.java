@@ -84,6 +84,8 @@ public final class NamedListNode<N extends InnerNode> implements NamedListView<N
 
         if (val == null)
             map.put(key, val = valSupplier.get());
+        else
+            map.put(key, val = (N)val.copy());
 
         valConsumer.accept(val);
 
@@ -92,9 +94,6 @@ public final class NamedListNode<N extends InnerNode> implements NamedListView<N
 
     /** {@inheritDoc} */
     @Override public NamedListChange<N> delete(String key) {
-        if (map.containsKey(key) && map.get(key) != null)
-            throw new IllegalStateException("You can't add entity that has just been modified [key=" + key + ']');
-
         map.put(key, null);
 
         return this;

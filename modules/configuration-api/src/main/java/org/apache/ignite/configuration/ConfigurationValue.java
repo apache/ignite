@@ -33,5 +33,5 @@ public interface ConfigurationValue<VIEW> extends ConfigurationProperty<VIEW, VI
      * @return Future that signifies end of the update operation. Can also be completed with
      *      {@link ConfigurationValidationException} and {@link ConfigurationChangeException}.
      */
-    Future<Void> update(VIEW change) throws ConfigurationValidationException;
+    Future<Void> update(VIEW change);
 }
