@@ -41,24 +41,24 @@ namespace Apache.Ignite.Core.Impl
         {
             var escapedArgs = args.Replace("\"", "\\\"");
 
-            var process = new Process
+            var processStartInfo = new ProcessStartInfo
             {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = file,
-                    Arguments = string.Format("-c \"{0}\"", escapedArgs),
-                    RedirectStandardOutput = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
+                FileName = file,
+                Arguments = string.Format("-c \"{0}\"", escapedArgs),
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
             };
 
-            process.Start();
+            using (var process = new Process {StartInfo = processStartInfo})
+            {
+                process.Start();
 
-            var res = process.StandardOutput.ReadToEnd();
-            process.WaitForExit();
+                var res = process.StandardOutput.ReadToEnd();
+                process.WaitForExit();
 
-            return res;
+                return res;
+            }
         }
 
     }
