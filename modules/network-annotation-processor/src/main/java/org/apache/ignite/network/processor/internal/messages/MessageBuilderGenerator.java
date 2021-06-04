@@ -36,9 +36,13 @@ public class MessageBuilderGenerator {
     /** */
     private final ProcessingEnvironment processingEnvironment;
 
+    /** Message group. */
     private final MessageGroupWrapper messageGroup;
 
-    /** */
+    /**
+     * @param processingEnvironment processing environment
+     * @param messageGroup message group
+     */
     public MessageBuilderGenerator(
         ProcessingEnvironment processingEnvironment, MessageGroupWrapper messageGroup
     ) {
@@ -48,6 +52,9 @@ public class MessageBuilderGenerator {
 
     /**
      * Generates a Builder interface for constructing the given Network Message.
+     *
+     * @param message network message
+     * @return {@code TypeSpec} of the generated Builder interface
      */
     public TypeSpec generateBuilderInterface(MessageClass message) {
         ClassName builderName = message.builderClassName();

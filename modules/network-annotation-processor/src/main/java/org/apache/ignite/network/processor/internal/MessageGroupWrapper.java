@@ -35,7 +35,7 @@ public class MessageGroupWrapper {
     private final MessageGroup annotation;
 
     /**
-     * @param messageGroup Element annotated with {@link MessageGroup}.
+     * @param messageGroup element annotated with {@link MessageGroup}
      */
     public MessageGroupWrapper(TypeElement messageGroup) {
         element = messageGroup;
@@ -46,33 +46,36 @@ public class MessageGroupWrapper {
             throw new ProcessingException("Group type must not be negative", null, element);
     }
 
+    /**
+     * @return element that this class wraps
+     */
     public TypeElement element() {
         return element;
     }
 
     /**
-     * Returns the package name of the annotated element.
+     * @return package name of the annotated element.
      */
     public String packageName() {
         return className.packageName();
     }
 
     /**
-     * Returns the {@link MessageGroup#groupName()} declared in the annotation.
+     * @return {@link MessageGroup#groupName()}
      */
     public String groupName() {
         return capitalize(annotation.groupName());
     }
 
     /**
-     * Returns the {@link MessageGroup#groupType()} declared in the annotation.
+     * @return {@link MessageGroup#groupType()}
      */
     public short groupType() {
         return annotation.groupType();
     }
 
     /**
-     * Returns the class name of the message factory that should be generated for the current module.
+     * @return class name of the message factory that should be generated for the current module.
      */
     public ClassName messageFactoryClassName() {
         return ClassName.get(packageName(), groupName() + "Factory");

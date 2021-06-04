@@ -41,9 +41,13 @@ public class MessageSerializerGenerator {
     /** */
     private final ProcessingEnvironment processingEnvironment;
 
+    /** Message group. */
     private final MessageGroupWrapper messageGroup;
 
-    /** */
+    /**
+     * @param processingEnvironment processing environment
+     * @param messageGroup message group
+     */
     public MessageSerializerGenerator(ProcessingEnvironment processingEnvironment, MessageGroupWrapper messageGroup) {
         this.processingEnvironment = processingEnvironment;
         this.messageGroup = messageGroup;
@@ -51,6 +55,9 @@ public class MessageSerializerGenerator {
 
     /**
      * Generates a {@link MessageSerializer} class for the given network message type.
+     *
+     * @param message network message
+     * @return {@code TypeSpec} of the generated serializer
      */
     public TypeSpec generateSerializer(MessageClass message) {
         processingEnvironment.getMessager()
@@ -80,7 +87,9 @@ public class MessageSerializerGenerator {
 
         method
             .beginControlFlow("if (!writer.isHeaderWritten())")
-            .beginControlFlow("if (!writer.writeHeader(message.groupType(), message.messageType(), (byte) $L))", getters.size())
+            .beginControlFlow(
+                "if (!writer.writeHeader(message.groupType(), message.messageType(), (byte) $L))", getters.size()
+            )
             .addStatement("return false")
             .endControlFlow()
             .addStatement("writer.onHeaderWritten()")

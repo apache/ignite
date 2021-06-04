@@ -41,7 +41,10 @@ public class SerializationFactoryGenerator {
     /** Message group. */
     private final MessageGroupWrapper messageGroup;
 
-    /** */
+    /**
+     * @param processingEnv processing environment
+     * @param messageGroup message group
+     */
     public SerializationFactoryGenerator(ProcessingEnvironment processingEnv, MessageGroupWrapper messageGroup) {
         this.processingEnv = processingEnv;
         this.messageGroup = messageGroup;
@@ -49,6 +52,11 @@ public class SerializationFactoryGenerator {
 
     /**
      * Generates a {@link MessageSerializationFactory} class for the given network message type.
+     *
+     * @param message network message
+     * @param serializer {@link MessageSerializer}, generated for the given {@code message}
+     * @param deserializer {@link MessageDeserializer}, generated for the given {@code message}
+     * @return {@code TypeSpec} of the generated {@code MessageSerializationFactory}
      */
     public TypeSpec generateFactory(MessageClass message, TypeSpec serializer, TypeSpec deserializer) {
         processingEnv.getMessager()

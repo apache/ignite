@@ -37,7 +37,9 @@ class MessageReaderMethodResolver {
     /** */
     private final MessageCollectionItemTypeConverter typeConverter;
 
-    /** */
+    /**
+     * @param processingEnvironment processing environment
+     */
     MessageReaderMethodResolver(ProcessingEnvironment processingEnvironment) {
         methodNameResolver = new BaseMethodNameResolver(processingEnvironment);
         typeConverter = new MessageCollectionItemTypeConverter(processingEnvironment);
@@ -45,6 +47,9 @@ class MessageReaderMethodResolver {
 
     /**
      * Resolves the "read" method by the type of the given message's builder method.
+     *
+     * @param getter getter method
+     * @return code for the method for reading the corresponding type of the getter
      */
     CodeBlock resolveReadMethod(ExecutableElement getter) {
         TypeMirror parameterType = getter.getReturnType();

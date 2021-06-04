@@ -33,13 +33,19 @@ public class TypeUtils {
     /** */
     private final ProcessingEnvironment processingEnvironment;
 
-    /** */
+    /**
+     * @param processingEnvironment processing environment
+     */
     public TypeUtils(ProcessingEnvironment processingEnvironment) {
         this.processingEnvironment = processingEnvironment;
     }
 
     /**
      * Returns {@code true} if the <i>erasure</i> of the given types are actually the same type.
+     *
+     * @param type1 first type (represented by a mirror)
+     * @param type2 second type (represented by a {@code Class})
+     * @return {@code true} if the erasure of both types represent the same type, {@code false} otherwise.
      */
     public boolean isSameType(TypeMirror type1, Class<?> type2) {
         TypeMirror type2Mirror = typeMirrorFromClass(type2);
@@ -50,6 +56,9 @@ public class TypeUtils {
     /**
      * Returns the primitive type represented by its boxed value or {@code null} if the given type is not a boxed
      * primitive type.
+     *
+     * @param type boxed wrapper of a primitive type
+     * @return corresponding primitive type
      */
     @Nullable
     public PrimitiveType unboxedType(TypeMirror type) {
@@ -64,6 +73,10 @@ public class TypeUtils {
     /**
      * Returns {@code true} if the given type element implements the given interface (represented by its {@link Class})
      * either directly or indirectly.
+     *
+     * @param element element which parent interfaces are to be inspected
+     * @param cls target superinterface to search for
+     * @return {@code true} if the given {@code element} is a subtype of {@code cls}
      */
     public boolean hasSuperInterface(TypeElement element, Class<?> cls) {
         // perform BFS to find the given interface among all possible superinterfaces
@@ -74,9 +87,8 @@ public class TypeUtils {
         while (!queue.isEmpty()) {
             Element currentElement = queue.pop();
 
-            if (isSameType(currentElement.asType(), cls)) {
+            if (isSameType(currentElement.asType(), cls))
                 return true;
-            }
 
             ((TypeElement)currentElement).getInterfaces().stream()
                 .map(processingEnvironment.getTypeUtils()::asElement)

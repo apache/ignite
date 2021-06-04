@@ -78,10 +78,9 @@ public class ScaleCubeDirectMarshallerTransport implements Transport {
     private Address address;
 
     /**
-     * Constructor.
-     *
-     * @param connectionManager Connection manager.
-     * @param topologyService Topology service.
+     * @param connectionManager connection manager
+     * @param topologyService topology service
+     * @param messageFactory message factory
      */
     public ScaleCubeDirectMarshallerTransport(
         ConnectionManager connectionManager,

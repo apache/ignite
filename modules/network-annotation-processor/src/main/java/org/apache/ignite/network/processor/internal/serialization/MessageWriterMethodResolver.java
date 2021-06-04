@@ -41,7 +41,9 @@ class MessageWriterMethodResolver {
     /** */
     private final MessageCollectionItemTypeConverter typeConverter;
 
-    /** */
+    /**
+     * @param processingEnvironment processing environment
+     */
     MessageWriterMethodResolver(ProcessingEnvironment processingEnvironment) {
         methodNameResolver = new BaseMethodNameResolver(processingEnvironment);
         typeConverter = new MessageCollectionItemTypeConverter(processingEnvironment);
@@ -49,6 +51,9 @@ class MessageWriterMethodResolver {
 
     /**
      * Resolves the "write" method by the type of the given message's getter method.
+     *
+     * @param getter getter method
+     * @return code for the method for writing a field based on the getter type
      */
     CodeBlock resolveWriteMethod(ExecutableElement getter) {
         if (!getter.getParameters().isEmpty() || getter.getReturnType().getKind() == TypeKind.VOID) {

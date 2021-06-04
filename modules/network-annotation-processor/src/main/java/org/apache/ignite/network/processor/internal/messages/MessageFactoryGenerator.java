@@ -37,7 +37,10 @@ public class MessageFactoryGenerator {
     /** Message group. */
     private final MessageGroupWrapper messageGroup;
 
-    /** */
+    /**
+     * @param processingEnvironment processing environment
+     * @param messageGroup message group
+     */
     public MessageFactoryGenerator(
         ProcessingEnvironment processingEnvironment,
         MessageGroupWrapper messageGroup
@@ -48,6 +51,9 @@ public class MessageFactoryGenerator {
 
     /**
      * Generates a factory for all Network Messages inside the given module.
+     *
+     * @param messages Network Messages from a module
+     * @return {@code TypeSpec} of the generated message factory
      */
     public TypeSpec generateMessageFactory(List<MessageClass> messages) {
         ClassName factoryName = messageGroup.messageFactoryClassName();

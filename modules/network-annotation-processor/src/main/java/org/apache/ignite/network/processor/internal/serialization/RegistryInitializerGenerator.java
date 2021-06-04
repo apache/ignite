@@ -40,9 +40,13 @@ public class RegistryInitializerGenerator {
     /** */
     private final ProcessingEnvironment processingEnv;
 
+    /** Message group. */
     private final MessageGroupWrapper messageGroup;
 
-    /** */
+    /**
+     * @param processingEnv processing environment
+     * @param messageGroup message group
+     */
     public RegistryInitializerGenerator(ProcessingEnvironment processingEnv, MessageGroupWrapper messageGroup) {
         this.processingEnv = processingEnv;
         this.messageGroup = messageGroup;
@@ -50,6 +54,9 @@ public class RegistryInitializerGenerator {
 
     /**
      * Generates a class for registering all generated {@link MessageSerializationFactory} for the current module.
+     *
+     * @param messageFactories map from a network message to a corresponding {@code MessageSerializationFactory}
+     * @return {@code TypeSpec} of the generated registry initializer
      */
     public TypeSpec generateRegistryInitializer(Map<MessageClass, TypeSpec> messageFactories) {
         String initializerName = messageGroup.groupName() + "SerializationRegistryInitializer";

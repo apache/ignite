@@ -46,7 +46,10 @@ public class MessageDeserializerGenerator {
      */
     private final MessageGroupWrapper messageGroup;
 
-    /** */
+    /**
+     * @param processingEnv processing environment
+     * @param messageGroup message group
+     */
     public MessageDeserializerGenerator(ProcessingEnvironment processingEnv, MessageGroupWrapper messageGroup) {
         this.processingEnv = processingEnv;
         this.messageGroup = messageGroup;
@@ -54,6 +57,9 @@ public class MessageDeserializerGenerator {
 
     /**
      * Generates a {@link MessageDeserializer} class for the given network message type.
+     *
+     * @param message network message
+     * @return {@code TypeSpec} of the generated deserializer
      */
     public TypeSpec generateDeserializer(MessageClass message) {
         processingEnv.getMessager()

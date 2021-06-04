@@ -84,13 +84,15 @@ import org.apache.ignite.network.serialization.MessageSerializer;
 // TODO: Update this annotation according to https://issues.apache.org/jira/browse/IGNITE-14817
 public @interface Transferable {
     /**
-     * This message's type as described in {@link NetworkMessage#messageType}.
+     * @return this message's type as described in {@link NetworkMessage#messageType}
      */
     short value();
 
     /**
      * When this property is set to {@code true} (default), serialization-related classes will be generated in addition
      * to the message implementation.
+     *
+     * @return {code true} if serialization classes need to be generated, {@code false} otherwise
      */
     boolean autoSerializable() default true;
 }

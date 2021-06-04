@@ -65,77 +65,77 @@ public class MessageClass {
     }
 
     /**
-     * Annotated element.
+     * @return annotated element
      */
     public TypeElement element() {
         return element;
     }
 
     /**
-     * Class name of the {@link #element()}.
+     * @return class name of the {@link #element()}
      */
     public ClassName className() {
         return className;
     }
 
     /**
-     * Package name of the {@link #element()}.
+     * @return package name of the {@link #element()}
      */
     public String packageName() {
         return className.packageName();
     }
 
     /**
-     * Simple name of the {@link #element()}.
+     * @return simple name of the {@link #element()}
      */
     public String simpleName() {
         return className.simpleName();
     }
 
     /**
-     * Getter methods declared in the annotated interface.
+     * @return getter methods declared in the annotated interface
      */
     public List<ExecutableElement> getters() {
         return getters;
     }
 
     /**
-     * Returns the class name that the generated Network Message implementation should have.
+     * @return class name that the generated Network Message implementation should have
      */
     public ClassName implClassName() {
         return ClassName.get(packageName(), simpleName() + "Impl");
     }
 
     /**
-     * Returns the class name that the generated Builder interface should have.
+     * @return class name that the generated Builder interface should have
      */
     public ClassName builderClassName() {
         return ClassName.get(packageName(), simpleName() + "Builder");
     }
 
     /**
-     * Returns the name of the factory method that should be used by the message factories.
+     * @return name of the factory method that should be used by the message factories
      */
     public String asMethodName() {
         return decapitalize(simpleName());
     }
 
     /**
-     * Returns {@link Transferable#value()}.
+     * @return {@link Transferable#value()}
      */
     public short messageType() {
         return annotation.value();
     }
 
     /**
-     * Returns {@link Transferable#autoSerializable()}.
+     * @return {@link Transferable#autoSerializable()}
      */
     public boolean isAutoSerializable() {
         return annotation.autoSerializable();
     }
 
     /**
-     * Returns a copy of the given string with the first character converted to lower case.
+     * @return a copy of the given string with the first character converted to lower case
      */
     private static String decapitalize(String str) {
         return Character.toLowerCase(str.charAt(0)) + str.substring(1);

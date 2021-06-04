@@ -48,10 +48,9 @@ public class RecoveryServerHandshakeManager implements HandshakeManager {
     private final NetworkMessagesFactory messageFactory;
 
     /**
-     * Constructor.
-     *
-     * @param launchId Launch id.
-     * @param consistentId Consistent id.
+     * @param launchId launch id
+     * @param consistentId consistent id
+     * @param messageFactory message factory
      */
     public RecoveryServerHandshakeManager(
         UUID launchId, String consistentId, NetworkMessagesFactory messageFactory

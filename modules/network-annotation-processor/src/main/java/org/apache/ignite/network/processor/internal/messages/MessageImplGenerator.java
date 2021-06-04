@@ -44,18 +44,21 @@ public class MessageImplGenerator {
     /** Message group. */
     private final MessageGroupWrapper messageGroup;
 
-    /** */
-    public MessageImplGenerator(
-        ProcessingEnvironment processingEnv,
-
-        MessageGroupWrapper messageGroup
-    ) {
+    /**
+     * @param processingEnv processing environment
+     * @param messageGroup message group
+     */
+    public MessageImplGenerator(ProcessingEnvironment processingEnv, MessageGroupWrapper messageGroup) {
         this.processingEnv = processingEnv;
         this.messageGroup = messageGroup;
     }
 
     /**
      * Generates the implementation of a given Network Message interface and its Builder (as a nested class).
+     *
+     * @param message network message
+     * @param builderInterface generated builder interface
+     * @return {@code TypeSpec} of the generated message implementation
      */
     public TypeSpec generateMessageImpl(MessageClass message, TypeSpec builderInterface) {
         ClassName messageImplClassName = message.implClassName();

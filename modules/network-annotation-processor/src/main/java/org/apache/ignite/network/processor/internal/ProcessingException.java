@@ -28,17 +28,26 @@ public class ProcessingException extends RuntimeException {
     @Nullable
     private final Element element;
 
-    /** */
+    /**
+     * @param message message
+     */
     public ProcessingException(String message) {
         this(message, null, null);
     }
 
-    /** */
+    /**
+     * @param message message
+     * @param cause cause
+     */
     public ProcessingException(String message, @Nullable Throwable cause) {
         this(message, cause, null);
     }
 
-    /** */
+    /**
+     * @param message message
+     * @param cause cause
+     * @param element element which processing triggered the exception
+     */
     public ProcessingException(String message, @Nullable Throwable cause, @Nullable Element element) {
         super(message, cause);
 
@@ -46,7 +55,7 @@ public class ProcessingException extends RuntimeException {
     }
 
     /**
-     * An element which processing triggered the exception.
+     * @return element which processing triggered the exception
      */
     @Nullable
     public Element getElement() {

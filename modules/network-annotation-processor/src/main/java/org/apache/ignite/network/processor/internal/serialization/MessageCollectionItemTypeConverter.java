@@ -37,7 +37,9 @@ class MessageCollectionItemTypeConverter {
     /** */
     private final ProcessingEnvironment processingEnvironment;
 
-    /** */
+    /**
+     * @param processingEnvironment processing environment
+     */
     MessageCollectionItemTypeConverter(ProcessingEnvironment processingEnvironment) {
         this.processingEnvironment = processingEnvironment;
     }
@@ -70,6 +72,9 @@ class MessageCollectionItemTypeConverter {
 
     /**
      * Converts the given {@link TypeMirror} into a {@link MessageCollectionItemType}.
+     *
+     * @param parameterType type mirror
+     * @return corresponding {@code MessageCollectionItemType}
      */
     MessageCollectionItemType fromTypeMirror(TypeMirror parameterType) {
         switch (parameterType.getKind()) {
@@ -106,26 +111,19 @@ class MessageCollectionItemTypeConverter {
 
         PrimitiveType unboxedType = typeUtils.unboxedType(parameterType);
 
-        if (unboxedType != null) {
+        if (unboxedType != null)
             return fromTypeMirror(unboxedType);
-        }
-        else if (typeUtils.isSameType(parameterType, String.class)) {
+        else if (typeUtils.isSameType(parameterType, String.class))
             return MessageCollectionItemType.STRING;
-        }
-        else if (typeUtils.isSameType(parameterType, UUID.class)) {
+        else if (typeUtils.isSameType(parameterType, UUID.class))
             return MessageCollectionItemType.UUID;
-        }
-        else if (typeUtils.isSameType(parameterType, IgniteUuid.class)) {
+        else if (typeUtils.isSameType(parameterType, IgniteUuid.class))
             return MessageCollectionItemType.IGNITE_UUID;
-        }
-        else if (typeUtils.isSameType(parameterType, NetworkMessage.class)) {
+        else if (typeUtils.isSameType(parameterType, NetworkMessage.class))
             return MessageCollectionItemType.MSG;
-        }
-        else if (typeUtils.isSameType(parameterType, BitSet.class)) {
+        else if (typeUtils.isSameType(parameterType, BitSet.class))
             return MessageCollectionItemType.BIT_SET;
-        }
-        else {
+        else
             throw new ProcessingException("Unsupported MessageCollectionItemType: " + parameterType);
-        }
     }
 }
