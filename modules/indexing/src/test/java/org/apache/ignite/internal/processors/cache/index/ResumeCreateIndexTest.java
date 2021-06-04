@@ -18,14 +18,9 @@
 package org.apache.ignite.internal.processors.cache.index;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
-import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.Person;
 import org.apache.ignite.cluster.ClusterState;
@@ -36,23 +31,17 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.schema.SchemaIndexCachePartitionWorker;
-import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
-import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
-import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorImpl;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_INDEX_REBUILD_BATCH_SIZE;
+import static org.apache.ignite.internal.processors.cache.index.IgniteH2IndexingEx.addIdxCreateRowConsumer;
+import static org.apache.ignite.internal.processors.cache.index.IgniteH2IndexingEx.prepareBeforeNodeStart;
+import static org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.nodeName;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /**
@@ -82,7 +71,6 @@ public class ResumeCreateIndexTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
-//            .setGridLogger(new ListeningTestLogger(log))
             .setConsistentId(igniteInstanceName)
             .setFailureHandler(new StopNodeFailureHandler())
             .setDataStorageConfiguration(
@@ -96,10 +84,9 @@ public class ResumeCreateIndexTest extends GridCommonAbstractTest {
     }
 
     @Test
+    @WithSystemProperty(key = IGNITE_INDEX_REBUILD_BATCH_SIZE, value = "1")
     public void test0() throws Exception {
-        setRootLoggerDebugLevel();
-
-        GridQueryProcessor.idxCls = IgniteH2IndexingEx.class;
+        prepareBeforeNodeStart();
 
         IgniteEx n = startGrid(0);
         n.cluster().state(ClusterState.ACTIVE);
@@ -109,13 +96,11 @@ public class ResumeCreateIndexTest extends GridCommonAbstractTest {
 
         log.warning("kirill 0");
 
-        SchemaIndexCachePartitionWorker.BATCH_SIZE = 1;
-
         GridFutureAdapter<Void> startIdxFut = new GridFutureAdapter<>();
         GridFutureAdapter<Void> finishIdxFut = new GridFutureAdapter<>();
         AtomicBoolean sleep = new AtomicBoolean(true);
 
-        IgniteH2IndexingEx.consumers.put("IDX0", row -> {
+        addIdxCreateRowConsumer(nodeName(n), "IDX0", row -> {
             startIdxFut.onDone();
 
             finishIdxFut.get(getTestTimeout());
@@ -179,25 +164,5 @@ public class ResumeCreateIndexTest extends GridCommonAbstractTest {
             rebIdxFut.get(getTestTimeout());
 
         log.warning("kirill select.size=" + n.cache(DEFAULT_CACHE_NAME).query(select).getAll().size());
-    }
-
-    private static class IgniteH2IndexingEx extends IgniteH2Indexing {
-        static final Map<String, IgniteThrowableConsumer<CacheDataRow>> consumers = new ConcurrentHashMap<>();
-
-        @Override public void dynamicIndexCreate(
-            String schemaName,
-            String tblName,
-            QueryIndexDescriptorImpl idxDesc,
-            boolean ifNotExists,
-            SchemaIndexCacheVisitor cacheVisitor
-        ) throws IgniteCheckedException {
-            SchemaIndexCacheVisitor cacheVisitor0 = clo -> cacheVisitor.visit(row -> {
-                consumers.getOrDefault(idxDesc.name(), row1 -> {}).accept(row);
-
-                clo.apply(row);
-            });
-
-            super.dynamicIndexCreate(schemaName, tblName, idxDesc, ifNotExists, cacheVisitor0);
-        }
     }
 }

@@ -1896,6 +1896,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     ) {
                         /** {@inheritDoc} */
                         @Override public void visit(SchemaIndexCacheVisitorClosure clo) {
+                            // TODO: 03.06.2021 Тут можно зафиксировать, что мы хотим добавить индекс
+
                             super.visit(clo);
 
                             try {
@@ -1904,6 +1906,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             catch (Exception e) {
                                 throw new IgniteException(e);
                             }
+
+                            // TODO: 03.06.2021 Тут можно зафиксировать, что мы перестроили индекс
                         }
                     };
                 }

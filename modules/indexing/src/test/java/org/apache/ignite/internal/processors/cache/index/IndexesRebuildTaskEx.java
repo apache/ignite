@@ -35,6 +35,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.emptyMap;
+import static org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.DO_NOTHING_CACHE_DATA_ROW_CONSUMER;
+import static org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.nodeName;
 
 /**
  * Extension {@link IndexesRebuildTask} for the tests.
@@ -63,8 +65,10 @@ class IndexesRebuildTaskEx extends IndexesRebuildTask {
         super.startRebuild(cctx, rebuildIdxFut, new SchemaIndexCacheVisitorClosure() {
             /** {@inheritDoc} */
             @Override public void apply(CacheDataRow row) throws IgniteCheckedException {
-                cacheRowConsumer.getOrDefault(nodeName(cctx), emptyMap())
-                    .getOrDefault(cctx.name(), r -> { }).accept(row);
+                cacheRowConsumer
+                    .getOrDefault(nodeName(cctx), emptyMap())
+                    .getOrDefault(cctx.name(), DO_NOTHING_CACHE_DATA_ROW_CONSUMER)
+                    .accept(row);
 
                 clo.apply(row);
             }
@@ -106,9 +110,9 @@ class IndexesRebuildTaskEx extends IndexesRebuildTask {
      * @param cacheName Cache name.
      * @param c Cache row consumer.
      *
-     * @see #nodeName(GridKernalContext)
-     * @see #nodeName(IgniteEx)
-     * @see #nodeName(GridCacheContext)
+     * @see IndexingTestUtils#nodeName(GridKernalContext)
+     * @see IndexingTestUtils#nodeName(IgniteEx)
+     * @see IndexingTestUtils#nodeName(GridCacheContext)
      * @see GridCommonAbstractTest#getTestIgniteInstanceName(int)
      */
     static void addCacheRowConsumer(String nodeName, String cacheName, IgniteThrowableConsumer<CacheDataRow> c) {
@@ -123,43 +127,13 @@ class IndexesRebuildTaskEx extends IndexesRebuildTask {
      * @param cacheName Cache name.
      * @param r A function that should run before preparing to rebuild the cache indexes.
      *
-     * @see #nodeName(GridKernalContext)
-     * @see #nodeName(IgniteEx)
-     * @see #nodeName(GridCacheContext)
+     * @see IndexingTestUtils#nodeName(GridKernalContext)
+     * @see IndexingTestUtils#nodeName(IgniteEx)
+     * @see IndexingTestUtils#nodeName(GridCacheContext)
      * @see GridCommonAbstractTest#getTestIgniteInstanceName(int)
      */
     static void addCacheRebuildRunner(String nodeName, String cacheName, Runnable r) {
         cacheRebuildRunner.computeIfAbsent(nodeName, s -> new ConcurrentHashMap<>()).put(cacheName, r);
-    }
-
-    /**
-     * Getting local instance name of the node.
-     *
-     * @param cacheCtx Cache context.
-     * @return Local instance name.
-     */
-    static String nodeName(GridCacheContext cacheCtx) {
-        return nodeName(cacheCtx.kernalContext());
-    }
-
-    /**
-     * Getting local instance name of the node.
-     *
-     * @param n Node.
-     * @return Local instance name.
-     */
-    static String nodeName(IgniteEx n) {
-        return nodeName(n.context());
-    }
-
-    /**
-     * Getting local instance name of the node.
-     *
-     * @param kernalCtx Kernal context.
-     * @return Local instance name.
-     */
-    static String nodeName(GridKernalContext kernalCtx) {
-        return kernalCtx.igniteInstanceName();
     }
 
     /**
