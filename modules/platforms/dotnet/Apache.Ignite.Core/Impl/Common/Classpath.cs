@@ -135,6 +135,8 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         /// <param name="path">Path.</param>
         /// <param name="cp">Classpath builder.</param>
+        [SuppressMessage("Usage", "CA2249:Consider using 'string.Contains' instead of 'string.IndexOf'",
+            Justification = "Not supported on all platforms.")]
         private static void AppendTestClasses0(string path, StringBuilder cp)
         {
             var shouldExcluded = TestExcludedModules.Any(excl =>
