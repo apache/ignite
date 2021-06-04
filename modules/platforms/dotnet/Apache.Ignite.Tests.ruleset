@@ -72,5 +72,11 @@
     <!-- ConfigureAwait. -->
     <Rule Id="CA2007" Action="None" />
 
+    <!-- Change to read-only. -->
+    <Rule Id="CA2227" Action="None" />
+
+    <!-- Inspections should be public. -->
+    <Rule Id="CA1064" Action="None" />
+
   </Rules>
 </RuleSet>
