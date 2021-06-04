@@ -9,11 +9,14 @@
     <SignAssembly>true</SignAssembly>
     <DelaySign>false</DelaySign>
     <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
-    <AnalysisMode>AllEnabledByDefault</AnalysisMode>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.4.0" />
-<!--    <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="5.0.3" />-->
+
+    <!--
+    NOTE: Microsoft.CodeAnalysis.NetAnalyzers is the new replacement for FxCopAnalyzers,
+    but it has some issues on older SDKs (https://github.com/dotnet/roslyn-analyzers/issues/4776).
+    -->
     <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="3.3.1"/>
   </ItemGroup>
   <ItemGroup>
