@@ -351,6 +351,8 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [TestCase((double) 255.5, 1)]
         [TestCase('1', 2)]
         [TestCase('2', 1)]
+        [TestCase("1", 2)]
+        [TestCase("2", 1)]
         [TestCase(true, 1)]
         [TestCase(false, 1)]
         public void CachePut_AllPrimitiveTypes_RequestIsRoutedToPrimaryNode(object key, int gridIdx)

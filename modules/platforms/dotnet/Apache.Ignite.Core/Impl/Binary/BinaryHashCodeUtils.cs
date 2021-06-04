@@ -45,6 +45,24 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (type == typeof(long))
                 return GetLongHashCode(TypeCaster<long>.Cast(val));
 
+            if (type == typeof(string))
+                return BinaryUtils.GetStringHashCode((string) (object) val);
+
+            if (type == typeof(Guid))
+                return GetGuidHashCode(TypeCaster<Guid>.Cast(val));
+
+            if (type == typeof(uint))
+            {
+                var val0 = TypeCaster<uint>.Cast(val);
+                return *(int*) &val0;
+            }
+
+            if (type == typeof(ulong))
+            {
+                var val0 = TypeCaster<ulong>.Cast(val);
+                return GetLongHashCode(*(long*) &val0);
+            }
+
             if (type == typeof(bool))
                 return TypeCaster<bool>.Cast(val) ? 1231 : 1237;
 
@@ -81,18 +99,6 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return *(short*) &val0;
             }
 
-            if (type == typeof(uint))
-            {
-                var val0 = TypeCaster<uint>.Cast(val);
-                return *(int*) &val0;
-            }
-
-            if (type == typeof(ulong))
-            {
-                var val0 = TypeCaster<ulong>.Cast(val);
-                return GetLongHashCode(*(long*) &val0);
-            }
-
             if (type == typeof(IntPtr))
             {
                 var val0 = TypeCaster<IntPtr>.Cast(val).ToInt64();
@@ -103,11 +109,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 var val0 = TypeCaster<UIntPtr>.Cast(val).ToUInt64();
                 return GetLongHashCode(*(long*) &val0);
-            }
-
-            if (type == typeof(Guid))
-            {
-                return GetGuidHashCode(TypeCaster<Guid>.Cast(val));
             }
 
             // DateTime, when used as key, is always written as BinaryObject.
