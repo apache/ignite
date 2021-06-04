@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.query.stat.StatisticsStorageRestart
 import org.apache.ignite.internal.processors.query.stat.StatisticsStorageUnitTest;
 import org.apache.ignite.internal.processors.query.stat.StatisticsViewsInMemoryTest;
 import org.apache.ignite.internal.processors.query.stat.StatisticsViewsPersistenceTest;
+import org.apache.ignite.internal.processors.query.stat.hll.FullHLLTest;
 import org.apache.ignite.internal.sql.SqlParserAnalyzeSelfTest;
 import org.apache.ignite.internal.sql.SqlParserDropStatisticsSelfTest;
 import org.apache.ignite.internal.sql.SqlParserRefreshStatisticsSelfTest;
@@ -75,6 +76,7 @@ import org.junit.runners.Suite;
     PSUStatisticsStorageTest.class,
 
     // Statistics collection components tests
+    FullHLLTest.class,
     StatisticsStorageInMemoryTest.class,
     StatisticsStoragePersistenceTest.class,
     StatisticsStorageUnitTest.class,
