@@ -138,7 +138,7 @@ namespace Apache.Ignite.Linq
                 throw new NotSupportedException("Unsupported ICache implementation: " + cache.GetType());
             }
 
-            return new CacheQueryable<TKey, TValue>((ICacheInternal) cache, queryOptions, cache.Ignite);
+            return new CacheQueryable<TKey, TValue>(cacheInternal, queryOptions, cache.Ignite);
         }
 
         /// <summary>
