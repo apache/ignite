@@ -73,6 +73,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             new ConcurrentDictionary<ClientSocket, DataStreamerClientPerNodeBuffer<TK, TV>>();
 
         /** */
+        [SuppressMessage("Microsoft.Design", "CA2213:DisposableFieldsShouldBeDisposed",
+            Justification = "WaitHandle is not used in ReaderWriterLockSlim, no need to dispose.")]
         private readonly ReaderWriterLockSlim _rwLock = new ReaderWriterLockSlim();
 
         /** Cached flags. */
