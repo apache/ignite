@@ -712,6 +712,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 memEx.invalidate(grpDesc.groupId(), PageIdAllocator.INDEX_PARTITION);
             }
+
+            if (grpDesc.config().isEncryptionEnabled())
+                cctx.kernalContext().encryption().onCacheGroupStop(grpDesc.groupId());
         }
 
         if (!hasMvccCache && dataRegionMap.containsKey(TxLog.TX_LOG_CACHE_NAME)) {
