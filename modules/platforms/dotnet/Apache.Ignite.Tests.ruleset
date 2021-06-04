@@ -1,0 +1,6 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<RuleSet Name="Rules for Apache.Ignite.Core" Description="Code analysis rules for Apache.Ignite.Core.csproj." ToolsVersion="14.0">
+  <Include Path="Apache.Ignite.ruleset" Action="Default" />
+  <Rules AnalyzerId="Microsoft.Analyzers.ManagedCodeAnalysis" RuleNamespace="Microsoft.Rules.Managed">
+  </Rules>
+</RuleSet>
