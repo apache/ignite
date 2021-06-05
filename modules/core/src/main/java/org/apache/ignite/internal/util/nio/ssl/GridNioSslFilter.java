@@ -53,7 +53,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     public static final String SSL_HANDSHAKE_DURATION_HISTOGRAM_METRIC_NAME = "SslHandshakeDurationHistogram";
 
     /** The name of the metric that provides number of rejected session due to SSL errors. */
-    public static final String SSL_REJECTED_SESSIONS_CNT_METRIC_NAME = "SslRejectedSessionsCount";
+    public static final String SSL_REJECTED_SESSIONS_CNT_METRIC_NAME = "rejectedSslSessionsCount";
 
     /** Logger to use. */
     private IgniteLogger log;
@@ -83,10 +83,10 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     private boolean directMode;
 
     /** Metric that indicates the number of rejected sessions due to SSL errors. */
-    @Nullable private IntMetricImpl rejectedSesMetric;
+    @Nullable private final IntMetricImpl rejectedSesMetric;
 
     /** Histogram that provides distribution of SSL handshake duration. */
-    @Nullable private HistogramMetricImpl handshakeDurationHistogram;
+    @Nullable private final HistogramMetricImpl handshakeDurationHistogram;
 
     /**
      * Creates SSL filter.
@@ -95,25 +95,29 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
      * @param directBuf Direct buffer flag.
      * @param order Byte order.
      * @param log Logger to use.
+     * @param mreg Optional metric registry.
      */
-    public GridNioSslFilter(SSLContext sslCtx, boolean directBuf, ByteOrder order, IgniteLogger log) {
+    public GridNioSslFilter(
+        SSLContext sslCtx,
+        boolean directBuf,
+        ByteOrder order,
+        IgniteLogger log,
+        @Nullable MetricRegistry mreg
+    ) {
         super("SSL filter");
 
         this.log = log;
         this.sslCtx = sslCtx;
         this.directBuf = directBuf;
         this.order = order;
-    }
 
-    /** Registers SSL metrics in the specified registry. */
-    public void registerMetrics(MetricRegistry mreg) {
-        handshakeDurationHistogram = mreg.histogram(
+        handshakeDurationHistogram = mreg == null ? null : mreg.histogram(
             SSL_HANDSHAKE_DURATION_HISTOGRAM_METRIC_NAME,
             new long[] {250, 500, 1000},
             "Histogram of SSL handshake duration in milliseconds."
         );
 
-        rejectedSesMetric = mreg.intMetric(
+        rejectedSesMetric = mreg == null ? null : mreg.intMetric(
             SSL_REJECTED_SESSIONS_CNT_METRIC_NAME,
             "The number of rejected TCP sessions due to SSL errors."
         );

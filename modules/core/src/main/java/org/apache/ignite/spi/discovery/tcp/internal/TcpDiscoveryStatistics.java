@@ -74,7 +74,7 @@ public class TcpDiscoveryStatistics {
     private final IntMetricImpl pendingMsgsRegistered;
 
     /** Metric that indicates the number of rejected connections due to SSL errors. */
-    private final IntMetricImpl sslRejectedConnectionsCnt;
+    private final IntMetricImpl rejectedSslConnectionsCnt;
 
     /** */
     public TcpDiscoveryStatistics() {
@@ -87,8 +87,8 @@ public class TcpDiscoveryStatistics {
         pendingMsgsRegistered = new IntMetricImpl(metricName(DISCO_METRICS, "PendingMessagesRegistered"),
             "Pending messages registered count");
 
-        sslRejectedConnectionsCnt = new IntMetricImpl(
-            metricName(DISCO_METRICS, "SslRejectedConnectionsCount"),
+        rejectedSslConnectionsCnt = new IntMetricImpl(
+            metricName(DISCO_METRICS, "rejectedSslConnectionsCount"),
             "The number of rejected TCP discovery connections due to SSL errors."
         );
     }
@@ -105,7 +105,7 @@ public class TcpDiscoveryStatistics {
         discoReg.register(failedNodesCnt);
         discoReg.register(leftNodesCnt);
         discoReg.register(pendingMsgsRegistered);
-        discoReg.register(sslRejectedConnectionsCnt);
+        discoReg.register(rejectedSslConnectionsCnt);
     }
 
     /**
@@ -138,7 +138,7 @@ public class TcpDiscoveryStatistics {
 
     /** Increments number of rejected connections due to SSL errors. */
     public void onSslConnectionRejected() {
-        sslRejectedConnectionsCnt.increment();
+        rejectedSslConnectionsCnt.increment();
     }
 
     /**
@@ -333,6 +333,7 @@ public class TcpDiscoveryStatistics {
         procMsgs.clear();
         rcvdMsgs.clear();
         sentMsgs.clear();
+        rejectedSslConnectionsCnt.reset();
     }
 
     /** {@inheritDoc} */

@@ -338,7 +338,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                     "(SSL is enabled but factory is null). Check the ClientConnectorConfiguration");
 
             GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtxFactory.create(),
-                true, ByteOrder.nativeOrder(), log);
+                true, ByteOrder.nativeOrder(), log, ctx.metric().registry(CLIENT_CONNECTOR_METRIC_REGISTRY_NAME));
 
             sslFilter.directMode(true);
 

@@ -39,6 +39,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.metric.IntMetric;
+import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -50,6 +51,8 @@ import static org.apache.ignite.internal.client.GridClientFactory.start;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.DISCO_METRICS;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLIENT_CONNECTOR_METRIC_REGISTRY_NAME;
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridTcpRestProtocol.REST_CONNECTOR_METRIC_REGISTRY_NAME;
+import static org.apache.ignite.internal.util.nio.GridNioServer.RECEIVED_BYTES_METRIC_NAME;
+import static org.apache.ignite.internal.util.nio.GridNioServer.SENT_BYTES_METRIC_NAME;
 import static org.apache.ignite.internal.util.nio.GridNioServer.SESSIONS_CNT_METRIC_NAME;
 import static org.apache.ignite.internal.util.nio.GridNioServer.SSL_ENABLED_METRIC_NAME;
 import static org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter.SSL_HANDSHAKE_DURATION_HISTOGRAM_METRIC_NAME;
@@ -61,8 +64,8 @@ import static org.apache.ignite.testframework.GridTestUtils.keyStorePath;
 import static org.apache.ignite.testframework.GridTestUtils.sslTrustedFactory;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
-/** Checks SSL metrics for all types of connections to the node. */
-public class SslConnectorsMetricTest extends GridCommonAbstractTest {
+/** Checks SSL metrics for various node connection approaches. */
+public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
     /** Cipher suite supported by cluster nodes. */
     private static final String CIPHER_SUITE = "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256";
 
@@ -93,7 +96,7 @@ public class SslConnectorsMetricTest extends GridCommonAbstractTest {
         assertFalse(mreg(srv, CLIENT_CONNECTOR_METRIC_REGISTRY_NAME).<BooleanMetric>findMetric(SSL_ENABLED_METRIC_NAME).value());
         assertNull(mreg(srv, REST_CONNECTOR_METRIC_REGISTRY_NAME).<BooleanMetric>findMetric(SSL_ENABLED_METRIC_NAME));
 
-        assertNotNull(mreg(srv, DISCO_METRICS).<IntMetric>findMetric("SslRejectedConnectionsCount"));
+        assertNotNull(mreg(srv, DISCO_METRICS).<IntMetric>findMetric("rejectedSslConnectionsCount"));
         assertNull(mreg(srv, COMMUNICATION_METRICS_GROUP_NAME).<IntMetric>findMetric(SSL_REJECTED_SESSIONS_CNT_METRIC_NAME));
         assertNull(mreg(srv, CLIENT_CONNECTOR_METRIC_REGISTRY_NAME).<IntMetric>findMetric(SSL_REJECTED_SESSIONS_CNT_METRIC_NAME));
         assertNull(mreg(srv, REST_CONNECTOR_METRIC_REGISTRY_NAME).<IntMetric>findMetric(SSL_REJECTED_SESSIONS_CNT_METRIC_NAME));
@@ -121,9 +124,15 @@ public class SslConnectorsMetricTest extends GridCommonAbstractTest {
     public void testJdbc() throws Exception {
         MetricRegistry reg = mreg(startClusterNode(0), CLIENT_CONNECTOR_METRIC_REGISTRY_NAME);
 
+        assertEquals(0, reg.<LongMetric>findMetric(SENT_BYTES_METRIC_NAME).value());
+        assertEquals(0, reg.<LongMetric>findMetric(RECEIVED_BYTES_METRIC_NAME).value());
+
         try (Connection ignored = getConnection(jdbcConfiguration("thinClient", "trusttwo", CIPHER_SUITE, "TLSv1.2"))) {
             assertSslCommunicationMetrics(reg, 1, 1, 0);
         }
+
+        assertTrue(reg.<LongMetric>findMetric(SENT_BYTES_METRIC_NAME).value() > 0);
+        assertTrue(reg.<LongMetric>findMetric(RECEIVED_BYTES_METRIC_NAME).value() > 0);
 
         assertSslCommunicationMetrics(reg, 1, 0, 0);
 
@@ -153,11 +162,17 @@ public class SslConnectorsMetricTest extends GridCommonAbstractTest {
     public void testRestClientConnector() throws Exception {
         MetricRegistry reg = mreg(startClusterNode(0), REST_CONNECTOR_METRIC_REGISTRY_NAME);
 
+        assertEquals(0, reg.<LongMetric>findMetric(SENT_BYTES_METRIC_NAME).value());
+        assertEquals(0, reg.<LongMetric>findMetric(RECEIVED_BYTES_METRIC_NAME).value());
+
         try (
             GridClient ignored = start(gridClientConfiguration("connectorClient", "trustthree", CIPHER_SUITE, "TLSv1.2"))
         ) {
             assertSslCommunicationMetrics(reg, 1, 1, 0);
         }
+
+        assertTrue(reg.<LongMetric>findMetric(SENT_BYTES_METRIC_NAME).value() > 0);
+        assertTrue(reg.<LongMetric>findMetric(RECEIVED_BYTES_METRIC_NAME).value() > 0);
 
         assertSslCommunicationMetrics(reg, 1, 0, 0);
 
@@ -194,7 +209,7 @@ public class SslConnectorsMetricTest extends GridCommonAbstractTest {
         startGrid(nodeConfiguration(1, true, "client", "trustone", CIPHER_SUITE, "TLSv1.2"));
 
         assertTrue(reg.<BooleanMetric>findMetric("SslEnabled").value());
-        assertEquals(0, reg.<IntMetric>findMetric("SslRejectedConnectionsCount").value());
+        assertEquals(0, reg.<IntMetric>findMetric("rejectedSslConnectionsCount").value());
 
         // Tests untrusted certificate.
         assertNodeJoinFails(2, true, "thinClient", "trusttwo", CIPHER_SUITE, "TLSv1.2");
@@ -209,7 +224,7 @@ public class SslConnectorsMetricTest extends GridCommonAbstractTest {
 
         // In case of an SSL error, the client and server nodes make 2 additional connection attempts.
         assertTrue(waitForCondition(() ->
-            18 == reg.<IntMetric>findMetric("SslRejectedConnectionsCount").value(),
+            18 == reg.<IntMetric>findMetric("rejectedSslConnectionsCount").value(),
             getTestTimeout()));
     }
 
@@ -217,6 +232,9 @@ public class SslConnectorsMetricTest extends GridCommonAbstractTest {
     @Test
     public void testCommunication() throws Exception {
         MetricRegistry reg = mreg(startClusterNode(0), COMMUNICATION_METRICS_GROUP_NAME);
+
+        assertEquals(0, reg.<LongMetric>findMetric(SENT_BYTES_METRIC_NAME).value());
+        assertEquals(0, reg.<LongMetric>findMetric(RECEIVED_BYTES_METRIC_NAME).value());
 
         assertSslCommunicationMetrics(reg, 0, 0, 0);
 
@@ -227,7 +245,14 @@ public class SslConnectorsMetricTest extends GridCommonAbstractTest {
             assertSslCommunicationMetrics(reg, 2, 2, 0);
             assertSslCommunicationMetrics(mreg(cliNode, COMMUNICATION_METRICS_GROUP_NAME), 0, 1, 0);
             assertSslCommunicationMetrics(mreg(srvNode, COMMUNICATION_METRICS_GROUP_NAME), 0, 1, 0);
+            assertTrue(mreg(cliNode, COMMUNICATION_METRICS_GROUP_NAME).<LongMetric>findMetric(SENT_BYTES_METRIC_NAME).value() > 0);
+            assertTrue(mreg(cliNode, COMMUNICATION_METRICS_GROUP_NAME).<LongMetric>findMetric(RECEIVED_BYTES_METRIC_NAME).value() > 0);
+            assertTrue(mreg(srvNode, COMMUNICATION_METRICS_GROUP_NAME).<LongMetric>findMetric(SENT_BYTES_METRIC_NAME).value() > 0);
+            assertTrue(mreg(srvNode, COMMUNICATION_METRICS_GROUP_NAME).<LongMetric>findMetric(RECEIVED_BYTES_METRIC_NAME).value() > 0);
         }
+
+        assertTrue(reg.<LongMetric>findMetric(SENT_BYTES_METRIC_NAME).value() > 0);
+        assertTrue(reg.<LongMetric>findMetric(RECEIVED_BYTES_METRIC_NAME).value() > 0);
 
         assertSslCommunicationMetrics(reg, 2, 0, 0);
     }
@@ -237,9 +262,15 @@ public class SslConnectorsMetricTest extends GridCommonAbstractTest {
     public void testClientConnector() throws Exception {
         MetricRegistry reg = mreg(startClusterNode(0), CLIENT_CONNECTOR_METRIC_REGISTRY_NAME);
 
+        assertEquals(0, reg.<LongMetric>findMetric(SENT_BYTES_METRIC_NAME).value());
+        assertEquals(0, reg.<LongMetric>findMetric(RECEIVED_BYTES_METRIC_NAME).value());
+
         try (IgniteClient ignored = startClient(clientConfiguration("thinClient", "trusttwo", CIPHER_SUITE, "TLSv1.2"))) {
             assertSslCommunicationMetrics(reg, 1, 1, 0);
         }
+
+        assertTrue(reg.<LongMetric>findMetric(SENT_BYTES_METRIC_NAME).value() > 0);
+        assertTrue(reg.<LongMetric>findMetric(RECEIVED_BYTES_METRIC_NAME).value() > 0);
 
         assertSslCommunicationMetrics(reg, 1, 0, 0);
 
