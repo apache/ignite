@@ -146,7 +146,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return hashCode.Value;
                 }
 
-                throw new IgniteException(string.Format("Failed to compute hash code for object '{0}'", val));
+                throw new IgniteException(
+                    string.Format("Failed to compute hash code for object '{0}' of type '{1}'", val, val.GetType()));
             }
         }
 
