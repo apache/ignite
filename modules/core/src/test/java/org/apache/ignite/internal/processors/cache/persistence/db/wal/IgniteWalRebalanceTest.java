@@ -710,7 +710,8 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
                 2,
                 demandMsgsForSupplier.size());
             assertTrue(
-                "The first message should require " + (mixed ? "mixed" : "historical") + " rebalance [msg=" + demandMsgsForSupplier.get(0) + ']',
+                "The first message should require " + (mixed ? "mixed" : "historical") + " rebalance [msg=" +
+                    demandMsgsForSupplier.get(0) + ']',
                 (mixed ? mixedPred.apply(demandMsgsForSupplier.get(0)) : histPred.apply(demandMsgsForSupplier.get(0))));
             assertTrue(
                 "The second message should require full rebalance [msg=" + demandMsgsForSupplier.get(0) + ']',
