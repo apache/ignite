@@ -37,7 +37,7 @@ public abstract class AbstractThinClientTest extends GridCommonAbstractTest {
      * Gets default client configuration.
      */
     protected ClientConfiguration getClientConfiguration() {
-        return new ClientConfiguration();
+        return new ClientConfiguration().setPartitionAwarenessEnabled(false);
     }
 
     /**

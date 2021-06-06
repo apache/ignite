@@ -594,8 +594,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     @Override public IgniteFuture<?> addData(Collection<? extends Map.Entry<K, V>> entries) {
         A.notEmpty(entries, "entries");
 
-        checkSecurityPermission(SecurityPermission.CACHE_PUT);
-
         Collection<DataStreamerEntry> batch = new ArrayList<>(entries.size());
 
         for (Map.Entry<K, V> entry : entries) {
@@ -639,6 +637,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
      * @return Future.
      */
     public IgniteFuture<?> addDataInternal(Collection<? extends DataStreamerEntry> entries, boolean useThreadBuffer) {
+        checkSecurityPermissions(entries);
+
         IgniteCacheFutureImpl fut = null;
 
         GridFutureAdapter internalFut = null;
@@ -743,11 +743,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /** {@inheritDoc} */
     @Override public IgniteFuture<?> addData(K key, V val) {
         A.notNull(key, "key");
-
-        if (val == null)
-            checkSecurityPermission(SecurityPermission.CACHE_REMOVE);
-        else
-            checkSecurityPermission(SecurityPermission.CACHE_PUT);
 
         KeyCacheObject key0 = cacheObjProc.toCacheKeyObject(cacheObjCtx, null, key, true);
         CacheObject val0 = cacheObjProc.toCacheObject(cacheObjCtx, val, true);
@@ -1458,17 +1453,37 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     }
 
     /**
-     * Check permissions for streaming.
+     * Checks permissions for specified entries.
      *
-     * @param perm Security permission.
+     * @param entries Streamer entries.
      * @throws org.apache.ignite.plugin.security.SecurityException If permissions are not enough for streaming.
      */
-    private void checkSecurityPermission(SecurityPermission perm)
-        throws org.apache.ignite.plugin.security.SecurityException {
+    private void checkSecurityPermissions(Collection<? extends DataStreamerEntry> entries)
+            throws org.apache.ignite.plugin.security.SecurityException {
         if (!ctx.security().enabled())
             return;
 
-        ctx.security().authorize(cacheName, perm);
+        boolean add = false;
+        boolean remove = false;
+
+        for (DataStreamerEntry e : entries) {
+            if (e.val == null) {
+                remove = true;
+            }
+            else {
+                add = true;
+            }
+
+            if (add && remove) {
+                break;
+            }
+        }
+
+        if (add)
+            ctx.security().authorize(cacheName, SecurityPermission.CACHE_PUT);
+
+        if (remove)
+            ctx.security().authorize(cacheName, SecurityPermission.CACHE_REMOVE);
     }
 
     /**
