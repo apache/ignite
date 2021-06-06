@@ -324,7 +324,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
      * @return Nodes owning this partition.
      */
     private List<ClusterNode> remoteOwners(int p, AffinityTopologyVersion topVer) {
-        return remoteOwners(p, topVer, (node, ownres) -> true);
+        return remoteOwners(p, topVer, (node, owners) -> true);
     }
 
     /**
