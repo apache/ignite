@@ -635,6 +635,46 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
      * @throws Exception If failed.
      */
     @Test
+    public void testDeactivation() throws Exception {
+        pageScanRate = 1;
+
+        T2<IgniteEx, IgniteEx> nodes = startTestGrids(true);
+
+        IgniteEx node0 = nodes.get1();
+        IgniteEx node1 = nodes.get2();
+
+        createEncryptedCache(node0, node1, cacheName(), null);
+
+        loadData(100_000);
+
+        node0.encryption().changeCacheGroupKey(Collections.singleton(cacheName())).get();
+
+        int grpId = CU.cacheId(cacheName());
+
+        assertFalse("Re-encryption must be started.", node0.context().encryption().reencryptionFuture(grpId).isDone());
+        assertFalse("Re-encryption must be started.", node1.context().encryption().reencryptionFuture(grpId).isDone());
+
+        node0.cluster().state(ClusterState.INACTIVE);
+
+        // Check node join to inactive cluster.
+        stopGrid(GRID_1);
+        node1 = startGrid(GRID_1);
+
+        assertTrue("Re-encryption should not start ", node0.context().encryption().reencryptionFuture(grpId).isDone());
+        assertTrue("Re-encryption should not start ", node1.context().encryption().reencryptionFuture(grpId).isDone());
+
+        node0.context().encryption().setReencryptionRate(DFLT_REENCRYPTION_RATE_MBPS);
+        node1.context().encryption().setReencryptionRate(DFLT_REENCRYPTION_RATE_MBPS);
+
+        node0.cluster().state(ClusterState.ACTIVE);
+
+        checkGroupKey(CU.cacheId(cacheName()), INITIAL_KEY_ID + 1, MAX_AWAIT_MILLIS);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testChangeBaseline() throws Exception {
         backups = 1;
         pageScanRate = 2;

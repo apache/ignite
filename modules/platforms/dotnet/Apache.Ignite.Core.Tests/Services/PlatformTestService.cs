@@ -314,6 +314,7 @@ namespace Apache.Ignite.Core.Tests.Services
             if (x == null || x.Length != 1)
                 throw new Exception("Expected array of length 1");
 
+            // ReSharper disable once PossibleInvalidOperationException
             return new DateTime?[] {test((DateTime) x[0])};
         }
 
