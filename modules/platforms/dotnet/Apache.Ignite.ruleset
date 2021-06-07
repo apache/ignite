@@ -53,22 +53,19 @@
     <!-- Avoid excessive class coupling -->
     <Rule Id="CA1506" Action="None" />
 
-    <!-- Identifiers should be spelled correctly -->
-    <Rule Id="CA1704" Action="None" />
-
-    <!-- -->
+    <!-- Identifiers should be cased correctly -->
     <Rule Id="CA1709" Action="None" />
 
-    <!-- -->
+    <!-- Identifiers should not match keywords -->
     <Rule Id="CA1716" Action="None" />
 
-    <!-- -->
+    <!-- Identifiers should not contain type names -->
     <Rule Id="CA1720" Action="None" />
 
-    <!-- -->
+    <!-- Use preferred terms -->
     <Rule Id="CA1726" Action="None" />
 
-    <!-- -->
+    <!-- Avoid calling problematic methods -->
     <Rule Id="CA2001" Action="None" />
 
     <!-- -->
