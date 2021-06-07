@@ -96,7 +96,7 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
         assertFalse(mreg(srv, CLIENT_CONNECTOR_METRIC_REGISTRY_NAME).<BooleanMetric>findMetric(SSL_ENABLED_METRIC_NAME).value());
         assertNull(mreg(srv, REST_CONNECTOR_METRIC_REGISTRY_NAME).<BooleanMetric>findMetric(SSL_ENABLED_METRIC_NAME));
 
-        assertNotNull(mreg(srv, DISCO_METRICS).<IntMetric>findMetric("rejectedSslConnectionsCount"));
+        assertNotNull(mreg(srv, DISCO_METRICS).<IntMetric>findMetric("RejectedSslConnectionsCount"));
         assertNull(mreg(srv, COMMUNICATION_METRICS_GROUP_NAME).<IntMetric>findMetric(SSL_REJECTED_SESSIONS_CNT_METRIC_NAME));
         assertNull(mreg(srv, CLIENT_CONNECTOR_METRIC_REGISTRY_NAME).<IntMetric>findMetric(SSL_REJECTED_SESSIONS_CNT_METRIC_NAME));
         assertNull(mreg(srv, REST_CONNECTOR_METRIC_REGISTRY_NAME).<IntMetric>findMetric(SSL_REJECTED_SESSIONS_CNT_METRIC_NAME));
@@ -209,7 +209,7 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
         startGrid(nodeConfiguration(1, true, "client", "trustone", CIPHER_SUITE, "TLSv1.2"));
 
         assertTrue(reg.<BooleanMetric>findMetric("SslEnabled").value());
-        assertEquals(0, reg.<IntMetric>findMetric("rejectedSslConnectionsCount").value());
+        assertEquals(0, reg.<IntMetric>findMetric("RejectedSslConnectionsCount").value());
 
         // Tests untrusted certificate.
         assertNodeJoinFails(2, true, "thinClient", "trusttwo", CIPHER_SUITE, "TLSv1.2");
@@ -224,7 +224,7 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
 
         // In case of an SSL error, the client and server nodes make 2 additional connection attempts.
         assertTrue(waitForCondition(() ->
-            18 == reg.<IntMetric>findMetric("rejectedSslConnectionsCount").value(),
+            18 == reg.<IntMetric>findMetric("RejectedSslConnectionsCount").value(),
             getTestTimeout()));
     }
 

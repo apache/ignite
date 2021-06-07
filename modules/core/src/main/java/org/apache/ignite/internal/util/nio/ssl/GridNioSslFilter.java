@@ -53,7 +53,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     public static final String SSL_HANDSHAKE_DURATION_HISTOGRAM_METRIC_NAME = "SslHandshakeDurationHistogram";
 
     /** The name of the metric that provides number of rejected session due to SSL errors. */
-    public static final String SSL_REJECTED_SESSIONS_CNT_METRIC_NAME = "rejectedSslSessionsCount";
+    public static final String SSL_REJECTED_SESSIONS_CNT_METRIC_NAME = "RejectedSslSessionsCount";
 
     /** Logger to use. */
     private IgniteLogger log;

@@ -88,7 +88,7 @@ public class TcpDiscoveryStatistics {
             "Pending messages registered count");
 
         rejectedSslConnectionsCnt = new IntMetricImpl(
-            metricName(DISCO_METRICS, "rejectedSslConnectionsCount"),
+            metricName(DISCO_METRICS, "RejectedSslConnectionsCount"),
             "The number of rejected TCP discovery connections due to SSL errors."
         );
     }
