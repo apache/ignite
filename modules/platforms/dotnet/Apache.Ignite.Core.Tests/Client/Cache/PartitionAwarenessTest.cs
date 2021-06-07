@@ -362,7 +362,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [TestCase(false, 1)]
         [TestCase(new[]{true, false}, 1)]
         [TestCase(new byte[]{1, 2}, 2)]
-        [TestCase(new sbyte[]{1, -2}, 1)]
+        [TestCase(new sbyte[]{1, -2}, 0)]
         [TestCase(new short[]{1, 3}, 2)]
         [TestCase(new ushort[]{1, 4}, 2)]
         [TestCase(new int[]{1, 5}, 2)]

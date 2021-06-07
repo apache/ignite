@@ -124,11 +124,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Gets the Ignite-specific hash code for an array.
         /// </summary>
-        private static unsafe int GetArrayHashCode<T>(T val, Marshaller marsh, IDictionary<int, int> affinityKeyFieldIds)
+        private static int GetArrayHashCode<T>(T val, Marshaller marsh, IDictionary<int, int> affinityKeyFieldIds)
         {
             var res = 1;
 
-            var bytes = val as byte[];
+            var bytes = val as sbyte[];  // Matches byte[] too.
 
             if (bytes != null)
             {
@@ -138,22 +138,12 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return res;
             }
 
-            var ints = val as int[];
+            var ints = val as int[]; // Matches uint[] too.
 
             if (ints != null)
             {
                 foreach (var x in ints)
                     res = 31 * res + x;
-
-                return res;
-            }
-
-            var uints = val as uint[];
-
-            if (uints != null)
-            {
-                foreach (var x in uints)
-                    res = 31 * res + *(int*) &x;
 
                 return res;
             }
