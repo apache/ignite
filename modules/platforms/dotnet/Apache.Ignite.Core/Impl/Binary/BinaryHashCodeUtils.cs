@@ -67,11 +67,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return TypeCaster<bool>.Cast(val) ? 1231 : 1237;
 
             if (type == typeof(byte))
-            {
-                var val0 = TypeCaster<byte>.Cast(val);
-                return *(sbyte*) &val0;
-
-            }
+                return unchecked((sbyte) TypeCaster<byte>.Cast(val));
 
             if (type == typeof(short))
                 return TypeCaster<short>.Cast(val);
