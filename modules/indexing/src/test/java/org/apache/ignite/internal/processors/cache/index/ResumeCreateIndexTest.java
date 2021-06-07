@@ -18,12 +18,10 @@
 package org.apache.ignite.internal.processors.cache.index;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.Person;
-import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -31,6 +29,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.SlowDownBuildIndexConsumer;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -39,8 +38,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_INDEX_REBUILD_BATCH_SIZE;
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.index.IgniteH2IndexingEx.addIdxCreateRowConsumer;
-import static org.apache.ignite.internal.processors.cache.index.IgniteH2IndexingEx.prepareBeforeNodeStart;
 import static org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.nodeName;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
@@ -52,7 +51,7 @@ public class ResumeCreateIndexTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        IndexesRebuildTaskEx.clean(getTestIgniteInstanceName());
+        IgniteH2IndexingEx.clean(getTestIgniteInstanceName());
 
         stopAllGrids();
         cleanPersistenceDir();
@@ -62,7 +61,7 @@ public class ResumeCreateIndexTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        IndexesRebuildTaskEx.clean(getTestIgniteInstanceName());
+        IgniteH2IndexingEx.clean(getTestIgniteInstanceName());
 
         stopAllGrids();
         cleanPersistenceDir();
@@ -86,34 +85,24 @@ public class ResumeCreateIndexTest extends GridCommonAbstractTest {
     @Test
     @WithSystemProperty(key = IGNITE_INDEX_REBUILD_BATCH_SIZE, value = "1")
     public void test0() throws Exception {
-        prepareBeforeNodeStart();
+        IgniteH2IndexingEx.prepareBeforeNodeStart();
 
         IgniteEx n = startGrid(0);
-        n.cluster().state(ClusterState.ACTIVE);
+        n.cluster().state(ACTIVE);
 
         for (int i = 0; i < 100_000; i++)
             n.cache(DEFAULT_CACHE_NAME).put(i, new Person(i, "name_" + i));
 
         log.warning("kirill 0");
 
-        GridFutureAdapter<Void> startIdxFut = new GridFutureAdapter<>();
-        GridFutureAdapter<Void> finishIdxFut = new GridFutureAdapter<>();
-        AtomicBoolean sleep = new AtomicBoolean(true);
-
-        addIdxCreateRowConsumer(nodeName(n), "IDX0", row -> {
-            startIdxFut.onDone();
-
-            finishIdxFut.get(getTestTimeout());
-
-            if (sleep.get())
-                doSleep(10);
-        });
+        SlowDownBuildIndexConsumer consumer = new SlowDownBuildIndexConsumer(getTestTimeout(), 10);
+        addIdxCreateRowConsumer(nodeName(n), "IDX0", consumer);
 
         IgniteEx n0 = n;
         IgniteInternalFuture<List<List<?>>> createIdxFut = runAsync(
             () -> n0.cache(DEFAULT_CACHE_NAME).query(new SqlFieldsQuery("CREATE INDEX IDX0 ON Person(name)")).getAll());
 
-        startIdxFut.get(getTestTimeout());
+        consumer.startFut.get(getTestTimeout());
 
         GridFutureAdapter<Void> startCpFut = new GridFutureAdapter<>();
 
@@ -141,11 +130,11 @@ public class ResumeCreateIndexTest extends GridCommonAbstractTest {
         });
 
         startCpFut.get(getTestTimeout());
-        finishIdxFut.onDone();
+        consumer.finishFut.onDone();
 
         enableCpFut.get(getTestTimeout());
 
-        sleep.set(false);
+        consumer.sleepTime.set(0);
         createIdxFut.get(getTestTimeout());
 
         log.warning("kirill 0");
@@ -156,7 +145,7 @@ public class ResumeCreateIndexTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         n = startGrid(0);
-        n.cluster().state(ClusterState.ACTIVE);
+        n.cluster().state(ACTIVE);
 
         IgniteInternalFuture<?> rebIdxFut = indexRebuildFuture(n, CU.cacheId(DEFAULT_CACHE_NAME));
 

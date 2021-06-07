@@ -17,11 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Utility class for testing indexing.
@@ -65,5 +69,78 @@ class IndexingTestUtils {
      */
     static String nodeName(GridCacheContext cacheCtx) {
         return nodeName(cacheCtx.kernalContext());
+    }
+
+    /**
+     * Consumer to stop building cache indexes.
+     */
+    static class StopBuildIndexConsumer implements IgniteThrowableConsumer<CacheDataRow> {
+        /** Future to indicate that the building indexes has begun. */
+        final GridFutureAdapter<Void> startFut = new GridFutureAdapter<>();
+
+        /** Future to wait to continue building indexes. */
+        final GridFutureAdapter<Void> finishFut = new GridFutureAdapter<>();
+
+        /** Counter of visits. */
+        final AtomicLong visitCnt = new AtomicLong();
+
+        /** The maximum time to wait finish future in milliseconds. */
+        final long timeout;
+
+        /**
+         * Constructor.
+         *
+         * @param timeout The maximum time to wait finish future in milliseconds.
+         */
+        StopBuildIndexConsumer(long timeout) {
+            this.timeout = timeout;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void accept(CacheDataRow row) throws IgniteCheckedException {
+            startFut.onDone();
+
+            visitCnt.incrementAndGet();
+
+            finishFut.get(timeout);
+        }
+
+        /**
+         * Resetting internal futures.
+         */
+        void resetFutures() {
+            startFut.reset();
+            finishFut.reset();
+        }
+    }
+
+    /**
+     * Consumer to slow down building cache indexes.
+     */
+    static class SlowDownBuildIndexConsumer extends StopBuildIndexConsumer {
+        /** Sleep time for each consumer call in milliseconds. */
+        final AtomicLong sleepTime;
+
+        /**
+         * Constructor.
+         *
+         * @param timeout The maximum time to wait finish future in milliseconds.
+         * @param sleepTime Sleep time for each consumer call in milliseconds.
+         */
+        SlowDownBuildIndexConsumer(long timeout, long sleepTime) {
+            super(timeout);
+
+            this.sleepTime = new AtomicLong(sleepTime);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void accept(CacheDataRow row) throws IgniteCheckedException {
+            super.accept(row);
+
+            long sleepTime = this.sleepTime.get();
+
+            if (sleepTime > 0)
+                U.sleep(sleepTime);
+        }
     }
 }

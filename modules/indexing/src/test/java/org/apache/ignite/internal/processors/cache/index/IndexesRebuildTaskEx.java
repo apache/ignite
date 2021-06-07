@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.index;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
@@ -134,48 +133,5 @@ class IndexesRebuildTaskEx extends IndexesRebuildTask {
      */
     static void addCacheRebuildRunner(String nodeName, String cacheName, Runnable r) {
         cacheRebuildRunner.computeIfAbsent(nodeName, s -> new ConcurrentHashMap<>()).put(cacheName, r);
-    }
-
-    /**
-     * Consumer for stopping rebuilding indexes of cache.
-     */
-    static class StopRebuildIndexConsumer implements IgniteThrowableConsumer<CacheDataRow> {
-        /** Future to indicate that the rebuilding indexes has begun. */
-        final GridFutureAdapter<Void> startRebuildIdxFut = new GridFutureAdapter<>();
-
-        /** Future to wait to continue rebuilding indexes. */
-        final GridFutureAdapter<Void> finishRebuildIdxFut = new GridFutureAdapter<>();
-
-        /** Counter of visits. */
-        final AtomicLong visitCnt = new AtomicLong();
-
-        /** The maximum time to wait finish future in milliseconds. */
-        final long timeout;
-
-        /**
-         * Constructor.
-         *
-         * @param timeout The maximum time to wait finish future in milliseconds.
-         */
-        StopRebuildIndexConsumer(long timeout) {
-            this.timeout = timeout;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void accept(CacheDataRow row) throws IgniteCheckedException {
-            startRebuildIdxFut.onDone();
-
-            visitCnt.incrementAndGet();
-
-            finishRebuildIdxFut.get(timeout);
-        }
-
-        /**
-         * Resetting internal futures.
-         */
-        void resetFutures() {
-            startRebuildIdxFut.reset();
-            finishRebuildIdxFut.reset();
-        }
     }
 }
