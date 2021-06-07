@@ -360,17 +360,17 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [TestCase(true, 1)]
         [TestCase(false, 1)]
         [TestCase(new[]{true, false}, 1)]
-        [TestCase(new byte[]{1, 2}, 1)]
-        [TestCase(new short[]{1, 3}, 1)]
-        [TestCase(new ushort[]{1, 4}, 1)]
-        [TestCase(new int[]{1, 5}, 1)]
+        [TestCase(new byte[]{1, 2}, 2)]
+        [TestCase(new short[]{1, 3}, 2)]
+        [TestCase(new ushort[]{1, 4}, 2)]
+        [TestCase(new int[]{1, 5}, 2)]
         [TestCase(new uint[]{1, 6}, 1)]
-        [TestCase(new long[]{1, 7}, 1)]
-        [TestCase(new ulong[]{1, 8}, 1)]
+        [TestCase(new long[]{1, 7}, 0)]
+        [TestCase(new ulong[]{1, 8}, 0)]
         [TestCase(new float[]{1.1f, 9.9f}, 1)]
         [TestCase(new double[]{1.2f, 19.19f}, 1)]
         [TestCase(new char[]{'x', 'y'}, 1)]
-        [TestCase(new string[]{"Hello", "World"}, 1)]
+        [TestCase(new string[]{"Hello", "World"}, 2)]
         // ReSharper restore RedundantExplicitArrayCreation
         public void CachePut_AllPrimitiveTypes_RequestIsRoutedToPrimaryNode(object key, int gridIdx)
         {
@@ -433,20 +433,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         public void CachePut_UIntPtrKeyKey_RequestIsRoutedToPrimaryNode(int keyInt, int gridIdx)
         {
             var key = new UIntPtr((uint) keyInt);
-
-            var cache = Client.GetCache<object, object>(_cache.Name);
-            TestOperation(() => cache.Put(key, key), gridIdx, "Put");
-
-            // Verify against real Affinity.
-            Assert.AreEqual(gridIdx, GetPrimaryNodeIdx(key));
-        }
-
-        [Test]
-        [TestCase(1, 1)]
-        [TestCase(2, 0)]
-        public void CachePut_ByteArrayKey_RequestIsRoutedToPrimaryNode(int keyInt, int gridIdx)
-        {
-            var key = new[] {(byte) keyInt, (byte) keyInt};
 
             var cache = Client.GetCache<object, object>(_cache.Name);
             TestOperation(() => cache.Put(key, key), gridIdx, "Put");

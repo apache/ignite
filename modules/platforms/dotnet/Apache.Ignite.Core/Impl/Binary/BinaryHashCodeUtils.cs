@@ -111,8 +111,37 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return GetLongHashCode(*(long*) &val0);
             }
 
+            if (type.IsArray)
+            {
+                return GetArrayHashCode(val, marsh, affinityKeyFieldIds);
+            }
+
             // DateTime, when used as key, is always written as BinaryObject.
             return GetComplexTypeHashCode(val, marsh, affinityKeyFieldIds);
+        }
+
+        private static int GetArrayHashCode<T>(T val, Marshaller marsh, IDictionary<int, int> affinityKeyFieldIds)
+        {
+            // TODO: Handle predefined type arrays separately.
+            var arr = val as Array;
+
+            Debug.Assert(arr != null);
+
+            if (arr.Rank != 1)
+            {
+                throw new IgniteException(
+                    string.Format("Failed to compute hash code for object '{0}' of type '{1}': " +
+                                  "multidimensional arrays are not supported", val, val.GetType()));
+            }
+
+            var res = 1;
+
+            foreach (var element in arr)
+            {
+                res = 31 * res + (element == null ? 0 : GetHashCode(element, marsh, affinityKeyFieldIds));
+            }
+
+            return res;
         }
 
         // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
