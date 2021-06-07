@@ -24,6 +24,8 @@ import java.util.UUID;
 import javax.cache.configuration.Factory;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryEventFilter;
+import javax.cache.event.CacheEntryUpdatedListener;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.ContinuousQueryWithTransformer;
 import org.apache.ignite.cache.query.ContinuousQueryWithTransformer.EventListener;
@@ -75,25 +77,64 @@ public class CacheContinuousQueryHandlerV3<K, V> extends CacheContinuousQueryHan
      * @param ignoreClsNotFound IgnoreClassNotFoundException flag.
      */
     public CacheContinuousQueryHandlerV3(
-        String cacheName,
-        Object topic,
-        EventListener<?> locTransLsnr,
-        @Nullable Factory<? extends CacheEntryEventFilter<K, V>> rmtFilterFactory,
-        Factory<? extends IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?>> rmtTransFactory,
-        boolean oldValRequired,
-        boolean sync,
-        boolean ignoreExpired,
-        boolean ignoreClsNotFound) {
+            String cacheName,
+            Object topic,
+            EventListener<?> locTransLsnr,
+            @Nullable Factory<? extends CacheEntryEventFilter<K, V>> rmtFilterFactory,
+            Factory<? extends IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?>> rmtTransFactory,
+            boolean oldValRequired,
+            boolean sync,
+            boolean ignoreExpired,
+            boolean ignoreClsNotFound) {
         super(
-            cacheName,
-            topic,
-            null,
-            rmtFilterFactory,
-            oldValRequired,
-            sync,
-            ignoreExpired,
-            ignoreClsNotFound,
-            null);
+                cacheName,
+                topic,
+                null,
+                rmtFilterFactory,
+                oldValRequired,
+                sync,
+                ignoreExpired,
+                ignoreClsNotFound,
+                null);
+
+        assert rmtTransFactory != null;
+
+        this.locTransLsnr = locTransLsnr;
+        this.rmtTransFactory = rmtTransFactory;
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @param topic Topic.
+     * @param locTransLsnr Local listener of transformed events.
+     * @param rmtFilterFactory Remote filter factory.
+     * @param rmtTransFactory Remote transformer factory.
+     * @param oldValRequired OldValRequired flag.
+     * @param sync Sync flag.
+     * @param ignoreExpired IgnoreExpired flag.
+     * @param ignoreClsNotFound IgnoreClassNotFoundException flag.
+     */
+    public CacheContinuousQueryHandlerV3(
+            String cacheName,
+            Object topic,
+            @Nullable CacheEntryUpdatedListener<K, V> locLsnr,
+            EventListener<?> locTransLsnr,
+            @Nullable Factory<? extends CacheEntryEventFilter<K, V>> rmtFilterFactory,
+            Factory<? extends IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?>> rmtTransFactory,
+            boolean oldValRequired,
+            boolean sync,
+            boolean ignoreExpired,
+            boolean ignoreClsNotFound) {
+        super(
+                cacheName,
+                topic,
+                locLsnr,
+                rmtFilterFactory,
+                oldValRequired,
+                sync,
+                ignoreExpired,
+                ignoreClsNotFound,
+                null);
 
         assert rmtTransFactory != null;
 

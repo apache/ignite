@@ -1121,16 +1121,36 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
                         Factory<CacheEntryEventFilter<K, V>> rmtFilterFactory = cfg.getCacheEntryEventFilterFactory();
 
                         if (rmtFilterFactory != null)
+                        {
                             hnd = new CacheContinuousQueryHandlerV2(
-                                cctx.name(),
-                                TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
-                                locLsnr,
-                                securityAwareFilterFactory(rmtFilterFactory),
-                                cfg.isOldValueRequired(),
-                                cfg.isSynchronous(),
-                                false,
-                                false,
-                                types0);
+                                    cctx.name(),
+                                    TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
+                                    locLsnr,
+                                    securityAwareFilterFactory(rmtFilterFactory),
+                                    cfg.isOldValueRequired(),
+                                    cfg.isSynchronous(),
+                                    false,
+                                    false,
+                                    types0);
+
+                            /*
+                            String cacheName,
+                            Object topic,
+                            @Nullable CacheEntryUpdatedListener<K, V> locLsnr,
+                            ContinuousQueryWithTransformer.EventListener<?> locTransLsnr,
+                            @Nullable Factory<? extends CacheEntryEventFilter<K, V>> rmtFilterFactory,
+                            Factory<? extends IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?>> rmtTransFactory,
+                            boolean oldValRequired,
+                            boolean sync,
+                            boolean ignoreExpired,
+                            boolean ignoreClsNotFound
+                            */
+                            /*new CacheContinuousQueryHandlerV4(
+                                    cctx.name(),
+                                    TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
+
+                                    );*/
+                        }
                         else {
                             JCacheQueryRemoteFilter jCacheFilter;
 

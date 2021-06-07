@@ -246,14 +246,14 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
      * @param ignoreExpired Ignore expired events flag.
      */
     public CacheContinuousQueryHandler(
-        String cacheName,
-        Object topic,
-        @Nullable CacheEntryUpdatedListener<K, V> locLsnr,
-        @Nullable CacheEntryEventSerializableFilter<K, V> rmtFilter,
-        boolean oldValRequired,
-        boolean sync,
-        boolean ignoreExpired,
-        boolean ignoreClsNotFound) {
+            String cacheName,
+            Object topic,
+            @Nullable CacheEntryUpdatedListener<K, V> locLsnr,
+            @Nullable CacheEntryEventSerializableFilter<K, V> rmtFilter,
+            boolean oldValRequired,
+            boolean sync,
+            boolean ignoreExpired,
+            boolean ignoreClsNotFound) {
         assert topic != null;
 
         this.cacheName = cacheName;
@@ -1629,5 +1629,15 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         }
 
         return transVal;
+    }
+
+    /** @return Local listener class name. */
+    public String localListenerClassName() {
+        return null;
+    }
+
+    /** @return Local transformed event listener class name. */
+    public String localTransformedEventListenerClassName() {
+        return null;
     }
 }
