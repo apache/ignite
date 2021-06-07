@@ -148,6 +148,48 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return res;
             }
 
+            var longs = val as long[]; // Matches ulong[] too.
+
+            if (longs != null)
+            {
+                foreach (var x in longs)
+                    res = 31 * res + GetLongHashCode(x);
+
+                return res;
+            }
+
+            var guids = val as Guid[];
+
+            if (guids != null)
+            {
+                foreach (var x in guids)
+                    res = 31 * res + GetGuidHashCode(x);
+
+                return res;
+            }
+
+            var shorts = val as short[]; // Matches ushort[] too.
+
+            if (shorts != null)
+            {
+                foreach (var x in shorts)
+                    res = 31 * res + x;
+
+                return res;
+            }
+
+            var chars = val as char[];
+
+            if (chars != null)
+            {
+                foreach (var x in chars)
+                    res = 31 * res + x;
+
+                return res;
+            }
+
+            // This covers all other arrays.
+            // We don't have special handling for unlikely use cases such as float[] and double[].
             var arr = val as Array;
 
             Debug.Assert(arr != null);
