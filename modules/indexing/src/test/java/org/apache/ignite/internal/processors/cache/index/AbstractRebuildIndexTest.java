@@ -32,7 +32,8 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.CacheMetricsImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.BreakRebuildIndexConsumer;
-import org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.StopRebuildIndexConsumer;
+import org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.SlowdownBuildIndexConsumer;
+import org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.StopBuildIndexConsumer;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.util.lang.IgniteThrowableBiPredicate;
 import org.apache.ignite.internal.util.typedef.G;
@@ -41,8 +42,9 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.internal.processors.cache.index.IgniteH2IndexingEx.addIdxCreateCacheRowConsumer;
 import static org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.addCacheRowConsumer;
-import static org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.nodeName;
+import static org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.nodeName;
 import static org.apache.ignite.testframework.GridTestUtils.deleteIndexBin;
 
 /**
@@ -54,6 +56,7 @@ public abstract class AbstractRebuildIndexTest extends GridCommonAbstractTest {
         super.beforeTest();
 
         IndexesRebuildTaskEx.clean(getTestIgniteInstanceName());
+        IgniteH2IndexingEx.clean(getTestIgniteInstanceName());
 
         stopAllGrids();
         cleanPersistenceDir();
@@ -64,6 +67,7 @@ public abstract class AbstractRebuildIndexTest extends GridCommonAbstractTest {
         super.afterTest();
 
         IndexesRebuildTaskEx.clean(getTestIgniteInstanceName());
+        IgniteH2IndexingEx.clean(getTestIgniteInstanceName());
 
         stopAllGrids();
         cleanPersistenceDir();
@@ -90,14 +94,14 @@ public abstract class AbstractRebuildIndexTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Registering a {@link StopRebuildIndexConsumer} for cache.
+     * Registering a {@link StopBuildIndexConsumer} for cache.
      *
      * @param n Node.
      * @param cacheName Cache name.
-     * @return New instance of {@link StopRebuildIndexConsumer}.
+     * @return New instance of {@link StopBuildIndexConsumer}.
      */
-    protected StopRebuildIndexConsumer addStopRebuildIndexConsumer(IgniteEx n, String cacheName) {
-        StopRebuildIndexConsumer stopRebuildIdxConsumer = new StopRebuildIndexConsumer(getTestTimeout());
+    protected StopBuildIndexConsumer addStopRebuildIndexConsumer(IgniteEx n, String cacheName) {
+        StopBuildIndexConsumer stopRebuildIdxConsumer = new StopBuildIndexConsumer(getTestTimeout());
 
         addCacheRowConsumer(nodeName(n), cacheName, stopRebuildIdxConsumer);
 
@@ -122,6 +126,22 @@ public abstract class AbstractRebuildIndexTest extends GridCommonAbstractTest {
         addCacheRowConsumer(nodeName(n), cacheName, breakRebuildIdxConsumer);
 
         return breakRebuildIdxConsumer;
+    }
+
+    /**
+     * Registering a {@link SlowdownBuildIndexConsumer} to {@link IgniteH2IndexingEx#addIdxCreateCacheRowConsumer}.
+     *
+     * @param n Node.
+     * @param idxName Index name.
+     * @param sleepTime Sleep time after processing each cache row.
+     * @return New instance of {@link SlowdownBuildIndexConsumer}.
+     */
+    protected SlowdownBuildIndexConsumer addSlowdownIdxCreateConsumer(IgniteEx n, String idxName, long sleepTime) {
+        SlowdownBuildIndexConsumer consumer = new SlowdownBuildIndexConsumer(getTestTimeout(), sleepTime);
+
+        addIdxCreateCacheRowConsumer(nodeName(n), idxName, consumer);
+
+        return consumer;
     }
 
     /**

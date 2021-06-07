@@ -23,7 +23,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.CacheMetricsImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.StopRebuildIndexConsumer;
+import org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.StopBuildIndexConsumer;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheCompoundFuture;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheFuture;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheStat;
@@ -38,7 +38,7 @@ import org.junit.Test;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.addCacheRebuildRunner;
 import static org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.addCacheRowConsumer;
-import static org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.nodeName;
+import static org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.nodeName;
 import static org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.prepareBeforeNodeStart;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValueHierarchy;
@@ -149,7 +149,7 @@ public class StopRebuildIndexTest extends AbstractRebuildIndexTest {
             () -> assertNull(internalIndexRebuildFuture(n, cacheCtx.cacheId()))
         );
 
-        StopRebuildIndexConsumer stopRebuildIdxConsumer = addStopRebuildIndexConsumer(n, cacheCtx.name());
+        StopBuildIndexConsumer stopRebuildIdxConsumer = addStopRebuildIndexConsumer(n, cacheCtx.name());
 
         forceRebuildIndexes(n, cacheCtx);
 
@@ -159,13 +159,13 @@ public class StopRebuildIndexTest extends AbstractRebuildIndexTest {
         SchemaIndexCacheFuture rebFut1 = internalIndexRebuildFuture(n, cacheCtx.cacheId());
         assertNotNull(rebFut1);
 
-        stopRebuildIdxConsumer.startRebuildIdxFut.get(getTestTimeout());
+        stopRebuildIdxConsumer.startBuildIdxFut.get(getTestTimeout());
         assertFalse(rebFut0.isDone());
 
         assertFalse(rebFut1.isDone());
         assertFalse(rebFut1.cancelToken().isCancelled());
 
-        stopRebuildIdxConsumer.finishRebuildIdxFut.onDone();
+        stopRebuildIdxConsumer.finishBuildIdxFut.onDone();
 
         rebFut0.get(getTestTimeout());
         rebFut1.get(getTestTimeout());

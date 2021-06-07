@@ -24,7 +24,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.BreakRebuildIndexConsumer;
-import org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.StopRebuildIndexConsumer;
+import org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.StopBuildIndexConsumer;
 import org.apache.ignite.internal.processors.query.aware.IndexRebuildStateStorage;
 import org.apache.ignite.internal.util.function.ThrowableFunction;
 import org.junit.Test;
@@ -56,7 +56,7 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
 
         GridCacheContext<?, ?> cacheCtx = n.cachex(DEFAULT_CACHE_NAME).context();
 
-        StopRebuildIndexConsumer stopRebuildIdxConsumer = addStopRebuildIndexConsumer(n, cacheCtx.name());
+        StopBuildIndexConsumer stopRebuildIdxConsumer = addStopRebuildIndexConsumer(n, cacheCtx.name());
 
         dbMgr(n).enableCheckpoints(false).get(getTestTimeout());
 
@@ -66,8 +66,8 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
         assertFalse(indexRebuildStateStorage(n).completed(cacheCtx.name()));
         assertNotNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheCtx.name())));
 
-        stopRebuildIdxConsumer.startRebuildIdxFut.get(getTestTimeout());
-        stopRebuildIdxConsumer.finishRebuildIdxFut.onDone();
+        stopRebuildIdxConsumer.startBuildIdxFut.get(getTestTimeout());
+        stopRebuildIdxConsumer.finishBuildIdxFut.onDone();
 
         idxRebFut.get(getTestTimeout());
 
@@ -104,8 +104,8 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
         assertFalse(indexRebuildStateStorage(n).completed(cacheCtx.name()));
         assertNotNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheCtx.name())));
 
-        breakRebuildIdxConsumer.startRebuildIdxFut.get(getTestTimeout());
-        breakRebuildIdxConsumer.finishRebuildIdxFut.onDone();
+        breakRebuildIdxConsumer.startBuildIdxFut.get(getTestTimeout());
+        breakRebuildIdxConsumer.finishBuildIdxFut.onDone();
 
         assertThrows(log, () -> idxRebFut0.get(getTestTimeout()), Throwable.class, null);
         assertTrue(breakRebuildIdxConsumer.visitCnt.get() < 1_000);
@@ -115,7 +115,7 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
         assertFalse(indexRebuildStateStorage(n).completed(cacheCtx.name()));
         assertNotNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheCtx.name())));
 
-        StopRebuildIndexConsumer stopRebuildIdxConsumer = addStopRebuildIndexConsumer(n, cacheCtx.name());
+        StopBuildIndexConsumer stopRebuildIdxConsumer = addStopRebuildIndexConsumer(n, cacheCtx.name());
         dbMgr(n).enableCheckpoints(false).get(getTestTimeout());
 
         assertTrue(forceRebuildIndexes(n, cacheCtx).isEmpty());
@@ -124,8 +124,8 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
         assertFalse(indexRebuildStateStorage(n).completed(cacheCtx.name()));
         assertNotNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheCtx.name())));
 
-        stopRebuildIdxConsumer.startRebuildIdxFut.get(getTestTimeout());
-        stopRebuildIdxConsumer.finishRebuildIdxFut.onDone();
+        stopRebuildIdxConsumer.startBuildIdxFut.get(getTestTimeout());
+        stopRebuildIdxConsumer.finishBuildIdxFut.onDone();
 
         idxRebFut1.get(getTestTimeout());
 
@@ -159,8 +159,8 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
         assertTrue(forceRebuildIndexes(n, cacheCtx).isEmpty());
         IgniteInternalFuture<?> idxRebFut0 = indexRebuildFuture(n, cacheCtx.cacheId());
 
-        breakRebuildIdxConsumer.startRebuildIdxFut.get(getTestTimeout());
-        breakRebuildIdxConsumer.finishRebuildIdxFut.onDone();
+        breakRebuildIdxConsumer.startBuildIdxFut.get(getTestTimeout());
+        breakRebuildIdxConsumer.finishBuildIdxFut.onDone();
 
         assertThrows(log, () -> idxRebFut0.get(getTestTimeout()), Throwable.class, null);
 
@@ -171,7 +171,7 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
 
         stopAllGrids();
 
-        StopRebuildIndexConsumer stopRebuildIdxConsumer = addStopRebuildIndexConsumer(n, cacheCtx.name());
+        StopBuildIndexConsumer stopRebuildIdxConsumer = addStopRebuildIndexConsumer(n, cacheCtx.name());
 
         prepareBeforeNodeStart();
         n = startGrid(0);
@@ -179,12 +179,12 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
         assertFalse(indexRebuildStateStorage(n).completed(cacheCtx.name()));
         assertNotNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheCtx.name())));
 
-        stopRebuildIdxConsumer.startRebuildIdxFut.get(getTestTimeout());
+        stopRebuildIdxConsumer.startBuildIdxFut.get(getTestTimeout());
         IgniteInternalFuture<?> idxRebFut1 = indexRebuildFuture(n, cacheCtx.cacheId());
 
         dbMgr(n).enableCheckpoints(false).get(getTestTimeout());
 
-        stopRebuildIdxConsumer.finishRebuildIdxFut.onDone();
+        stopRebuildIdxConsumer.finishBuildIdxFut.onDone();
         idxRebFut1.get(getTestTimeout());
 
         assertEquals(1_000, stopRebuildIdxConsumer.visitCnt.get());
@@ -305,8 +305,8 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
 
             IgniteInternalFuture<?> rebIdxFut = indexRebuildFuture(n1, cachex.context().cacheId());
 
-            breakRebuildIdxConsumer.startRebuildIdxFut.get(getTestTimeout());
-            breakRebuildIdxConsumer.finishRebuildIdxFut.onDone();
+            breakRebuildIdxConsumer.startBuildIdxFut.get(getTestTimeout());
+            breakRebuildIdxConsumer.finishBuildIdxFut.onDone();
 
             assertThrows(log, () -> rebIdxFut.get(getTestTimeout()), Throwable.class, null);
             assertTrue(breakRebuildIdxConsumer.visitCnt.get() < cacheSize);
@@ -397,18 +397,18 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
         BreakRebuildIndexConsumer breakRebuildIdxConsumer =
             addBreakRebuildIndexConsumer(n, cacheCtx0.name(), (c, row) -> c.visitCnt.get() >= 10);
 
-        StopRebuildIndexConsumer stopRebuildIdxConsumer0 = addStopRebuildIndexConsumer(n, cacheCtx1.name());
+        StopBuildIndexConsumer stopRebuildIdxConsumer0 = addStopRebuildIndexConsumer(n, cacheCtx1.name());
 
         assertTrue(forceRebuildIndexes(n, cacheCtx0, cacheCtx1).isEmpty());
 
         IgniteInternalFuture<?> rebIdxFut0 = indexRebuildFuture(n, cacheCtx0.cacheId());
         IgniteInternalFuture<?> rebIdxFut1 = indexRebuildFuture(n, cacheCtx1.cacheId());
 
-        breakRebuildIdxConsumer.startRebuildIdxFut.get(getTestTimeout());
-        breakRebuildIdxConsumer.finishRebuildIdxFut.onDone();
+        breakRebuildIdxConsumer.startBuildIdxFut.get(getTestTimeout());
+        breakRebuildIdxConsumer.finishBuildIdxFut.onDone();
 
-        stopRebuildIdxConsumer0.startRebuildIdxFut.get(getTestTimeout());
-        stopRebuildIdxConsumer0.finishRebuildIdxFut.onDone();
+        stopRebuildIdxConsumer0.startBuildIdxFut.get(getTestTimeout());
+        stopRebuildIdxConsumer0.finishBuildIdxFut.onDone();
 
         assertThrows(log, () -> rebIdxFut0.get(getTestTimeout()), Throwable.class, null);
         assertTrue(breakRebuildIdxConsumer.visitCnt.get() < cacheSize0);
@@ -416,7 +416,7 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
         rebIdxFut1.get(getTestTimeout());
         assertEquals(cacheSize1, stopRebuildIdxConsumer0.visitCnt.get());
 
-        StopRebuildIndexConsumer stopRebuildIdxConsumer1 = addStopRebuildIndexConsumer(n, cacheCtx0.name());
+        StopBuildIndexConsumer stopRebuildIdxConsumer1 = addStopRebuildIndexConsumer(n, cacheCtx0.name());
         stopRebuildIdxConsumer0.resetFutures();
 
         forceCheckpoint();
@@ -426,16 +426,16 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
         IgniteInternalFuture<?> rebIdxFut01 = indexRebuildFuture(n, cacheCtx0.cacheId());
         IgniteInternalFuture<?> rebIdxFut11 = indexRebuildFuture(n, cacheCtx1.cacheId());
 
-        stopRebuildIdxConsumer1.startRebuildIdxFut.get(getTestTimeout());
-        stopRebuildIdxConsumer1.finishRebuildIdxFut.onDone();
+        stopRebuildIdxConsumer1.startBuildIdxFut.get(getTestTimeout());
+        stopRebuildIdxConsumer1.finishBuildIdxFut.onDone();
 
         assertThrows(
             log,
-            () -> stopRebuildIdxConsumer0.startRebuildIdxFut.get(1_000),
+            () -> stopRebuildIdxConsumer0.startBuildIdxFut.get(1_000),
             IgniteFutureTimeoutCheckedException.class,
             null
         );
-        stopRebuildIdxConsumer0.finishRebuildIdxFut.onDone();
+        stopRebuildIdxConsumer0.finishBuildIdxFut.onDone();
 
         rebIdxFut01.get(getTestTimeout());
         assertEquals(cacheSize0, stopRebuildIdxConsumer1.visitCnt.get());
