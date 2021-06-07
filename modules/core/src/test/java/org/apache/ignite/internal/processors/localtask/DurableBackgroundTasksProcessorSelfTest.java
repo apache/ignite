@@ -28,15 +28,12 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointWorkflow;
-import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask.DurableBackgroundTask;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.pendingtask.DurableBackgroundTaskResult;
 import org.apache.ignite.internal.processors.localtask.DurableBackgroundTaskState.State;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -485,30 +482,6 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
      */
     private DurableBackgroundTasksProcessor durableBackgroundTask(IgniteEx n) {
         return n.context().durableBackgroundTask();
-    }
-
-    /**
-     * Performing an operation on a MetaStorage.
-     *
-     * @param n Node.
-     * @param fun Function for working with MetaStorage, the argument can be {@code null}.
-     * @return The function result.
-     * @throws IgniteCheckedException If failed.
-     */
-    private <R> R metaStorageOperation(
-        IgniteEx n,
-        IgniteThrowableFunction<MetaStorage, R> fun
-    ) throws IgniteCheckedException {
-        GridCacheDatabaseSharedManager dbMgr = dbMgr(n);
-
-        dbMgr.checkpointReadLock();
-
-        try {
-            return fun.apply(dbMgr.metaStorage());
-        }
-        finally {
-            dbMgr.checkpointReadUnlock();
-        }
     }
 
     /**
