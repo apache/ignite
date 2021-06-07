@@ -23,7 +23,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
+import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -59,24 +59,7 @@ import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.sql.SqlParseException;
 import org.apache.ignite.internal.sql.SqlParser;
 import org.apache.ignite.internal.sql.SqlStrictParseException;
-import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
-import org.apache.ignite.internal.sql.command.SqlAlterUserCommand;
-import org.apache.ignite.internal.sql.command.SqlBeginTransactionCommand;
-import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
-import org.apache.ignite.internal.sql.command.SqlCommitTransactionCommand;
-import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
-import org.apache.ignite.internal.sql.command.SqlCreateUserCommand;
-import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
-import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
-import org.apache.ignite.internal.sql.command.SqlKillComputeTaskCommand;
-import org.apache.ignite.internal.sql.command.SqlKillContinuousQueryCommand;
-import org.apache.ignite.internal.sql.command.SqlKillQueryCommand;
-import org.apache.ignite.internal.sql.command.SqlKillScanQueryCommand;
-import org.apache.ignite.internal.sql.command.SqlKillServiceCommand;
-import org.apache.ignite.internal.sql.command.SqlKillTransactionCommand;
-import org.apache.ignite.internal.sql.command.SqlRollbackTransactionCommand;
-import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -94,12 +77,6 @@ public class QueryParser {
     /** */
     private static final int CACHE_SIZE = 1024;
 
-    /** A pattern for commands having internal implementation in Ignite. */
-    private static final Pattern INTERNAL_CMD_RE = Pattern.compile(
-        "^(create|drop)\\s+index|^alter\\s+table|^copy|^set|^begin|^commit|^rollback|^(create|alter|drop)\\s+user" +
-            "|^kill\\s+(query|scan|continuous|compute|service|transaction)|show|help|grant|revoke",
-        Pattern.CASE_INSENSITIVE);
-
     /** Indexing. */
     private final IgniteH2Indexing idx;
 
@@ -112,6 +89,9 @@ public class QueryParser {
     /** Query parser metrics holder. */
     private final QueryParserMetricsHolder metricsHolder;
 
+    /** Predicate to filter supported native commands. */
+    private final Predicate<SqlCommand> nativeCmdPredicate;
+
     /** */
     private volatile GridBoundedConcurrentLinkedHashMap<QueryDescriptor, QueryParserCacheEntry> cache =
         new GridBoundedConcurrentLinkedHashMap<>(CACHE_SIZE);
@@ -121,10 +101,12 @@ public class QueryParser {
      *
      * @param idx Indexing instance.
      * @param connMgr Connection manager.
+     * @param nativeCmdPredicate Predicate to filter supported native commands.
      */
-    public QueryParser(IgniteH2Indexing idx, ConnectionManager connMgr) {
+    public QueryParser(IgniteH2Indexing idx, ConnectionManager connMgr, Predicate<SqlCommand> nativeCmdPredicate) {
         this.idx = idx;
         this.connMgr = connMgr;
+        this.nativeCmdPredicate = nativeCmdPredicate;
 
         this.log = idx.kernalContext().log(QueryParser.class);
         this.metricsHolder = new QueryParserMetricsHolder(idx.kernalContext().metric());
@@ -254,7 +236,7 @@ public class QueryParser {
         String sql = qry.getSql();
 
         // Heuristic check for fast return.
-        if (!INTERNAL_CMD_RE.matcher(sql.trim()).find())
+        if (!SqlParser.isInternalCommand(sql.trim()))
             return null;
 
         try {
@@ -264,24 +246,7 @@ public class QueryParser {
 
             assert nativeCmd != null : "Empty query. Parser met end of data";
 
-            if (!(nativeCmd instanceof SqlCreateIndexCommand
-                || nativeCmd instanceof SqlDropIndexCommand
-                || nativeCmd instanceof SqlBeginTransactionCommand
-                || nativeCmd instanceof SqlCommitTransactionCommand
-                || nativeCmd instanceof SqlRollbackTransactionCommand
-                || nativeCmd instanceof SqlBulkLoadCommand
-                || nativeCmd instanceof SqlAlterTableCommand
-                || nativeCmd instanceof SqlSetStreamingCommand
-                || nativeCmd instanceof SqlCreateUserCommand
-                || nativeCmd instanceof SqlAlterUserCommand
-                || nativeCmd instanceof SqlDropUserCommand
-                || nativeCmd instanceof SqlKillQueryCommand
-                || nativeCmd instanceof SqlKillComputeTaskCommand
-                || nativeCmd instanceof SqlKillServiceCommand
-                || nativeCmd instanceof SqlKillTransactionCommand
-                || nativeCmd instanceof SqlKillScanQueryCommand
-                || nativeCmd instanceof SqlKillContinuousQueryCommand)
-            )
+            if (!nativeCmdPredicate.test(nativeCmd))
                 return null;
 
             SqlFieldsQuery newQry = cloneFieldsQuery(qry).setSql(parser.lastCommandSql());

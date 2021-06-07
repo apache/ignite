@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.sql;
 
+import java.util.regex.Pattern;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
 import org.apache.ignite.internal.sql.command.SqlAlterUserCommand;
@@ -77,6 +78,12 @@ import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatchesOptiona
  * SQL parser.
  */
 public class SqlParser {
+    /** A pattern for commands having internal implementation in Ignite. */
+    private static final Pattern INTERNAL_CMD_RE = Pattern.compile(
+        "^(create|drop)\\s+index|^alter\\s+table|^copy|^set|^begin|^commit|^rollback|^(create|alter|drop)\\s+user" +
+            "|^kill\\s+(query|scan|continuous|compute|service|transaction)|show|help|grant|revoke",
+        Pattern.CASE_INSENSITIVE);
+
     /** Scheme name. */
     private final String schemaName;
 
@@ -503,5 +510,12 @@ public class SqlParser {
             return null;
 
         return lex.sql().substring(lastCmdBeginPos, lastCmdEndPos);
+    }
+
+    /**
+     * Heuristic fast check for internal command.
+     */
+    public static boolean isInternalCommand(String sql) {
+        return INTERNAL_CMD_RE.matcher(sql).find();
     }
 }
