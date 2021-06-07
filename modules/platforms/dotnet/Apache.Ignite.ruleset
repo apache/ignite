@@ -20,25 +20,64 @@
 <RuleSet Name="Rules for Apache.Ignite.Core" Description="Code analysis rules for Apache.Ignite.Core.csproj." ToolsVersion="14.0">
   <IncludeAll Action="Error" />
   <Rules AnalyzerId="Microsoft.Analyzers.ManagedCodeAnalysis" RuleNamespace="Microsoft.Rules.Managed">
+    <!-- Generic methods should provide type parameter -->
     <Rule Id="CA1004" Action="None" />
+    
+    <!-- Avoid excessive parameters on generic types -->
     <Rule Id="CA1005" Action="None" />
+
+    <!-- Do not nest generic types in member signatures -->
     <Rule Id="CA1006" Action="None" />
+
+    <!-- Avoid namespaces with few types -->
     <Rule Id="CA1020" Action="None" />
+
+    <!-- Avoid out parameters -->
     <Rule Id="CA1021" Action="None" />
+
+    <!-- Use properties where appropriate -->
     <Rule Id="CA1024" Action="None" />
+
+    <!-- Default parameters should not be used -->
     <Rule Id="CA1026" Action="None" />
+
+    <!-- -->
     <Rule Id="CA1303" Action="None" />
+
+    <!-- Do not pass literals as localized parameters -->
     <Rule Id="CA1305" Action="None" />
+
+    <!-- -->
     <Rule Id="CA1307" Action="None" />
+
+    <!-- -->
     <Rule Id="CA1502" Action="None" />
+
+    <!-- -->
     <Rule Id="CA1506" Action="None" />
+
+    <!-- -->
     <Rule Id="CA1704" Action="None" />
+
+    <!-- -->
     <Rule Id="CA1709" Action="None" />
+
+    <!-- -->
     <Rule Id="CA1716" Action="None" />
+
+    <!-- -->
     <Rule Id="CA1720" Action="None" />
+
+    <!-- -->
     <Rule Id="CA1726" Action="None" />
+
+    <!-- -->
     <Rule Id="CA2001" Action="None" />
+
+    <!-- -->
     <Rule Id="CA2204" Action="None" />
+
+    <!-- -->
     <Rule Id="CA2243" Action="None" />
 
     <!-- Do not lock on objects with weak identity: we allow this on internal classes that are never exposed to the user. -->
