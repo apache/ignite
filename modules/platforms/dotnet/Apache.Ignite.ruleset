@@ -53,9 +53,6 @@
     <!-- Avoid excessive class coupling -->
     <Rule Id="CA1506" Action="None" />
 
-    <!-- Identifiers should be cased correctly -->
-    <Rule Id="CA1709" Action="None" />
-
     <!-- Identifiers should not match keywords -->
     <Rule Id="CA1716" Action="None" />
 
