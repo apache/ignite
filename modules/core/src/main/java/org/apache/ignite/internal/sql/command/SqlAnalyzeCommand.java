@@ -148,7 +148,7 @@ public class SqlAnalyzeCommand extends SqlStatisticsCommands {
      * @param dfltVal Default value.
      * @return Value or default value.
      */
-    private static byte getByteOrDefault(Map<String,String> map, String key, byte dfltVal) {
+    private static byte getByteOrDefault(Map<String, String> map, String key, byte dfltVal) {
         if (map == null)
             return dfltVal;
 
