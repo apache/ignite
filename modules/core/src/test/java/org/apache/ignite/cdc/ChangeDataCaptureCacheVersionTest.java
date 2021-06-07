@@ -111,14 +111,18 @@ public class ChangeDataCaptureCacheVersionTest extends AbstractChangeDataCapture
         ign.context().cache().context().versions().dataCenterId(DFLT_DC_ID);
         ign.cluster().state(ACTIVE);
 
-        TestCDCConsumer cnsmr = new TestCDCConsumer();
+        UserCDCConsumer cnsmr = new UserCDCConsumer() {
+            @Override public void checkEvent(ChangeDataCaptureEvent evt) {
+                assertEquals(DFLT_DC_ID, evt.version().clusterId());
+                assertEquals(OTHER_DC_ID, evt.version().otherClusterVersion().clusterId());
+
+                super.checkEvent(evt);
+            }
+        };
 
         ChangeDataCapture cdc = new ChangeDataCapture(cfg, null, cdcConfig(cnsmr));
 
         IgniteCache<Integer, User> cache = ign.getOrCreateCache(FOR_OTHER_DC_ID);
-
-        cnsmr.dcId = DFLT_DC_ID;
-        cnsmr.otherDcId = OTHER_DC_ID;
 
         addAndWaitForConsumption(cnsmr, cdc, cache, null, this::addConflictData, 0, KEYS_CNT, getTestTimeout());
     }

@@ -17,25 +17,17 @@
 
 package org.apache.ignite.internal.cdc;
 
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cdc.AbstractChangeDataCaptureTest;
 import org.apache.ignite.cdc.ChangeDataCaptureConfiguration;
-import org.apache.ignite.cdc.ChangeDataCaptureConsumer;
 import org.apache.ignite.cdc.ChangeDataCaptureEvent;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.junit.Test;
 
 import static org.apache.ignite.cdc.AbstractChangeDataCaptureTest.ChangeEventType.DELETE;
@@ -43,7 +35,6 @@ import static org.apache.ignite.cdc.AbstractChangeDataCaptureTest.ChangeEventTyp
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
-import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
 public class SqlChangeDataCaptureTest extends AbstractChangeDataCaptureTest {
@@ -119,106 +110,65 @@ public class SqlChangeDataCaptureTest extends AbstractChangeDataCaptureTest {
                 Integer.toString(127000 + i));
         }
 
-        assertTrue(waitForSize(KEYS_CNT, USER, UPDATE, cnsmr));
-        assertTrue(waitForSize(KEYS_CNT, CITY, UPDATE, cnsmr));
+        assertTrue(waitForSize(KEYS_CNT, USER, UPDATE, getTestTimeout(), cnsmr));
+        assertTrue(waitForSize(KEYS_CNT, CITY, UPDATE, getTestTimeout(), cnsmr));
 
         fut.cancel();
 
         assertEquals(KEYS_CNT, cnsmr.data(UPDATE, cacheId(USER)).size());
         assertEquals(KEYS_CNT, cnsmr.data(UPDATE, cacheId(CITY)).size());
 
-        assertTrue(cnsmr.stopped);
+        assertTrue(cnsmr.stopped());
 
         for (int i = 0; i < KEYS_CNT; i++)
             executeSql(ign, "DELETE FROM USER WHERE id = ?", i);
 
         IgniteInternalFuture<?> rmvFut = runAsync(cdc);
 
-        assertTrue(waitForSize(KEYS_CNT, USER, DELETE, cnsmr));
+        assertTrue(waitForSize(KEYS_CNT, USER, DELETE, getTestTimeout(), cnsmr));
 
         rmvFut.cancel();
 
-        assertTrue(cnsmr.stopped);
+        assertTrue(cnsmr.stopped());
     }
 
     /** */
-    private boolean waitForSize(
-        int expSz,
-        String cacheName,
-        ChangeEventType evtType,
-        BinaryCDCConsumer cnsmr
-    ) throws IgniteInterruptedCheckedException {
-        return waitForCondition(
-            () -> F.size(cnsmr.data(evtType, cacheId(cacheName))) == expSz,
-            getTestTimeout());
-    }
-
-    /** */
-    private static class BinaryCDCConsumer implements ChangeDataCaptureConsumer {
-        /** Keys */
-        private final ConcurrentMap<IgniteBiTuple<ChangeEventType, Integer>, List<ChangeDataCaptureEvent>> cacheKeys =
-            new ConcurrentHashMap<>();
-
-        /** */
-        public volatile boolean stopped;
-
+    public static class BinaryCDCConsumer extends TestCDCConsumer<ChangeDataCaptureEvent> {
         /** {@inheritDoc} */
-        @Override public void start() {
-            stopped = false;
+        @Override public void checkEvent(ChangeDataCaptureEvent evt) {
+            if (evt.value() == null)
+                return;
+
+            if (evt.cacheId() == cacheId(USER)) {
+                int id = ((BinaryObject)evt.key()).field("ID");
+                int cityId = ((BinaryObject)evt.key()).field("CITY_ID");
+
+                assertEquals(42 * id, cityId);
+
+                String name = ((BinaryObject)evt.value()).field("NAME");
+
+                if (id % 2 == 0)
+                    assertTrue(name.startsWith(JOHN));
+                else
+                    assertTrue(name.startsWith(SARAH));
+            }
+            else {
+                int id = (Integer)evt.key();
+                String name = ((BinaryObject)evt.value()).field("NAME");
+                String zipCode = ((BinaryObject)evt.value()).field("ZIP_CODE");
+
+                assertEquals(Integer.toString(127000 + id), zipCode);
+
+                if (id % 2 == 0)
+                    assertTrue(name.startsWith(MSK));
+                else
+                    assertTrue(name.startsWith(SPB));
+            }
         }
 
         /** {@inheritDoc} */
-        @Override public void stop() {
-            stopped = true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean onEvents(Iterator<ChangeDataCaptureEvent> events) {
-            events.forEachRemaining(evt -> {
-                if (!evt.primary())
-                    return;
-
-                cacheKeys.computeIfAbsent(
-                    F.t(evt.value() == null ? DELETE : UPDATE, evt.cacheId()),
-                    k -> new ArrayList<>()
-                ).add(evt);
-
-                if (evt.value() == null)
-                    return;
-
-                if (evt.cacheId() == cacheId(USER)) {
-                    int id = ((BinaryObject)evt.key()).field("ID");
-                    int cityId = ((BinaryObject)evt.key()).field("CITY_ID");
-
-                    assertEquals(42 * id, cityId);
-
-                    String name = ((BinaryObject)evt.value()).field("NAME");
-
-                    if (id % 2 == 0)
-                        assertTrue(name.startsWith(JOHN));
-                    else
-                        assertTrue(name.startsWith(SARAH));
-                }
-                else {
-                    int id = (Integer)evt.key();
-                    String name = ((BinaryObject)evt.value()).field("NAME");
-                    String zipCode = ((BinaryObject)evt.value()).field("ZIP_CODE");
-
-                    assertEquals(Integer.toString(127000 + id), zipCode);
-
-                    if (id % 2 == 0)
-                        assertTrue(name.startsWith(MSK));
-                    else
-                        assertTrue(name.startsWith(SPB));
-                }
-            });
-
-            return true;
-        }
-
-        /** */
-        public List<ChangeDataCaptureEvent> data(ChangeEventType op, int cacheId) {
-            return cacheKeys.get(F.t(op, cacheId));
+        @Override public ChangeDataCaptureEvent extract(ChangeDataCaptureEvent evt) {
+            return evt;
         }
     }
 

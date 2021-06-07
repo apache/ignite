@@ -62,7 +62,7 @@ public abstract class AbstractChangeDataCaptureTest extends GridCommonAbstractTe
 
     /** */
     public void addAndWaitForConsumption(
-        ChangeDataCaptureSelfTest.TestCDCConsumer cnsmr,
+        UserCDCConsumer cnsmr,
         ChangeDataCapture cdc,
         IgniteCache<Integer, ChangeDataCaptureSelfTest.User> cache,
         IgniteCache<Integer, ChangeDataCaptureSelfTest.User> txCache,
@@ -85,14 +85,14 @@ public abstract class AbstractChangeDataCaptureTest extends GridCommonAbstractTe
 
         fut.cancel();
 
-        List<Integer> keys = cnsmr.keys(UPDATE, cacheId(cache.getName()));
+        List<Integer> keys = cnsmr.data(UPDATE, cacheId(cache.getName()));
 
         assertEquals(to - from, keys.size());
 
         for (int i = from; i < to; i++)
             assertTrue(Integer.toString(i), keys.contains(i));
 
-        assertTrue(cnsmr.stopped);
+        assertTrue(cnsmr.stopped());
     }
 
     /** */
@@ -101,11 +101,11 @@ public abstract class AbstractChangeDataCaptureTest extends GridCommonAbstractTe
         String cacheName,
         ChangeDataCaptureSelfTest.ChangeEventType evtType,
         long timeout,
-        ChangeDataCaptureSelfTest.TestCDCConsumer... cnsmrs
+        TestCDCConsumer<?>... cnsmrs
     ) throws IgniteInterruptedCheckedException {
         return waitForCondition(
             () -> {
-                int sum = Arrays.stream(cnsmrs).mapToInt(c -> F.size(c.keys(evtType, cacheId(cacheName)))).sum();
+                int sum = Arrays.stream(cnsmrs).mapToInt(c -> F.size(c.data(evtType, cacheId(cacheName)))).sum();
                 return sum == expSz;
             },
             timeout);
@@ -122,19 +122,12 @@ public abstract class AbstractChangeDataCaptureTest extends GridCommonAbstractTe
     }
 
     /** */
-    public static class TestCDCConsumer implements ChangeDataCaptureConsumer {
+    public abstract static class TestCDCConsumer<T> implements ChangeDataCaptureConsumer {
         /** Keys */
-        final ConcurrentMap<IgniteBiTuple<ChangeEventType, Integer>, List<Integer>> cacheKeys =
-            new ConcurrentHashMap<>();
+        final ConcurrentMap<IgniteBiTuple<ChangeEventType, Integer>, List<T>> data = new ConcurrentHashMap<>();
 
         /** */
-        volatile boolean stopped;
-
-        /** */
-        volatile byte dcId = -1;
-
-        /** */
-        volatile byte otherDcId = -1;
+        private volatile boolean stopped;
 
         /** {@inheritDoc} */
         @Override public void start() {
@@ -152,23 +145,21 @@ public abstract class AbstractChangeDataCaptureTest extends GridCommonAbstractTe
                 if (!evt.primary())
                     return;
 
-                cacheKeys.computeIfAbsent(
+                data.computeIfAbsent(
                     F.t(evt.value() == null ? DELETE : UPDATE, evt.cacheId()),
-                    k -> new ArrayList<>()).add((Integer)evt.key()
-                );
+                    k -> new ArrayList<>()).add(extract(evt));
 
-                if (dcId != -1)
-                    assertEquals(dcId, evt.version().clusterId());
-
-                if (otherDcId != -1)
-                    assertEquals(otherDcId, evt.version().otherClusterVersion().clusterId());
-
-                if (evt.value() != null)
-                    checkUser((User)evt.value());
+                checkEvent(evt);
             });
 
             return commit();
         }
+
+        /** */
+        public abstract void checkEvent(ChangeDataCaptureEvent evt);
+
+        /** */
+        public abstract T extract(ChangeDataCaptureEvent evt);
 
         /** */
         protected boolean commit() {
@@ -176,8 +167,32 @@ public abstract class AbstractChangeDataCaptureTest extends GridCommonAbstractTe
         }
 
         /** @return Read keys. */
-        public List<Integer> keys(ChangeEventType op, int cacheId) {
-            return cacheKeys.get(F.t(op, cacheId));
+        public List<T> data(ChangeEventType op, int cacheId) {
+            return data.get(F.t(op, cacheId));
+        }
+
+        /** */
+        public boolean stopped() {
+            return stopped;
+        }
+    }
+
+    /** */
+    public static class UserCDCConsumer extends TestCDCConsumer<Integer> {
+        /** {@inheritDoc} */
+        @Override public void checkEvent(ChangeDataCaptureEvent evt) {
+            if (evt.value() == null)
+                return;
+
+            User user = (User)evt.value();
+
+            assertTrue(user.getName().startsWith(JOHN));
+            assertTrue(user.getAge() >= 42);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Integer extract(ChangeDataCaptureEvent evt) {
+            return (Integer)evt.key();
         }
     }
 
@@ -188,12 +203,6 @@ public abstract class AbstractChangeDataCaptureTest extends GridCommonAbstractTe
         ThreadLocalRandom.current().nextBytes(bytes);
 
         return new User(JOHN + " " + i, 42 + i, bytes);
-    }
-
-    /** */
-    protected static void checkUser(User user) {
-        assertTrue(user.getName().startsWith(JOHN));
-        assertTrue(user.getAge() >= 42);
     }
 
     /** */
