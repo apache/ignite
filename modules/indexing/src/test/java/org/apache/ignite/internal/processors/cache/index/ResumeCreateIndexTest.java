@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.index;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.SlowdownBuildIndexConsumer;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 
@@ -44,6 +45,9 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
         n.cluster().state(ACTIVE);
 
         populate(n.cache(DEFAULT_CACHE_NAME), 100_000);
+
+        String idxName = "IDX0";
+        SlowdownBuildIndexConsumer slowdownIdxCreateConsumer = addSlowdownIdxCreateConsumer(n, idxName, 10);
 
         // TODO: 07.06.2021 continue
     }

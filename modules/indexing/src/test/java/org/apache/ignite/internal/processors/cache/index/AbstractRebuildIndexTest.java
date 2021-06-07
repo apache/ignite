@@ -133,7 +133,7 @@ public abstract class AbstractRebuildIndexTest extends GridCommonAbstractTest {
      *
      * @param n Node.
      * @param idxName Index name.
-     * @param sleepTime Sleep time after processing each cache row.
+     * @param sleepTime Sleep time after processing each cache row in milliseconds.
      * @return New instance of {@link SlowdownBuildIndexConsumer}.
      */
     protected SlowdownBuildIndexConsumer addSlowdownIdxCreateConsumer(IgniteEx n, String idxName, long sleepTime) {

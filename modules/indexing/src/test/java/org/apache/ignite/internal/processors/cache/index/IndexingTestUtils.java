@@ -119,14 +119,14 @@ class IndexingTestUtils {
      * Consumer for slowdown building indexes of cache.
      */
     static class SlowdownBuildIndexConsumer extends StopBuildIndexConsumer {
-        /** Sleep time after processing each cache row. */
+        /** Sleep time after processing each cache row in milliseconds. */
         final AtomicLong sleepTime;
 
         /**
          * Constructor.
          *
          * @param timeout The maximum time to wait finish future in milliseconds.
-         * @param sleepTime Sleep time after processing each cache row.
+         * @param sleepTime Sleep time after processing each cache row in milliseconds.
          */
         SlowdownBuildIndexConsumer(long timeout, long sleepTime) {
             super(timeout);
