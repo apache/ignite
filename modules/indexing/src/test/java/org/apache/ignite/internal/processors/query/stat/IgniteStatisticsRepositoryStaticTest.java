@@ -17,14 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.stat;
 
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.h2.value.ValueInt;
-import org.junit.Test;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.stream.Collectors;
+
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.h2.value.ValueInt;
+import org.junit.Test;
 
 /**
  * Test of static methods of Ignite statistics repository.

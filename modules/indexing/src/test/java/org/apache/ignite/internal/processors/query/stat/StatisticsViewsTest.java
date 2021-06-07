@@ -17,14 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.stat;
 
-import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cluster.ClusterState;
-import org.junit.Test;
-
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cluster.ClusterState;
+import org.junit.Test;
 
 /**
  * Tests for statistics related views.

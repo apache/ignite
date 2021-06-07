@@ -28,7 +28,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.table.Column;
 import org.h2.value.Value;
-import org.w3c.dom.TypeInfo;
 
 /**
  * Collector to compute statistic by single column.

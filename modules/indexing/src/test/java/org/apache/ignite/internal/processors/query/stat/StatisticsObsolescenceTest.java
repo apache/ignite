@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.stat;
 
+import java.util.Map;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -25,8 +27,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-
-import java.util.Map;
 
 import static org.apache.ignite.internal.processors.query.stat.IgniteStatisticsHelper.buildDefaultConfigurations;
 

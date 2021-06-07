@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.stat.view;
 
+import java.sql.Timestamp;
+
 import org.apache.ignite.internal.managers.systemview.walker.Filtrable;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.query.stat.ObjectStatisticsImpl;
 import org.apache.ignite.internal.processors.query.stat.StatisticsKey;
-
-import java.sql.Timestamp;
 
 /**
  * Statistics partition data view.

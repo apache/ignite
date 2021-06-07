@@ -41,51 +41,53 @@ package org.apache.ignite.internal.processors.query.stat.hll.serialization;
  * @author timon
  */
 public class BigEndianAscendingWordSerializer implements IWordSerializer {
-    // The number of bits per byte.
+    /** The number of bits per byte. */
     private static final int BITS_PER_BYTE = 8;
 
     // ************************************************************************
-    // The length in bits of the words to be written.
+    /** The length in bits of the words to be written. */
     private final int wordLength;
-    // The number of words to be written.
+
+    /** The number of words to be written. */
     private final int wordCount;
 
-    // The byte array to which the words are serialized.
+    /** The byte array to which the words are serialized. */
     private final byte[] bytes;
 
     // ------------------------------------------------------------------------
     // Write state
-    // Number of bits that remain writable in the current byte.
+    /** Number of bits that remain writable in the current byte. */
     private int bitsLeftInByte;
-    // Index of byte currently being written to.
+
+    /** Index of byte currently being written to. */
     private int byteIndex;
-    // Number of words written.
+
+    /** Number of words written. */
     private int wordsWritten;
 
     // ========================================================================
     /**
      * @param wordLength the length in bits of the words to be serialized. Must
      *        be greater than or equal to 1 and less than or equal to 64.
-     * @param wordCount the number of words to be serialized. Must be greater than
+     * @param wordCnt the number of words to be serialized. Must be greater than
      *        or equal to zero.
      * @param bytePadding the number of leading bytes that should pad the
      *        serialized words. Must be greater than or equal to zero.
      */
-    public BigEndianAscendingWordSerializer(final int wordLength, final int wordCount, final int bytePadding) {
-        if((wordLength < 1) || (wordLength > 64)) {
+    public BigEndianAscendingWordSerializer(final int wordLength, final int wordCnt, final int bytePadding) {
+        if ((wordLength < 1) || (wordLength > 64))
             throw new IllegalArgumentException("Word length must be >= 1 and <= 64. (was: " + wordLength + ")");
-        }
-        if(wordCount < 0) {
-            throw new IllegalArgumentException("Word count must be >= 0. (was: " + wordCount + ")");
-        }
-        if(bytePadding < 0) {
+
+        if (wordCnt < 0)
+            throw new IllegalArgumentException("Word count must be >= 0. (was: " + wordCnt + ")");
+
+        if (bytePadding < 0)
             throw new IllegalArgumentException("Byte padding must be must be >= 0. (was: " + bytePadding + ")");
-        }
 
         this.wordLength = wordLength;
-        this.wordCount = wordCount;
+        this.wordCount = wordCnt;
 
-        final long bitsRequired = (wordLength * wordCount);
+        final long bitsRequired = (wordLength * wordCnt);
         final boolean leftoverBits = ((bitsRequired % BITS_PER_BYTE) != 0);
         final int bytesRequired = (int)(bitsRequired / BITS_PER_BYTE) + (leftoverBits ? 1 : 0) + bytePadding;
         bytes = new byte[bytesRequired];
@@ -100,27 +102,24 @@ public class BigEndianAscendingWordSerializer implements IWordSerializer {
      * @throws RuntimeException if the number of words written is greater than the
      *         <code>wordCount</code> parameter in the constructor.
      */
-    @Override
-    public void writeWord(final long word) {
-        if(wordsWritten == wordCount) {
+    @Override public void writeWord(final long word) {
+        if (wordsWritten == wordCount)
             throw new RuntimeException("Cannot write more words, backing array full!");
-        }
 
         int bitsLeftInWord = wordLength;
 
-        while(bitsLeftInWord > 0) {
+        while (bitsLeftInWord > 0) {
             // Move to the next byte if the current one is fully packed.
-            if(bitsLeftInByte == 0) {
+            if (bitsLeftInByte == 0) {
                 byteIndex++;
                 bitsLeftInByte = BITS_PER_BYTE;
             }
 
             final long consumedMask;
-            if(bitsLeftInWord == 64) {
+            if (bitsLeftInWord == 64)
                 consumedMask = ~0L;
-            } else {
+            else
                 consumedMask = ((1L << bitsLeftInWord) - 1L);
-            }
 
             // Fix how many bits will be written in this cycle. Choose the
             // smaller of the remaining bits in the word or byte.
@@ -134,13 +133,12 @@ public class BigEndianAscendingWordSerializer implements IWordSerializer {
             final long bitsThatTheByteCanAccept;
             // If there is more left in the word than can be written to this
             // byte, shift off the bits that can't be written off the bottom.
-            if(bitsLeftInWord > numberOfBitsToWrite) {
+            if (bitsLeftInWord > numberOfBitsToWrite)
                 bitsThatTheByteCanAccept = (remainingBitsOfWordToWrite >>> (bitsLeftInWord - bitsLeftInByte));
-            } else {
+            else
                 // If the byte can accept all remaining bits, there is no need
                 // to shift off the bits that won't be written in this cycle.
                 bitsThatTheByteCanAccept = remainingBitsOfWordToWrite;
-            }
 
             // Align the word bits to write up against the byte bits that have
             // already been written. This shift may do nothing if the remainder
@@ -155,7 +153,7 @@ public class BigEndianAscendingWordSerializer implements IWordSerializer {
             bitsLeftInByte = bitsInByteRemainingAfterWrite;
         }
 
-        wordsWritten ++;
+        wordsWritten++;
     }
 
     /* (non-Javadoc)
@@ -163,11 +161,9 @@ public class BigEndianAscendingWordSerializer implements IWordSerializer {
      * @throws RuntimeException if the number of words written is fewer than the
      *         <code>wordCount</code> parameter in the constructor.
      */
-    @Override
-    public byte[] getBytes() {
-        if(wordsWritten < wordCount) {
+    @Override public byte[] getBytes() {
+        if (wordsWritten < wordCount)
             throw new RuntimeException("Not all words have been written! (" + wordsWritten + "/" + wordCount + ")");
-        }
 
         return bytes;
     }

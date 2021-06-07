@@ -17,6 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.stat;
 
+import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.UUID;
+
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.table.Column;
 import org.h2.value.Value;
@@ -32,14 +40,6 @@ import org.h2.value.ValueShort;
 import org.h2.value.ValueString;
 import org.h2.value.ValueUuid;
 import org.junit.Test;
-
-import java.math.BigDecimal;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * Test different scenario with column statistics collection.
@@ -61,9 +61,9 @@ public class ColumnStatisticsCollectorTest extends GridCommonAbstractTest {
             (v1, v2) -> v1.getBigDecimal().compareTo(v2.getBigDecimal()));
         types.put(new Value[]{ValueDate.fromMillis(1), ValueDate.fromMillis(10000), ValueDate.fromMillis(9999999)},
             (v1, v2) -> v1.getDate().compareTo(v2.getDate()));
-        types.put(new Value[]{ValueUuid.get(1,2), ValueUuid.get(2,1), ValueUuid.get(2,2)},
-            (v1, v2) -> new UUID(((ValueUuid)v1).getHigh(),((ValueUuid)v1).getLow())
-                .compareTo(new UUID(((ValueUuid)v2).getHigh(),((ValueUuid)v2).getLow())));
+        types.put(new Value[]{ValueUuid.get(1, 2), ValueUuid.get(2, 1), ValueUuid.get(2, 2)},
+            (v1, v2) -> new UUID(((ValueUuid)v1).getHigh(), ((ValueUuid)v1).getLow())
+                .compareTo(new UUID(((ValueUuid)v2).getHigh(), ((ValueUuid)v2).getLow())));
         types.put(new Value[]{ValueFloat.get(1f), ValueFloat.get(10f)},
             (v1, v2) -> Float.compare(v1.getFloat(), v2.getFloat()));
         types.put(new Value[]{ValueDouble.get(1.), ValueDouble.get(10.)},
@@ -124,7 +124,7 @@ public class ColumnStatisticsCollectorTest extends GridCommonAbstractTest {
     public void testMultipleAggregation() {
         for (Map.Entry<Value[], Comparator<Value>> type : types.entrySet()) {
             Value[] vals = type.getKey();
-            testAggregation(type.getValue(), vals[0].getType(),0, vals);
+            testAggregation(type.getValue(), vals[0].getType(), 0, vals);
         }
     }
 
@@ -136,7 +136,7 @@ public class ColumnStatisticsCollectorTest extends GridCommonAbstractTest {
     public void testMultipleWithNullsAggregation() {
         for (Map.Entry<Value[], Comparator<Value>> type : types.entrySet()) {
             Value[] vals = type.getKey();
-            testAggregation(type.getValue(), vals[0].getType(),vals.length, vals);
+            testAggregation(type.getValue(), vals[0].getType(), vals.length, vals);
         }
     }
 

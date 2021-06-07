@@ -403,7 +403,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
             StatisticsObjectConfiguration finalCfg = cfg;
 
-            objObs.getValue().forEach((k,v) -> {
+            objObs.getValue().forEach((k, v) -> {
                 ObjectPartitionStatisticsImpl partStat = statsRepos.getLocalPartitionStatistics(key, k);
 
                 if (partStat == null || partStat.rowCount() == 0 ||

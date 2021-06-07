@@ -58,14 +58,14 @@ public class BitUtil {
     // REF:  http://stackoverflow.com/questions/757059/position-of-least-significant-bit-that-is-set
     // REF:  http://www-graphics.stanford.edu/~seander/bithacks.html
     public static int leastSignificantBit(final long value) {
-        if(value == 0L) return -1/*by contract*/;
-        if((value & 0xFFL) != 0) return LEAST_SIGNIFICANT_BIT[(int)( (value >>>  0) & 0xFF)] +  0;
-        if((value & 0xFFFFL) != 0) return LEAST_SIGNIFICANT_BIT[(int)( (value >>>  8) & 0xFF)] +  8;
-        if((value & 0xFFFFFFL) != 0) return LEAST_SIGNIFICANT_BIT[(int)( (value >>> 16) & 0xFF)] + 16;
-        if((value & 0xFFFFFFFFL) != 0) return LEAST_SIGNIFICANT_BIT[(int)( (value >>> 24) & 0xFF)] + 24;
-        if((value & 0xFFFFFFFFFFL) != 0) return LEAST_SIGNIFICANT_BIT[(int)( (value >>> 32) & 0xFF)] + 32;
-        if((value & 0xFFFFFFFFFFFFL) != 0) return LEAST_SIGNIFICANT_BIT[(int)( (value >>> 40) & 0xFF)] + 40;
-        if((value & 0xFFFFFFFFFFFFFFL) != 0) return LEAST_SIGNIFICANT_BIT[(int)( (value >>> 48) & 0xFF)] + 48;
+        if (value == 0L) return -1/*by contract*/;
+        if ((value & 0xFFL) != 0) return LEAST_SIGNIFICANT_BIT[(int)( (value >>> 0) & 0xFF)] + 0;
+        if ((value & 0xFFFFL) != 0) return LEAST_SIGNIFICANT_BIT[(int)( (value >>> 8) & 0xFF)] + 8;
+        if ((value & 0xFFFFFFL) != 0) return LEAST_SIGNIFICANT_BIT[(int)( (value >>> 16) & 0xFF)] + 16;
+        if ((value & 0xFFFFFFFFL) != 0) return LEAST_SIGNIFICANT_BIT[(int)( (value >>> 24) & 0xFF)] + 24;
+        if ((value & 0xFFFFFFFFFFL) != 0) return LEAST_SIGNIFICANT_BIT[(int)( (value >>> 32) & 0xFF)] + 32;
+        if ((value & 0xFFFFFFFFFFFFL) != 0) return LEAST_SIGNIFICANT_BIT[(int)( (value >>> 40) & 0xFF)] + 40;
+        if ((value & 0xFFFFFFFFFFFFFFL) != 0) return LEAST_SIGNIFICANT_BIT[(int)( (value >>> 48) & 0xFF)] + 48;
         return LEAST_SIGNIFICANT_BIT[(int)( (value >>> 56) & 0xFFL)] + 56;
     }
 }

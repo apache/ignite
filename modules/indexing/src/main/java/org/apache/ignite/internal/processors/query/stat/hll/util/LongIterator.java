@@ -15,7 +15,6 @@
  */
 package org.apache.ignite.internal.processors.query.stat.hll.util;
 
-
 /**
  * A <code>long</code>-based iterator.  This is not <i>is-a</i> {@link java.util.Iterator}
  * to prevent autoboxing between <code>Long</code> and <code>long</code>.

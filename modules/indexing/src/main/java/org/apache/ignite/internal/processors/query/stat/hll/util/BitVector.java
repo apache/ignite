@@ -25,35 +25,52 @@ import org.apache.ignite.internal.processors.query.stat.hll.serialization.IWordS
  * @author rgrzywinski
  */
 public class BitVector implements Cloneable {
-    // NOTE:  in this context, a word is 64bits
-
-    // rather than doing division to determine how a bit index fits into 64bit
-    // words (i.e. longs), bit shifting is used
+    /** NOTE:  in this context, a word is 64bits
+     * rather than doing division to determine how a bit index fits into 64bit
+     * words (i.e. longs), bit shifting is used
+     */
     private static final int LOG2_BITS_PER_WORD = 6/*=>64bits*/;
+
+    /** Bits per word. */
     private static final int BITS_PER_WORD = 1 << LOG2_BITS_PER_WORD;
+
+    /** Bits per word mask. */
     private static final int BITS_PER_WORD_MASK = BITS_PER_WORD - 1;
 
-    // ditto from above but for bytes (for output)
+    /** ditto from above but for bytes (for output)*/
     private static final int LOG2_BITS_PER_BYTE = 3/*=>8bits*/;
+
+    /** Bits per byte. */
     public static final int BITS_PER_BYTE = 1 << LOG2_BITS_PER_BYTE;
 
     // ========================================================================
+    /** Bytes per word. */
     public static final int BYTES_PER_WORD = 8/*8 bytes in a long*/;
 
     // ************************************************************************
-    // 64bit words
+    /** 64bit words. */
     private final long[] words;
+
+    /** */
     public final long[] words() { return words; }
+
+    /** */
     public final int wordCount() { return words.length; }
+
+    /** */
     public final int byteCount() { return wordCount() * BYTES_PER_WORD; }
 
-    // the width of a register in bits (this cannot be more than 64 (the word size))
+    /** the width of a register in bits (this cannot be more than 64 (the word size)) */
     private final int registerWidth;
+
+    /** */
     public final int registerWidth() { return registerWidth; }
 
+    /** Count. */
     private final long count;
 
     // ------------------------------------------------------------------------
+    /** Register mask. */
     private final long registerMask;
 
     // ========================================================================
@@ -86,9 +103,10 @@ public class BitVector implements Cloneable {
         final int secondWordIndex = (int)((bitIndex + registerWidth - 1) >>> LOG2_BITS_PER_WORD)/*see above*/;
         final int bitRemainder = (int)(bitIndex & BITS_PER_WORD_MASK)/*aka (bitIndex % BITS_PER_WORD)*/;
 
-        if(firstWordIndex == secondWordIndex)
+        if (firstWordIndex == secondWordIndex)
             return ((words[firstWordIndex] >>> bitRemainder) & registerMask);
         /* else -- register spans words */
+
         return (words[firstWordIndex] >>> bitRemainder)/*no need to mask since at top of word*/
             | (words[secondWordIndex] << (BITS_PER_WORD - bitRemainder)) & registerMask;
     }
@@ -108,11 +126,14 @@ public class BitVector implements Cloneable {
         final int bitRemainder = (int)(bitIndex & BITS_PER_WORD_MASK)/*aka (bitIndex % BITS_PER_WORD)*/;
 
         final long words[] = this.words/*for convenience/performance*/;
-        if(firstWordIndex == secondWordIndex) {
+
+        if (firstWordIndex == secondWordIndex) {
             // clear then set
             words[firstWordIndex] &= ~(registerMask << bitRemainder);
             words[firstWordIndex] |= (value << bitRemainder);
-        } else {/*register spans words*/
+        }
+        else {
+            /*register spans words*/
             // clear then set each partial word
             words[firstWordIndex] &= (1L << bitRemainder) - 1;
             words[firstWordIndex] |= (value << bitRemainder);
@@ -135,37 +156,39 @@ public class BitVector implements Cloneable {
 
             // register setup
             long registerIndex = 0;
-            int wordIndex = 0;
+            int wordIdx = 0;
             int remainingWordBits = BITS_PER_WORD;
-            long word = words[wordIndex];
+            long word = words[wordIdx];
 
-            @Override
-            public long next() {
+            @Override public long next() {
                 long register;
+
                 if (remainingWordBits >= registerWidth) {
                     register = word & registerMask;
 
                     // shift to the next register
                     word >>>= registerWidth;
                     remainingWordBits -= registerWidth;
-                } else { /*insufficient bits remaining in current word*/
-                    wordIndex++/*move to the next word*/;
+                }
+                else { /*insufficient bits remaining in current word*/
+                    wordIdx++/*move to the next word*/;
 
-                    register = (word | (words[wordIndex] << remainingWordBits)) & registerMask;
+                    register = (word | (words[wordIdx] << remainingWordBits)) & registerMask;
 
                     // shift to the next partial register (word)
-                    word = words[wordIndex] >>> (registerWidth - remainingWordBits);
+                    word = words[wordIdx] >>> (registerWidth - remainingWordBits);
                     remainingWordBits += BITS_PER_WORD - registerWidth;
                 }
+
                 registerIndex++;
                 return register;
             }
 
-            @Override
-            public boolean hasNext() {
+            @Override public boolean hasNext() {
                 return registerIndex < count;
             }
         };
+
         return longIterator;
     }
 
@@ -199,20 +222,22 @@ public class BitVector implements Cloneable {
         // NOTE:  matches getRegister()
         final long registerValue;
         final long words[] = this.words/*for convenience/performance*/;
-        if(firstWordIndex == secondWordIndex)
+        if (firstWordIndex == secondWordIndex)
             registerValue = ((words[firstWordIndex] >>> bitRemainder) & registerMask);
         else /*register spans words*/
             registerValue = (words[firstWordIndex] >>> bitRemainder)/*no need to mask since at top of word*/
                 | (words[secondWordIndex] << (BITS_PER_WORD - bitRemainder)) & registerMask;
 
         // determine which is the larger and update as necessary
-        if(value > registerValue) {
+        if (value > registerValue) {
             // NOTE:  matches setRegister()
-            if(firstWordIndex == secondWordIndex) {
+            if (firstWordIndex == secondWordIndex) {
                 // clear then set
                 words[firstWordIndex] &= ~(registerMask << bitRemainder);
                 words[firstWordIndex] |= (value << bitRemainder);
-            } else {/*register spans words*/
+            }
+            else {
+                /*register spans words*/
                 // clear then set each partial word
                 words[firstWordIndex] &= (1L << bitRemainder) - 1;
                 words[firstWordIndex] |= (value << bitRemainder);
@@ -230,12 +255,11 @@ public class BitVector implements Cloneable {
      * Fills this bit vector with the specified bit value.  This can be used to
      * clear the vector by specifying <code>0</code>.
      *
-     * @param  value the value to set all bits to (only the lowest bit is used)
+     * @param  val the value to set all bits to (only the lowest bit is used)
      */
-    public void fill(final long value) {
-        for(long i=0; i<count; i++) {
-            setRegister(i, value);
-        }
+    public void fill(final long val) {
+        for (long i = 0; i < count; i++)
+            setRegister(i, val);
     }
 
     // ------------------------------------------------------------------------
@@ -245,9 +269,8 @@ public class BitVector implements Cloneable {
      * @param serializer the serializer to use. This cannot be <code>null</code>.
      */
     public void getRegisterContents(final IWordSerializer serializer) {
-        for(final LongIterator iter = registerIterator(); iter.hasNext();) {
+        for (final LongIterator iter = registerIterator(); iter.hasNext();)
             serializer.writeWord(iter.next());
-        }
     }
 
     /**
@@ -255,10 +278,11 @@ public class BitVector implements Cloneable {
      *
      * @see java.lang.Object#clone()
      */
-    @Override
-    public BitVector clone() {
+    @Override public BitVector clone() {
         final BitVector copy = new BitVector(registerWidth, count);
+
         System.arraycopy(words, 0, copy.words, 0, words.length);
+
         return copy;
     }
 }

@@ -68,8 +68,8 @@ public final class HLLUtil {
     private static final int REG_WIDTH_INDEX_MULTIPLIER = HLL.MAXIMUM_LOG2M_PARAM + 1;
 
     static {
-        for(int regWidth = HLL.MINIMUM_REGWIDTH_PARAM; regWidth <= HLL.MAXIMUM_REGWIDTH_PARAM; regWidth++) {
-            for(int log2m = HLL.MINIMUM_LOG2M_PARAM ; log2m <= HLL.MAXIMUM_LOG2M_PARAM; log2m++) {
+        for (int regWidth = HLL.MINIMUM_REGWIDTH_PARAM; regWidth <= HLL.MAXIMUM_REGWIDTH_PARAM; regWidth++) {
+            for (int log2m = HLL.MINIMUM_LOG2M_PARAM; log2m <= HLL.MAXIMUM_LOG2M_PARAM; log2m++) {
                 int maxRegisterValue = (1 << regWidth) - 1;
 
                 // Since 1 is added to p(w) in the insertion algorithm, only
@@ -109,7 +109,7 @@ public final class HLLUtil {
      *         than 16.
      */
     public static double alphaMSquared(final int m) {
-        switch(m) {
+        switch (m) {
             case 1/*2^0*/:
             case 2/*2^1*/:
             case 4/*2^2*/:
@@ -177,7 +177,8 @@ public final class HLLUtil {
      * @param  registerSizeInBits the size of the HLL registers, in bits.
      * @return the cutoff for the large range correction.
      * @see #largeEstimator(int, int, double)
-     * @see <a href='http://research.neustar.biz/2013/01/24/hyperloglog-googles-take-on-engineering-hll/'>Blog post with section on 64 bit hashes and "large range correction" cutoff</a>
+     * @see <a href='http://research.neustar.biz/2013/01/24/hyperloglog-googles-take-on-engineering-hll/'>
+     *     Blog post with section on 64 bit hashes and "large range correction" cutoff</a>
      */
     public static double largeEstimatorCutoff(final int log2m, final int registerSizeInBits) {
         return (TWO_TO_L[(REG_WIDTH_INDEX_MULTIPLIER * registerSizeInBits) + log2m]) / 30.0;
@@ -192,10 +193,11 @@ public final class HLLUtil {
      * @param  registerSizeInBits the size of the HLL registers, in bits.
      * @param  estimator the original estimator ("E" in the paper).
      * @return a corrected cardinality estimate.
-     * @see <a href='http://research.neustar.biz/2013/01/24/hyperloglog-googles-take-on-engineering-hll/'>Blog post with section on 64 bit hashes and "large range correction"</a>
+     * @see <a href='http://research.neustar.biz/2013/01/24/hyperloglog-googles-take-on-engineering-hll/'>
+     *     Blog post with section on 64 bit hashes and "large range correction"</a>
      */
     public static double largeEstimator(final int log2m, final int registerSizeInBits, final double estimator) {
         final double twoToL = TWO_TO_L[(REG_WIDTH_INDEX_MULTIPLIER * registerSizeInBits) + log2m];
-        return -1 * twoToL * Math.log(1.0 - (estimator/twoToL));
+        return -1 * twoToL * Math.log(1.0 - (estimator / twoToL));
     }
 }

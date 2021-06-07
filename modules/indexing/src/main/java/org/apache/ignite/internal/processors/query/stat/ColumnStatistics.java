@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.stat;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.h2.value.Value;
-
 import java.util.Arrays;
 import java.util.Objects;
+
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.h2.value.Value;
 
 /**
  * Values statistic in particular column.

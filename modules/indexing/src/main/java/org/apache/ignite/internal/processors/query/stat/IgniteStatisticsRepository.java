@@ -295,7 +295,7 @@ public class IgniteStatisticsRepository {
      * @param partId Partition id.
      */
     public void refreshObsolescence(StatisticsKey key, int partId) {
-        statObs.compute(key, (k,v) -> {
+        statObs.compute(key, (k, v) -> {
             if (v == null)
                 v = new IntHashMap<>();
 
@@ -623,7 +623,7 @@ public class IgniteStatisticsRepository {
         for (Map.Entry<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> objObs : statObs.entrySet()) {
             hasDirty[0] = false;
 
-            objObs.getValue().forEach((k,v) -> {
+            objObs.getValue().forEach((k, v) -> {
                 if (v.dirty()) {
                     v.dirty(false);
                     hasDirty[0] = true;
@@ -633,7 +633,7 @@ public class IgniteStatisticsRepository {
             if (hasDirty[0]) {
                 IntMap<ObjectPartitionStatisticsObsolescence> objDirtyObs = new IntHashMap<>();
 
-                objObs.getValue().forEach((k,v) -> objDirtyObs.put(k, v));
+                objObs.getValue().forEach((k, v) -> objDirtyObs.put(k, v));
 
                 dirtyObs.put(objObs.getKey(), objDirtyObs);
             }

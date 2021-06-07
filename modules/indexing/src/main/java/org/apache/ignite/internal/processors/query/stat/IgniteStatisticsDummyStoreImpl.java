@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.stat;
 
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.util.collection.IntMap;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.function.Function;
+
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.collection.IntMap;
 
 /**
  * Statistics store implementation to log unexpected calls. Returns nulls to any request.

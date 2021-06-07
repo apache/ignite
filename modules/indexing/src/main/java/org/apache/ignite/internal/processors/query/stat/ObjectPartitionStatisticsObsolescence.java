@@ -16,12 +16,12 @@
  */
 package org.apache.ignite.internal.processors.query.stat;
 
-import org.apache.ignite.internal.processors.query.stat.hll.HLL;
-
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+
+import org.apache.ignite.internal.processors.query.stat.hll.HLL;
 
 /**
  * Partition obsolescence tracker.

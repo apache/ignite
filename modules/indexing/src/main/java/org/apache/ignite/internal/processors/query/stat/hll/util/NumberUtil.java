@@ -52,7 +52,7 @@ public class NumberUtil {
      * @param  offset the offset in <code>bytes</code> at which the bytes will
      *         be taken.  This cannot be negative and must be less than
      *         <code>bytes.length - 1</code>.
-     * @param  count the number of bytes to be retrieved from the specified array.
+     * @param  cnt the number of bytes to be retrieved from the specified array.
      *         This cannot be negative.  If greater than <code>bytes.length - offset</code>
      *         then that value is used.
      * @return a string of at most <code>count</code> characters that represents
@@ -63,17 +63,19 @@ public class NumberUtil {
      *         or equal to <code>bytes.length</code>.
      * @see #fromHex(String, int, int)
      */
-    public static String toHex(final byte[] bytes, final int offset, final int count) {
-        if(offset >= bytes.length) throw new IllegalArgumentException("Offset is greater than the length (" + offset + " >= " + bytes.length + ").")/*by contract*/;
-        final int byteCount = Math.min( (bytes.length - offset), count);
-        final int upperBound = byteCount + offset;
+    public static String toHex(final byte[] bytes, final int offset, final int cnt) {
+        if (offset >= bytes.length) throw new IllegalArgumentException("Offset is greater than the length (" + offset +
+            " >= " + bytes.length + ").")/*by contract*/;
+        final int byteCnt = Math.min( (bytes.length - offset), cnt);
+        final int upperBound = byteCnt + offset;
 
-        final char[] chars = new char[byteCount * 2/*two chars per byte*/];
-        int charIndex = 0;
-        for(int i=offset; i<upperBound; i++) {
-            final byte value = bytes[i];
-            chars[charIndex++] = HEX[(value >>> 4) & 0x0F];
-            chars[charIndex++] = HEX[value & 0x0F];
+        final char[] chars = new char[byteCnt * 2/*two chars per byte*/];
+        int charIdx = 0;
+
+        for (int i = offset; i < upperBound; i++) {
+            final byte val = bytes[i];
+            chars[charIdx++] = HEX[(val >>> 4) & 0x0F];
+            chars[charIdx++] = HEX[val & 0x0F];
         }
 
         return new String(chars);
@@ -100,17 +102,21 @@ public class NumberUtil {
      * @see #toHex(byte[], int, int)
      */
     public static byte[] fromHex(final String string, final int offset, final int count) {
-        if(offset >= string.length()) throw new IllegalArgumentException("Offset is greater than the length (" + offset + " >= " + string.length() + ").")/*by contract*/;
-        if( (count & 0x01) != 0) throw new IllegalArgumentException("Count is not divisible by two (" + count + ").")/*by contract*/;
+        if (offset >= string.length())
+            throw new IllegalArgumentException("Offset is greater than the length (" + offset + " >= " +
+                string.length() + ").")/*by contract*/;
+
+        if ( (count & 0x01) != 0)
+            throw new IllegalArgumentException("Count is not divisible by two (" + count + ").")/*by contract*/;
+
         final int charCount = Math.min((string.length() - offset), count);
         final int upperBound = offset + charCount;
 
         final byte[] bytes = new byte[charCount >>> 1/*aka /2*/];
         int byteIndex = 0/*beginning*/;
-        for(int i=offset; i<upperBound; i+=2) {
-            bytes[byteIndex++] = (byte)(( (digit(string.charAt(i)) << 4)
-                | digit(string.charAt(i + 1))) & 0xFF);
-        }
+
+        for (int i = offset; i < upperBound; i += 2)
+            bytes[byteIndex++] = (byte)(( (digit(string.charAt(i)) << 4) | digit(string.charAt(i + 1))) & 0xFF);
 
         return bytes;
     }
@@ -125,7 +131,7 @@ public class NumberUtil {
      *         [a-fA-F0-9]
      */
     private static final int digit(final char character) {
-        switch(character) {
+        switch (character) {
             case '0':
                 return 0;
             case '1':

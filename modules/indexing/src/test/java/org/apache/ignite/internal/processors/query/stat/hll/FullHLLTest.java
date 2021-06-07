@@ -16,9 +16,8 @@
  */
 package org.apache.ignite.internal.processors.query.stat.hll;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.apache.ignite.internal.processors.query.stat.hll.serialization.ISchemaVersion;
 import org.apache.ignite.internal.processors.query.stat.hll.serialization.SerializationUtil;
@@ -28,8 +27,9 @@ import org.apache.ignite.internal.processors.query.stat.hll.util.LongIterator;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
-import java.util.Random;
-import java.util.concurrent.ThreadLocalRandom;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests {@link HLL} of type {@link HLLType#FULL}.
@@ -50,7 +50,8 @@ public class FullHLLTest {
 
         // only one register set
         {
-            final HLL hll = new HLL(log2m, regwidth, 128/*explicitThreshold, arbitrary, unused*/, 256/*sparseThreshold, arbitrary, unused*/, HLLType.FULL);
+            final HLL hll = new HLL(log2m, regwidth, 128/*explicitThreshold, arbitrary, unused*/,
+                256/*sparseThreshold, arbitrary, unused*/, HLLType.FULL);
             hll.addRaw(ProbabilisticTestUtil.constructHLLValue(log2m, 0/*ix*/, 1/*val*/));
 
             final long cardinality = hll.cardinality();
@@ -64,8 +65,9 @@ public class FullHLLTest {
 
         // all but one register set
         {
-            final HLL hll = new HLL(log2m, regwidth, 128/*explicitThreshold, arbitrary, unused*/, 256/*sparseThreshold, arbitrary, unused*/, HLLType.FULL);
-            for(int i=0; i<(m - 1); i++)
+            final HLL hll = new HLL(log2m, regwidth, 128/*explicitThreshold, arbitrary, unused*/,
+                256/*sparseThreshold, arbitrary, unused*/, HLLType.FULL);
+            for (int i = 0; i < (m - 1); i++)
                 hll.addRaw(ProbabilisticTestUtil.constructHLLValue(log2m, i/*ix*/, 1/*val*/));
 
             // Trivially true that small correction conditions hold: all but
@@ -91,7 +93,8 @@ public class FullHLLTest {
         // log2m + (2^5 - 1 - 1), so L = log2m + 30
         final int l = log2m + 30;
         final int m = (1 << log2m);
-        final HLL hll = new HLL(log2m, regwidth, 128/*explicitThreshold, arbitrary, unused*/, 256/*sparseThreshold, arbitrary, unused*/, HLLType.FULL);
+        final HLL hll = new HLL(log2m, regwidth, 128/*explicitThreshold, arbitrary, unused*/,
+            256/*sparseThreshold, arbitrary, unused*/, HLLType.FULL);
 
         // all registers at 'medium' value
         {
@@ -101,12 +104,11 @@ public class FullHLLTest {
 
             final long cardinality = hll.cardinality();
 
-
             // Simplified estimator when all registers take same value: alpha / (m/2^val)
             final double estimator = HLLUtil.alphaMSquared(m) / ((double)m / Math.pow(2, registerValue));
 
             // Assert conditions for uncorrected range
-            assertTrue(estimator <= Math.pow(2, l)/30);
+            assertTrue(estimator <= Math.pow(2, l) / 30);
             assertTrue(estimator > (5 * m / (double)2));
 
             final long expected = (long)Math.ceil(estimator);
@@ -126,7 +128,8 @@ public class FullHLLTest {
         // log2m + (2^5 - 1 - 1), so L = log2m + 30
         final int l = log2m + 30;
         final int m = (1 << log2m);
-        final HLL hll = new HLL(log2m, regwidth, 128/*explicitThreshold, arbitrary, unused*/, 256/*sparseThreshold, arbitrary, unused*/, HLLType.FULL);
+        final HLL hll = new HLL(log2m, regwidth, 128/*explicitThreshold, arbitrary, unused*/,
+            256/*sparseThreshold, arbitrary, unused*/, HLLType.FULL);
 
         {
             final int registerValue = 31/*chosen to ensure large correction kicks in*/;
@@ -135,16 +138,15 @@ public class FullHLLTest {
 
             final long cardinality = hll.cardinality();
 
-
             // Simplified estimator when all registers take same value: alpha / (m/2^val)
-            final double estimator = HLLUtil.alphaMSquared(m)/((double)m/Math.pow(2, registerValue));
+            final double estimator = HLLUtil.alphaMSquared(m) / ((double)m / Math.pow(2, registerValue));
 
             // Assert conditions for large range
 
-            assertTrue(estimator > Math.pow(2,l)/30);
+            assertTrue(estimator > Math.pow(2, l) / 30);
 
             // Large range correction: -2^L * log(1 - E/2^L)
-            final long expected = (long)Math.ceil(-1.0 * Math.pow(2, l) * Math.log(1.0 - estimator/Math.pow(2, l)));
+            final long expected = (long)Math.ceil(-1.0 * Math.pow(2, l) * Math.log(1.0 - estimator / Math.pow(2, l)));
             assertEquals(cardinality, expected);
         }
     }
@@ -160,8 +162,10 @@ public class FullHLLTest {
         // register width 4 (the minimum size)
         { // scoped locally for sanity
             final int regwidth = 4;
-            final HLL hll = new HLL(log2m, regwidth, 128/*explicitThreshold, arbitrary, unused*/, 256/*sparseThreshold, arbitrary, unused*/, HLLType.FULL);
-            final BitVector bitVector = GridTestUtils.getFieldValue(hll, "probabilisticStorage");//(BitVector)getInternalState(hll, "probabilisticStorage")/*for testing convenience*/;
+            final HLL hll = new HLL(log2m, regwidth, 128/*explicitThreshold, arbitrary, unused*/,
+                256/*sparseThreshold, arbitrary, unused*/, HLLType.FULL);
+            final BitVector bitVector = GridTestUtils.getFieldValue(hll, "probabilisticStorage");
+            //(BitVector)getInternalState(hll, "probabilisticStorage");/*for testing convenience*/
 
             // lower-bounds of the register
             hll.addRaw(0x000000000000001L/*'j'=1*/);
@@ -207,7 +211,8 @@ public class FullHLLTest {
         // register width 5
         { // scoped locally for sanity
             final int regwidth = 5;
-            final HLL hll = new HLL(log2m, regwidth, 128/*explicitThreshold, arbitrary, unused*/, 256/*sparseThreshold, arbitrary, unused*/, HLLType.FULL);
+            final HLL hll = new HLL(log2m, regwidth, 128/*explicitThreshold, arbitrary, unused*/,
+                256/*sparseThreshold, arbitrary, unused*/, HLLType.FULL);
             final BitVector bitVector = GridTestUtils.getFieldValue(hll, "probabilisticStorage");
 
             // lower-bounds of the register
@@ -253,8 +258,10 @@ public class FullHLLTest {
         final int log2m = 4/*16 registers per counter*/;
         final int m = 1 << log2m;
 
-        final HLL hll = new HLL(log2m, regwidth, 128/*explicitThreshold, arbitrary, unused*/, 256/*sparseThreshold, arbitrary, unused*/, HLLType.FULL);
-        final BitVector bitVector = GridTestUtils.getFieldValue(hll, "probabilisticStorage")/*for testing convenience*/;
+        final HLL hll = new HLL(log2m, regwidth, 128/*explicitThreshold, arbitrary, unused*/,
+            256/*sparseThreshold, arbitrary, unused*/, HLLType.FULL);
+        final BitVector bitVector = GridTestUtils.getFieldValue(hll, "probabilisticStorage")
+            /*for testing convenience*/;
         for (int i = 0; i < m; i++)
             bitVector.setRegister(i, i);
 
@@ -279,8 +286,10 @@ public class FullHLLTest {
         final int dataByteCount = ProbabilisticTestUtil.getRequiredBytes(regwidth, (1 << log2m)/*aka 2^log2m = m*/);
         final int expectedByteCount = padding + dataByteCount;
 
-        {// Should work on an empty element
-            final HLL hll = new HLL(log2m, regwidth, 128/*explicitThreshold, arbitrary, unused*/, 256/*sparseThreshold, arbitrary, unused*/, HLLType.FULL);
+        {
+            // Should work on an empty element
+            final HLL hll = new HLL(log2m, regwidth, 128/*explicitThreshold, arbitrary, unused*/,
+                256/*sparseThreshold, arbitrary, unused*/, HLLType.FULL);
             final byte[] bytes = hll.toBytes(schemaVersion);
 
             // assert output length is correct
@@ -291,8 +300,10 @@ public class FullHLLTest {
             // assert register values correct
             assertElementsEqual(hll, inHLL);
         }
-        {// Should work on a partially filled element
-            final HLL hll = new HLL(log2m, regwidth, 128/*explicitThreshold, arbitrary, unused*/, 256/*sparseThreshold, arbitrary, unused*/, HLLType.FULL);
+        {
+            // Should work on a partially filled element
+            final HLL hll = new HLL(log2m, regwidth, 128/*explicitThreshold, arbitrary, unused*/,
+                256/*sparseThreshold, arbitrary, unused*/, HLLType.FULL);
 
             for (int i = 0; i < 3; i++) {
                 final long rawValue = ProbabilisticTestUtil.constructHLLValue(log2m, i, (i + 9));
@@ -309,8 +320,10 @@ public class FullHLLTest {
             // assert register values correct
             assertElementsEqual(hll, inHLL);
         }
-        {// Should work on a full set
-            final HLL hll = new HLL(log2m, regwidth, 128/*explicitThreshold, arbitrary, unused*/, 256/*sparseThreshold, arbitrary, unused*/, HLLType.FULL);
+        {
+            // Should work on a full set
+            final HLL hll = new HLL(log2m, regwidth, 128/*explicitThreshold, arbitrary, unused*/,
+                256/*sparseThreshold, arbitrary, unused*/, HLLType.FULL);
 
             for (int i = 0; i < (1 << log2m)/*aka 2^log2m*/; i++) {
                 final long rawValue = ProbabilisticTestUtil.constructHLLValue(log2m, i, (i % 9) + 1);
@@ -329,6 +342,9 @@ public class FullHLLTest {
         }
     }
 
+    /**
+     *
+     */
     @Test
     public void unionTest() {
         Random r = ThreadLocalRandom.current();
@@ -337,6 +353,9 @@ public class FullHLLTest {
         hll.addRaw(r.nextLong());
     }
 
+    /**
+     *
+     */
     @Test
     public void homogeneousUnionTest() {
         getHll(1).union((getHll(1)));
@@ -373,6 +392,10 @@ public class FullHLLTest {
         testSerialization(getHll(100000));
     }
 
+    /**
+     *
+     * @param originHll
+     */
     private static void testSerialization(HLL originHll) {
         byte[] hllBytes = originHll.toBytes();
         HLL restoredHll = HLL.fromBytes(hllBytes);
@@ -382,6 +405,12 @@ public class FullHLLTest {
         assertEquals(originHll.getType(), restoredHll.getType());
     }
 
+    /**
+     * Get HLL with specified number of random values added.
+     *
+     * @param rows
+     * @return
+     */
     private static HLL getHll(int rows) {
         Random r = ThreadLocalRandom.current();
         HLL result = new HLL(13, 5);
@@ -396,8 +425,10 @@ public class FullHLLTest {
      * Asserts that the two HLLs are register-wise equal.
      */
     private static void assertElementsEqual(final HLL hllA, final HLL hllB) {
-        final BitVector bitVectorA = GridTestUtils.getFieldValue(hllA, "probabilisticStorage")/*for testing convenience*/;
-        final BitVector bitVectorB = GridTestUtils.getFieldValue(hllB, "probabilisticStorage")/*for testing convenience*/;
+        /*for testing convenience*/
+        final BitVector bitVectorA = GridTestUtils.getFieldValue(hllA, "probabilisticStorage");
+        /*for testing convenience*/
+        final BitVector bitVectorB = GridTestUtils.getFieldValue(hllB, "probabilisticStorage");
 
         if (bitVectorA == null && bitVectorB == null)
             return;
@@ -405,7 +436,7 @@ public class FullHLLTest {
         final LongIterator iterA = bitVectorA.registerIterator();
         final LongIterator iterB = bitVectorB.registerIterator();
 
-        for (;iterA.hasNext() && iterB.hasNext();)
+        while (iterA.hasNext() && iterB.hasNext())
             assertEquals(iterA.next(), iterB.next());
 
         assertFalse(iterA.hasNext());

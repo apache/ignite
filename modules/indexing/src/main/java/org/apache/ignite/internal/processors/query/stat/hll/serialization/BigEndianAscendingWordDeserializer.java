@@ -22,26 +22,26 @@ package org.apache.ignite.internal.processors.query.stat.hll.serialization;
  * @author timon
  */
 public class BigEndianAscendingWordDeserializer implements IWordDeserializer {
-    // The number of bits per byte.
+    /** The number of bits per byte. */
     private static final int BITS_PER_BYTE = 8;
 
-    // long mask for the maximum value stored in a byte
+    /** long mask for the maximum value stored in a byte. */
     private static final long BYTE_MASK = (1L << BITS_PER_BYTE) - 1L;
 
     // ************************************************************************
-    // The length in bits of the words to be read.
+    /** The length in bits of the words to be read. */
     private final int wordLength;
 
-    // The byte array to which the words are serialized.
+    /** The byte array to which the words are serialized. */
     private final byte[] bytes;
 
-    // The number of leading padding bytes in 'bytes' to be ignored.
+    /** The number of leading padding bytes in 'bytes' to be ignored. */
     private final int bytePadding;
 
-    // The number of words that the byte array contains.
+    /** The number of words that the byte array contains. */
     private final int wordCount;
 
-    // The current read state.
+    /** The current read state. */
     private int currentWordIndex;
 
     // ========================================================================
@@ -54,13 +54,11 @@ public class BigEndianAscendingWordDeserializer implements IWordDeserializer {
      *        <code>null</code>.
      */
     public BigEndianAscendingWordDeserializer(final int wordLength, final int bytePadding, final byte[] bytes) {
-        if((wordLength < 1) || (wordLength > 64)) {
+        if ((wordLength < 1) || (wordLength > 64))
             throw new IllegalArgumentException("Word length must be >= 1 and <= 64. (was: " + wordLength + ")");
-        }
 
-        if(bytePadding < 0) {
+        if (bytePadding < 0)
             throw new IllegalArgumentException("Byte padding must be >= zero. (was: " + bytePadding + ")");
-        }
 
         this.wordLength = wordLength;
         this.bytes = bytes;
@@ -69,7 +67,7 @@ public class BigEndianAscendingWordDeserializer implements IWordDeserializer {
         final int dataBytes = (bytes.length - bytePadding);
         final long dataBits = (dataBytes * BITS_PER_BYTE);
 
-        this.wordCount = (int)(dataBits/wordLength);
+        this.wordCount = (int)(dataBits / wordLength);
 
         currentWordIndex = 0;
     }
@@ -78,8 +76,7 @@ public class BigEndianAscendingWordDeserializer implements IWordDeserializer {
     /* (non-Javadoc)
      * @see net.agkn.hll.serialization.IWordDeserializer#readWord()
      */
-    @Override
-    public long readWord() {
+    @Override public long readWord() {
         final long word = readWord(currentWordIndex);
         currentWordIndex++;
 
@@ -95,9 +92,8 @@ public class BigEndianAscendingWordDeserializer implements IWordDeserializer {
      * @return the value of the serialized word at the specified position.
      */
     private long readWord(final int position) {
-        if(position < 0) {
+        if (position < 0)
             throw new ArrayIndexOutOfBoundsException(position);
-        }
 
         // First bit of the word
         final long firstBitIndex = (position * wordLength);
@@ -112,16 +108,14 @@ public class BigEndianAscendingWordDeserializer implements IWordDeserializer {
         final int bitsAfterByteBoundary = (int)((lastBitIndex + 1) % BITS_PER_BYTE);
         // If the word terminates at the end of the last byte, consume the whole
         // last byte.
-        if(bitsAfterByteBoundary == 0) {
+        if (bitsAfterByteBoundary == 0)
             lastByteBitsToConsume = BITS_PER_BYTE;
-        } else {
+        else
             // Otherwise, only consume what is necessary.
             lastByteBitsToConsume = bitsAfterByteBoundary;
-        }
 
-        if(lastByteIndex >= bytes.length) {
+        if (lastByteIndex >= bytes.length)
             throw new ArrayIndexOutOfBoundsException("Word out of bounds of backing array.");
-        }
 
         // Accumulator
         long value = 0;
@@ -141,14 +135,14 @@ public class BigEndianAscendingWordDeserializer implements IWordDeserializer {
         value |= firstByte;
 
         // If the first byte contains the whole word, short-circuit.
-        if(firstByteIndex == lastByteIndex) {
+        if (firstByteIndex == lastByteIndex)
             return value;
-        }
 
         // --------------------------------------------------------------------
         // Middle bytes
         final int middleByteCount = (lastByteIndex - firstByteIndex - 1);
-        for(int i=0; i<middleByteCount; i++) {
+
+        for (int i = 0; i < middleByteCount; i++) {
             final long middleByte = (bytes[firstByteIndex + i + 1] & BYTE_MASK);
             // Push middle byte onto accumulator.
             value <<= BITS_PER_BYTE;
@@ -161,14 +155,14 @@ public class BigEndianAscendingWordDeserializer implements IWordDeserializer {
         lastByte >>= (BITS_PER_BYTE - lastByteBitsToConsume);
         value <<= lastByteBitsToConsume;
         value |= lastByte;
+
         return value;
     }
 
     /* (non-Javadoc)
      * @see net.agkn.hll.serialization.IWordDeserializer#totalWordCount()
      */
-    @Override
-    public int totalWordCount() {
+    @Override public int totalWordCount() {
         return wordCount;
     }
 }

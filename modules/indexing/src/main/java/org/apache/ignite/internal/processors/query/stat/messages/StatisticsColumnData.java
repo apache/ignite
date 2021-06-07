@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.stat.messages;
 
+import java.nio.ByteBuffer;
+
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-
-import java.nio.ByteBuffer;
 
 /**
  * Statistics by column (or by set of columns, if they collected together)

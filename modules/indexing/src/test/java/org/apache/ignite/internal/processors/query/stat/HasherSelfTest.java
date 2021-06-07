@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.stat;
 
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -27,6 +24,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
 
 /**
  * Unit tests for Hasher.
@@ -42,13 +42,13 @@ public class HasherSelfTest extends GridCommonAbstractTest {
 
         list.add(h.fastHash(new byte[]{}));
         list.add(h.fastHash(new byte[]{1}));
-        list.add(h.fastHash(new byte[]{1,2,3,4}));
-        list.add(h.fastHash(new byte[]{1,2,3,4,5,6,7}));
-        list.add(h.fastHash(new byte[]{1,2,3,4,5,6,7,8}));
-        list.add(h.fastHash(new byte[]{1,2,3,4,5,6,7,8,9}));
-        list.add(h.fastHash(new byte[]{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15}));
-        list.add(h.fastHash(new byte[]{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16}));
-        list.add(h.fastHash(new byte[]{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17}));
+        list.add(h.fastHash(new byte[]{1, 2, 3, 4}));
+        list.add(h.fastHash(new byte[]{1, 2, 3, 4, 5, 6, 7}));
+        list.add(h.fastHash(new byte[]{1, 2, 3, 4, 5, 6, 7, 8}));
+        list.add(h.fastHash(new byte[]{1, 2, 3, 4, 5, 6, 7, 8, 9}));
+        list.add(h.fastHash(new byte[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}));
+        list.add(h.fastHash(new byte[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}));
+        list.add(h.fastHash(new byte[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17}));
 
         Set<Long> set = new HashSet<>();
         set.addAll(list);

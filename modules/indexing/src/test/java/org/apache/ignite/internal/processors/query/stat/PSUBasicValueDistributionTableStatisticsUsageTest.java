@@ -17,13 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.stat;
 
+import java.util.Arrays;
+import java.util.Collection;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheMode;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import java.util.Arrays;
-import java.util.Collection;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;

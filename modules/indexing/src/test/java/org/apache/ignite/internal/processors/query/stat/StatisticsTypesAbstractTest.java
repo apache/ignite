@@ -17,21 +17,21 @@
 
 package org.apache.ignite.internal.processors.query.stat;
 
-import org.apache.ignite.Ignite;
-
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.TimeZone;
 import java.util.UUID;
 
+import org.apache.ignite.Ignite;
+
 /**
  * Common parts to test statistics collection for different types.
  */
 public abstract class StatisticsTypesAbstractTest extends StatisticsAbstractTest {
     /** Types to test. */
-    protected static final String TYPES[] = new String[]{"BOOLEAN", "INT", "TINYINT", "SMALLINT","BIGINT",
-        "DECIMAL", "DOUBLE","REAL","TIME","DATE","TIMESTAMP","VARCHAR","CHAR","UUID","BINARY","GEOMETRY"};
+    protected static final String TYPES[] = new String[]{"BOOLEAN", "INT", "TINYINT", "SMALLINT", "BIGINT",
+        "DECIMAL", "DOUBLE", "REAL", "TIME", "DATE", "TIMESTAMP", "VARCHAR", "CHAR", "UUID", "BINARY", "GEOMETRY"};
 
     /** Column names prefix. */
     protected static final String COL_NAME_PREFIX = "COL_";

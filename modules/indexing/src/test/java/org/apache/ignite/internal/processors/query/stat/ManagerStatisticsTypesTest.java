@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.stat;
 
+import java.math.BigDecimal;
+
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.h2.value.ValueUuid;
 import org.junit.Test;
-
-import java.math.BigDecimal;
 
 /**
  * Gather statistics on test table dtypes and check that statistics manager will return correct statistics for

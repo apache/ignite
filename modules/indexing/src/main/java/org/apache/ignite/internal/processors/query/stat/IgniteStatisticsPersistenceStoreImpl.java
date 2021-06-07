@@ -242,7 +242,7 @@ public class IgniteStatisticsPersistenceStoreImpl implements IgniteStatisticsSto
 
             if (log.isDebugEnabled())
                 log.debug("Local statistics for object " + key + " loaded");
-        },true);
+        }, true);
 
         if (!brokenObjects.isEmpty())
             log.warning(String.format("Removing statistics by %d objects.", brokenObjects.size()));
@@ -257,7 +257,7 @@ public class IgniteStatisticsPersistenceStoreImpl implements IgniteStatisticsSto
             return;
 
         try {
-            iterateMeta(META_STAT_PREFIX, (k,v) -> {
+            iterateMeta(META_STAT_PREFIX, (k, v) -> {
                 try {
                     metastore.remove(k);
 
@@ -329,7 +329,7 @@ public class IgniteStatisticsPersistenceStoreImpl implements IgniteStatisticsSto
 
         String objPrefix = getPartKeyPrefix(key);
         try {
-            iterateMeta(objPrefix, (k,v) -> {
+            iterateMeta(objPrefix, (k, v) -> {
                 ObjectPartitionStatisticsImpl newStats = partStatistics.remove(getPartitionId(k));
                 try {
                     if (newStats == null) {
@@ -393,7 +393,7 @@ public class IgniteStatisticsPersistenceStoreImpl implements IgniteStatisticsSto
             return;
 
         try {
-            iterateMeta(getPartKeyPrefix(key), (k,v) -> {
+            iterateMeta(getPartKeyPrefix(key), (k, v) -> {
                 try {
                     metastore.remove(k);
                 }
@@ -429,7 +429,7 @@ public class IgniteStatisticsPersistenceStoreImpl implements IgniteStatisticsSto
             log.warning(
                 String.format(
                     "Error while storing local partition statistics %s.%s:%d",
-                    key.schema(), key.obj(),stat.partId()
+                    key.schema(), key.obj(), stat.partId()
                 ),
                 e
             );
@@ -536,7 +536,7 @@ public class IgniteStatisticsPersistenceStoreImpl implements IgniteStatisticsSto
         Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> res = new HashMap<>();
 
         try {
-            iterateMeta(STAT_OBS_PREFIX, (k,v) -> {
+            iterateMeta(STAT_OBS_PREFIX, (k, v) -> {
                 StatisticsKey key = getObsolescenceStatsKey(k);
                 Integer partId = getObsolescenceStatsPartId(k);
 

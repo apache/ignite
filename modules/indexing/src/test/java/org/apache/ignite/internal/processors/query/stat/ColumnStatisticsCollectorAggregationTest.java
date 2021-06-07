@@ -17,20 +17,19 @@
 
 package org.apache.ignite.internal.processors.query.stat;
 
-import org.apache.ignite.internal.processors.query.stat.hll.HLL;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import org.h2.value.Value;
-import org.h2.value.ValueDecimal;
-import org.junit.Test;
-
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
+
+import org.apache.ignite.internal.processors.query.stat.hll.HLL;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.h2.value.Value;
+import org.h2.value.ValueDecimal;
+import org.junit.Test;
 
 /**
  * Test different scenarious with column statistics aggregation.

@@ -124,7 +124,7 @@ public class IgniteStatisticsInMemoryStoreImpl implements IgniteStatisticsStore 
                     v = new IntHashMap<>();
                 IntMap<ObjectPartitionStatisticsObsolescence> vFinal = v;
 
-                objObs.getValue().forEach((k1,v1) -> vFinal.put(k1, v1));
+                objObs.getValue().forEach((k1, v1) -> vFinal.put(k1, v1));
 
                 return v;
             });
@@ -174,7 +174,7 @@ public class IgniteStatisticsInMemoryStoreImpl implements IgniteStatisticsStore 
 
     /** {@inheritDoc} */
     @Override public void clearLocalPartitionStatistics(StatisticsKey key, int partId) {
-        partsStats.computeIfPresent(key, (k,v) -> {
+        partsStats.computeIfPresent(key, (k, v) -> {
             v.remove(partId);
 
             return v;
@@ -183,7 +183,7 @@ public class IgniteStatisticsInMemoryStoreImpl implements IgniteStatisticsStore 
 
     /** {@inheritDoc} */
     @Override public void clearLocalPartitionsStatistics(StatisticsKey key, Collection<Integer> partIds) {
-        partsStats.computeIfPresent(key, (k,v) -> {
+        partsStats.computeIfPresent(key, (k, v) -> {
             for (Integer partId : partIds)
                 v.remove(partId);
 

@@ -110,13 +110,14 @@ public class SerializationUtil {
      *         be <code>null</code>.
      */
     public static ISchemaVersion getSchemaVersion(final int schemaVersionNumber) {
-        if(schemaVersionNumber >= REGISTERED_SCHEMA_VERSIONS.length || schemaVersionNumber < 0) {
+        if (schemaVersionNumber >= REGISTERED_SCHEMA_VERSIONS.length || schemaVersionNumber < 0)
             throw new RuntimeException("Invalid schema version number " + schemaVersionNumber);
-        }
+
         final ISchemaVersion schemaVersion = REGISTERED_SCHEMA_VERSIONS[schemaVersionNumber];
-        if(schemaVersion == null) {
+
+        if (schemaVersion == null)
             throw new RuntimeException("Unknown schema version number " + schemaVersionNumber);
-        }
+
         return schemaVersion;
     }
 
@@ -152,6 +153,7 @@ public class SerializationUtil {
     public static byte packVersionByte(final int schemaVersion, final int typeOrdinal) {
         return (byte)(((NIBBLE_MASK & schemaVersion) << NIBBLE_BITS) | (NIBBLE_MASK & typeOrdinal));
     }
+
     /**
      * Generates a byte that encodes the log-base-2 of the explicit cutoff
      * or sentinel values for 'explicit-disabled' or 'auto', as well as the

@@ -17,16 +17,15 @@
 
 package org.apache.ignite.internal.processors.query.stat.messages;
 
+import java.nio.ByteBuffer;
+import java.util.Map;
+
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.processors.query.stat.StatisticsType;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-
-import java.nio.ByteBuffer;
-
-import java.util.Map;
 
 /**
  * Statistics for some object (index or table) in database.
