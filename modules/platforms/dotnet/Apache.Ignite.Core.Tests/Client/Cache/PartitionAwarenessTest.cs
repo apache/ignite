@@ -331,19 +331,19 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [TestCase(1, 1)]
         [TestCase(2, 0)]
         [TestCase((uint) 1, 1)]
-        [TestCase((uint) 2, 0)]
+        [TestCase(uint.MaxValue, 0)]
         [TestCase((byte) 1, 1)]
         [TestCase((byte) 2, 0)]
         [TestCase((sbyte) 1, 1)]
-        [TestCase((sbyte) 2, 0)]
+        [TestCase((sbyte) -2, 2)]
         [TestCase((short) 1, 1)]
         [TestCase((short) 2, 0)]
         [TestCase((ushort) 1, 1)]
-        [TestCase((ushort) 2, 0)]
+        [TestCase(ushort.MaxValue, 0)]
         [TestCase((long) 1, 1)]
         [TestCase((long) 2, 0)]
         [TestCase((ulong) 1, 1)]
-        [TestCase((ulong) 2, 0)]
+        [TestCase(ulong.MaxValue, 0)]
         [TestCase((float) 1.3, 0)]
         [TestCase((float) 1.4, 2)]
         [TestCase((double) 51.3, 1)]
@@ -361,7 +361,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [TestCase(false, 1)]
         [TestCase(new[]{true, false}, 1)]
         [TestCase(new byte[]{1, 2}, 2)]
-        [TestCase(new sbyte[]{1, -2}, 0)]
+        [TestCase(new sbyte[]{1, -2}, 1)]
         [TestCase(new short[]{1, 3}, 2)]
         [TestCase(new ushort[]{1, 4}, 2)]
         [TestCase(new int[]{1, 5}, 2)]
@@ -379,7 +379,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             TestOperation(() => cache.Put(key, key), gridIdx, "Put");
 
             // Verify against real Affinity.
-            Assert.AreEqual(gridIdx, GetPrimaryNodeIdx(key));
+            Assert.AreEqual(gridIdx, GetPrimaryNodeIdx(key), "Actual primary node is different");
         }
 
         [Test]
