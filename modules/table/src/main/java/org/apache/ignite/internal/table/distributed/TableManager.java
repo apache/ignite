@@ -205,7 +205,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
 
             List<CompletableFuture<Boolean>> futs = new ArrayList<>();
 
-            boolean hasMetastorageLocally = MetaStorageManager.hasMetastorageLocally(configurationMgr);
+            boolean hasMetastorageLocally = metaStorageMgr.hasMetastorageLocally(configurationMgr);
 
             for (String tblName : tablesToStart) {
                 TableView tableView = ctx.newValue().get(tblName);

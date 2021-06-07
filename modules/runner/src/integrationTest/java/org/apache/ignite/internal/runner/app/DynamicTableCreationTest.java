@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.runner.app;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.app.Ignite;
 import org.apache.ignite.app.IgnitionManager;
@@ -47,41 +49,37 @@ class DynamicTableCreationTest {
     private static final IgniteLogger LOG = IgniteLogger.forClass(SchemaManager.class);
 
     /** Nodes bootstrap configuration. */
-    private final String[] nodesBootstrapCfg =
-        {
-            "{\n" +
+    private final Map<String, String> nodesBootstrapCfg = new LinkedHashMap<>() {{
+            put("node0", "{\n" +
                 "  \"node\": {\n" +
-                "    \"name\":node0,\n" +
                 "    \"metastorageNodes\":[ \"node0\" ]\n" +
                 "  },\n" +
                 "  \"network\": {\n" +
                 "    \"port\":3344,\n" +
                 "    \"netClusterNodes\":[ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ]\n" +
                 "  }\n" +
-                "}",
+                "}");
 
-            "{\n" +
+            put("node1", "{\n" +
                 "  \"node\": {\n" +
-                "    \"name\":node1,\n" +
                 "    \"metastorageNodes\":[ \"node0\" ]\n" +
                 "  },\n" +
                 "  \"network\": {\n" +
                 "    \"port\":3345,\n" +
                 "    \"netClusterNodes\":[ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ]\n" +
                 "  }\n" +
-                "}",
+                "}");
 
-            "{\n" +
+            put("node2", "{\n" +
                 "  \"node\": {\n" +
-                "    \"name\":node2,\n" +
                 "    \"metastorageNodes\":[ \"node0\"]\n" +
                 "  },\n" +
                 "  \"network\": {\n" +
                 "    \"port\":3346,\n" +
                 "    \"netClusterNodes\":[ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ]\n" +
                 "  }\n" +
-                "}",
-        };
+                "}");
+        }};
 
     /**
      * Check dynamic table creation.
@@ -90,8 +88,8 @@ class DynamicTableCreationTest {
     void testDynamicSimpleTableCreation() {
         List<Ignite> clusterNodes = new ArrayList<>();
 
-        for (String nodeBootstrapCfg : nodesBootstrapCfg)
-            clusterNodes.add(IgnitionManager.start(nodeBootstrapCfg));
+        for (Map.Entry<String, String> nodeBootstrapCfg : nodesBootstrapCfg.entrySet())
+            clusterNodes.add(IgnitionManager.start(nodeBootstrapCfg.getKey(), nodeBootstrapCfg.getValue()));
 
         assertEquals(3, clusterNodes.size());
 
@@ -159,8 +157,8 @@ class DynamicTableCreationTest {
     void testDynamicTableCreation() {
         List<Ignite> clusterNodes = new ArrayList<>();
 
-        for (String nodeBootstrapCfg : nodesBootstrapCfg)
-            clusterNodes.add(IgnitionManager.start(nodeBootstrapCfg));
+        for (Map.Entry<String, String> nodeBootstrapCfg : nodesBootstrapCfg.entrySet())
+            clusterNodes.add(IgnitionManager.start(nodeBootstrapCfg.getKey(), nodeBootstrapCfg.getValue()));
 
         assertEquals(3, clusterNodes.size());
 

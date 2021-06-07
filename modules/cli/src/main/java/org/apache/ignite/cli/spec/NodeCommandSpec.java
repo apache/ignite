@@ -60,8 +60,8 @@ public class NodeCommandSpec extends CategorySpec {
         private NodeManager nodeMgr;
 
         /** Consistent id, which will be used by new node. */
-        @CommandLine.Parameters(paramLabel = "consistent-id", description = "Consistent ID of the new node")
-        public String consistentId;
+        @CommandLine.Parameters(paramLabel = "name", description = "Name of the new node")
+        public String nodeName;
 
         /** Path to node config. */
         @CommandLine.Option(names = "--config", description = "Configuration file to start the node with")
@@ -74,19 +74,19 @@ public class NodeCommandSpec extends CategorySpec {
             PrintWriter out = spec.commandLine().getOut();
             ColorScheme cs = spec.commandLine().getColorScheme();
 
-            NodeManager.RunningNode node = nodeMgr.start(consistentId, ignitePaths.logDir,
+            NodeManager.RunningNode node = nodeMgr.start(nodeName, ignitePaths.logDir,
                 ignitePaths.cliPidsDir(),
                 configPath,
                 out);
 
             out.println();
             out.println("Node is successfully started. To stop, type " +
-                cs.commandText("ignite node stop ") + cs.parameterText(node.consistentId));
+                cs.commandText("ignite node stop ") + cs.parameterText(node.name));
             out.println();
 
             Table tbl = new Table(0, cs);
 
-            tbl.addRow("@|bold Consistent ID|@", node.consistentId);
+            tbl.addRow("@|bold Node name|@", node.name);
             tbl.addRow("@|bold PID|@", node.pid);
             tbl.addRow("@|bold Log File|@", node.logFile);
 
@@ -170,9 +170,8 @@ public class NodeCommandSpec extends CategorySpec {
 
                 tbl.addRow("@|bold Consistent ID|@", "@|bold PID|@", "@|bold Log File|@");
 
-                for (NodeManager.RunningNode node : nodes) {
-                    tbl.addRow(node.consistentId, node.pid, node.logFile);
-                }
+                for (NodeManager.RunningNode node : nodes)
+                    tbl.addRow(node.name, node.pid, node.logFile);
 
                 out.println(tbl);
             }
@@ -197,14 +196,12 @@ public class NodeCommandSpec extends CategorySpec {
 
                 out.println(Ansi.AUTO.string("@|bold Current Ignite node classpath:|@"));
 
-                for (String item : items) {
+                for (String item : items)
                     out.println("    " + item);
-                }
             }
             catch (IOException e) {
                 throw new IgniteCLIException("Can't get current classpath", e);
             }
         }
     }
-
 }

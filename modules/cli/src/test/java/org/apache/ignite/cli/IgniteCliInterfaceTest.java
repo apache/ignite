@@ -336,13 +336,13 @@ public class IgniteCliInterfaceTest extends AbstractCliTest {
                 cli.getOut());
 
             assertEquals("\nNode is successfully started. To stop, type ignite node stop " + nodeName + "\n\n" +
-                "+---------------+---------+\n" +
-                "| Consistent ID | node1   |\n" +
-                "+---------------+---------+\n" +
-                "| PID           | 1       |\n" +
-                "+---------------+---------+\n" +
-                "| Log File      | logfile |\n" +
-                "+---------------+---------+\n",
+                "+-----------+---------+\n" +
+                "| Node name | node1   |\n" +
+                "+-----------+---------+\n" +
+                "| PID       | 1       |\n" +
+                "+-----------+---------+\n" +
+                "| Log File  | logfile |\n" +
+                "+-----------+---------+\n",
                 out.toString());
         }
 

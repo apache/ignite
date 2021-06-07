@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.runner.app;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.apache.ignite.app.Ignite;
 import org.apache.ignite.app.IgnitionManager;
 import org.junit.jupiter.api.Assertions;
@@ -30,41 +32,37 @@ import org.junit.jupiter.api.Test;
  */
 class IgnitionTest {
     /** Nodes bootstrap configuration. */
-    private final String[] nodesBootstrapCfg =
-        {
-            "{\n" +
+    private final Map<String, String> nodesBootstrapCfg = new LinkedHashMap<>() {{
+            put("node0", "{\n" +
                 "  \"node\": {\n" +
-                "    \"name\":node0,\n" +
                 "    \"metastorageNodes\":[ \"node0\" ]\n" +
                 "  },\n" +
                 "  \"network\": {\n" +
                 "    \"port\":3344,\n" +
                 "    \"netClusterNodes\":[ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ]\n" +
                 "  }\n" +
-                "}",
+                "}");
 
-            "{\n" +
+            put("node1", "{\n" +
                 "  \"node\": {\n" +
-                "    \"name\":node1,\n" +
                 "    \"metastorageNodes\":[ \"node0\" ]\n" +
                 "  },\n" +
                 "  \"network\": {\n" +
                 "    \"port\":3345,\n" +
                 "    \"netClusterNodes\":[ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ]\n" +
                 "  }\n" +
-                "}",
+                "}");
 
-            "{\n" +
+            put("node2", "{\n" +
                 "  \"node\": {\n" +
-                "    \"name\":node2,\n" +
                 "    \"metastorageNodes\":[ \"node0\" ]\n" +
                 "  },\n" +
                 "  \"network\": {\n" +
                 "    \"port\":3346,\n" +
                 "    \"netClusterNodes\":[ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ]\n" +
                 "  }\n" +
-                "}",
-        };
+                "}");
+        }};
 
     /**
      * Check that Ignition.start() with bootstrap configuration returns Ignite instance.
@@ -73,8 +71,8 @@ class IgnitionTest {
     void testNodesStartWithBootstrapConfiguration() {
         List<Ignite> startedNodes = new ArrayList<>();
 
-        for (String nodeBootstrapCfg : nodesBootstrapCfg)
-            startedNodes.add(IgnitionManager.start(nodeBootstrapCfg));
+        for (Map.Entry<String, String> nodeBootstrapCfg : nodesBootstrapCfg.entrySet())
+            startedNodes.add(IgnitionManager.start(nodeBootstrapCfg.getKey(), nodeBootstrapCfg.getValue()));
 
         Assertions.assertEquals(3, startedNodes.size());
 
@@ -87,7 +85,7 @@ class IgnitionTest {
     @Test
     @Disabled("https://issues.apache.org/jira/browse/IGNITE-14709")
     void testNodeStartWithoutBootstrapConfiguration() {
-        Ignite ignite = IgnitionManager.start(null);
+        Ignite ignite = IgnitionManager.start("node0", null);
 
         Assertions.assertNotNull(ignite);
     }

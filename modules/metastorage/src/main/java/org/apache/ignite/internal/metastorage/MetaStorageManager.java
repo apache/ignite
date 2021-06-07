@@ -122,9 +122,6 @@ public class MetaStorageManager {
         watchAggregator = new WatchAggregator();
         deployFut = new CompletableFuture<>();
 
-        String locNodeName = locCfgMgr.configurationRegistry().getConfiguration(NodeConfiguration.KEY)
-            .name().value();
-
         String[] metastorageNodes = locCfgMgr.configurationRegistry().getConfiguration(NodeConfiguration.KEY)
             .metastorageNodes().value();
 
@@ -503,20 +500,19 @@ public class MetaStorageManager {
      * @param configurationMgr Configuration manager.
      * @return {@code true} if the node has meta storage, {@code false} otherwise.
      */
-    public static boolean hasMetastorageLocally(ConfigurationManager configurationMgr) {
-        String locNodeName = configurationMgr
-            .configurationRegistry()
-            .getConfiguration(NodeConfiguration.KEY)
-            .name()
-            .value();
-
+    public boolean hasMetastorageLocally(ConfigurationManager configurationMgr) {
         String[] metastorageMembers = configurationMgr
             .configurationRegistry()
             .getConfiguration(NodeConfiguration.KEY)
             .metastorageNodes()
             .value();
 
-        return hasMetastorage(locNodeName, metastorageMembers);
+        try {
+            return hasMetastorage(vaultMgr.name(), metastorageMembers);
+        }
+        catch (IgniteInternalCheckedException e) {
+            throw new IgniteInternalException(e);
+        }
     }
 
     // TODO: IGNITE-14691 Temporally solution that should be removed after implementing reactive watches.

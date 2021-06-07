@@ -110,7 +110,6 @@ public class TableManagerTest {
 
             cfrMgr.bootstrap("{\n" +
                 "   \"node\":{\n" +
-                "      \"name\":\"node1\",\n" +
                 "      \"metastorageNodes\":[\n" +
                 "         \"" + NODE_NAME + "\"\n" +
                 "      ]\n" +
@@ -285,6 +284,8 @@ public class TableManagerTest {
         ClusterNode node,
         CompletableFuture<UUID> tblIdFut
     ) {
+        when(mm.hasMetastorageLocally(any())).thenReturn(true);
+
         when(mm.invoke((Condition)any(), (Operation)any(), (Operation)any())).thenAnswer(invokation -> {
             Condition condition = (Condition)invokation.getArgument(0);
 

@@ -18,6 +18,7 @@
 package org.apache.ignite.app;
 
 import java.util.ServiceLoader;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -29,21 +30,24 @@ public class IgnitionManager {
 
     /**
      * Starts Ignite node with optional bootstrap configuration in json format.
+     *
+     * @param nodeName Name of the node.
      * @param jsonStrBootstrapCfg Node configuration in json format.
      * @return Started Ignite node.
      */
     // TODO IGNITE-14580 Add exception handling logic to IgnitionProcessor.
-    public static synchronized Ignite start(@Nullable String jsonStrBootstrapCfg) {
+    public static synchronized Ignite start(@NotNull String nodeName, @Nullable String jsonStrBootstrapCfg) {
         if (ignition == null) {
             ServiceLoader<Ignition> ldr = ServiceLoader.load(Ignition.class);
             ignition = ldr.iterator().next();
         }
 
-        return ignition.start(jsonStrBootstrapCfg);
+        return ignition.start(nodeName, jsonStrBootstrapCfg);
     }
 
     /**
      * Starts Ignite node with optional bootstrap configuration in json format.
+     * @param nodeName Name of the node.
      * @param jsonStrBootstrapCfg Node configuration in json format.
      * @param clsLdr The class loader to be used to load provider-configuration files
      * and provider classes, or {@code null} if the system class
@@ -51,12 +55,12 @@ public class IgnitionManager {
      * @return Started Ignite node.
      */
     // TODO IGNITE-14580 Add exception handling logic to IgnitionProcessor.
-    public static synchronized Ignite start(@Nullable String jsonStrBootstrapCfg, @Nullable ClassLoader clsLdr) {
+    public static synchronized Ignite start(@NotNull String nodeName, @Nullable String jsonStrBootstrapCfg, @Nullable ClassLoader clsLdr) {
         if (ignition == null) {
             ServiceLoader<Ignition> ldr = ServiceLoader.load(Ignition.class, clsLdr);
             ignition = ldr.iterator().next();
         }
 
-        return ignition.start(jsonStrBootstrapCfg);
+        return ignition.start(nodeName, jsonStrBootstrapCfg);
     }
 }

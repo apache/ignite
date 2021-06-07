@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.runner.app;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.app.Ignite;
 import org.apache.ignite.app.IgnitionManager;
@@ -38,9 +40,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 @Disabled("https://issues.apache.org/jira/browse/IGNITE-14578")
 class TableCreationTest {
     /** Nodes bootstrap configuration with preconfigured tables. */
-    private final String[] nodesBootstrapCfg =
-        {
-            "{\n" +
+    private final LinkedHashMap<String, String> nodesBootstrapCfg = new LinkedHashMap<>() {{
+            put("node0", "{\n" +
                 "  \"node\": {\n" +
                 "    \"name\":node0,\n" +
                 "    \"metastorageNodes\":[ \"node0\", \"node1\" ]\n" +
@@ -124,30 +125,28 @@ class TableCreationTest {
                 "           }\n" + /* Table. */
                 "       }\n" + /* Tables. */
                 "  }\n" + /* Root. */
-                "}",
+                "}");
 
-            "{\n" +
+            put("node1", "{\n" +
                 "  \"node\": {\n" +
-                "    \"name\":node1,\n" +
                 "    \"metastorageNodes\":[ \"node0\", \"node1\" ]\n" +
                 "  },\n" +
                 "  \"network\": {\n" +
                 "    \"port\":3345,\n" +
                 "    \"netClusterNodes\":[ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ]\n" +
                 "  }\n" +
-                "}",
+                "}");
 
-            "{\n" +
+            put("node2", "{\n" +
                 "  \"node\": {\n" +
-                "    \"name\":node2,\n" +
                 "    \"metastorageNodes\":[ \"node0\", \"node1\" ]\n" +
                 "  },\n" +
                 "  \"network\": {\n" +
                 "    \"port\":3346,\n" +
                 "    \"netClusterNodes\":[ \"localhost:3344\", \"localhost:3345\", \"localhost:3346\" ]\n" +
                 "  }\n" +
-                "}",
-        };
+                "}");
+        }};
 
     /**
      * Check table creation via bootstrap configuration with pre-configured table.
@@ -156,8 +155,8 @@ class TableCreationTest {
     void testInitialSimpleTableConfiguration() {
         List<Ignite> clusterNodes = new ArrayList<>();
 
-        for (String nodeBootstrapCfg : nodesBootstrapCfg)
-            clusterNodes.add(IgnitionManager.start(nodeBootstrapCfg));
+        for (Map.Entry<String, String> nodeBootstrapCfg : nodesBootstrapCfg.entrySet())
+            clusterNodes.add(IgnitionManager.start(nodeBootstrapCfg.getKey(), nodeBootstrapCfg.getValue()));
 
         assertEquals(3, clusterNodes.size());
 

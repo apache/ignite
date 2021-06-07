@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.vault;
 
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -29,6 +30,7 @@ import org.apache.ignite.internal.vault.service.VaultService;
 import org.apache.ignite.lang.ByteArray;
 import org.apache.ignite.lang.IgniteInternalCheckedException;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * VaultManager is responsible for handling {@link VaultService} lifecycle
@@ -37,6 +39,9 @@ import org.jetbrains.annotations.NotNull;
 public class VaultManager {
     /** Special key for vault where applied revision for {@code putAll} operation is stored. */
     private static ByteArray APPLIED_REV = ByteArray.fromString("applied_revision");
+
+    /** Special key, which reserved for storing the name of the current node. */
+    private static final ByteArray NODE_NAME = ByteArray.fromString("node_name");
 
     /** Mutex. */
     private final Object mux = new Object();
@@ -168,6 +173,35 @@ public class VaultManager {
             }
 
             return appliedRevision == null ? 0L : ByteUtils.bytesToLong(appliedRevision, 0);
+        }
+    }
+
+    /**
+     * Persist node name to the vault.
+     *
+     * @param name Node name to persist. Couldn't be null.
+     * @return Future representing pending completion of the operation. Couldn't be {@code null}.
+     */
+    @NotNull public CompletableFuture<Void> putName(@NotNull String name) {
+        return put(NODE_NAME, name.getBytes(StandardCharsets.UTF_8));
+    }
+
+    /**
+     * @return Node name, if was stored earlier. Could be {@code null}.
+     * @throws IgniteInternalCheckedException If couldn't get node name from the vault.
+     */
+    @Nullable public String name() throws IgniteInternalCheckedException {
+        synchronized (mux) {
+            try {
+                byte[] nodeName = vaultService.get(NODE_NAME).get().value();
+                if (nodeName != null)
+                    return new String(nodeName, StandardCharsets.UTF_8);
+                else
+                    return null;
+            }
+            catch (InterruptedException | ExecutionException e) {
+                throw new IgniteInternalCheckedException("Error occurred when getting node name", e);
+            }
         }
     }
 
