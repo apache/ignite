@@ -499,6 +499,10 @@
                                 <title>Tracing SPI</title>
                                 <packages>org.apache.ignite.spi.tracing*</packages>
                             </group>
+                            <group>
+                                <title>Capture Data Change API</title>
+                                <packages>org.apache.ignite.cdc*</packages>
+                            </group>
                         </groups>
                         <bottom>
                             <![CDATA[

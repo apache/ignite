@@ -32,7 +32,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Abstract file lock holder.
- * Implementations should provide {@link #lockId()} that will appear in error message for concurrent processes
+ * Implementations should provide {@link #lockInfo()} that will appear in error message for concurrent processes
  * that will try to lock the same file and {@link #warningMessage(String)} to print on each lock try.
  *
  * @see GridCacheDatabaseSharedManager.NodeFileLockHolder
@@ -71,17 +71,17 @@ public abstract class FileLockHolder implements AutoCloseable {
     }
 
     /**
-     * This id will appear in error message of concurrent processes that will try to lock on the same file.
+     * This info will appear in error message of concurrent processes that will try to lock on the same file.
      *
-     * @return Lock ID to store in the file.
+     * @return Lock info to store in the file.
      */
-    public abstract String lockId();
+    public abstract String lockInfo();
 
     /**
-     * @param lockId Existing lock id.
+     * @param lockInfo Existing lock info.
      * @return Warning message.
      */
-    protected abstract String warningMessage(String lockId);
+    protected abstract String warningMessage(String lockInfo);
 
     /**
      * @param lockWaitTimeMillis During which time thread will try capture file lock.
@@ -103,7 +103,7 @@ public abstract class FileLockHolder implements AutoCloseable {
                     lock = ch.tryLock(0, 1, false);
 
                     if (lock != null && lock.isValid()) {
-                        writeContent(lockId());
+                        writeContent(lockInfo());
 
                         return;
                     }

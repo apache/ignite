@@ -42,6 +42,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 
@@ -153,7 +154,7 @@ public class PdsFolderResolver<L extends FileLockHolder> {
         if (!CU.isPersistenceEnabled(cfg))
             return compatibleResolve(pstStoreBasePath, consistentId);
 
-        if (cfg.isClientMode() || cfg.isDaemon())
+        if (cfg.isClientMode() == TRUE || cfg.isDaemon())
             return new PdsFolderSettings<>(pstStoreBasePath, UUID.randomUUID());
 
         if (getBoolean(IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID, false))

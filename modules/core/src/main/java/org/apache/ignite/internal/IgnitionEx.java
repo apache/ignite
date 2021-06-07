@@ -22,8 +22,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.lang.management.ManagementFactory;
-import java.lang.reflect.Constructor;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -109,9 +107,6 @@ import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.logger.LoggerNodeIdAndApplicationAware;
-import org.apache.ignite.logger.LoggerNodeIdAware;
-import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -2302,7 +2297,7 @@ public class IgnitionEx {
             if (!F.isEmpty(predefineConsistentId))
                 myCfg.setConsistentId(predefineConsistentId);
 
-            IgniteLogger cfgLog = initLogger(cfg.getGridLogger(), null, nodeId, workDir);
+            IgniteLogger cfgLog = U.initLogger(cfg.getGridLogger(), null, nodeId, workDir);
 
             assert cfgLog != null;
 
@@ -2556,94 +2551,6 @@ public class IgnitionEx {
 
             if (cfg.getTracingSpi() == null)
                 cfg.setTracingSpi(new NoopTracingSpi());
-        }
-
-        /**
-         * @param cfgLog Configured logger.
-         * @param nodeId Local node ID.
-         * @param workDir Work directory.
-         * @return Initialized logger.
-         * @throws IgniteCheckedException If failed.
-         */
-        @SuppressWarnings("ErrorNotRethrown")
-        private IgniteLogger initLogger(@Nullable IgniteLogger cfgLog, @Nullable String app, UUID nodeId, String workDir)
-            throws IgniteCheckedException {
-            try {
-                Exception log4jInitErr = null;
-
-                if (cfgLog == null) {
-                    Class<?> log4jCls;
-
-                    try {
-                        log4jCls = Class.forName("org.apache.ignite.logger.log4j.Log4JLogger");
-                    }
-                    catch (ClassNotFoundException | NoClassDefFoundError ignored) {
-                        log4jCls = null;
-                    }
-
-                    if (log4jCls != null) {
-                        try {
-                            URL url = U.resolveIgniteUrl("config/ignite-log4j.xml");
-
-                            if (url == null) {
-                                File cfgFile = new File("config/ignite-log4j.xml");
-
-                                if (!cfgFile.exists())
-                                    cfgFile = new File("../config/ignite-log4j.xml");
-
-                                if (cfgFile.exists()) {
-                                    try {
-                                        url = cfgFile.toURI().toURL();
-                                    }
-                                    catch (MalformedURLException ignore) {
-                                        // No-op.
-                                    }
-                                }
-                            }
-
-                            if (url != null) {
-                                boolean configured = (Boolean)log4jCls.getMethod("isConfigured").invoke(null);
-
-                                if (configured)
-                                    url = null;
-                            }
-
-                            if (url != null) {
-                                Constructor<?> ctor = log4jCls.getConstructor(URL.class);
-
-                                cfgLog = (IgniteLogger)ctor.newInstance(url);
-                            }
-                            else
-                                cfgLog = (IgniteLogger)log4jCls.newInstance();
-                        }
-                        catch (Exception e) {
-                            log4jInitErr = e;
-                        }
-                    }
-
-                    if (log4jCls == null || log4jInitErr != null)
-                        cfgLog = new JavaLogger();
-                }
-
-                // Special handling for Java logger which requires work directory.
-                if (cfgLog instanceof JavaLogger)
-                    ((JavaLogger)cfgLog).setWorkDirectory(workDir);
-
-                // Set node IDs for all file appenders.
-                if (cfgLog instanceof LoggerNodeIdAndApplicationAware)
-                    ((LoggerNodeIdAndApplicationAware)cfgLog).setApplicationAndNode(app, nodeId);
-                else if (cfgLog instanceof LoggerNodeIdAware)
-                    ((LoggerNodeIdAware)cfgLog).setNodeId(nodeId);
-
-                if (log4jInitErr != null)
-                    U.warn(cfgLog, "Failed to initialize Log4JLogger (falling back to standard java logging): "
-                        + log4jInitErr.getCause());
-
-                return cfgLog;
-            }
-            catch (Exception e) {
-                throw new IgniteCheckedException("Failed to create logger.", e);
-            }
         }
 
         /**

@@ -3021,7 +3021,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         /** {@inheritDoc} */
-        @Override public String lockId() {
+        @Override public String lockInfo() {
             SB sb = new SB();
 
             //write node id
@@ -3056,9 +3056,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         /** {@inheritDoc} */
-        @Override protected String warningMessage(String lockId) {
+        @Override protected String warningMessage(String lockInfo) {
             return "Failed to acquire file lock. Will try again in 1s " +
-                "[nodeId=" + ctx.localNodeId() + ", holder=" + lockId +
+                "[nodeId=" + ctx.localNodeId() + ", holder=" + lockInfo +
                 ", path=" + lockPath() + ']';
         }
     }

@@ -165,6 +165,9 @@ public class DataStorageConfiguration implements Serializable {
     /** Default wal archive directory. */
     public static final String DFLT_WAL_ARCHIVE_PATH = "db/wal/archive";
 
+    /** Default change data capture directory. */
+    public static final String DFLT_WAL_CDC_PATH = "db/wal/cdc";
+
     /** Default path (relative to working directory) of binary metadata folder */
     public static final String DFLT_BINARY_METADATA_PATH = "db/binary_meta";
 
@@ -241,6 +244,14 @@ public class DataStorageConfiguration implements Serializable {
 
     /** WAL archive path. */
     private String walArchivePath = DFLT_WAL_ARCHIVE_PATH;
+
+    /** Change Data Capture path. */
+    @IgniteExperimental
+    private String changeDataCaptureWalPath = DFLT_WAL_CDC_PATH;
+
+    /** Change Data Capture enabled flag. */
+    @IgniteExperimental
+    private boolean changeDataCaptureEnabled;
 
     /** Metrics enabled flag. */
     private boolean metricsEnabled = DFLT_METRICS_ENABLED;
@@ -725,6 +736,54 @@ public class DataStorageConfiguration implements Serializable {
         this.walArchivePath = walArchivePath;
 
         return this;
+    }
+
+    /**
+     * Gets a path to the CDC directory.
+     * If this path is relative, it will be resolved relatively to Ignite work directory.
+     *
+     * @return CDC directory.
+     */
+    @IgniteExperimental
+    public String getChangeDataCaptureWalPath() {
+        return changeDataCaptureWalPath;
+    }
+
+    /**
+     * Sets a path for the CDC directory.
+     * Hard link to every WAL Archive segment will be created in it for CDC processing purpose.
+     *
+     * @param changeDataCaptureWalPath CDC directory.
+     * @return {@code this} for chaining.
+     */
+    @IgniteExperimental
+    public DataStorageConfiguration setChangeDataCaptureWalPath(String changeDataCaptureWalPath) {
+        this.changeDataCaptureWalPath = changeDataCaptureWalPath;
+
+        return this;
+    }
+
+    /**
+     * Sets flag indicating whether CDC enabled.
+     *
+     * @param changeDataCaptureEnabled CDC enabled flag.
+     */
+    @IgniteExperimental
+    public DataStorageConfiguration setChangeDataCaptureEnabled(boolean changeDataCaptureEnabled) {
+        this.changeDataCaptureEnabled = changeDataCaptureEnabled;
+
+        return this;
+    }
+
+    /**
+     * Gets flag indicating whether CDC is enabled.
+     * Default value is {@code false}.
+     *
+     * @return Metrics enabled flag.
+     */
+    @IgniteExperimental
+    public boolean isChangeDataCaptureEnabled() {
+        return changeDataCaptureEnabled;
     }
 
     /**
