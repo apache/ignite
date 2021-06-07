@@ -108,6 +108,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCach
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -116,6 +117,7 @@ import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.service.IgniteServiceProcessor;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PA;
@@ -2723,5 +2725,29 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      */
     protected GridCacheDatabaseSharedManager dbMgr(IgniteEx n) {
         return (GridCacheDatabaseSharedManager)n.context().cache().context().database();
+    }
+
+    /**
+     * Performing an operation on a MetaStorage.
+     *
+     * @param n Node.
+     * @param fun Function for working with MetaStorage, the argument can be {@code null}.
+     * @return The function result.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected <R> R metaStorageOperation(
+        IgniteEx n,
+        IgniteThrowableFunction<MetaStorage, R> fun
+    ) throws IgniteCheckedException {
+        GridCacheDatabaseSharedManager dbMgr = dbMgr(n);
+
+        dbMgr.checkpointReadLock();
+
+        try {
+            return fun.apply(dbMgr.metaStorage());
+        }
+        finally {
+            dbMgr.checkpointReadUnlock();
+        }
     }
 }
