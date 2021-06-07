@@ -334,6 +334,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [TestCase(uint.MaxValue, 0)]
         [TestCase((byte) 1, 1)]
         [TestCase((byte) 2, 0)]
+        [TestCase((byte) 131, 2)]
         [TestCase((sbyte) 1, 1)]
         [TestCase((sbyte) -2, 2)]
         [TestCase((short) 1, 1)]
