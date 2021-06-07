@@ -326,23 +326,25 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             }
         }
 
+        // ReSharper disable RedundantExplicitArrayCreation
         [Test]
         [TestCase(1, 1)]
         [TestCase(2, 0)]
         [TestCase((uint) 1, 1)]
-        [TestCase((uint) 2, 0)]
+        [TestCase(uint.MaxValue, 0)]
         [TestCase((byte) 1, 1)]
         [TestCase((byte) 2, 0)]
+        [TestCase((byte) 131, 1)]
         [TestCase((sbyte) 1, 1)]
-        [TestCase((sbyte) 2, 0)]
+        [TestCase((sbyte) -2, 1)]
         [TestCase((short) 1, 1)]
         [TestCase((short) 2, 0)]
         [TestCase((ushort) 1, 1)]
-        [TestCase((ushort) 2, 0)]
+        [TestCase(ushort.MaxValue, 0)]
         [TestCase((long) 1, 1)]
         [TestCase((long) 2, 0)]
         [TestCase((ulong) 1, 1)]
-        [TestCase((ulong) 2, 0)]
+        [TestCase(ulong.MaxValue, 0)]
         [TestCase((float) 1.3, 0)]
         [TestCase((float) 1.4, 2)]
         [TestCase((double) 51.3, 1)]
@@ -351,15 +353,34 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         [TestCase((double) 255.5, 1)]
         [TestCase('1', 2)]
         [TestCase('2', 1)]
+        [TestCase("1", 2)]
+        [TestCase("2", 1)]
+        [TestCase("Hello World", 0)]
+        [TestCase("Тест1", 1)]
+        [TestCase("🙂🔥😎", 2)]
         [TestCase(true, 1)]
         [TestCase(false, 1)]
+        [TestCase(new[]{true, false}, 1)]
+        [TestCase(new byte[]{1, 2}, 2)]
+        [TestCase(new sbyte[]{1, -2}, 0)]
+        [TestCase(new short[]{1, 3}, 2)]
+        [TestCase(new ushort[]{1, 4}, 2)]
+        [TestCase(new int[]{1, 5}, 2)]
+        [TestCase(new uint[]{1, 6}, 1)]
+        [TestCase(new long[]{1, 7}, 0)]
+        [TestCase(new ulong[]{1, 8}, 0)]
+        [TestCase(new float[]{1.1f, 9.9f}, 1)]
+        [TestCase(new double[]{1.2f, 19.19f}, 1)]
+        [TestCase(new char[]{'x', 'y'}, 1)]
+        [TestCase(new string[]{"Hello", "World"}, 2)]
+        // ReSharper restore RedundantExplicitArrayCreation
         public void CachePut_AllPrimitiveTypes_RequestIsRoutedToPrimaryNode(object key, int gridIdx)
         {
             var cache = Client.GetCache<object, object>(_cache.Name);
             TestOperation(() => cache.Put(key, key), gridIdx, "Put");
 
             // Verify against real Affinity.
-            Assert.AreEqual(gridIdx, GetPrimaryNodeIdx(key));
+            Assert.AreEqual(gridIdx, GetPrimaryNodeIdx(key), "Actual primary node is different");
         }
 
         [Test]

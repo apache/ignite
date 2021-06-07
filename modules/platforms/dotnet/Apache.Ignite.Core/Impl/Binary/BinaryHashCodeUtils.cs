@@ -45,11 +45,29 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (type == typeof(long))
                 return GetLongHashCode(TypeCaster<long>.Cast(val));
 
+            if (type == typeof(string))
+                return BinaryUtils.GetStringHashCode((string) (object) val);
+
+            if (type == typeof(Guid))
+                return GetGuidHashCode(TypeCaster<Guid>.Cast(val));
+
+            if (type == typeof(uint))
+            {
+                var val0 = TypeCaster<uint>.Cast(val);
+                return *(int*) &val0;
+            }
+
+            if (type == typeof(ulong))
+            {
+                var val0 = TypeCaster<ulong>.Cast(val);
+                return GetLongHashCode(*(long*) &val0);
+            }
+
             if (type == typeof(bool))
                 return TypeCaster<bool>.Cast(val) ? 1231 : 1237;
 
             if (type == typeof(byte))
-                return TypeCaster<byte>.Cast(val);
+                return unchecked((sbyte) TypeCaster<byte>.Cast(val));
 
             if (type == typeof(short))
                 return TypeCaster<short>.Cast(val);
@@ -70,27 +88,12 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             if (type == typeof(sbyte))
-            {
-                var val0 = TypeCaster<sbyte>.Cast(val);
-                return *(byte*) &val0;
-            }
+                return TypeCaster<sbyte>.Cast(val);
 
             if (type == typeof(ushort))
             {
                 var val0 = TypeCaster<ushort>.Cast(val);
                 return *(short*) &val0;
-            }
-
-            if (type == typeof(uint))
-            {
-                var val0 = TypeCaster<uint>.Cast(val);
-                return *(int*) &val0;
-            }
-
-            if (type == typeof(ulong))
-            {
-                var val0 = TypeCaster<ulong>.Cast(val);
-                return GetLongHashCode(*(long*) &val0);
             }
 
             if (type == typeof(IntPtr))
@@ -105,13 +108,101 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return GetLongHashCode(*(long*) &val0);
             }
 
-            if (type == typeof(Guid))
+            if (type.IsArray)
             {
-                return GetGuidHashCode(TypeCaster<Guid>.Cast(val));
+                return GetArrayHashCode(val, marsh, affinityKeyFieldIds);
             }
 
             // DateTime, when used as key, is always written as BinaryObject.
             return GetComplexTypeHashCode(val, marsh, affinityKeyFieldIds);
+        }
+
+        /// <summary>
+        /// Gets the Ignite-specific hash code for an array.
+        /// </summary>
+        private static int GetArrayHashCode<T>(T val, Marshaller marsh, IDictionary<int, int> affinityKeyFieldIds)
+        {
+            var res = 1;
+
+            var bytes = val as sbyte[];  // Matches byte[] too.
+
+            if (bytes != null)
+            {
+                foreach (var x in bytes)
+                    res = 31 * res + x;
+
+                return res;
+            }
+
+            var ints = val as int[]; // Matches uint[] too.
+
+            if (ints != null)
+            {
+                foreach (var x in ints)
+                    res = 31 * res + x;
+
+                return res;
+            }
+
+            var longs = val as long[]; // Matches ulong[] too.
+
+            if (longs != null)
+            {
+                foreach (var x in longs)
+                    res = 31 * res + GetLongHashCode(x);
+
+                return res;
+            }
+
+            var guids = val as Guid[];
+
+            if (guids != null)
+            {
+                foreach (var x in guids)
+                    res = 31 * res + GetGuidHashCode(x);
+
+                return res;
+            }
+
+            var shorts = val as short[]; // Matches ushort[] too.
+
+            if (shorts != null)
+            {
+                foreach (var x in shorts)
+                    res = 31 * res + x;
+
+                return res;
+            }
+
+            var chars = val as char[];
+
+            if (chars != null)
+            {
+                foreach (var x in chars)
+                    res = 31 * res + x;
+
+                return res;
+            }
+
+            // This covers all other arrays.
+            // We don't have special handling for unlikely use cases such as float[] and double[].
+            var arr = val as Array;
+
+            Debug.Assert(arr != null);
+
+            if (arr.Rank != 1)
+            {
+                throw new IgniteException(
+                    string.Format("Failed to compute hash code for object '{0}' of type '{1}': " +
+                                  "multidimensional arrays are not supported", val, val.GetType()));
+            }
+
+            foreach (var element in arr)
+            {
+                res = 31 * res + (element == null ? 0 : GetHashCode(element, marsh, affinityKeyFieldIds));
+            }
+
+            return res;
         }
 
         // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
@@ -145,7 +236,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return hashCode.Value;
                 }
 
-                throw new IgniteException(string.Format("Failed to compute hash code for object '{0}'", val));
+                throw new IgniteException(
+                    string.Format("Failed to compute hash code for object '{0}' of type '{1}'", val, val.GetType()));
             }
         }
 
