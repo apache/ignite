@@ -62,9 +62,6 @@
     <!-- Identifiers should not contain type names -->
     <Rule Id="CA1720" Action="None" />
 
-    <!-- Use preferred terms -->
-    <Rule Id="CA1726" Action="None" />
-
     <!-- Avoid calling problematic methods -->
     <Rule Id="CA2001" Action="None" />
 
