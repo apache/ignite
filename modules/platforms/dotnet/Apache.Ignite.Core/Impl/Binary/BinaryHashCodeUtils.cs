@@ -120,9 +120,43 @@ namespace Apache.Ignite.Core.Impl.Binary
             return GetComplexTypeHashCode(val, marsh, affinityKeyFieldIds);
         }
 
-        private static int GetArrayHashCode<T>(T val, Marshaller marsh, IDictionary<int, int> affinityKeyFieldIds)
+        /// <summary>
+        /// Gets the Ignite-specific hash code for an array.
+        /// </summary>
+        private static unsafe int GetArrayHashCode<T>(T val, Marshaller marsh, IDictionary<int, int> affinityKeyFieldIds)
         {
-            // TODO: Handle predefined type arrays separately.
+            var res = 1;
+
+            var bytes = val as byte[];
+
+            if (bytes != null)
+            {
+                foreach (var x in bytes)
+                    res = 31 * res + x;
+
+                return res;
+            }
+
+            var ints = val as int[];
+
+            if (ints != null)
+            {
+                foreach (var x in ints)
+                    res = 31 * res + x;
+
+                return res;
+            }
+
+            var uints = val as uint[];
+
+            if (uints != null)
+            {
+                foreach (var x in uints)
+                    res = 31 * res + *(int*) &x;
+
+                return res;
+            }
+
             var arr = val as Array;
 
             Debug.Assert(arr != null);
@@ -133,8 +167,6 @@ namespace Apache.Ignite.Core.Impl.Binary
                     string.Format("Failed to compute hash code for object '{0}' of type '{1}': " +
                                   "multidimensional arrays are not supported", val, val.GetType()));
             }
-
-            var res = 1;
 
             foreach (var element in arr)
             {
