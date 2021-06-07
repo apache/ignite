@@ -41,22 +41,19 @@
     <!-- Default parameters should not be used -->
     <Rule Id="CA1026" Action="None" />
 
-    <!-- -->
+    <!-- Do not pass literals as localized parameters -->
     <Rule Id="CA1303" Action="None" />
 
-    <!-- Do not pass literals as localized parameters -->
+    <!-- Specify IFormatProvider -->
     <Rule Id="CA1305" Action="None" />
 
-    <!-- -->
-    <Rule Id="CA1307" Action="None" />
-
-    <!-- -->
+    <!-- Avoid excessive complexity -->
     <Rule Id="CA1502" Action="None" />
 
-    <!-- -->
+    <!-- Avoid excessive class coupling -->
     <Rule Id="CA1506" Action="None" />
 
-    <!-- -->
+    <!-- Identifiers should be spelled correctly -->
     <Rule Id="CA1704" Action="None" />
 
     <!-- -->
