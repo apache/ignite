@@ -59,9 +59,6 @@ public class ChangeDataCaptureSelfTest extends AbstractChangeDataCaptureTest {
     /** */
     public static final int WAL_ARCHIVE_TIMEOUT = 5_000;
 
-    /** Keys count. */
-    public static final int KEYS_CNT = 50;
-
     /** */
     @Parameterized.Parameter
     public boolean specificConsistentId;
