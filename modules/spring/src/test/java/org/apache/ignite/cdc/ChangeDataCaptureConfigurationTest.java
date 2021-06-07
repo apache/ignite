@@ -75,8 +75,8 @@ public class ChangeDataCaptureConfigurationTest extends GridCommonAbstractTest {
             loadChangeDataCapture("modules/spring/src/test/config/cdc/correct-cdc-config.xml");
 
         try (IgniteEx ign = startGrid((IgniteConfiguration)getFieldValue(cdc, "igniteCfg"))) {
-            TestCDCConsumer cnsmr =
-                (TestCDCConsumer)((WalRecordsConsumer<?, ?>)getFieldValue(cdc, "consumer")).consumer();
+            TestCdcConsumer cnsmr =
+                (TestCdcConsumer)((WalRecordsConsumer<?, ?>)getFieldValue(cdc, "consumer")).consumer();
 
             assertNotNull(cnsmr);
 
@@ -101,7 +101,7 @@ public class ChangeDataCaptureConfigurationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public static class TestCDCConsumer implements ChangeDataCaptureConsumer {
+    public static class TestCdcConsumer implements ChangeDataCaptureConsumer {
         /** */
         @LoggerResource
         private IgniteLogger log;

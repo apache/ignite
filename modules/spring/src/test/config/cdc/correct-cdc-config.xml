@@ -39,7 +39,7 @@
 
     <bean id="cdc.cfg" class="org.apache.ignite.cdc.ChangeDataCaptureConfiguration">
         <property name="consumer">
-            <bean class="org.apache.ignite.cdc.ChangeDataCaptureConfigurationTest$TestCDCConsumer" />
+            <bean class="org.apache.ignite.cdc.ChangeDataCaptureConfigurationTest$TestCdcConsumer" />
         </property>
     </bean>
 

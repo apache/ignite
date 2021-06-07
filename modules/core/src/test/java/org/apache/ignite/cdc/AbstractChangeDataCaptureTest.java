@@ -62,7 +62,7 @@ public abstract class AbstractChangeDataCaptureTest extends GridCommonAbstractTe
 
     /** */
     public void addAndWaitForConsumption(
-        UserCDCConsumer cnsmr,
+        UserCdcConsumer cnsmr,
         ChangeDataCapture cdc,
         IgniteCache<Integer, ChangeDataCaptureSelfTest.User> cache,
         IgniteCache<Integer, ChangeDataCaptureSelfTest.User> txCache,
@@ -101,7 +101,7 @@ public abstract class AbstractChangeDataCaptureTest extends GridCommonAbstractTe
         String cacheName,
         ChangeDataCaptureSelfTest.ChangeEventType evtType,
         long timeout,
-        TestCDCConsumer<?>... cnsmrs
+        TestCdcConsumer<?>... cnsmrs
     ) throws IgniteInterruptedCheckedException {
         return waitForCondition(
             () -> {
@@ -122,7 +122,7 @@ public abstract class AbstractChangeDataCaptureTest extends GridCommonAbstractTe
     }
 
     /** */
-    public abstract static class TestCDCConsumer<T> implements ChangeDataCaptureConsumer {
+    public abstract static class TestCdcConsumer<T> implements ChangeDataCaptureConsumer {
         /** Keys */
         final ConcurrentMap<IgniteBiTuple<ChangeEventType, Integer>, List<T>> data = new ConcurrentHashMap<>();
 
@@ -178,7 +178,7 @@ public abstract class AbstractChangeDataCaptureTest extends GridCommonAbstractTe
     }
 
     /** */
-    public static class UserCDCConsumer extends TestCDCConsumer<Integer> {
+    public static class UserCdcConsumer extends TestCdcConsumer<Integer> {
         /** {@inheritDoc} */
         @Override public void checkEvent(ChangeDataCaptureEvent evt) {
             if (evt.value() == null)

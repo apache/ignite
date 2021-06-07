@@ -74,7 +74,7 @@ public class SqlChangeDataCaptureTest extends AbstractChangeDataCaptureTest {
 
         ign.cluster().state(ACTIVE);
 
-        BinaryCDCConsumer cnsmr = new BinaryCDCConsumer();
+        BinaryCdcConsumer cnsmr = new BinaryCdcConsumer();
 
         ChangeDataCaptureConfiguration cdcCfg = new ChangeDataCaptureConfiguration();
 
@@ -133,7 +133,7 @@ public class SqlChangeDataCaptureTest extends AbstractChangeDataCaptureTest {
     }
 
     /** */
-    public static class BinaryCDCConsumer extends TestCDCConsumer<ChangeDataCaptureEvent> {
+    public static class BinaryCdcConsumer extends TestCdcConsumer<ChangeDataCaptureEvent> {
         /** {@inheritDoc} */
         @Override public void checkEvent(ChangeDataCaptureEvent evt) {
             if (evt.value() == null)

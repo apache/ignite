@@ -93,9 +93,9 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWr
  *
  * Application works as follows:
  * <ol>
- *     <li>Search node work directory based on provided {@link IgniteConfiguration}.</li>
- *     <li>Await for the creation of CDC directory if it not exists.</li>
- *     <li>Acquire file lock to ensure exclusive consumption.</li>
+ *     <li>Searches node work directory based on provided {@link IgniteConfiguration}.</li>
+ *     <li>Awaits for the creation of CDC directory if it not exists.</li>
+ *     <li>Acquires file lock to ensure exclusive consumption.</li>
  *     <li>Loads state of consumption if it exists.</li>
  *     <li>Infinitely waits for new available segment and processes it.</li>
  * </ol>

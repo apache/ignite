@@ -58,13 +58,13 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /** */
 public class ChangeDataCaptureCacheVersionTest extends AbstractChangeDataCaptureTest {
     /** */
-    public static final String FOR_OTHER_DC_ID = "for-other-dc-id";
+    public static final String FOR_OTHER_CLUSTER_ID = "for-other-cluster-id";
 
     /** */
-    public static final byte DFLT_DC_ID = 1;
+    public static final byte DFLT_CLUSTER_ID = 1;
 
     /** */
-    public static final byte OTHER_DC_ID = 2;
+    public static final byte OTHER_CLUSTER_ID = 2;
 
     /** */
     public static final int KEY_TO_UPD = 42;
@@ -84,7 +84,7 @@ public class ChangeDataCaptureCacheVersionTest extends AbstractChangeDataCapture
             }
 
             @Override public CachePluginProvider createCacheProvider(CachePluginContext ctx) {
-                if (!ctx.igniteCacheConfiguration().getName().equals(FOR_OTHER_DC_ID))
+                if (!ctx.igniteCacheConfiguration().getName().equals(FOR_OTHER_CLUSTER_ID))
                     return null;
 
                 return new AbstractCachePluginProvider() {
@@ -103,18 +103,18 @@ public class ChangeDataCaptureCacheVersionTest extends AbstractChangeDataCapture
 
     /** Simplest CDC test with usage of {@link IgniteInternalCache#putAllConflict(Map)}. */
     @Test
-    public void testReadAllKeysWithOtherDc() throws Exception {
+    public void testReadAllKeysFromOtherCluster() throws Exception {
         IgniteConfiguration cfg = getConfiguration("ignite-conflict-resolver");
 
         IgniteEx ign = startGrid(cfg);
 
-        ign.context().cache().context().versions().dataCenterId(DFLT_DC_ID);
+        ign.context().cache().context().versions().dataCenterId(DFLT_CLUSTER_ID);
         ign.cluster().state(ACTIVE);
 
-        UserCDCConsumer cnsmr = new UserCDCConsumer() {
+        UserCdcConsumer cnsmr = new UserCdcConsumer() {
             @Override public void checkEvent(ChangeDataCaptureEvent evt) {
-                assertEquals(DFLT_DC_ID, evt.version().clusterId());
-                assertEquals(OTHER_DC_ID, evt.version().otherClusterVersion().clusterId());
+                assertEquals(DFLT_CLUSTER_ID, evt.version().clusterId());
+                assertEquals(OTHER_CLUSTER_ID, evt.version().otherClusterVersion().clusterId());
 
                 super.checkEvent(evt);
             }
@@ -122,7 +122,7 @@ public class ChangeDataCaptureCacheVersionTest extends AbstractChangeDataCapture
 
         ChangeDataCapture cdc = new ChangeDataCapture(cfg, null, cdcConfig(cnsmr));
 
-        IgniteCache<Integer, User> cache = ign.getOrCreateCache(FOR_OTHER_DC_ID);
+        IgniteCache<Integer, User> cache = ign.getOrCreateCache(FOR_OTHER_CLUSTER_ID);
 
         addAndWaitForConsumption(cnsmr, cdc, cache, null, this::addConflictData, 0, KEYS_CNT, getTestTimeout());
     }
@@ -196,7 +196,7 @@ public class ChangeDataCaptureCacheVersionTest extends AbstractChangeDataCapture
 
                 val.prepareMarshal(intCache.context().cacheObjectContext());
 
-                drMap.put(key, new GridCacheDrInfo(val, new GridCacheVersion(1, i, 1, OTHER_DC_ID)));
+                drMap.put(key, new GridCacheDrInfo(val, new GridCacheVersion(1, i, 1, OTHER_CLUSTER_ID)));
             }
 
             intCache.putAllConflict(drMap);
