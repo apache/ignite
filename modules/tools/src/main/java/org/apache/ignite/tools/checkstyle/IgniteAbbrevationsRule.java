@@ -24,8 +24,11 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Consumer;
 import com.puppycrawl.tools.checkstyle.api.AbstractCheck;
 import com.puppycrawl.tools.checkstyle.api.DetailAST;
 import com.puppycrawl.tools.checkstyle.api.TokenTypes;
@@ -38,6 +41,9 @@ import com.puppycrawl.tools.checkstyle.api.TokenTypes;
 public class IgniteAbbrevationsRule extends AbstractCheck {
     /** File with abbrevations. */
     public static final String ABBREVS_FILE = "/abbrevations.csv";
+
+    /** File with exclusions. */
+    public static final String ABBREVS_EXCL_FILE = "/abbrevations-exclude.txt";
 
     /** */
     public static final char DELIM = ',';
@@ -53,9 +59,31 @@ public class IgniteAbbrevationsRule extends AbstractCheck {
      */
     private final Map<String, String> abbrevs = new HashMap<>();
 
+    private final Set<String> excl = new HashSet<>();
+
     /** */
     public IgniteAbbrevationsRule() {
-        InputStream stream = getClass().getResourceAsStream(ABBREVS_FILE);
+        forEachLine(ABBREVS_FILE, line -> {
+            line = line.toLowerCase();
+
+            int firstDelim = line.indexOf(DELIM);
+
+            assert firstDelim > 0;
+
+            String term = line.substring(0, firstDelim);
+            String[] substitutions = line.substring(firstDelim + 1).split("" + DELIM);
+
+            assert substitutions.length > 0;
+
+            abbrevs.put(term, String.join(", ", substitutions));
+        });
+
+        forEachLine(ABBREVS_EXCL_FILE, excl::add);
+    }
+
+    /** */
+    private void forEachLine(String file, Consumer<String> lineProc) {
+        InputStream stream = getClass().getResourceAsStream(file);
 
         try (BufferedReader br =
                  new BufferedReader(new InputStreamReader(stream))) {
@@ -65,18 +93,7 @@ public class IgniteAbbrevationsRule extends AbstractCheck {
                 if (line.startsWith("#"))
                     continue;
 
-                line = line.toLowerCase();
-
-                int firstDelim = line.indexOf(DELIM);
-
-                assert firstDelim > 0;
-
-                String term = line.substring(0, firstDelim);
-                String[] substitutions = line.substring(firstDelim + 1).split("" + DELIM);
-
-                assert substitutions.length > 0;
-
-                abbrevs.put(term, String.join(", ", substitutions));
+                lineProc.accept(line);
             }
         }
         catch (IOException e) {
@@ -89,6 +106,9 @@ public class IgniteAbbrevationsRule extends AbstractCheck {
         DetailAST token = ast.findFirstToken(TokenTypes.IDENT);
 
         String varName = token.getText();
+
+        if (excl.contains(varName))
+            return;
 
         List<String> words = words(varName);
 
