@@ -415,6 +415,7 @@ public class FilePerformanceStatisticsWriter {
     }
 
     /**
+     * @param evtType Event type.
      * @param startTime Start time in milliseconds.
      * @param duration Duration in milliseconds.
      * @param initVerTop Initial version topology.
@@ -423,7 +424,9 @@ public class FilePerformanceStatisticsWriter {
      * @param resVerMnr  Result version minor.
      * @param rebalanced {@code True} if cluster fully rebalanced.
      */
-    public void pme(long startTime,
+    public void pme(
+        int evtType,
+        long startTime,
         long duration,
         long initVerTop,
         int initVerMnr,
@@ -431,6 +434,7 @@ public class FilePerformanceStatisticsWriter {
         int resVerMnr,
         boolean rebalanced) {
         doWrite(PME, pmeRecordSize(), buf -> {
+            buf.putInt(evtType);
             buf.putLong(startTime);
             buf.putLong(duration);
             buf.putLong(initVerTop);

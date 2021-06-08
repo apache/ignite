@@ -262,6 +262,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param evtType Event type.
      * @param startTime Time in milliseconds.
      * @param duratione Time in milliseconds.
      * @param initVer Initial exchange version.
@@ -269,6 +270,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
      * @param rebalanced {@code True} if cluster fully rebalanced.
      */
     public void pme(
+        int evtType,
         long startTime,
         long duratione,
         AffinityTopologyVersion initVer,
@@ -276,6 +278,7 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
         boolean rebalanced
     ) {
         write(writer -> writer.pme(
+            evtType,
             startTime,
             duratione,
             initVer.topologyVersion(),

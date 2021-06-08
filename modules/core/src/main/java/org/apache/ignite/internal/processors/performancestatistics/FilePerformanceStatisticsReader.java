@@ -466,6 +466,7 @@ public class FilePerformanceStatisticsReader {
             if (buf.remaining() < pmeRecordSize())
                 return false;
 
+            int evtType = buf.getInt();
             long startTime = buf.getLong();
             long duration = buf.getLong();
             long initVerTop = buf.getLong();
@@ -477,6 +478,7 @@ public class FilePerformanceStatisticsReader {
             for (PerformanceStatisticsHandler handler : curHnd)
                 handler.pme(
                     nodeId,
+                    evtType,
                     startTime,
                     duration,
                     new AffinityTopologyVersion(initVerTop, initVerMnr),

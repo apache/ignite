@@ -2414,13 +2414,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 ", wasRebalanced=" + wasRebalanced() + ']');
         }
 
-        if (cctx.kernalContext().performanceStatistics().enabled())
+        if (cctx.kernalContext().performanceStatistics().enabled()) {
             cctx.kernalContext().performanceStatistics().pme(
+                firstDiscoEvt.type(),
                 startTime,
                 U.currentTimeMillis() - startTime,
                 initialVersion(),
                 res,
                 rebalanced);
+        }
 
         assert res != null || err != null;
 

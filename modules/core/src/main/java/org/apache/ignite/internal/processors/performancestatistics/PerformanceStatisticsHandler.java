@@ -142,6 +142,7 @@ public interface PerformanceStatisticsHandler {
 
     /**
      * @param nodeId Node id.
+     * @param evtType Event type.
      * @param startTime Start time in milliseconds.
      * @param duration Duration in milliseconds.
      * @param initVer Initial exchange version.
@@ -150,6 +151,7 @@ public interface PerformanceStatisticsHandler {
      */
     void pme(
         UUID nodeId,
+        int evtType,
         long startTime,
         long duration,
         AffinityTopologyVersion initVer,

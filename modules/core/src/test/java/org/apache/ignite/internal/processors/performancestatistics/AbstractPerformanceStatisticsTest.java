@@ -227,7 +227,7 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
         }
 
         /** {@inheritDoc} */
-        @Override public void pme(UUID nodeId, long startTime, long duration, AffinityTopologyVersion initVer,
+        @Override public void pme(UUID nodeId, int evtType, long startTime, long duration, AffinityTopologyVersion initVer,
             AffinityTopologyVersion resVer, boolean rebalanced) {
             // No-op.
         }

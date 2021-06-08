@@ -140,7 +140,7 @@ public class RebalanceTest extends AbstractPerformanceStatisticsTest {
                 cntCF.incrementAndGet();
             }
 
-            @Override public void pme(UUID nodeId, long startTime, long duration, AffinityTopologyVersion initVer,
+            @Override public void pme(UUID nodeId, int evtType, long startTime, long duration, AffinityTopologyVersion initVer,
                 AffinityTopologyVersion resVer, boolean rebalanced) {
 
                 assertTrue(startTime > beforeStart);
