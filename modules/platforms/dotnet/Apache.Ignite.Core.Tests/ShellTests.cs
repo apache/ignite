@@ -43,8 +43,8 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsNotEmpty(uname, uname);
             Console.WriteLine(uname);
 
-            var badRes = Shell.ExecuteSafe("readlink", "-foobar");
-            Assert.IsEmpty(badRes);
+            Assert.IsEmpty(Shell.ExecuteSafe("readlink", "-foobar"));
+            Assert.IsEmpty(Shell.ExecuteSafe("foo_bar", "abc"));
         }
     }
 }
