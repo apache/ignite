@@ -73,6 +73,8 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
             new ConcurrentDictionary<ClientSocket, DataStreamerClientPerNodeBuffer<TK, TV>>();
 
         /** */
+        [SuppressMessage("Microsoft.Design", "CA2213:DisposableFieldsShouldBeDisposed",
+            Justification = "WaitHandle is not used in ReaderWriterLockSlim, no need to dispose.")]
         private readonly ReaderWriterLockSlim _rwLock = new ReaderWriterLockSlim();
 
         /** Cached flags. */
@@ -380,7 +382,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
             FlushBufferInternalAsync(buffer, socket, tcs);
 
-            return tcs.Task.ContinueWith(t =>
+            return tcs.Task.ContWith(t =>
             {
                 semaphore.Release();
 
@@ -407,7 +409,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
                         ctx => WriteBuffer(buffer, ctx.Writer),
                         ctx => (object)null,
                         syncCallback: true)
-                    .ContinueWith(
+                    .ContWith(
                         t => FlushBufferCompleteOrRetry(buffer, socket, tcs, t.Exception),
                         TaskContinuationOptions.ExecuteSynchronously);
             }
@@ -485,7 +487,7 @@ namespace Apache.Ignite.Core.Impl.Client.Datastream
 
                 // Note: if initial flush was caused by full buffer, not requested by the user,
                 // we don't need to force flush everything here - just re-add entries to other buffers.
-                FlushInternalAsync().ContinueWith(flushTask => flushTask.SetAsResult(tcs));
+                FlushInternalAsync().ContWith(flushTask => flushTask.SetAsResult(tcs));
             }
             catch (Exception e)
             {

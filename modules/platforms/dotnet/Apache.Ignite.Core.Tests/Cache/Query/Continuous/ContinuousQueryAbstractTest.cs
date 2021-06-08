@@ -1171,7 +1171,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// Abstract filter.
         /// </summary>
         [Serializable]
-        public abstract class AbstractFilter<V> : ICacheEntryEventFilter<int, V>
+        public abstract class AbstractFilter<TV> : ICacheEntryEventFilter<int, TV>
         {
             /** Result. */
             public static volatile bool res = true;
@@ -1190,7 +1190,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             public IIgnite ignite;
 
             /** <inheritDoc /> */
-            public bool Evaluate(ICacheEntryEvent<int, V> evt)
+            public bool Evaluate(ICacheEntryEvent<int, TV> evt)
             {
                 if (err)
                     throw new Exception("Filter error.");
@@ -1283,13 +1283,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Listener.
         /// </summary>
-        public class Listener<V> : ICacheEntryEventListener<int, V>
+        public class Listener<TV> : ICacheEntryEventListener<int, TV>
         {
             [InstanceResource]
             public IIgnite ignite;
 
             /** <inheritDoc /> */
-            public void OnEvent(IEnumerable<ICacheEntryEvent<int, V>> evts)
+            public void OnEvent(IEnumerable<ICacheEntryEvent<int, TV>> evts)
             {
                 CB_EVTS.Add(new CallbackEvent(evts.Select(CreateEvent).ToList()));
             }
