@@ -23,11 +23,11 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.ignite.internal.processors.query.GridIndex;
+import org.apache.ignite.internal.cache.query.index.Index;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.IndexScan;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
-import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -41,13 +41,13 @@ public class IgniteIndex {
     private final String idxName;
 
     /** */
-    private final GridIndex<H2Row> idx;
+    private final Index idx;
 
     /** */
     private final IgniteTable tbl;
 
     /** */
-    public IgniteIndex(RelCollation collation, String name, GridIndex<H2Row> idx, IgniteTable tbl) {
+    public IgniteIndex(RelCollation collation, String name, Index idx, IgniteTable tbl) {
         this.collation = collation;
         idxName = name;
         this.idx = idx;
@@ -65,11 +65,6 @@ public class IgniteIndex {
     }
 
     /** */
-    public GridIndex<H2Row> index() {
-        return idx;
-    }
-
-    /** */
     public IgniteTable table() {
         return tbl;
     }
@@ -84,9 +79,11 @@ public class IgniteIndex {
         Function<Row, Row> rowTransformer,
         @Nullable ImmutableBitSet requiredColumns) {
         UUID localNodeId = execCtx.planningContext().localNodeId();
-        if (group.nodeIds().contains(localNodeId))
-            return new IndexScan<>(execCtx, table().descriptor(), idx, group.partitions(localNodeId),
-                filters, lowerIdxConditions, upperIdxConditions, rowTransformer, requiredColumns);
+        if (group.nodeIds().contains(localNodeId) && idx != null) {
+            return new IndexScan<>(execCtx, table().descriptor(), idx.unwrap(InlineIndex.class), collation.getKeys(),
+                group.partitions(localNodeId), filters, lowerIdxConditions, upperIdxConditions, rowTransformer,
+                requiredColumns);
+        }
 
         return Collections.emptyList();
     }
