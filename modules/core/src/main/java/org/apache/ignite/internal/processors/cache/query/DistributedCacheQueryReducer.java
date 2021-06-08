@@ -19,21 +19,11 @@ package org.apache.ignite.internal.processors.cache.query;
 
 import java.util.UUID;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Reducer for distributed cache query.
  */
 public interface DistributedCacheQueryReducer<T> extends CacheQueryReducer<T> {
-    /**
-     * Callback that invoked after getting a page from remote node. Checks whether it is the last page for query or not.
-     *
-     * @param nodeId Node ID of remote page.
-     * @param last Whether page is last for specified node.
-     * @return Whether page is last for a query.
-     */
-    public boolean onPage(@Nullable UUID nodeId, boolean last);
-
     /**
      * Loads full cache query result pages from remote nodes. It can be done for speedup operation if user invokes
      * get() on {@link GridCacheQueryFutureAdapter} instead of using it as iterator.
@@ -43,16 +33,22 @@ public interface DistributedCacheQueryReducer<T> extends CacheQueryReducer<T> {
     public void loadAll() throws IgniteInterruptedCheckedException;
 
     /**
-     * Callback to handle node left.
+     * Checks whether cache query runs on specified node.
      *
-     * @param nodeId Node ID that left a cluster.
+     * @param nodeId Node ID.
      * @return {@code true} if specified node runs this query.
      */
-    public boolean onNodeLeft(UUID nodeId);
+    public boolean queryNode(UUID nodeId);
 
     /** Blocks while reducer doesn't get first result item for this query. */
-    public void awaitFirstItem() throws InterruptedException;
+    public void awaitFirstItem() throws IgniteInterruptedCheckedException;
 
     /** Callback that invokes when this query is cancelled. */
-    public void cancel();
+    public void onCancel();
+
+    /**
+     * Callback that invokes after reducer get last query result page.
+     * Also invokes for failed queries to let reducer know that there won't be new pages.
+     */
+    public void onLastPage();
 }

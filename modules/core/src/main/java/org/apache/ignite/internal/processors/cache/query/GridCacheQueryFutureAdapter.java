@@ -138,15 +138,13 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     /**
      * @return If fields query.
      */
-    boolean fields() {
+    public boolean fields() {
         return false;
     }
 
     /** {@inheritDoc} */
     @Override public boolean onDone(Collection<R> res, Throwable err) {
         cctx.time().removeTimeoutObject(this);
-
-        reducer().onLastPage();
 
         return super.onDone(res, err);
     }
@@ -252,7 +250,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
         try {
             if (err != null)
                 synchronized (lock) {
-                    reducer().onErrorPage();
+                    reducer().onError();
 
                     if (err instanceof IgniteCheckedException)
                         onDone(err);
@@ -264,8 +262,6 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
                             S.toString("Failed to execute query locally",
                                 "query", qry, true),
                             err));
-
-                    onPage(nodeId, true);
 
                     lock.notifyAll();
                 }
@@ -299,9 +295,9 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
                     data = cctx.unwrapBinariesIfNeeded((Collection<Object>)data, qry.query().keepBinary());
 
                 synchronized (lock) {
-                    reducer().addPage(nodeId, (Collection<R>) data);
+                    boolean lastPageRcvd = reducer().onPage(nodeId, (Collection<R>) data, finished);
 
-                    if (onPage(nodeId, finished)) {
+                    if (lastPageRcvd) {
                         onDone(/* data */);
 
                         clear();
@@ -312,7 +308,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
             }
         }
         catch (Throwable e) {
-            onPageError(nodeId, e);
+            onPageError(e);
 
             if (e instanceof Error)
                 throw (Error)e;
@@ -320,14 +316,11 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     }
 
     /**
-     * @param nodeId Sender node id.
      * @param e Error.
      */
-    private void onPageError(@Nullable UUID nodeId, Throwable e) {
+    private void onPageError(Throwable e) {
         synchronized (lock) {
-            reducer().onErrorPage();
-
-            onPage(nodeId, true);
+            reducer().onError();
 
             onDone(e);
 
@@ -396,15 +389,6 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     }
 
     /**
-     * Callback performs additional actions after page handling.
-     *
-     * @param nodeId Sender node id.
-     * @param last Whether page is last for sender node.
-     * @return Is query finished or not.
-     */
-    protected abstract boolean onPage(@Nullable UUID nodeId, boolean last);
-
-    /**
      * Loads all left pages.
      *
      * @throws IgniteInterruptedCheckedException If thread is interrupted.
@@ -445,17 +429,8 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onCancelled() {
-        reducer().onLastPage();
-
-        return super.onCancelled();
-    }
-
-    /** {@inheritDoc} */
     @Override public void onTimeout() {
         try {
-            reducer().onLastPage();
-
             cancelQuery();
 
             onDone(new IgniteFutureTimeoutCheckedException("Query timed out."));

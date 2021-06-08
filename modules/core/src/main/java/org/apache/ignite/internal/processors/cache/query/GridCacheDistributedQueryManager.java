@@ -38,6 +38,8 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsQueryHelper;
+import org.apache.ignite.internal.processors.cache.query.reducer.MergeSortDistributedCacheQueryReducer;
+import org.apache.ignite.internal.processors.cache.query.reducer.UnsortedDistributedCacheQueryReducer;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.GridBoundedConcurrentOrderedSet;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
@@ -768,13 +770,13 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 if (c2.payload() == null)
                     return 1;
 
-                return Float.compare((float) c2.payload(), (float) c1.payload());
+                return Float.compare(c2.payload(), c1.payload());
             };
 
             return new MergeSortDistributedCacheQueryReducer(
-                fut, reqId, pageRequester, nodes, cmp);
+                fut, reqId, pageRequester, fut.lock, nodes, cmp);
         } else
-            return new UnsortedDistributedCacheQueryReducer(fut, reqId, pageRequester, nodes);
+            return new UnsortedDistributedCacheQueryReducer(fut, reqId, pageRequester, fut.lock, nodes);
     }
 
     /**

@@ -17,13 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import java.util.Collections;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Distributed query future.
@@ -57,7 +55,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
 
     /** {@inheritDoc} */
     @Override protected void cancelQuery() {
-        reducer.cancel();
+        reducer.onCancel();
 
         cctx.queries().onQueryFutureCanceled(reqId);
 
@@ -66,32 +64,20 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
 
     /** Fail if a node runs this query left cluster. */
     @Override protected void onNodeLeft(UUID nodeId) {
-        boolean callOnPage = reducer.onNodeLeft(nodeId);
+        boolean qryNode = reducer.queryNode(nodeId);
 
-        if (callOnPage)
+        if (qryNode)
             onPage(nodeId, null,
                 new ClusterTopologyCheckedException("Remote node has left topology: " + nodeId), true);
     }
 
     /** {@inheritDoc} */
     @Override public void awaitFirstItem() throws IgniteCheckedException {
-        try {
-            reducer.awaitFirstItem();
+        reducer.awaitFirstItem();
 
-            if (isDone() && error() != null)
-                // Throw the exception if future failed.
-                get();
-        }
-        catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-
-            throw new IgniteInterruptedCheckedException(e);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean onPage(@Nullable UUID nodeId, boolean last) {
-        return reducer.onPage(nodeId, last);
+        if (isDone() && error() != null)
+            // Throw the exception if future failed.
+            get();
     }
 
     /** {@inheritDoc} */

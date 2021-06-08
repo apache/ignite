@@ -15,21 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.query;
+package org.apache.ignite.internal.processors.cache.query.reducer;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.query.CacheQueryReducer;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryAdapter;
 
 /** Simple reducer for local queries. */
-public class LocalCacheQueryReducer<R> extends AbstractCacheQueryReducer<R> {
+public class LocalCacheQueryReducer<R> implements CacheQueryReducer<R> {
     /** Stream of local pages. */
-    private final PageStream pageStream = new PageStream();
+    private final PageStream<R> pageStream;
 
     /** */
-    LocalCacheQueryReducer(GridCacheQueryFutureAdapter fut) {
-        super(fut);
+    public LocalCacheQueryReducer(GridCacheQueryAdapter qry, Object queueLock, long timeoutTime) {
+        pageStream = new PageStream<>(qry, queueLock, timeoutTime, Collections.emptyList(), (ns, all) -> {});
     }
 
     /** {@inheritDoc} */
@@ -43,17 +45,12 @@ public class LocalCacheQueryReducer<R> extends AbstractCacheQueryReducer<R> {
     }
 
     /** {@inheritDoc} */
-    @Override public void addPage(UUID nodeId, Collection<R> data) {
-        pageStream.addPage(data);
+    @Override public boolean onPage(UUID nodeId, Collection<R> data, boolean last) {
+        return pageStream.addPage(nodeId, data, last);
     }
 
     /** {@inheritDoc} */
-    @Override public void onErrorPage() {
-        pageStream.addPage(Collections.emptyList());
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void loadPage() {
-        // No-op.
+    @Override public void onError() {
+        pageStream.onError();
     }
 }

@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.query.reducer.LocalCacheQueryReducer;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
@@ -53,7 +53,7 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
 
         run = new LocalQueryRunnable();
 
-        reducer = new LocalCacheQueryReducer<>(this);
+        reducer = new LocalCacheQueryReducer<>(qry.query(), lock, endTime());
     }
 
     /**
@@ -67,11 +67,6 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
     @Override protected void cancelQuery() throws IgniteCheckedException {
         if (fut != null)
             fut.cancel();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean onPage(UUID nodeId, boolean last) {
-        return last;
     }
 
     /** {@inheritDoc} */

@@ -134,7 +134,7 @@ public abstract class CacheQueryPageRequester {
      * @param fieldsQry Whether query is a fields query.
      *
      */
-    public void cancelQueryRequest(long reqId, Collection<ClusterNode> nodes, boolean fieldsQry) {
+    public void cancelQueryRequest(long reqId, Collection<UUID> nodes, boolean fieldsQry) {
         final GridCacheQueryManager qryMgr = cctx.queries();
 
         assert qryMgr != null;
@@ -149,12 +149,12 @@ public abstract class CacheQueryPageRequester {
             // Process cancel query directly (without sending) for local node.
             sendLocal(req);
 
-            for (ClusterNode node : nodes) {
+            for (UUID node : nodes) {
                 try {
                     cctx.io().send(node, req, cctx.ioPolicy());
                 }
                 catch (IgniteCheckedException e) {
-                    if (cctx.io().checkNodeLeft(node.id(), e, false)) {
+                    if (cctx.io().checkNodeLeft(node, e, false)) {
                         if (log.isDebugEnabled())
                             log.debug("Failed to send cancel request, node failed: " + node);
                     }

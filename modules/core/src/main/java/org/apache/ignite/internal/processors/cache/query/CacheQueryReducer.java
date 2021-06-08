@@ -23,7 +23,7 @@ import org.apache.ignite.IgniteCheckedException;
 
 /**
  * This class is responsible for reducing results of cache query. Query results are delivered with function
- * {@link #addPage(UUID, Collection)}. Note that this reducer deeply interacts with corresponding query future
+ * {@link #onPage(UUID, Collection, boolean)}. Note that this reducer deeply interacts with corresponding query future
  * {@link GridCacheQueryFutureAdapter}, so they used the same lock object. It guards reducer pages operations
  * and the future status. Custom reduce logic is applied within {@link #next()} and {@link #hasNext()}.
  *
@@ -42,21 +42,17 @@ public interface CacheQueryReducer<T> {
 
     /**
      * Offer query result page for reduce. Note that the data collection may contain extension of type T.
-     * In such cases data item contains additional payload for custom reducer logic.
+     * In such cases data item contains additional payload for custom reducer logic ({@see CacheEntryWithPayload}).
      *
      * @param nodeId Node ID that sent this page.
      * @param data Page data rows.
+     * @param last Whether this page is last for specified {@code nodeId}.
+     * @return {@code true} if this page is final page for query and no more pages are waited, otherwise {@code false}.
      */
-    public void addPage(UUID nodeId, Collection<T> data);
+    public boolean onPage(UUID nodeId, Collection<T> data, boolean last);
 
     /**
      * Callback in case of page with error.
      */
-    public void onErrorPage();
-
-    /**
-     * Callback that invokes after reducer get last query result page.
-     * Also invokes for failed queries to let reducer know that there won't be new pages.
-     */
-    public void onLastPage();
+    public void onError();
 }

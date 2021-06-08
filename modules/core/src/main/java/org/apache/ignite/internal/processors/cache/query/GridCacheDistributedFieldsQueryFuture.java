@@ -90,7 +90,7 @@ public class GridCacheDistributedFieldsQueryFuture
     }
 
     /** {@inheritDoc} */
-    @Override boolean fields() {
+    @Override public boolean fields() {
         return true;
     }
 }
