@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests
 {
+    using System;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using NUnit.Framework;
@@ -34,9 +35,14 @@ namespace Apache.Ignite.Core.Tests
                 return;
             }
 
-            var res = Shell.Execute("readlink", "-f /usr/bin/java");
+            var readlink = Shell.ExecuteSafe("readlink", "-f /usr/bin/java");
+            Assert.IsNotEmpty(readlink, readlink);
+            Console.WriteLine(readlink);
             
-            Assert.AreEqual("x", res);
+            var uname = Shell.ExecuteSafe("uname", string.Empty);
+            Assert.IsNotEmpty(uname, uname);
+            Console.WriteLine(uname);
+            
         }
     }
 }

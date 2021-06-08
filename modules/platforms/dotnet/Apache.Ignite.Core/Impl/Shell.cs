@@ -28,48 +28,38 @@ namespace Apache.Ignite.Core.Impl
     internal static class Shell
     {
         /// <summary>
-        /// Executes Bash command.
-        /// </summary>
-        public static string BashExecute(string args)
-        {
-            var escapedArgs = args.Replace("\"", "\\\"");
-
-            return Execute("/bin/bash", string.Format("-c \"{0}\"", escapedArgs));
-        }
-
-        /// <summary>
         /// Executes the command.
         /// </summary>
-        public static string Execute(string file, string args)
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes", 
+            Justification = "ExecuteSafe should ignore all exceptions.")]
+        public static string ExecuteSafe(string file, string args)
         {
-            var processStartInfo = new ProcessStartInfo
+            try
             {
-                FileName = file,
-                Arguments = args,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            using (var process = new Process {StartInfo = processStartInfo})
-            {
-                process.Start();
-
-                var res = process.StandardOutput.ReadToEnd();
-                var err = process.StandardError.ReadToEnd();
-
-                if (!string.IsNullOrWhiteSpace(err))
+                var processStartInfo = new ProcessStartInfo
                 {
-                    // TODO: Better text
-                    throw new Exception(err);
-                }
-                
-                process.WaitForExit();
+                    FileName = file,
+                    Arguments = args,
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
 
-                return res;
+                using (var process = new Process {StartInfo = processStartInfo})
+                {
+                    process.Start();
+
+                    var res = process.StandardOutput.ReadToEnd();
+
+                    process.WaitForExit();
+
+                    return res;
+                }
+            }
+            catch (Exception)
+            {
+                return string.Empty;
             }
         }
-
     }
 }
