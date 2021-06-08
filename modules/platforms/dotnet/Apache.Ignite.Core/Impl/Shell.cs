@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Executes the command.
         /// </summary>
-        private static string Execute(string file, string args)
+        public static string Execute(string file, string args)
         {
             var escapedArgs = args.Replace("\"", "\\\"");
 
