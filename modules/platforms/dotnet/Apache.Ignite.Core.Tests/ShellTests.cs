@@ -31,6 +31,7 @@ namespace Apache.Ignite.Core.Tests
         /// Tests <see cref="Shell.ExecuteSafe"/> method.
         /// </summary>
         [Test]
+        [Explicit] // TODO: Does this time out on TC? Why?
         public void TestExecuteSafe()
         {
             if (Os.IsWindows)
