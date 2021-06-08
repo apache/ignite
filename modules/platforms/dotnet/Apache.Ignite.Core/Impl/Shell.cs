@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl
 {
+    using System;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
 
@@ -31,7 +32,9 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         public static string BashExecute(string args)
         {
-            return Execute("/bin/bash", args);
+            var escapedArgs = args.Replace("\"", "\\\"");
+
+            return Execute("/bin/bash", string.Format("-c \"{0}\"", escapedArgs));
         }
 
         /// <summary>
@@ -39,13 +42,12 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         public static string Execute(string file, string args)
         {
-            var escapedArgs = args.Replace("\"", "\\\"");
-
             var processStartInfo = new ProcessStartInfo
             {
                 FileName = file,
-                Arguments = string.Format("-c \"{0}\"", escapedArgs),
+                Arguments = args,
                 RedirectStandardOutput = true,
+                RedirectStandardError = true,
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
@@ -55,6 +57,14 @@ namespace Apache.Ignite.Core.Impl
                 process.Start();
 
                 var res = process.StandardOutput.ReadToEnd();
+                var err = process.StandardError.ReadToEnd();
+
+                if (!string.IsNullOrWhiteSpace(err))
+                {
+                    // TODO: Better text
+                    throw new Exception(err);
+                }
+                
                 process.WaitForExit();
 
                 return res;
