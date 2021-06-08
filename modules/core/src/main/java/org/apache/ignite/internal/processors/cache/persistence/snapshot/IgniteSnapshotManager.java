@@ -1155,7 +1155,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             List<String> grps = cctx.cache().persistentGroups().stream()
                 .filter(g -> cctx.cache().cacheType(g.cacheOrGroupName()) == CacheType.USER)
-                .filter(g -> !g.config().isEncryptionEnabled())
                 .map(CacheGroupDescriptor::cacheOrGroupName)
                 .collect(Collectors.toList());
 
@@ -1341,8 +1340,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         File snpPart = getPartitionFile(new File(snapshotLocalDir(snpName), databaseRelativePath(folderName)),
             grps.get(0).getName(), partId);
 
+        boolean encrypted = cctx.cacheContext(CU.cacheId(grpName)).config().isEncryptionEnabled();
+
         FilePageStore pageStore = (FilePageStore)storeFactory
-            .apply(CU.cacheId(grpName), false)
+            .apply(CU.cacheId(grpName), encrypted)
             .createPageStore(getTypeByPartId(partId),
                 snpPart::toPath,
                 val -> {
@@ -1884,9 +1885,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     ", delta=" + delta + ']');
             }
 
+            boolean encrypted = false;
+
             try (FileIO fileIo = ioFactory.create(delta, READ);
                  FilePageStore pageStore = (FilePageStore)storeFactory
-                     .apply(pair.getGroupId(), false)
+                     .apply(pair.getGroupId(), encrypted)
                      .createPageStore(getTypeByPartId(pair.getPartitionId()),
                          snpPart::toPath,
                          val -> {})

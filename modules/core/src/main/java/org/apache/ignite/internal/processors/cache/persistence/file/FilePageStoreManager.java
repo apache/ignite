@@ -684,19 +684,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         FileIOFactory pageStoreV1FileIoFactory = this.pageStoreV1FileIoFactory;
 
         if (encrypted) {
-            pageStoreFileIoFactory = new EncryptedFileIOFactory(
-                this.pageStoreFileIoFactory,
-                grpId,
-                pageSize(),
-                cctx.kernalContext().encryption(),
-                cctx.gridConfig().getEncryptionSpi());
-
-            pageStoreV1FileIoFactory = new EncryptedFileIOFactory(
-                this.pageStoreV1FileIoFactory,
-                grpId,
-                pageSize(),
-                cctx.kernalContext().encryption(),
-                cctx.gridConfig().getEncryptionSpi());
+            pageStoreFileIoFactory = getEncryptedFileIoFactory(this.pageStoreFileIoFactory, grpId);
+            pageStoreV1FileIoFactory = getEncryptedFileIoFactory(this.pageStoreV1FileIoFactory, grpId);
         }
 
         FileVersionCheckingFactory pageStoreFactory = new FileVersionCheckingFactory(
@@ -1400,6 +1389,18 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      */
     public FileIOFactory getPageStoreFileIoFactory() {
         return pageStoreFileIoFactory;
+    }
+
+    /**
+     * @return TODO.
+     */
+    public FileIOFactory getEncryptedFileIoFactory(FileIOFactory plainFileIOFactory, int cacheGrpId) {
+        return new EncryptedFileIOFactory(
+            plainFileIOFactory,
+            cacheGrpId,
+            pageSize(),
+            cctx.kernalContext().encryption(),
+            cctx.gridConfig().getEncryptionSpi());
     }
 
     /**

@@ -111,7 +111,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
     /** Local buffer to perform copy-on-write operations for {@link PageStoreSerialWriter}. */
     private final ThreadLocal<ByteBuffer> locBuff;
 
-    /** IO factory which will be used for creating snapshot delta-writers. */
+    /** TODO: rename and fix the text. Not-encrypted factory. IO factory which will be used for creating snapshot delta-writers. */
     private final FileIOFactory ioFactory;
 
     /**
@@ -902,17 +902,10 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
                     if (stopped())
                         return;
 
-                    if (deltaFileIo == null) {
-                        deltaFileIo = ioFactory.create(deltaFile);
-
-                        boolean encrypted = cctx.cacheContext(grpPartId.getGroupId()).config().isEncryptionEnabled();
-
-                        deltaFileIo =
-                            pageStore.getPageStoreFactory(grpPartId.getGroupId(), encrypted).getFileIOFactory().
-                                create(deltaFile);
-
-                        deltaFileIo = pageStore.getPageStoreFileIoFactory().create(deltaFile);
-                    }
+                    if (deltaFileIo == null)
+                        deltaFileIo = (cctx.cacheContext(grpPartId.getGroupId()).config().isEncryptionEnabled() ?
+                            pageStore.getEncryptedFileIoFactory(ioFactory, grpPartId.getGroupId()) :
+                            ioFactory).create(deltaFile);
                 }
                 catch (IOException e) {
                     acceptException(e);
