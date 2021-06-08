@@ -42,7 +42,6 @@ namespace Apache.Ignite.Core.Tests
             var uname = Shell.ExecuteSafe("uname", string.Empty);
             Assert.IsNotEmpty(uname, uname);
             Console.WriteLine(uname);
-            
         }
     }
 }
