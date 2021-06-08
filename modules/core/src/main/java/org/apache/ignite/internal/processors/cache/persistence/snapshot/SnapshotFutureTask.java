@@ -344,9 +344,6 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
                 if (!CU.isPersistentCache(gctx.config(), cctx.kernalContext().config().getDataStorageConfiguration()))
                     throw new IgniteCheckedException("In-memory cache groups are not allowed to be snapshot: " + grpId);
 
-                if (gctx.config().isEncryptionEnabled())
-                    throw new IgniteCheckedException("Encrypted cache groups are not allowed to be snapshot: " + grpId);
-
                 // Create cache group snapshot directory on start in a single thread.
                 U.ensureDirectory(cacheWorkDir(tmpConsIdDir, FilePageStoreManager.cacheDirName(gctx.config())),
                     "directory for snapshotting cache group",
@@ -622,7 +619,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
 
             partDeltaWriters.put(pair,
                 new PageStoreSerialWriter(store,
-                    partDeltaFile(cacheWorkDir(tmpConsIdDir, dirName), partId)));
+                    partDeltaFile(cacheWorkDir(tmpConsIdDir, dirName), partId), pair));
 
             partFileLengths.put(pair, store.size());
         }
@@ -784,7 +781,8 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
                 File newCcfgFile = new File(cacheWorkDir, ccfgFile.getName());
                 newCcfgFile.createNewFile();
 
-                copy(ioFactory, ccfgFile, newCcfgFile, ccfgFile.length());
+//                copy(ioFactory, ccfgFile, newCcfgFile, ccfgFile.length());
+                copy(pageStore.getPageStoreFileIoFactory(), ccfgFile, newCcfgFile, ccfgFile.length());
 
                 this.ccfgFile = newCcfgFile;
                 fromTemp = true;
@@ -828,6 +826,9 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
         /** Partition delta file to store delta pages into. */
         private final File deltaFile;
 
+        /** TODO */
+        private final GroupPartitionId grpPartId;
+
         /** Busy lock to protect write operations. */
         private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
@@ -853,12 +854,13 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
          * @param store Partition page store.
          * @param deltaFile Destination file to write pages to.
          */
-        public PageStoreSerialWriter(PageStore store, File deltaFile) {
+        public PageStoreSerialWriter(PageStore store, File deltaFile, GroupPartitionId grpPartId) {
             assert store != null;
             assert cctx.database().checkpointLockIsHeldByThread();
 
             this.deltaFile = deltaFile;
             this.store = store;
+            this.grpPartId = grpPartId;
             // It is important to init {@link AtomicBitSet} under the checkpoint write-lock.
             // This guarantee us that no pages will be modified and it's safe to init pages
             // list which needs to be processed.
@@ -900,8 +902,17 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
                     if (stopped())
                         return;
 
-                    if (deltaFileIo == null)
+                    if (deltaFileIo == null) {
                         deltaFileIo = ioFactory.create(deltaFile);
+
+                        boolean encrypted = cctx.cacheContext(grpPartId.getGroupId()).config().isEncryptionEnabled();
+
+                        deltaFileIo =
+                            pageStore.getPageStoreFactory(grpPartId.getGroupId(), encrypted).getFileIOFactory().
+                                create(deltaFile);
+
+                        deltaFileIo = pageStore.getPageStoreFileIoFactory().create(deltaFile);
+                    }
                 }
                 catch (IOException e) {
                     acceptException(e);

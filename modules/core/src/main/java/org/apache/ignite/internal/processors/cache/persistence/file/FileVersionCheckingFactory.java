@@ -165,6 +165,11 @@ public class FileVersionCheckingFactory {
         }
     }
 
+    /** */
+    public FileIOFactory getFileIOFactory() {
+        return fileIOFactory;
+    }
+
     /**
      * @param ver Version.
      * @return Header size.
