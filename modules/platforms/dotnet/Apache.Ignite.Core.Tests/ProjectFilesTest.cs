@@ -242,7 +242,8 @@ namespace Apache.Ignite.Core.Tests
                 "BinaryStringTest.cs",
                 "BinarySelfTest.cs",
                 "CacheDmlQueriesTest.cs",
-                "CacheTest.cs"
+                "CacheTest.cs",
+                "PartitionAwarenessTest.cs"
             };
 
             var srcFiles = TestUtils.GetDotNetSourceDir()

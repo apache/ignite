@@ -291,8 +291,8 @@ public class TcpDiscoveryVmIpFinderDnsResolveTest extends GridCommonAbstractTest
     }
 
     /**
-     * Current test checks that in case if TcpDiscoveryVmIpFinder has MULTI_FQDN (resolved to two ip) name and additional one "registeredAddress"
-     * then both of them can be resolved. There are no ports will be used, only hostname.
+     * Current test checks that in case if TcpDiscoveryVmIpFinder has MULTI_FQDN (resolved to two ip) name
+     * and additional one "registeredAddress" then both of them can be resolved. There are no ports will be used, only hostname.
      *
      * @throws Exception if failed.
      */
@@ -313,8 +313,8 @@ public class TcpDiscoveryVmIpFinderDnsResolveTest extends GridCommonAbstractTest
     }
 
     /**
-     * Current test checks that in case if TcpDiscoveryVmIpFinder has MULTI_FQDN (resolved to two ip) name and additional one "registeredAddress"
-     * then both of them can be resolved. Port will be used.
+     * Current test checks that in case if TcpDiscoveryVmIpFinder has MULTI_FQDN (resolved to two ip) name
+     * and additional one "registeredAddress" then both of them can be resolved. Port will be used.
      *
      * @throws Exception if failed.
      */
@@ -335,8 +335,8 @@ public class TcpDiscoveryVmIpFinderDnsResolveTest extends GridCommonAbstractTest
     }
 
     /**
-     * Current test checks that in case if TcpDiscoveryVmIpFinder has MULTI_FQDN (resolved to two ip) name and additional one "registeredAddress"
-     * then both of them can be resolved. Port range will be used.
+     * Current test checks that in case if TcpDiscoveryVmIpFinder has MULTI_FQDN (resolved to two ip) name
+     * and additional one "registeredAddress" then both of them can be resolved. Port range will be used.
      *
      * @throws Exception if failed.
      */
@@ -528,7 +528,8 @@ public class TcpDiscoveryVmIpFinderDnsResolveTest extends GridCommonAbstractTest
     public interface INameService extends InvocationHandler {
         /** */
         static void install(
-            INameService dns) throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException, ClassNotFoundException {
+            INameService dns
+        ) throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException, ClassNotFoundException {
             final Class<?> inetAddrCls = InetAddress.class;
 
             Object neu;

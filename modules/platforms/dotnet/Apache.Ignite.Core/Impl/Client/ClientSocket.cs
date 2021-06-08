@@ -225,7 +225,8 @@ namespace Apache.Ignite.Core.Impl.Client
         /// Performs a send-receive operation asynchronously.
         /// </summary>
         public Task<T> DoOutInOpAsync<T>(ClientOp opId, Action<ClientRequestContext> writeAction,
-            Func<ClientResponseContext, T> readFunc, Func<ClientStatusCode, string, T> errorFunc = null)
+            Func<ClientResponseContext, T> readFunc, Func<ClientStatusCode, string, T> errorFunc = null,
+            bool syncCallback = false)
         {
             // Encode.
             var reqMsg = WriteMessage(writeAction, opId);
@@ -234,6 +235,12 @@ namespace Apache.Ignite.Core.Impl.Client
             var task = SendRequestAsync(ref reqMsg);
 
             // Decode.
+            if (syncCallback)
+            {
+                return task.ContinueWith(responseTask => DecodeResponse(responseTask.Result, readFunc, errorFunc),
+                    TaskContinuationOptions.ExecuteSynchronously);
+            }
+
             // NOTE: ContWith explicitly uses TaskScheduler.Default,
             // which runs DecodeResponse (and any user continuations) on a thread pool thread,
             // so that WaitForMessages thread does not do anything except reading from the socket.
@@ -988,13 +995,16 @@ namespace Apache.Ignite.Core.Impl.Client
                 {
                     return;
                 }
+                
+                // Set disposed state before ending requests so that request continuations see disconnected socket.
+                _isDisposed = true;
 
                 _exception = _exception ?? new ObjectDisposedException(typeof(ClientSocket).FullName);
                 EndRequestsWithError();
-                
+
                 // This will call Socket.Shutdown and Socket.Close.
                 _stream.Close();
-                
+
                 _listenerEvent.Set();
                 _listenerEvent.Dispose();
 
@@ -1002,9 +1012,13 @@ namespace Apache.Ignite.Core.Impl.Client
                 {
                     _timeoutCheckTimer.Dispose();
                 }
-
-                _isDisposed = true;
             }
+        }
+
+        /** <inheritDoc /> */
+        public override string ToString()
+        {
+            return string.Format("ClientSocket [RemoteEndPoint={0}]", RemoteEndPoint);
         }
 
         /// <summary>

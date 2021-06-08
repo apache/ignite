@@ -100,7 +100,8 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean, Discover
      *
      * @return IP finder clean frequency.
      */
-    @MXBeanDescription("The frequency with which coordinator cleans IP finder and keeps it in the correct state, unregistering addresses of the nodes that have left the topology.")
+    @MXBeanDescription("The frequency with which coordinator cleans IP finder and keeps it in the correct state, " +
+        "unregistering addresses of the nodes that have left the topology.")
     public long getIpFinderCleanFrequency();
 
     /**

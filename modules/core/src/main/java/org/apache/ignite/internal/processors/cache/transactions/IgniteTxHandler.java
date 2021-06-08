@@ -178,7 +178,10 @@ public class IgniteTxHandler {
      * @param nearNode Sender node.
      * @param req Request.
      */
-    private IgniteInternalFuture<GridNearTxPrepareResponse> processNearTxPrepareRequest0(ClusterNode nearNode, GridNearTxPrepareRequest req) {
+    private IgniteInternalFuture<GridNearTxPrepareResponse> processNearTxPrepareRequest0(
+        ClusterNode nearNode,
+        GridNearTxPrepareRequest req
+    ) {
         IgniteInternalFuture<GridNearTxPrepareResponse> fut;
 
         if (req.firstClientRequest() && req.allowWaitTopologyFuture()) {

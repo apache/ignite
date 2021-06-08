@@ -15,16 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.metastorage.persistence;
+package org.apache.ignite.internal.processors.platform.client.streamer;
 
-/** */
-enum DmsWorkerStatus {
-    /** */
-    CONTINUE,
+/**
+ * Data streamer flags.
+ */
+public class ClientDataStreamerFlags {
+    /** Allow overwrite flag mask. */
+    public static final byte ALLOW_OVERWRITE = 0x01;
 
-    /** */
-    CANCEL,
+    /** Skip store flag mask. */
+    public static final byte SKIP_STORE = 0x02;
 
-    /** */
-    HALT;
+    /** Keep binary flag mask. */
+    public static final byte KEEP_BINARY = 0x04;
+
+    /** Streamer flush flag mask. */
+    public static final byte FLUSH = 0x08;
+
+    /** Streamer close flag mask. */
+    public static final byte CLOSE = 0x10;
 }

@@ -91,6 +91,10 @@ namespace Apache.Ignite.Core.Impl.Client
         ComputeTaskFinished = 6001,
 
         // Services.
-        ServiceInvoke = 7000
+        ServiceInvoke = 7000,
+
+        // Data Streamer.
+        DataStreamerStart = 8000,
+        DataStreamerAddData = 8001
     }
 }

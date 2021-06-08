@@ -205,7 +205,7 @@ public abstract class PagesList extends DataStructure {
     }
 
     /**
-     * @param cacheId Cache ID.
+     * @param cacheGrpId Cache group ID.
      * @param name Name (for debug purpose).
      * @param pageMem Page memory.
      * @param buckets Number of buckets.
@@ -214,7 +214,7 @@ public abstract class PagesList extends DataStructure {
      * @param pageFlag Default flag value for allocated pages.
      */
     protected PagesList(
-        int cacheId,
+        int cacheGrpId,
         String name,
         PageMemory pageMem,
         int buckets,
@@ -224,7 +224,7 @@ public abstract class PagesList extends DataStructure {
         GridKernalContext ctx,
         byte pageFlag
     ) {
-        super(cacheId, null, pageMem, wal, lockLsnr, DEFAULT_PAGE_IO_RESOLVER, pageFlag);
+        super(cacheGrpId, null, pageMem, wal, lockLsnr, DEFAULT_PAGE_IO_RESOLVER, pageFlag);
 
         this.name = name;
         this.buckets = buckets;
@@ -478,7 +478,7 @@ public abstract class PagesList extends DataStructure {
 
                                 curIo = PagesListMetaIO.VERSIONS.latest();
 
-                                curIo.initNewPage(curAddr, curId, pageSize());
+                                curIo.initNewPage(curAddr, curId, pageSize(), metrics);
                             }
                             else {
                                 releaseAndClose(curId, curPage, curAddr);
@@ -601,7 +601,7 @@ public abstract class PagesList extends DataStructure {
     private void setupNextPage(PagesListNodeIO io, long prevId, long prev, long nextId, long next) {
         assert io.getNextId(prev) == 0L;
 
-        io.initNewPage(next, nextId, pageSize());
+        io.initNewPage(next, nextId, pageSize(), metrics);
         io.setPreviousId(next, prevId);
 
         io.setNextId(prev, nextId);
@@ -1561,7 +1561,7 @@ public abstract class PagesList extends DataStructure {
         boolean needWalDeltaRecord = needWalDeltaRecord(reusedPageId, reusedPage, null);
 
         if (initIo != null) {
-            initIo.initNewPage(reusedPageAddr, newPageId, pageSize());
+            initIo.initNewPage(reusedPageAddr, newPageId, pageSize(), metrics);
 
             if (needWalDeltaRecord) {
                 assert PageIdUtils.partId(reusedPageId) == PageIdUtils.partId(newPageId) :
@@ -2066,7 +2066,8 @@ public abstract class PagesList extends DataStructure {
         @SystemProperty(value = "The threshold of flush calls on empty caches to allow GC of stripes " +
             "(the flush is triggered two times per checkpoint)", type = Long.class,
             defaults = "" + DFLT_PAGES_LIST_CACHING_EMPTY_FLUSH_GC_THRESHOLD)
-        public static final String IGNITE_PAGES_LIST_CACHING_EMPTY_FLUSH_GC_THRESHOLD = "IGNITE_PAGES_LIST_CACHING_EMPTY_FLUSH_GC_THRESHOLD";
+        public static final String IGNITE_PAGES_LIST_CACHING_EMPTY_FLUSH_GC_THRESHOLD =
+            "IGNITE_PAGES_LIST_CACHING_EMPTY_FLUSH_GC_THRESHOLD";
 
         /** Pages cache max size. */
         private static final int MAX_SIZE = IgniteSystemProperties.getInteger(IGNITE_PAGES_LIST_CACHING_MAX_CACHE_SIZE,

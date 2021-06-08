@@ -46,7 +46,7 @@ namespace ignite
              */
             IgniteClientConfiguration() :
                 sslMode(SslMode::DISABLE),
-                partitionAwareness(false),
+                partitionAwareness(true),
                 connectionsLimit(0)
             {
                 // No-op.

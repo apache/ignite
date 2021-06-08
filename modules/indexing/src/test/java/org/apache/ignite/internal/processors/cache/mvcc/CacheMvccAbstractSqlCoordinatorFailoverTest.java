@@ -351,7 +351,9 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
 
             GridTestUtils.assertThrows(log, new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    clientCache.query(new SqlFieldsQuery("UPDATE Integer SET _val=42 WHERE _key IN (SELECT DISTINCT _val FROM INTEGER)")).getAll();
+                    clientCache.query(
+                        new SqlFieldsQuery("UPDATE Integer SET _val=42 WHERE _key IN (SELECT DISTINCT _val FROM INTEGER)")
+                    ).getAll();
 
                     return null;
                 }

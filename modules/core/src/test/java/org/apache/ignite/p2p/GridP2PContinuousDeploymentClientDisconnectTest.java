@@ -60,16 +60,19 @@ public class GridP2PContinuousDeploymentClientDisconnectTest extends GridCommonA
     private ListeningTestLogger testLog;
 
     /** The resource name which is used in static initializer block. */
-    private static final String P2P_TEST_OBJ_RSRC_NAME = "org/apache/ignite/tests/p2p/GridP2PTestObjectWithStaticInitializer$GridP2PTestObject.class";
+    private static final String P2P_TEST_OBJ_RSRC_NAME =
+        "org/apache/ignite/tests/p2p/GridP2PTestObjectWithStaticInitializer$GridP2PTestObject.class";
 
     /** */
     private static final String REMOTE_FILTER_CLS_NAME = "org.apache.ignite.tests.p2p.GridP2PSerializableRemoteFilterWithStaticInitializer";
 
     /** */
-    private static final String REMOTE_FILTER_FACTORY_CLS_NAME = "org.apache.ignite.tests.p2p.GridP2PRemoteFilterWithStaticInitializerFactory";
+    private static final String REMOTE_FILTER_FACTORY_CLS_NAME =
+        "org.apache.ignite.tests.p2p.GridP2PRemoteFilterWithStaticInitializerFactory";
 
     /** */
-    private static final String REMOTE_TRANSFORMER_FACTORY_CLS_NAME = "org.apache.ignite.tests.p2p.GridP2PRemoteTransformerWithStaticInitializerFactory";
+    private static final String REMOTE_TRANSFORMER_FACTORY_CLS_NAME =
+        "org.apache.ignite.tests.p2p.GridP2PRemoteTransformerWithStaticInitializerFactory";
 
     /** */
     private static final String EVT_REMOTE_FILTER_CLS_NAME = "org.apache.ignite.tests.p2p.GridP2PEventRemoteFilterWithStaticInitializer";

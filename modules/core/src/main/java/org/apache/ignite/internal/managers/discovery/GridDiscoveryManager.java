@@ -75,7 +75,6 @@ import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.managers.systemview.walker.ClusterNodeViewWalker;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.ClientCacheChangeDummyDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
@@ -172,7 +171,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_USER_NAME;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
-import static org.apache.ignite.internal.processors.security.SecurityUtils.ifAuthenticationEnabled;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.isSecurityCompatibilityMode;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.NOOP;
 
@@ -769,8 +767,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         ctx.cache().context().exchange().onLocalJoin(discoEvt, discoCache);
 
                         ctx.service().onLocalJoin(discoEvt, discoCache);
-
-                        ifAuthenticationEnabled(ctx, IgniteAuthenticationProcessor::onLocalJoin);
 
                         ctx.encryption().onLocalJoin();
 
@@ -2534,13 +2530,19 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         DiscoverySpi discoverySpi = cfg.getDiscoverySpi();
 
         if (rslvr != null) {
-            if (!supportsCommunicationErrorResolve(commSpi))
-                throw new IgniteCheckedException("CommunicationFailureResolver is configured, but CommunicationSpi does not support communication" +
-                    "problem resolve: " + commSpi.getClass().getName());
+            if (!supportsCommunicationErrorResolve(commSpi)) {
+                throw new IgniteCheckedException(
+                    "CommunicationFailureResolver is configured, but CommunicationSpi does not support communication" +
+                    "problem resolve: " + commSpi.getClass().getName()
+                );
+            }
 
-            if (!supportsCommunicationErrorResolve(discoverySpi))
-                throw new IgniteCheckedException("CommunicationFailureResolver is configured, but DiscoverySpi does not support communication" +
-                    "problem resolve: " + discoverySpi.getClass().getName());
+            if (!supportsCommunicationErrorResolve(discoverySpi)) {
+                throw new IgniteCheckedException(
+                    "CommunicationFailureResolver is configured, but DiscoverySpi does not support communication" +
+                    "problem resolve: " + discoverySpi.getClass().getName()
+                );
+            }
         }
         else {
             if (supportsCommunicationErrorResolve(commSpi) && supportsCommunicationErrorResolve(discoverySpi))
@@ -2903,7 +2905,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          * @param topSnapshot Topology snapshot.
          */
         @SuppressWarnings("RedundantTypeArguments")
-        private void recordEvent(int type, long topVer, ClusterNode node, DiscoCache discoCache, Collection<ClusterNode> topSnapshot, @Nullable SpanContainer spanContainer) {
+        private void recordEvent(
+            int type,
+            long topVer,
+            ClusterNode node,
+            DiscoCache discoCache,
+            Collection<ClusterNode> topSnapshot,
+            @Nullable SpanContainer spanContainer
+        ) {
             assert node != null;
 
             if (ctx.event().isRecordable(type)) {

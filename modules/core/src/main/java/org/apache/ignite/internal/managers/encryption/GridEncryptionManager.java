@@ -52,6 +52,8 @@ import org.apache.ignite.internal.pagemem.wal.record.MasterKeyChangeRecordV2;
 import org.apache.ignite.internal.pagemem.wal.record.ReencryptionStartRecord;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
@@ -103,7 +105,8 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
  *     <li>Joining node:
  *     <ul>
  *         <li>1. Collects and send all stored group keys to coordinator.</li>
- *         <li>2. Generate(but doesn't store locally!) and send keys for all statically configured groups in case the not presented in metastore.</li>
+ *         <li>2. Generate(but doesn't store locally!)
+ *         and send keys for all statically configured groups in case the not presented in metastore.</li>
  *         <li>3. Store all keys received from coordinator to local store.</li>
  *     </ul>
  *     </li>
@@ -135,7 +138,7 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
  * @see #performMKChangeProc
  */
 public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> implements EncryptionCacheKeyProvider,
-    MetastorageLifecycleListener, IgniteChangeGlobalStateSupport, IgniteEncryption {
+    MetastorageLifecycleListener, IgniteChangeGlobalStateSupport, IgniteEncryption, PartitionsExchangeAware {
     /**
      * Cache encryption introduced in this Ignite version.
      */
@@ -327,8 +330,8 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     }
 
     /** {@inheritDoc} */
-    @Override protected void onKernalStart0() throws IgniteCheckedException {
-        // No-op.
+    @Override protected void onKernalStart0() {
+        ctx.cache().context().exchange().registerExchangeAwareComponent(this);
     }
 
     /** {@inheritDoc} */
@@ -1087,8 +1090,6 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
         }
 
         reencryptGroupsForced.clear();
-
-        startReencryption(reencryptGroups.keySet());
     }
 
     /** {@inheritDoc} */
@@ -1109,6 +1110,18 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     @Override public void onDeActivate(GridKernalContext kctx) {
         synchronized (metaStorageMux) {
             writeToMetaStoreEnabled = false;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDoneAfterTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
+        if (fut.activateCluster() || fut.localJoinExchange()) {
+            try {
+                startReencryption(reencryptGroups.keySet());
+            }
+            catch (IgniteCheckedException e) {
+                log.error("Unable to start reencryption", e);
+            }
         }
     }
 

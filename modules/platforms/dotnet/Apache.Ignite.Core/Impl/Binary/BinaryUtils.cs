@@ -1452,7 +1452,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Gets the string hash code using Java algorithm.
         /// </summary>
-        private static int GetStringHashCode(string val)
+        public static int GetStringHashCode(string val)
         {
             if (val == null)
                 return 0;

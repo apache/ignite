@@ -133,7 +133,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <summary>
         /// Writes new element.
         /// </summary>
-        private static void WriteElement(object obj, XmlWriter writer, string rootElementName, Type valueType, 
+        private static void WriteElement(object obj, XmlWriter writer, string rootElementName, Type valueType,
             PropertyInfo property = null, bool writeSchema = false)
         {
             if (property != null)
@@ -215,7 +215,7 @@ namespace Apache.Ignite.Core.Impl.Common
                 writer.WriteAttributeString(TypNameAttribute, TypNameNull);
                 return;
             }
-            
+
             var props = GetNonDefaultProperties(obj).OrderBy(x => x.Name).ToList();
 
             var realType = obj.GetType();
@@ -285,7 +285,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <summary>
         /// Reads the property value.
         /// </summary>
-        private static object ReadPropertyValue(XmlReader reader, TypeResolver resolver, 
+        private static object ReadPropertyValue(XmlReader reader, TypeResolver resolver,
             PropertyInfo prop, Type targetType)
         {
             var propType = prop.PropertyType;
@@ -325,7 +325,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <summary>
         /// Reads the complex property (nested object).
         /// </summary>
-        private static object ReadComplexProperty(XmlReader reader, Type propType, string propName, Type targetType, 
+        private static object ReadComplexProperty(XmlReader reader, Type propType, string propName, Type targetType,
             TypeResolver resolver)
         {
             propType = ResolvePropertyType(reader, propType, propName, targetType, resolver);
@@ -390,7 +390,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <summary>
         /// Reads the collection.
         /// </summary>
-        private static IList ReadCollectionProperty(XmlReader reader, PropertyInfo prop, Type targetType, 
+        private static IList ReadCollectionProperty(XmlReader reader, PropertyInfo prop, Type targetType,
             TypeResolver resolver)
         {
             var elementType = prop.PropertyType.GetGenericArguments().Single();
@@ -422,7 +422,7 @@ namespace Apache.Ignite.Core.Impl.Common
 
             return list;
         }
-        
+
         /// <summary>
         /// Reads the dictionary.
         /// </summary>
@@ -586,6 +586,7 @@ namespace Apache.Ignite.Core.Impl.Common
 
             var converter = TypeDescriptor.GetConverter(propertyType);
 
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalse (null is possible with custom type descriptors)
             if (converter == null || !converter.CanConvertFrom(typeof(string)) ||
                 !converter.CanConvertTo(typeof(string)))
                 throw new ConfigurationErrorsException("No converter for type " + propertyType);

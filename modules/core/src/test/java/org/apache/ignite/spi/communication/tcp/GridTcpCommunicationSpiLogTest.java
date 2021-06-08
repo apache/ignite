@@ -198,7 +198,8 @@ public class GridTcpCommunicationSpiLogTest extends GridCommonAbstractTest {
         TcpCommunicationSpi clientSpi = (TcpCommunicationSpi) ((IgniteEx)client).context().config().getCommunicationSpi();
 
         ConcurrentMap<UUID, GridCommunicationClient[]> clients = GridTestUtils.getFieldValue(clientSpi, "clientPool", "clients");
-        ConcurrentMap<?, GridNioRecoveryDescriptor> recoveryDescs = GridTestUtils.getFieldValue(clientSpi, "nioSrvWrapper", "recoveryDescs");
+        ConcurrentMap<?, GridNioRecoveryDescriptor> recoveryDescs =
+            GridTestUtils.getFieldValue(clientSpi, "nioSrvWrapper", "recoveryDescs");
         ConcurrentMap<?, GridNioRecoveryDescriptor> outRecDescs = GridTestUtils.getFieldValue(clientSpi, "nioSrvWrapper", "outRecDescs");
         ConcurrentMap<?, GridNioRecoveryDescriptor> inRecDescs = GridTestUtils.getFieldValue(clientSpi, "nioSrvWrapper", "inRecDescs");
         GridNioServerListener<Message> lsnr = U.field(clientSpi, "srvLsnr");
