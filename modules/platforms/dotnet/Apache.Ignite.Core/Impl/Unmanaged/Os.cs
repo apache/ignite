@@ -47,7 +47,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// <summary>
         /// .NET Core.
         /// </summary>
-        public static bool IsNetCore { get; set; }
+        public static bool IsNetCore { get; private set; }
 
         /// <summary>
         /// Mono.
