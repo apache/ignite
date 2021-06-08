@@ -181,6 +181,8 @@ public abstract class AbstractChangeDataCaptureTest extends GridCommonAbstractTe
     public static class UserCdcConsumer extends TestCdcConsumer<Integer> {
         /** {@inheritDoc} */
         @Override public void checkEvent(ChangeDataCaptureEvent evt) {
+            assertNull(evt.version().otherClusterVersion());
+
             if (evt.value() == null)
                 return;
 

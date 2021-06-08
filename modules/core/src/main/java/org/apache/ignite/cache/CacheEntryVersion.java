@@ -56,8 +56,9 @@ public interface CacheEntryVersion extends Comparable<CacheEntryVersion>, Serial
     public int topologyVersion();
 
     /**
-     * If source of the update is "local" cluster then {@code this} will be returned.
-     * If updated comes from the other cluster using {@link IgniteInternalCache#putAllConflict(Map)} then
+     * If source of the update is "local" cluster then {@code null} will be returned.
+     * If updated comes from the other cluster using {@link IgniteInternalCache#putAllConflict(Map)}
+     * then entry version for other cluster.
      * @return Replication version.
      * @see IgniteInternalCache#putAllConflict(Map)
      * @see IgniteInternalCache#removeAllConflict(Map)

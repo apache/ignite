@@ -116,7 +116,7 @@ public class GridCacheVersion implements Message, Externalizable, CacheEntryVers
 
     /** {@inheritDoc} */
     @Override public CacheEntryVersion otherClusterVersion() {
-        return conflictVersion();
+        return null;
     }
 
     /** {@inheritDoc} */

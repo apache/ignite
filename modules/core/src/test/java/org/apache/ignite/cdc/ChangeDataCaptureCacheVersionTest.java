@@ -115,8 +115,6 @@ public class ChangeDataCaptureCacheVersionTest extends AbstractChangeDataCapture
             @Override public void checkEvent(ChangeDataCaptureEvent evt) {
                 assertEquals(DFLT_CLUSTER_ID, evt.version().clusterId());
                 assertEquals(OTHER_CLUSTER_ID, evt.version().otherClusterVersion().clusterId());
-
-                super.checkEvent(evt);
             }
         };
 
