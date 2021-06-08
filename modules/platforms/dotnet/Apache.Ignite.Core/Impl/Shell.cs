@@ -41,6 +41,7 @@ namespace Apache.Ignite.Core.Impl
                     FileName = file,
                     Arguments = args,
                     RedirectStandardOutput = true,
+                    RedirectStandardError = true,
                     UseShellExecute = false,
                     CreateNoWindow = true
                 };
@@ -49,7 +50,9 @@ namespace Apache.Ignite.Core.Impl
                 {
                     process.Start();
 
+                    // TODO: Hangs because we don't read everything?
                     var res = process.StandardOutput.ReadToEnd();
+                    process.StandardError.ReadToEnd();
 
                     process.WaitForExit();
 

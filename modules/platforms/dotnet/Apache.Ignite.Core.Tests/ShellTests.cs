@@ -31,29 +31,38 @@ namespace Apache.Ignite.Core.Tests
         /// Tests <see cref="Shell.ExecuteSafe"/> method.
         /// </summary>
         [Test]
-        [Explicit] // TODO: Does this time out on TC? Why?
+        // [Explicit] // TODO: Does this time out on TC? Why?
         public void TestExecuteSafe()
         {
             if (Os.IsWindows)
             {
                 return;
             }
+            
+            TestContext.WriteLine(">>> TestExecuteSafe 1");
+
+            var uname = Shell.ExecuteSafe("uname", string.Empty);
+            TestContext.WriteLine(">>> TestExecuteSafe 2");
+            Assert.IsNotEmpty(uname, uname);
+            TestContext.WriteLine(">>> TestExecuteSafe 3");
+            Console.WriteLine(uname);
+            TestContext.WriteLine(">>> TestExecuteSafe 4");
 
             var readlink = Shell.ExecuteSafe("readlink", "-f /usr/bin/java");
+            TestContext.WriteLine(">>> TestExecuteSafe 5");
             Assert.IsNotEmpty(readlink, readlink);
             Console.WriteLine(readlink);
             
-            var uname = Shell.ExecuteSafe("uname", string.Empty);
-            Assert.IsNotEmpty(uname, uname);
-            Console.WriteLine(uname);
-
             if (Os.IsLinux)
             {
                 Assert.AreEqual("Linux", uname.Trim());
             }
 
+            TestContext.WriteLine(">>> TestExecuteSafe 6");
             Assert.IsEmpty(Shell.ExecuteSafe("readlink", "-foobar"));
             Assert.IsEmpty(Shell.ExecuteSafe("foo_bar", "abc"));
+            
+            TestContext.WriteLine(">>> TestExecuteSafe 7");
         }
     }
 }
