@@ -27,8 +27,11 @@ namespace Apache.Ignite.Core.Tests
     /// </summary>
     public class ShellTests
     {
+        /// <summary>
+        /// Tests <see cref="Shell.ExecuteSafe"/> method.
+        /// </summary>
         [Test]
-        public void TestExecute()
+        public void TestExecuteSafe()
         {
             if (Os.IsWindows)
             {
@@ -42,6 +45,11 @@ namespace Apache.Ignite.Core.Tests
             var uname = Shell.ExecuteSafe("uname", string.Empty);
             Assert.IsNotEmpty(uname, uname);
             Console.WriteLine(uname);
+
+            if (Os.IsLinux)
+            {
+                Assert.AreEqual("Linux", uname.Trim());
+            }
 
             Assert.IsEmpty(Shell.ExecuteSafe("readlink", "-foobar"));
             Assert.IsEmpty(Shell.ExecuteSafe("foo_bar", "abc"));
