@@ -146,9 +146,9 @@ See the link:tools/control-script#checking-snapshot-consistency[Control Script] 
 commands.
 
 == Restoring From Snapshot
-
-Currently, the data restore procedure has to be performed manually. In a nutshell, you need to stop the cluster,
-replace persistence data and other files with the data from the snapshot, and restart the nodes.
+=== Manual snapshot restore procedure
+In a nutshell, you need to stop the cluster, replace persistence data and other files with the data from the snapshot,
+and restart the nodes.
 
 The detailed procedure looks as follows:
 
@@ -177,6 +177,51 @@ below explains what options are supported:
 the topology and wait while the data gets rebalanced and indexes are rebuilt.
 |N > M | Unsupported.
 |===
+
+=== Automatic snapshot restore procedure
+The automatic restore procedure allows the user to restore cache group(s) from a snapshot on an active cluster using the Java API or Command Language Interface (CLI).
+
+Currently, this procedure has a number of limitations:
+
+* The restore procedure applies only to public cache groups.
+* Cache groups to be restored from the snapshot must not present in the cluster, if they present, they must be destroyed by the user before starting this operation.
+* Restore to a smaller topology is not supported. Those. restore is possible only if all parts of the snapshot are present in the cluster.
+* Concurrent restore operations are not allowed. Those. if one restore operation has been started, the other can only be started after the first is completed.
+
+==== Restoring cache group from the snapshot
+The following code snippet demonstrates how to restore an individual cache group from a snapshot.
+
+[tabs]
+--
+tab:Java[]
+
+[source, java]
+----
+include::{javaCodeDir}/Snapshots.java[tags=restore, indent=0]
+----
+
+tab:CLI[]
+[source,shell]
+----
+# Restore cache group "snapshot-cache" from the snapshot "snapshot_02092020".
+control.(sh|bat) --snapshot restore --start snapshot_02092020 snapshot-cache
+----
+--
+
+==== Using CLI to control restore operation
+The `control.sh|bat` script provides the ability to start, stop, and get the status of the restore operation.
+
+[source,shell]
+----
+# Start restore all public cache groups from the snapshot "snapshot_09062021".
+control.(sh|bat) --snapshot restore --start snapshot_09062021
+
+# Get the status of the restore operation for "snapshot_09062021".
+control.(sh|bat) --snapshot restore --status snapshot_09062021
+
+# Cancel the restore operation for "snapshot_09062021".
+control.(sh|bat) --snapshot restore --stop snapshot_09062021
+----
 
 == Consistency Guarantees
 
