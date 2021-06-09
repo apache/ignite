@@ -226,7 +226,7 @@ public class GridMapQueryExecutor {
             CU.firstPartitioned(ctx.cache().context(), cacheIds).config().getQueryParallelism();
 
         final int segments = explain || replicated || singlePart ? 1 : parallelisn;
-        final int singleSegment = singlePart? InlineIndexImpl.calculateSegment(parallelisn, parts[0]) : 0;
+        final int singleSegment = singlePart ? InlineIndexImpl.calculateSegment(parallelisn, parts[0]) : 0;
 
         final Object[] params = req.parameters();
 
