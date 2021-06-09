@@ -73,7 +73,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
 
     /** {@inheritDoc} */
     @Override public void awaitFirstItem() throws IgniteCheckedException {
-        reducer.awaitFirstItem();
+        reducer.awaitInitialization();
 
         if (isDone() && error() != null)
             // Throw the exception if future failed.
@@ -81,8 +81,8 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
     }
 
     /** {@inheritDoc} */
-    @Override protected void loadAllPages() throws IgniteInterruptedCheckedException {
-        reducer.loadAll();
+    @Override protected void requestFullPages() throws IgniteInterruptedCheckedException {
+        reducer.requestFullPages();
     }
 
     /** {@inheritDoc} */

@@ -165,12 +165,12 @@ public class MergeSortDistributedCacheQueryReducer<R> extends AbstractDistribute
     }
 
     /** {@inheritDoc} */
-    @Override public void loadAll() throws IgniteInterruptedCheckedException {
-        awaitFirstItem();
+    @Override public void requestFullPages() throws IgniteInterruptedCheckedException {
+        awaitInitialization();
 
         if (loadAllowed()) {
             for (NodePageStream<R> s: streamsMap.values())
-                s.loadAll();
+                s.requestFullPages();
         }
     }
 

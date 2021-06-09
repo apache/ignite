@@ -25,7 +25,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 
-/** */
+/**
+ * Stream over single node.
+ */
 public class NodePageStream<R> extends PageStream<R> {
     /** */
     private final UUID nodeId;
@@ -33,11 +35,7 @@ public class NodePageStream<R> extends PageStream<R> {
     /** */
     private R head;
 
-    /**
-     * @param qry
-     * @param queueLock
-     * @param reqPages
-     */
+    /** */
     protected NodePageStream(GridCacheQueryAdapter qry, Object queueLock, long timeoutTime,
         UUID nodeId, BiConsumer<Collection<UUID>, Boolean> reqPages) {
         super(qry, queueLock, timeoutTime, new HashSet<>(F.asList(nodeId)), reqPages);
@@ -45,12 +43,16 @@ public class NodePageStream<R> extends PageStream<R> {
         this.nodeId = nodeId;
     }
 
-    /** */
+    /**
+     * @return Head of stream, that is last item returned with {@link #next()}.
+     */
     public R head() {
         return head;
     }
 
-    /** */
+    /**
+     * @return Head of stream and then clean it.
+     */
     public R get() {
         R ret = head;
 
@@ -78,7 +80,9 @@ public class NodePageStream<R> extends PageStream<R> {
         return head;
     }
 
-    /** */
+    /**
+     * @return Node ID.
+     */
     public UUID nodeId() {
         return nodeId;
     }

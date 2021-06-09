@@ -53,7 +53,7 @@ class PageStream<R> {
     private final Collection<UUID> rcvd = new HashSet<>();
 
     /**
-     * Lock that guards:
+     * This lock guards:
      * 1. Order of invocation query future {@code onDone} and while loop over {@link #queue}.
      * 2. Consistency of {@link #rcvd} and {@link #queue}.
      */
@@ -227,7 +227,7 @@ class PageStream<R> {
     /**
      * Request pages with whole data from nodes.
      */
-    void loadAll() {
+    void requestFullPages() {
         Collection<UUID> nodes = null;
 
         synchronized (queueLock) {

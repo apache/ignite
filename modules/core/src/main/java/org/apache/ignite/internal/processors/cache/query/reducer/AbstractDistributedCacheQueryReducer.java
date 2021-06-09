@@ -65,7 +65,7 @@ abstract class AbstractDistributedCacheQueryReducer<R> implements DistributedCac
     }
 
     /** {@inheritDoc} */
-    @Override public void awaitFirstItem() throws IgniteInterruptedCheckedException {
+    @Override public void awaitInitialization() throws IgniteInterruptedCheckedException {
         U.await(firstPageLatch);
     }
 

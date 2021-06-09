@@ -372,7 +372,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     /** {@inheritDoc} */
     @Override public Collection<R> get() throws IgniteCheckedException {
         if (!isDone())
-            loadAllPages();
+            requestFullPages();
 
         return super.get();
     }
@@ -380,7 +380,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     /** {@inheritDoc} */
     @Override public Collection<R> get(long timeout, TimeUnit unit) throws IgniteCheckedException {
         if (!isDone())
-            loadAllPages();
+            requestFullPages();
 
         return super.get(timeout, unit);
     }
@@ -388,7 +388,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     /** {@inheritDoc} */
     @Override public Collection<R> getUninterruptibly() throws IgniteCheckedException {
         if (!isDone())
-            loadAllPages();
+            requestFullPages();
 
         return super.getUninterruptibly();
     }
@@ -398,7 +398,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      *
      * @throws IgniteInterruptedCheckedException If thread is interrupted.
      */
-    protected abstract void loadAllPages() throws IgniteInterruptedCheckedException;
+    protected abstract void requestFullPages() throws IgniteInterruptedCheckedException;
 
     /**
      * Clears future.
