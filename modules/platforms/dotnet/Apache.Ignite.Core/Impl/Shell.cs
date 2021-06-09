@@ -20,7 +20,6 @@ namespace Apache.Ignite.Core.Impl
     using System;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
-    using System.Text;
 
     /// <summary>
     /// Shell utils (cmd/bash).
