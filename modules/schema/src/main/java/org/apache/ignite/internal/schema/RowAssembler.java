@@ -86,8 +86,10 @@ public class RowAssembler {
      * @return Total size of the varlen table.
      */
     public static int varlenTableChunkSize(int nonNullVarlenCols) {
-        return nonNullVarlenCols == 0 ? 0 :
-            VARLEN_TABLE_SIZE_FIELD_SIZE + nonNullVarlenCols * VARLEN_COLUMN_OFFSET_FIELD_SIZE;
+        int items = nonNullVarlenCols - 1; // Ignore very first varlen.
+
+        return items <= 0 ? 0 :
+            VARLEN_TABLE_SIZE_FIELD_SIZE + items * VARLEN_COLUMN_OFFSET_FIELD_SIZE;
     }
 
     /**
@@ -189,16 +191,18 @@ public class RowAssembler {
 
         buf.putShort(0, (short)schema.version());
 
-        if (nonNullVarlenKeyCols == 0)
-            flags |= OMIT_KEY_VARTBL_FLAG;
+        if (nonNullVarlenKeyCols > 1) // First varlen column offset is known.
+            buf.putShort(varlenTblChunkOff, (short)(nonNullVarlenKeyCols - 1));
         else
-            buf.putShort(varlenTblChunkOff, (short)nonNullVarlenKeyCols);
+            flags |= OMIT_KEY_VARTBL_FLAG;
     }
 
     /**
      * Appends {@code null} value for the current column to the chunk.
+     *
+     * @return {@code this} for chaining.
      */
-    public void appendNull() {
+    public RowAssembler appendNull() {
         Column col = curCols.column(curCol);
 
         if (!col.nullable())
@@ -211,14 +215,17 @@ public class RowAssembler {
             keyHash *= 31;
 
         shiftColumn(0, false);
+
+        return this;
     }
 
     /**
      * Appends byte value for the current column to the chunk.
      *
      * @param val Column value.
+     * @return {@code this} for chaining.
      */
-    public void appendByte(byte val) {
+    public RowAssembler appendByte(byte val) {
         checkType(NativeTypes.BYTE);
 
         buf.put(curOff, val);
@@ -227,14 +234,17 @@ public class RowAssembler {
             keyHash = 31 * keyHash + Byte.hashCode(val);
 
         shiftColumn(NativeTypes.BYTE);
+
+        return this;
     }
 
     /**
      * Appends short value for the current column to the chunk.
      *
      * @param val Column value.
+     * @return {@code this} for chaining.
      */
-    public void appendShort(short val) {
+    public RowAssembler appendShort(short val) {
         checkType(NativeTypes.SHORT);
 
         buf.putShort(curOff, val);
@@ -243,14 +253,17 @@ public class RowAssembler {
             keyHash = 31 * keyHash + Short.hashCode(val);
 
         shiftColumn(NativeTypes.SHORT);
+
+        return this;
     }
 
     /**
      * Appends int value for the current column to the chunk.
      *
      * @param val Column value.
+     * @return {@code this} for chaining.
      */
-    public void appendInt(int val) {
+    public RowAssembler appendInt(int val) {
         checkType(NativeTypes.INTEGER);
 
         buf.putInt(curOff, val);
@@ -259,14 +272,17 @@ public class RowAssembler {
             keyHash = 31 * keyHash + Integer.hashCode(val);
 
         shiftColumn(NativeTypes.INTEGER);
+
+        return this;
     }
 
     /**
      * Appends long value for the current column to the chunk.
      *
      * @param val Column value.
+     * @return {@code this} for chaining.
      */
-    public void appendLong(long val) {
+    public RowAssembler appendLong(long val) {
         checkType(NativeTypes.LONG);
 
         buf.putLong(curOff, val);
@@ -275,14 +291,17 @@ public class RowAssembler {
             keyHash += 31 * keyHash + Long.hashCode(val);
 
         shiftColumn(NativeTypes.LONG);
+
+        return this;
     }
 
     /**
      * Appends float value for the current column to the chunk.
      *
      * @param val Column value.
+     * @return {@code this} for chaining.
      */
-    public void appendFloat(float val) {
+    public RowAssembler appendFloat(float val) {
         checkType(NativeTypes.FLOAT);
 
         buf.putFloat(curOff, val);
@@ -291,14 +310,17 @@ public class RowAssembler {
             keyHash += 31 * keyHash + Float.hashCode(val);
 
         shiftColumn(NativeTypes.FLOAT);
+
+        return this;
     }
 
     /**
      * Appends double value for the current column to the chunk.
      *
      * @param val Column value.
+     * @return {@code this} for chaining.
      */
-    public void appendDouble(double val) {
+    public RowAssembler appendDouble(double val) {
         checkType(NativeTypes.DOUBLE);
 
         buf.putDouble(curOff, val);
@@ -307,14 +329,17 @@ public class RowAssembler {
             keyHash += 31 * keyHash + Double.hashCode(val);
 
         shiftColumn(NativeTypes.DOUBLE);
+
+        return this;
     }
 
     /**
      * Appends UUID value for the current column to the chunk.
      *
      * @param uuid Column value.
+     * @return {@code this} for chaining.
      */
-    public void appendUuid(UUID uuid) {
+    public RowAssembler appendUuid(UUID uuid) {
         checkType(NativeTypes.UUID);
 
         buf.putLong(curOff, uuid.getLeastSignificantBits());
@@ -324,25 +349,31 @@ public class RowAssembler {
             keyHash += 31 * keyHash + uuid.hashCode();
 
         shiftColumn(NativeTypes.UUID);
+
+        return this;
     }
 
     /**
      * Appends String value for the current column to the chunk.
      *
      * @param val Column value.
+     * @return {@code this} for chaining.
      */
-    public void appendString(String val) {
+    public RowAssembler appendString(String val) {
         checkType(NativeTypes.STRING);
 
         try {
             int written = buf.putString(curOff, val, encoder());
 
-            writeOffset(curVarlenTblEntry, curOff - baseOff);
+            if (curVarlenTblEntry != 0)
+                writeOffset(curVarlenTblEntry - 1, curOff - baseOff);
 
             if (isKeyColumn())
                 keyHash += 31 * keyHash + val.hashCode();
 
             shiftColumn(written, true);
+
+            return this;
         }
         catch (CharacterCodingException e) {
             throw new AssemblyException("Failed to encode string", e);
@@ -353,8 +384,9 @@ public class RowAssembler {
      * Appends byte[] value for the current column to the chunk.
      *
      * @param val Column value.
+     * @return {@code this} for chaining.
      */
-    public void appendBytes(byte[] val) {
+    public RowAssembler appendBytes(byte[] val) {
         checkType(NativeTypes.BYTES);
 
         buf.putBytes(curOff, val);
@@ -362,17 +394,21 @@ public class RowAssembler {
         if (isKeyColumn())
             keyHash += 31 * keyHash + Arrays.hashCode(val);
 
-        writeOffset(curVarlenTblEntry, curOff - baseOff);
+        if (curVarlenTblEntry != 0)
+            writeOffset(curVarlenTblEntry - 1, curOff - baseOff);
 
         shiftColumn(val.length, true);
+
+        return this;
     }
 
     /**
      * Appends BitSet value for the current column to the chunk.
      *
      * @param bitSet Column value.
+     * @return {@code this} for chaining.
      */
-    public void appendBitmask(BitSet bitSet) {
+    public RowAssembler appendBitmask(BitSet bitSet) {
         Column col = curCols.column(curCol);
 
         checkType(NativeTypeSpec.BITMASK);
@@ -394,6 +430,8 @@ public class RowAssembler {
             keyHash += 31 * keyHash + Arrays.hashCode(arr);
 
         shiftColumn(maskType);
+
+        return this;
     }
 
     /**
@@ -514,10 +552,10 @@ public class RowAssembler {
 
             initOffsets(baseOff + chunkLen, nonNullVarlenValCols);
 
-            if (nonNullVarlenValCols == 0)
-                flags |= OMIT_VAL_VARTBL_FLAG;
+            if (nonNullVarlenValCols > 1)
+                buf.putShort(varlenTblChunkOff, (short)(nonNullVarlenValCols - 1));
             else
-                buf.putShort(varlenTblChunkOff, (short)nonNullVarlenValCols);
+                flags |= OMIT_VAL_VARTBL_FLAG;
         }
     }
 

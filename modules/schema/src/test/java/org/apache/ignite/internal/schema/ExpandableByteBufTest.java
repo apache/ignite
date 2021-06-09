@@ -33,7 +33,7 @@ public class ExpandableByteBufTest {
      *
      */
     @Test
-    public void testAllTypesDirectOrder() throws Exception {
+    public void allTypesDirectOrder() throws Exception {
         ExpandableByteBuf buf = new ExpandableByteBuf(5);
 
         byte[] targetBytes = {1, 2, 3, 4, 5, 6, 7};
@@ -77,7 +77,7 @@ public class ExpandableByteBufTest {
      *
      */
     @Test
-    public void testAllTypesReverseOrder() throws Exception {
+    public void allTypesReverseOrder() throws Exception {
         ExpandableByteBuf buf = new ExpandableByteBuf(5);
 
         byte[] targetBytes = {1, 2, 3, 4, 5, 6, 7};
@@ -121,7 +121,7 @@ public class ExpandableByteBufTest {
      *
      */
     @Test
-    public void testJavadocDesc() {
+    public void exampleFromJavadoc() {
         ExpandableByteBuf b = new ExpandableByteBuf(1);
         b.put(0, (byte)1); // Does not expand.
         b.put(5, (byte)1); // Expands, meaningful bytes are [0..5]
@@ -134,8 +134,27 @@ public class ExpandableByteBufTest {
      *
      */
     @Test
-    public void testStringExpandMultipleTimes() throws Exception {
-        // Expansion chain 1->2->4->8->16->32.
+    public void stringExpandMultipleTimes() throws Exception {
+        // Expansion chain 1->2->4->8->16.
+        ExpandableByteBuf buf = new ExpandableByteBuf(1);
+
+        assertEquals(3, buf.putString(0, "我", StandardCharsets.UTF_8.newEncoder()));
+        assertEquals("我", new String(buf.toArray()));
+
+        assertEquals(3, buf.putString(3, "愛", StandardCharsets.UTF_8.newEncoder()));
+        assertEquals("我愛", new String(buf.toArray()));
+
+        assertEquals(4, buf.putString(6, "Java", StandardCharsets.UTF_8.newEncoder()));
+        assertEquals(10, buf.toArray().length);
+        assertEquals("我愛Java", new String(buf.toArray()));
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void stringWithnMultiByteChars() throws Exception {
+        // Expansion chain 1->2->4.
         ExpandableByteBuf buf = new ExpandableByteBuf(1);
 
         String str = "abcdefghijklmnopq";

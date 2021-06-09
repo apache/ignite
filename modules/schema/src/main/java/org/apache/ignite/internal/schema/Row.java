@@ -371,11 +371,9 @@ public class Row implements BinaryRow {
         if (hasNullMap && isNull(off, colIdx))
             return -1;
 
-        assert hasVarTable || type.fixedLength();
-
         return type.fixedLength() ?
             fixlenColumnOffset(cols, off, colIdx, hasVarTable, hasNullMap) :
-            varlenColumnOffsetAndLength(cols, off, colIdx, hasNullMap);
+            varlenColumnOffsetAndLength(cols, off, colIdx, hasVarTable, hasNullMap);
     }
 
     /**
@@ -438,10 +436,11 @@ public class Row implements BinaryRow {
      * @param cols Columns chunk.
      * @param baseOff Chunk base offset.
      * @param idx Column index in the chunk.
+     * @param hasVarTbl Has varlen table flag.
      * @param hasNullMap Has null map flag.
      * @return Encoded offset (from the row start) and length of the column with the given index.
      */
-    private long varlenColumnOffsetAndLength(Columns cols, int baseOff, int idx, boolean hasNullMap) {
+    private long varlenColumnOffsetAndLength(Columns cols, int baseOff, int idx, boolean hasVarTbl, boolean hasNullMap) {
         int vartableOff = baseOff + CHUNK_LEN_FIELD_SIZE;
 
         int numNullsBefore = 0;
@@ -473,16 +472,29 @@ public class Row implements BinaryRow {
         }
 
         idx -= cols.numberOfFixsizeColumns() + numNullsBefore;
+
+        if (idx == 0) { // Very first non-null varlen column.
+            int off = cols.numberOfFixsizeColumns() == 0 ?
+                (hasVarTbl ? vartableOff + varlenItemOffset(readShort(vartableOff)) : vartableOff) :
+                fixlenColumnOffset(cols, baseOff, cols.numberOfFixsizeColumns(), hasVarTbl, hasNullMap);
+
+            long len = hasVarTbl ?
+                readShort(vartableOff + varlenItemOffset(0)) - (off - baseOff) :
+                readInteger(baseOff) - (off - baseOff);
+
+            return (len << 32) | off;
+        }
+
         int vartableSize = readShort(vartableOff);
 
         // Offset of idx-th column is from base offset.
-        int resOff = readShort(vartableOff + varlenItemOffset(idx));
+        int resOff = readShort(vartableOff + varlenItemOffset(idx - 1));
 
-        long len = (idx == vartableSize - 1) ?
+        long len = (idx == vartableSize) ?
             // totalLength - columnStartOffset
             readInteger(baseOff) - resOff :
             // nextColumnStartOffset - columnStartOffset
-            readShort(vartableOff + varlenItemOffset(idx + 1)) - resOff;
+            readShort(vartableOff + varlenItemOffset(idx)) - resOff;
 
         return (len << 32) | (resOff + baseOff);
     }

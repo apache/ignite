@@ -34,6 +34,7 @@ import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.EnumSet;
 import org.apache.ignite.internal.schema.Columns;
+import org.apache.ignite.internal.schema.RowAssembler;
 import org.apache.ignite.internal.schema.marshaller.MarshallerUtil;
 import org.apache.ignite.internal.schema.marshaller.Serializer;
 import org.apache.ignite.lang.IgniteInternalException;
@@ -103,14 +104,14 @@ class ObjectMarshallerCodeGenerator implements MarshallerCodeGenerator {
 
             final BytecodeExpression marshallNonNulExpr = asm.invoke(
                 columnAccessor.writeMethodName(),
-                void.class,
+                RowAssembler.class,
                 Collections.singletonList(columnAccessor.writeArgType()),
                 fld.cast(columnAccessor.writeArgType()));
 
             if (columns.column(i).nullable())
                 block.append(new BytecodeBlock().append(
                     new IfStatement().condition(BytecodeExpressions.isNull(fld))
-                        .ifTrue(asm.invoke("appendNull", void.class))
+                        .ifTrue(asm.invoke("appendNull", RowAssembler.class))
                         .ifFalse(marshallNonNulExpr))
                 );
             else

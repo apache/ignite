@@ -189,7 +189,7 @@ public class ExpandableByteBuf {
                     break;
 
                 if (cr.isOverflow()) {
-                    expand(len + 1);
+                    expand(len + (int)encoder.maxBytesPerChar());
 
                     continue;
                 }
@@ -205,7 +205,7 @@ public class ExpandableByteBuf {
                 len = buf.position();
 
                 if (cr.isOverflow()) {
-                    expand(len + 1);
+                    expand(len + (int)encoder.maxBytesPerChar());
 
                     continue;
                 }
@@ -270,7 +270,7 @@ public class ExpandableByteBuf {
                 l += MB;
         }
 
-        byte[] tmp = new byte[cap];
+        byte[] tmp = new byte[l];
 
         System.arraycopy(arr, 0, tmp, 0, arr.length);
 
