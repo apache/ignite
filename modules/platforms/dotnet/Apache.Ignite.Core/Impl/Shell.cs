@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl
     using System;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.Text;
 
     /// <summary>
     /// Shell utils (cmd/bash).
@@ -41,22 +42,25 @@ namespace Apache.Ignite.Core.Impl
                     FileName = file,
                     Arguments = args,
                     RedirectStandardOutput = true,
-                    RedirectStandardError = true,
                     UseShellExecute = false,
                     CreateNoWindow = true
                 };
 
+                var sb = new StringBuilder();
+
                 using (var process = new Process {StartInfo = processStartInfo})
                 {
-                    process.Start();
+                    process.OutputDataReceived += (_, eventArgs) =>
+                    {
+                        sb.Append(eventArgs.Data);
+                    };
 
-                    // TODO: Hangs because we don't read everything?
-                    var res = process.StandardOutput.ReadToEnd();
-                    process.StandardError.ReadToEnd();
+                    process.Start();
+                    process.BeginOutputReadLine();
 
                     process.WaitForExit();
 
-                    return res;
+                    return sb.ToString();
                 }
             }
             catch (Exception)
