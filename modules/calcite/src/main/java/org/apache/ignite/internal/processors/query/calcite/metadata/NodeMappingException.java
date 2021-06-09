@@ -14,27 +14,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.query.calcite;
 
-/** Stubs */
-public class Stubs {
+package org.apache.ignite.internal.processors.query.calcite.metadata;
+
+import org.apache.calcite.rel.RelNode;
+
+/**
+ *
+ */
+public class NodeMappingException extends RuntimeException {
     /** */
-    public static int intFoo(Object... args) {
-        return args == null ? 0 : args.length;
+    private final RelNode node;
+
+    /**
+     *
+     * @param message Message.
+     * @param node Node of a query plan, where the exception was thrown.
+     * @param cause Cause.
+     */
+    public NodeMappingException(String message, RelNode node, Throwable cause) {
+        super(message, cause);
+        this.node = node;
     }
 
-    /** */
-    public static long longFoo(Object... args) {
-        return args == null ? 0 : args.length;
-    }
-
-    /** */
-    public static boolean boolFoo(Object... args) {
-        return args == null;
-    }
-
-    /** */
-    public static String stringFoo(Object... args) {
-        return args == null ? "null" : "not null";
+    /**
+     * @return Node of a query plan, where the exception was thrown.
+     */
+    public RelNode node() {
+        return node;
     }
 }

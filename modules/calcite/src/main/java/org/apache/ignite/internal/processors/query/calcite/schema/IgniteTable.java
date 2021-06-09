@@ -25,6 +25,8 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
@@ -74,6 +76,14 @@ public interface IgniteTable extends TranslatableTable {
      * @return Table relational expression.
      */
     IgniteLogicalIndexScan toRel(RelOptCluster cluster, RelOptTable relOptTbl, String idxName);
+
+    /**
+     * Returns nodes mapping.
+     *
+     * @param ctx Planning context.
+     * @return Nodes mapping.
+     */
+    ColocationGroup colocationGroup(PlanningContext ctx);
 
     /**
      * @return Table distribution.

@@ -14,27 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.query.calcite;
 
-/** Stubs */
-public class Stubs {
-    /** */
-    public static int intFoo(Object... args) {
-        return args == null ? 0 : args.length;
-    }
+package org.apache.ignite.internal.util;
 
-    /** */
-    public static long longFoo(Object... args) {
-        return args == null ? 0 : args.length;
-    }
+/**
+ * Iterator over integer primitives.
+ */
+public interface IgniteIntIterator {
+    /**
+     * @return {@code true} if the iteration has more elements.
+     */
+    public boolean hasNext();
 
-    /** */
-    public static boolean boolFoo(Object... args) {
-        return args == null;
-    }
-
-    /** */
-    public static String stringFoo(Object... args) {
-        return args == null ? "null" : "not null";
-    }
+    /**
+     * @return Next int.
+     */
+    public int next();
 }

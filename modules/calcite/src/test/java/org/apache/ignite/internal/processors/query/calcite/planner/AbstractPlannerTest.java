@@ -26,6 +26,7 @@ import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.config.CalciteConnectionConfig;
@@ -37,6 +38,7 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelDistribution;
@@ -59,9 +61,14 @@ import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql2rel.InitializerContext;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonReader;
+import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.prepare.Cloner;
+import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlannerHelper;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
@@ -79,14 +86,18 @@ import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTr
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.testframework.IgniteAbstractTest;
+import org.apache.ignite.internal.testframework.IgniteTestUtils;
 import org.apache.ignite.internal.util.ArrayUtils;
 
 import static org.apache.calcite.tools.Frameworks.createRootSchema;
 import static org.apache.calcite.tools.Frameworks.newConfigBuilder;
+import static org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonWriter.toJson;
 import static org.apache.ignite.internal.processors.query.calcite.util.Commons.FRAMEWORK_CONFIG;
 import static org.apache.ignite.internal.util.CollectionUtils.first;
 import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /** */
@@ -206,6 +217,8 @@ public abstract class AbstractPlannerTest extends IgniteAbstractTest {
 
             try {
                 IgniteRel rel = PlannerHelper.optimize(sqlNode, planner);
+
+                checkSplitAndSerialization(rel, publicSchema);
 
 //                System.out.println(RelOptUtil.toString(rel));
 
@@ -398,6 +411,84 @@ public abstract class AbstractPlannerTest extends IgniteAbstractTest {
     }
 
     /** */
+    protected void checkSplitAndSerialization(IgniteRel rel, IgniteSchema publicSchema) {
+        assertNotNull(rel);
+
+        rel = Cloner.clone(rel);
+
+        SchemaPlus schema = createRootSchema(false)
+            .add("PUBLIC", publicSchema);
+
+        List<Fragment> fragments = new Splitter().go(rel);
+        List<String> serialized = new ArrayList<>(fragments.size());
+
+        for (Fragment fragment : fragments)
+            serialized.add(toJson(fragment.root()));
+
+        assertNotNull(serialized);
+
+        RelTraitDef<?>[] traitDefs = {
+            DistributionTraitDef.INSTANCE,
+            ConventionTraitDef.INSTANCE,
+            RelCollationTraitDef.INSTANCE,
+            RewindabilityTraitDef.INSTANCE,
+            CorrelationTraitDef.INSTANCE
+        };
+
+        List<UUID> nodes = new ArrayList<>(4);
+
+        for (int i = 0; i < 4; i++)
+            nodes.add(UUID.randomUUID());
+
+        PlanningContext ctx = PlanningContext.builder()
+            .localNodeId(first(nodes))
+            .originatingNodeId(first(nodes))
+            .parentContext(Contexts.empty())
+            .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
+                .defaultSchema(schema)
+                .traitDefs(traitDefs)
+                .build())
+            .build();
+
+        List<RelNode> deserializedNodes = new ArrayList<>();
+
+        try (IgnitePlanner ignored = ctx.planner()) {
+            for (String s : serialized) {
+                RelJsonReader reader = new RelJsonReader(ctx.cluster(), ctx.catalogReader());
+                deserializedNodes.add(reader.read(s));
+            }
+        }
+
+        List<RelNode> expectedRels = fragments.stream()
+            .map(Fragment::root)
+            .collect(Collectors.toList());
+
+        assertEquals(expectedRels.size(), deserializedNodes.size(), "Invalid deserialization fragments count");
+
+        for (int i = 0; i < expectedRels.size(); ++i) {
+            RelNode expected = expectedRels.get(i);
+            RelNode deserialized = deserializedNodes.get(i);
+
+            clearTraits(expected);
+            clearTraits(deserialized);
+
+            if (!expected.deepEquals(deserialized))
+                assertTrue(
+                    expected.deepEquals(deserialized),
+                    "Invalid serialization / deserialization.\n" +
+                        "Expected:\n" + RelOptUtil.toString(expected) +
+                        "Deserialized:\n" + RelOptUtil.toString(deserialized)
+                );
+        }
+    }
+
+    /** */
+    protected void clearTraits(RelNode rel) {
+        IgniteTestUtils.setFieldValue(rel, AbstractRelNode.class, "traitSet", RelTraitSet.createEmpty());
+        rel.getInputs().forEach(this::clearTraits);
+    }
+
+    /** */
     abstract static class TestTable implements IgniteTable {
         /** */
         private final String name;
@@ -527,6 +618,11 @@ public abstract class AbstractPlannerTest extends IgniteAbstractTest {
             SqlNode parent,
             CalciteConnectionConfig config
         ) {
+            throw new AssertionError();
+        }
+
+        /** {@inheritDoc} */
+        @Override public ColocationGroup colocationGroup(PlanningContext ctx) {
             throw new AssertionError();
         }
 

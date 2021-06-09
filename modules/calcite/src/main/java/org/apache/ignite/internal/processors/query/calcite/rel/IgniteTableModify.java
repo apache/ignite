@@ -73,7 +73,7 @@ public class IgniteTableModify extends TableModify implements IgniteRel {
             input.getInput(),
             input.getEnum("operation", Operation.class),
             input.getStringList("updateColumnList"),
-            input.getExpressionList("sourceExpressionList"),
+            input.get("sourceExpressionList") != null ? input.getExpressionList("sourceExpressionList") : null,
             input.getBoolean("flattened", true)
         );
     }

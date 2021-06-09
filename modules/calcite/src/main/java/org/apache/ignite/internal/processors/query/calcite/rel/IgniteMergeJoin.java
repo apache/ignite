@@ -41,6 +41,7 @@ import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.Pair;
+import org.apache.ignite.internal.processors.query.calcite.externalize.RelInputEx;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
@@ -86,8 +87,8 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
             input.getExpression("condition"),
             ImmutableSet.copyOf(Commons.transform(input.getIntegerList("variablesSet"), CorrelationId::new)),
             input.getEnum("joinType", JoinRelType.class),
-            null,//((RelInputEx)input).getCollation("leftCollation"),
-            null//((RelInputEx)input).getCollation("rightCollation")
+            ((RelInputEx)input).getCollation("leftCollation"),
+            ((RelInputEx)input).getCollation("rightCollation")
         );
     }
 

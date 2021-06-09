@@ -19,6 +19,10 @@ package org.apache.ignite.internal.util;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.function.Predicate;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -35,11 +39,28 @@ public class IgniteUtils {
     /** Class loader used to load Ignite. */
     private static final ClassLoader igniteClassLoader = IgniteUtils.class.getClassLoader();
 
+    /** Primitive class map. */
+    private static final Map<String, Class<?>> primitiveMap = new HashMap<>(16, .5f);
+
+    /** */
+    private static final ConcurrentMap<ClassLoader, ConcurrentMap<String, Class>> classCache =
+        new ConcurrentHashMap<>();
+
     /*
       Initializes enterprise check.
      */
     static {
         IgniteUtils.jdkVer = System.getProperty("java.specification.version");
+
+        primitiveMap.put("byte", byte.class);
+        primitiveMap.put("short", short.class);
+        primitiveMap.put("int", int.class);
+        primitiveMap.put("long", long.class);
+        primitiveMap.put("float", float.class);
+        primitiveMap.put("double", double.class);
+        primitiveMap.put("char", char.class);
+        primitiveMap.put("boolean", boolean.class);
+        primitiveMap.put("void", void.class);
     }
 
     /**
@@ -252,5 +273,66 @@ public class IgniteUtils {
      */
     public static ClassLoader igniteClassLoader() {
         return igniteClassLoader;
+    }
+
+    /**
+     * Gets class for provided name. Accepts primitive types names.
+     *
+     * @param clsName Class name.
+     * @param ldr Class loader.
+     * @return Class.
+     * @throws ClassNotFoundException If class not found.
+     */
+    public static Class<?> forName(String clsName, @Nullable ClassLoader ldr) throws ClassNotFoundException {
+        return forName(clsName, ldr, null);
+    }
+
+    /**
+     * Gets class for provided name. Accepts primitive types names.
+     *
+     * @param clsName Class name.
+     * @param ldr Class loader.
+     * @return Class.
+     * @throws ClassNotFoundException If class not found.
+     */
+    public static Class<?> forName(
+        String clsName,
+        @Nullable ClassLoader ldr,
+        Predicate<String> clsFilter
+    ) throws ClassNotFoundException {
+        assert clsName != null;
+
+        Class<?> cls = primitiveMap.get(clsName);
+
+        if (cls != null)
+            return cls;
+
+        if (ldr == null)
+            ldr = igniteClassLoader;
+
+        ConcurrentMap<String, Class> ldrMap = classCache.get(ldr);
+
+        if (ldrMap == null) {
+            ConcurrentMap<String, Class> old = classCache.putIfAbsent(ldr, ldrMap = new ConcurrentHashMap<>());
+
+            if (old != null)
+                ldrMap = old;
+        }
+
+        cls = ldrMap.get(clsName);
+
+        if (cls == null) {
+            if (clsFilter != null && !clsFilter.test(clsName))
+                throw new ClassNotFoundException("Deserialization of class " + clsName + " is disallowed.");
+
+            cls = Class.forName(clsName, true, ldr);
+
+            Class old = ldrMap.putIfAbsent(clsName, cls);
+
+            if (old != null)
+                cls = old;
+        }
+
+        return cls;
     }
 }

@@ -14,27 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.query.calcite;
 
-/** Stubs */
-public class Stubs {
-    /** */
-    public static int intFoo(Object... args) {
-        return args == null ? 0 : args.length;
-    }
+package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import java.util.concurrent.atomic.AtomicLong;
+
+/** */
+public class IdGenerator {
     /** */
-    public static long longFoo(Object... args) {
-        return args == null ? 0 : args.length;
-    }
+    private static final AtomicLong ID_GEN = new AtomicLong();
 
     /** */
-    public static boolean boolFoo(Object... args) {
-        return args == null;
-    }
+    private IdGenerator() {}
 
     /** */
-    public static String stringFoo(Object... args) {
-        return args == null ? "null" : "not null";
+    public static long nextId() {
+        return ID_GEN.getAndIncrement();
     }
 }

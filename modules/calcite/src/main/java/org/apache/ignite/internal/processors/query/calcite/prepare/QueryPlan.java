@@ -14,27 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.query.calcite;
 
-/** Stubs */
-public class Stubs {
-    /** */
-    public static int intFoo(Object... args) {
-        return args == null ? 0 : args.length;
-    }
+package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-    /** */
-    public static long longFoo(Object... args) {
-        return args == null ? 0 : args.length;
-    }
+/**
+ *
+ */
+public interface QueryPlan {
+    /** Query type */
+    enum Type { QUERY, FRAGMENT, DML, DDL, EXPLAIN }
 
-    /** */
-    public static boolean boolFoo(Object... args) {
-        return args == null;
-    }
+    /**
+     * @return Query type.
+     */
+    Type type();
 
-    /** */
-    public static String stringFoo(Object... args) {
-        return args == null ? "null" : "not null";
-    }
+    /**
+     * Clones this plan.
+     */
+    QueryPlan copy();
 }

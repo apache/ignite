@@ -14,27 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.query.calcite;
 
-/** Stubs */
-public class Stubs {
-    /** */
-    public static int intFoo(Object... args) {
-        return args == null ? 0 : args.length;
+package org.apache.ignite.internal.processors.query.calcite.prepare;
+
+/**
+ * Distributed query plan.
+ */
+public class MultiStepQueryPlan extends AbstractMultiStepPlan {
+    /**
+     * @param fieldsMeta Fields metadata.
+     */
+    public MultiStepQueryPlan(QueryTemplate queryTemplate, Object fieldsMeta) {
+        super(queryTemplate, fieldsMeta);
     }
 
-    /** */
-    public static long longFoo(Object... args) {
-        return args == null ? 0 : args.length;
+    /** {@inheritDoc} */
+    @Override public Type type() {
+        return Type.QUERY;
     }
 
-    /** */
-    public static boolean boolFoo(Object... args) {
-        return args == null;
-    }
-
-    /** */
-    public static String stringFoo(Object... args) {
-        return args == null ? "null" : "not null";
+    /** {@inheritDoc} */
+    @Override public QueryPlan copy() {
+        return new MultiStepQueryPlan(queryTemplate, fieldsMetadata);
     }
 }

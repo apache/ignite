@@ -68,6 +68,9 @@ public final class PlanningContext implements Context {
     private final Object[] parameters;
 
     /** */
+    private final long topVer;
+
+    /** */
     private final IgniteTypeFactory typeFactory;
 
     /** */
@@ -91,11 +94,14 @@ public final class PlanningContext implements Context {
         UUID locNodeId,
         UUID originatingNodeId,
         String qry,
-        Object[] parameters) {
+        Object[] parameters,
+        long topVer
+    ) {
         this.locNodeId = locNodeId;
         this.originatingNodeId = originatingNodeId;
         this.qry = qry;
         this.parameters = parameters;
+        this.topVer = topVer;
 
         this.parentCtx = Contexts.chain(parentCtx, cfg.getContext());
         // link frameworkConfig#context() to this.
@@ -139,6 +145,13 @@ public final class PlanningContext implements Context {
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public Object[] parameters() {
         return parameters;
+    }
+
+    /**
+     * @return Topology version.
+     */
+    public long topologyVersion() {
+        return topVer;
     }
 
     // Helper methods
@@ -276,7 +289,7 @@ public final class PlanningContext implements Context {
     /**
      * Planner context builder.
      */
-    @SuppressWarnings("PublicInnerClass") 
+    @SuppressWarnings("PublicInnerClass")
     public static class Builder {
         /** */
         private static final FrameworkConfig EMPTY_CONFIG =
@@ -302,6 +315,9 @@ public final class PlanningContext implements Context {
 
         /** */
         private Object[] parameters;
+
+        /** */
+        private long topVer;
 
         /**
          * @param locNodeId Local node ID.
@@ -359,12 +375,21 @@ public final class PlanningContext implements Context {
         }
 
         /**
+         * @param topVer Topology version.
+         * @return Builder for chaining.
+         */
+        public Builder topologyVersion(long topVer) {
+            this.topVer = topVer;
+            return this;
+        }
+
+        /**
          * Builds planner context.
          *
          * @return Planner context.
          */
         public PlanningContext build() {
-            return new PlanningContext(frameworkCfg, parentCtx, locNodeId, originatingNodeId, qry, parameters);
+            return new PlanningContext(frameworkCfg, parentCtx, locNodeId, originatingNodeId, qry, parameters, topVer);
         }
     }
 }

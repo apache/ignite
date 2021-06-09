@@ -194,6 +194,62 @@ public final class ArrayUtils {
     }
 
     /**
+     * @param arr Array to check.
+     * @return {@code true} if {@code null} or an empty array is provided, {@code false} otherwise.
+     */
+    public static boolean nullOrEmpty(byte[] arr) {
+        return arr == null || arr.length == 0;
+    }
+
+    /**
+     * @param arr Array to check.
+     * @return {@code true} if {@code null} or an empty array is provided, {@code false} otherwise.
+     */
+    public static boolean nullOrEmpty(short[] arr) {
+        return arr == null || arr.length == 0;
+    }
+
+    /**
+     * @param arr Array to check.
+     * @return {@code true} if {@code null} or an empty array is provided, {@code false} otherwise.
+     */
+    public static boolean nullOrEmpty(int[] arr) {
+        return arr == null || arr.length == 0;
+    }
+
+    /**
+     * @param arr Array to check.
+     * @return {@code true} if {@code null} or an empty array is provided, {@code false} otherwise.
+     */
+    public static boolean nullOrEmpty(long[] arr) {
+        return arr == null || arr.length == 0;
+    }
+
+    /**
+     * @param arr Array to check.
+     * @return {@code true} if {@code null} or an empty array is provided, {@code false} otherwise.
+     */
+    public static boolean nullOrEmpty(float[] arr) {
+        return arr == null || arr.length == 0;
+    }
+
+    /**
+     * @param arr Array to check.
+     * @return {@code true} if {@code null} or an empty array is provided, {@code false} otherwise.
+     */
+    public static boolean nullOrEmpty(double[] arr) {
+        return arr == null || arr.length == 0;
+    }
+
+    /**
+     * @param arr Array to check.
+     * @return {@code true} if {@code null} or an empty array is provided, {@code false} otherwise.
+     */
+    public static boolean nullOrEmpty(boolean[] arr) {
+        return arr == null || arr.length == 0;
+    }
+
+    /**
      * Converts array to {@link List}. Note that resulting list cannot
      * be altered in size, as it it based on the passed in array -
      * only current elements can be changed.

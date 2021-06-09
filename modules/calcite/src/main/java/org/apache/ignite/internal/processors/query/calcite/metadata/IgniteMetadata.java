@@ -18,17 +18,27 @@
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.ChainedRelMetadataProvider;
 import org.apache.calcite.rel.metadata.DefaultRelMetadataProvider;
+import org.apache.calcite.rel.metadata.Metadata;
+import org.apache.calcite.rel.metadata.MetadataDef;
+import org.apache.calcite.rel.metadata.MetadataHandler;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 
 /**
  * Utility class, holding metadata related interfaces and metadata providers.
  */
 public class IgniteMetadata {
+    /** */
     public static final RelMetadataProvider METADATA_PROVIDER =
         ChainedRelMetadataProvider.of(
             ImmutableList.of(
+                // Ignite specific providers
+                IgniteMdFragmentMapping.SOURCE,
+
                 // Ignite overriden providers
                 IgniteMdDistribution.SOURCE,
                 IgniteMdPercentageOriginalRows.SOURCE,
@@ -42,4 +52,18 @@ public class IgniteMetadata {
 
                 // Basic providers
                 DefaultRelMetadataProvider.INSTANCE));
+
+    /** */
+    public interface FragmentMappingMetadata extends Metadata {
+        MetadataDef<FragmentMappingMetadata> DEF = MetadataDef.of(FragmentMappingMetadata.class,
+            FragmentMappingMetadata.Handler.class, IgniteMethod.FRAGMENT_MAPPING.method());
+
+        /** Determines how the rows are distributed. */
+        FragmentMapping fragmentMapping();
+
+        /** Handler API. */
+        interface Handler extends MetadataHandler<FragmentMappingMetadata> {
+            FragmentMapping fragmentMapping(RelNode r, RelMetadataQuery mq);
+        }
+    }
 }

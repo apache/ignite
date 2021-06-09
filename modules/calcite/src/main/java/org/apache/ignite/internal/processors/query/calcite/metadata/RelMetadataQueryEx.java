@@ -51,6 +51,13 @@ public class RelMetadataQueryEx extends RelMetadataQuery {
         JaninoRelMetadataProvider.DEFAULT.register(types);
     }
 
+    /** */
+    private static final IgniteMetadata.FragmentMappingMetadata.Handler SOURCE_DISTRIBUTION_INITIAL_HANDLER =
+        initialHandler(IgniteMetadata.FragmentMappingMetadata.Handler.class);
+
+    /** */
+    private IgniteMetadata.FragmentMappingMetadata.Handler sourceDistributionHandler;
+
     /**
      * Factory method.
      *
@@ -72,6 +79,27 @@ public class RelMetadataQueryEx extends RelMetadataQuery {
         }
         finally {
             THREAD_PROVIDERS.remove();
+        }
+    }
+
+    /** */
+    private RelMetadataQueryEx() {
+        sourceDistributionHandler = SOURCE_DISTRIBUTION_INITIAL_HANDLER;
+    }
+
+    /**
+     * Calculates data location mapping for a query fragment the given relation node is a root of.
+     *
+     * @param rel Relational node.
+     * @return Fragment meta information.
+     */
+    public FragmentMapping fragmentMapping(RelNode rel) {
+        for (;;) {
+            try {
+                return sourceDistributionHandler.fragmentMapping(rel, this);
+            } catch (JaninoRelMetadataProvider.NoHandler e) {
+                sourceDistributionHandler = revise(e.relClass, IgniteMetadata.FragmentMappingMetadata.DEF);
+            }
         }
     }
 }

@@ -40,7 +40,7 @@ import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
  * Relational operator that returns the hashed contents of a table
  * and allow to lookup rows by specified keys.
  */
-public class IgniteHashIndexSpool extends Spool implements IgniteRel {
+public class IgniteHashIndexSpool extends AbstractIgniteSpool implements IgniteRel {
     /** Search row. */
     private final List<RexNode> searchRow;
 
@@ -58,7 +58,7 @@ public class IgniteHashIndexSpool extends Spool implements IgniteRel {
         List<RexNode> searchRow,
         RexNode cond
     ) {
-        super(cluster, traits, input, Type.LAZY, Type.EAGER);
+        super(cluster, traits, Type.LAZY, input);
 
         assert !nullOrEmpty(searchRow);
 

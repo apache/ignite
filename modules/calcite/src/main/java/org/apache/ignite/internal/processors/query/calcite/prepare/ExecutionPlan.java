@@ -14,27 +14,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.query.calcite;
 
-/** Stubs */
-public class Stubs {
+package org.apache.ignite.internal.processors.query.calcite.prepare;
+
+import java.util.List;
+
+import com.google.common.collect.ImmutableList;
+
+/**
+ *
+ */
+class ExecutionPlan {
     /** */
-    public static int intFoo(Object... args) {
-        return args == null ? 0 : args.length;
+    private final long ver;
+
+    /** */
+    private final ImmutableList<Fragment> fragments;
+
+    /** */
+    ExecutionPlan(long ver, List<Fragment> fragments) {
+        this.ver = ver;
+        this.fragments = ImmutableList.copyOf(fragments);
     }
 
     /** */
-    public static long longFoo(Object... args) {
-        return args == null ? 0 : args.length;
+    public long topologyVersion() {
+        return ver;
     }
 
     /** */
-    public static boolean boolFoo(Object... args) {
-        return args == null;
-    }
-
-    /** */
-    public static String stringFoo(Object... args) {
-        return args == null ? "null" : "not null";
+    public List<Fragment> fragments() {
+        return fragments;
     }
 }
