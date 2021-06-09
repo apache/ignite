@@ -45,10 +45,4 @@ public interface DistributedCacheQueryReducer<T> extends CacheQueryReducer<T> {
 
     /** Callback that invokes when this query is cancelled. */
     public void onCancel();
-
-    /**
-     * Callback that invokes after reducer get last query result page.
-     * Also invokes for failed queries to let reducer know that there won't be new pages.
-     */
-    public void onLastPage();
 }

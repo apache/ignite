@@ -180,8 +180,6 @@ public class MergeSortDistributedCacheQueryReducer<R> extends AbstractDistribute
             s.cancel(ns -> pageRequester.cancelQueryRequest(reqId, ns, fut.fields()));
 
         streamsMap.clear();
-
-        onLastPage();
     }
 
     /** {@inheritDoc} */

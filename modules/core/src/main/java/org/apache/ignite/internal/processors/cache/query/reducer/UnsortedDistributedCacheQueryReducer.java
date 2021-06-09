@@ -75,24 +75,17 @@ public class UnsortedDistributedCacheQueryReducer<R> extends AbstractDistributed
         if (!loadAllowed() && pageStream.allPagesReady())
             onFirstItemReady();
 
-        if (lastPageRcvd)
-            onLastPage();
-
         return lastPageRcvd;
     }
 
     /** {@inheritDoc} */
     @Override public void onError() {
         pageStream.onError();
-
-        onLastPage();
     }
 
     /** {@inheritDoc} */
     @Override public void onCancel() {
         pageStream.cancel((ns) -> pageRequester.cancelQueryRequest(reqId, ns, fut.fields()));
-
-        onLastPage();
     }
 
     /** {@inheritDoc} */

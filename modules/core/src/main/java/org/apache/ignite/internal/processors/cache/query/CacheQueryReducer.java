@@ -42,7 +42,7 @@ public interface CacheQueryReducer<T> {
 
     /**
      * Offer query result page for reduce. Note that the data collection may contain extension of type T.
-     * In such cases data item contains additional payload for custom reducer logic ({@see CacheEntryWithPayload}).
+     * In such cases data item contains additional payload for custom reducer logic.
      *
      * @param nodeId Node ID that sent this page.
      * @param data Page data rows.
@@ -55,4 +55,9 @@ public interface CacheQueryReducer<T> {
      * Callback in case of page with error.
      */
     public void onError();
+
+    /**
+     * Callback that invokes after a query future is done.
+     */
+    public void onFinish();
 }

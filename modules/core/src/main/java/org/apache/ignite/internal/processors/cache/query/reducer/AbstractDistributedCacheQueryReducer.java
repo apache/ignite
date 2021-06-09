@@ -24,7 +24,9 @@ import org.apache.ignite.internal.processors.cache.query.DistributedCacheQueryRe
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-/** */
+/**
+ * Abstract class for reducer implementations. Controls global state of pages loading and receiving.
+ */
 abstract class AbstractDistributedCacheQueryReducer<R> implements DistributedCacheQueryReducer<R> {
     /** Query request ID. */
     protected final long reqId;
@@ -56,7 +58,7 @@ abstract class AbstractDistributedCacheQueryReducer<R> implements DistributedCac
     }
 
     /** {@inheritDoc} */
-    @Override public void onLastPage() {
+    @Override public void onFinish() {
         loadAllowed = false;
 
         firstPageLatch.countDown();

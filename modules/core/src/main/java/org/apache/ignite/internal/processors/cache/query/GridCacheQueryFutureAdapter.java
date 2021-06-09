@@ -143,13 +143,6 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(Collection<R> res, Throwable err) {
-        cctx.time().removeTimeoutObject(this);
-
-        return super.onDone(res, err);
-    }
-
-    /** {@inheritDoc} */
     @Override public R next() {
         try {
             if (!limitDisabled && cnt == capacity)
@@ -326,6 +319,18 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
 
             lock.notifyAll();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean onDone(Collection<R> res, Throwable err) {
+        boolean done = super.onDone(res, err);
+
+        cctx.time().removeTimeoutObject(this);
+
+        // Must release the latch after onDone() in order for a waiting thread to see an exception, if any.
+        reducer().onFinish();
+
+        return done;
     }
 
     /**

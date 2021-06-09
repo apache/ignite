@@ -231,7 +231,7 @@ class PageStream<R> {
         Collection<UUID> nodes = null;
 
         synchronized (queueLock) {
-            if (!subgrid.isEmpty())
+            if (!noMorePages && !subgrid.isEmpty())
                 nodes = new ArrayList<>(subgrid);
         }
 
