@@ -39,17 +39,17 @@ namespace Apache.Ignite.Core.Tests
                 return;
             }
             
-            TestContext.WriteLine(">>> TestExecuteSafe 1");
+            TestContext.Progress.WriteLine(">>> TestExecuteSafe 1");
 
             var uname = Shell.ExecuteSafe("uname", string.Empty);
-            TestContext.WriteLine(">>> TestExecuteSafe 2");
+            TestContext.Progress.WriteLine(">>> TestExecuteSafe 2");
             Assert.IsNotEmpty(uname, uname);
-            TestContext.WriteLine(">>> TestExecuteSafe 3");
+            TestContext.Progress.WriteLine(">>> TestExecuteSafe 3");
             Console.WriteLine(uname);
-            TestContext.WriteLine(">>> TestExecuteSafe 4");
+            TestContext.Progress.WriteLine(">>> TestExecuteSafe 4");
 
             var readlink = Shell.ExecuteSafe("readlink", "-f /usr/bin/java");
-            TestContext.WriteLine(">>> TestExecuteSafe 5");
+            TestContext.Progress.WriteLine(">>> TestExecuteSafe 5");
             Assert.IsNotEmpty(readlink, readlink);
             Console.WriteLine(readlink);
             
@@ -58,11 +58,11 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual("Linux", uname.Trim());
             }
 
-            TestContext.WriteLine(">>> TestExecuteSafe 6");
+            TestContext.Progress.WriteLine(">>> TestExecuteSafe 6");
             Assert.IsEmpty(Shell.ExecuteSafe("readlink", "-foobar"));
             Assert.IsEmpty(Shell.ExecuteSafe("foo_bar", "abc"));
             
-            TestContext.WriteLine(">>> TestExecuteSafe 7");
+            TestContext.Progress.WriteLine(">>> TestExecuteSafe 7");
         }
     }
 }
