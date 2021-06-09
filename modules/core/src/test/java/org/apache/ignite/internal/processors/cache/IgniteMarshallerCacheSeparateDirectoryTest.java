@@ -171,8 +171,7 @@ public class IgniteMarshallerCacheSeparateDirectoryTest extends GridCommonAbstra
 
         if (putMode == AccessMode.CLOSURE) {
             client.compute().run(new IgniteRunnable() {
-                @Override
-                public void run() {
+                @Override public void run() {
                     Ignition.ignite(SERVER).cache(DEFAULT_CACHE_NAME).put(KEY, new TestClass());
                 }
             });
@@ -184,8 +183,7 @@ public class IgniteMarshallerCacheSeparateDirectoryTest extends GridCommonAbstra
 
         if (getMode == AccessMode.CLOSURE) {
             val = client.compute().call(new IgniteCallable<String>() {
-                @Override
-                public String call() throws Exception {
+                @Override public String call() throws Exception {
                     return Ignition.ignite(SERVER).cache(DEFAULT_CACHE_NAME).get(KEY).toString();
                 }
             });
