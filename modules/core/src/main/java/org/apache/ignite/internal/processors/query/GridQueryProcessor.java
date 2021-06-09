@@ -304,6 +304,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }, QRY_DETAIL_METRICS_EVICTION_FREQ, QRY_DETAIL_METRICS_EVICTION_FREQ);
 
         idxRebuildStateStorage.start();
+
+        registerMetadataForRegisteredCaches();
     }
 
     /** {@inheritDoc} */
@@ -347,8 +349,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     public void onCacheKernalStart() throws IgniteCheckedException {
-        registerMetadataForRegisteredCaches();
-
         synchronized (stateMux) {
             exchangeReady = true;
 
