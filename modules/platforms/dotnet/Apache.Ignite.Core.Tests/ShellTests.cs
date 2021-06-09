@@ -31,7 +31,6 @@ namespace Apache.Ignite.Core.Tests
         /// Tests <see cref="Shell.ExecuteSafe"/> method.
         /// </summary>
         [Test]
-        // [Explicit] // TODO: Does this time out on TC? Why?
         public void TestExecuteSafe()
         {
             if (Os.IsWindows)
@@ -39,15 +38,11 @@ namespace Apache.Ignite.Core.Tests
                 return;
             }
             
-            TestContext.Progress.WriteLine(">>> TestExecuteSafe 1");
-
             var uname = Shell.ExecuteSafe("uname", string.Empty);
-            TestContext.Progress.WriteLine(">>> TestExecuteSafe 2 " + uname);
             Assert.IsNotEmpty(uname, uname);
             Console.WriteLine(uname);
 
             var readlink = Shell.ExecuteSafe("readlink", "-f /usr/bin/java");
-            TestContext.Progress.WriteLine(">>> TestExecuteSafe 5 " + readlink);
             Assert.IsNotEmpty(readlink, readlink);
             Console.WriteLine(readlink);
             
@@ -56,11 +51,8 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual("Linux", uname.Trim());
             }
 
-            TestContext.Progress.WriteLine(">>> TestExecuteSafe 6");
             Assert.IsEmpty(Shell.ExecuteSafe("readlink", "-foobar"));
-            TestContext.Progress.WriteLine(">>> TestExecuteSafe 7");
             Assert.IsEmpty(Shell.ExecuteSafe("foo_bar", "abc"));
-            TestContext.Progress.WriteLine(">>> TestExecuteSafe 8");
         }
     }
 }

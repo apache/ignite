@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes", 
             Justification = "ExecuteSafe should ignore all exceptions.")]
-        public static string ExecuteSafe(string file, string args)
+        public static string ExecuteSafe(string file, string args, int timeoutMs = 1000)
         {
             try
             {
@@ -63,9 +63,9 @@ namespace Apache.Ignite.Core.Impl
 
                     process.Start();
                     process.BeginOutputReadLine();
+                    process.BeginErrorReadLine();
 
-                    // TODO: Looks like a problem with Java signal handlers and processes that we had in tests.
-                    if (!process.WaitForExit(3000))
+                    if (!process.WaitForExit(timeoutMs))
                     {
                         process.Kill();
                     }
