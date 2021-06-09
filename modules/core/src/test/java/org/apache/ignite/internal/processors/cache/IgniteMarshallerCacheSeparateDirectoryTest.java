@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.io.File;
+
+import com.sun.org.apache.xerces.internal.xs.datatypes.ObjectList;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -179,19 +181,20 @@ public class IgniteMarshallerCacheSeparateDirectoryTest extends GridCommonAbstra
         else
             (putMode == AccessMode.SERVER ? server : client).cache(DEFAULT_CACHE_NAME).put(KEY, new TestClass());
 
-        String val;
+        Object val;
 
         if (getMode == AccessMode.CLOSURE) {
-            val = client.compute().call(new IgniteCallable<String>() {
-                @Override public String call() throws Exception {
-                    return Ignition.ignite(SERVER).cache(DEFAULT_CACHE_NAME).get(KEY).toString();
+            val = client.compute().call(new IgniteCallable<Object>() {
+                @Override public Object call() throws Exception {
+                    return Ignition.ignite(SERVER).cache(DEFAULT_CACHE_NAME).get(KEY);
                 }
             });
         }
         else
-            val = (putMode == AccessMode.SERVER ? server : client).cache(DEFAULT_CACHE_NAME).get(KEY).toString();
+            val = (putMode == AccessMode.SERVER ? server : client).cache(DEFAULT_CACHE_NAME).get(KEY);
 
-        assertTrue(val.contains("TestClass"));
+        assertNotNull(val);
+        assertTrue(val.toString().contains("TestClass"));
     }
 
     /** */
