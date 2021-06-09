@@ -43,6 +43,7 @@ import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsQueryHelper;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -220,8 +221,12 @@ public class GridMapQueryExecutor {
 
         final List<Integer> cacheIds = req.caches();
 
-        int segments = explain || replicated || F.isEmpty(cacheIds) ? 1 :
+        final boolean singlePart = parts != null && parts.length == 1;
+        final int parallelisn = explain || replicated ? 1 :
             CU.firstPartitioned(ctx.cache().context(), cacheIds).config().getQueryParallelism();
+
+        final int segments = explain || replicated || singlePart ? 1 : parallelisn;
+        final int singleSegment = singlePart? InlineIndexImpl.calculateSegment(parallelisn, parts[0]) : 0;
 
         final Object[] params = req.parameters();
 
@@ -268,7 +273,7 @@ public class GridMapQueryExecutor {
 
         onQueryRequest0(node,
             req.requestId(),
-            0,
+            singleSegment,
             req.schemaName(),
             req.queries(),
             cacheIds,

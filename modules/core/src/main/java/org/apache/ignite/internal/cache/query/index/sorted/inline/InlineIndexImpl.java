@@ -351,7 +351,16 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
      * @return Segment ID for given key
      */
     public int segmentForRow(CacheDataRow row) {
-        return segmentsCount() == 1 ? 0 : (rowHnd.partition(row) % segmentsCount());
+        return calculateSegment(segmentsCount(), rowHnd.partition(row));
+    }
+
+    /**
+     * @param segmentCnt count of segments in cache.
+     * @param part partition
+     * @return Segment ID for given segment count and partition
+     */
+    public static int calculateSegment(int segmentCnt, int part) {
+        return segmentCnt == 1 ? 0 : (part % segmentCnt);
     }
 
     /** */
