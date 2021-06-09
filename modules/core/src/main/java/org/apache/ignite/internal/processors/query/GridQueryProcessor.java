@@ -1306,9 +1306,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private void registerPlatformTypeLocally(String clsName, CacheObjectBinaryProcessorImpl binProc) {
         PlatformProcessor platformProc = ctx.platform();
 
-        assert platformProc != null : "Platform processor must be initialized";
-
-        if (!platformProc.hasContext())
+        if (platformProc == null || !platformProc.hasContext())
             return;
 
         PlatformContext platformCtx = platformProc.context();
