@@ -121,24 +121,24 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TcpDiscoverySpi discoSpi = new BlockingCustomMessageDiscoverySpi();
-
-        discoSpi.setIpFinder(((TcpDiscoverySpi)cfg.getDiscoverySpi()).getIpFinder());
-
+//        TcpDiscoverySpi discoSpi = new BlockingCustomMessageDiscoverySpi();
+//
+//        discoSpi.setIpFinder(((TcpDiscoverySpi)cfg.getDiscoverySpi()).getIpFinder());
+//
         if (dfltCacheCfg != null)
             cfg.setCacheConfiguration(dfltCacheCfg);
-
+//
         return cfg.setConsistentId(igniteInstanceName)
-            .setCommunicationSpi(new TestRecordingCommunicationSpi())
+//            .setCommunicationSpi(new TestRecordingCommunicationSpi())
             .setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                     .setMaxSize(100L * 1024 * 1024)
                     .setPersistenceEnabled(persistence))
                 .setCheckpointFrequency(3000)
                 .setPageSize(DFLT_PAGE_SIZE))
-            .setClusterStateOnStart(INACTIVE)
-            .setIncludeEventTypes(EVTS_CLUSTER_SNAPSHOT)
-            .setDiscoverySpi(discoSpi);
+            .setClusterStateOnStart(INACTIVE);
+//            .setIncludeEventTypes(EVTS_CLUSTER_SNAPSHOT)
+//            .setDiscoverySpi(discoSpi);
     }
 
     /** @throws Exception If fails. */

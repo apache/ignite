@@ -46,12 +46,16 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.EncryptionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.encryption.AbstractEncryptionTest;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
@@ -76,6 +80,8 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
@@ -83,6 +89,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.cluster.ClusterState.INACTIVE;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FAILED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FINISHED;
@@ -112,6 +120,26 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
     /** {@code true} if node should be started in separate jvm. */
     protected volatile boolean jvm;
+
+    protected volatile boolean encryption;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+//        if(encryption){
+//            KeystoreEncryptionSpi encSpi = new KeystoreEncryptionSpi();
+//
+//            encSpi.setKeyStorePath(AbstractEncryptionTest.KEYSTORE_PATH);
+//            encSpi.setKeyStorePassword(AbstractEncryptionTest.KEYSTORE_PASSWORD.toCharArray());
+//
+//            cfg.setEncryptionSpi(encSpi);
+//
+//            dfltCacheCfg.setEncryptionEnabled(true);
+//        }
+
+        return cfg;
+    }
 
     /** @throws Exception If fails. */
     @Before
@@ -1062,6 +1090,29 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         IgniteEx snp = startGridsFromSnapshot(3, SNAPSHOT_NAME);
 
+        assertSnapshotCacheKeys(snp.cache(dfltCacheCfg.getName()));
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testEncryption() throws Exception {
+//        encryption = true;
+
+        startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        grid(0).cluster().state(ACTIVE);
+
+        IgniteEx clnt = startClientGrid(2);
+
+        clnt.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+
+        waitForEvents(Arrays.asList(EVT_CLUSTER_SNAPSHOT_STARTED, EVT_CLUSTER_SNAPSHOT_FINISHED));
+
+        stopAllGrids();
+
+        IgniteEx snp = startGridsFromSnapshot(2, SNAPSHOT_NAME);
+
+        awaitPartitionMapExchange();
         assertSnapshotCacheKeys(snp.cache(dfltCacheCfg.getName()));
     }
 
