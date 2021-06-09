@@ -40,18 +40,15 @@ namespace Apache.Ignite.Core.Tests
             
             var uname = Shell.ExecuteSafe("uname", string.Empty);
             Assert.IsNotEmpty(uname, uname);
-            Console.WriteLine(uname);
 
             var readlink = Shell.ExecuteSafe("readlink", "-f /usr/bin/java");
             Assert.IsNotEmpty(readlink, readlink);
-            Console.WriteLine(readlink);
             
             if (Os.IsLinux)
             {
                 Assert.AreEqual("Linux", uname.Trim());
             }
 
-            Assert.IsEmpty(Shell.ExecuteSafe("readlink", "-foobar"));
             Assert.IsEmpty(Shell.ExecuteSafe("foo_bar", "abc"));
         }
     }
