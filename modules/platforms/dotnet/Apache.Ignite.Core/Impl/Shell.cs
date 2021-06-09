@@ -42,6 +42,7 @@ namespace Apache.Ignite.Core.Impl
                     FileName = file,
                     Arguments = args,
                     RedirectStandardOutput = true,
+                    RedirectStandardError = true,
                     UseShellExecute = false,
                     CreateNoWindow = true
                 };
@@ -55,10 +56,19 @@ namespace Apache.Ignite.Core.Impl
                         sb.Append(eventArgs.Data);
                     };
 
+                    process.ErrorDataReceived += (_, eventArgs) =>
+                    {
+                        sb.Append(eventArgs.Data);
+                    };
+
                     process.Start();
                     process.BeginOutputReadLine();
 
-                    process.WaitForExit();
+                    // TODO: Looks like a problem with Java signal handlers and processes that we had in tests.
+                    if (!process.WaitForExit(3000))
+                    {
+                        process.Kill();
+                    }
 
                     return sb.ToString();
                 }
