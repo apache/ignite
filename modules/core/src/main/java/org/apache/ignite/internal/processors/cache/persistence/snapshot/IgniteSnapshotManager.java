@@ -1251,6 +1251,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             ((DiscoveryCustomEvent)evt).customMessage() instanceof SnapshotStartDiscoveryMessage;
     }
 
+    /** TODO */
+    public boolean isEncrypted(int grpId){
+        return grpId != METASTORAGE_CACHE_ID && cctx.cache().cacheGroup(grpId).config().isEncryptionEnabled();
+    }
+
     /** {@inheritDoc} */
     @Override public void onDoneBeforeTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
         if (clusterSnpReq == null || cctx.kernalContext().clientNode())
@@ -1340,10 +1345,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         File snpPart = getPartitionFile(new File(snapshotLocalDir(snpName), databaseRelativePath(folderName)),
             grps.get(0).getName(), partId);
 
-        boolean encrypted = cctx.cacheContext(CU.cacheId(grpName)).config().isEncryptionEnabled();
-
         FilePageStore pageStore = (FilePageStore)storeFactory
-            .apply(CU.cacheId(grpName), encrypted)
+            .apply(CU.cacheId(grpName), isEncrypted(CU.cacheId(grpName)))
             .createPageStore(getTypeByPartId(partId),
                 snpPart::toPath,
                 val -> {
@@ -1885,11 +1888,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     ", delta=" + delta + ']');
             }
 
-            boolean encrypted = false;
-
             try (FileIO fileIo = ioFactory.create(delta, READ);
                  FilePageStore pageStore = (FilePageStore)storeFactory
-                     .apply(pair.getGroupId(), encrypted)
+                     .apply(pair.getGroupId(), isEncrypted(pair.getGroupId()))
                      .createPageStore(getTypeByPartId(pair.getPartitionId()),
                          snpPart::toPath,
                          val -> {})
