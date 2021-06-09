@@ -85,6 +85,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -122,7 +123,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
     private int backups;
 
     /** User attributes. */
-    private Map<String, Serializable> userAttrs = new HashMap<>();
+    private final Map<String, Serializable> userAttrs = new HashMap<>();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -208,7 +209,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         final int entryCnt = PARTS_CNT * 100;
         final int preloadEntryCnt = PARTS_CNT * 101;
 
-        ig0.cluster().active(true);
+        ig0.cluster().state(ACTIVE);
 
         IgniteCache<Object, Object> cache = ig0.cache(CACHE_NAME);
 
@@ -251,7 +252,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         final int entryCnt = PARTS_CNT * 100;
         final int preloadEntryCnt = PARTS_CNT * 135;
 
-        ig0.cluster().active(true);
+        ig0.cluster().state(ACTIVE);
 
         IgniteCache<Object, Object> cache = ig0.cache(CACHE_NAME);
 
@@ -300,7 +301,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         IgniteEx crd = startGrids(4);
 
-        crd.cluster().active(true);
+        crd.cluster().state(ACTIVE);
 
         final int entryCnt = PARTS_CNT * 10;
         final int preloadEntryCnt = PARTS_CNT * 11;
@@ -318,7 +319,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         IgniteEx ig0 = startGrids(2);
 
-        ig0.cluster().active(true);
+        ig0.cluster().state(ACTIVE);
 
         IgniteCache<Object, Object> cache = ig0.cache(CACHE_NAME);
 
@@ -392,7 +393,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         // Prepare some data.
         IgniteEx crd = startGrids(3);
 
-        crd.cluster().active(true);
+        crd.cluster().state(ACTIVE);
 
         final int entryCnt = PARTS_CNT * 10;
 
@@ -401,8 +402,8 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         {
             IgniteCache<Object, Object> cache = crd.cache(CACHE_NAME);
 
-            //Preload should be more that data coming through historical rebalance
-            //Otherwise cluster may to choose a full rebalance instead of historical one.
+            // Preload should be more than data coming through historical rebalance
+            // Otherwise cluster may to choose a full rebalance instead of historical one.
             for (int k = 0; k < preloadEntryCnt; k++)
                 cache.put(k, new IndexedObject(k - 1));
         }
@@ -414,7 +415,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         // Rewrite data with globally disabled WAL.
         crd = startGrids(2);
 
-        crd.cluster().active(true);
+        crd.cluster().state(ACTIVE);
 
         crd.cluster().disableWal(CACHE_NAME);
 
@@ -478,7 +479,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         // Prepare some data.
         IgniteEx crd = startGrids(3);
 
-        crd.cluster().active(true);
+        crd.cluster().state(ACTIVE);
 
         final int entryCnt = PARTS_CNT * 10;
         final int preloadEntryCnt = PARTS_CNT * 11;
@@ -497,7 +498,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         // Rewrite data to trigger further rebalance.
         IgniteEx supplierNode = startGrid(0);
 
-        supplierNode.cluster().active(true);
+        supplierNode.cluster().state(ACTIVE);
 
         IgniteCache<Object, Object> cache = supplierNode.cache(CACHE_NAME);
 
@@ -580,7 +581,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         userAttrs.put("TEST_ATTR", "TEST_ATTR");
         startGrid(node_cnt - 1);
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ACTIVE);
 
         // Create a new cache that places a full set of partitions on demander node.
         RendezvousAffinityFunction aff = new RendezvousAffinityFunction(false, PARTS_CNT);
@@ -614,6 +615,12 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
             if (grid(0).affinity(cacheName).partition(k) != 12)
                 cache0.put(k, new IndexedObject(k));
         }
+
+        // Upload additional data to a particular partition (primary partition belongs to coordinator, for instance)
+        // in order to trigger full rebalance for that partition instead of historical one.
+        int[] primaries0 = grid(0).affinity(cacheName).primaryPartitions(grid(0).localNode());
+        for (int i = 0; i < preloadEntryCnt; ++i)
+            cache0.put(primaries0[0], new IndexedObject(primaries0[0]));
 
         forceCheckpoint();
 
@@ -687,7 +694,10 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         IgnitePredicate<RecordedDemandMessage> fullPred = msg ->
             !msg.hasHistorical() && msg.hasFull();
 
-        IgniteInClosure<UUID> supplierChecker = supplierId -> {
+        IgnitePredicate<RecordedDemandMessage> mixedPred = msg ->
+            msg.hasHistorical() && msg.hasFull();
+
+        IgniteBiInClosure<UUID, Boolean> supplierChecker = (supplierId, mixed) -> {
             List<RecordedDemandMessage> demandMsgsForSupplier = recorderedMsgs.stream()
                 // Filter messages correspond to the supplierId
                 .filter(msg -> msg.supplierId().equals(supplierId))
@@ -700,15 +710,16 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
                 2,
                 demandMsgsForSupplier.size());
             assertTrue(
-                "The first message should require historical rebalance [msg=" + demandMsgsForSupplier.get(0) + ']',
-                histPred.apply(demandMsgsForSupplier.get(0)));
+                "The first message should require " + (mixed ? "mixed" : "historical") + " rebalance [msg=" +
+                    demandMsgsForSupplier.get(0) + ']',
+                (mixed ? mixedPred.apply(demandMsgsForSupplier.get(0)) : histPred.apply(demandMsgsForSupplier.get(0))));
             assertTrue(
                 "The second message should require full rebalance [msg=" + demandMsgsForSupplier.get(0) + ']',
                 fullPred.apply(demandMsgsForSupplier.get(1)));
         };
 
-        supplierChecker.apply(grid(0).cluster().localNode().id());
-        supplierChecker.apply(grid(1).cluster().localNode().id());
+        supplierChecker.apply(grid(0).cluster().localNode().id(), true);
+        supplierChecker.apply(grid(1).cluster().localNode().id(), false);
 
         // Check supplier3
         List<RecordedDemandMessage> demandMsgsForSupplier = recorderedMsgs.stream()
@@ -812,7 +823,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         IgniteEx supplier2 = startGrid(1);
         IgniteEx demander = startGrid(2);
 
-        supplier1.cluster().active(true);
+        supplier1.cluster().state(ACTIVE);
 
         String supplier1Name = supplier1.localNode().consistentId().toString();
         String supplier2Name = supplier2.localNode().consistentId().toString();
@@ -1170,7 +1181,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
     /**
      * Injects a new instance of FailingIOFactory into wal manager for the given supplier node.
-     * This allows to break historical rebalance fo=rom the supplier.
+     * This allows to break historical rebalance from the supplier.
      *
      * @param supplier Supplier node to be modified.
      * @return Instance of FailingIOFactory that was injected.

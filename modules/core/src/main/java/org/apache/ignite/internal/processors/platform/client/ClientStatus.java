@@ -37,6 +37,9 @@ public final class ClientStatus {
     /** Invalid op code. */
     public static final int INVALID_OP_CODE = 2;
 
+    /** Invalid node status. */
+    public static final int INVALID_NODE_STATE = 10;
+
     /** Functionality is disabled. */
     public static final int FUNCTIONALITY_DISABLED = 100;
 
