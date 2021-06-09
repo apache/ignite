@@ -31,7 +31,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
- *
+ * Tests cache metadata exchange when marshaller directory is not shared between server and client.
  */
 public class IgniteMarshallerCacheSeparateDirectoryTest extends GridCommonAbstractTest {
     /** */
