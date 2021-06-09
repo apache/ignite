@@ -42,14 +42,12 @@ namespace Apache.Ignite.Core.Tests
             TestContext.Progress.WriteLine(">>> TestExecuteSafe 1");
 
             var uname = Shell.ExecuteSafe("uname", string.Empty);
-            TestContext.Progress.WriteLine(">>> TestExecuteSafe 2");
+            TestContext.Progress.WriteLine(">>> TestExecuteSafe 2 " + uname);
             Assert.IsNotEmpty(uname, uname);
-            TestContext.Progress.WriteLine(">>> TestExecuteSafe 3");
             Console.WriteLine(uname);
-            TestContext.Progress.WriteLine(">>> TestExecuteSafe 4");
 
             var readlink = Shell.ExecuteSafe("readlink", "-f /usr/bin/java");
-            TestContext.Progress.WriteLine(">>> TestExecuteSafe 5");
+            TestContext.Progress.WriteLine(">>> TestExecuteSafe 5 " + readlink);
             Assert.IsNotEmpty(readlink, readlink);
             Console.WriteLine(readlink);
             
@@ -60,9 +58,9 @@ namespace Apache.Ignite.Core.Tests
 
             TestContext.Progress.WriteLine(">>> TestExecuteSafe 6");
             Assert.IsEmpty(Shell.ExecuteSafe("readlink", "-foobar"));
-            Assert.IsEmpty(Shell.ExecuteSafe("foo_bar", "abc"));
-            
             TestContext.Progress.WriteLine(">>> TestExecuteSafe 7");
+            Assert.IsEmpty(Shell.ExecuteSafe("foo_bar", "abc"));
+            TestContext.Progress.WriteLine(">>> TestExecuteSafe 8");
         }
     }
 }
