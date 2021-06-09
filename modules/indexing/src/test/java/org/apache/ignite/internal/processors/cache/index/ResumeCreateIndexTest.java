@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
-import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.Person;
@@ -30,6 +29,8 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.SlowdownBuildIndexConsumer;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
+import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
+import org.apache.ignite.internal.processors.query.QueryIndexKey;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -37,8 +38,10 @@ import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_INDEX_REBUILD_BATCH_SIZE;
+import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
+@WithSystemProperty(key = IGNITE_INDEX_REBUILD_BATCH_SIZE, value = "1")
 public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -49,21 +52,18 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
     }
 
     @Test
-    @WithSystemProperty(key = IGNITE_INDEX_REBUILD_BATCH_SIZE, value = "1")
     public void test0() throws Exception {
         IgniteH2IndexingEx.prepareBeforeNodeStart();
 
         IgniteEx n = startGrid(0);
 
-        IgniteCache<Integer, Person> cache = n.cache(DEFAULT_CACHE_NAME);
-        populate(cache, 100_000);
-
-        // Create a new index and write only the first entries to the checkpoint.
+        String cacheName = DEFAULT_CACHE_NAME;
+        populate(n.cache(cacheName), 100_000);
 
         String idxName = "IDX0";
         SlowdownBuildIndexConsumer slowdownIdxCreateConsumer = addSlowdownIdxCreateConsumer(n, idxName, 10);
 
-        IgniteInternalFuture<List<List<?>>> createIdxFut = createIdxAsync(cache, idxName);
+        IgniteInternalFuture<List<List<?>>> createIdxFut = createIdxAsync(n.cache(cacheName), idxName);
 
         slowdownIdxCreateConsumer.startBuildIdxFut.get(getTestTimeout());
 
@@ -79,23 +79,18 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
 
         createIdxFut.get(getTestTimeout());
 
-        // TODO: 07.06.2021 continue
-
         stopGrid(0);
 
         n = startGrid(0);
 
-        IgniteInternalFuture<?> rebIdxFut = indexRebuildFuture(n, CU.cacheId(DEFAULT_CACHE_NAME));
+        assertTrue(allIndexes(n).containsKey(new QueryIndexKey(cacheName, idxName)));
+
+        IgniteInternalFuture<?> rebIdxFut = indexRebuildFuture(n, CU.cacheId(cacheName));
 
         if (rebIdxFut != null)
             rebIdxFut.get(getTestTimeout());
 
-        Collection<QueryEntity> entities = n.cachex(DEFAULT_CACHE_NAME).configuration().getQueryEntities();
-        log.info(entities.toString());
-
-        SqlFieldsQuery select = new SqlFieldsQuery("SELECT * FROM Person where name LIKE 'name_%';");
-        List<List<?>> all = n.cache(DEFAULT_CACHE_NAME).query(select).getAll();
-        assertEquals(100_000, all.size());
+        assertEquals(100_000, selectPersonByName(n.cache(cacheName)).size());
     }
 
     /**
@@ -161,5 +156,26 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
         });
 
         return fut;
+    }
+
+    /**
+     * Getting {@code GridQueryProcessor#idxs}.
+     *
+     * @param n Node.
+     * @return All indexes.
+     */
+    private Map<QueryIndexKey, QueryIndexDescriptorImpl> allIndexes(IgniteEx n) {
+        return getFieldValue(n.context().query(), "idxs");
+    }
+
+    /**
+     * Selection of all {@link Person} by name.
+     * SQL: SELECT * FROM Person where name LIKE 'name_%';
+     *
+     * @param cache Cache.
+     * @return List containing all query results.
+     */
+    private List<List<?>> selectPersonByName(IgniteCache<Integer, Person> cache) {
+        return cache.query(new SqlFieldsQuery("SELECT * FROM Person where name LIKE 'name_%';")).getAll();
     }
 }
