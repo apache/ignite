@@ -305,7 +305,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         idxRebuildStateStorage.start();
 
-        registerMetadataForRegisteredCaches();
+        registerMetadataForRegisteredCaches(false);
     }
 
     /** {@inheritDoc} */
@@ -1140,10 +1140,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /**
      * Register metadata locally for already registered caches.
+     *
+     * @param platformOnly Whether to register non-Java platformOnly types only.
      */
-    private void registerMetadataForRegisteredCaches() {
+    public void registerMetadataForRegisteredCaches(boolean platformOnly) {
         for (DynamicCacheDescriptor cacheDescriptor : ctx.cache().cacheDescriptors().values())
-            registerBinaryMetadata(cacheDescriptor.cacheConfiguration(), cacheDescriptor.schema());
+            registerBinaryMetadata(cacheDescriptor.cacheConfiguration(), cacheDescriptor.schema(), platformOnly);
     }
 
     /**
@@ -1157,7 +1159,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 continue;
 
             try {
-                registerBinaryMetadata(req.startCacheConfiguration(), req.schema());
+                registerBinaryMetadata(req.startCacheConfiguration(), req.schema(), false);
             }
             catch (BinaryObjectException e) {
                 ctx.cache().completeCacheStartFuture(req, false, e);
@@ -1170,9 +1172,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param ccfg Cache configuration.
      * @param schema Schema for which register metadata is required.
+     * @param platformOnly Whether to register non-Java platformOnly types only.
      * @throws BinaryObjectException if register was failed.
      */
-    private void registerBinaryMetadata(CacheConfiguration ccfg, QuerySchema schema) throws BinaryObjectException {
+    private void registerBinaryMetadata(CacheConfiguration ccfg, QuerySchema schema, boolean platformOnly) throws BinaryObjectException {
         if (schema != null) {
             Collection<QueryEntity> qryEntities = schema.entities();
 
@@ -1181,8 +1184,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 if (binaryEnabled) {
                     for (QueryEntity qryEntity : qryEntities) {
-                        registerTypeLocally(qryEntity.findKeyType());
-                        registerTypeLocally(qryEntity.findValueType());
+                        registerTypeLocally(qryEntity.findKeyType(), platformOnly);
+                        registerTypeLocally(qryEntity.findValueType(), platformOnly);
                     }
                 }
             }
@@ -1270,9 +1273,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * Register class metadata locally if it didn't do it earlier.
      *
      * @param clsName Class name for which the metadata should be registered.
+     * @param platformOnly Whether to only register non-Java platform types only.
      * @throws BinaryObjectException if register was failed.
      */
-    private void registerTypeLocally(String clsName) throws BinaryObjectException {
+    private void registerTypeLocally(String clsName, boolean platformOnly) throws BinaryObjectException {
         if (clsName == null)
             return;
 
@@ -1283,8 +1287,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             Class<?> cls = U.box(U.classForName(clsName, null, true));
 
-            if (cls != null)
-                binProc.binaryContext().registerClass(cls, true, false, true);
+            if (cls != null) {
+                if (!platformOnly) {
+                    binProc.binaryContext().registerClass(cls, true, false, true);
+                }
+            }
             else
                 registerPlatformTypeLocally(clsName, binProc);
         }
