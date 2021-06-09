@@ -19,6 +19,8 @@ package org.apache.ignite.raft.server;
 
 import org.apache.ignite.raft.client.ReadCommand;
 
-/** */
+/**
+ * Get a value command.
+ */
 public class GetValueCommand implements ReadCommand {
 }

@@ -17,18 +17,38 @@
 
 package org.apache.ignite.raft.server;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Iterator;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.raft.client.ReadCommand;
 import org.apache.ignite.raft.client.WriteCommand;
 import org.apache.ignite.raft.client.service.CommandClosure;
 import org.apache.ignite.raft.client.service.RaftGroupListener;
+import org.apache.ignite.raft.jraft.util.Utils;
 
-/** */
+/**
+ * The counter listener implementation.
+ */
 public class CounterListener implements RaftGroupListener {
-    /** */
+    /**
+     * The logger.
+     */
+    private static final IgniteLogger LOG = IgniteLogger.forClass(CounterListener.class);
+
+    /**
+     * The counter.
+     */
     private AtomicLong counter = new AtomicLong();
+
+    /**
+     * Snapshot executor.
+     */
+    private Executor executor = Executors.newSingleThreadExecutor();
 
     /** {@inheritDoc} */
     @Override public void onRead(Iterator<CommandClosure<ReadCommand>> iterator) {
@@ -52,12 +72,41 @@ public class CounterListener implements RaftGroupListener {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public void onSnapshotSave(String path, Consumer<Throwable> doneClo) {
-        // Not implemented.
+        final long currVal = this.counter.get();
+
+        Utils.runInThread(executor, () -> {
+            final CounterSnapshotFile snapshot = new CounterSnapshotFile(path + File.separator + "data");
+
+            try {
+                snapshot.save(currVal);
+
+                doneClo.accept(null);
+            }
+            catch (Throwable e) {
+                doneClo.accept(e);
+            }
+        });
     }
 
+    /** {@inheritDoc} */
     @Override public boolean onSnapshotLoad(String path) {
-        // Not implemented.
-        return false;
+        final CounterSnapshotFile snapshot = new CounterSnapshotFile(path + File.separator + "data");
+        try {
+            this.counter.set(snapshot.load());
+            return true;
+        }
+        catch (final IOException e) {
+            LOG.error("Fail to load snapshot from {}", snapshot.getPath());
+            return false;
+        }
+    }
+
+    /**
+     * @return Current value.
+     */
+    public long value() {
+        return counter.get();
     }
 }

@@ -65,7 +65,7 @@
     <build>
         <plugins>
             <!--
-               Disable javadoc validataion for forked foreign module.
+               Disable javadoc validation for forked foreign module.
            -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

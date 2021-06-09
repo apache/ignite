@@ -80,6 +80,10 @@
         <reflections.version>0.9.10</reflections.version>
         <javassist.version>3.27.0-GA</javassist.version>
         <esri.geometry.version>2.2.3</esri.geometry.version>
+        <rocksdb.version>5.18.4</rocksdb.version>
+        <disruptor.version>3.3.7</disruptor.version>
+        <metrics.version>4.0.2</metrics.version>
+        <jctools.version>3.3.0</jctools.version>
 
         <!-- Plugins versions -->
         <apache.rat.plugin.version>0.13</apache.rat.plugin.version>
@@ -423,6 +427,12 @@
             </dependency>
 
             <dependency>
+                <groupId>org.junit.vintage</groupId>
+                <artifactId>junit-vintage-engine</artifactId>
+                <version>${junit.jupiter.version}</version>
+            </dependency>
+
+            <dependency>
                 <groupId>org.junit.jupiter</groupId>
                 <artifactId>junit-jupiter-params</artifactId>
                 <version>${junit.jupiter.version}</version>
@@ -477,6 +487,12 @@
             </dependency>
 
             <dependency>
+                <groupId>org.openjdk.jmh</groupId>
+                <artifactId>jmh-generator-annprocess</artifactId>
+                <version>${jmh.framework.version}</version>
+            </dependency>
+
+            <dependency>
                 <groupId>org.ow2.asm</groupId>
                 <artifactId>asm</artifactId>
                 <version>${asm.framework.version}</version>
@@ -522,6 +538,30 @@
                 <groupId>io.netty</groupId>
                 <artifactId>netty-codec-http</artifactId>
                 <version>${netty.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.lmax</groupId>
+                <artifactId>disruptor</artifactId>
+                <version>${disruptor.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.rocksdb</groupId>
+                <artifactId>rocksdbjni</artifactId>
+                <version>${rocksdb.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.dropwizard.metrics</groupId>
+                <artifactId>metrics-core</artifactId>
+                <version>${metrics.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.jctools</groupId>
+                <artifactId>jctools-core</artifactId>
+                <version>${jctools.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -882,8 +922,7 @@
                     <configLocation>${project.basedir}/check-rules/checkstyle-rules.xml</configLocation>
                     <suppressionsLocation>${project.basedir}/check-rules/checkstyle-suppressions.xml</suppressionsLocation>
                     <includeTestSourceDirectory>true</includeTestSourceDirectory>
-                    <excludes>**/generated/**/*</excludes>
-                    <excludes>**/com/facebook/presto/bytecode/**/*</excludes> <!-- Forked prestodb-bytecode code. -->
+                    <excludes>generated/**/*,com/facebook/presto/bytecode/**/*,org/apache/ignite/raft/jraft/**/*</excludes>
                 </configuration>
                 <dependencies>
                     <dependency>

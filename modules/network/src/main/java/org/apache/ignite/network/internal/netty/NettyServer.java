@@ -180,6 +180,9 @@ public class NettyServer {
                  * the connection is refused.
                  */
                 .option(ChannelOption.SO_BACKLOG, 128)
+                .option(ChannelOption.SO_REUSEADDR, true)
+                .childOption(ChannelOption.SO_LINGER, 0)
+                .childOption(ChannelOption.TCP_NODELAY, true)
                 /*
                  * When the keepalive option is set for a TCP socket and no data has been exchanged across the socket
                  * in either direction for 2 hours (NOTE: the actual value is implementation dependent),
