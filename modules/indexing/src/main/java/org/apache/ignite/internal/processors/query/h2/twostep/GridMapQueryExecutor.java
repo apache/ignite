@@ -43,7 +43,6 @@ import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsQueryHelper;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -87,6 +86,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
+import static org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl.calculateSegment;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.QUERY_POOL;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest.isDataPageScanEnabled;
 import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory.toMessages;
@@ -226,7 +226,7 @@ public class GridMapQueryExecutor {
             CU.firstPartitioned(ctx.cache().context(), cacheIds).config().getQueryParallelism();
 
         final int segments = explain || replicated || singlePart ? 1 : parallelisn;
-        final int singleSegment = singlePart ? InlineIndexImpl.calculateSegment(parallelisn, parts[0]) : 0;
+        final int singleSegment = singlePart ? calculateSegment(parallelisn, parts[0]) : 0;
 
         final Object[] params = req.parameters();
 
