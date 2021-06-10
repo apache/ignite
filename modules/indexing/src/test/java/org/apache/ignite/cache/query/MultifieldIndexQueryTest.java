@@ -35,6 +35,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.cache.query.IndexConditionBuilder.lt;
+
 /** */
 public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
     /** */
@@ -87,7 +89,7 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
 
         IndexQuery<Long, Person> qry = IndexQuery
             .<Long, Person>forIndex(Person.class, "_key_PK")
-            .lt("_KEY", (long) pivot);
+            .where(lt("_KEY", (long) pivot));
 
         checkPerson(cache.query(qry), 0, pivot);
     }
@@ -97,7 +99,7 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
     public void testEmptyCacheQuery() {
         IndexQuery<Long, Person> qry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .lt("id", Integer.MAX_VALUE, "secId", Integer.MAX_VALUE);
+            .where(lt("id", Integer.MAX_VALUE), lt("secId", Integer.MAX_VALUE));
 
         QueryCursor<Cache.Entry<Long, Person>> cursor = cache.query(qry);
 
@@ -106,7 +108,7 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
         // Check same query with specify index name.
         qry = IndexQuery
             .<Long, Person>forIndex(Person.class, INDEX)
-            .lt("id", Integer.MAX_VALUE, "secId", Integer.MAX_VALUE);
+            .where(lt("id", Integer.MAX_VALUE), lt("secId", Integer.MAX_VALUE));
 
         assertTrue(cache.query(qry).getAll().isEmpty());
     }
@@ -121,47 +123,47 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
         // Should return empty result for ID that less any inserted.
         IndexQuery<Long, Person> qry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .lt("id", -1, "secId", pivot);
+            .where(lt("id", -1), lt("secId", pivot));
 
         assertTrue(cache.query(qry).getAll().isEmpty());
 
         // Should return all data for ID and SECID that greater any inserted.
         qry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .lt("id", 1, "secId", pivot * 10);
+            .where(lt("id", 1), lt("secId", pivot * 10));
 
         checkPerson(cache.query(qry), 0, CNT);
 
         // Should return part of data, as ID equals to inserted data ID field.
         qry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .lt("id", 0, "secId", pivot);
+            .where(lt("id", 0), lt("secId", pivot));
 
         checkPerson(cache.query(qry), 0, pivot);
 
         // Should return all data for ID greater any inserted.
         qry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .lt("id", 1, "secId", pivot);
+            .where(lt("id", 1), lt("secId", pivot));
 
         checkPerson(cache.query(qry), 0, CNT);
 
         // Checks the same with query with specified index name.
         qry = IndexQuery
             .<Long, Person>forIndex(Person.class, INDEX)
-            .lt("id", -1, "secId", pivot);
+            .where(lt("id", -1), lt("secId", pivot));
 
         assertTrue(cache.query(qry).getAll().isEmpty());
 
         qry = IndexQuery
             .<Long, Person>forIndex(Person.class, INDEX)
-            .lt("id", 0, "secId", pivot);
+            .where(lt("id", 0), lt("secId", pivot));
 
         checkPerson(cache.query(qry), 0, pivot);
 
         qry = IndexQuery
             .<Long, Person>forIndex(Person.class, INDEX)
-            .lt("id", 1, "secId", pivot);
+            .where(lt("id", 1), lt("secId", pivot));
 
         checkPerson(cache.query(qry), 0, CNT);
     }
@@ -174,7 +176,7 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
         // Use long boundary instead of int.
         IndexQuery<Long, Person> qry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .lt("id", (long) 0);
+            .where(lt("id", (long) 0));
 
         GridTestUtils.assertThrows(null,
             () -> cache.query(qry).getAll(), CacheException.class, null);
@@ -192,7 +194,7 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
 
         IndexQuery<Long, Person> qry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .lt("id", 0, "secId", pivot, "_KEY", (long) pivot);
+            .where(lt("id", 0), lt("secId", pivot), lt("_KEY", (long) pivot));
 
         checkPerson(cache.query(qry), 0, pivot);
     }

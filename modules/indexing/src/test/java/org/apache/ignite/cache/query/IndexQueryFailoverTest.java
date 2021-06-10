@@ -35,6 +35,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.cache.query.IndexConditionBuilder.between;
+import static org.apache.ignite.cache.query.IndexConditionBuilder.lt;
+
 /** */
 public class IndexQueryFailoverTest extends GridCommonAbstractTest {
     /** */
@@ -87,25 +90,16 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
         GridTestUtils.assertThrowsAnyCause(null, () -> {
                 IndexQuery<Long, Person> qryNullCond = IndexQuery
                     .<Long, Person>forType(Person.class)
-                    .lt(null, 12);
+                    .where(lt(null, 12));
 
                 return cache.query(qryNullCond);
             },
             NullPointerException.class, "Ouch! Argument cannot be null: field");
 
         GridTestUtils.assertThrowsAnyCause(null, () -> {
-                IndexQuery<Long, Person> qryWrongNumberOfVals = IndexQuery
-                    .<Long, Person>forType(Person.class)
-                    .lt("id", 12, "id");
-
-                return cache.query(qryWrongNumberOfVals);
-            },
-            IllegalArgumentException.class, "Ouch! Argument is invalid: vals must not be empty.");
-
-        GridTestUtils.assertThrowsAnyCause(null, () -> {
                 IndexQuery<Long, Person> qryDuplicateField = IndexQuery
                     .<Long, Person>forType(Person.class)
-                    .lt("id", 12, "id", 32);
+                    .where(lt("id", 12), lt("id", 32));
 
                 return cache.query(qryDuplicateField);
             },
@@ -121,7 +115,7 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
         GridTestUtils.assertThrowsAnyCause(null, () -> {
                 IndexQuery<Long, Integer> qry = IndexQuery
                     .<Long, Integer>forType(Integer.class)
-                    .lt("id", Integer.MAX_VALUE);
+                    .where(lt("id", Integer.MAX_VALUE));
 
                 return cache.query(qry).getAll();
             },
@@ -135,7 +129,7 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
 
         IndexQuery<Long, Person> qry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .lt("id", CNT);
+            .where(lt("id", CNT));
 
         QueryCursor<Cache.Entry<Long, Person>> cursor = cache.query(qry);
 
@@ -153,7 +147,7 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
 
         IndexQuery<Long, Person> qry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .lt("id", CNT);
+            .where(lt("id", CNT));
 
         Iterator<Cache.Entry<Long, Person>> cursor = cache.query(qry).iterator();
 
@@ -179,7 +173,7 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
 
         IndexQuery<Long, Person> qry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .between("id", CNT / 2, CNT + CNT / 2);
+            .where(between("id", CNT / 2, CNT + CNT / 2));
 
         Iterator<Cache.Entry<Long, Person>> cursor = cache.query(qry).iterator();
 

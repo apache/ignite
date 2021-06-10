@@ -34,6 +34,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.cache.query.IndexConditionBuilder.lt;
+
 /** */
 public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
     /** */
@@ -90,7 +92,7 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
 
         IndexQuery<Long, Person> qry = IndexQuery
             .<Long, Person>forIndex(Person.class, DESC_ID_IDX, "PUBLIC")
-            .lt("descId", Integer.MAX_VALUE);
+            .where(lt("descId", Integer.MAX_VALUE));
 
         assertTrue(tableCache.query(qry).getAll().isEmpty());
     }
@@ -108,7 +110,7 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
 
         IndexQuery<Long, Person> qry = IndexQuery
             .<Long, Person>forIndex(Person.class, DESC_ID_IDX, "PUBLIC")
-            .lt("descId", pivot);
+            .where(lt("descId", pivot));
 
         check(tableCache.query(qry), pivot + 1, CNT);
 
@@ -116,7 +118,7 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
         GridTestUtils.assertThrowsAnyCause(null, () -> {
             IndexQuery<Long, Person> wrongQry = IndexQuery
                 .<Long, Person>forIndex(Person.class, DESC_ID_IDX, "PUBLIC")
-                .lt("id", Integer.MAX_VALUE);
+                .where(lt("id", Integer.MAX_VALUE));
 
             return cache.query(wrongQry).getAll();
 
@@ -126,7 +128,7 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
         GridTestUtils.assertThrowsAnyCause(null, () -> {
             IndexQuery<Long, Person> wrongQry = IndexQuery
                 .<Long, Person>forIndex(Person.class, DESC_ID_IDX, "PUBLIC")
-                .lt("descId", Integer.MAX_VALUE);
+                .where(lt("descId", Integer.MAX_VALUE));
 
             return cache.query(wrongQry).getAll();
 
@@ -136,7 +138,7 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
         GridTestUtils.assertThrowsAnyCause(null, () -> {
             IndexQuery<Long, Person> wrongQry = IndexQuery
                 .<Long, Person>forIndex(Person.class, DESC_ID_IDX, "DEFAULT")
-                .lt("descId", Integer.MAX_VALUE);
+                .where(lt("descId", Integer.MAX_VALUE));
 
             return cache.query(wrongQry).getAll();
 

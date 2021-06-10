@@ -33,6 +33,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.cache.query.IndexConditionBuilder.lt;
+
 /** */
 public class IndexQueryKeepBinaryTest extends GridCommonAbstractTest {
     /** */
@@ -70,7 +72,7 @@ public class IndexQueryKeepBinaryTest extends GridCommonAbstractTest {
 
         IndexQuery<Long, Person> qry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .lt("id", CNT / 2);
+            .where(lt("id", CNT / 2));
 
         check(cache.withKeepBinary().query(qry), 0, CNT / 2);
     }

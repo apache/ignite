@@ -23,6 +23,7 @@ import java.util.Comparator;
 import java.util.NoSuchElementException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.query.IndexConditionBuilder;
 import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.internal.cache.query.IndexCondition;
 import org.apache.ignite.internal.cache.query.RangeIndexCondition;
@@ -244,7 +245,7 @@ public class IndexQueryProcessor {
             if (lowerBounds != null) {
                 Object val = cond.lowers().get(i);
 
-                if (val instanceof IndexQuery.Null)
+                if (val instanceof IndexConditionBuilder.Null)
                     val = null;
 
                 IndexKey l = IndexKeyFactory.wrap(
@@ -256,7 +257,7 @@ public class IndexQueryProcessor {
             if (upperBounds != null) {
                 Object val = cond.uppers().get(i);
 
-                if (val instanceof IndexQuery.Null)
+                if (val instanceof IndexConditionBuilder.Null)
                     val = null;
 
                 IndexKey u = IndexKeyFactory.wrap(

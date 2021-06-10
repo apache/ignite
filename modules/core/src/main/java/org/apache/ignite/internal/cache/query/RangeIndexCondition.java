@@ -44,8 +44,34 @@ public class RangeIndexCondition implements IndexCondition {
     /** Whether query result includes upper bound. */
     private boolean upperInclusive;
 
+    /** */
+    public RangeIndexCondition(String field, @Nullable Object lower, @Nullable Object upper) {
+        addCondition(field, lower, upper);
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<String> fields() {
+        return fields;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IndexCondition and(IndexCondition cond) {
+        A.ensure(cond instanceof RangeIndexCondition, "Expect a range condition for chaining.");
+
+        RangeIndexCondition rngCond = (RangeIndexCondition) cond;
+
+        for (int i = 0; i < rngCond.fields.size(); i++) {
+            Object lower = rngCond.lowers != null ? rngCond.lowers.get(i) : null;
+            Object upper = rngCond.uppers != null ? rngCond.uppers.get(i) : null;
+
+            addCondition(rngCond.fields.get(i), lower, upper);
+        }
+
+        return this;
+    }
+
     /** Adds a condition for new index field. */
-    public void addCondition(String field, @Nullable Object lower, @Nullable Object upper) {
+    private void addCondition(String field, @Nullable Object lower, @Nullable Object upper) {
         validate(field, lower, upper);
 
         fields.add(field);
@@ -109,10 +135,5 @@ public class RangeIndexCondition implements IndexCondition {
         A.ensure(!(upper != null && lowers != null),
             "Range index query supports only single boundary for different fields." +
                 " For same field use 'between' instead.");
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<String> fields() {
-        return fields;
     }
 }

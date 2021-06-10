@@ -30,6 +30,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.cache.query.IndexConditionBuilder.lt;
+
 /** */
 public class IndexQueryLocalTest extends GridCommonAbstractTest {
     /** */
@@ -54,7 +56,7 @@ public class IndexQueryLocalTest extends GridCommonAbstractTest {
 
         IndexQuery<Long, Person> qry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .lt("id", CNT / 2);
+            .where(lt("id", CNT / 2));
 
         for (int i = 0; i < 4; i++) {
             cache = grid(i).cache(CACHE);
@@ -76,7 +78,7 @@ public class IndexQueryLocalTest extends GridCommonAbstractTest {
 
         IndexQuery<Long, Person> qry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .lt("id", CNT / 2);
+            .where(lt("id", CNT / 2));
 
         for (int i = 0; i < 4; i++) {
             cache = grid(i).cache(CACHE);
@@ -100,7 +102,7 @@ public class IndexQueryLocalTest extends GridCommonAbstractTest {
 
         IndexQuery<Long, Person> qry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .lt("id", CNT / 2);
+            .where(lt("id", CNT / 2));
 
         GridTestUtils.assertThrows(null, () -> cache.query(qry.setLocal(true)).getAll(),
             IgniteException.class, "Cluster group is empty");

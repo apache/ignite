@@ -43,6 +43,11 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.cache.query.IndexConditionBuilder.between;
+import static org.apache.ignite.cache.query.IndexConditionBuilder.gt;
+import static org.apache.ignite.cache.query.IndexConditionBuilder.gte;
+import static org.apache.ignite.cache.query.IndexConditionBuilder.lt;
+import static org.apache.ignite.cache.query.IndexConditionBuilder.lte;
 
 /** */
 @RunWith(Parameterized.class)
@@ -156,7 +161,7 @@ public class IndexQueryRangeTest extends GridCommonAbstractTest {
         // Query empty cache.
         IndexQuery<Long, Person> qry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .lt("id", Integer.MAX_VALUE);
+            .where(lt("id", Integer.MAX_VALUE));
 
         assertTrue(cache.query(qry).getAll().isEmpty());
 
@@ -168,56 +173,56 @@ public class IndexQueryRangeTest extends GridCommonAbstractTest {
         // Lt.
         qry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .lt("id", pivot);
+            .where(lt("id", pivot));
 
         check(cache.query(qry), 0, pivot);
 
         // Lt, desc index.
         IndexQuery<Long, Person> descQry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .lt("descId", pivot);
+            .where(lt("descId", pivot));
 
         check(cache.query(descQry), pivot + 1, CNT);
 
         // Lte.
         qry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .lte("id", pivot);
+            .where(lte("id", pivot));
 
         check(cache.query(qry), 0, pivot + 1);
 
         // Lte, desc index.
         descQry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .lte("descId", pivot);
+            .where(lte("descId", pivot));
 
         check(cache.query(descQry), pivot, CNT);
 
         // Gt.
         qry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .gt("id", pivot);
+            .where(gt("id", pivot));
 
         check(cache.query(qry), pivot + 1, CNT);
 
         // Gt, desc index.
         descQry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .gt("descId", pivot);
+            .where(gt("descId", pivot));
 
         check(cache.query(descQry), 0, pivot);
 
         // Gte.
         qry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .gte("id", pivot);
+            .where(gte("id", pivot));
 
         check(cache.query(qry), pivot, CNT);
 
         // Gte, desc index.
         descQry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .gte("descId", pivot);
+            .where(gte("descId", pivot));
 
         check(cache.query(descQry), 0, pivot + 1);
 
@@ -227,14 +232,14 @@ public class IndexQueryRangeTest extends GridCommonAbstractTest {
 
         qry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .between("id", lower, upper);
+            .where(between("id", lower, upper));
 
         check(cache.query(qry), lower, upper + 1);
 
         // Between, desc index.
         descQry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .between("descId", upper, lower);
+            .where(between("descId", upper, lower));
 
         check(cache.query(descQry), lower, upper + 1);
     }

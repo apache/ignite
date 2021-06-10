@@ -39,6 +39,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.cache.query.IndexConditionBuilder.lt;
+
 /** */
 public class IndexQueryQueryEntityTest extends GridCommonAbstractTest {
     /** */
@@ -112,25 +114,25 @@ public class IndexQueryQueryEntityTest extends GridCommonAbstractTest {
     public void testEmptyCache() {
         IndexQuery<Long, Person> qry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .lt("id", Integer.MAX_VALUE);
+            .where(lt("id", Integer.MAX_VALUE));
 
         assertTrue(cache.query(qry).getAll().isEmpty());
 
         qry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .lt("descId", Integer.MAX_VALUE);
+            .where(lt("descId", Integer.MAX_VALUE));
 
         assertTrue(cache.query(qry).getAll().isEmpty());
 
         qry = IndexQuery
             .<Long, Person>forIndex(Person.class, ID_IDX)
-            .lt("id", Integer.MAX_VALUE);
+            .where(lt("id", Integer.MAX_VALUE));
 
         assertTrue(cache.query(qry).getAll().isEmpty());
 
         qry = IndexQuery
             .<Long, Person>forIndex(Person.class, DESC_ID_IDX)
-            .lt("descId", Integer.MAX_VALUE);
+            .where(lt("descId", Integer.MAX_VALUE));
 
         assertTrue(cache.query(qry).getAll().isEmpty());
 
@@ -138,7 +140,7 @@ public class IndexQueryQueryEntityTest extends GridCommonAbstractTest {
         GridTestUtils.assertThrows(null, () -> {
             IndexQuery<Long, Person> wrongQry = IndexQuery
                 .<Long, Person>forIndex(Person.class, DESC_ID_IDX)
-                .lt("id", Integer.MAX_VALUE);
+                .where(lt("id", Integer.MAX_VALUE));
 
             cache.query(wrongQry).getAll();
         }, IgniteException.class, null);
@@ -149,25 +151,25 @@ public class IndexQueryQueryEntityTest extends GridCommonAbstractTest {
     public void testEmptyCacheTableName() {
         IndexQuery<Long, Person> qry = IndexQuery
             .<Long, Person>forIndex(Person.class, ID_IDX)
-            .lt("id", Integer.MAX_VALUE);
+            .where(lt("id", Integer.MAX_VALUE));
 
         assertTrue(cacheTblName.query(qry).getAll().isEmpty());
 
         qry = IndexQuery
             .<Long, Person>forIndex(Person.class, DESC_ID_IDX)
-            .lt("descId", Integer.MAX_VALUE);
+            .where(lt("descId", Integer.MAX_VALUE));
 
         assertTrue(cacheTblName.query(qry).getAll().isEmpty());
 
         qry = IndexQuery
             .<Long, Person>forIndex(Person.class, ID_IDX)
-            .lt("id", Integer.MAX_VALUE);
+            .where(lt("id", Integer.MAX_VALUE));
 
         assertTrue(cacheTblName.query(qry).getAll().isEmpty());
 
         qry = IndexQuery
             .<Long, Person>forIndex(Person.class, DESC_ID_IDX)
-            .lt("descId", Integer.MAX_VALUE);
+            .where(lt("descId", Integer.MAX_VALUE));
 
         assertTrue(cacheTblName.query(qry).getAll().isEmpty());
     }
@@ -182,28 +184,28 @@ public class IndexQueryQueryEntityTest extends GridCommonAbstractTest {
         // Lt.
         IndexQuery<Long, Person> qry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .lt("id", pivot);
+            .where(lt("id", pivot));
 
         check(cache.query(qry), 0, pivot);
 
         // Lt, desc index.
         IndexQuery<Long, Person> descQry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .lt("descId", pivot);
+            .where(lt("descId", pivot));
 
         check(cache.query(descQry), pivot + 1, CNT);
 
         // Lt.
         qry = IndexQuery
             .<Long, Person>forIndex(Person.class, ID_IDX)
-            .lt("id", pivot);
+            .where(lt("id", pivot));
 
         check(cache.query(qry), 0, pivot);
 
         // Lt, desc index.
         descQry = IndexQuery
             .<Long, Person>forIndex(Person.class, DESC_ID_IDX)
-            .lt("descId", pivot);
+            .where(lt("descId", pivot));
 
         check(cache.query(descQry), pivot + 1, CNT);
     }
@@ -218,42 +220,42 @@ public class IndexQueryQueryEntityTest extends GridCommonAbstractTest {
         // Lt.
         IndexQuery<Long, Person> qry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .lt("id", pivot);
+            .where(lt("id", pivot));
 
         check(cacheTblName.query(qry), 0, pivot);
 
         // Lt, desc index.
         IndexQuery<Long, Person> descQry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .lt("descId", pivot);
+            .where(lt("descId", pivot));
 
         check(cacheTblName.query(descQry), pivot + 1, CNT);
 
         // Lt.
         qry = IndexQuery
             .<Long, Person>forIndex(Person.class, ID_IDX)
-            .lt("id", pivot);
+            .where(lt("id", pivot));
 
         check(cacheTblName.query(qry), 0, pivot);
 
         // Lt, desc index.
         descQry = IndexQuery
             .<Long, Person>forIndex(Person.class, DESC_ID_IDX)
-            .lt("descId", pivot);
+            .where(lt("descId", pivot));
 
         check(cacheTblName.query(descQry), pivot + 1, CNT);
 
         // Lt.
         qry = IndexQuery
             .<Long, Person>forIndex(Person.class, ID_IDX)
-            .lt("id", pivot);
+            .where(lt("id", pivot));
 
         check(cacheTblName.query(qry), 0, pivot);
 
         // Lt, desc index.
         descQry = IndexQuery
             .<Long, Person>forIndex(Person.class, DESC_ID_IDX)
-            .lt("descId", pivot);
+            .where(lt("descId", pivot));
 
         check(cacheTblName.query(descQry), pivot + 1, CNT);
     }

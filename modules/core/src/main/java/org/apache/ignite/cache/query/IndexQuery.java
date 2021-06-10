@@ -19,7 +19,6 @@ package org.apache.ignite.cache.query;
 
 import javax.cache.Cache;
 import org.apache.ignite.internal.cache.query.IndexCondition;
-import org.apache.ignite.internal.cache.query.RangeIndexCondition;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.jetbrains.annotations.Nullable;
@@ -31,9 +30,6 @@ import org.jetbrains.annotations.Nullable;
 public class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Object to mark a boundary if {@code null} is specified. */
-    private static final Object NULL = new Null();
 
     /** Index condition describes index query clause. */
     private IndexCondition idxCond;
@@ -61,7 +57,7 @@ public class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
     public static <K, V> IndexQuery<K, V> forType(Class<V> valCls) {
         A.notNull(valCls, "valCls");
 
-        return new IndexQuery<>(valCls.getName(), null, null);
+        return new IndexQuery<K, V>(valCls.getName(), null, null);
     }
 
     /**
@@ -69,8 +65,9 @@ public class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
      */
     public static <K, V> IndexQuery<K, V> forIndex(Class<V> valCls, String idxName) {
         A.notNull(valCls, "valCls");
+        A.notNullOrEmpty(idxName, "idxName");
 
-        return new IndexQuery<>(valCls.getName(), idxName, null);
+        return new IndexQuery<K, V>(valCls.getName(), idxName, null);
     }
 
     /**
@@ -79,162 +76,43 @@ public class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
      */
     public static <K, V> IndexQuery<K, V> forIndex(Class<V> valCls, String idxName, String schema) {
         A.notNull(valCls, "valCls");
+        A.notNullOrEmpty(idxName, "idxName");
+        A.notNullOrEmpty(schema, "schema");
 
-        return new IndexQuery<>(valCls.getName(), idxName, schema);
+        return new IndexQuery<K, V>(valCls.getName(), idxName, schema);
     }
 
-    /** Less Then. */
-    public IndexQuery<K, V> lt(String field, Object val) {
-        A.ensure(idxCond == null, "The only index condition is supported.");
+    /**
+     * Provide index condition to query an index.
+     */
+    public IndexQuery<K, V> where(IndexCondition idxCond) {
+        A.notNull(idxCond, "idxCond");
 
-        RangeIndexCondition cond = new RangeIndexCondition();
-
-        cond.addCondition(field, null, wrapNull(val));
-
-        idxCond = cond;
+        this.idxCond = idxCond;
 
         return this;
     }
 
-    /** Less Then. */
-    public IndexQuery<K, V> lt(String field, Object val, String field2, Object... vals) {
-        A.ensure(idxCond == null, "The only index condition is supported.");
+    /**
+     * Provide multiple index conditions. Order of conditons has to match index structure.
+     */
+    public IndexQuery<K, V> where(IndexCondition... idxConds) {
+        A.ensure(idxConds.length > 1, "Expect multiple index conditions.");
 
-        A.notEmpty(vals, "vals");
-        A.ensure(vals.length % 2 == 1, "number of fields has to be equal number of values.");
+        for (IndexCondition c: idxConds) {
+            A.notNull(c, "idxConds");
 
-        RangeIndexCondition cond = new RangeIndexCondition();
-
-        cond.addCondition(field, null, wrapNull(val));
-        cond.addCondition(field2, null, wrapNull(vals[0]));
-
-        for (int i = 1; i + 1 < vals.length; i += 2) {
-            A.ensure(vals[i] instanceof String, "waited for field name but got " + vals[i]);
-
-            cond.addCondition((String) vals[i], null, wrapNull(vals[i + 1]));
+            if (idxCond == null)
+                idxCond = c;
+            else
+                idxCond.and(c);
         }
-
-        idxCond = cond;
-
-        return this;
-    }
-
-    /** Less Then or Equal. */
-    public IndexQuery<K, V> lte(String field, Object val) {
-        lt(field, val);
-
-        ((RangeIndexCondition) idxCond).upperInclusive(true);
-
-        return this;
-    }
-
-    /** Less Then or Equal. */
-    public IndexQuery<K, V> lte(String field, Object val, String field2, Object... vals) {
-        lt(field, val, field2, vals);
-
-        ((RangeIndexCondition) idxCond).upperInclusive(true);
-
-        return this;
-    }
-
-    /** Greater Then. */
-    public IndexQuery<K, V> gt(String field, Object val) {
-        A.ensure(idxCond == null, "The only index condition is supported.");
-
-        RangeIndexCondition cond = new RangeIndexCondition();
-
-        cond.addCondition(field, wrapNull(val), null);
-
-        idxCond = cond;
-
-        return this;
-    }
-
-    /** Greater Then. */
-    public IndexQuery<K, V> gt(String field, Object val, String field2, Object... vals) {
-        A.ensure(idxCond == null, "The only index condition is supported.");
-
-        A.notEmpty(vals, "vals");
-        A.ensure(vals.length % 2 == 1, "number of fields has to be equal number of values.");
-
-        RangeIndexCondition cond = new RangeIndexCondition();
-
-        cond.addCondition(field, wrapNull(val), null);
-        cond.addCondition(field2, wrapNull(vals[0]), null);
-
-        for (int i = 1; i + 1 < vals.length; i += 2) {
-            A.ensure(vals[i] instanceof String, "waited for field name but got " + vals[i]);
-
-            cond.addCondition((String) vals[i], wrapNull(vals[i + 1]), null);
-        }
-
-        idxCond = cond;
-
-        return this;
-    }
-
-    /** Greater Then or Equal. */
-    public IndexQuery<K, V> gte(String field, Object val) {
-        gt(field, val);
-
-        ((RangeIndexCondition) idxCond).lowerInclusive(true);
-
-        return this;
-    }
-
-    /** Greater Then or Equal. */
-    public IndexQuery<K, V> gte(String field, Object val, String field2, Object... vals) {
-        gt(field, val, field2, vals);
-
-        ((RangeIndexCondition) idxCond).lowerInclusive(true);
-
-        return this;
-    }
-
-    /** Between. Lower and upper boundaries are inclusive. */
-    public IndexQuery<K, V> between(String field, Object lower, Object upper) {
-        A.ensure(idxCond == null, "The only index condition is supported.");
-
-        RangeIndexCondition cond = new RangeIndexCondition();
-
-        cond.addCondition(field, wrapNull(lower), wrapNull(upper));
-
-        cond.lowerInclusive(true);
-        cond.upperInclusive(true);
-
-        idxCond = cond;
-
-        return this;
-    }
-
-    /** Between. Lower and upper boundaries are inclusive. */
-    public IndexQuery<K, V> between(String field, Object lower, Object upper, String field2, Object... vals) {
-        A.ensure(idxCond == null, "The only index condition is supported.");
-
-        A.notEmpty(vals, "vals");
-        A.ensure(vals.length % 2 == 0, "number of fields has to be equal number of values pairs.");
-
-        RangeIndexCondition cond = new RangeIndexCondition();
-
-        cond.addCondition(field, wrapNull(lower), wrapNull(upper));
-        cond.addCondition(field2, wrapNull(vals[0]), wrapNull(vals[1]));
-
-        for (int i = 2; i + 2 < vals.length; i += 3) {
-            A.ensure(vals[i] instanceof String, "waited for field name but got " + vals[i]);
-
-            cond.addCondition((String) vals[i], wrapNull(vals[i + 1]), wrapNull(vals[i + 2]));
-        }
-
-        cond.lowerInclusive(true);
-        cond.upperInclusive(true);
-
-        idxCond = cond;
 
         return this;
     }
 
     /** Index condition. */
-    public IndexCondition idxCond() {
+    public IndexCondition getIndexCondition() {
         return idxCond;
     }
 
@@ -252,12 +130,4 @@ public class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
     public @Nullable String getSchema() {
         return schema;
     }
-
-    /** */
-    private Object wrapNull(Object val) {
-        return val == null ? NULL : val;
-    }
-
-    /** Class to represent NULL value. */
-    public static final class Null {}
 }

@@ -44,6 +44,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.cache.query.IndexConditionBuilder.gt;
+import static org.apache.ignite.cache.query.IndexConditionBuilder.gte;
+import static org.apache.ignite.cache.query.IndexConditionBuilder.lt;
+import static org.apache.ignite.cache.query.IndexConditionBuilder.lte;
+
 /** */
 public class IndexQueryAllTypesTest extends GridCommonAbstractTest {
     /** */
@@ -96,35 +101,35 @@ public class IndexQueryAllTypesTest extends GridCommonAbstractTest {
         // Should include nulls.
         IndexQuery<Long, Person> qry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .lt("intNullId", pivot);
+            .where(lt("intNullId", pivot));
 
         check(cache.query(qry), 0, CNT / 5, i -> i, persGen);
 
         // Should exclude nulls.
         qry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .gte("intNullId", 0);
+            .where(gte("intNullId", 0));
 
         check(cache.query(qry), CNT / 10, CNT, i -> i, persGen);
 
         // Should return only nulls.
         qry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .lt("intNullId", 0);
+            .where(lt("intNullId", 0));
 
         check(cache.query(qry), 0, CNT / 10, i -> i, persGen);
 
         // Should return only nulls.
         qry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .lte("intNullId", null);
+            .where(lte("intNullId", null));
 
         check(cache.query(qry), 0, CNT / 10, i -> i, persGen);
 
         // Should return all non nulls.
         qry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .gt("intNullId", null);
+            .where(gt("intNullId", null));
 
         check(cache.query(qry), CNT / 10, CNT, i -> i, persGen);
     }
@@ -239,28 +244,28 @@ public class IndexQueryAllTypesTest extends GridCommonAbstractTest {
         // Lt.
         IndexQuery<Long, Person> qry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .lt("boolId", true);
+            .where(lt("boolId", true));
 
         check(cache.query(qry), CNT / 2 + 1, CNT, valGen, persGen);
 
         // Lte.
         qry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .lte("boolId", true);
+            .where(lte("boolId", true));
 
         check(cache.query(qry), 0, CNT, valGen, persGen);
 
         // Gt.
         qry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .gt("boolId", false);
+            .where(gt("boolId", false));
 
         check(cache.query(qry), 0, CNT / 2 + 1, valGen, persGen);
 
         // Gte.
         qry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .gte("boolId", false);
+            .where(gte("boolId", false));
 
         check(cache.query(qry), 0, CNT, valGen, persGen);
     }
@@ -283,14 +288,14 @@ public class IndexQueryAllTypesTest extends GridCommonAbstractTest {
         // Lt.
         IndexQuery<Long, Person> qry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .lt(fieldName, val);
+            .where(lt(fieldName, val));
 
         check(cache.query(qry), 0, pivot, valGen, persGen);
 
         // Lte.
         qry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .lte(fieldName, val);
+            .where(lte(fieldName, val));
 
         check(cache.query(qry), 0, pivot + 1, valGen, persGen);
     }

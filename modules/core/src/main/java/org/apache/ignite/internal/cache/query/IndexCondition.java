@@ -28,4 +28,12 @@ public interface IndexCondition extends Serializable {
      * @return List of index fields that this condition applies to.
      */
     public abstract List<String> fields();
+
+    /**
+     * Merges multiple index conditions. Order of conditons has to match index structure.
+     *
+     * @param cond Index condition to merge.
+     * @return This for chaining.
+     */
+    public abstract IndexCondition and(IndexCondition cond);
 }

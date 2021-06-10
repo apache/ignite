@@ -32,6 +32,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.cache.query.IndexConditionBuilder.lt;
+
 /** */
 public class MultiTableIndexQuery extends GridCommonAbstractTest {
     /** */
@@ -74,7 +76,7 @@ public class MultiTableIndexQuery extends GridCommonAbstractTest {
     public void testEmptyCache() {
         IndexQuery<Long, Person> qry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .lt("id", Integer.MAX_VALUE);
+            .where(lt("id", Integer.MAX_VALUE));
 
         QueryCursor<Cache.Entry<Long, Person>> cursor = cache.query(qry);
 
@@ -90,7 +92,7 @@ public class MultiTableIndexQuery extends GridCommonAbstractTest {
 
         IndexQuery<Long, SecondPerson> secQry = IndexQuery
             .<Long, SecondPerson>forType(SecondPerson.class)
-            .lt("id", CNT + pivot);
+            .where(lt("id", CNT + pivot));
 
         checkSecondPerson(cache.query(secQry), CNT, CNT + pivot);
     }
@@ -206,5 +208,4 @@ public class MultiTableIndexQuery extends GridCommonAbstractTest {
             return Objects.hash(id);
         }
     }
-
 }
