@@ -33,7 +33,7 @@ import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonT
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.junit.Test;
 
-/** Tests for the computation of default inline size. */
+/** Tests for the computation inline size. */
 public class ComputeInlineSizeTest extends AbstractIndexingCommonTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
