@@ -68,6 +68,12 @@ import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.N
  * BPlusTree where nodes stores inlined index keys.
  */
 public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
+    /**
+     * Default sql index size for types with variable length (such as String or byte[]).
+     * Note that effective length will be lower, because 3 bytes will be taken for the inner representation of variable type.
+     */
+    public static final int IGNITE_VARIABLE_TYPE_DEFAULT_INLINE_SIZE = 10;
+
     /** Amount of bytes to store inlined index keys. */
     private final int inlineSize;
 
@@ -177,7 +183,8 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
             rowHnd = rowHndFactory.create(def, keyTypeSettings);
 
             inlineSize = computeInlineSize(
-                rowHnd.inlineIndexKeyTypes(), configuredInlineSize, cctx.config().getSqlIndexMaxInlineSize());
+                rowHnd.inlineIndexKeyTypes(), rowHnd.indexKeyDefinitions(),
+                configuredInlineSize, cctx.config().getSqlIndexMaxInlineSize());
 
             setIos(inlineSize, mvccEnabled);
         }
@@ -427,12 +434,14 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
     /**
      * @param keyTypes Index key types.
+     * @param keyDefs Index key definitions.
      * @param cfgInlineSize Inline size from index config.
      * @param maxInlineSize Max inline size from cache config.
      * @return Inline size.
      */
     public static int computeInlineSize(
         List<InlineIndexKeyType> keyTypes,
+        List<IndexKeyDefinition> keyDefs,
         int cfgInlineSize,
         int maxInlineSize
     ) {
@@ -451,13 +460,27 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
         int size = 0;
 
-        for (InlineIndexKeyType keyType: keyTypes) {
-            if (keyType.inlineSize() <= 0) {
+        for (int i = 0; i < keyTypes.size(); i++) {
+            InlineIndexKeyType keyType = keyTypes.get(i);
+
+            int sizeInc = keyType.inlineSize();
+
+            if (sizeInc < 0) {
+                long precision = keyDefs.get(i).precision();
+
+                if (precision > 0)
+                    // 3 is required to store (type, length) of value.
+                    sizeInc = 3 + (int) precision;
+                else
+                    sizeInc = IGNITE_VARIABLE_TYPE_DEFAULT_INLINE_SIZE;
+            }
+
+            size += sizeInc;
+
+            if (size > propSize) {
                 size = propSize;
                 break;
             }
-
-            size += keyType.inlineSize();
         }
 
         return Math.min(PageIO.MAX_PAYLOAD_SIZE, size);
@@ -469,7 +492,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
     }
 
     /** Default value for {@code IGNITE_MAX_INDEX_PAYLOAD_SIZE} */
-    public static final int IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT = 10;
+    public static final int IGNITE_MAX_INDEX_PAYLOAD_SIZE_DEFAULT = 64;
 
     /**
      * @return Inline size.
