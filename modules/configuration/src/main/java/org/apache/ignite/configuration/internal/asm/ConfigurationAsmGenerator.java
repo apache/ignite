@@ -53,6 +53,7 @@ import org.apache.ignite.configuration.ConfigurationProperty;
 import org.apache.ignite.configuration.ConfigurationValue;
 import org.apache.ignite.configuration.NamedConfigurationTree;
 import org.apache.ignite.configuration.RootKey;
+import org.apache.ignite.configuration.TypeUtils;
 import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.ConfigValue;
 import org.apache.ignite.configuration.annotation.ConfigurationRoot;
@@ -1121,23 +1122,8 @@ public class ConfigurationAsmGenerator {
      * @return Not primitive class that represents parameter class.
      */
     private static Class<?> box(Class<?> clazz) {
-        if (!clazz.isPrimitive())
-            return clazz;
+        Class<?> boxed = TypeUtils.boxed(clazz);
 
-        switch (clazz.getName()) {
-            case "boolean":
-                return Boolean.class;
-
-            case "int":
-                return Integer.class;
-
-            case "long":
-                return Long.class;
-
-            default:
-                assert clazz == double.class;
-
-                return Double.class;
-        }
+        return boxed == null ? clazz : boxed;
     }
 }

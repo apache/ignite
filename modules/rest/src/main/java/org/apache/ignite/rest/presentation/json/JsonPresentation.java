@@ -17,11 +17,12 @@
 
 package org.apache.ignite.rest.presentation.json;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
 import java.util.Collections;
 import java.util.concurrent.ExecutionException;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import org.apache.ignite.configuration.ConfigurationRegistry;
+import org.apache.ignite.configuration.json.JsonConverter;
 import org.apache.ignite.configuration.internal.util.ConfigurationUtil;
 import org.apache.ignite.rest.presentation.ConfigurationPresentation;
 

@@ -32,9 +32,11 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.ArrayType;
+import javax.lang.model.type.TypeKind;
+import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.tools.Diagnostic;
-import com.squareup.javapoet.ArrayTypeName;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.JavaFile;
@@ -67,12 +69,6 @@ public class Processor extends AbstractProcessor {
     /** */
     private static final ClassName ROOT_KEY_CLASSNAME = ClassName.get("org.apache.ignite.configuration", "RootKey");
 
-    /**
-     * Constructor.
-     */
-    public Processor() {
-    }
-
     /** {@inheritDoc} */
     @Override public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnvironment) {
         try {
@@ -81,7 +77,7 @@ public class Processor extends AbstractProcessor {
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter(sw);
             t.printStackTrace(pw);
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to process configuration: " + sw.toString());
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to process configuration: " + sw);
         }
         return false;
     }
@@ -92,10 +88,10 @@ public class Processor extends AbstractProcessor {
      * @return Whether or not the set of annotation types are claimed by this processor.
      */
     private boolean process0(RoundEnvironment roundEnvironment) {
-        final Elements elementUtils = processingEnv.getElementUtils();
+        Elements elementUtils = processingEnv.getElementUtils();
 
         // All classes annotated with @Config
-        final List<TypeElement> annotatedConfigs = roundEnvironment
+        List<TypeElement> annotatedConfigs = roundEnvironment
             .getElementsAnnotatedWithAny(Set.of(ConfigurationRoot.class, Config.class)).stream()
             .filter(element -> element.getKind() == ElementKind.CLASS)
             .map(TypeElement.class::cast)
@@ -106,11 +102,11 @@ public class Processor extends AbstractProcessor {
 
         for (TypeElement clazz : annotatedConfigs) {
             // Get package name of the schema class
-            final PackageElement elementPackage = elementUtils.getPackageOf(clazz);
-            final String packageName = elementPackage.getQualifiedName().toString();
+            PackageElement elementPackage = elementUtils.getPackageOf(clazz);
+            String packageName = elementPackage.getQualifiedName().toString();
 
             // Find all the fields of the schema
-            final List<VariableElement> fields = clazz.getEnclosedElements().stream()
+            List<VariableElement> fields = clazz.getEnclosedElements().stream()
                 .filter(el -> el.getKind() == ElementKind.FIELD)
                 .map(VariableElement.class::cast)
                 .collect(Collectors.toList());
@@ -118,12 +114,12 @@ public class Processor extends AbstractProcessor {
             ConfigurationRoot rootAnnotation = clazz.getAnnotation(ConfigurationRoot.class);
 
             // Is root of the configuration
-            final boolean isRoot = rootAnnotation != null;
+            boolean isRoot = rootAnnotation != null;
 
-            final ClassName schemaClassName = ClassName.get(packageName, clazz.getSimpleName().toString());
+            ClassName schemaClassName = ClassName.get(packageName, clazz.getSimpleName().toString());
 
             // Get name for generated configuration interface.
-            final ClassName configInterface = Utils.getConfigurationInterfaceName(schemaClassName);
+            ClassName configInterface = Utils.getConfigurationInterfaceName(schemaClassName);
 
             TypeSpec.Builder configurationInterfaceBuilder = TypeSpec.interfaceBuilder(configInterface)
                 .addModifiers(PUBLIC);
@@ -137,15 +133,12 @@ public class Processor extends AbstractProcessor {
 
                 Element fieldTypeElement = processingEnv.getTypeUtils().asElement(field.asType());
 
-                // Get original field type (must be another configuration schema or "primitive" like String or long)
-                final TypeName baseType = TypeName.get(field.asType());
-
-                final String fieldName = field.getSimpleName().toString();
+                String fieldName = field.getSimpleName().toString();
 
                 // Get configuration types (VIEW, CHANGE and so on)
                 TypeName interfaceGetMethodType = getInterfaceGetMethodType(field);
 
-                final ConfigValue confAnnotation = field.getAnnotation(ConfigValue.class);
+                ConfigValue confAnnotation = field.getAnnotation(ConfigValue.class);
                 if (confAnnotation != null) {
                     if (fieldTypeElement.getAnnotation(Config.class) == null) {
                         throw new ProcessorException(
@@ -155,7 +148,7 @@ public class Processor extends AbstractProcessor {
                     }
                 }
 
-                final NamedConfigValue namedConfigAnnotation = field.getAnnotation(NamedConfigValue.class);
+                NamedConfigValue namedConfigAnnotation = field.getAnnotation(NamedConfigValue.class);
                 if (namedConfigAnnotation != null) {
                     if (fieldTypeElement.getAnnotation(Config.class) == null) {
                         throw new ProcessorException(
@@ -165,10 +158,10 @@ public class Processor extends AbstractProcessor {
                     }
                 }
 
-                final Value valueAnnotation = field.getAnnotation(Value.class);
+                Value valueAnnotation = field.getAnnotation(Value.class);
                 if (valueAnnotation != null) {
                     // Must be a primitive or an array of the primitives (including java.lang.String)
-                    if (!isPrimitiveOrArrayOfPrimitives(baseType)) {
+                    if (!isPrimitiveOrArray(field.asType())) {
                         throw new ProcessorException(
                             "@Value " + clazz.getQualifiedName() + "." + field.getSimpleName() + " field must" +
                                 " have one of the following types: boolean, int, long, double, String or an array of " +
@@ -220,7 +213,7 @@ public class Processor extends AbstractProcessor {
      *
      * @param configurationInterfaceBuilder
      * @param fieldName
-     * @param types
+     * @param interfaceGetMethodType
      */
     private void createGetters(
         TypeSpec.Builder configurationInterfaceBuilder,
@@ -240,17 +233,17 @@ public class Processor extends AbstractProcessor {
      * @param field
      * @return Bundle with all types for configuration
      */
-    private TypeName getInterfaceGetMethodType(final VariableElement field) {
+    private TypeName getInterfaceGetMethodType(VariableElement field) {
         TypeName interfaceGetMethodType = null;
 
-        final TypeName baseType = TypeName.get(field.asType());
+        TypeName baseType = TypeName.get(field.asType());
 
-        final ConfigValue confAnnotation = field.getAnnotation(ConfigValue.class);
+        ConfigValue confAnnotation = field.getAnnotation(ConfigValue.class);
         if (confAnnotation != null) {
             interfaceGetMethodType = Utils.getConfigurationInterfaceName((ClassName) baseType);
         }
 
-        final NamedConfigValue namedConfigAnnotation = field.getAnnotation(NamedConfigValue.class);
+        NamedConfigValue namedConfigAnnotation = field.getAnnotation(NamedConfigValue.class);
         if (namedConfigAnnotation != null) {
             ClassName interfaceGetType = Utils.getConfigurationInterfaceName((ClassName) baseType);
 
@@ -260,7 +253,7 @@ public class Processor extends AbstractProcessor {
             interfaceGetMethodType = ParameterizedTypeName.get(ClassName.get(NamedConfigurationTree.class), interfaceGetType, viewClassType, changeClassType);
         }
 
-        final Value valueAnnotation = field.getAnnotation(Value.class);
+        Value valueAnnotation = field.getAnnotation(Value.class);
         if (valueAnnotation != null) {
             // It is necessary to use class names without loading classes so that we won't
             // accidentally get NoClassDefFoundError
@@ -288,8 +281,8 @@ public class Processor extends AbstractProcessor {
         ClassName schemaClassName,
         TypeSpec.Builder configurationInterfaceBuilder
     ) {
-        final ClassName viewClassTypeName = Utils.getViewName(schemaClassName);
-        final ClassName changeClassName = Utils.getChangeName(schemaClassName);
+        ClassName viewClassTypeName = Utils.getViewName(schemaClassName);
+        ClassName changeClassName = Utils.getChangeName(schemaClassName);
 
         ClassName confTreeInterface = ClassName.get("org.apache.ignite.configuration", "ConfigurationTree");
         TypeName confTreeParameterized = ParameterizedTypeName.get(confTreeInterface, viewClassTypeName, changeClassName);
@@ -316,19 +309,25 @@ public class Processor extends AbstractProcessor {
             Value valAnnotation = field.getAnnotation(Value.class);
 
             String fieldName = field.getSimpleName().toString();
-            TypeName schemaFieldType = TypeName.get(field.asType());
+            TypeMirror schemaFieldType = field.asType();
+            TypeName schemaFieldTypeName = TypeName.get(schemaFieldType);
 
-            boolean leafField = isPrimitiveOrArrayOfPrimitives(schemaFieldType)
-                || !((ClassName)schemaFieldType).simpleName().contains("ConfigurationSchema");
+            boolean leafField = isPrimitiveOrArray(schemaFieldType)
+                || !((ClassName)schemaFieldTypeName).simpleName().contains("ConfigurationSchema");
 
             boolean namedListField = field.getAnnotation(NamedConfigValue.class) != null;
 
-            TypeName viewFieldType = leafField ? schemaFieldType : Utils.getViewName((ClassName)schemaFieldType);
+            TypeName viewFieldType =
+                leafField ? schemaFieldTypeName : Utils.getViewName((ClassName)schemaFieldTypeName);
 
-            TypeName changeFieldType = leafField ? schemaFieldType : Utils.getChangeName((ClassName)schemaFieldType);
+            TypeName changeFieldType =
+                leafField ? schemaFieldTypeName : Utils.getChangeName((ClassName)schemaFieldTypeName);
 
             if (namedListField) {
-                viewFieldType = ParameterizedTypeName.get(ClassName.get(NamedListView.class), WildcardTypeName.subtypeOf(viewFieldType));
+                viewFieldType = ParameterizedTypeName.get(
+                    ClassName.get(NamedListView.class),
+                    WildcardTypeName.subtypeOf(viewFieldType)
+                );
 
                 changeFieldType = ParameterizedTypeName.get(ClassName.get(NamedListChange.class), changeFieldType);
             }
@@ -350,7 +349,7 @@ public class Processor extends AbstractProcessor {
                         .returns(changeClsName);
 
                     if (valAnnotation != null) {
-                        if (schemaFieldType instanceof ArrayTypeName)
+                        if (schemaFieldType.getKind() == TypeKind.ARRAY)
                             changeMtdBuilder.varargs(true);
 
                         changeMtdBuilder.addParameter(changeFieldType, fieldName);
@@ -389,28 +388,24 @@ public class Processor extends AbstractProcessor {
     }
 
     /**
-     * Checks whether TypeName is a primitive (or String) or an array of primitives (or Strings)
-     * @param typeName TypeName.
-     * @return {@code true} if type is primitive or array.
+     * Checks whether the given type is a primitive (or String) or an array of primitives (or Strings).
+     *
+     * @param type type
+     * @return {@code true} if type is a primitive or a String or an array of primitives or Strings
      */
-    private boolean isPrimitiveOrArrayOfPrimitives(TypeName typeName) {
-        String type = typeName.toString();
+    private boolean isPrimitiveOrArray(TypeMirror type) {
+        if (type.getKind() == TypeKind.ARRAY)
+            type = ((ArrayType) type).getComponentType();
 
-        if (typeName instanceof ArrayTypeName)
-            type = ((ArrayTypeName) typeName).componentType.toString();
+        if (type.getKind().isPrimitive())
+            return true;
 
-        switch (type) {
-            case "boolean":
-            case "int":
-            case "long":
-            case "double":
-            case "java.lang.String":
-                return true;
+        TypeMirror stringType = processingEnv
+            .getElementUtils()
+            .getTypeElement(String.class.getCanonicalName())
+            .asType();
 
-            default:
-                return false;
-
-        }
+        return processingEnv.getTypeUtils().isSameType(type, stringType);
     }
 
     /** {@inheritDoc} */

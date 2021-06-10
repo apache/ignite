@@ -17,22 +17,26 @@
 
 package org.apache.ignite.configuration.sample;
 
-import java.util.function.Supplier;
+import java.util.Random;
+import java.util.UUID;
+import java.util.stream.Stream;
 import org.apache.ignite.configuration.annotation.Config;
 import org.apache.ignite.configuration.annotation.Value;
 import org.apache.ignite.configuration.internal.asm.ConfigurationAsmGenerator;
 import org.apache.ignite.configuration.tree.InnerNode;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.configuration.internal.util.ConfigurationUtil.leafNodeVisitor;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
 
 /**
- * Test configuration with array of primitive type (or {@link String}) fields.
+ * Test configuration with array of primitives and {@code String} fields.
  */
 public class ConfigurationArrayTest {
     /** */
@@ -40,77 +44,182 @@ public class ConfigurationArrayTest {
     public static class TestArrayConfigurationSchema {
         /** */
         @Value
-        public String[] array;
+        public boolean[] booleanArray;
+
+        /** */
+        @Value
+        public byte[] byteArray;
+
+        /** */
+        @Value
+        public short[] shortArray;
+
+        /** */
+        @Value
+        public int[] intArray;
+
+        /** */
+        @Value
+        public long[] longArray;
+
+        /** */
+        @Value
+        public char[] charArray;
+
+        /** */
+        @Value
+        public float[] floatArray;
+
+        /** */
+        @Value
+        public double[] doubleArray;
+
+        /** */
+        @Value
+        public String[] stringArray;
     }
 
-    private static ConfigurationAsmGenerator cgen;
+    /** */
+    private static ConfigurationAsmGenerator cgen = new ConfigurationAsmGenerator();
 
+    /** */
     @BeforeAll
     public static void beforeAll() {
-        cgen = new ConfigurationAsmGenerator();
-
         cgen.compileRootSchema(TestArrayConfigurationSchema.class);
     }
 
+    /** */
     @AfterAll
     public static void afterAll() {
         cgen = null;
     }
 
     /**
-     * Test array node init operation.
+     * Parameterized test source with all supported array types.
      */
-    @Test
-    public void testInit() {
-        InnerNode arrayNode = cgen.instantiateNode(TestArrayConfigurationSchema.class);
-
-        Supplier<String[]> initialSupplier = () -> {
-            return new String[]{"test1", "test2"};
-        };
-
-        final String[] initialValue = initialSupplier.get();
-        ((TestArrayChange)arrayNode).changeArray(initialValue);
-
-        // test that field is not the same as initialValue
-        assertNotSame(getArray(arrayNode), initialValue);
-
-        // test that init method set values successfully
-        assertThat(((TestArrayView)arrayNode).array(), is(initialSupplier.get()));
-
-        // test that returned array is a copy of the field
-        assertNotSame(getArray(arrayNode), ((TestArrayView)arrayNode).array());
+    static Stream<Class<?>> supportedTypes() {
+        return Stream.of(
+            boolean[].class,
+            byte[].class,
+            short[].class,
+            int[].class,
+            long[].class,
+            char[].class,
+            float[].class,
+            double[].class,
+            String[].class
+        );
     }
 
     /**
      * Test array node change operation.
      */
-    @Test
-    public void testChange() {
+    @ParameterizedTest
+    @MethodSource("supportedTypes")
+    public void testChange(Class<?> type) throws Exception {
         InnerNode arrayNode = cgen.instantiateNode(TestArrayConfigurationSchema.class);
 
-        Supplier<String[]> changeSupplier = () -> {
-            return new String[]{"foo", "bar"};
-        };
+        Object initialValue = createTestValue(type);
 
-        final String[] changeValue = changeSupplier.get();
-        ((TestArrayChange)arrayNode).changeArray(changeValue);
+        changeArray(arrayNode, initialValue);
+
+        // test that init method set values successfully
+        assertThat(getArray(arrayNode, type), is(initialValue));
+        assertThat(getViewField(arrayNode, type), is(initialValue));
 
         // test that field is not the same as initialValue
-        assertNotSame(getArray(arrayNode), changeValue);
-
-        // test that change method set values successfully
-        assertThat(((TestArrayView)arrayNode).array(), is(changeSupplier.get()));
+        assertThat(getArray(arrayNode, type), not(sameInstance(initialValue)));
 
         // test that returned array is a copy of the field
-        assertNotSame(getArray(arrayNode), ((TestArrayView)arrayNode).array());
+        assertThat(getArray(arrayNode, type), not(sameInstance(getViewField(arrayNode, type))));
+
+        Object newValue = createTestValue(type);
+
+        changeArray(arrayNode, newValue);
+
+        // test that change method set values successfully
+        assertThat(getArray(arrayNode, type), is(newValue));
+        assertThat(getViewField(arrayNode, type), is(newValue));
     }
 
     /**
-     * Get array field from ArrayNode
-     * @param arrayNode ArrayNode.
-     * @return Array field value.
+     * Gets an array field from the given {@code InnerNode}.
      */
-    private String[] getArray(InnerNode arrayNode) {
-        return (String[])arrayNode.traverseChild("array", leafNodeVisitor());
+    private static <T> T getArray(InnerNode arrayNode, Class<T> cls) {
+        return cls.cast(arrayNode.traverseChild(getFieldName(cls), leafNodeVisitor()));
+    }
+
+    /**
+     * Calls one of the {@link TestArrayView} getters based on the field type.
+     */
+    private static <T> T getViewField(InnerNode arrayNode, Class<T> cls) throws Exception {
+        String methodName = getFieldName(cls);
+
+        return cls.cast(arrayNode.getClass().getMethod(methodName).invoke(arrayNode));
+    }
+
+    /**
+     * Calls one of the {@link TestArrayChange} setters based on the value type.
+     */
+    private static void changeArray(InnerNode arrayNode, Object newValue) throws Exception {
+        String fieldName = getFieldName(newValue.getClass());
+
+        String methodName = "change" + Character.toUpperCase(fieldName.charAt(0)) + fieldName.substring(1);
+
+        arrayNode.getClass().getMethod(methodName, newValue.getClass()).invoke(arrayNode, newValue);
+    }
+
+    /**
+     * Returns the field name of {@link TestArrayConfigurationSchema} based on its type.
+     */
+    private static String getFieldName(Class<?> cls) {
+        if (cls == boolean[].class)
+            return "booleanArray";
+        else if (cls == byte[].class)
+            return "byteArray";
+        else if (cls == short[].class)
+            return "shortArray";
+        else if (cls == int[].class)
+            return "intArray";
+        else if (cls == long[].class)
+            return "longArray";
+        else if (cls == char[].class)
+            return "charArray";
+        else if (cls == float[].class)
+            return "floatArray";
+        else if (cls == double[].class)
+            return "doubleArray";
+        else if (cls == String[].class)
+            return "stringArray";
+        else
+            throw new AssertionError("Invalid field type: " + cls);
+    }
+
+    /**
+     * Creates a randomized test array value of the given type.
+     */
+    private static Object createTestValue(Class<?> cls) {
+        var random = new Random();
+
+        if (cls == boolean[].class)
+            return new boolean[] { random.nextBoolean(), random.nextBoolean(), random.nextBoolean() };
+        else if (cls == byte[].class)
+            return new byte[] { (byte) random.nextInt(), (byte) random.nextInt(), (byte) random.nextInt() };
+        else if (cls == short[].class)
+            return new short[] { (short) random.nextInt(), (short) random.nextInt(), (short) random.nextInt() };
+        else if (cls == int[].class)
+            return new int[] { random.nextInt(), random.nextInt(), random.nextInt() };
+        else if (cls == long[].class)
+            return new long[] { random.nextLong(), random.nextLong(), random.nextLong() };
+        else if (cls == char[].class)
+            return new char[] { (char) random.nextInt(), (char) random.nextInt(), (char) random.nextInt() };
+        else if (cls == float[].class)
+            return new float[] { random.nextFloat(), random.nextFloat(), random.nextFloat() };
+        else if (cls == double[].class)
+            return new double[] { random.nextDouble(), random.nextDouble(), random.nextDouble() };
+        else if (cls == String[].class)
+            return new String[] { UUID.randomUUID().toString(), UUID.randomUUID().toString(), UUID.randomUUID().toString() };
+        else
+            throw new AssertionError("Invalid field type: " + cls);
     }
 }

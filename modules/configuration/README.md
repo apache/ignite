@@ -65,12 +65,7 @@ public static class ChildConfigurationSchema {
   `NamedListConfiguration` interface is used to represent this field in the generated configuration classes. 
 * `@Value` annotation marks the _leaf_ values. `hasDefault` property can be used to set default values for fields:
   if set to `true`, the default value will be used to initialize the annotated configuration field in case no value 
-  has been provided explicitly. This annotation can only be present on fields of the following types:
-  * `boolean` or `boolean[]`
-  * `int` or `int[]`
-  * `long` or `long[]`
-  * `double` or `double[]`
-  * `String` or `String[]`
+  has been provided explicitly. This annotation can only be present on fields of the Java primitive or `String` type.
     
   All _leaves_ must be public and corresponding configuration values **must not be null**;
 * `@Immutable` annotation can only be present on fields marked with the `@Value` annotation. Annotated fields cannot be 

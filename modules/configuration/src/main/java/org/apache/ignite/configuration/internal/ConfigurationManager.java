@@ -17,8 +17,6 @@
 
 package org.apache.ignite.configuration.internal;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import java.lang.annotation.Annotation;
 import java.util.Collection;
 import java.util.Collections;
@@ -26,9 +24,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import org.apache.ignite.configuration.ConfigurationRegistry;
 import org.apache.ignite.configuration.RootKey;
-import org.apache.ignite.configuration.internal.rest.JsonConverter;
+import org.apache.ignite.configuration.json.JsonConverter;
 import org.apache.ignite.configuration.storage.ConfigurationStorage;
 import org.apache.ignite.configuration.storage.ConfigurationType;
 import org.apache.ignite.configuration.validation.Validator;

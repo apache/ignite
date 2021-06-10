@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.rest.presentation.json;
+package org.apache.ignite.configuration.json;
 
 import java.io.Serializable;
 import java.util.Collections;
@@ -52,6 +52,7 @@ class TestConfigurationStorage implements ConfigurationStorage {
         listeners.add(listener);
     }
 
+    /** {@inheritDoc} */
     @Override public void notifyApplied(long storageRevision) {
     }
 
