@@ -22,35 +22,28 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
-import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.Timeout;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_WRITE_SAFE;
 
 /**
- * IGNITE-14120 Test for correct results in case of query with single partition and cache with parallelism > 1
+ * IGNITE-14120 Test for correct results in case of query with single partition and cache with parallelism > 1.
  */
 public class IgniteSqlSinglePartitionMultiParallelismTest extends AbstractIndexingCommonTest {
     /** */
     private static final String CACHE_NAME = "SC_NULL_TEST";
 
-    /** Test timeout. */
-    @Rule
-    public Timeout globalTimeout = new Timeout((int)GridTestUtils.DFLT_TEST_TIMEOUT);
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrids(1);
+        ignite(0).createCache(cacheConfig());
+        createTable();
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
+    @Override protected void afterTestsStopped() throws Exception {
         grid(0).destroyCaches(Collections.singletonList(CACHE_NAME));
     }
 
@@ -132,8 +125,6 @@ public class IgniteSqlSinglePartitionMultiParallelismTest extends AbstractIndexi
 
     /** */
     private void run(Runnable test) throws Exception {
-        ignite(0).createCache(cacheConfig());
-        createTable();
         test.run();
     }
 
