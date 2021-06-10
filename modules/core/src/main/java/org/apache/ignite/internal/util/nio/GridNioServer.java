@@ -166,7 +166,7 @@ public class GridNioServer<T> {
     /** The name of the metric that indicates whether SSL is enabled for the connector. */
     public static final String SSL_ENABLED_METRIC_NAME = "SslEnabled";
 
-    /** The name of the metric that provides the number of active TCP sessions. */
+    /** The name of the metric that provides the active TCP sessions count. */
     public static final String SESSIONS_CNT_METRIC_NAME = "ActiveSessionsCount";
 
     /** Defines how many times selector should do {@code selectNow()} before doing {@code select(long)}. */
@@ -459,13 +459,11 @@ public class GridNioServer<T> {
         );
 
         if (mreg != null) {
-            mreg.register(SESSIONS_CNT_METRIC_NAME, sessions::size, "Number of active TCP sessions.");
+            mreg.register(SESSIONS_CNT_METRIC_NAME, sessions::size, "Active TCP sessions count.");
 
-            GridNioFilter sslFilter = directMode ? this.sslFilter : Arrays.stream(filters)
-                .filter(filter -> filter instanceof GridNioSslFilter)
-                .findFirst().orElse(null);
+            final boolean sslEnabled = Arrays.stream(filters).anyMatch(filter -> filter instanceof GridNioSslFilter);
 
-            mreg.booleanMetric(SSL_ENABLED_METRIC_NAME, "Whether SSL is enabled").value(sslFilter != null);
+            mreg.register(SSL_ENABLED_METRIC_NAME, () -> sslEnabled, "Whether SSL is enabled");
         }
     }
 

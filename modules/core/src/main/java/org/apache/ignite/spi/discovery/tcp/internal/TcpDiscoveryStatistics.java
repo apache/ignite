@@ -73,7 +73,7 @@ public class TcpDiscoveryStatistics {
     /** Pending messages registered count. */
     private final IntMetricImpl pendingMsgsRegistered;
 
-    /** Metric that indicates the number of rejected connections due to SSL errors. */
+    /** Metric that indicates connections count that were rejected due to SSL errors. */
     private final IntMetricImpl rejectedSslConnectionsCnt;
 
     /** */
@@ -89,7 +89,7 @@ public class TcpDiscoveryStatistics {
 
         rejectedSslConnectionsCnt = new IntMetricImpl(
             metricName(DISCO_METRICS, "RejectedSslConnectionsCount"),
-            "The number of rejected TCP discovery connections due to SSL errors."
+            "TCP discovery connections count that were rejected due to SSL errors."
         );
     }
 
@@ -136,7 +136,7 @@ public class TcpDiscoveryStatistics {
         crdSinceTs.compareAndSet(0, U.currentTimeMillis());
     }
 
-    /** Increments number of rejected connections due to SSL errors. */
+    /** Increments connections count that were rejected due to SSL errors. */
     public void onSslConnectionRejected() {
         rejectedSslConnectionsCnt.increment();
     }
