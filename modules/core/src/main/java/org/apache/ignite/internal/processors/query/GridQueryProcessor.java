@@ -1288,9 +1288,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             Class<?> cls = U.box(U.classForName(clsName, null, true));
 
             if (cls != null) {
-                if (!platformOnly) {
+                if (!platformOnly)
                     binProc.binaryContext().registerClass(cls, true, false, true);
-                }
             }
             else
                 registerPlatformTypeLocally(clsName, binProc);
