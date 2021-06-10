@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.io.File;
 
-import com.sun.org.apache.xerces.internal.xs.datatypes.ObjectList;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
