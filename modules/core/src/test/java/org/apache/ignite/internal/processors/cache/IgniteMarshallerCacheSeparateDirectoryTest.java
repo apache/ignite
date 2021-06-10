@@ -75,6 +75,9 @@ public class IgniteMarshallerCacheSeparateDirectoryTest extends GridCommonAbstra
             cfg.setCacheConfiguration(ccfg);
         }
 
+        if (igniteInstanceName.equals(CLIENT))
+            cfg.setClientMode(true);
+
         return cfg;
     }
 
