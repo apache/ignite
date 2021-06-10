@@ -34,11 +34,10 @@ import static org.apache.ignite.internal.IgniteComponentType.SPRING;
  */
 public class ChangeDataCaptureLoader {
     /**
-     * Loads {@link ChangeDataCapture} from XML configuration file and possible error message.
-     * If load fails then error message wouldn't be null.
+     * Loads {@link ChangeDataCapture} from XML configuration file.
      *
      * @param springXmlPath Path to XML configuration file.
-     * @return Tuple of {@code ChangeDataCapture} and error message.
+     * @return {@code ChangeDataCapture} instance.
      * @throws IgniteCheckedException If failed.
      */
     public static ChangeDataCapture loadChangeDataCapture(String springXmlPath) throws IgniteCheckedException {
