@@ -237,8 +237,6 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
     /** {@inheritDoc} */
     @Override public void collectStatistics(StatisticsObjectConfiguration... targets) throws IgniteCheckedException {
-        checkStatisticsSupport("collect statistics");
-
         if (usageState() == OFF)
             throw new IgniteException("Can't gather statistics while statistics usage state is OFF.");
 
@@ -247,8 +245,6 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
     /** {@inheritDoc} */
     @Override public void dropStatistics(StatisticsTarget... targets) throws IgniteCheckedException {
-        checkStatisticsSupport("drop statistics");
-
         if (usageState() == OFF)
             throw new IgniteException("Can't drop statistics while statistics usage state is OFF.");
 
@@ -257,8 +253,6 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
     /** {@inheritDoc} */
     @Override public void refreshStatistics(StatisticsTarget... targets) throws IgniteCheckedException {
-        checkStatisticsSupport("collect statistics");
-
         if (usageState() == OFF)
             throw new IgniteException("Can't refresh statistics while statistics usage state is OFF.");
 
@@ -267,8 +261,6 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
     /** {@inheritDoc} */
     @Override public void dropAll() throws IgniteCheckedException {
-        checkStatisticsSupport("drop all statistics");
-
         statCfgMgr.dropAll();
     }
 
@@ -296,8 +288,6 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
     /** {@inheritDoc} */
     @Override public void usageState(StatisticsUsageState state) throws IgniteCheckedException {
-        checkStatisticsSupport("clear statistics");
-
         try {
             usageState.propagate(state);
         }
@@ -416,29 +406,5 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
         }
 
         return res;
-    }
-
-    /**
-     * Check that all server nodes in the cluster support STATISTICS_COLLECTION feature. Throws IgniteCheckedException
-     * in not.
-     *
-     * @param op Operation name.
-     * @throws IgniteCheckedException If at least one server node doesn't support feature.
-     */
-    private void checkStatisticsSupport(String op) throws IgniteCheckedException {
-        if (!isStatisticsSupport()) {
-            throw new IgniteCheckedException(String.format(
-                "Unable to perform %s due to not all server nodes supports STATISTICS_COLLECTION feature.", op));
-        }
-    }
-
-    /**
-     * Test is statistics collection feature are supported by each server node in cluster.
-     *
-     * @return {@code true} if all server nodes support STATISTICS_COLLECTION feature, {@code false} - otherwise.
-     */
-    private boolean isStatisticsSupport() {
-        return ctx.discovery().remoteNodes().stream().noneMatch(node -> !node.isClient() && !node.isDaemon() &&
-            !IgniteFeatures.nodeSupports(node, IgniteFeatures.STATISTICS_COLLECTION));
     }
 }

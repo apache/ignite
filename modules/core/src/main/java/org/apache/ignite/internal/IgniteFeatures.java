@@ -142,10 +142,7 @@ public enum IgniteFeatures {
     PERFORMANCE_STATISTICS(48),
 
     /** Restore cache group from the snapshot. */
-    SNAPSHOT_RESTORE_CACHE_GROUP(49),
-
-    /** Statistics collection. */
-    STATISTICS_COLLECTION(50);
+    SNAPSHOT_RESTORE_CACHE_GROUP(49);
 
     /**
      * Unique feature identifier.
