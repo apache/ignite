@@ -16,16 +16,12 @@
  */
 package org.apache.ignite.internal.processors.query;
 
+import java.util.Collections;
 import java.util.List;
-import java.util.function.Consumer;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.Ignition;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.client.Config;
-import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Rule;
 import org.junit.Test;
@@ -34,26 +30,53 @@ import org.junit.rules.Timeout;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_WRITE_SAFE;
-import static org.junit.Assert.assertEquals;
 
 /**
  * IGNITE-14120 Test for correct results in case of query with single partition and cache with parallelism > 1
- * */
-public class IgniteSqlSinglePartitionMultiParallelismTest {
+ */
+public class IgniteSqlSinglePartitionMultiParallelismTest extends AbstractIndexingCommonTest {
+    /** */
+    private static final String CACHE_NAME = "SC_NULL_TEST";
 
-    /**
-     * Test timeout
-     * */
+    /** Test timeout. */
     @Rule
     public Timeout globalTimeout = new Timeout((int)GridTestUtils.DFLT_TEST_TIMEOUT);
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        startGrids(1);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        grid(0).destroyCaches(Collections.singletonList(CACHE_NAME));
+    }
+
     /**
-     * Check common case without partitions. Should be single result
-     * */
+     * @return Cache configuration.
+     */
+    protected CacheConfiguration<Integer, Integer> cacheConfig() {
+        return new CacheConfiguration<Integer, Integer>()
+            .setName(CACHE_NAME)
+            .setCacheMode(PARTITIONED)
+            .setReadFromBackup(false)
+            .setStatisticsEnabled(true)
+            .setQueryParallelism(100)
+            .setSqlIndexMaxInlineSize(64)
+            .setBackups(0)
+            .setPartitionLossPolicy(READ_WRITE_SAFE)
+            .setAtomicityMode(TRANSACTIONAL);
+    }
+
+    /**
+     * Check common case without partitions. Should be single result.
+     */
     @Test
     public void assertSimpleCountQuery() throws Exception {
-        run(client -> {
-            List<List<?>> results = runQuery(client, "select count(*) from SC_NULL_TEST");
+        run(() -> {
+            List<List<?>> results = runQuery("select count(*) from SC_NULL_TEST");
 
             Long res = (Long) results.get(0).get(0);
 
@@ -63,12 +86,12 @@ public class IgniteSqlSinglePartitionMultiParallelismTest {
     }
 
     /**
-     * Check case with 1 partition. Partition segment must be calculated correctly
-     * */
+     * Check case with 1 partition. Partition segment must be calculated correctly.
+     */
     @Test
     public void assertWhereCountFirstPartitionQuery() throws Exception {
-        run(client -> {
-            List<List<?>> results = runQuery(client, "select count(*) from SC_NULL_TEST where ID=1");
+        run(() -> {
+            List<List<?>> results = runQuery("select count(*) from SC_NULL_TEST where ID=1");
 
             Long res = (Long) results.get(0).get(0);
 
@@ -78,12 +101,12 @@ public class IgniteSqlSinglePartitionMultiParallelismTest {
     }
 
     /**
-     * Check case with 1 partition. Partition segment must be calculated correctly
-     * */
+     * Check case with 1 partition. Partition segment must be calculated correctly.
+     */
     @Test
     public void assertWhereCountAnotherPartitionQuery() throws Exception {
-        run(client -> {
-            List<List<?>> results = runQuery(client, "select count(*) from SC_NULL_TEST where ID=973");
+        run(() -> {
+            List<List<?>> results = runQuery("select count(*) from SC_NULL_TEST where ID=973");
 
             Long res = (Long) results.get(0).get(0);
 
@@ -93,12 +116,12 @@ public class IgniteSqlSinglePartitionMultiParallelismTest {
     }
 
     /**
-     * Check case with 2 partition. Multiple partitions should not be affected
-     * */
+     * Check case with 2 partition. Multiple partitions should not be affected.
+     */
     @Test
     public void assertWhereCountMultiPartitionsQuery() throws Exception {
-        run(client -> {
-            List<List<?>> results = runQuery(client, "select count(*) from SC_NULL_TEST where ID=5 or ID=995");
+        run(() -> {
+            List<List<?>> results = runQuery("select count(*) from SC_NULL_TEST where ID=5 or ID=995");
 
             Long res = (Long) results.get(0).get(0);
 
@@ -107,66 +130,33 @@ public class IgniteSqlSinglePartitionMultiParallelismTest {
         });
     }
 
-    /**
-     * */
-    private void run(Consumer<IgniteClient> test) throws Exception {
-        IgniteConfiguration srvCfg = Config.getServerConfiguration();
-
-        srvCfg.setCacheConfiguration(
-            new CacheConfiguration<Integer, Integer>()
-                .setName("cache-template*")
-                .setCacheMode(PARTITIONED)
-                .setReadFromBackup(false)
-                .setStatisticsEnabled(true)
-                .setQueryParallelism(100)
-                .setSqlIndexMaxInlineSize(64)
-                .setBackups(0)
-                .setPartitionLossPolicy(READ_WRITE_SAFE)
-                .setAtomicityMode(TRANSACTIONAL)
-        );
-
-        try (
-            Ignite ignored = Ignition.start(srvCfg);
-            IgniteClient client = Ignition.startClient(getClientConfiguration())
-        ) {
-            createTable(client);
-
-            test.accept(client);
-        }
+    /** */
+    private void run(Runnable test) throws Exception {
+        ignite(0).createCache(cacheConfig());
+        createTable();
+        test.run();
     }
 
-    /**
-     * */
-    public void createTable(IgniteClient client) {
-        runQuery(client,
-            "CREATE TABLE IF NOT EXISTS SC_NULL_TEST ( id INT(11), val INT(11), PRIMARY KEY (ID) ) " +
-                "WITH \"template=cache-template, CACHE_NAME=SC_NULL_TEST\""
-        );
+    /** */
+    public void createTable() {
+        runQuery("CREATE TABLE IF NOT EXISTS SC_NULL_TEST ( id INT(11), val INT(11), PRIMARY KEY (ID) ) " +
+            "WITH \"template=cache-template, CACHE_NAME=SC_NULL_TEST\"");
 
         for (int i = 1; i < 1000; i++)
-            insertValue(client, i);
+            insertValue(i);
     }
 
-    /**
-     * */
-    public void insertValue(IgniteClient client, int val) {
-        runQuery(client, String.format("insert into SC_NULL_TEST VALUES(%d, %d)", val, val));
+    /** */
+    public void insertValue(int val) {
+        runQuery(String.format("insert into SC_NULL_TEST VALUES(%d, %d)", val, val));
     }
 
-    /**
-     * */
-    public List<List<?>> runQuery(IgniteClient client, String qry) {
-        return client.query(
+    /** */
+    public List<List<?>> runQuery(String qry) {
+        IgniteCache<Integer, Integer> cache = ignite(0).cache(CACHE_NAME);
+
+        return cache.query(
             new SqlFieldsQuery(qry)
         ).getAll();
-    }
-
-    /**
-     * */
-    private static ClientConfiguration getClientConfiguration() {
-        return new ClientConfiguration()
-            .setAddresses(Config.SERVER)
-            .setSendBufferSize(0)
-            .setReceiveBufferSize(0);
     }
 }
