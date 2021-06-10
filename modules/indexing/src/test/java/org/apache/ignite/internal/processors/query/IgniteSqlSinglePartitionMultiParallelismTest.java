@@ -68,14 +68,12 @@ public class IgniteSqlSinglePartitionMultiParallelismTest extends AbstractIndexi
      */
     @Test
     public void assertSimpleCountQuery() throws Exception {
-        run(() -> {
-            List<List<?>> results = runQuery("select count(*) from SC_NULL_TEST");
+        List<List<?>> results = runQuery("select count(*) from SC_NULL_TEST");
 
-            Long res = (Long) results.get(0).get(0);
+        Long res = (Long) results.get(0).get(0);
 
-            assertEquals(1, results.size());
-            assertEquals(Long.valueOf(999), res);
-        });
+        assertEquals(1, results.size());
+        assertEquals(Long.valueOf(999), res);
     }
 
     /**
@@ -83,14 +81,12 @@ public class IgniteSqlSinglePartitionMultiParallelismTest extends AbstractIndexi
      */
     @Test
     public void assertWhereCountFirstPartitionQuery() throws Exception {
-        run(() -> {
-            List<List<?>> results = runQuery("select count(*) from SC_NULL_TEST where ID=1");
+        List<List<?>> results = runQuery("select count(*) from SC_NULL_TEST where ID=1");
 
-            Long res = (Long) results.get(0).get(0);
+        Long res = (Long) results.get(0).get(0);
 
-            assertEquals(1, results.size());
-            assertEquals(Long.valueOf(1), res);
-        });
+        assertEquals(1, results.size());
+        assertEquals(Long.valueOf(1), res);
     }
 
     /**
@@ -98,14 +94,12 @@ public class IgniteSqlSinglePartitionMultiParallelismTest extends AbstractIndexi
      */
     @Test
     public void assertWhereCountAnotherPartitionQuery() throws Exception {
-        run(() -> {
-            List<List<?>> results = runQuery("select count(*) from SC_NULL_TEST where ID=973");
+        List<List<?>> results = runQuery("select count(*) from SC_NULL_TEST where ID=973");
 
-            Long res = (Long) results.get(0).get(0);
+        Long res = (Long) results.get(0).get(0);
 
-            assertEquals(1, results.size());
-            assertEquals(Long.valueOf(1), res);
-        });
+        assertEquals(1, results.size());
+        assertEquals(Long.valueOf(1), res);
     }
 
     /**
@@ -113,19 +107,12 @@ public class IgniteSqlSinglePartitionMultiParallelismTest extends AbstractIndexi
      */
     @Test
     public void assertWhereCountMultiPartitionsQuery() throws Exception {
-        run(() -> {
-            List<List<?>> results = runQuery("select count(*) from SC_NULL_TEST where ID=5 or ID=995");
+        List<List<?>> results = runQuery("select count(*) from SC_NULL_TEST where ID=5 or ID=995");
 
-            Long res = (Long) results.get(0).get(0);
+        Long res = (Long) results.get(0).get(0);
 
-            assertEquals(1, results.size());
-            assertEquals(Long.valueOf(2), res);
-        });
-    }
-
-    /** */
-    private void run(Runnable test) throws Exception {
-        test.run();
+        assertEquals(1, results.size());
+        assertEquals(Long.valueOf(2), res);
     }
 
     /** */
