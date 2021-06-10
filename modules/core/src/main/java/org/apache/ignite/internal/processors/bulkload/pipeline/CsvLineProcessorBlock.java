@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.processors.bulkload.pipeline;
 
 import java.sql.SQLException;
-import org.apache.ignite.IgniteCheckedException;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadCsvFormat;
 
 /**
