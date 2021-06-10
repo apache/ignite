@@ -140,6 +140,15 @@ public class FunctionsTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
+    public void testPercentRemainder() {
+        checkQuery("SELECT 3 % 2").returns(1).check();
+        checkQuery("SELECT 4 % 2").returns(0).check();
+        checkQuery("SELECT NULL % 2").returns(new Object[] { null }).check();
+        checkQuery("SELECT 3 % NULL::int").returns(new Object[] { null }).check();
+    }
+
+    /** */
     private QueryChecker checkQuery(String qry) {
         return new QueryChecker(qry) {
             @Override protected QueryEngine getEngine() {

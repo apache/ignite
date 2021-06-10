@@ -155,7 +155,7 @@ public class SqlScriptRunner {
 
         /** */
         String positionDescription() {
-            return fileName + ':' + lineNum;
+            return '(' + fileName + ':' + lineNum + ')';
         }
 
         /** {@inheritDoc} */
@@ -427,13 +427,13 @@ public class SqlScriptRunner {
                         break;
 
                     default:
-                        throw new IgniteException("Unknown type character '" + resTypesChars.charAt(i) + "'. "
+                        throw new IgniteException("Unknown type character '" + resTypesChars.charAt(i) + "' at: "
                             + script.positionDescription() + "[cmd=" + Arrays.toString(cmd) + ']');
                 }
             }
 
             if (F.isEmpty(resTypes)) {
-                throw new IgniteException("Missing type string. "
+                throw new IgniteException("Missing type string at: "
                     + script.positionDescription() + "[cmd=" + Arrays.toString(cmd) + ']');
             }
 
@@ -474,7 +474,7 @@ public class SqlScriptRunner {
                         singleValOnLine = true;
 
                     if (vals.length != resTypes.size() && !singleValOnLine) {
-                        throw new IgniteException("Invalid columns count at the result. "
+                        throw new IgniteException("Invalid columns count at the result at: "
                             + script.positionDescription() + " [row=\"" + s + "\", types=" + resTypes + ']');
                     }
 
@@ -497,7 +497,7 @@ public class SqlScriptRunner {
                         }
                     }
                     catch (Exception e) {
-                        throw new IgniteException("Cannot parse expected results. "
+                        throw new IgniteException("Cannot parse expected results at: "
                             + script.positionDescription() + "[row=\"" + s + "\", types=" + resTypes + ']', e);
                     }
 
@@ -529,7 +529,7 @@ public class SqlScriptRunner {
         /** */
         private void checkResultTuples(List<List<?>> res) {
             if (expectedRes.size() != res.size()) {
-                throw new AssertionError("Invalid results rows count at " + posDesc +
+                throw new AssertionError("Invalid results rows count at: " + posDesc +
                     ". [expected=" + expectedRes + ", actual=" + res + ']');
             }
 
@@ -538,12 +538,12 @@ public class SqlScriptRunner {
                 List<?> row = res.get(i);
 
                 if (row.size() != expectedRow.size()) {
-                    throw new AssertionError("Invalid columns count at " + posDesc +
+                    throw new AssertionError("Invalid columns count at: " + posDesc +
                         ". [expected=" + expectedRes + ", actual=" + res + ']');
                 }
 
                 for (int j = 0; j < expectedRow.size(); ++j) {
-                    checkEquals("Not expected result at " + posDesc +
+                    checkEquals("Not expected result at: " + posDesc +
                         ". [row=" + i + ", col=" + j +
                         ", expected=" + expectedRow.get(j) + ", actual=" + row.get(j) + ']', expectedRow.get(j), row.get(j));
                 }
