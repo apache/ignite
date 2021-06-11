@@ -36,6 +36,7 @@ import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
+import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
@@ -132,7 +133,11 @@ public class IgniteTableModify extends TableModify implements TraitsAwareIgniteR
         IgniteDistribution distributionTrait = IgniteDistributions.affinity(0, "default",
                 nodeTraits.getTrait(DistributionTraitDef.INSTANCE));
 
-        if (distributionTrait.function().type() != RelDistribution.Type.HASH_DISTRIBUTED) {
+        IgniteDistribution targetDistributionTrait = IgniteDistributions.affinity(0, "default",
+                table.getDistribution());
+
+        if ((distributionTrait.function().type() != RelDistribution.Type.HASH_DISTRIBUTED) ||
+                !(DistributionFunction.satisfy(distributionTrait.function(), targetDistributionTrait.function()))) {
             return Collections.emptyList();
         }
 
@@ -185,8 +190,11 @@ public class IgniteTableModify extends TableModify implements TraitsAwareIgniteR
         IgniteDistribution distributionTrait = IgniteDistributions.affinity(0, "default",
                 getTraitSet().getTrait(DistributionTraitDef.INSTANCE));
 
-        if (distributionTrait.function().type() == RelDistribution.Type.HASH_DISTRIBUTED) {
-            networkCost = Double.MAX_VALUE;
+        if (distributionTrait.function().type() == RelDistribution.Type.HASH_DISTRIBUTED &&
+                distributionTrait.function().affinity()) {
+            networkCost = 0;
+        } else {
+            networkCost = totalBytes;
         }
 
         return costFactory.makeCost(rowCnt, cpuCost, 0, totalBytes, networkCost);
