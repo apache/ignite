@@ -1888,24 +1888,27 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     ", delta=" + delta + ']');
             }
 
-            try (FileIO fileIo = ioFactory.create(delta, READ);
-                 FilePageStore pageStore = (FilePageStore)storeFactory
-                     .apply(pair.getGroupId(), isEncrypted(pair.getGroupId()))
-                     .createPageStore(getTypeByPartId(pair.getPartitionId()),
-                         snpPart::toPath,
-                         val -> {})
+            boolean encrypted = isEncrypted(pair.getGroupId());
+
+            FileIOFactory deltaIOFactory = encrypted ?
+                ((FilePageStoreManager)cctx.pageStore()).getEncryptedFileIoFactory(ioFactory, pair.getGroupId()) :
+                ioFactory;
+
+            try (FileIO deltaIO = deltaIOFactory.create(delta, READ);
+                 FilePageStore pageStore = (FilePageStore)storeFactory.apply(pair.getGroupId(), encrypted)
+                     .createPageStore(getTypeByPartId(pair.getPartitionId()), snpPart::toPath, v -> {})
             ) {
                 ByteBuffer pageBuf = ByteBuffer.allocate(pageSize)
                     .order(ByteOrder.nativeOrder());
 
-                long totalBytes = fileIo.size();
+                long totalBytes = deltaIO.size();
 
-                assert totalBytes % pageSize == 0 : "Given file with delta pages has incorrect size: " + fileIo.size();
+                assert totalBytes % pageSize == 0 : "Given file with delta pages has incorrect size: " + deltaIO.size();
 
                 pageStore.beginRecover();
 
                 for (long pos = 0; pos < totalBytes; pos += pageSize) {
-                    long read = fileIo.readFully(pageBuf, pos);
+                    long read = deltaIO.readFully(pageBuf, pos);
 
                     assert read == pageBuf.capacity();
 
@@ -1925,6 +1928,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 }
 
                 pageStore.finishRecover();
+
+                if (log.isInfoEnabled()) {
+                    log.info("Finished partition snapshot recovery with the given delta page file [part=" + snpPart +
+                        ", delta=" + delta + ']');
+                }
             }
             catch (IOException | IgniteCheckedException e) {
                 throw new IgniteException(e);

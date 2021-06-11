@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -901,10 +902,10 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
                     if (stopped())
                         return;
 
-                    if (deltaFileIo == null)
-                        deltaFileIo = (encryptedGrpId != null ?
-                            pageStore.getEncryptedFileIoFactory(ioFactory, encryptedGrpId) :
-                            ioFactory).create(deltaFile);
+                    if (deltaFileIo == null) {
+                        deltaFileIo = (encryptedGrpId == null ? ioFactory :
+                            pageStore.getEncryptedFileIoFactory(ioFactory, encryptedGrpId)).create(deltaFile);
+                    }
                 }
                 catch (IOException e) {
                     acceptException(e);
@@ -948,7 +949,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
 
                     // Page marked as written to delta file, so there is no need to
                     // copy it from file when the first checkpoint associated with
-                    // current snapshot task ends.
+                    // current snapshot task ends.F
                     writtenPages.touch(pageIdx);
                 }
             }
@@ -972,8 +973,8 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
             assert pageBuf.order() == ByteOrder.nativeOrder() : "Page buffer order " + pageBuf.order()
                 + " should be same with " + ByteOrder.nativeOrder();
 
-            if (log.isDebugEnabled()) {
-                log.debug("onPageWrite [pageId=" + pageId +
+            if (log.isInfoEnabled()) {
+                log.info("onPageWrite [pageId=" + pageId +
                     ", pageIdBuff=" + PageIO.getPageId(pageBuf) +
                     ", fileSize=" + deltaFileIo.size() +
                     ", crcBuff=" + FastCrc.calcCrc(pageBuf, pageBuf.limit()) +

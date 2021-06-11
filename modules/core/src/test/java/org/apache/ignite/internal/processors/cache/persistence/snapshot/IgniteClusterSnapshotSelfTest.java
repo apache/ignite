@@ -27,8 +27,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
@@ -46,9 +48,6 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.EncryptionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -80,7 +79,6 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -89,8 +87,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.cluster.ClusterState.INACTIVE;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FAILED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FINISHED;
@@ -121,22 +117,22 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     /** {@code true} if node should be started in separate jvm. */
     protected volatile boolean jvm;
 
-    protected volatile boolean encryption;
+    protected volatile boolean encryption = true;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-//        if(encryption){
-//            KeystoreEncryptionSpi encSpi = new KeystoreEncryptionSpi();
-//
-//            encSpi.setKeyStorePath(AbstractEncryptionTest.KEYSTORE_PATH);
-//            encSpi.setKeyStorePassword(AbstractEncryptionTest.KEYSTORE_PASSWORD.toCharArray());
-//
-//            cfg.setEncryptionSpi(encSpi);
-//
-//            dfltCacheCfg.setEncryptionEnabled(true);
-//        }
+        if(encryption){
+            KeystoreEncryptionSpi encSpi = new KeystoreEncryptionSpi();
+
+            encSpi.setKeyStorePath(AbstractEncryptionTest.KEYSTORE_PATH);
+            encSpi.setKeyStorePassword(AbstractEncryptionTest.KEYSTORE_PASSWORD.toCharArray());
+
+            cfg.setEncryptionSpi(encSpi);
+
+            dfltCacheCfg.setEncryptionEnabled(true);
+        }
 
         return cfg;
     }
@@ -1096,17 +1092,42 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If fails. */
     @Test
     public void testEncryption() throws Exception {
-//        encryption = true;
+        int keysRange = 1024;
 
-        startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
+        Random rnd = new Random();
 
-        grid(0).cluster().state(ACTIVE);
+        AtomicBoolean stop = new AtomicBoolean();
 
-        IgniteEx clnt = startClientGrid(2);
+        Map<Integer, Integer> values = new ConcurrentHashMap<>();
 
-        clnt.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        try {
+            startGridsWithCache(2, dfltCacheCfg, keysRange);
 
-        waitForEvents(Arrays.asList(EVT_CLUSTER_SNAPSHOT_STARTED, EVT_CLUSTER_SNAPSHOT_FINISHED));
+            grid(0).cluster().state(ACTIVE);
+
+            IgniteEx client = startClientGrid();
+
+            IgniteInternalFuture<?> txLoadFut = GridTestUtils.runMultiThreadedAsync(
+                () -> {
+                    while (!stop.get()) {
+                        int key = rnd.nextInt(keysRange);
+
+                        int val = rnd.nextInt(keysRange);
+
+                        client.cache(defaultCacheConfiguration().getName()).put(key, val);
+
+                        values.put(key, val);
+                    }
+                }, 1, "cacheLoader"
+            );
+
+            grid(0).snapshot().createSnapshot(SNAPSHOT_NAME).get();
+
+            waitForEvents(Arrays.asList(EVT_CLUSTER_SNAPSHOT_STARTED, EVT_CLUSTER_SNAPSHOT_FINISHED));
+        }
+        finally {
+            stop.set(true);
+        }
 
         stopAllGrids();
 

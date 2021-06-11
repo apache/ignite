@@ -1394,7 +1394,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /**
      * @return TODO.
      */
-    public FileIOFactory getEncryptedFileIoFactory(FileIOFactory plainFileIOFactory, int cacheGrpId) {
+    public EncryptedFileIOFactory getEncryptedFileIoFactory(FileIOFactory plainFileIOFactory, int cacheGrpId) {
         return new EncryptedFileIOFactory(
             plainFileIOFactory,
             cacheGrpId,

@@ -146,7 +146,7 @@ public class EncryptedFileIO implements FileIO {
     /** {@inheritDoc} */
     @Override public int readFully(ByteBuffer destBuf, long position) throws IOException {
         assert destBuf.capacity() == pageSize;
-        assert position() != 0;
+        assert position() >= headerSize;
 
         ByteBuffer encrypted = ByteBuffer.allocate(pageSize);
 
@@ -179,10 +179,14 @@ public class EncryptedFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public int write(ByteBuffer srcBuf) throws IOException {
-        assert position() == 0;
-        assert headerSize == srcBuf.capacity();
+        if (headerSize > 0) {
+            assert position() == 0;
+            assert headerSize == srcBuf.capacity();
 
-        return plainFileIO.write(srcBuf);
+            return plainFileIO.write(srcBuf);
+        }
+        else
+            return plainFileIO.writeFully(encrypt(srcBuf));
     }
 
     /** {@inheritDoc} */
@@ -192,24 +196,12 @@ public class EncryptedFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public int write(ByteBuffer srcBuf, long position) throws IOException {
-        ByteBuffer encrypted = ByteBuffer.allocate(pageSize);
-
-        encrypt(srcBuf, encrypted);
-
-        encrypted.rewind();
-
-        return plainFileIO.write(encrypted, position);
+        return plainFileIO.write(encrypt(srcBuf), position);
     }
 
     /** {@inheritDoc} */
     @Override public int writeFully(ByteBuffer srcBuf, long position) throws IOException {
-        ByteBuffer encrypted = ByteBuffer.allocate(pageSize);
-
-        encrypt(srcBuf, encrypted);
-
-        encrypted.rewind();
-
-        return plainFileIO.writeFully(encrypted, position);
+        return plainFileIO.writeFully(encrypt(srcBuf), position);
     }
 
     /**
@@ -218,11 +210,22 @@ public class EncryptedFileIO implements FileIO {
      * @throws IOException If failed.
      */
     private void encrypt(ByteBuffer srcBuf, ByteBuffer res) throws IOException {
-        assert position() != 0;
+        assert position() >= headerSize;
 
         GroupKey grpKey = encMgr.getActiveKey(groupId);
 
         encUtil.encrypt(srcBuf, res, grpKey);
+    }
+
+    /** TODO */
+    private ByteBuffer encrypt(ByteBuffer srcBuf) throws IOException {
+        ByteBuffer encrypted = ByteBuffer.allocate(pageSize);
+
+        encrypt(srcBuf, encrypted);
+
+        encrypted.rewind();
+
+        return encrypted;
     }
 
     /**
