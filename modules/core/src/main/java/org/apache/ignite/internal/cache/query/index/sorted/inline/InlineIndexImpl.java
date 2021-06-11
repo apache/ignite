@@ -355,12 +355,12 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
     }
 
     /**
-     * @param segmentCnt Сount of segments in cache.
+     * @param segmentsCnt Сount of segments in cache.
      * @param part Partition.
      * @return Segment ID for given segment count and partition.
      */
-    public static int calculateSegment(int segmentCnt, int part) {
-        return segmentCnt == 1 ? 0 : (part % segmentCnt);
+    public static int calculateSegment(int segmentsCnt, int part) {
+        return segmentsCnt == 1 ? 0 : (part % segmentsCnt);
     }
 
     /** */
