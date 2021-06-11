@@ -47,7 +47,11 @@ class TriggerEvent(IntEnum):
     NODE_LEFT = 1
 
 
-def preload_data(context, config, preloaders, backups, cache_count, entry_count, entry_size, timeout=3600):
+# pylint: disable=R0914
+def preload_data(context, config, preloaders, backups, cache_count, entry_count, entry_size,
+                 preload_class_name=
+                 "org.apache.ignite.internal.ducktest.tests.rebalance.DataGenerationApplicationStreamer",
+                 timeout=3600):
     """
     Puts entry_count of key-value pairs of entry_size bytes to cache_count caches.
     :param context: Test context.
@@ -57,6 +61,7 @@ def preload_data(context, config, preloaders, backups, cache_count, entry_count,
     :param cache_count: Cache count.
     :param entry_count: Cache entry count.
     :param entry_size: Entry size in bytes.
+    :param preload_class_name: Preload java class name
     :param timeout: Timeout in seconds for application finished.
     :return: Time taken for data preloading.
     """
@@ -71,7 +76,7 @@ def preload_data(context, config, preloaders, backups, cache_count, entry_count,
         app0 = IgniteApplicationService(
             context,
             config=config,
-            java_class_name="org.apache.ignite.internal.ducktest.tests.rebalance.DataGenerationApplication",
+            java_class_name=preload_class_name,
             params={
                 "backups": backups,
                 "cacheCount": cache_count,
@@ -218,7 +223,7 @@ def aggregate_rebalance_stats(nodes, cache_count):
 
 # pylint: disable=too-many-arguments, too-many-locals
 def start_ignite(test_context, ignite_version, trigger_event, backups, cache_count, entry_count, entry_size, preloaders,
-                 thread_pool_size, batch_size, batches_prefetch_count, throttle):
+                 thread_pool_size, batch_size, batches_prefetch_count, throttle, persistent: bool = False):
 
     """
     Start IgniteService:
@@ -235,18 +240,27 @@ def start_ignite(test_context, ignite_version, trigger_event, backups, cache_cou
     :param batch_size: rebalanceBatchSize config property.
     :param batches_prefetch_count: rebalanceBatchesPrefetchCount config property.
     :param throttle: rebalanceThrottle config property.
+    :param persistent: Persistent enabled.
     :return: IgniteService.
     """
     node_count = len(test_context.cluster) - preloaders
 
-    node_config = IgniteConfiguration(
-        version=IgniteVersion(ignite_version),
-        data_storage=DataStorageConfiguration(
+    if persistent:
+        data_storage = DataStorageConfiguration(
+            max_wal_archive_size=max(cache_count * entry_count * entry_size * (backups + 1), DEFAULT_DATA_REGION_SZ),
             default=DataRegionConfiguration(
                 persistent=True,
                 max_size=max(cache_count * entry_count * entry_size * (backups + 1), DEFAULT_DATA_REGION_SZ),
             )
-        ),
+        )
+    else:
+        data_storage = DataStorageConfiguration(
+            default=DataRegionConfiguration(
+                max_size=max(cache_count * entry_count * entry_size * (backups + 1), DEFAULT_DATA_REGION_SZ)))
+
+    node_config = IgniteConfiguration(
+        version=IgniteVersion(ignite_version),
+        data_storage=data_storage,
         metric_exporter="org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi",
         rebalance_thread_pool_size=thread_pool_size,
         rebalance_batch_size=batch_size,
@@ -285,16 +299,22 @@ def get_result(rebalance_nodes: dict, preload_time: int, cache_count: int, entry
         "preloaded_bytes": cache_count * entry_count * entry_size
     }
 
-#
-# def _do_rebalance_trigger_event(test_context, trigger_event, ignites, node_config):
-#     if trigger_event:  # TriggerEvent.NODE_LEFT
-#         left = ignites.nodes[len(ignites.nodes) - 1]
-#         test_context.logger.info("Stopping node %s.." % left.name)
-#         ignites.stop_node(left)
-#         return ignites.nodes[:-1]
-#
-#     # TriggerEvent.NODE_JOIN
-#     ignite = IgniteService(test_context, node_config._replace(discovery_spi=from_ignite_cluster(ignites)),
-#                            num_nodes=1)
-#     ignite.start()
-#     return ignite.nodes
+
+def check_type_of_rebalancing(nodes: dict, is_full: bool = True):
+    """
+    Check the type of rebalancing on node.
+
+    :param nodes: Ignite nodes in which rebalance will be awaited.
+    :param is_full: Expected type of rebalancing.
+    """
+
+    for node in nodes:
+        output = node.account.ssh_output(f'grep "Starting rebalance routine" {node.log_file}', allow_fail=False,
+                                         combine_stderr=False).decode('utf-8').splitlines()
+
+        msg = 'histPartitions=[]' if is_full else 'fullPartitions=[]'
+
+        for i in output:
+            assert msg in i, i
+
+        return output

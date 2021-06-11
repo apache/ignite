@@ -27,7 +27,7 @@ import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 /**
  * Application generates cache data by specified parameters.
  */
-public class DataGenerationApplication extends IgniteAwareApplication {
+public class DataGenerationApplicationStreamer extends IgniteAwareApplication {
     /** Max streamer data size. */
     private static final int MAX_STREAMER_DATA_SIZE = 100_000_000;
 
@@ -42,7 +42,6 @@ public class DataGenerationApplication extends IgniteAwareApplication {
         markInitialized();
 
         for (int i = 1; i <= cacheCnt; i++) {
-            // TODO https://issues.apache.org/jira/browse/IGNITE-14319
             IgniteCache<Integer, DataModel> cache = ignite.getOrCreateCache(
                 new CacheConfiguration<Integer, DataModel>("test-cache-" + i)
                     .setBackups(backups));

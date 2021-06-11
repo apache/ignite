@@ -23,7 +23,7 @@ import sys
 import time
 import tempfile
 from abc import ABCMeta
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import IntEnum
 from pathlib import Path
 from threading import Thread
@@ -36,7 +36,7 @@ from ignitetest.services.utils import IgniteServiceType
 from ignitetest.services.utils.background_thread import BackgroundThreadService
 from ignitetest.services.utils.concurrent import CountDownLatch, AtomicValue
 from ignitetest.services.utils.ignite_spec import resolve_spec, SHARED_PREPARED_FILE
-from ignitetest.services.utils.jmx_utils import ignite_jmx_mixin
+from ignitetest.services.utils.jmx_utils import ignite_jmx_mixin, JmxClient
 from ignitetest.services.utils.log_utils import monitor_log
 from ignitetest.services.utils.path import IgnitePathAware
 from ignitetest.utils.enum import constructible
@@ -549,6 +549,30 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
             node.account.ssh(f'rm -rf {self.database_dir}', allow_fail=False)
             node.account.ssh(f'cp -r {snapshot_db} {self.work_dir}', allow_fail=False)
+
+    def await_rebalance(self, timeout_sec=180):
+        """
+        Waiting for the rebalance to complete.
+        For the method, you need to set the
+        metric_exporter='org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi'
+        to the config.
+        :param timeout_sec: timeout to wait the rebalance to complete.
+        """
+        assert self.nodes, 'Node list is empty.'
+
+        delta_time = datetime.now() + timedelta(seconds=timeout_sec)
+
+        for node in self.nodes:
+            rebalanced = False
+            mbean = JmxClient(node).find_mbean('.*name=cluster')
+
+            while datetime.now() < delta_time and not rebalanced:
+                rebalanced = next(mbean.Rebalanced) == 'true'
+
+        if rebalanced:
+            return
+
+        raise TimeoutError(f'Rebalancing was not completed within the time: {timeout_sec} seconds.')
 
 
 def node_failed_event_pattern(failed_node_id=None):
