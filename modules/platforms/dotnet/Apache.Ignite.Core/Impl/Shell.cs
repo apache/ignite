@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl
 {
+    using System;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
 
@@ -27,39 +28,39 @@ namespace Apache.Ignite.Core.Impl
     internal static class Shell
     {
         /// <summary>
-        /// Executes Bash command.
-        /// </summary>
-        public static string BashExecute(string args)
-        {
-            return Execute("/bin/bash", args);
-        }
-
-        /// <summary>
         /// Executes the command.
         /// </summary>
-        private static string Execute(string file, string args)
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes", 
+            Justification = "ExecuteSafe should ignore all exceptions.")]
+        public static string ExecuteSafe(string file, string args, int timeoutMs = 1000)
         {
-            var escapedArgs = args.Replace("\"", "\\\"");
-
-            var processStartInfo = new ProcessStartInfo
+            try
             {
-                FileName = file,
-                Arguments = string.Format("-c \"{0}\"", escapedArgs),
-                RedirectStandardOutput = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
+                var processStartInfo = new ProcessStartInfo
+                {
+                    FileName = file,
+                    Arguments = args,
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
 
-            using (var process = new Process {StartInfo = processStartInfo})
+                using (var process = new Process {StartInfo = processStartInfo})
+                {
+                    process.Start();
+
+                    if (!process.WaitForExit(timeoutMs))
+                    {
+                        process.Kill();
+                    }
+
+                    return process.StandardOutput.ReadToEnd();
+                }
+            }
+            catch (Exception)
             {
-                process.Start();
-
-                var res = process.StandardOutput.ReadToEnd();
-                process.WaitForExit();
-
-                return res;
+                return string.Empty;
             }
         }
-
     }
 }

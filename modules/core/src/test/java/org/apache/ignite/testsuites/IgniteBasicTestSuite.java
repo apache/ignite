@@ -75,6 +75,7 @@ import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheClassNam
 import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheClientRequestsMappingOnMissTest;
 import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheConcurrentReadWriteTest;
 import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheFSRestoreTest;
+import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheSeparateDirectoryTest;
 import org.apache.ignite.internal.processors.cache.RebalanceWithDifferentThreadPoolSizeTest;
 import org.apache.ignite.internal.processors.cache.SetTxTimeoutOnPartitionMapExchangeTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteRejectConnectOnNodeStopTest;
@@ -244,6 +245,7 @@ import org.junit.runners.Suite;
     IgniteMarshallerCacheFSRestoreTest.class,
     IgniteMarshallerCacheClassNameConflictTest.class,
     IgniteMarshallerCacheClientRequestsMappingOnMissTest.class,
+    IgniteMarshallerCacheSeparateDirectoryTest.class,
 
     IgniteDiagnosticMessagesTest.class,
     IgniteDiagnosticMessagesMultipleConnectionsTest.class,
