@@ -244,7 +244,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
                     ses.addMeta(HANDSHAKE_FUT_META_KEY, fut);
                 }
 
-                final long handshakeStartTime = System.nanoTime();
+                long handshakeStartTime = System.nanoTime();
 
                 fut.listen(f -> handshakeDurationHistogram.value(U.nanosToMillis(System.nanoTime() - handshakeStartTime)));
             }
