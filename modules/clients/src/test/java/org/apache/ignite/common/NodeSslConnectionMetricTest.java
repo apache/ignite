@@ -128,33 +128,33 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
         assertEquals(0, reg.<LongMetric>findMetric(RECEIVED_BYTES_METRIC_NAME).value());
 
         try (Connection ignored = getConnection(jdbcConfiguration("thinClient", "trusttwo", CIPHER_SUITE, "TLSv1.2"))) {
-            assertSslCommunicationMetrics(reg, 1, 1, 0);
+            checkSslCommunicationMetrics(reg, 1, 1, 0);
         }
 
         assertTrue(reg.<LongMetric>findMetric(SENT_BYTES_METRIC_NAME).value() > 0);
         assertTrue(reg.<LongMetric>findMetric(RECEIVED_BYTES_METRIC_NAME).value() > 0);
 
-        assertSslCommunicationMetrics(reg, 1, 0, 0);
+        checkSslCommunicationMetrics(reg, 1, 0, 0);
 
         // Tests untrusted certificate.
         assertThrowsWithCause(() ->
             getConnection(jdbcConfiguration("client", "trusttwo", CIPHER_SUITE, "TLSv1.2")),
             SQLException.class);
 
-        assertSslCommunicationMetrics(reg, 2, 0, 1);
+        checkSslCommunicationMetrics(reg, 2, 0, 1);
 
         // Tests unsupported cipher suite.
         assertThrowsWithCause(() ->
             getConnection(jdbcConfiguration("thinClient", "trusttwo", UNSUPPORTED_CIPHER_SUITE, "TLSv1.2")),
             SQLException.class);
 
-        assertSslCommunicationMetrics(reg, 3, 0, 2);
+        checkSslCommunicationMetrics(reg, 3, 0, 2);
 
         assertThrowsWithCause(() ->
             getConnection(jdbcConfiguration("thinClient", "trusttwo", null, "TLSv1.1")),
             SQLException.class);
 
-        assertSslCommunicationMetrics(reg, 4, 0, 3);
+        checkSslCommunicationMetrics(reg, 4, 0, 3);
     }
 
     /** Tests SSL metrics produced by REST TCP client connection. */
@@ -168,20 +168,20 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
         try (
             GridClient ignored = start(gridClientConfiguration("connectorClient", "trustthree", CIPHER_SUITE, "TLSv1.2"))
         ) {
-            assertSslCommunicationMetrics(reg, 1, 1, 0);
+            checkSslCommunicationMetrics(reg, 1, 1, 0);
         }
 
         assertTrue(reg.<LongMetric>findMetric(SENT_BYTES_METRIC_NAME).value() > 0);
         assertTrue(reg.<LongMetric>findMetric(RECEIVED_BYTES_METRIC_NAME).value() > 0);
 
-        assertSslCommunicationMetrics(reg, 1, 0, 0);
+        checkSslCommunicationMetrics(reg, 1, 0, 0);
 
         // Tests untrusted certificate.
         try (GridClient ignored = start(gridClientConfiguration("client", "trustthree", CIPHER_SUITE, "TLSv1.2"))) {
             // GridClient makes 2 additional silent connection attempts if an SSL error occurs.
         }
 
-        assertSslCommunicationMetrics(reg, 4, 0, 3);
+        checkSslCommunicationMetrics(reg, 4, 0, 3);
 
         // Tests unsupported cipher suite.
         try (
@@ -191,14 +191,14 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
             // GridClient makes 2 additional silent connection attempts if an SSL error occurs.
         }
 
-        assertSslCommunicationMetrics(reg, 7, 0, 6);
+        checkSslCommunicationMetrics(reg, 7, 0, 6);
 
         // Tests mismatched protocol versions.
         try (GridClient ignored = start(gridClientConfiguration("connectorClient", "trustthree", null, "TLSv1.1"))) {
             // GridClient makes 2 additional  silent connection attempts if an SSL error occurs.
         }
 
-        assertSslCommunicationMetrics(reg, 10, 0, 9);
+        checkSslCommunicationMetrics(reg, 10, 0, 9);
     }
 
     /** Tests SSL discovery metrics produced by node connection. */
@@ -212,15 +212,15 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
         assertEquals(0, reg.<IntMetric>findMetric("RejectedSslConnectionsCount").value());
 
         // Tests untrusted certificate.
-        assertNodeJoinFails(2, true, "thinClient", "trusttwo", CIPHER_SUITE, "TLSv1.2");
-        assertNodeJoinFails(2, false, "thinClient", "trusttwo", CIPHER_SUITE, "TLSv1.2");
+        checkNodeJoinFails(2, true, "thinClient", "trusttwo", CIPHER_SUITE, "TLSv1.2");
+        checkNodeJoinFails(2, false, "thinClient", "trusttwo", CIPHER_SUITE, "TLSv1.2");
         // Tests untrusted cipher suites.
-        assertNodeJoinFails(2, true, "client", "trustone", UNSUPPORTED_CIPHER_SUITE, "TLSv1.2");
-        assertNodeJoinFails(2, false, "node01", "trustone", UNSUPPORTED_CIPHER_SUITE, "TLSv1.2");
+        checkNodeJoinFails(2, true, "client", "trustone", UNSUPPORTED_CIPHER_SUITE, "TLSv1.2");
+        checkNodeJoinFails(2, false, "node01", "trustone", UNSUPPORTED_CIPHER_SUITE, "TLSv1.2");
 
         // Tests mismatched protocol versions.
-        assertNodeJoinFails(2, true, "client", "trustone", null, "TLSv1.1");
-        assertNodeJoinFails(2, false, "node01", "trustone", null, "TLSv1.1");
+        checkNodeJoinFails(2, true, "client", "trustone", null, "TLSv1.1");
+        checkNodeJoinFails(2, false, "node01", "trustone", null, "TLSv1.1");
 
         // In case of an SSL error, the client and server nodes make 2 additional connection attempts.
         assertTrue(waitForCondition(() ->
@@ -236,15 +236,15 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
         assertEquals(0, reg.<LongMetric>findMetric(SENT_BYTES_METRIC_NAME).value());
         assertEquals(0, reg.<LongMetric>findMetric(RECEIVED_BYTES_METRIC_NAME).value());
 
-        assertSslCommunicationMetrics(reg, 0, 0, 0);
+        checkSslCommunicationMetrics(reg, 0, 0, 0);
 
         try (
             IgniteEx cliNode = startGrid(nodeConfiguration(1, true, "client", "trustone", CIPHER_SUITE, "TLSv1.2"));
             IgniteEx srvNode = startGrid(nodeConfiguration(2, false, "node01", "trustone", CIPHER_SUITE, "TLSv1.2"))
         ) {
-            assertSslCommunicationMetrics(reg, 2, 2, 0);
-            assertSslCommunicationMetrics(mreg(cliNode, COMMUNICATION_METRICS_GROUP_NAME), 0, 1, 0);
-            assertSslCommunicationMetrics(mreg(srvNode, COMMUNICATION_METRICS_GROUP_NAME), 0, 1, 0);
+            checkSslCommunicationMetrics(reg, 2, 2, 0);
+            checkSslCommunicationMetrics(mreg(cliNode, COMMUNICATION_METRICS_GROUP_NAME), 0, 1, 0);
+            checkSslCommunicationMetrics(mreg(srvNode, COMMUNICATION_METRICS_GROUP_NAME), 0, 1, 0);
             assertTrue(mreg(cliNode, COMMUNICATION_METRICS_GROUP_NAME).<LongMetric>findMetric(SENT_BYTES_METRIC_NAME).value() > 0);
             assertTrue(mreg(cliNode, COMMUNICATION_METRICS_GROUP_NAME).<LongMetric>findMetric(RECEIVED_BYTES_METRIC_NAME).value() > 0);
             assertTrue(mreg(srvNode, COMMUNICATION_METRICS_GROUP_NAME).<LongMetric>findMetric(SENT_BYTES_METRIC_NAME).value() > 0);
@@ -254,7 +254,7 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
         assertTrue(reg.<LongMetric>findMetric(SENT_BYTES_METRIC_NAME).value() > 0);
         assertTrue(reg.<LongMetric>findMetric(RECEIVED_BYTES_METRIC_NAME).value() > 0);
 
-        assertSslCommunicationMetrics(reg, 2, 0, 0);
+        checkSslCommunicationMetrics(reg, 2, 0, 0);
     }
 
     /** Tests SSL metrics produced by thin client connection. */
@@ -266,20 +266,20 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
         assertEquals(0, reg.<LongMetric>findMetric(RECEIVED_BYTES_METRIC_NAME).value());
 
         try (IgniteClient ignored = startClient(clientConfiguration("thinClient", "trusttwo", CIPHER_SUITE, "TLSv1.2"))) {
-            assertSslCommunicationMetrics(reg, 1, 1, 0);
+            checkSslCommunicationMetrics(reg, 1, 1, 0);
         }
 
         assertTrue(reg.<LongMetric>findMetric(SENT_BYTES_METRIC_NAME).value() > 0);
         assertTrue(reg.<LongMetric>findMetric(RECEIVED_BYTES_METRIC_NAME).value() > 0);
 
-        assertSslCommunicationMetrics(reg, 1, 0, 0);
+        checkSslCommunicationMetrics(reg, 1, 0, 0);
 
         // Tests untrusted certificate.
         assertThrowsWithCause(() ->
             startClient(clientConfiguration("client", "trustboth", CIPHER_SUITE, "TLSv1.2")),
             ClientConnectionException.class);
 
-        assertSslCommunicationMetrics(reg, 2, 0, 1);
+        checkSslCommunicationMetrics(reg, 2, 0, 1);
 
         // Tests unsupported cipher suites.
         assertThrowsWithCause(() ->
@@ -287,7 +287,7 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
             ClientConnectionException.class
         );
 
-        assertSslCommunicationMetrics(reg, 3, 0, 2);
+        checkSslCommunicationMetrics(reg, 3, 0, 2);
 
         // Tests mismatched protocol versions.
         assertThrowsWithCause(() ->
@@ -295,7 +295,7 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
             ClientConnectionException.class
         );
 
-        assertSslCommunicationMetrics(reg, 4, 0, 3);
+        checkSslCommunicationMetrics(reg, 4, 0, 3);
     }
 
     /** Starts node that imitates a cluster server node to which connections will be performed. */
@@ -374,9 +374,9 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
             .setSslContextFactory(sslContextFactory(keyStore, trustStore, cipherSuite, protocol));
     }
 
-    /** Asserts that the node join failed if the connection was performed with the specified SSL options. */
+    /** Checks that the node join failed if the connection was performed with the specified SSL options. */
     @SuppressWarnings("ThrowableNotThrown")
-    private void assertNodeJoinFails(
+    private void checkNodeJoinFails(
         int idx,
         boolean client,
         String keyStore,
@@ -398,7 +398,7 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
     }
 
     /** Checks SSL communication metrics. */
-    private void assertSslCommunicationMetrics(
+    private void checkSslCommunicationMetrics(
         MetricRegistry mreg,
         long handshakeCnt,
         int sesCnt,
