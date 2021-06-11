@@ -215,11 +215,9 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
 
     /**
      * Check 'OR -> UNION' rule is not applied if (at least) one of column is not indexed.
-     *
-     * @throws Exception If failed.
      */
     @Test
-    public void testNonIndexedOrToUnionAllRewrite() throws Exception {
+    public void testNonIndexedOrToUnionAllRewrite() {
         checkQuery("SELECT * " +
             "FROM products " +
             "WHERE name = 'Canon' " +
