@@ -44,6 +44,8 @@ import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static java.sql.DriverManager.getConnection;
 import static org.apache.ignite.Ignition.startClient;
@@ -65,7 +67,14 @@ import static org.apache.ignite.testframework.GridTestUtils.sslTrustedFactory;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** Checks SSL metrics for various node connection approaches. */
+@RunWith(Parameterized.class)
 public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
+    /** */
+    @Parameterized.Parameters
+    public static Object[][] parameters() {
+        return new Object[90][0];
+    }
+
     /** Cipher suite supported by cluster nodes. */
     private static final String CIPHER_SUITE = "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256";
 
