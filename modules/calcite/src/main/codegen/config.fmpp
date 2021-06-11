@@ -584,14 +584,16 @@ data: {
     # Each must accept arguments "(SqlParserPos pos, boolean replace)".
     # Example: "SqlCreateForeignSchema".
     createStatementParserMethods: [
-      "SqlCreateTable"
+      "SqlCreateTable",
+      "SqlCreateIndex"
     ]
 
     # List of methods for parsing extensions to "DROP" calls.
     # Each must accept arguments "(SqlParserPos pos)".
     # Example: "SqlDropSchema".
     dropStatementParserMethods: [
-      "SqlDropTable"
+      "SqlDropTable",
+      "SqlDropIndex"
     ]
 
     # List of methods for parsing extensions to "DROP" calls.

@@ -168,7 +168,7 @@ public class CommandProcessor extends SqlCommandProcessor {
      * @param schemaMgr Schema manager.
      */
     public CommandProcessor(GridKernalContext ctx, SchemaManager schemaMgr, IgniteH2Indexing idx) {
-        super(ctx);
+        super(ctx, schemaMgr);
 
         this.schemaMgr = schemaMgr;
         this.idx = idx;
@@ -421,7 +421,7 @@ public class CommandProcessor extends SqlCommandProcessor {
     public FieldsQueryCursor<List<?>> runNativeCommand(String sql, SqlCommand cmdNative,
         QueryParameters params, @Nullable SqlClientContext cliCtx, Long qryId) throws IgniteCheckedException {
         if (super.isCommandSupported(cmdNative))
-            return runCommand(sql, cmdNative, cliCtx, qryId);
+            return runCommand(sql, cmdNative, cliCtx);
 
         if (cmdNative instanceof SqlBulkLoadCommand)
             return processBulkLoadCommand((SqlBulkLoadCommand) cmdNative, qryId);

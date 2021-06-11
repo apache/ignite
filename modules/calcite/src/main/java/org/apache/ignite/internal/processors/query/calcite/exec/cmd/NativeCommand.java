@@ -15,22 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.prepare;
+package org.apache.ignite.internal.processors.query.calcite.exec.cmd;
+
+import java.util.Objects;
+import org.apache.ignite.internal.sql.command.SqlCommand;
 
 /**
- *
+ * Wrapper for Ignite core SqlCommand.
  */
-public interface QueryPlan {
-    /** Query type */
-    enum Type { QUERY, FRAGMENT, DML, DDL, NATIVE, EXPLAIN }
+public class NativeCommand {
+    /** */
+    private final SqlCommand cmd;
 
-    /**
-     * @return Query type.
-     */
-    Type type();
+    /** */
+    public NativeCommand(SqlCommand cmd) {
+        this.cmd = Objects.requireNonNull(cmd);
+    }
 
-    /**
-     * Clones this plan.
-     */
-    QueryPlan copy();
+    /** */
+    public SqlCommand command() {
+        return cmd;
+    }
 }

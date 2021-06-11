@@ -63,6 +63,8 @@ import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlC
 import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.TEMPLATE;
 import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.VALUE_TYPE;
 import static org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum.WRITE_SYNCHRONIZATION_MODE;
+import static org.apache.ignite.internal.processors.query.calcite.util.PlanUtils.deriveObjectName;
+import static org.apache.ignite.internal.processors.query.calcite.util.PlanUtils.deriveSchemaName;
 
 /** */
 public class DdlSqlToCommandConverter {
@@ -220,51 +222,6 @@ public class DdlSqlToCommandConverter {
         dropTblCmd.ifExists(dropTblNode.ifExists);
 
         return dropTblCmd;
-    }
-
-    /** Derives a schema name from the compound identifier. */
-    private String deriveSchemaName(SqlIdentifier id, PlanningContext ctx) {
-        String schemaName;
-        if (id.isSimple())
-            schemaName = ctx.schemaName();
-        else {
-            SqlIdentifier schemaId = id.skipLast(1);
-
-            if (!schemaId.isSimple()) {
-                throw new IgniteSQLException("Unexpected value of schemaName [" +
-                    "expected a simple identifier, but was " + schemaId + "; " +
-                    "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.PARSING);
-            }
-
-            schemaName = schemaId.getSimple();
-        }
-
-        ensureSchemaExists(ctx, schemaName);
-
-        return schemaName;
-    }
-
-    /** Derives an object(a table, an index, etc) name from the compound identifier. */
-    private String deriveObjectName(SqlIdentifier id, PlanningContext ctx, String objDesc) {
-        if (id.isSimple())
-            return id.getSimple();
-
-        SqlIdentifier objId = id.getComponent(id.skipLast(1).names.size());
-
-        if (!objId.isSimple()) {
-            throw new IgniteSQLException("Unexpected value of " + objDesc + " [" +
-                "expected a simple identifier, but was " + objId + "; " +
-                "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.PARSING);
-        }
-
-        return objId.getSimple();
-    }
-
-    /** */
-    private void ensureSchemaExists(PlanningContext ctx, String schemaName) {
-        if (ctx.catalogReader().getRootSchema().getSubSchema(schemaName, true) == null)
-            throw new IgniteSQLException("Schema with name " + schemaName + " not found",
-                IgniteQueryErrorCode.SCHEMA_NOT_FOUND);
     }
 
     /**

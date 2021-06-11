@@ -15,22 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.prepare;
+package org.apache.ignite.internal.processors.query.calcite.sql;
+
+import org.apache.calcite.sql.SqlCall;
+import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.sql.parser.SqlParserPos;
 
 /**
- *
+ * SqlNode for Ignite native (core module) commands.
  */
-public interface QueryPlan {
-    /** Query type */
-    enum Type { QUERY, FRAGMENT, DML, DDL, NATIVE, EXPLAIN }
+public abstract class IgniteSqlNativeCommand extends SqlCall {
+    /** Operator. */
+    private final SqlOperator operator;
 
-    /**
-     * @return Query type.
-     */
-    Type type();
+    /** */
+    protected IgniteSqlNativeCommand(SqlOperator op, SqlParserPos pos) {
+        super(pos);
+        operator = op;
+    }
 
-    /**
-     * Clones this plan.
-     */
-    QueryPlan copy();
+    /** {@inheritDoc} */
+    @Override public SqlOperator getOperator() {
+        return operator;
+    }
 }

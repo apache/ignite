@@ -37,10 +37,10 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLo
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
+import org.apache.ignite.internal.processors.query.GridQuerySchemaManager;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
 import org.apache.ignite.internal.sql.command.SqlAlterUserCommand;
@@ -71,13 +71,17 @@ public abstract class SqlCommandProcessor {
     /** Logger. */
     protected final IgniteLogger log;
 
+    /** Schema manager. */
+    protected final GridQuerySchemaManager schemaMgr;
+
     /**
      * Constructor.
      *
      * @param ctx Kernal context.
      */
-    protected SqlCommandProcessor(GridKernalContext ctx) {
+    protected SqlCommandProcessor(GridKernalContext ctx, GridQuerySchemaManager schemaMgr) {
         this.ctx = ctx;
+        this.schemaMgr = schemaMgr;
         log = ctx.log(getClass());
     }
 
@@ -87,11 +91,10 @@ public abstract class SqlCommandProcessor {
      * @param sql SQL.
      * @param cmdNative Native command.
      * @param cliCtx Client context.
-     * @param qryId Running query ID.
      * @return Result.
      */
-    public @Nullable FieldsQueryCursor<List<?>> runCommand(String sql, SqlCommand cmdNative,
-        @Nullable SqlClientContext cliCtx, Long qryId) {
+    @Nullable public FieldsQueryCursor<List<?>> runCommand(String sql, SqlCommand cmdNative,
+        @Nullable SqlClientContext cliCtx) {
         assert cmdNative != null;
 
         if (isDdl(cmdNative))
@@ -203,14 +206,13 @@ public abstract class SqlCommandProcessor {
             if (cmd instanceof SqlCreateIndexCommand) {
                 SqlCreateIndexCommand cmd0 = (SqlCreateIndexCommand)cmd;
 
-                GridH2Table tbl = schemaMgr.dataTable(cmd0.schemaName(), cmd0.tableName());
+                GridQueryTypeDescriptor typeDesc = schemaMgr.typeDescriptorForTable(cmd0.schemaName(), cmd0.tableName());
+                GridCacheContextInfo<?, ?> cacheInfo = schemaMgr.cacheInfoForTable(cmd0.schemaName(), cmd0.tableName());
 
-                if (tbl == null)
+                if (typeDesc == null)
                     throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, cmd0.tableName());
 
-                assert tbl.rowDescriptor() != null;
-
-                ensureDdlSupported(tbl.cacheInfo());
+                ensureDdlSupported(cacheInfo);
 
                 QueryIndex newIdx = new QueryIndex();
 
@@ -219,9 +221,6 @@ public abstract class SqlCommandProcessor {
                 newIdx.setIndexType(cmd0.spatial() ? QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);
 
                 LinkedHashMap<String, Boolean> flds = new LinkedHashMap<>();
-
-                // Let's replace H2's table and property names by those operated by GridQueryProcessor.
-                GridQueryTypeDescriptor typeDesc = tbl.rowDescriptor().type();
 
                 for (SqlIndexColumn col : cmd0.columns()) {
                     GridQueryProperty prop = typeDesc.property(col.name());
@@ -235,18 +234,21 @@ public abstract class SqlCommandProcessor {
                 newIdx.setFields(flds);
                 newIdx.setInlineSize(cmd0.inlineSize());
 
-                fut = ctx.query().dynamicIndexCreate(tbl.cacheName(), cmd.schemaName(), typeDesc.tableName(),
+                fut = ctx.query().dynamicIndexCreate(cacheInfo.name(), cmd.schemaName(), typeDesc.tableName(),
                     newIdx, cmd0.ifNotExists(), cmd0.parallel());
             }
             else if (cmd instanceof SqlDropIndexCommand) {
                 SqlDropIndexCommand cmd0 = (SqlDropIndexCommand)cmd;
 
-                GridH2Table tbl = schemaMgr.dataTableForIndex(cmd0.schemaName(), cmd0.indexName());
+                GridQueryTypeDescriptor typeDesc = schemaMgr.typeDescriptorForIndex(cmd0.schemaName(), cmd0.indexName());
 
-                if (tbl != null) {
-                    ensureDdlSupported(tbl.cacheInfo());
+                if (typeDesc != null) {
+                    GridCacheContextInfo<?, ?> cacheInfo = schemaMgr.cacheInfoForTable(typeDesc.schemaName(),
+                        typeDesc.tableName());
 
-                    fut = ctx.query().dynamicIndexDrop(tbl.cacheName(), cmd0.schemaName(), cmd0.indexName(),
+                    ensureDdlSupported(cacheInfo);
+
+                    fut = ctx.query().dynamicIndexDrop(cacheInfo.name(), cmd0.schemaName(), cmd0.indexName(),
                         cmd0.ifExists());
                 }
                 else {
@@ -260,9 +262,9 @@ public abstract class SqlCommandProcessor {
             else if (cmd instanceof SqlAlterTableCommand) {
                 SqlAlterTableCommand cmd0 = (SqlAlterTableCommand)cmd;
 
-                GridH2Table tbl = schemaMgr.dataTable(cmd0.schemaName(), cmd0.tableName());
+                GridCacheContextInfo<?, ?> cacheInfo = schemaMgr.cacheInfoForTable(cmd0.schemaName(), cmd0.tableName());
 
-                if (tbl == null) {
+                if (cacheInfo == null) {
                     throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND,
                         cmd0.tableName());
                 }
@@ -274,13 +276,13 @@ public abstract class SqlCommandProcessor {
                 IgniteCluster cluster = ctx.grid().cluster();
 
                 if (logging) {
-                    boolean res = cluster.enableWal(tbl.cacheName());
+                    boolean res = cluster.enableWal(cacheInfo.name());
 
                     if (!res)
                         throw new IgniteSQLException("Logging already enabled for table: " + cmd0.tableName());
                 }
                 else {
-                    boolean res = cluster.disableWal(tbl.cacheName());
+                    boolean res = cluster.disableWal(cacheInfo.name());
 
                     if (!res)
                         throw new IgniteSQLException("Logging already disabled for table: " + cmd0.tableName());

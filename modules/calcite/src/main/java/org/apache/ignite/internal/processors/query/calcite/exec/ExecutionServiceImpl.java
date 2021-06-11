@@ -64,6 +64,8 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryCancellable;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
+import org.apache.ignite.internal.processors.query.calcite.exec.cmd.NativeCommandHandler;
+import org.apache.ignite.internal.processors.query.calcite.exec.cmd.NativeCommandPlan;
 import org.apache.ignite.internal.processors.query.calcite.exec.ddl.DdlCommandHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
@@ -99,6 +101,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.ValidationRes
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.DdlSqlToCommandConverter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlNativeCommand;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTraitDef;
@@ -180,6 +183,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     /** */
     private final DdlSqlToCommandConverter ddlConverter;
 
+    /** */
+    private final NativeCommandHandler nativeCmdHnd;
+
     /**
      * @param ctx Kernal.
      */
@@ -194,6 +200,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         ddlCmdHnd = new DdlCommandHandler(
             ctx::query, ctx.cache(), ctx.security(), () -> schemaHolder().schema()
         );
+
+        nativeCmdHnd = new NativeCommandHandler(ctx, schemaHolder);
     }
 
     /**
@@ -545,6 +553,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         ctx.planner().reset();
 
+        if (sqlNode instanceof IgniteSqlNativeCommand)
+            return prepareNative(sqlNode, ctx);
+
         switch (sqlNode.getKind()) {
             case SELECT:
             case ORDER_BY:
@@ -621,6 +632,13 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
+    private QueryPlan prepareNative(SqlNode sqlNode, PlanningContext ctx) {
+        assert sqlNode instanceof IgniteSqlNativeCommand : sqlNode == null ? "null" : sqlNode.getClass().getName();
+
+        return new NativeCommandPlan(nativeCmdHnd.convert((IgniteSqlNativeCommand)sqlNode, ctx));
+    }
+
+    /** */
     private QueryPlan prepareExplain(SqlNode explain, PlanningContext ctx) throws ValidationException {
         IgnitePlanner planner = ctx.planner();
 
@@ -659,6 +677,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 return executeExplain((ExplainPlan)plan, pctx);
             case DDL:
                 return executeDdl((DdlPlan)plan, pctx);
+            case NATIVE:
+                return executeNative(qryId, (NativeCommandPlan)plan, pctx);
 
             default:
                 throw new AssertionError("Unexpected plan type: " + plan);
@@ -676,6 +696,18 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         }
 
         return H2Utils.zeroCursor();
+    }
+
+    /** */
+    private FieldsQueryCursor<List<?>> executeNative(UUID qryId, NativeCommandPlan plan, PlanningContext pctx) {
+        try {
+            return nativeCmdHnd.handle(qryId, plan.command(), pctx);
+        }
+        catch (Exception e) {
+            throw new IgniteSQLException("Failed to execute native command [stmt=" + pctx.query() +
+                ", err=" + e.getMessage() + ']', e);
+        }
+
     }
 
     /** */

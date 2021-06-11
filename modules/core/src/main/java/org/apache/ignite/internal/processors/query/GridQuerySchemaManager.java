@@ -15,22 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.prepare;
+package org.apache.ignite.internal.processors.query;
+
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 
 /**
- *
+ * Provides information about query engine schemas.
  */
-public interface QueryPlan {
-    /** Query type */
-    enum Type { QUERY, FRAGMENT, DML, DDL, NATIVE, EXPLAIN }
+public interface GridQuerySchemaManager {
+    /**
+     * Find type descriptor by schema and table name.
+     */
+    public GridQueryTypeDescriptor typeDescriptorForTable(String schemaName, String tableName);
 
     /**
-     * @return Query type.
+     *  Find type descriptor by schema and index name.
      */
-    Type type();
+    public GridQueryTypeDescriptor typeDescriptorForIndex(String schemaName, String idxName);
 
     /**
-     * Clones this plan.
+     *  Find cache info by schema and table name.
      */
-    QueryPlan copy();
+    public <K, V> GridCacheContextInfo<K, V> cacheInfoForTable(String schemaName, String tableName);
 }

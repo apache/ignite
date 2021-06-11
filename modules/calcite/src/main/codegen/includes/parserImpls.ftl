@@ -164,6 +164,60 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     }
 }
 
+SqlNode IndexedColumn() :
+{
+    final Span s;
+    SqlNode col;
+}
+{
+    col = SimpleIdentifier()
+    (
+        <ASC>
+    |   <DESC> {
+            col = SqlStdOperatorTable.DESC.createCall(getPos(), col);
+        }
+    )?
+    {
+        return col;
+    }
+}
+
+SqlNodeList IndexedColumnList() :
+{
+    final Span s;
+    final List<SqlNode> list = new ArrayList<SqlNode>();
+    SqlNode col = null;
+}
+{
+    <LPAREN> { s = span(); }
+    col = IndexedColumn(list) { list.add(col); }
+    (
+        <COMMA> IndexedColumn(list) { list.add(col); }
+    )*
+    <RPAREN> {
+        return new SqlNodeList(list, s.end(this));
+    }
+}
+
+SqlCreate SqlCreateIndex(Span s, boolean replace) :
+{
+    final boolean ifNotExists;
+    final SqlIdentifier idxId;
+    final SqlIdentifier tblId;
+    final SqlNodeList columnList;
+}
+{
+    <INDEX>
+    ifNotExists = IfNotExistsOpt()
+    idxId = SimpleIdentifier()
+    <ON>
+    tblId = CompoundIdentifier()
+    columnList = IndexedColumnList()
+    {
+        return new IgniteSqlCreateIndex(s.end(this), ifNotExists, idxId, tblId, columnList);
+    }
+}
+
 boolean IfExistsOpt() :
 {
 }

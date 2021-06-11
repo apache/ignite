@@ -173,7 +173,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /** Pattern to test incoming query to decide whether this query should be executed with Calcite or H2. */
     public static final Pattern H2_REDIRECTION_RULES =
-        Pattern.compile("\\s*(alter\\s*table|create\\s*index|drop\\s*index)", CASE_INSENSITIVE);
+        Pattern.compile("\\s*(alter\\s+table)", CASE_INSENSITIVE);
 
     /** For tests. */
     public static Class<? extends GridQueryIndexing> idxCls;
@@ -2850,8 +2850,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new CacheException("Execution of local SqlFieldsQuery on client node disallowed.");
 
         if (experimentalQueryEngine != null && useExperimentalSqlEngine) {
-            if (executeWithExperimentalEngine(qry.getSql()))
-                return experimentalQueryEngine.query(QueryContext.of(qry), qry.getSchema(), qry.getSql(), X.EMPTY_OBJECT_ARRAY);
+            if (executeWithExperimentalEngine(qry.getSql())) {
+                return experimentalQueryEngine.query(QueryContext.of(qry, cliCtx), qry.getSchema(), qry.getSql(),
+                    X.EMPTY_OBJECT_ARRAY);
+            }
         }
 
         return executeQuerySafe(cctx, () -> {
