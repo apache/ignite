@@ -19,6 +19,7 @@ package org.apache.ignite.internal.table.distributed;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,17 +30,22 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
-import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import org.apache.ignite.configuration.internal.ConfigurationManager;
+import org.apache.ignite.configuration.internal.util.ConfigurationUtil;
 import org.apache.ignite.configuration.schemas.table.TableChange;
 import org.apache.ignite.configuration.schemas.table.TableView;
 import org.apache.ignite.configuration.schemas.table.TablesConfiguration;
 import org.apache.ignite.internal.affinity.AffinityManager;
 import org.apache.ignite.internal.affinity.event.AffinityEvent;
 import org.apache.ignite.internal.affinity.event.AffinityEventParameters;
+import org.apache.ignite.internal.manager.EventListener;
+import org.apache.ignite.internal.manager.ListenerRemovedException;
 import org.apache.ignite.internal.manager.Producer;
 import org.apache.ignite.internal.metastorage.MetaStorageManager;
+import org.apache.ignite.internal.metastorage.client.Conditions;
+import org.apache.ignite.internal.metastorage.client.Entry;
+import org.apache.ignite.internal.metastorage.client.Operations;
 import org.apache.ignite.internal.raft.Loza;
 import org.apache.ignite.internal.schema.SchemaManager;
 import org.apache.ignite.internal.schema.SchemaRegistry;
@@ -50,16 +56,17 @@ import org.apache.ignite.internal.table.distributed.raft.PartitionListener;
 import org.apache.ignite.internal.table.distributed.storage.InternalTableImpl;
 import org.apache.ignite.internal.table.event.TableEvent;
 import org.apache.ignite.internal.table.event.TableEventParameters;
+import org.apache.ignite.internal.util.Cursor;
 import org.apache.ignite.internal.vault.VaultManager;
 import org.apache.ignite.lang.ByteArray;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteLogger;
-import org.apache.ignite.internal.metastorage.client.Conditions;
-import org.apache.ignite.internal.metastorage.client.Operations;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.raft.client.service.RaftGroupService;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.manager.IgniteTables;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Table manager.
@@ -70,6 +77,9 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
 
     /** Internal prefix for the metasorage. */
     private static final String INTERNAL_PREFIX = "internal.tables.";
+
+    /** Public prefix for metastorage. */
+    private static final String PUBLIC_PREFIX = "dst-cfg.table.tables.";
 
     /** Meta storage service. */
     private final MetaStorageManager metaStorageMgr;
@@ -142,16 +152,13 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
             ));
         }
 
-        InternalTableImpl internalTable = new InternalTableImpl(tblId, partitionMap, partitions);
+        InternalTableImpl internalTable = new InternalTableImpl(name, tblId, partitionMap, partitions);
 
-        tables.put(name, new TableImpl(internalTable, schemaReg));
+        var table = new TableImpl(internalTable, schemaReg);
 
-        onEvent(TableEvent.CREATE, new TableEventParameters(
-            tblId,
-            name,
-            schemaReg,
-            internalTable
-        ), null);
+        tables.put(name, table);
+
+        onEvent(TableEvent.CREATE, new TableEventParameters(table), null);
     }
 
     /**
@@ -171,12 +178,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
 
         assert table != null : "There is no table with the name specified [name=" + name + ']';
 
-        onEvent(TableEvent.DROP, new TableEventParameters(
-            tblId,
-            name,
-            table.schemaView(),
-            table.internalTable()
-        ), null);
+        onEvent(TableEvent.DROP, new TableEventParameters(table), null);
     }
 
     /**
@@ -229,12 +231,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
                     .exceptionally(e -> {
                         LOG.error("Failed to create a new table [name=" + tblName + ", id=" + tblId + ']', e);
 
-                        onEvent(TableEvent.CREATE, new TableEventParameters(
-                            tblId,
-                            tblName,
-                            null,
-                            null
-                        ), e);
+                        onEvent(TableEvent.CREATE, new TableEventParameters(tblId, tblName), e);
 
                         return null;
                     })
@@ -245,28 +242,40 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
                         schemaReadyFut.join().schemaRegistry()
                     ));
 
-                affMgr.listen(AffinityEvent.CALCULATED, (parameters, e) -> {
-                    if (!tblId.equals(parameters.tableId()))
-                        return false;
+                affMgr.listen(AffinityEvent.CALCULATED, new EventListener<AffinityEventParameters>() {
+                    @Override public boolean notify(@NotNull AffinityEventParameters parameters, @Nullable Throwable e) {
+                        if (!tblId.equals(parameters.tableId()))
+                            return false;
 
-                    if (e == null)
-                        affinityReadyFut.complete(parameters);
-                    else
+                        if (e == null)
+                            affinityReadyFut.complete(parameters);
+                        else
+                            affinityReadyFut.completeExceptionally(e);
+
+                        return true;
+                    }
+
+                    @Override public void remove(@NotNull Throwable e) {
                         affinityReadyFut.completeExceptionally(e);
-
-                    return true;
+                    }
                 });
 
-                schemaMgr.listen(SchemaEvent.INITIALIZED, (parameters, e) -> {
-                    if (!tblId.equals(parameters.tableId()))
-                        return false;
+                schemaMgr.listen(SchemaEvent.INITIALIZED, new EventListener<SchemaEventParameters>() {
+                    @Override public boolean notify(@NotNull SchemaEventParameters parameters, @Nullable Throwable e) {
+                        if (!tblId.equals(parameters.tableId()))
+                            return false;
 
-                    if (e == null)
-                        schemaReadyFut.complete(parameters);
-                    else
+                        if (e == null)
+                            schemaReadyFut.complete(parameters);
+                        else
+                            schemaReadyFut.completeExceptionally(e);
+
+                        return true;
+                    }
+
+                    @Override public void remove(@NotNull Throwable e) {
                         schemaReadyFut.completeExceptionally(e);
-
-                    return true;
+                    }
                 });
             }
 
@@ -278,7 +287,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
             for (String tblName : tablesToStop) {
                 TableImpl t = tables.get(tblName);
 
-                UUID tblId = t.internalTable().tableId();
+                UUID tblId = t.tableId();
 
                 if (hasMetastorageLocally) {
                     var key = new ByteArray(INTERNAL_PREFIX + tblId);
@@ -291,24 +300,22 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
                                 Operations.noop())));
                 }
 
-                affMgr.listen(AffinityEvent.REMOVED, (parameters, e) -> {
-                    if (!tblId.equals(parameters.tableId()))
-                        return false;
+                affMgr.listen(AffinityEvent.REMOVED, new EventListener<AffinityEventParameters>() {
+                    @Override public boolean notify(@NotNull AffinityEventParameters parameters, @Nullable Throwable e) {
+                        if (!tblId.equals(parameters.tableId()))
+                            return false;
 
-                    if (e == null)
-                        dropTableLocally(tblName, tblId, parameters.assignment());
-                    else {
-                        LOG.error("Failed to drop a table [name=" + tblName + ", id=" + tblId + ']', e);
+                        if (e == null)
+                            dropTableLocally(tblName, tblId, parameters.assignment());
+                        else
+                            onEvent(TableEvent.DROP, new TableEventParameters(tblId, tblName), e);
 
-                        onEvent(TableEvent.DROP, new TableEventParameters(
-                            tblId,
-                            tblName,
-                            null,
-                            null
-                        ), e);
+                        return true;
                     }
 
-                    return true;
+                    @Override public void remove(@NotNull Throwable e) {
+                        onEvent(TableEvent.DROP, new TableEventParameters(tblId, tblName), e);
+                    }
                 });
             }
 
@@ -320,19 +327,24 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
     @Override public Table createTable(String name, Consumer<TableChange> tableInitChange) {
         CompletableFuture<Table> tblFut = new CompletableFuture<>();
 
-        listen(TableEvent.CREATE, (params, e) -> {
-            String tableName = params.tableName();
+        listen(TableEvent.CREATE, new EventListener<TableEventParameters>() {
+            @Override public boolean notify(@NotNull TableEventParameters parameters, @Nullable Throwable e) {
+                String tableName = parameters.tableName();
 
-            if (!name.equals(tableName))
-                return false;
+                if (!name.equals(tableName))
+                    return false;
 
-            if (e == null) {
-                tblFut.complete(tables.get(name));
+                if (e == null)
+                    tblFut.complete(parameters.table());
+                else
+                    tblFut.completeExceptionally(e);
+
+                return true;
             }
-            else
-                tblFut.completeExceptionally(e);
 
-            return true;
+            @Override public void remove(@NotNull Throwable e) {
+                tblFut.completeExceptionally(e);
+            }
         });
 
         try {
@@ -353,9 +365,9 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
     @Override public void dropTable(String name) {
         CompletableFuture<Void> dropTblFut = new CompletableFuture<>();
 
-        listen(TableEvent.DROP, new BiPredicate<>() {
-            @Override public boolean test(TableEventParameters params, Throwable e) {
-                String tableName = params.tableName();
+        listen(TableEvent.DROP, new EventListener<TableEventParameters>() {
+            @Override public boolean notify(@NotNull TableEventParameters parameters, @Nullable Throwable e) {
+                String tableName = parameters.tableName();
 
                 if (!name.equals(tableName))
                     return false;
@@ -371,6 +383,10 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
                     dropTblFut.completeExceptionally(e);
 
                 return true;
+            }
+
+            @Override public void remove(@NotNull Throwable e) {
+                dropTblFut.completeExceptionally(e);
             }
         });
 
@@ -392,11 +408,138 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
 
     /** {@inheritDoc} */
     @Override public List<Table> tables() {
-        return new ArrayList<>(tables.values());
+        ArrayList<Table> tables = new ArrayList<>();
+
+        for (String tblName : tableNamesConfigured()) {
+            Table tbl = table(tblName, false);
+
+            if (tbl != null)
+                tables.add(tbl);
+        }
+
+        return tables;
+    }
+
+    /**
+     * Collects a set of table names from the distributed configuration storage.
+     *
+     * @return A set of table names.
+     */
+    private HashSet<String> tableNamesConfigured() {
+        IgniteBiTuple<ByteArray, ByteArray> range = toRange(new ByteArray(PUBLIC_PREFIX));
+
+        HashSet tableNames = new HashSet();
+
+        try (Cursor<Entry> cursor = metaStorageMgr.range(range.get1(), range.get2())) {
+            while (cursor.hasNext()) {
+                Entry entry = cursor.next();
+
+                String keyTail = entry.key().toString().substring(PUBLIC_PREFIX.length());
+
+                int idx = -1;
+
+                while ((idx = keyTail.indexOf('.', idx + 1)) > 0 && keyTail.charAt(idx - 1) == '\\');
+
+                String tablName = keyTail.substring(0, idx);
+
+                tableNames.add(ConfigurationUtil.unescape(tablName));
+            }
+        }
+        catch (Exception e) {
+            LOG.error("Can't get table names.", e);
+        }
+
+        return tableNames;
     }
 
     /** {@inheritDoc} */
     @Override public Table table(String name) {
-        return tables.get(name);
+        return table(name, true);
+    }
+
+    /**
+     * Gets a table if it exists or {@code null} if it was not created or was removed before.
+     *
+     * @param name Table name.
+     * @param checkConfiguration True when the method checks a configuration before tries to get a table,
+     * false otherwise.
+     * @return A table or {@code null} if table does not exist.
+     */
+    private Table table(String name, boolean checkConfiguration) {
+        if (checkConfiguration && !isTableConfigured(name))
+            return null;
+
+        Table tbl = tables.get(name);
+
+        if (tbl != null)
+            return tbl;
+
+        CompletableFuture<Table> getTblFut = new CompletableFuture<>();
+
+        EventListener<TableEventParameters> clo = new EventListener<TableEventParameters>() {
+            @Override public boolean notify(@NotNull TableEventParameters parameters, @Nullable Throwable e) {
+                if (e instanceof ListenerRemovedException) {
+                    getTblFut.completeExceptionally(e);
+
+                    return true;
+                }
+
+                String tableName = parameters.tableName();
+
+                if (!name.equals(tableName))
+                    return false;
+
+                if (e == null)
+                    getTblFut.complete(parameters.table());
+                else
+                    getTblFut.completeExceptionally(e);
+
+                return true;
+            }
+
+            @Override public void remove(@NotNull Throwable e) {
+                getTblFut.completeExceptionally(e);
+            }
+        };
+
+        listen(TableEvent.CREATE, clo);
+
+        tbl = tables.get(name);
+
+        if (tbl != null && getTblFut.complete(tbl) ||
+            !isTableConfigured(name) && getTblFut.complete(null))
+            removeListener(TableEvent.CREATE, clo);
+
+        return getTblFut.join();
+    }
+
+    /**
+     * Checks that the table is configured.
+     *
+     * @param name Table name.
+     * @return True if table configured, false otherwise.
+     */
+    private boolean isTableConfigured(String name) {
+        return metaStorageMgr.get(new ByteArray(PUBLIC_PREFIX + ConfigurationUtil.escape(name) + ".name")).join() != null;
+    }
+
+    /**
+     * Transforms a prefix bytes to range.
+     * This method should be replaced to direct call of range by prefix
+     * in Meta storage manager when it will be implemented.
+     * TODO: IGNITE-14799
+     *
+     * @param prefixKey Prefix bytes.
+     * @return Tuple with left and right borders for range.
+     */
+    private IgniteBiTuple<ByteArray, ByteArray> toRange(ByteArray prefixKey) {
+        var bytes = Arrays.copyOf(prefixKey.bytes(), prefixKey.bytes().length);
+
+        if (bytes[bytes.length - 1] != Byte.MAX_VALUE)
+            bytes[bytes.length - 1]++;
+        else
+            bytes = Arrays.copyOf(bytes, bytes.length + 1);
+
+        return new IgniteBiTuple<>(prefixKey, new ByteArray(bytes));
     }
 }

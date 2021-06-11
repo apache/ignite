@@ -83,6 +83,11 @@ public class DummyInternalTableImpl implements InternalTable {
     }
 
     /** {@inheritDoc} */
+    @Override public @NotNull String tableName() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public CompletableFuture<BinaryRow> get(@NotNull BinaryRow row) {
         assert row != null;
 

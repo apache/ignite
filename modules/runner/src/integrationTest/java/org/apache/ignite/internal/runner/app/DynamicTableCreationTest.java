@@ -106,14 +106,14 @@ class DynamicTableCreationTest {
         );
 
         // Put data on node 1.
-        Table tbl1 = waitForTable(schTbl1.canonicalName(), clusterNodes.get(1));
+        Table tbl1 = clusterNodes.get(1).tables().table(schTbl1.canonicalName());
         KeyValueBinaryView kvView1 = tbl1.kvView();
 
         tbl1.insert(tbl1.tupleBuilder().set("key", 1L).set("val", 111).build());
         kvView1.put(tbl1.tupleBuilder().set("key", 2L).build(), tbl1.tupleBuilder().set("val", 222).build());
 
         // Get data on node 2.
-        Table tbl2 = waitForTable(schTbl1.canonicalName(), clusterNodes.get(2));
+        Table tbl2 = clusterNodes.get(2).tables().table(schTbl1.canonicalName());
         KeyValueBinaryView kvView2 = tbl2.kvView();
 
         final Tuple keyTuple1 = tbl2.tupleBuilder().set("key", 1L).build();
@@ -128,26 +128,6 @@ class DynamicTableCreationTest {
         assertEquals(111, (Integer)kvView2.get(keyTuple1).value("val"));
         assertEquals(222, (Integer)tbl2.get(keyTuple2).value("val"));
         assertEquals(222, (Integer)kvView2.get(keyTuple2).value("val"));
-    }
-
-    /**
-     * Waits for table, until it is initialized.
-     *
-     * @param tableName Table name
-     * @param ign Ignite.
-     * @return Table.
-     */
-    private Table waitForTable(String tableName, Ignite ign) {
-        while (ign.tables().table(tableName) == null) {
-            try {
-                Thread.sleep(100);
-            }
-            catch (InterruptedException e) {
-                LOG.warn("Waiting for table " + tableName + " is interrupted.");
-            }
-        }
-
-        return ign.tables().table(tableName);
     }
 
     /**
@@ -186,7 +166,7 @@ class DynamicTableCreationTest {
         final UUID uuid2 = UUID.randomUUID();
 
         // Put data on node 1.
-        Table tbl1 = waitForTable(scmTbl1.canonicalName(), clusterNodes.get(1));
+        Table tbl1 = clusterNodes.get(1).tables().table(scmTbl1.canonicalName());
         KeyValueBinaryView kvView1 = tbl1.kvView();
 
         tbl1.insert(tbl1.tupleBuilder().set("key", uuid).set("affKey", 42L)
@@ -196,7 +176,7 @@ class DynamicTableCreationTest {
             kvView1.tupleBuilder().set("valStr", "String value 2").set("valInt", 7373).set("valNull", null).build());
 
         // Get data on node 2.
-        Table tbl2 = waitForTable(scmTbl1.canonicalName(), clusterNodes.get(2));
+        Table tbl2 = clusterNodes.get(2).tables().table(scmTbl1.canonicalName());
         KeyValueBinaryView kvView2 = tbl2.kvView();
 
         final Tuple keyTuple1 = tbl2.tupleBuilder().set("key", uuid).set("affKey", 42L).build();

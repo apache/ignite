@@ -36,6 +36,13 @@ public interface InternalTable {
     @NotNull UUID tableId();
 
     /**
+     * Gets a name of the table.
+     *
+     * @return Table name.
+     */
+    @NotNull String tableName();
+
+    /**
      * Asynchronously gets a row with same key columns values as given one from the table.
      *
      * @param keyRow Row with key columns set.

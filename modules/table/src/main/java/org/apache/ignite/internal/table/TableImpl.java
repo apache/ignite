@@ -22,13 +22,14 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.schema.BinaryRow;
 import org.apache.ignite.internal.schema.Row;
 import org.apache.ignite.internal.schema.SchemaDescriptor;
-import org.apache.ignite.internal.schema.marshaller.TupleMarshaller;
 import org.apache.ignite.internal.schema.SchemaRegistry;
+import org.apache.ignite.internal.schema.marshaller.TupleMarshaller;
 import org.apache.ignite.table.InvokeProcessor;
 import org.apache.ignite.table.KeyValueBinaryView;
 import org.apache.ignite.table.KeyValueView;
@@ -61,12 +62,17 @@ public class TableImpl extends AbstractTableView implements Table {
     }
 
     /**
-     * Gets an internal table associated with the table.
+     * Gets a table id.
      *
-     * @return Internal table.
+     * @return Table id as UUID.
      */
-    public @NotNull InternalTable internalTable() {
-        return tbl;
+    public @NotNull UUID tableId() {
+        return tbl.tableId();
+    }
+
+    /** {@inheritDoc} */
+    @Override public @NotNull String tableName() {
+        return tbl.tableName();
     }
 
     /**

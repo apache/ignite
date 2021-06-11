@@ -20,14 +20,13 @@ package org.apache.ignite.internal.manager;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.function.BiPredicate;
 
 /**
  * Interface which can produce its events.
  */
 public abstract class Producer<T extends Event, P extends EventParameters> {
     /** All listeners. */
-    private ConcurrentHashMap<T, ConcurrentLinkedQueue<BiPredicate<P, Throwable>>> listeners = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<T, ConcurrentLinkedQueue<EventListener<P>>> listeners = new ConcurrentHashMap<>();
 
     /**
      * Registers an event listener.
@@ -37,9 +36,20 @@ public abstract class Producer<T extends Event, P extends EventParameters> {
      * @param evt Event.
      * @param closure Closure.
      */
-    public void listen(T evt, BiPredicate<P, Throwable> closure) {
+    public void listen(T evt, EventListener<P> closure) {
         listeners.computeIfAbsent(evt, evtKey -> new ConcurrentLinkedQueue<>())
             .offer(closure);
+    }
+
+    /**
+     * Removes a listener associated with the event.
+     *
+     * @param evt Event.
+     * @param closure Closure.
+     */
+    public void removeListener(T evt, EventListener<P> closure) {
+        if (listeners.computeIfAbsent(evt, evtKey -> new ConcurrentLinkedQueue<>()).remove(closure))
+            closure.remove(new ListenerRemovedException());
     }
 
     /**
@@ -50,19 +60,19 @@ public abstract class Producer<T extends Event, P extends EventParameters> {
      * @param err Exception when it was happened, or {@code null} otherwise.
      */
     protected void onEvent(T evt, P params, Throwable err) {
-        ConcurrentLinkedQueue<BiPredicate<P, Throwable>> queue = listeners.get(evt);
+        ConcurrentLinkedQueue<EventListener<P>> queue = listeners.get(evt);
 
         if (queue == null)
             return;
 
-        BiPredicate<P, Throwable> closure;
+        EventListener<P> closure;
 
-        Iterator<BiPredicate<P, Throwable>> iter = queue.iterator();
+        Iterator<EventListener<P>> iter = queue.iterator();
 
         while (iter.hasNext()) {
             closure = iter.next();
 
-            if (closure.test(params, err))
+            if (closure.notify(params, err))
                 iter.remove();
         }
     }

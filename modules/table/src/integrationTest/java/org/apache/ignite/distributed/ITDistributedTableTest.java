@@ -257,6 +257,7 @@ public class ITDistributedTableTest {
         }
 
         Table tbl = new TableImpl(new InternalTableImpl(
+            "tbl",
             UUID.randomUUID(),
             partMap,
             PARTS

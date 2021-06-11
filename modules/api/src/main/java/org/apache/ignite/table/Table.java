@@ -21,6 +21,7 @@ import org.apache.ignite.table.mapper.KeyMapper;
 import org.apache.ignite.table.mapper.Mappers;
 import org.apache.ignite.table.mapper.RecordMapper;
 import org.apache.ignite.table.mapper.ValueMapper;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Table view of table provides methods to access table records regarding binary object concept.
@@ -38,6 +39,13 @@ import org.apache.ignite.table.mapper.ValueMapper;
  * @see KeyValueBinaryView
  */
 public interface Table extends TableView<Tuple> {
+    /**
+     * Gets a name of the table.
+     *
+     * @return Table name.
+     */
+    @NotNull String tableName();
+
     /**
      * Creates record view of table for record class mapper provided.
      *

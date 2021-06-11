@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.schema;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -29,6 +30,12 @@ import org.apache.ignite.configuration.schemas.table.TableConfiguration;
 import org.apache.ignite.configuration.schemas.table.TablesConfiguration;
 import org.apache.ignite.internal.manager.Producer;
 import org.apache.ignite.internal.metastorage.MetaStorageManager;
+import org.apache.ignite.internal.metastorage.client.Conditions;
+import org.apache.ignite.internal.metastorage.client.Entry;
+import org.apache.ignite.internal.metastorage.client.EntryEvent;
+import org.apache.ignite.internal.metastorage.client.Operations;
+import org.apache.ignite.internal.metastorage.client.WatchEvent;
+import org.apache.ignite.internal.metastorage.client.WatchListener;
 import org.apache.ignite.internal.schema.configuration.SchemaConfigurationConverter;
 import org.apache.ignite.internal.schema.configuration.SchemaDescriptorConverter;
 import org.apache.ignite.internal.schema.event.SchemaEvent;
@@ -39,13 +46,8 @@ import org.apache.ignite.internal.util.ByteUtils;
 import org.apache.ignite.internal.util.Cursor;
 import org.apache.ignite.internal.vault.VaultManager;
 import org.apache.ignite.lang.ByteArray;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteLogger;
-import org.apache.ignite.internal.metastorage.client.Conditions;
-import org.apache.ignite.internal.metastorage.client.Entry;
-import org.apache.ignite.internal.metastorage.client.EntryEvent;
-import org.apache.ignite.internal.metastorage.client.Operations;
-import org.apache.ignite.internal.metastorage.client.WatchEvent;
-import org.apache.ignite.internal.metastorage.client.WatchListener;
 import org.apache.ignite.schema.SchemaTable;
 import org.jetbrains.annotations.NotNull;
 
@@ -251,13 +253,35 @@ public class SchemaManager extends Producer<SchemaEvent, SchemaEventParameters> 
 
         Set<ByteArray> keys = new HashSet<>();
 
-        try (Cursor<Entry> cursor = metaStorageMgr.range(new ByteArray(schemaPrefix), null)) {
+        IgniteBiTuple<ByteArray, ByteArray> range = toRange(new ByteArray(schemaPrefix));
+
+        try (Cursor<Entry> cursor = metaStorageMgr.range(range.get1(), range.get2())) {
             cursor.forEach(entry -> keys.add(entry.key()));
         }
         catch (Exception e) {
-            LOG.error("Can't remove schemas for the table [tblId=" + tableId + ']');
+            LOG.error("Can't remove schemas for the table [tblId=" + tableId + ']', e);
         }
 
         return fut.thenCompose(r -> metaStorageMgr.removeAll(keys)).thenApply(v -> true);
+    }
+
+    /**
+     * Transforms a prefix bytes to range.
+     * This method should be replaced to direct call of range by prefix
+     * in Meta storage manager when it will be implemented.
+     * TODO: IGNITE-14799
+     *
+     * @param prefixKey Prefix bytes.
+     * @return Tuple with left and right borders for range.
+     */
+    private IgniteBiTuple<ByteArray, ByteArray> toRange(ByteArray prefixKey) {
+        var bytes = Arrays.copyOf(prefixKey.bytes(), prefixKey.bytes().length);
+
+        if (bytes[bytes.length - 1] != Byte.MAX_VALUE)
+            bytes[bytes.length - 1]++;
+        else
+            bytes = Arrays.copyOf(bytes, bytes.length + 1);
+
+        return new IgniteBiTuple<>(prefixKey, new ByteArray(bytes));
     }
 }

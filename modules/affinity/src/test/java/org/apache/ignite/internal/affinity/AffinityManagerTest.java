@@ -28,18 +28,22 @@ import org.apache.ignite.configuration.internal.ConfigurationManager;
 import org.apache.ignite.configuration.schemas.table.TablesConfiguration;
 import org.apache.ignite.configuration.storage.ConfigurationType;
 import org.apache.ignite.internal.affinity.event.AffinityEvent;
+import org.apache.ignite.internal.affinity.event.AffinityEventParameters;
 import org.apache.ignite.internal.baseline.BaselineManager;
+import org.apache.ignite.internal.manager.EventListener;
 import org.apache.ignite.internal.metastorage.MetaStorageManager;
-import org.apache.ignite.internal.util.ByteUtils;
-import org.apache.ignite.internal.vault.VaultManager;
-import org.apache.ignite.lang.ByteArray;
-import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.internal.metastorage.client.Condition;
 import org.apache.ignite.internal.metastorage.client.Entry;
 import org.apache.ignite.internal.metastorage.client.EntryEvent;
 import org.apache.ignite.internal.metastorage.client.Operation;
 import org.apache.ignite.internal.metastorage.client.WatchEvent;
 import org.apache.ignite.internal.metastorage.client.WatchListener;
+import org.apache.ignite.internal.util.ByteUtils;
+import org.apache.ignite.internal.vault.VaultManager;
+import org.apache.ignite.lang.ByteArray;
+import org.apache.ignite.lang.IgniteLogger;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -186,7 +190,15 @@ public class AffinityManagerTest {
 
         CompletableFuture<Boolean> assignmentCalculated = new CompletableFuture<>();
 
-        affinityManager.listen(AffinityEvent.CALCULATED, (parameters, e) -> assignmentCalculated.complete(e == null));
+        affinityManager.listen(AffinityEvent.CALCULATED, new EventListener<AffinityEventParameters>() {
+            @Override public boolean notify(@NotNull AffinityEventParameters parameters, @Nullable Throwable e) {
+                return assignmentCalculated.complete(e == null);
+            }
+
+            @Override public void remove(@NotNull Throwable e) {
+                assignmentCalculated.completeExceptionally(e);
+            }
+        });
 
         affinityManager.calculateAssignments(tblId, STATIC_TABLE_NAME);
 
@@ -200,7 +212,6 @@ public class AffinityManagerTest {
     public void testRemovedAssignment() {
         MetaStorageManager mm = mock(MetaStorageManager.class);
         BaselineManager bm = mock(BaselineManager.class);
-        VaultManager vm = mock(VaultManager.class);
 
         UUID tblId = UUID.randomUUID();
 
@@ -242,7 +253,15 @@ public class AffinityManagerTest {
 
         CompletableFuture<Boolean> assignmentRemoved = new CompletableFuture<>();
 
-        affinityManager.listen(AffinityEvent.REMOVED, (parameters, e) -> assignmentRemoved.complete(e == null));
+        affinityManager.listen(AffinityEvent.REMOVED, new EventListener<AffinityEventParameters>() {
+            @Override public boolean notify(@NotNull AffinityEventParameters parameters, @Nullable Throwable e) {
+                return assignmentRemoved.complete(e == null);
+            }
+
+            @Override public void remove(@NotNull Throwable e) {
+                assignmentRemoved.completeExceptionally(e);
+            }
+        });
 
         affinityManager.removeAssignment(tblId);
 

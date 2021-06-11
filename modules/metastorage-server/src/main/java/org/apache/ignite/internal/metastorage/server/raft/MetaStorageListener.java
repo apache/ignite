@@ -221,11 +221,14 @@ public class MetaStorageListener implements RaftGroupListener {
 
                 IgniteUuid cursorId = new IgniteUuid(UUID.randomUUID(), 0L);
 
-                Cursor<Entry> cursor = storage.range(
-                    rangeCmd.keyFrom(),
-                    rangeCmd.keyTo(),
-                    rangeCmd.revUpperBound()
-                );
+                Cursor<Entry> cursor = (rangeCmd.revUpperBound() != -1) ?
+                    storage.range(
+                        rangeCmd.keyFrom(),
+                        rangeCmd.keyTo(),
+                        rangeCmd.revUpperBound()) :
+                    storage.range(
+                        rangeCmd.keyFrom(),
+                        rangeCmd.keyTo());
 
                 cursors.put(cursorId, new IgniteBiTuple<>(cursor, CursorType.RANGE));
 

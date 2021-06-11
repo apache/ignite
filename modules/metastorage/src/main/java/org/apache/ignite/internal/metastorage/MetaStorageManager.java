@@ -29,7 +29,14 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.configuration.internal.ConfigurationManager;
 import org.apache.ignite.configuration.schemas.runner.NodeConfiguration;
+import org.apache.ignite.internal.metastorage.client.CompactedException;
+import org.apache.ignite.internal.metastorage.client.Condition;
+import org.apache.ignite.internal.metastorage.client.Entry;
+import org.apache.ignite.internal.metastorage.client.MetaStorageService;
 import org.apache.ignite.internal.metastorage.client.MetaStorageServiceImpl;
+import org.apache.ignite.internal.metastorage.client.Operation;
+import org.apache.ignite.internal.metastorage.client.OperationTimeoutException;
+import org.apache.ignite.internal.metastorage.client.WatchListener;
 import org.apache.ignite.internal.metastorage.server.SimpleInMemoryKeyValueStorage;
 import org.apache.ignite.internal.metastorage.server.raft.MetaStorageListener;
 import org.apache.ignite.internal.metastorage.watch.AggregatedWatch;
@@ -43,13 +50,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInternalCheckedException;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.internal.metastorage.client.CompactedException;
-import org.apache.ignite.internal.metastorage.client.Condition;
-import org.apache.ignite.internal.metastorage.client.Entry;
-import org.apache.ignite.internal.metastorage.client.MetaStorageService;
-import org.apache.ignite.internal.metastorage.client.Operation;
-import org.apache.ignite.internal.metastorage.client.OperationTimeoutException;
-import org.apache.ignite.internal.metastorage.client.WatchListener;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;
 import org.jetbrains.annotations.NotNull;
@@ -544,7 +544,7 @@ public class MetaStorageManager {
 
             /** {@inheritDoc} */
         @Override public void close() throws Exception {
-            innerCursorFut.thenCompose(cursor -> {
+            innerCursorFut.thenApply(cursor -> {
                 try {
                     cursor.close();
 
