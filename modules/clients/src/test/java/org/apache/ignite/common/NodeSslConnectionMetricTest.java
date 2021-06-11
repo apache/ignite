@@ -91,32 +91,40 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
     public void testSslDisabled() throws Exception {
         IgniteEx srv = startGrid();
 
-        assertFalse(mreg(srv, DISCO_METRICS).<BooleanMetric>findMetric("SslEnabled").value());
-        assertFalse(mreg(srv, COMMUNICATION_METRICS_GROUP_NAME).<BooleanMetric>findMetric(SSL_ENABLED_METRIC_NAME).value());
-        assertFalse(mreg(srv, CLIENT_CONNECTOR_METRIC_REGISTRY_NAME).<BooleanMetric>findMetric(SSL_ENABLED_METRIC_NAME).value());
-        assertNull(mreg(srv, REST_CONNECTOR_METRIC_REGISTRY_NAME).<BooleanMetric>findMetric(SSL_ENABLED_METRIC_NAME));
+        MetricRegistry discoReg = mreg(srv, DISCO_METRICS);
 
-        assertNotNull(mreg(srv, DISCO_METRICS).<IntMetric>findMetric("RejectedSslConnectionsCount"));
-        assertNull(mreg(srv, COMMUNICATION_METRICS_GROUP_NAME).<IntMetric>findMetric(SSL_REJECTED_SESSIONS_CNT_METRIC_NAME));
-        assertNull(mreg(srv, CLIENT_CONNECTOR_METRIC_REGISTRY_NAME).<IntMetric>findMetric(SSL_REJECTED_SESSIONS_CNT_METRIC_NAME));
-        assertNull(mreg(srv, REST_CONNECTOR_METRIC_REGISTRY_NAME).<IntMetric>findMetric(SSL_REJECTED_SESSIONS_CNT_METRIC_NAME));
+        assertFalse(discoReg.<BooleanMetric>findMetric("SslEnabled").value());
+        assertEquals(0, discoReg.<IntMetric>findMetric("RejectedSslConnectionsCount").value());
 
-        assertNull(mreg(srv, COMMUNICATION_METRICS_GROUP_NAME).<HistogramMetric>findMetric(SSL_HANDSHAKE_DURATION_HISTOGRAM_METRIC_NAME));
-        assertNull(mreg(srv, CLIENT_CONNECTOR_METRIC_REGISTRY_NAME)
-            .<HistogramMetric>findMetric(SSL_HANDSHAKE_DURATION_HISTOGRAM_METRIC_NAME));
-        assertNull(mreg(srv, REST_CONNECTOR_METRIC_REGISTRY_NAME)
-            .<HistogramMetric>findMetric(SSL_HANDSHAKE_DURATION_HISTOGRAM_METRIC_NAME));
+        MetricRegistry commReg = mreg(srv, COMMUNICATION_METRICS_GROUP_NAME);
 
-        assertNotNull(mreg(srv, COMMUNICATION_METRICS_GROUP_NAME).<IntMetric>findMetric(SESSIONS_CNT_METRIC_NAME));
-        assertNotNull(mreg(srv, CLIENT_CONNECTOR_METRIC_REGISTRY_NAME).<IntMetric>findMetric(SESSIONS_CNT_METRIC_NAME));
-        assertNull(mreg(srv, REST_CONNECTOR_METRIC_REGISTRY_NAME).<IntMetric>findMetric(SESSIONS_CNT_METRIC_NAME));
+        assertFalse(commReg.<BooleanMetric>findMetric(SSL_ENABLED_METRIC_NAME).value());
+        assertNull(commReg.<IntMetric>findMetric(SSL_REJECTED_SESSIONS_CNT_METRIC_NAME));
+        assertNull(commReg.<HistogramMetric>findMetric(SSL_HANDSHAKE_DURATION_HISTOGRAM_METRIC_NAME));
+        assertEquals(0, commReg.<IntMetric>findMetric(SESSIONS_CNT_METRIC_NAME).value());
+
+        MetricRegistry cliConnReg = mreg(srv, CLIENT_CONNECTOR_METRIC_REGISTRY_NAME);
+
+        assertFalse(cliConnReg.<BooleanMetric>findMetric(SSL_ENABLED_METRIC_NAME).value());
+        assertNull(cliConnReg.<IntMetric>findMetric(SSL_REJECTED_SESSIONS_CNT_METRIC_NAME));
+        assertNull(cliConnReg.<HistogramMetric>findMetric(SSL_HANDSHAKE_DURATION_HISTOGRAM_METRIC_NAME));
+        assertEquals(0, cliConnReg.<IntMetric>findMetric(SESSIONS_CNT_METRIC_NAME).value());
+
+        MetricRegistry restConnReg = mreg(srv, REST_CONNECTOR_METRIC_REGISTRY_NAME);
+
+        assertNull(restConnReg.<BooleanMetric>findMetric(SSL_ENABLED_METRIC_NAME));
+        assertNull(restConnReg.<IntMetric>findMetric(SSL_REJECTED_SESSIONS_CNT_METRIC_NAME));
+        assertNull(restConnReg.<HistogramMetric>findMetric(SSL_HANDSHAKE_DURATION_HISTOGRAM_METRIC_NAME));
+        assertNull(restConnReg.<IntMetric>findMetric(SESSIONS_CNT_METRIC_NAME));
 
         stopAllGrids();
 
         srv = startGrid(getConfiguration().setConnectorConfiguration(new ConnectorConfiguration()));
 
-        assertFalse(mreg(srv, REST_CONNECTOR_METRIC_REGISTRY_NAME).<BooleanMetric>findMetric(SSL_ENABLED_METRIC_NAME).value());
-        assertNotNull(mreg(srv, REST_CONNECTOR_METRIC_REGISTRY_NAME).<IntMetric>findMetric(SESSIONS_CNT_METRIC_NAME));
+        restConnReg = mreg(srv, REST_CONNECTOR_METRIC_REGISTRY_NAME);
+
+        assertFalse(restConnReg.<BooleanMetric>findMetric(SSL_ENABLED_METRIC_NAME).value());
+        assertEquals(0, restConnReg.<IntMetric>findMetric(SESSIONS_CNT_METRIC_NAME).value());
     }
 
     /** Tests SSL metrics produced by JDBC connection. */
@@ -243,12 +251,20 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
             IgniteEx srvNode = startGrid(nodeConfiguration(2, false, "node01", "trustone", CIPHER_SUITE, "TLSv1.2"))
         ) {
             checkSslCommunicationMetrics(reg, 2, 2, 0);
-            checkSslCommunicationMetrics(mreg(cliNode, COMMUNICATION_METRICS_GROUP_NAME), 0, 1, 0);
-            checkSslCommunicationMetrics(mreg(srvNode, COMMUNICATION_METRICS_GROUP_NAME), 0, 1, 0);
-            assertTrue(mreg(cliNode, COMMUNICATION_METRICS_GROUP_NAME).<LongMetric>findMetric(SENT_BYTES_METRIC_NAME).value() > 0);
-            assertTrue(mreg(cliNode, COMMUNICATION_METRICS_GROUP_NAME).<LongMetric>findMetric(RECEIVED_BYTES_METRIC_NAME).value() > 0);
-            assertTrue(mreg(srvNode, COMMUNICATION_METRICS_GROUP_NAME).<LongMetric>findMetric(SENT_BYTES_METRIC_NAME).value() > 0);
-            assertTrue(mreg(srvNode, COMMUNICATION_METRICS_GROUP_NAME).<LongMetric>findMetric(RECEIVED_BYTES_METRIC_NAME).value() > 0);
+
+            MetricRegistry cliNodeReg = mreg(cliNode, COMMUNICATION_METRICS_GROUP_NAME);
+
+            checkSslCommunicationMetrics(cliNodeReg, 0, 1, 0);
+
+            assertTrue(cliNodeReg.<LongMetric>findMetric(SENT_BYTES_METRIC_NAME).value() > 0);
+            assertTrue(cliNodeReg.<LongMetric>findMetric(RECEIVED_BYTES_METRIC_NAME).value() > 0);
+
+            MetricRegistry srvNodeReg = mreg(srvNode, COMMUNICATION_METRICS_GROUP_NAME);
+
+            checkSslCommunicationMetrics(srvNodeReg, 0, 1, 0);
+
+            assertTrue(srvNodeReg.<LongMetric>findMetric(SENT_BYTES_METRIC_NAME).value() > 0);
+            assertTrue(srvNodeReg.<LongMetric>findMetric(RECEIVED_BYTES_METRIC_NAME).value() > 0);
         }
 
         assertTrue(reg.<LongMetric>findMetric(SENT_BYTES_METRIC_NAME).value() > 0);
