@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -76,6 +77,12 @@ import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_QRY_PAR
 public class QueryParser {
     /** */
     private static final int CACHE_SIZE = 1024;
+
+    /** A pattern for commands having internal implementation in Ignite. */
+    private static final Pattern INTERNAL_CMD_RE = Pattern.compile(
+        "^(create|drop)\\s+index|^alter\\s+table|^copy|^set|^begin|^commit|^rollback|^(create|alter|drop)\\s+user" +
+            "|^kill\\s+(query|scan|continuous|compute|service|transaction)|show|help|grant|revoke",
+        Pattern.CASE_INSENSITIVE);
 
     /** Indexing. */
     private final IgniteH2Indexing idx;
@@ -236,7 +243,7 @@ public class QueryParser {
         String sql = qry.getSql();
 
         // Heuristic check for fast return.
-        if (!SqlParser.isInternalCommand(sql.trim()))
+        if (!INTERNAL_CMD_RE.matcher(sql.trim()).find())
             return null;
 
         try {
