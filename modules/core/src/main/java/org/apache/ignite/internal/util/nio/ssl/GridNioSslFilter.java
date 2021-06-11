@@ -86,7 +86,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     @Nullable private final IntMetricImpl rejectedSesCnt;
 
     /** Histogram that provides distribution of SSL handshake duration. */
-    @Nullable private final HistogramMetricImpl handshakeDurationHistogram;
+    @Nullable private final HistogramMetricImpl handshakeDuration;
 
     /**
      * Creates SSL filter.
@@ -111,7 +111,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
         this.directBuf = directBuf;
         this.order = order;
 
-        handshakeDurationHistogram = mreg == null ? null : mreg.histogram(
+        handshakeDuration = mreg == null ? null : mreg.histogram(
             SSL_HANDSHAKE_DURATION_HISTOGRAM_METRIC_NAME,
             new long[] {250, 500, 1000},
             "SSL handshake duration in milliseconds."
@@ -235,7 +235,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
 
             sslMeta.handler(hnd);
 
-            if (handshakeDurationHistogram != null) {
+            if (handshakeDuration != null) {
                 GridNioFutureImpl<?> fut = ses.meta(HANDSHAKE_FUT_META_KEY);
 
                 if (fut == null) {
@@ -244,9 +244,9 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
                     ses.addMeta(HANDSHAKE_FUT_META_KEY, fut);
                 }
 
-                long handshakeStartTime = System.nanoTime();
+                long startTime = System.nanoTime();
 
-                fut.listen(f -> handshakeDurationHistogram.value(U.nanosToMillis(System.nanoTime() - handshakeStartTime)));
+                fut.listen(f -> handshakeDuration.value(U.nanosToMillis(System.nanoTime() - startTime)));
             }
 
             hnd.handshake();
