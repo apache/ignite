@@ -100,7 +100,7 @@ public class CacheDataPageScanQueryTest extends GridCommonAbstractTest {
 
         IgniteInternalCache<Long, String> cache = ignite.cachex(CACHE);
         CacheGroupMetricsImpl metrics = cache.context().group().metrics();
-        DataRegionMetricsImpl rmx = cache.context().dataRegion().memoryMetrics();
+        DataRegionMetricsImpl rmx = cache.context().dataRegion().metrics();
 
         long maxKey = 10_000;
 

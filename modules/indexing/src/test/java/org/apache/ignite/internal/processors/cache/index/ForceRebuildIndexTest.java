@@ -17,68 +17,23 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
-import org.apache.ignite.client.Person;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.cache.query.index.IndexProcessor;
-import org.apache.ignite.internal.processors.cache.CacheMetricsImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.StopRebuildIndexConsumer;
-import org.apache.ignite.internal.processors.query.IndexRebuildAware;
+import org.apache.ignite.internal.processors.query.aware.IndexRebuildFutureStorage;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static java.util.Collections.emptyList;
-import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.addCacheRowConsumer;
-import static org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.nodeName;
-import static org.apache.ignite.testframework.GridTestUtils.deleteIndexBin;
+import static org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.prepareBeforeNodeStart;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 
 /**
  * Class for testing forced rebuilding of indexes.
  */
-public class ForceRebuildIndexTest extends GridCommonAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        IndexesRebuildTaskEx.clean(getTestIgniteInstanceName());
-
-        stopAllGrids();
-        cleanPersistenceDir();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
-        IndexesRebuildTaskEx.clean(getTestIgniteInstanceName());
-
-        stopAllGrids();
-        cleanPersistenceDir();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName)
-            .setConsistentId(igniteInstanceName)
-            .setFailureHandler(new StopNodeFailureHandler())
-            .setDataStorageConfiguration(
-                new DataStorageConfiguration()
-                    .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true))
-            ).setCacheConfiguration(
-                new CacheConfiguration<>(DEFAULT_CACHE_NAME).setIndexedTypes(Integer.class, Person.class)
-            );
-    }
-
+public class ForceRebuildIndexTest extends AbstractRebuildIndexTest {
     /**
      * Checking that a forced rebuild of indexes is possible only after the previous one has finished.
      *
@@ -86,14 +41,15 @@ public class ForceRebuildIndexTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSequentialForceRebuildIndexes() throws Exception {
-        IndexProcessor.idxRebuildCls = IndexesRebuildTaskEx.class;
+        prepareBeforeNodeStart();
 
-        IgniteEx n = prepareCluster(100);
+        IgniteEx n = startGrid(0);
+
+        populate(n.cache(DEFAULT_CACHE_NAME), 100);
 
         GridCacheContext<?, ?> cacheCtx = n.cachex(DEFAULT_CACHE_NAME).context();
 
-        StopRebuildIndexConsumer stopRebuildIdxConsumer = new StopRebuildIndexConsumer(getTestTimeout());
-        addCacheRowConsumer(nodeName(n), cacheCtx.name(), stopRebuildIdxConsumer);
+        StopRebuildIndexConsumer stopRebuildIdxConsumer = addStopRebuildIndexConsumer(n, cacheCtx.name());
 
         // The forced rebuild has begun - no rejected.
         assertEqualsCollections(emptyList(), forceRebuildIndexes(n, cacheCtx));
@@ -138,18 +94,17 @@ public class ForceRebuildIndexTest extends GridCommonAbstractTest {
      */
     @Test
     public void testForceRebuildIndexesAfterExchange() throws Exception {
-        IgniteEx n = prepareCluster(100);
+        IgniteEx n = startGrid(0);
 
-        stopAllGrids();
-        deleteIndexBin(n.context().igniteInstanceName());
+        populate(n.cache(DEFAULT_CACHE_NAME), 100);
 
-        IndexProcessor.idxRebuildCls = IndexesRebuildTaskEx.class;
+        stopAllGridsWithDeleteIndexBin();
 
-        StopRebuildIndexConsumer stopRebuildIdxConsumer = new StopRebuildIndexConsumer(getTestTimeout());
-        addCacheRowConsumer(nodeName(n), DEFAULT_CACHE_NAME, stopRebuildIdxConsumer);
+        prepareBeforeNodeStart();
+
+        StopRebuildIndexConsumer stopRebuildIdxConsumer = addStopRebuildIndexConsumer(n, DEFAULT_CACHE_NAME);
 
         n = startGrid(0);
-        n.cluster().state(ACTIVE);
 
         GridCacheContext<?, ?> cacheCtx = n.cachex(DEFAULT_CACHE_NAME).context();
 
@@ -197,18 +152,17 @@ public class ForceRebuildIndexTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSequentialRebuildIndexesOnExchange() throws Exception {
-        IgniteEx n = prepareCluster(100);
+        IgniteEx n = startGrid(0);
 
-        stopAllGrids();
-        deleteIndexBin(n.context().igniteInstanceName());
+        populate(n.cache(DEFAULT_CACHE_NAME), 100);
 
-        IndexProcessor.idxRebuildCls = IndexesRebuildTaskEx.class;
+        stopAllGridsWithDeleteIndexBin();
 
-        StopRebuildIndexConsumer stopRebuildIdxConsumer = new StopRebuildIndexConsumer(getTestTimeout());
-        addCacheRowConsumer(nodeName(n), DEFAULT_CACHE_NAME, stopRebuildIdxConsumer);
+        prepareBeforeNodeStart();
+
+        StopRebuildIndexConsumer stopRebuildIdxConsumer = addStopRebuildIndexConsumer(n, DEFAULT_CACHE_NAME);
 
         n = startGrid(0);
-        n.cluster().state(ACTIVE);
 
         GridCacheContext<?, ?> cacheCtx = n.cachex(DEFAULT_CACHE_NAME).context();
 
@@ -230,76 +184,6 @@ public class ForceRebuildIndexTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Prepare cluster for test.
-     *
-     * @param keys Key count.
-     * @return Coordinator.
-     * @throws Exception If failed.
-     */
-    private IgniteEx prepareCluster(int keys) throws Exception {
-        IgniteEx n = startGrid(0);
-
-        n.cluster().state(ACTIVE);
-
-        for (int i = 0; i < keys; i++)
-            n.cache(DEFAULT_CACHE_NAME).put(i, new Person(i, "name_" + i));
-
-        return n;
-    }
-
-    /**
-     * Checking metrics rebuilding indexes of cache.
-     *
-     * @param n                          Node.
-     * @param cacheName                  Cache name.
-     * @param expIdxRebuildInProgress    The expected status of rebuilding indexes.
-     * @param expIdxRebuildKeysProcessed The expected number of keys processed during index rebuilding.
-     */
-    private void checkCacheMetrics0(
-        IgniteEx n,
-        String cacheName,
-        boolean expIdxRebuildInProgress,
-        long expIdxRebuildKeysProcessed
-    ) {
-        CacheMetricsImpl metrics0 = cacheMetrics0(n, cacheName);
-        assertNotNull(metrics0);
-
-        assertEquals(expIdxRebuildInProgress, metrics0.isIndexRebuildInProgress());
-        assertEquals(expIdxRebuildKeysProcessed, metrics0.getIndexRebuildKeysProcessed());
-    }
-
-    /**
-     * Checking that rebuilding indexes for the cache has started.
-     *
-     * @param n Node.
-     * @param cacheCtx Cache context.
-     * @return Rebuild index future.
-     */
-    private IgniteInternalFuture<?> checkStartRebuildIndexes(IgniteEx n, GridCacheContext<?, ?> cacheCtx) {
-        IgniteInternalFuture<?> idxRebFut = indexRebuildFuture(n, cacheCtx.cacheId());
-
-        assertNotNull(idxRebFut);
-        assertFalse(idxRebFut.isDone());
-
-        checkCacheMetrics0(n, cacheCtx.name(), true, 0);
-
-        return idxRebFut;
-    }
-
-    /**
-     * Checking that the rebuild of indexes for the cache has completed.
-     *
-     * @param n Node.
-     * @param cacheCtx Cache context.
-     * @param expKeys The expected number of keys processed during index rebuilding
-     */
-    private void checkFinishRebuildIndexes(IgniteEx n, GridCacheContext<?, ?> cacheCtx, int expKeys) {
-        assertNull(indexRebuildFuture(n, cacheCtx.cacheId()));
-
-        checkCacheMetrics0(n, cacheCtx.name(), false, expKeys);
-    }
-
-    /**
      * Checking the contents of the cache in {@code GridQueryProcessor#idxRebuildOnExchange}.
      * Allows to check if the cache will be marked, that the rebuild for it should be after the exchange.
      *
@@ -308,7 +192,7 @@ public class ForceRebuildIndexTest extends GridCommonAbstractTest {
      * @param expContains Whether a cache is expected.
      */
     private void checkRebuildAfterExchange(IgniteEx n, int cacheId, boolean expContains) {
-        IndexRebuildAware idxRebuildAware = getFieldValue(n.context().query(), "idxRebuildAware");
+        IndexRebuildFutureStorage idxRebuildAware = getFieldValue(n.context().query(), "idxRebuildFutStorage");
 
         GridDhtPartitionsExchangeFuture exhFut = n.context().cache().context().exchange().lastTopologyFuture();
 

@@ -53,7 +53,6 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRecord;
 import org.apache.ignite.internal.processors.cache.CacheDiagnosticManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
@@ -61,6 +60,7 @@ import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
 import org.apache.ignite.internal.processors.cache.persistence.partstorage.PartitionMetaStorageImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
@@ -76,6 +76,7 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_AUX;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 
 /**
  * General purpose key-value local-only storage.
@@ -128,9 +129,6 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
     private AtomicLong rmvId = new AtomicLong();
 
     /** */
-    private DataRegionMetricsImpl regionMetrics;
-
-    /** */
     private final boolean readOnly;
 
     /** */
@@ -164,13 +162,11 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
     public MetaStorage(
         GridCacheSharedContext<?, ?> cctx,
         DataRegion dataRegion,
-        DataRegionMetricsImpl regionMetrics,
         boolean readOnly
     ) {
         this.cctx = cctx;
         wal = cctx.wal();
         this.dataRegion = dataRegion;
-        this.regionMetrics = regionMetrics;
         this.readOnly = readOnly;
         log = cctx.logger(getClass());
         this.failureProcessor = cctx.kernalContext().failure();
@@ -178,7 +174,7 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
 
     /** */
     public void init(GridCacheDatabaseSharedManager db) throws IgniteCheckedException {
-        regionMetrics.clear();
+        dataRegion.metrics().clear();
         initInternal(db);
 
         if (!PRESERVE_LEGACY_METASTORAGE_PARTITION_ID) {
@@ -275,7 +271,6 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
             partStorage = new PartitionMetaStorageImpl<MetastorageRowStoreEntry>(
                 METASTORAGE_CACHE_ID,
                 freeListName,
-                regionMetrics,
                 dataRegion,
                 null,
                 wal,
@@ -505,13 +500,11 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
 
     /** */
     private void checkRootsPageIdFlag(long treeRoot, long reuseListRoot) throws StorageException {
-        if (PageIdUtils.flag(treeRoot) != PageMemory.FLAG_AUX &&
-            PageIdUtils.flag(treeRoot) != PageMemory.FLAG_DATA)
+        if (PageIdUtils.flag(treeRoot) != FLAG_AUX && PageIdUtils.flag(treeRoot) != FLAG_DATA)
             throw new StorageException("Wrong tree root page id flag: treeRoot="
                 + U.hexLong(treeRoot) + ", METASTORAGE_CACHE_ID=" + METASTORAGE_CACHE_ID);
 
-        if (PageIdUtils.flag(treeRoot) != PageMemory.FLAG_AUX &&
-            PageIdUtils.flag(treeRoot) != PageMemory.FLAG_DATA)
+        if (PageIdUtils.flag(reuseListRoot) != FLAG_AUX && PageIdUtils.flag(reuseListRoot) != FLAG_DATA)
             throw new StorageException("Wrong reuse list root page id flag: reuseListRoot="
                 + U.hexLong(reuseListRoot) + ", METASTORAGE_CACHE_ID=" + METASTORAGE_CACHE_ID);
     }
@@ -567,14 +560,16 @@ public class MetaStorage implements CheckpointListener, ReadWriteMetastorage {
                         // Initialize new page.
                         PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.latest();
 
+                        PageMetrics metrics = pageMem.metrics().cacheGrpPageMetrics(METASTORAGE_CACHE_ID);
+
                         //MetaStorage never encrypted so realPageSize == pageSize.
-                        io.initNewPage(pageAddr, partMetaId, pageMem.pageSize());
+                        io.initNewPage(pageAddr, partMetaId, pageMem.pageSize(), metrics);
 
-                        treeRoot = pageMem.allocatePage(METASTORAGE_CACHE_ID, partId, PageMemory.FLAG_AUX);
-                        reuseListRoot = pageMem.allocatePage(METASTORAGE_CACHE_ID, partId, PageMemory.FLAG_AUX);
+                        treeRoot = pageMem.allocatePage(METASTORAGE_CACHE_ID, partId, FLAG_AUX);
+                        reuseListRoot = pageMem.allocatePage(METASTORAGE_CACHE_ID, partId, FLAG_AUX);
 
-                        assert PageIdUtils.flag(treeRoot) == PageMemory.FLAG_AUX;
-                        assert PageIdUtils.flag(reuseListRoot) == PageMemory.FLAG_AUX;
+                        assert PageIdUtils.flag(treeRoot) == FLAG_AUX;
+                        assert PageIdUtils.flag(reuseListRoot) == FLAG_AUX;
 
                         io.setTreeRoot(pageAddr, treeRoot);
                         io.setReuseListRoot(pageAddr, reuseListRoot);

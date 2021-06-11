@@ -926,7 +926,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                 cctx.mvccCaching().onTxFinished(this, true);
 
-                if (ptr != null && !cctx.tm().logTxRecords())
+                if (ptr != null)
                     cctx.wal().flush(ptr, false);
             }
             catch (Throwable ex) {

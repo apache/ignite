@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query;
+package org.apache.ignite.internal.processors.query.aware;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,10 +28,10 @@ import org.jetbrains.annotations.Nullable;
 import static java.util.Collections.emptySet;
 
 /**
- * Holder actual information about the state of rebuilding indexes.
+ * Holder of up-to-date information of rebuild index futures for caches.
  * Thread safe.
  */
-public class IndexRebuildAware {
+public class IndexRebuildFutureStorage {
     /**
      * Futures to track the status of index rebuilds.
      * Mapping: Cache id -> Future.

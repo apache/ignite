@@ -216,7 +216,7 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
 
                 long pageAdr = ptr + i * pageSize;
 
-                pageIO.initNewPage(pageAdr, pageId, pageSize);
+                pageIO.initNewPage(pageAdr, pageId, pageSize, null);
 
                 ByteBuffer buf = GridUnsafe.wrapPointer(pageAdr, pageSize);
 
