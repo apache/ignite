@@ -96,8 +96,8 @@ public class MessageSerializationRegistryImplTest {
     public void testCreateSerializersIfNotRegistered() {
         var registry = new MessageSerializationRegistryImpl();
 
-        assertThrows(AssertionError.class, () -> registry.createSerializer(Msg.GROUP_TYPE, Msg.TYPE));
-        assertThrows(AssertionError.class, () -> registry.createDeserializer(Msg.GROUP_TYPE, Msg.TYPE));
+        assertThrows(NetworkConfigurationException.class, () -> registry.createSerializer(Msg.GROUP_TYPE, Msg.TYPE));
+        assertThrows(NetworkConfigurationException.class, () -> registry.createDeserializer(Msg.GROUP_TYPE, Msg.TYPE));
     }
 
     /** */

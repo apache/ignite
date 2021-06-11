@@ -110,7 +110,8 @@ public class NettyClient {
                         new HandshakeHandler(handshakeManager),
                         new MessageHandler(messageListener),
                         new ChunkedWriteHandler(),
-                        new OutboundEncoder(serializationRegistry)
+                        new OutboundEncoder(serializationRegistry),
+                        new IoExceptionSuppressingHandler()
                     );
                 }
             });

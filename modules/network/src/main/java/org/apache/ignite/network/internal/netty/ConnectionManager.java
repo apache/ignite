@@ -23,10 +23,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -116,11 +117,19 @@ public class ConnectionManager {
      */
     public void start() throws IgniteInternalException {
         try {
-            server.start().join();
+            //TODO: timeout value should be extracted into common configuration
+            // https://issues.apache.org/jira/browse/IGNITE-14538
+            server.start().get(3, TimeUnit.SECONDS);
         }
-        catch (CompletionException e) {
+        catch (ExecutionException e) {
             Throwable cause = e.getCause();
-            throw new IgniteInternalException("Failed to start server: " + cause.getMessage(), cause);
+            throw new IgniteInternalException("Failed to start the connection manager: " + cause.getMessage(), cause);
+        }
+        catch (TimeoutException e) {
+            throw new IgniteInternalException("Timeout while waiting for the connection manager to start", e);
+        }
+        catch (InterruptedException e) {
+            throw new IgniteInternalException("Interrupted while starting the connection manager", e);
         }
     }
 
@@ -190,9 +199,7 @@ public class ConnectionManager {
      * @param address Target address.
      * @return New netty client.
      */
-    private NettyClient connect(
-        SocketAddress address
-    ) {
+    private NettyClient connect(SocketAddress address) {
         var client = new NettyClient(
             address,
             serializationRegistry,

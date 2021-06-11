@@ -19,6 +19,7 @@ package org.apache.ignite.network.internal.netty;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.internal.handshake.HandshakeAction;
 import org.apache.ignite.network.internal.handshake.HandshakeException;
@@ -28,6 +29,9 @@ import org.apache.ignite.network.internal.handshake.HandshakeManager;
  * Netty handler of the handshake operation.
  */
 public class HandshakeHandler extends ChannelInboundHandlerAdapter {
+    /** Logger. */
+    private static final IgniteLogger LOG = IgniteLogger.forClass(HandshakeHandler.class);
+
     /** Handshake manager. */
     private final HandshakeManager manager;
 
@@ -41,15 +45,23 @@ public class HandshakeHandler extends ChannelInboundHandlerAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
+    @Override public void handlerAdded(ChannelHandlerContext ctx) {
         HandshakeAction handshakeAction = manager.init(ctx.channel());
 
         handleHandshakeAction(handshakeAction, ctx);
     }
 
     /** {@inheritDoc} */
-    @Override public void channelActive(ChannelHandlerContext ctx) throws Exception {
+    @Override public void channelActive(ChannelHandlerContext ctx) {
         HandshakeAction handshakeAction = manager.onConnectionOpen(ctx.channel());
+
+        manager.handshakeFuture().whenComplete((unused, throwable) -> {
+            if (throwable != null) {
+                LOG.debug("Error when performing handshake", throwable);
+
+                ctx.close();
+            }
+        });
 
         handleHandshakeAction(handshakeAction, ctx);
 
@@ -57,7 +69,7 @@ public class HandshakeHandler extends ChannelInboundHandlerAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+    @Override public void channelRead(ChannelHandlerContext ctx, Object msg) {
         HandshakeAction handshakeAction = manager.onMessage(ctx.channel(), (NetworkMessage) msg);
 
         handleHandshakeAction(handshakeAction, ctx);
@@ -65,7 +77,7 @@ public class HandshakeHandler extends ChannelInboundHandlerAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+    @Override public void channelInactive(ChannelHandlerContext ctx) {
         // If this method is called that means channel has been closed before handshake has finished or handshake
         // has failed.
         manager.handshakeFuture().completeExceptionally(
@@ -73,6 +85,11 @@ public class HandshakeHandler extends ChannelInboundHandlerAdapter {
         );
 
         ctx.fireChannelInactive();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        manager.handshakeFuture().completeExceptionally(cause);
     }
 
     /**

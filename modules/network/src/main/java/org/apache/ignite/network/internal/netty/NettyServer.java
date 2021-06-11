@@ -165,13 +165,11 @@ public class NettyServer {
                              */
                             new ChunkedWriteHandler(),
                             // Converts NetworkMessage to a ChunkedNetworkMessageInput
-                            new OutboundEncoder(serializationRegistry)
+                            new OutboundEncoder(serializationRegistry),
+                            new IoExceptionSuppressingHandler()
                         );
 
-                        handshakeManager.handshakeFuture().whenComplete((sender, throwable) -> {
-                            if (sender != null)
-                                newConnectionListener.accept(sender);
-                        });
+                        handshakeManager.handshakeFuture().thenAccept(newConnectionListener);
                     }
                 })
                 /*

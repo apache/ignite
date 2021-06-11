@@ -17,6 +17,7 @@
 
 package org.apache.ignite.network.internal.netty;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.ArrayList;
@@ -24,8 +25,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
+import io.netty.handler.codec.DecoderException;
 import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.NetworkMessagesFactory;
 import org.apache.ignite.network.TestMessage;
@@ -33,14 +36,20 @@ import org.apache.ignite.network.TestMessageSerializationRegistryImpl;
 import org.apache.ignite.network.TestMessagesFactory;
 import org.apache.ignite.network.internal.recovery.RecoveryClientHandshakeManager;
 import org.apache.ignite.network.internal.recovery.RecoveryServerHandshakeManager;
+import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.isA;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyShort;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Tests for {@link ConnectionManager}.
@@ -219,14 +228,70 @@ public class ConnectionManagerTest {
     }
 
     /**
-     * Create and start a {@link ConnectionManager} adding it to the {@link #startedManagers} list.
+     * Tests that a connection to a misconfigured server results in a connection close and an exception on the client
+     * side.
+     */
+    @Test
+    public void testConnectMisconfiguredServer() throws Exception {
+        ConnectionManager client = startManager(4000);
+
+        ConnectionManager server = startManager(4001, mockSerializationRegistry());
+
+        try {
+            client.channel(null, server.getLocalAddress()).get(3, TimeUnit.SECONDS);
+        } catch (ExecutionException e) {
+            assertThat(e.getCause(), isA(IOException.class));
+        }
+    }
+
+    /**
+     * Tests that a connection from a misconfigured client results in an exception.
+     */
+    @Test
+    public void testConnectMisconfiguredClient() throws Exception {
+        ConnectionManager client = startManager(4000, mockSerializationRegistry());
+
+        ConnectionManager server = startManager(4001);
+
+        try {
+            client.channel(null, server.getLocalAddress()).get(3, TimeUnit.SECONDS);
+        } catch (ExecutionException e) {
+            assertThat(e.getCause(), isA(DecoderException.class));
+        }
+    }
+
+    /**
+     * Creates a mock {@link MessageSerializationRegistry} that throws an exception when trying to get a serializer
+     * or a deserializer.
+     */
+    private static MessageSerializationRegistry mockSerializationRegistry() {
+        var mockRegistry = mock(MessageSerializationRegistry.class);
+
+        when(mockRegistry.createDeserializer(anyShort(), anyShort())).thenThrow(RuntimeException.class);
+        when(mockRegistry.createSerializer(anyShort(), anyShort())).thenThrow(RuntimeException.class);
+
+        return mockRegistry;
+    }
+
+    /**
+     * Creates and starts a {@link ConnectionManager} listening on the given port.
      *
-     * @param port Port for the {@link ConnectionManager#server}.
+     * @param port Port for the connection manager to listen on.
      * @return Connection manager.
      */
     private ConnectionManager startManager(int port) {
-        var registry = new TestMessageSerializationRegistryImpl();
+        return startManager(port, new TestMessageSerializationRegistryImpl());
+    }
 
+    /**
+     * Creates and starts a {@link ConnectionManager} listening on the given port, configured with the provided
+     * serialization registry.
+     *
+     * @param port Port for the connection manager to listen on.
+     * @param registry Serialization registry.
+     * @return Connection manager.
+     */
+    private ConnectionManager startManager(int port, MessageSerializationRegistry registry) {
         UUID launchId = UUID.randomUUID();
         String consistentId = UUID.randomUUID().toString();
 
