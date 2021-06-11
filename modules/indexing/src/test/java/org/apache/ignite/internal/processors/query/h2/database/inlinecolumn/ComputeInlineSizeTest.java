@@ -59,7 +59,8 @@ public class ComputeInlineSizeTest extends AbstractIndexingCommonTest {
     public void testSQLIndexes() throws Exception {
         IgniteEx ignite = startGrid();
 
-        GatewayProtectedCacheProxy cache = (GatewayProtectedCacheProxy) ignite.createCache(new CacheConfiguration<>());
+        GatewayProtectedCacheProxy cache = (GatewayProtectedCacheProxy) ignite.createCache(
+            new CacheConfiguration<>().setName("CACHE"));
 
         SqlFieldsQuery qry = new SqlFieldsQuery("create table TABLE (" +
             "id long primary key" +
