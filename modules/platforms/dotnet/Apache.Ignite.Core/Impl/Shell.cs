@@ -20,7 +20,6 @@ namespace Apache.Ignite.Core.Impl
     using System;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
-    using System.Text;
 
     /// <summary>
     /// Shell utils (cmd/bash).
@@ -42,35 +41,20 @@ namespace Apache.Ignite.Core.Impl
                     FileName = file,
                     Arguments = args,
                     RedirectStandardOutput = true,
-                    RedirectStandardError = true,
                     UseShellExecute = false,
                     CreateNoWindow = true
                 };
 
-                var sb = new StringBuilder();
-
                 using (var process = new Process {StartInfo = processStartInfo})
                 {
-                    process.OutputDataReceived += (_, eventArgs) =>
-                    {
-                        sb.Append(eventArgs.Data);
-                    };
-
-                    process.ErrorDataReceived += (_, eventArgs) =>
-                    {
-                        sb.Append(eventArgs.Data);
-                    };
-
                     process.Start();
-                    process.BeginOutputReadLine();
-                    process.BeginErrorReadLine();
 
                     if (!process.WaitForExit(timeoutMs))
                     {
                         process.Kill();
                     }
 
-                    return sb.ToString();
+                    return process.StandardOutput.ReadToEnd();
                 }
             }
             catch (Exception)
