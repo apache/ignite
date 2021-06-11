@@ -39,7 +39,7 @@ public interface DistributedCacheQueryReducer<T> extends CacheQueryReducer<T> {
      * @param nodeId Node ID.
      * @return {@code true} if specified node runs this query.
      */
-    public boolean queryNode(UUID nodeId);
+    public boolean mapNode(UUID nodeId);
 
     /**
      * Blocks current thread until reducer will be ready to return the very first result item for the query.

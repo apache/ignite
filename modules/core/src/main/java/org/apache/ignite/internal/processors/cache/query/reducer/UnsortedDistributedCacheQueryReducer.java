@@ -97,7 +97,7 @@ public class UnsortedDistributedCacheQueryReducer<R> extends AbstractDistributed
     }
 
     /** {@inheritDoc} */
-    @Override public boolean queryNode(UUID nodeId) {
+    @Override public boolean mapNode(UUID nodeId) {
         return pageStream.queryNode(nodeId);
     }
 }

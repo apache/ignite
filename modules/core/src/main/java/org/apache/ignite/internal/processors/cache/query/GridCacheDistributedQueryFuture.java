@@ -64,7 +64,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
 
     /** Fail if a node runs this query left cluster. */
     @Override protected void onNodeLeft(UUID nodeId) {
-        boolean qryNode = reducer.queryNode(nodeId);
+        boolean qryNode = reducer.mapNode(nodeId);
 
         if (qryNode)
             onPage(nodeId, null,

@@ -544,8 +544,12 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public CacheQueryFuture<?> queryDistributed(GridCacheQueryBean qry, final Collection<ClusterNode> nodes) {
+        return queryDistributed(qry, nodes, false);
+    }
+
+    /** */
+    private CacheQueryFuture<?> queryDistributed(GridCacheQueryBean qry, final Collection<ClusterNode> nodes, boolean fields) {
         assert cctx.config().getCacheMode() != LOCAL;
 
         if (log.isDebugEnabled())
@@ -553,9 +557,9 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
         long reqId = cctx.io().nextIoId();
 
-        final GridCacheDistributedQueryFuture<K, V, ?> fut = new GridCacheDistributedQueryFuture(cctx, reqId, qry);
+        final GridCacheDistributedQueryFuture<K, V, ?> fut = initDistributedQuery(reqId, qry, nodes, fields);
 
-        initDistributedQuery(reqId, fut, nodes);
+        addQueryFuture(reqId, fut);
 
         return fut;
     }
@@ -711,32 +715,23 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     }
 
     /** {@inheritDoc} */
-    @Override public CacheQueryFuture<?> queryFieldsDistributed(GridCacheQueryBean qry,
-        Collection<ClusterNode> nodes) {
-        assert cctx.config().getCacheMode() != LOCAL;
-
-        if (log.isDebugEnabled())
-            log.debug("Executing distributed query: " + qry);
-
-        long reqId = cctx.io().nextIoId();
-
-        final GridCacheDistributedFieldsQueryFuture fut = new GridCacheDistributedFieldsQueryFuture(cctx, reqId, qry);
-
-        initDistributedQuery(reqId, fut, nodes);
-
-        return fut;
+    @Override public CacheQueryFuture<?> queryFieldsDistributed(GridCacheQueryBean qry, Collection<ClusterNode> nodes) {
+        return queryDistributed(qry, nodes, true);
     }
 
     /** Initialize distributed query: stores future, sends query requests to nodes. */
-    private void initDistributedQuery(long reqId, GridCacheDistributedQueryFuture fut, Collection<ClusterNode> nodes) {
+    private GridCacheDistributedQueryFuture initDistributedQuery(long reqId, GridCacheQueryBean qry,
+        Collection<ClusterNode> nodes, boolean fields) {
+        final GridCacheDistributedQueryFuture fut = fields ?
+            new GridCacheDistributedFieldsQueryFuture(cctx, reqId, qry)
+            : new GridCacheDistributedQueryFuture(cctx, reqId, qry);
+
         try {
             DistributedCacheQueryReducer reducer = createReducer(fut.qry.query().type(), reqId, fut, nodes);
 
             fut.reducer(reducer);
 
             fut.qry.query().validate();
-
-            addQueryFuture(reqId, fut);
 
             final Object topic = topic(cctx.nodeId(), reqId);
 
@@ -753,6 +748,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         catch (IgniteCheckedException e) {
             fut.onDone(e);
         }
+
+        return fut;
     }
 
     /** Creates a reducer depends on query type. */
