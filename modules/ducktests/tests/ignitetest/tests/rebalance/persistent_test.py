@@ -62,7 +62,7 @@ class RebalancePersistentTest(IgniteTest):
             ignites.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites)),
             preloaders, backups, cache_count, entry_count, entry_size)
 
-        self.logger.warn(f'db size: {get_database_size_mb(ignites)}')
+        # self.logger.warn(f'db size: {get_database_size_mb(ignites)}')
 
         new_node = IgniteService(self.test_context, ignites.config._replace(discovery_spi=from_ignite_cluster(ignites)),
                                  num_nodes=1)
@@ -101,7 +101,7 @@ class RebalancePersistentTest(IgniteTest):
             ignites.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites)),
             preloaders, backups, cache_count, entry_count, entry_size)
 
-        self.logger.warn(f'db size: {get_database_size_mb(ignites)}')
+        # self.logger.warn(f'db size: {get_database_size_mb(ignites)}')
 
         node = ignites.nodes[-1]
 
@@ -145,7 +145,7 @@ class RebalancePersistentTest(IgniteTest):
         control_utility.deactivate()
         control_utility.activate()
 
-        self.logger.debug(f'DB size before rebalance: {get_database_size_mb(ignites)}')
+        # self.logger.debug(f'DB size before rebalance: {get_database_size_mb(ignites)}')
 
         new_node = IgniteService(self.test_context, ignites.config._replace(discovery_spi=from_ignite_cluster(ignites)),
                                  num_nodes=1)
@@ -165,7 +165,7 @@ class RebalancePersistentTest(IgniteTest):
 
         control_utility.deactivate()
 
-        self.logger.debug(f'DB size after rebalance: {get_database_size_mb(ignites)}')
+        # self.logger.debug(f'DB size after rebalance: {get_database_size_mb(ignites)}')
 
         return get_result(new_node.nodes, preload_time, cache_count, entry_count, entry_size)
 
@@ -193,7 +193,7 @@ class RebalancePersistentTest(IgniteTest):
             ignites.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites)),
             preloaders, backups, cache_count, entry_count, entry_size)
 
-        self.logger.warn(f'db size: {get_database_size_mb(ignites)}')
+        # self.logger.warn(f'db size: {get_database_size_mb(ignites)}')
 
         node = ignites.nodes[-1]
 
@@ -281,7 +281,7 @@ class RebalancePersistentTest(IgniteTest):
         control_utility.deactivate()
         control_utility.activate()
 
-        self.logger.warn(f'DB size before rebalance: {get_database_size_mb(ignites)}')
+        # self.logger.warn(f'DB size before rebalance: {get_database_size_mb(ignites)}')
 
         ignites.start_node(node)
         ignites.await_started()
@@ -294,7 +294,7 @@ class RebalancePersistentTest(IgniteTest):
 
         control_utility.deactivate()
 
-        self.logger.warn(f'DB size after rebalance: {get_database_size_mb(ignites)}')
+        # self.logger.warn(f'DB size after rebalance: {get_database_size_mb(ignites)}')
 
         return get_result([node], preload_time, 1, entry_count, entry_size)
 

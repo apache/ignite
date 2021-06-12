@@ -94,10 +94,11 @@ class RebalanceInMemoryTest(IgniteTest):
 
         if trigger_event:
             ignites.stop_node(ignites.nodes[-1])
-            ignite = ignites
+            rebalance_nodes = ignites.nodes[:-1]
         else:
             ignite = IgniteService(self.test_context,
                                    ignites.config._replace(discovery_spi=from_ignite_cluster(ignites)), num_nodes=1)
             ignite.start()
+            rebalance_nodes = ignite.nodes
 
-        return get_result(ignite.nodes, preload_time, cache_count, entry_count, entry_size)
+        return get_result(rebalance_nodes, preload_time, cache_count, entry_count, entry_size)
