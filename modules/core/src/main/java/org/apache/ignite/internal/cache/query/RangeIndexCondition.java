@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.cache.query;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -30,23 +31,17 @@ public class RangeIndexCondition implements IndexCondition {
     private static final long serialVersionUID = 0L;
 
     /** List of condition fields that should match index fields. */
-    private List<String> fields = new ArrayList<>();
+    private final List<String> fields = new ArrayList<>();
 
-    /** List of lower bound conditions. */
-    private List<Object> lowers;
-
-    /** List of upper bound conditions. */
-    private List<Object> uppers;
-
-    /** Whether query result includes lower bound. */
-    private boolean lowerInclusive;
-
-    /** Whether query result includes upper bound. */
-    private boolean upperInclusive;
+    /** List of condition fields that should match index fields. */
+    private final List<SingleFieldRangeCondition> fldConds = new ArrayList<>();
 
     /** */
-    public RangeIndexCondition(String field, @Nullable Object lower, @Nullable Object upper) {
-        addCondition(field, lower, upper);
+    public RangeIndexCondition(String field, @Nullable Object lower, @Nullable Object upper, boolean lowIncl, boolean upIncl) {
+        fields.add(field);
+
+        fldConds.add(
+            new SingleFieldRangeCondition(lower, upper, lowIncl, upIncl));
     }
 
     /** {@inheritDoc} */
@@ -61,79 +56,70 @@ public class RangeIndexCondition implements IndexCondition {
         RangeIndexCondition rngCond = (RangeIndexCondition) cond;
 
         for (int i = 0; i < rngCond.fields.size(); i++) {
-            Object lower = rngCond.lowers != null ? rngCond.lowers.get(i) : null;
-            Object upper = rngCond.uppers != null ? rngCond.uppers.get(i) : null;
+            String f = rngCond.fields.get(i);
 
-            addCondition(rngCond.fields.get(i), lower, upper);
+            A.ensure(!fields.contains(f), "Duplicated field in conditions: " + f + ".");
+
+            fields.add(f);
+            fldConds.add(rngCond.fldConds.get(i));
         }
 
         return this;
     }
 
-    /** Adds a condition for new index field. */
-    private void addCondition(String field, @Nullable Object lower, @Nullable Object upper) {
-        validate(field, lower, upper);
+    /** */
+    public List<SingleFieldRangeCondition> conditions() {
+        return fldConds;
+    }
 
-        fields.add(field);
+    /** Represents info about signle field condition. */
+    public static class SingleFieldRangeCondition implements Serializable {
+        /** */
+        private static final long serialVersionUID = 0L;
 
-        if (lower != null) {
-            if (lowers == null)
-                lowers = new ArrayList<>();
+        /** List of lower bound conditions. */
+        private final Object lower;
 
-            lowers.add(lower);
+        /** List of upper bound conditions. */
+        private final Object upper;
+
+        /** Should include lower value. */
+        private final boolean lowerIncl;
+
+        /** Should include upper value. */
+        private final boolean upperIncl;
+
+        /** */
+        SingleFieldRangeCondition(Object lower, Object upper, boolean lowerIncl, boolean upperIncl) {
+            this.lower = lower;
+            this.upper = upper;
+            this.lowerIncl = lowerIncl;
+            this.upperIncl = upperIncl;
         }
 
-        if (upper != null) {
-            if (uppers == null)
-                uppers = new ArrayList<>();
-
-            uppers.add(upper);
+        /** Swap boundaries. */
+        public SingleFieldRangeCondition swap() {
+            return new SingleFieldRangeCondition(upper, lower, upperIncl, lowerIncl);
         }
-    }
 
-    /** */
-    public List<Object> lowers() {
-        return lowers;
-    }
+        /** */
+        public Object lower() {
+            return lower;
+        }
 
-    /** */
-    public List<Object> uppers() {
-        return uppers;
-    }
+        /** */
+        public Object upper() {
+            return upper;
+        }
 
-    /** */
-    public void lowerInclusive(boolean val) {
-        lowerInclusive = val;
-    }
+        /** */
+        public boolean lowerIncl() {
+            return lowerIncl;
+        }
 
-    /** */
-    public boolean lowerInclusive() {
-        return lowerInclusive;
-    }
-
-    /** */
-    public void upperInclusive(boolean val) {
-        upperInclusive = val;
-    }
-
-    /** */
-    public boolean upperInclusive() {
-        return upperInclusive;
-    }
-
-    /** Validates that new condition matches conditions on other fields. */
-    private void validate(String field, @Nullable Object lower, @Nullable Object upper) {
-        A.notNullOrEmpty(field, "field");
-
-        A.ensure(!fields.contains(field),
-            "Range index query already has condition for field '" + field + "'. Use 'between' instead.");
-
-        A.ensure(!(lower != null && uppers != null),
-            "Range index query supports only single boundary for different fields." +
-                " For same field use 'between' instead.");
-
-        A.ensure(!(upper != null && lowers != null),
-            "Range index query supports only single boundary for different fields." +
-                " For same field use 'between' instead.");
+        /** */
+        public boolean upperIncl() {
+            return upperIncl;
+        }
     }
 }

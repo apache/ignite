@@ -112,7 +112,7 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
             .<Long, Person>forIndex(Person.class, DESC_ID_IDX, "PUBLIC")
             .where(lt("descId", pivot));
 
-        check(tableCache.query(qry), pivot + 1, CNT);
+        check(tableCache.query(qry), 0, pivot);
 
         // Wrong fields in query.
         GridTestUtils.assertThrowsAnyCause(null, () -> {

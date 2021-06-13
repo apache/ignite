@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.cache.query.index;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.List;
 import java.util.NoSuchElementException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -28,6 +30,7 @@ import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.internal.cache.query.IndexCondition;
 import org.apache.ignite.internal.cache.query.RangeIndexCondition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowComparator;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexSearchRowImpl;
@@ -46,6 +49,8 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+
+import static org.apache.ignite.internal.cache.query.index.SortOrder.DESC;
 
 /**
  * Processor of {@link IndexQuery}.
@@ -222,17 +227,29 @@ public class IndexQueryProcessor {
         throw new IllegalStateException("Doesn't support index condition: " + idxCond.getClass().getName());
     }
 
-    /** Runs range query over specified segment. */
+    /**
+     * Runs range query over specified segment. There are 2 steps to run query:
+     * 1. Traverse index by specified boundaries;
+     * 2. Scan over cursor and filter rows that doesn't match user condition.
+     *
+     * Filtering is required in 2 cases:
+     * 1. Exclusion of one of boundaries, as idx.find() includes both of them;
+     * 2. To apply conditions on non-first index fields. Tree apply boundaries field by field, if first field match
+     * a boundary, then second field isn't checked within traversing.
+     */
     private GridCursor<IndexRow> treeIndexRange(InlineIndex idx, RangeIndexCondition cond, int segment,
         IndexQueryContext qryCtx) throws IgniteCheckedException {
 
         InlineIndexRowHandler hnd = idx.segment(0).rowHandler();
+        CacheObjectContext coctx = idx.segment(0).cacheContext().cacheObjectContext();
 
-        IndexKey[] lowerBounds = cond.lowers() == null ? null : new IndexKey[hnd.indexKeyDefinitions().size()];
-        IndexKey[] upperBounds = cond.uppers() == null ? null : new IndexKey[hnd.indexKeyDefinitions().size()];
+        IndexKey[] lowerBounds = new IndexKey[hnd.indexKeyDefinitions().size()];
+        IndexKey[] upperBounds = new IndexKey[hnd.indexKeyDefinitions().size()];
 
-        IndexRow lower = cond.lowers() == null ? null : new IndexSearchRowImpl(lowerBounds, hnd);
-        IndexRow upper = cond.uppers() == null ? null : new IndexSearchRowImpl(upperBounds, hnd);
+        boolean lowerAllNulls = true;
+        boolean upperAllNulls = true;
+
+        List<RangeIndexCondition.SingleFieldRangeCondition> treeConds = new ArrayList<>();
 
         for (int i = 0; i < cond.fields().size(); i++) {
             String f = cond.fields().get(i);
@@ -242,52 +259,60 @@ public class IndexQueryProcessor {
             if (!def.name().equalsIgnoreCase(f))
                 throw new IgniteCheckedException("Range query doesn't match index '" + idx.name() + "'");
 
-            if (lowerBounds != null) {
-                Object val = cond.lowers().get(i);
+            RangeIndexCondition.SingleFieldRangeCondition c = cond.conditions().get(i);
 
-                if (val instanceof IndexConditionBuilder.Null)
-                    val = null;
+            // If index is desc, then we need to swap boundaries as user declare condition in straight manner.
+            // For example, there is an idx (int Val desc). It means that index stores data in reverse order (1 < 0).
+            // But user won't expect for condition gt(1) to get 0 as result, instead user will use lt(1) for getting
+            // 0. Then we need to swap user condition.
+            if (def.order().sortOrder() == DESC)
+                c = c.swap();
 
-                IndexKey l = IndexKeyFactory.wrap(
-                    val, def.idxType(), idx.segment(0).cacheContext().cacheObjectContext(), hnd.indexKeyTypeSettings());
+            treeConds.add(c);
 
-                lowerBounds[i] = l;
+            IndexKey l = key(c.lower(), def, hnd.indexKeyTypeSettings(), coctx);
+            IndexKey u = key(c.upper(), def, hnd.indexKeyTypeSettings(), coctx);
+
+            if (l != null) {
+                // This is completely wrong condition that returns incorrect result. Instead access predicate should be used.
+                if (lowerAllNulls && i > 0)
+                    throw new IgniteCheckedException("Range query doesn't match index '" + idx.name() + "'");
+
+                lowerAllNulls = false;
             }
 
-            if (upperBounds != null) {
-                Object val = cond.uppers().get(i);
+            if (u != null) {
+                // This is completely wrong condition that returns incorrect result. Instead access predicate should be used.
+                if (upperAllNulls && i > 0)
+                    throw new IgniteCheckedException("Range query doesn't match index '" + idx.name() + "'");
 
-                if (val instanceof IndexConditionBuilder.Null)
-                    val = null;
-
-                IndexKey u = IndexKeyFactory.wrap(
-                    val, def.idxType(), idx.segment(0).cacheContext().cacheObjectContext(), hnd.indexKeyTypeSettings());
-
-                upperBounds[i] = u;
+                upperAllNulls = false;
             }
+
+            lowerBounds[i] = l;
+            upperBounds[i] = u;
         }
 
+        IndexRow lower = lowerAllNulls ? null : new IndexSearchRowImpl(lowerBounds, hnd);
+        IndexRow upper = upperAllNulls ? null : new IndexSearchRowImpl(upperBounds, hnd);
+
+        // Step 1. Traverse index.
         GridCursor<IndexRow> findRes = idx.find(lower, upper, segment, qryCtx);
 
-        boolean checkLower = !cond.lowerInclusive() && cond.lowers() != null;
-        boolean checkUpper = !cond.upperInclusive() && cond.uppers() != null;
-
-        if (!checkLower && !checkUpper)
-            return findRes;
-
+        // Step 2. Scan and filter.
         return new GridCursor<IndexRow>() {
             /** Whether returns first row. */
             private boolean returnFirst;
 
-            private IndexRowComparator rowCmp = ((SortedIndexDefinition) idxProc.indexDefinition(idx.id())).rowComparator();
+            private final IndexRowComparator rowCmp = ((SortedIndexDefinition) idxProc.indexDefinition(idx.id())).rowComparator();
 
             /** {@inheritDoc} */
             @Override public boolean next() throws IgniteCheckedException {
                 if (!findRes.next())
                     return false;
 
-                if (checkLower && !returnFirst) {
-                    while (match(get(), lower, cond.lowers().size())) {
+                if (!returnFirst) {
+                    while (match(get(), lower, 1)) {
                         if (!findRes.next())
                             return false;
                     }
@@ -295,7 +320,7 @@ public class IndexQueryProcessor {
                     returnFirst = true;
                 }
 
-                if (checkUpper && match(get(), upper, cond.uppers().size()))
+                if (match(get(), upper, -1))
                     return false;
 
                 return true;
@@ -306,16 +331,66 @@ public class IndexQueryProcessor {
                 return findRes.get();
             }
 
-            /** Return {@code true} if specified row fully match specified condition. */
-            private boolean match(IndexRow row, IndexRow cond, int condKeysCnt) throws IgniteCheckedException {
+            /**
+             * Matches index row, boundary and inclusion mask to decide whether this row will be excluded from result.
+             *
+             * @param row Result row to check.
+             * @param boundary Index search boundary.
+             * @param boundarySign {@code 1} for lower boundary and {@code -1} for upper boundary.
+             * @return {@code true} if specified row has to be excluded from result.
+             */
+            private boolean match(IndexRow row, IndexRow boundary, int boundarySign) throws IgniteCheckedException {
+                // Unbounded search, include all.
+                if (boundary == null)
+                    return false;
+
+                int condKeysCnt = treeConds.size();
+
                 for (int i = 0; i < condKeysCnt; i++) {
-                    if (rowCmp.compareKey(row, cond, i) != 0)
+                    RangeIndexCondition.SingleFieldRangeCondition c = treeConds.get(i);
+
+                    // Include all values on this field.
+                    if (boundary.key(i) == null)
                         return false;
+
+                    int cmp = rowCmp.compareKey(row, boundary, i);
+
+                    // Swap direction.
+                    if (hnd.indexKeyDefinitions().get(i).order().sortOrder() == DESC)
+                        cmp = -1 * cmp;
+
+                    // Exclude if field equals boundary field and condition is excluding.
+                    if (cmp == 0) {
+                        if (boundarySign > 0 && !c.lowerIncl())
+                            return true;
+
+                        if (boundarySign < 0 && !c.upperIncl())
+                            return true;
+                    }
+
+                    // Check sign. Exclude if field is out of boundaries.
+                    if (cmp * boundarySign < 0)
+                        return true;
                 }
 
-                return true;
+                return false;
             }
         };
+    }
+
+    /** */
+    private IndexKey key(Object val, IndexKeyDefinition def, IndexKeyTypeSettings settings, CacheObjectContext coctx) {
+        IndexKey key = null;
+
+        if (val != null) {
+            if (val instanceof IndexConditionBuilder.Null)
+                val = null;
+
+            key = IndexKeyFactory.wrap(
+                val, def.idxType(), coctx, settings);
+        }
+
+        return key;
     }
 
     /** Single cursor over multiple segments. Next value is choose with the index row comparator. */

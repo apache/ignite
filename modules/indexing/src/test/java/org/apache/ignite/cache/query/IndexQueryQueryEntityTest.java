@@ -193,7 +193,7 @@ public class IndexQueryQueryEntityTest extends GridCommonAbstractTest {
             .<Long, Person>forType(Person.class)
             .where(lt("descId", pivot));
 
-        check(cache.query(descQry), pivot + 1, CNT);
+        check(cache.query(descQry), 0, pivot);
 
         // Lt.
         qry = IndexQuery
@@ -207,7 +207,7 @@ public class IndexQueryQueryEntityTest extends GridCommonAbstractTest {
             .<Long, Person>forIndex(Person.class, DESC_ID_IDX)
             .where(lt("descId", pivot));
 
-        check(cache.query(descQry), pivot + 1, CNT);
+        check(cache.query(descQry), 0, pivot);
     }
 
     /** */
@@ -229,7 +229,7 @@ public class IndexQueryQueryEntityTest extends GridCommonAbstractTest {
             .<Long, Person>forType(Person.class)
             .where(lt("descId", pivot));
 
-        check(cacheTblName.query(descQry), pivot + 1, CNT);
+        check(cacheTblName.query(descQry), 0, pivot);
 
         // Lt.
         qry = IndexQuery
@@ -243,7 +243,7 @@ public class IndexQueryQueryEntityTest extends GridCommonAbstractTest {
             .<Long, Person>forIndex(Person.class, DESC_ID_IDX)
             .where(lt("descId", pivot));
 
-        check(cacheTblName.query(descQry), pivot + 1, CNT);
+        check(cacheTblName.query(descQry), 0, pivot);
 
         // Lt.
         qry = IndexQuery
@@ -257,7 +257,7 @@ public class IndexQueryQueryEntityTest extends GridCommonAbstractTest {
             .<Long, Person>forIndex(Person.class, DESC_ID_IDX)
             .where(lt("descId", pivot));
 
-        check(cacheTblName.query(descQry), pivot + 1, CNT);
+        check(cacheTblName.query(descQry), 0, pivot);
     }
 
     /**

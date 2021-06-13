@@ -28,48 +28,44 @@ public class IndexConditionBuilder {
     /** Object to mark a boundary if {@code null} is specified. */
     private static final Object NULL = new Null();
 
+    /** Equal To. */
+    public static IndexCondition eq(String field, Object val) {
+        return between(field, val, val);
+    }
+
     /** Less Then. */
     public static IndexCondition lt(String field, Object val) {
         A.notNullOrEmpty(field, "field");
 
-        return new RangeIndexCondition(field, null, wrapNull(val));
+        return new RangeIndexCondition(field, null, wrapNull(val), true, false);
     }
 
     /** Less Then or Equal. */
     public static IndexCondition lte(String field, Object val) {
-        IndexCondition idxCond = lt(field, val);
+        A.notNullOrEmpty(field, "field");
 
-        ((RangeIndexCondition) idxCond).upperInclusive(true);
-
-        return idxCond;
+        return new RangeIndexCondition(field, null, wrapNull(val), true, true);
     }
 
     /** Greater Then. */
     public static IndexCondition gt(String field, Object val) {
         A.notNullOrEmpty(field, "field");
 
-        return new RangeIndexCondition(field, wrapNull(val), null);
+        return new RangeIndexCondition(field, wrapNull(val), null, false, true);
     }
 
     /** Greater Then or Equal. */
     public static IndexCondition gte(String field, Object val) {
-        IndexCondition idxCond = gt(field, val);
+        A.notNullOrEmpty(field, "field");
 
-        ((RangeIndexCondition) idxCond).lowerInclusive(true);
-
-        return idxCond;
+        return new RangeIndexCondition(field, wrapNull(val), null, true, true);
     }
 
     /** Between. Lower and upper boundaries are inclusive. */
     public static IndexCondition between(String field, Object lower, Object upper) {
         A.notNullOrEmpty(field, "field");
 
-        RangeIndexCondition cond = new RangeIndexCondition(field, wrapNull(lower), wrapNull(upper));
-
-        cond.lowerInclusive(true);
-        cond.upperInclusive(true);
-
-        return cond;
+        return new RangeIndexCondition(field, wrapNull(lower), wrapNull(upper), true, true);
     }
 
     /** */

@@ -57,7 +57,7 @@ public class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
     public static <K, V> IndexQuery<K, V> forType(Class<V> valCls) {
         A.notNull(valCls, "valCls");
 
-        return new IndexQuery<K, V>(valCls.getName(), null, null);
+        return new IndexQuery<>(valCls.getName(), null, null);
     }
 
     /**
@@ -67,7 +67,7 @@ public class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
         A.notNull(valCls, "valCls");
         A.notNullOrEmpty(idxName, "idxName");
 
-        return new IndexQuery<K, V>(valCls.getName(), idxName, null);
+        return new IndexQuery<>(valCls.getName(), idxName, null);
     }
 
     /**
@@ -79,33 +79,21 @@ public class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
         A.notNullOrEmpty(idxName, "idxName");
         A.notNullOrEmpty(schema, "schema");
 
-        return new IndexQuery<K, V>(valCls.getName(), idxName, schema);
+        return new IndexQuery<>(valCls.getName(), idxName, schema);
     }
 
     /**
-     * Provide index condition to query an index.
+     * Provide multiple index conditions joint with AND. Order of conditons has to match index structure.
      */
-    public IndexQuery<K, V> where(IndexCondition idxCond) {
-        A.notNull(idxCond, "idxCond");
+    public IndexQuery<K, V> where(IndexCondition cond, IndexCondition... conds) {
+        A.notNull(cond, "cond");
 
-        this.idxCond = idxCond;
+        idxCond = cond;
 
-        return this;
-    }
-
-    /**
-     * Provide multiple index conditions. Order of conditons has to match index structure.
-     */
-    public IndexQuery<K, V> where(IndexCondition... idxConds) {
-        A.ensure(idxConds.length > 1, "Expect multiple index conditions.");
-
-        for (IndexCondition c: idxConds) {
+        for (IndexCondition c: conds) {
             A.notNull(c, "idxConds");
 
-            if (idxCond == null)
-                idxCond = c;
-            else
-                idxCond.and(c);
+            idxCond.and(c);
         }
 
         return this;

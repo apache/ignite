@@ -44,6 +44,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.query.IndexConditionBuilder.between;
+import static org.apache.ignite.cache.query.IndexConditionBuilder.eq;
 import static org.apache.ignite.cache.query.IndexConditionBuilder.gt;
 import static org.apache.ignite.cache.query.IndexConditionBuilder.gte;
 import static org.apache.ignite.cache.query.IndexConditionBuilder.lt;
@@ -60,6 +61,9 @@ public class IndexQueryRangeTest extends GridCommonAbstractTest {
 
     /** */
     private Ignite crd;
+
+    /** */
+    private int duplicates;
 
     /** */
     private IgniteCache<Long, Person> cache;
@@ -158,6 +162,37 @@ public class IndexQueryRangeTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testRangeQueries() {
+        duplicates = 1;
+
+        checkRangeQueries();
+    }
+
+    /** */
+    @Test
+    public void testRangeDescQueries() {
+        duplicates = 1;
+
+        checkRangeDescQueries();
+    }
+
+    /** */
+    @Test
+    public void testRangeQueriesWithDuplicatedData() {
+        duplicates = 10;
+
+        checkRangeQueries();
+    }
+
+    /** */
+    @Test
+    public void testRangeDescQueriesWithDuplicatedData() {
+        duplicates = 10;
+
+        checkRangeDescQueries();
+    }
+
+    /** */
+    public void checkRangeQueries() {
         // Query empty cache.
         IndexQuery<Long, Person> qry = IndexQuery
             .<Long, Person>forType(Person.class)
@@ -170,19 +205,19 @@ public class IndexQueryRangeTest extends GridCommonAbstractTest {
 
         int pivot = new Random().nextInt(CNT);
 
+        // Eq.
+        qry = IndexQuery
+            .<Long, Person>forType(Person.class)
+            .where(eq("id", pivot));
+
+        check(cache.query(qry), pivot, pivot + 1);
+
         // Lt.
         qry = IndexQuery
             .<Long, Person>forType(Person.class)
             .where(lt("id", pivot));
 
         check(cache.query(qry), 0, pivot);
-
-        // Lt, desc index.
-        IndexQuery<Long, Person> descQry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(lt("descId", pivot));
-
-        check(cache.query(descQry), pivot + 1, CNT);
 
         // Lte.
         qry = IndexQuery
@@ -191,13 +226,6 @@ public class IndexQueryRangeTest extends GridCommonAbstractTest {
 
         check(cache.query(qry), 0, pivot + 1);
 
-        // Lte, desc index.
-        descQry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(lte("descId", pivot));
-
-        check(cache.query(descQry), pivot, CNT);
-
         // Gt.
         qry = IndexQuery
             .<Long, Person>forType(Person.class)
@@ -205,26 +233,12 @@ public class IndexQueryRangeTest extends GridCommonAbstractTest {
 
         check(cache.query(qry), pivot + 1, CNT);
 
-        // Gt, desc index.
-        descQry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(gt("descId", pivot));
-
-        check(cache.query(descQry), 0, pivot);
-
         // Gte.
         qry = IndexQuery
             .<Long, Person>forType(Person.class)
             .where(gte("id", pivot));
 
         check(cache.query(qry), pivot, CNT);
-
-        // Gte, desc index.
-        descQry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(gte("descId", pivot));
-
-        check(cache.query(descQry), 0, pivot + 1);
 
         // Between.
         int lower = new Random().nextInt(CNT / 2);
@@ -235,11 +249,64 @@ public class IndexQueryRangeTest extends GridCommonAbstractTest {
             .where(between("id", lower, upper));
 
         check(cache.query(qry), lower, upper + 1);
+    }
 
-        // Between, desc index.
+    /** */
+    public void checkRangeDescQueries() {
+        // Query empty cache.
+        IndexQuery<Long, Person> qry = IndexQuery
+            .<Long, Person>forType(Person.class)
+            .where(lt("id", Integer.MAX_VALUE));
+
+        assertTrue(cache.query(qry).getAll().isEmpty());
+
+        // Add data
+        insertData();
+
+        int pivot = new Random().nextInt(CNT);
+
+        // Eq.
+        qry = IndexQuery
+            .<Long, Person>forType(Person.class)
+            .where(eq("descId", pivot));
+
+        check(cache.query(qry), pivot, pivot + 1);
+
+        // Lt, desc index.
+        IndexQuery<Long, Person> descQry = IndexQuery
+            .<Long, Person>forType(Person.class)
+            .where(lt("descId", pivot));
+
+        check(cache.query(descQry), 0, pivot);
+
+        // Lte, desc index.
         descQry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .where(between("descId", upper, lower));
+            .where(lte("descId", pivot));
+
+        check(cache.query(descQry), 0, pivot + 1);
+
+        // Gt, desc index.
+        descQry = IndexQuery
+            .<Long, Person>forType(Person.class)
+            .where(gt("descId", pivot));
+
+        check(cache.query(descQry), pivot + 1, CNT);
+
+        // Gte, desc index.
+        descQry = IndexQuery
+            .<Long, Person>forType(Person.class)
+            .where(gte("descId", pivot));
+
+        check(cache.query(descQry), pivot, CNT);
+
+        // Between, desc index.
+        int lower = new Random().nextInt(CNT / 2);
+        int upper = lower + CNT / 20;
+
+        descQry = IndexQuery
+            .<Long, Person>forType(Person.class)
+            .where(between("descId", lower, upper));
 
         check(cache.query(descQry), lower, upper + 1);
     }
@@ -251,16 +318,22 @@ public class IndexQueryRangeTest extends GridCommonAbstractTest {
     private void check(QueryCursor<Cache.Entry<Long, Person>> cursor, int left, int right) {
         List<Cache.Entry<Long, Person>> all = cursor.getAll();
 
-        assertEquals(right - left, all.size());
+        assertFalse(all.isEmpty());
 
-        Set<Long> expKeys = LongStream.range(left, right).boxed().collect(Collectors.toSet());
+        assertEquals((right - left) * duplicates, all.size());
+
+        Set<Long> expKeys = LongStream
+            .range(left * duplicates, right * duplicates).boxed()
+            .collect(Collectors.toSet());
 
         for (int i = 0; i < all.size(); i++) {
             Cache.Entry<Long, Person> entry = all.get(i);
 
             assertTrue(expKeys.remove(entry.getKey()));
 
-            assertEquals(new Person(entry.getKey().intValue()), all.get(i).getValue());
+            int persId = entry.getKey().intValue() / duplicates;
+
+            assertEquals(new Person(persId), all.get(i).getValue());
         }
 
         assertTrue(expKeys.isEmpty());
@@ -269,8 +342,11 @@ public class IndexQueryRangeTest extends GridCommonAbstractTest {
     /** */
     private void insertData() {
         try (IgniteDataStreamer<Long, Person> streamer = crd.dataStreamer(cache.getName())) {
-            for (int i = 0; i < CNT; i++)
-                streamer.addData((long) i, new Person(i));
+            for (int persId = 0; persId < CNT; persId++) {
+                // Create duplicates of data.
+                for (int i = 0; i < duplicates; i++)
+                    streamer.addData((long) persId * duplicates + i, new Person(persId));
+            }
         }
     }
 
