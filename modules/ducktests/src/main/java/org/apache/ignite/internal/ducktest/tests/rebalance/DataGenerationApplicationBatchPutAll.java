@@ -18,19 +18,17 @@
 package org.apache.ignite.internal.ducktest.tests.rebalance;
 
 import java.util.TreeMap;
-import java.util.concurrent.ThreadLocalRandom;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
+import static org.apache.ignite.internal.ducktest.tests.rebalance.DataGenerationApplicationStreamer.MAX_STREAMER_DATA_SIZE;
+
 /**
  * Application generates cache data by specified parameters.
  */
 public class DataGenerationApplicationBatchPutAll extends IgniteAwareApplication {
-    /** Max streamer data size. */
-    private static final int MAX_STREAMER_DATA_SIZE = 100_000_000;
-
     /** {@inheritDoc} */
     @Override protected void run(JsonNode jsonNode) throws Exception {
         int backups = jsonNode.get("backups").asInt();
@@ -58,7 +56,7 @@ public class DataGenerationApplicationBatchPutAll extends IgniteAwareApplication
      * @param to To key.
      */
     private void generateCacheData(IgniteCache<Integer, DataModel> cache, int entrySize, int from, int to) {
-        int flushEach = MAX_STREAMER_DATA_SIZE / entrySize + (MAX_STREAMER_DATA_SIZE % entrySize == 0 ? 0 : 1);
+        int batchSize = MAX_STREAMER_DATA_SIZE / entrySize + (MAX_STREAMER_DATA_SIZE % entrySize == 0 ? 0 : 1);
 
         TreeMap<Integer, DataModel> map;
 
@@ -67,43 +65,12 @@ public class DataGenerationApplicationBatchPutAll extends IgniteAwareApplication
         while(i < to) {
             map = new TreeMap<>();
 
-            for (int j = 0; j < flushEach & i < to; j += entrySize, i++)
+            for (int j = 0; j < batchSize & i < to; j += entrySize, i++)
                 map.put(i, new DataModel(entrySize));
 
             cache.putAll(map);
         }
 
         log.info(cache.getName() + " data generated [entryCnt=" + (from - to) + ", from=" + from + ", to=" + to + "]");
-    }
-
-    /**
-     * Data model class, which instances used as cache entry values.
-     */
-    private static class DataModel {
-        /** Cached payload. */
-        private static byte[] cachedPayload;
-
-        /** Payload. */
-        private final byte[] payload;
-
-        /**
-         * @param entrySize Entry size.
-         */
-        DataModel(int entrySize) {
-            payload = getPayload(entrySize);
-        }
-
-        /**
-         * @param payloadSize Payload size.
-         */
-        private static byte[] getPayload(int payloadSize) {
-            if (cachedPayload == null || cachedPayload.length != payloadSize) {
-                cachedPayload = new byte[payloadSize];
-
-                ThreadLocalRandom.current().nextBytes(cachedPayload);
-            }
-
-            return cachedPayload;
-        }
     }
 }

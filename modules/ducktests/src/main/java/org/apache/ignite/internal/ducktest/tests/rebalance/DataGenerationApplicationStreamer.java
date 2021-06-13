@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.ducktest.tests.rebalance;
 
-import java.util.concurrent.ThreadLocalRandom;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -29,7 +28,7 @@ import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
  */
 public class DataGenerationApplicationStreamer extends IgniteAwareApplication {
     /** Max streamer data size. */
-    private static final int MAX_STREAMER_DATA_SIZE = 100_000_000;
+    static final int MAX_STREAMER_DATA_SIZE = 100_000_000;
 
     /** {@inheritDoc} */
     @Override protected void run(JsonNode jsonNode) throws Exception {
@@ -75,36 +74,5 @@ public class DataGenerationApplicationStreamer extends IgniteAwareApplication {
         }
 
         log.info(cacheName + " data generated [entryCnt=" + (from - to) + ", from=" + from + ", to=" + to + "]");
-    }
-
-    /**
-     * Data model class, which instances used as cache entry values.
-     */
-    private static class DataModel {
-        /** Cached payload. */
-        private static byte[] cachedPayload;
-
-        /** Payload. */
-        private final byte[] payload;
-
-        /**
-         * @param entrySize Entry size.
-         */
-        DataModel(int entrySize) {
-            payload = getPayload(entrySize);
-        }
-
-        /**
-         * @param payloadSize Payload size.
-         */
-        private static byte[] getPayload(int payloadSize) {
-            if (cachedPayload == null || cachedPayload.length != payloadSize) {
-                cachedPayload = new byte[payloadSize];
-
-                ThreadLocalRandom.current().nextBytes(cachedPayload);
-            }
-
-            return cachedPayload;
-        }
     }
 }
