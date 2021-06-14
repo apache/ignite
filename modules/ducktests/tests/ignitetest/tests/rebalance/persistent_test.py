@@ -212,7 +212,7 @@ class RebalancePersistentTest(IgniteTest):
         reb_nodes = ignites.nodes[:-1].copy()
 
         ignites.stop_node(node)
-        ignites.wait_node(node)
+        assert ignites.wait_node(node)
 
         control_utility.remove_from_baseline([node], ignites.nodes[0])
 
@@ -224,7 +224,7 @@ class RebalancePersistentTest(IgniteTest):
 
         ignites.await_rebalance(reb_nodes, 600)
 
-        check_type_of_rebalancing(new_node.nodes)
+        check_type_of_rebalancing(reb_nodes)
 
         control_utility.idle_verify()
 
