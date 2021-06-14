@@ -66,7 +66,7 @@ class RebalancePersistentTest(IgniteTest):
 
         control_utility.add_to_baseline(new_node.nodes)
 
-        new_node.await_rebalance(600)
+        new_node.await_rebalance(timeout_sec=600)
 
         check_type_of_rebalancing(new_node.nodes)
 
@@ -110,11 +110,11 @@ class RebalancePersistentTest(IgniteTest):
         node = ignites.nodes[-1]
 
         ignites.stop_node(node)
-        ignites.wait_node(node, 10)
+        assert ignites.wait_node(node)
 
         control_utility.remove_from_baseline([node])
 
-        ignites.await_rebalance(600)
+        ignites.await_rebalance(ignites.nodes[:-1], 600)
 
         check_type_of_rebalancing(ignites.nodes[:-1])
 
@@ -165,7 +165,7 @@ class RebalancePersistentTest(IgniteTest):
 
         ignites.stop_node(ignites.nodes[-1])
 
-        new_node.await_rebalance(600)
+        new_node.await_rebalance(timeout_sec=600)
 
         check_type_of_rebalancing(new_node.nodes)
 
@@ -212,7 +212,7 @@ class RebalancePersistentTest(IgniteTest):
         reb_nodes = ignites.nodes[:-1].copy()
 
         ignites.stop_node(node)
-        ignites.wait_node(node, 10)
+        ignites.wait_node(node)
 
         control_utility.remove_from_baseline([node], ignites.nodes[0])
 
@@ -222,7 +222,7 @@ class RebalancePersistentTest(IgniteTest):
                                  num_nodes=1)
         new_node.start()
 
-        ignites.await_rebalance(600)
+        ignites.await_rebalance(reb_nodes, 600)
 
         check_type_of_rebalancing(new_node.nodes)
 
@@ -290,7 +290,7 @@ class RebalancePersistentTest(IgniteTest):
         node = ignites.nodes[-1]
 
         ignites.stop_node(node)
-        assert ignites.wait_node(node, 10)
+        assert ignites.wait_node(node)
 
         preload_time = preload_data(
             self.test_context,
@@ -307,7 +307,7 @@ class RebalancePersistentTest(IgniteTest):
         ignites.start_node(node)
         ignites.await_started()
 
-        ignites.await_rebalance(600)
+        ignites.await_rebalance(timeout_sec=600)
 
         check_type_of_rebalancing([node], is_full=False)
 
