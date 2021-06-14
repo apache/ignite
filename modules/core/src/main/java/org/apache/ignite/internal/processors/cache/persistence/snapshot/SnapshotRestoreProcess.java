@@ -397,6 +397,8 @@ public class SnapshotRestoreProcess {
      *
      * @param reason Interruption reason.
      * @param snpName Snapshot name.
+     * @return Future that will be finished when process the process is complete. The result of this future will be
+     * {@code false} if the restore process with the specified snapshot name is not running at all.
      */
     public IgniteInternalFuture<Boolean> interrupt(Exception reason, @Nullable String snpName) {
         SnapshotRestoreContext opCtx0 = opCtx;
