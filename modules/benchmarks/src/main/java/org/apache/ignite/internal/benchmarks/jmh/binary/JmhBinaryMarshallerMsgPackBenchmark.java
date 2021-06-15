@@ -39,6 +39,7 @@ import org.msgpack.core.MessageBufferPacker;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
+import org.msgpack.core.buffer.ArrayBufferInput;
 import org.msgpack.jackson.dataformat.JsonArrayFormat;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -83,6 +84,8 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
 
     private ObjectMapper msgPackMapper2;
     private ObjectWriter msgPackWriter2;
+
+    private MessageUnpacker msgPackUnpacker;
 
     /**
      * Setup routine. Child classes must invoke this method first.
@@ -129,6 +132,8 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
         // Init MsgPack without field names.
         msgPackMapper2 = new ObjectMapper(new MessagePackFactory(packerConfig)).setAnnotationIntrospector(new JsonArrayFormat());
         msgPackWriter2 = msgPackMapper2.writerFor(IntPojo.class);
+
+        msgPackUnpacker = MessagePack.newDefaultUnpacker(msgPackPrimitiveBytes);
     }
 
     //@Benchmark
@@ -175,7 +180,7 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
         return packer.toByteArray();
     }
 
-    //@Benchmark
+    // @Benchmark
     public byte[] writePrimitivesIgnite() {
         try (BinaryWriterExImpl writer = new BinaryWriterExImpl(binaryCtx)) {
             writer.writeInt(42);
@@ -194,9 +199,9 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
 
     @Benchmark
     public IgniteBiTuple<Integer, String> readPrimitivesMsgPack() throws Exception {
-        MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(msgPackPrimitiveBytes);
+        msgPackUnpacker.reset(new ArrayBufferInput(msgPackPrimitiveBytes));
 
-        return new IgniteBiTuple<>(unpacker.unpackInt(), unpacker.unpackString());
+        return new IgniteBiTuple<>(msgPackUnpacker.unpackInt(), msgPackUnpacker.unpackString());
     }
 
     /**
@@ -230,9 +235,7 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
 //
 //        while (System.currentTimeMillis() - t < 10000)
 //        {
-//            // objectWriter.writeValueAsBytes(new IntPojo((int) t));
-//            // bench.writePrimitivesMsgPackRaw();
-//            bench.writePrimitivesMsgPackRaw();
+//            bench.readPrimitivesMsgPack();
 //        }
 
 
