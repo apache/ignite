@@ -47,6 +47,8 @@ import java.io.OutputStream;
 
 /**
  * Ignite marshaller vs MsgPack benchmark.
+ *
+ * TODO: Read benchmarks.
  */
 @State(Scope.Benchmark)
 public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
@@ -172,7 +174,6 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
 //        {
 //            objectWriter.writeValueAsBytes(new IntPojo((int) t));
 //        }
-
 
 
 
