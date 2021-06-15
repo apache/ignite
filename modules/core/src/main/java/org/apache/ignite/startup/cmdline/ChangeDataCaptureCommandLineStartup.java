@@ -19,6 +19,7 @@ package org.apache.ignite.startup.cmdline;
 
 import java.net.URL;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cdc.ChangeDataCaptureConfiguration;
@@ -79,22 +80,28 @@ public class ChangeDataCaptureCommandLineStartup {
         if (args.length > 0 && args[0].charAt(0) == '-')
             exit("Invalid arguments: " + args[0], true, -1);
 
+        AtomicReference<ChangeDataCapture> cdc = new AtomicReference<>();
+
         try {
-            ChangeDataCapture cdc = ChangeDataCaptureLoader.loadChangeDataCapture(args[0]);
+            cdc.set(ChangeDataCaptureLoader.loadChangeDataCapture(args[0]));
 
             if (!IgniteSystemProperties.getBoolean(IGNITE_NO_SHUTDOWN_HOOK, false)) {
                 Runtime.getRuntime().addShutdownHook(new Thread("cdc-shutdown-hook") {
                     @Override public void run() {
-                        cdc.stop();
+                        cdc.get().stop();
                     }
                 });
             }
 
-            Thread appThread = new Thread(cdc);
+            Thread appThread = new Thread(cdc.get());
 
             appThread.start();
 
             appThread.join();
+        }
+        catch (InterruptedException e) {
+            if (cdc.get() != null)
+                cdc.get().stop();
         }
         catch (Throwable e) {
             e.printStackTrace();
