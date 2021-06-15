@@ -330,7 +330,7 @@ class ControlUtility:
 
     def __run(self, cmd, node=None):
         if node is None:
-            node = random.choice(self.__alives())
+            node = random.choice(self._cluster.alive_nodes())
 
         self.logger.debug(f"Run command {cmd} on node {node.name}")
 

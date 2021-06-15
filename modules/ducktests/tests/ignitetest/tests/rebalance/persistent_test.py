@@ -66,7 +66,7 @@ class RebalancePersistentTest(IgniteTest):
 
         control_utility.add_to_baseline(new_node.nodes)
 
-        new_node.await_rebalance(timeout_sec=600)
+        new_node.await_rebalance()
 
         check_type_of_rebalancing(new_node.nodes)
 
@@ -78,7 +78,7 @@ class RebalancePersistentTest(IgniteTest):
 
         nodes.append(new_node.nodes[0])
 
-        self.logger.warn(f'DB size after rebalance mb: {get_database_size_mb(nodes, ignites.database_dir)}')
+        self.logger.debug(f'DB size after rebalance mb: {get_database_size_mb(nodes, ignites.database_dir)}')
 
         return get_result(new_node.nodes, preload_time, cache_count, entry_count, entry_size)
 
@@ -114,7 +114,7 @@ class RebalancePersistentTest(IgniteTest):
 
         control_utility.remove_from_baseline([node])
 
-        ignites.await_rebalance(ignites.nodes[:-1], 600)
+        ignites.await_rebalance()
 
         check_type_of_rebalancing(ignites.nodes[:-1])
 
@@ -165,7 +165,7 @@ class RebalancePersistentTest(IgniteTest):
 
         ignites.stop_node(ignites.nodes[-1])
 
-        new_node.await_rebalance(timeout_sec=600)
+        new_node.await_rebalance()
 
         check_type_of_rebalancing(new_node.nodes)
 
@@ -222,7 +222,7 @@ class RebalancePersistentTest(IgniteTest):
                                  num_nodes=1)
         new_node.start()
 
-        ignites.await_rebalance(reb_nodes, 600)
+        ignites.await_rebalance()
 
         check_type_of_rebalancing(reb_nodes)
 
@@ -307,7 +307,7 @@ class RebalancePersistentTest(IgniteTest):
         ignites.start_node(node)
         ignites.await_started()
 
-        ignites.await_rebalance(timeout_sec=600)
+        ignites.await_rebalance()
 
         check_type_of_rebalancing([node], is_full=False)
 
@@ -333,8 +333,11 @@ def get_database_size_mb(nodes: list, database_dir: str) -> dict:
         cmd = f'du -md1 {database_dir}'
         out, err = IgniteAwareService.exec_command_ex(node, cmd)
 
-        assert len(err) == 0, f"Command failed: '{cmd}'.\nError: '{err}'"
+        assert not err, f"Command failed: '{cmd}'.\nError: '{err}'"
 
-        res[node.account.hostname] = out.splitlines()
+        node_res = list(map(lambda v: ' -> '.join(v.split('\t')[::-1]), out.splitlines()))
+        node_res = list(map(lambda v: (v + 'mb.'), node_res))
+
+        res[node.account.hostname] = node_res
 
     return res

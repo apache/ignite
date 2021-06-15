@@ -17,6 +17,7 @@
 This module contains the base class to build services aware of Ignite.
 """
 import os
+import random
 import re
 import signal
 import sys
@@ -550,32 +551,39 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
             node.account.ssh(f'rm -rf {self.database_dir}', allow_fail=False)
             node.account.ssh(f'cp -r {snapshot_db} {self.work_dir}', allow_fail=False)
 
-    def await_rebalance(self, nodes: list = None, timeout_sec: int = 180):
+    def await_rebalance(self, node=None, timeout_sec=600):
         """
         Waiting for the rebalance to complete.
         For the method, you need to set the
         metric_exporter='org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi'
         to the config.
-        :param nodes: List of nodes.
+
+        :param node: Node.
         :param timeout_sec: timeout to wait the rebalance to complete.
         """
-        assert self.nodes, 'Node list is empty.'
 
         delta_time = datetime.now() + timedelta(seconds=timeout_sec)
 
-        _nodes = nodes if nodes else self.nodes
+        _node = node if node else random.choice(self.alive_nodes())
 
-        for node in _nodes:
-            rebalanced = False
-            mbean = JmxClient(node).find_mbean('.*name=cluster')
+        rebalanced = False
+        mbean = JmxClient(_node).find_mbean('.*name=cluster')
 
-            while datetime.now() < delta_time and not rebalanced:
-                rebalanced = next(mbean.Rebalanced) == 'true'
+        while datetime.now() < delta_time and not rebalanced:
+            rebalanced = next(mbean.Rebalanced) == 'true'
 
         if rebalanced:
             return
 
         raise TimeoutError(f'Rebalancing was not completed within the time: {timeout_sec} seconds.')
+
+    def alive_nodes(self) -> list:
+        """
+        Alive nodes.
+
+        :return List of alives nodes.
+        """
+        return [node for node in self.nodes if self.alive(node)]
 
 
 def node_failed_event_pattern(failed_node_id=None):
