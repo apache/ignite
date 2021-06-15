@@ -27,14 +27,18 @@ import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.msgpack.core.MessageBufferPacker;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
+import org.msgpack.core.MessageUnpacker;
 import org.msgpack.jackson.dataformat.JsonArrayFormat;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -54,7 +58,7 @@ import java.io.ByteArrayOutputStream;
  * JmhBinaryMarshallerMsgPackBenchmark.writePrimitivesIgnite      thrpt   10  12702562.838 ± 248094.068  ops/s
  *
  * JmhBinaryMarshallerMsgPackBenchmark.writePojoIgnite            thrpt   10  11590924.790 ±  42061.734  ops/s
- * JmhBinaryMarshallerMsgPackBenchmark.writePojoMsgPack           thrpt   10   5386377.535 ±  33835.097  ops/s // Writes field names
+ * JmhBinaryMarshallerMsgPackBenchmark.writePojoMsgPack           thrpt   10   5386377.535 ±  33835.097  ops/s // Fields with names
  * JmhBinaryMarshallerMsgPackBenchmark.writePojoMsgPack2          thrpt   10   8505961.494 ± 465369.449  ops/s // Fields without names (array)
  *
  * TODO: Read benchmarks.
@@ -133,7 +137,7 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
         return msgPackWriter.writeValueAsBytes(new IntPojo(42));
     }
 
-    @Benchmark
+    //@Benchmark
     public byte[] writePojoMsgPack2() throws Exception {
         // This uses TLS buffers and does not allocate on repeated calls.
         return msgPackWriter2.writeValueAsBytes(new IntPojo(42));
@@ -171,7 +175,7 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
         return packer.toByteArray();
     }
 
-    ////@Benchmark
+    //@Benchmark
     public byte[] writePrimitivesIgnite() {
         try (BinaryWriterExImpl writer = new BinaryWriterExImpl(binaryCtx)) {
             writer.writeInt(42);
@@ -179,6 +183,20 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
 
             return writer.array();
         }
+    }
+
+    @Benchmark
+    public IgniteBiTuple<Integer, String> readPrimitivesIgnite() throws Exception {
+        try (BinaryReaderExImpl reader = new BinaryReaderExImpl(binaryCtx, new BinaryHeapInputStream(ignitePrimitiveBytes), null, true)) {
+            return new IgniteBiTuple<>(reader.readInt(), reader.readString());
+        }
+    }
+
+    @Benchmark
+    public IgniteBiTuple<Integer, String> readPrimitivesMsgPack() throws Exception {
+        MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(msgPackPrimitiveBytes);
+
+        return new IgniteBiTuple<>(unpacker.unpackInt(), unpacker.unpackString());
     }
 
     /**
