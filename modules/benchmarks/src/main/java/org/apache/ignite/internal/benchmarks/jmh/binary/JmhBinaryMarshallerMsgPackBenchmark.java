@@ -17,8 +17,21 @@
 
 package org.apache.ignite.internal.benchmarks.jmh.binary;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.BinaryConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.benchmarks.jmh.JmhAbstractBenchmark;
 import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
+import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
+import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.logger.NullLogger;
+import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Mode;
 
@@ -30,6 +43,7 @@ import java.util.concurrent.ThreadLocalRandom;
 public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
     @Benchmark
     public void writeIgnite() {
+        BinaryMarshaller bm = new BinaryMarshaller();
         int key = ThreadLocalRandom.current().nextInt(100);
     }
 
@@ -49,5 +63,32 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
         runner
                 .benchmarkModes(Mode.Throughput)
                 .run();
+    }
+
+    private BinaryMarshaller createBinaryMarshaller(IgniteLogger log) throws IgniteCheckedException {
+        IgniteConfiguration iCfg = new IgniteConfiguration()
+                .setBinaryConfiguration(
+                        new BinaryConfiguration().setCompactFooter(true)
+                )
+                .setClientMode(false)
+                .setDiscoverySpi(new TcpDiscoverySpi() {
+                    @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
+                        //No-op.
+                    }
+                });
+
+        BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), iCfg, new NullLogger());
+
+        MarshallerContextBenchImpl marshCtx = new MarshallerContextBenchImpl();
+
+        marshCtx.onMarshallerProcessorStarted(new GridBenchKernalContext(log, iCfg), null);
+
+        BinaryMarshaller marsh = new BinaryMarshaller();
+
+        marsh.setContext(marshCtx);
+
+        IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setBinaryContext", ctx, iCfg);
+
+        return marsh;
     }
 }
