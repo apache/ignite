@@ -26,12 +26,10 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.StopBuildIndexConsumer;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexOperationCancellationToken;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.IgniteThrowableBiPredicate;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
@@ -143,40 +141,5 @@ class IndexesRebuildTaskEx extends IndexesRebuildTask {
      */
     static void addCacheRebuildRunner(String nodeName, String cacheName, Runnable r) {
         cacheRebuildRunner.computeIfAbsent(nodeName, s -> new ConcurrentHashMap<>()).put(cacheName, r);
-    }
-
-    /**
-     * Consumer breaking index rebuild for the cache.
-     */
-    static class BreakRebuildIndexConsumer extends StopBuildIndexConsumer {
-        /** Predicate for throwing an {@link IgniteCheckedException}. */
-        final IgniteThrowableBiPredicate<BreakRebuildIndexConsumer, CacheDataRow> brakePred;
-
-        /**
-         * Constructor.
-         *
-         * @param timeout The maximum time to wait finish future in milliseconds.
-         * @param brakePred Predicate for throwing an {@link IgniteCheckedException}.
-         */
-        BreakRebuildIndexConsumer(
-            long timeout,
-            IgniteThrowableBiPredicate<BreakRebuildIndexConsumer, CacheDataRow> brakePred
-        ) {
-            super(timeout);
-
-            this.brakePred = brakePred;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void accept(CacheDataRow row) throws IgniteCheckedException {
-            startBuildIdxFut.onDone();
-
-            finishBuildIdxFut.get(timeout);
-
-            visitCnt.incrementAndGet();
-
-            if (brakePred.test(this, row))
-                throw new IgniteCheckedException("From test.");
-        }
     }
 }

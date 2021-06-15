@@ -34,7 +34,7 @@ import static org.apache.ignite.internal.processors.query.aware.IndexBuildStatus
  */
 public class IndexBuildStatus {
     /** Enumeration of statuses. */
-    enum Status {
+    public enum Status {
         /** Initial status - operation(s) in progress. */
         INIT,
 

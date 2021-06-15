@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.index;
 
 import java.util.List;
+import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -31,11 +32,11 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.CacheMetricsImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.BreakRebuildIndexConsumer;
+import org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.BreakBuildIndexConsumer;
 import org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.SlowdownBuildIndexConsumer;
 import org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.StopBuildIndexConsumer;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.util.lang.IgniteThrowableBiPredicate;
+import org.apache.ignite.internal.processors.query.aware.IndexBuildStatus;
+import org.apache.ignite.internal.processors.query.aware.IndexBuildStatusStorage;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
@@ -46,6 +47,7 @@ import static org.apache.ignite.internal.processors.cache.index.IgniteH2Indexing
 import static org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.addCacheRowConsumer;
 import static org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.nodeName;
 import static org.apache.ignite.testframework.GridTestUtils.deleteIndexBin;
+import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 
 /**
  * Base class for testing index rebuilds.
@@ -94,38 +96,57 @@ public abstract class AbstractRebuildIndexTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Registering a {@link StopBuildIndexConsumer} for cache.
+     * Registering a {@link StopBuildIndexConsumer} to {@link IndexesRebuildTaskEx#addCacheRowConsumer}.
      *
      * @param n Node.
      * @param cacheName Cache name.
      * @return New instance of {@link StopBuildIndexConsumer}.
      */
     protected StopBuildIndexConsumer addStopRebuildIndexConsumer(IgniteEx n, String cacheName) {
-        StopBuildIndexConsumer stopRebuildIdxConsumer = new StopBuildIndexConsumer(getTestTimeout());
+        StopBuildIndexConsumer consumer = new StopBuildIndexConsumer(getTestTimeout());
 
-        addCacheRowConsumer(nodeName(n), cacheName, stopRebuildIdxConsumer);
+        addCacheRowConsumer(nodeName(n), cacheName, consumer);
 
-        return stopRebuildIdxConsumer;
+        return consumer;
     }
 
     /**
-     * Registering a {@link BreakRebuildIndexConsumer} for cache.
+     * Registering a {@link BreakBuildIndexConsumer} to {@link IndexesRebuildTaskEx#addCacheRowConsumer}.
      *
      * @param n Node.
      * @param cacheName Cache name.
-     * @param breakPred Predicate for throwing an {@link IgniteCheckedException}.
-     * @return New instance of {@link BreakRebuildIndexConsumer}.
+     * @param breakCnt Count of rows processed, after which an {@link IgniteCheckedException} will be thrown.
+     * @return New instance of {@link BreakBuildIndexConsumer}.
      */
-    protected BreakRebuildIndexConsumer addBreakRebuildIndexConsumer(
+    protected BreakBuildIndexConsumer addBreakRebuildIndexConsumer(IgniteEx n, String cacheName, int breakCnt) {
+        BreakBuildIndexConsumer consumer = new BreakBuildIndexConsumer(
+            getTestTimeout(),
+            (c, r) -> c.visitCnt.get() >= breakCnt
+        );
+
+        addCacheRowConsumer(nodeName(n), cacheName, consumer);
+
+        return consumer;
+    }
+
+    /**
+     * Registering a {@link SlowdownBuildIndexConsumer} to {@link IndexesRebuildTaskEx#addCacheRowConsumer}.
+     *
+     * @param n Node.
+     * @param cacheName Cache name.
+     * @param sleepTime Sleep time after processing each cache row in milliseconds.
+     * @return New instance of {@link SlowdownBuildIndexConsumer}.
+     */
+    protected SlowdownBuildIndexConsumer addSlowdownRebuildIndexConsumer(
         IgniteEx n,
         String cacheName,
-        IgniteThrowableBiPredicate<BreakRebuildIndexConsumer, CacheDataRow> breakPred
+        long sleepTime
     ) {
-        BreakRebuildIndexConsumer breakRebuildIdxConsumer = new BreakRebuildIndexConsumer(getTestTimeout(), breakPred);
+        SlowdownBuildIndexConsumer consumer = new SlowdownBuildIndexConsumer(getTestTimeout(), sleepTime);
 
-        addCacheRowConsumer(nodeName(n), cacheName, breakRebuildIdxConsumer);
+        addCacheRowConsumer(nodeName(n), cacheName, consumer);
 
-        return breakRebuildIdxConsumer;
+        return consumer;
     }
 
     /**
@@ -138,6 +159,25 @@ public abstract class AbstractRebuildIndexTest extends GridCommonAbstractTest {
      */
     protected SlowdownBuildIndexConsumer addSlowdownIdxCreateConsumer(IgniteEx n, String idxName, long sleepTime) {
         SlowdownBuildIndexConsumer consumer = new SlowdownBuildIndexConsumer(getTestTimeout(), sleepTime);
+
+        addIdxCreateCacheRowConsumer(nodeName(n), idxName, consumer);
+
+        return consumer;
+    }
+
+    /**
+     * Registering a {@link BreakBuildIndexConsumer} to {@link IgniteH2IndexingEx#addIdxCreateCacheRowConsumer}.
+     *
+     * @param n Node.
+     * @param idxName Index name.
+     * @param breakCnt Count of rows processed, after which an {@link IgniteCheckedException} will be thrown.
+     * @return New instance of {@link BreakBuildIndexConsumer}.
+     */
+    protected BreakBuildIndexConsumer addBreakIdxCreateConsumer(IgniteEx n, String idxName, int breakCnt) {
+        BreakBuildIndexConsumer consumer = new BreakBuildIndexConsumer(
+            getTestTimeout(),
+            (c, r) -> c.visitCnt.get() >= breakCnt
+        );
 
         addIdxCreateCacheRowConsumer(nodeName(n), idxName, consumer);
 
@@ -234,5 +274,25 @@ public abstract class AbstractRebuildIndexTest extends GridCommonAbstractTest {
     protected void populate(IgniteCache<Integer, Person> cache, int cnt) {
         for (int i = 0; i < cnt; i++)
             cache.put(i, new Person(i, "name_" + i));
+    }
+
+    /**
+     * Getting {@code GridQueryProcessor#idxBuildStatusStorage}.
+     *
+     * @param n Node.
+     * @return Index build status storage.
+     */
+    protected IndexBuildStatusStorage indexBuildStatusStorage(IgniteEx n) {
+        return getFieldValue(n.context().query(), "idxBuildStatusStorage");
+    }
+
+    /**
+     * Getting {@code IndexBuildStatusStorage#statuses}.
+     *
+     * @param n Node.
+     * @return Index build status storage.
+     */
+    protected ConcurrentMap<String, IndexBuildStatus> statuses(IgniteEx n) {
+        return getFieldValue(indexBuildStatusStorage(n), "statuses");
     }
 }

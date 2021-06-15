@@ -23,8 +23,9 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.BreakRebuildIndexConsumer;
+import org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.BreakBuildIndexConsumer;
 import org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.StopBuildIndexConsumer;
+import org.apache.ignite.internal.processors.query.aware.IndexBuildStatus;
 import org.apache.ignite.internal.processors.query.aware.IndexBuildStatusStorage;
 import org.apache.ignite.internal.util.function.ThrowableFunction;
 import org.junit.Test;
@@ -35,7 +36,6 @@ import static org.apache.ignite.internal.processors.cache.index.IndexesRebuildTa
 import static org.apache.ignite.internal.processors.query.aware.IndexBuildStatusStorage.KEY_PREFIX;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.deleteCacheGrpDir;
-import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 
 /**
  * Class for testing rebuilding index resumes.
@@ -95,8 +95,7 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
 
         GridCacheContext<?, ?> cacheCtx = n.cachex(DEFAULT_CACHE_NAME).context();
 
-        BreakRebuildIndexConsumer breakRebuildIdxConsumer =
-            addBreakRebuildIndexConsumer(n, cacheCtx.name(), (c, row) -> c.visitCnt.get() > 10);
+        BreakBuildIndexConsumer breakRebuildIdxConsumer = addBreakRebuildIndexConsumer(n, cacheCtx.name(), 10);
 
         assertTrue(forceRebuildIndexes(n, cacheCtx).isEmpty());
         IgniteInternalFuture<?> idxRebFut0 = indexRebuildFuture(n, cacheCtx.cacheId());
@@ -153,8 +152,7 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
 
         GridCacheContext<?, ?> cacheCtx = n.cachex(DEFAULT_CACHE_NAME).context();
 
-        BreakRebuildIndexConsumer breakRebuildIdxConsumer =
-            addBreakRebuildIndexConsumer(n, cacheCtx.name(), (c, row) -> c.visitCnt.get() > 10);
+        BreakBuildIndexConsumer breakRebuildIdxConsumer = addBreakRebuildIndexConsumer(n, cacheCtx.name(), 10);
 
         assertTrue(forceRebuildIndexes(n, cacheCtx).isEmpty());
         IgniteInternalFuture<?> idxRebFut0 = indexRebuildFuture(n, cacheCtx.cacheId());
@@ -294,8 +292,7 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
 
             populate(n1.getOrCreateCache(cacheCfg(cacheName, grpName)), 10_000);
 
-            BreakRebuildIndexConsumer breakRebuildIdxConsumer =
-                addBreakRebuildIndexConsumer(n1, cacheName, (c, r) -> c.visitCnt.get() > 10);
+            BreakBuildIndexConsumer breakRebuildIdxConsumer = addBreakRebuildIndexConsumer(n1, cacheName, 10);
 
             IgniteInternalCache<?, ?> cachex = n1.cachex(cacheName);
 
@@ -323,7 +320,7 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
 
         forceCheckpoint(n1);
 
-        ConcurrentMap<String, Object> states = getFieldValue(indexBuildStatusStorage(n1), "statuses");
+        ConcurrentMap<String, IndexBuildStatus> states = statuses(n1);
 
         assertFalse(states.containsKey(DEFAULT_CACHE_NAME + 0));
         assertFalse(states.containsKey(DEFAULT_CACHE_NAME + 1));
@@ -349,7 +346,7 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
 
         forceCheckpoint(n1);
 
-        states = getFieldValue(indexBuildStatusStorage(n1), "statuses");
+        states = statuses(n1);
 
         assertFalse(states.containsKey(DEFAULT_CACHE_NAME + 2));
         assertFalse(states.containsKey(DEFAULT_CACHE_NAME + 3));
@@ -394,8 +391,7 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
         GridCacheContext<?, ?> cacheCtx0 = cachex0.context();
         GridCacheContext<?, ?> cacheCtx1 = cachex1.context();
 
-        BreakRebuildIndexConsumer breakRebuildIdxConsumer =
-            addBreakRebuildIndexConsumer(n, cacheCtx0.name(), (c, row) -> c.visitCnt.get() >= 10);
+        BreakBuildIndexConsumer breakRebuildIdxConsumer = addBreakRebuildIndexConsumer(n, cacheCtx0.name(), 10);
 
         StopBuildIndexConsumer stopRebuildIdxConsumer0 = addStopRebuildIndexConsumer(n, cacheCtx1.name());
 
@@ -442,15 +438,5 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
 
         assertNull(rebIdxFut11);
         assertEquals(cacheSize1, stopRebuildIdxConsumer0.visitCnt.get());
-    }
-
-    /**
-     * Getting {@code GridQueryProcessor#idxBuildStatusStorage}.
-     *
-     * @param n Node.
-     * @return Index build status storage.
-     */
-    private IndexBuildStatusStorage indexBuildStatusStorage(IgniteEx n) {
-        return getFieldValue(n.context().query(), "idxBuildStatusStorage");
     }
 }

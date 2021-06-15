@@ -24,6 +24,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.IgniteThrowableBiPredicate;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -142,6 +143,37 @@ class IndexingTestUtils {
 
             if (sleepTime > 0)
                 U.sleep(sleepTime);
+        }
+    }
+
+    /**
+     * Consumer breaking index building for the cache.
+     */
+    static class BreakBuildIndexConsumer extends StopBuildIndexConsumer {
+        /** Predicate for throwing an {@link IgniteCheckedException}. */
+        final IgniteThrowableBiPredicate<BreakBuildIndexConsumer, CacheDataRow> brakePred;
+
+        /**
+         * Constructor.
+         *
+         * @param timeout The maximum time to wait finish future in milliseconds.
+         * @param brakePred Predicate for throwing an {@link IgniteCheckedException}.
+         */
+        BreakBuildIndexConsumer(
+            long timeout,
+            IgniteThrowableBiPredicate<BreakBuildIndexConsumer, CacheDataRow> brakePred
+        ) {
+            super(timeout);
+
+            this.brakePred = brakePred;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void accept(CacheDataRow row) throws IgniteCheckedException {
+            super.accept(row);
+
+            if (brakePred.test(this, row))
+                throw new IgniteCheckedException("From test.");
         }
     }
 }
