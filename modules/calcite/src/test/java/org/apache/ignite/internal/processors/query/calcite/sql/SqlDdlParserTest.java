@@ -21,6 +21,7 @@ import java.util.Objects;
 import java.util.function.Predicate;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLiteral;
@@ -30,6 +31,8 @@ import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
 import org.apache.calcite.sql.ddl.SqlKeyConstraint;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.sql.validate.SqlValidatorException;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.hamcrest.CustomMatcher;
 import org.hamcrest.Matcher;
@@ -238,6 +241,90 @@ public class SqlDdlParserTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Create index with list of indexed columns.
+     */
+    @Test
+    public void createIndexColumns() throws SqlParseException {
+        String qry = "create index my_index on my_table(id, val1 asc, val2 desc)";
+
+        IgniteSqlCreateIndex createIdx = (IgniteSqlCreateIndex) parse(qry);
+
+        assertThat(createIdx.indexName().names, is(ImmutableList.of("MY_INDEX")));
+        assertThat(createIdx.tableName().names, is(ImmutableList.of("MY_TABLE")));
+        assertThat(createIdx.ifNotExists, is(false));
+        assertThat(createIdx.columnList(), hasItem(indexedColumn("ID", false)));
+        assertThat(createIdx.columnList(), hasItem(indexedColumn("VAL1", false)));
+        assertThat(createIdx.columnList(), hasItem(indexedColumn("VAL2", true)));
+    }
+
+    /**
+     * Create index on table with schema.
+     */
+    @Test
+    public void createIndexOnTableWithSchema() throws SqlParseException {
+        String qry = "create index my_index on my_schema.my_table(id)";
+
+        IgniteSqlCreateIndex createIdx = (IgniteSqlCreateIndex)parse(qry);
+
+        assertThat(createIdx.indexName().names, is(ImmutableList.of("MY_INDEX")));
+        assertThat(createIdx.tableName().names, is(ImmutableList.of("MY_SCHEMA", "MY_TABLE")));
+    }
+
+    /**
+     * Create index with "if not exists" clause"
+     */
+    @Test
+    public void createIndexIfNotExists() throws SqlParseException {
+        String qry = "create index if not exists my_index on my_table(id)";
+
+        IgniteSqlCreateIndex createIdx = (IgniteSqlCreateIndex)parse(qry);
+
+        assertThat(createIdx.indexName().names, is(ImmutableList.of("MY_INDEX")));
+        assertThat(createIdx.tableName().names, is(ImmutableList.of("MY_TABLE")));
+        assertThat(createIdx.ifNotExists, is(true));
+    }
+
+    /**
+     * Create index with parallel and inline_size options"
+     */
+    @Test
+    public void createIndexWithOptions() throws SqlParseException {
+        String qry = "create index my_index on my_table(id) parallel 10 inline_size 20";
+
+        IgniteSqlCreateIndex createIdx = (IgniteSqlCreateIndex)parse(qry);
+
+        assertThat(createIdx.indexName().names, is(ImmutableList.of("MY_INDEX")));
+        assertThat(createIdx.tableName().names, is(ImmutableList.of("MY_TABLE")));
+        assertEquals(10, createIdx.parallel().intValue(true));
+        assertEquals(20, createIdx.inlineSize().intValue(true));
+
+        qry = "create index my_index on my_table(id) parallel 10";
+
+        createIdx = (IgniteSqlCreateIndex)parse(qry);
+
+        assertEquals(10, createIdx.parallel().intValue(true));
+        assertNull(createIdx.inlineSize());
+
+        qry = "create index my_index on my_table(id) inline_size 20";
+
+        createIdx = (IgniteSqlCreateIndex)parse(qry);
+
+        assertNull(createIdx.parallel());
+        assertEquals(20, createIdx.inlineSize().intValue(true));
+
+        qry = "create index my_index on my_table(id) inline_size 20 parallel 10";
+
+        createIdx = (IgniteSqlCreateIndex)parse(qry);
+
+        assertEquals(20, createIdx.inlineSize().intValue(true));
+        assertEquals(10, createIdx.parallel().intValue(true));
+
+        String errQry = "create index my_index on my_table(id) parallel 10 inline_size 20 parallel 10";
+
+        GridTestUtils.assertThrowsAnyCause(log, () -> parse(errQry), SqlValidatorException.class, "");
+    }
+
+    /**
      * Parses a given statement and returns a resulting AST.
      *
      * @param stmt Statement to parse.
@@ -319,6 +406,31 @@ public class SqlDdlParserTest extends GridCommonAbstractTest {
         return new CustomMatcher<T>(desc) {
             @Override public boolean matches(Object item) {
                 return item != null && cls.isAssignableFrom(item.getClass()) && pred.test((T)item);
+            }
+        };
+    }
+
+    /**
+     * Matcher to verify name and direction of indexed column.
+     *
+     * @param name Expected name.
+     * @return {@code true} in case name in the column declaration equals to the expected one.
+     */
+    private static <T extends SqlColumnDeclaration> Matcher<T> indexedColumn(String name, boolean desc) {
+        return new CustomMatcher<T>("column with name=" + name) {
+            @Override public boolean matches(Object item) {
+                SqlNode node = (SqlNode)item;
+
+                if (desc) {
+                    if (node.getKind() != SqlKind.DESCENDING)
+                        return false;
+
+                    SqlIdentifier ident = ((SqlIdentifier)((SqlCall)node).getOperandList().get(0));
+
+                    return ident.names.get(0).equals(name);
+                }
+                else
+                    return item instanceof SqlIdentifier && ((SqlIdentifier)node).names.get(0).equals(name);
             }
         };
     }

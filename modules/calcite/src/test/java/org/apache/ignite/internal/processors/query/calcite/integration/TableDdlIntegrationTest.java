@@ -30,25 +30,13 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.SqlConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.hamcrest.CustomMatcher;
 import org.hamcrest.Matcher;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.util.IgniteUtils.map;
@@ -59,47 +47,7 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
 
 /** */
-public class TableDdlIntegrationTest extends GridCommonAbstractTest {
-    /** */
-    private static final String CLIENT_NODE_NAME = "client";
-
-    /** */
-    private static final String DATA_REGION_NAME = "test_data_region";
-
-    /** */
-    private IgniteEx client;
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        startGrids(1);
-
-        client = startClientGrid(CLIENT_NODE_NAME);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName)
-            .setSqlConfiguration(
-                new SqlConfiguration().setSqlSchemas("MY_SCHEMA")
-            )
-            .setDataStorageConfiguration(
-                new DataStorageConfiguration()
-                    .setDataRegionConfigurations(new DataRegionConfiguration().setName(DATA_REGION_NAME))
-            );
-    }
-
-    /** */
-    @Before
-    public void init() {
-        client = grid(CLIENT_NODE_NAME);
-    }
-
-    /** */
-    @After
-    public void cleanUp() {
-        client.destroyCaches(client.cacheNames());
-    }
-
+public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
     /**
      * Creates table with two columns, where the first column is PK,
      * and verifies created cache.
@@ -338,21 +286,6 @@ public class TableDdlIntegrationTest extends GridCommonAbstractTest {
 
         executeSql("drop table if exists my_schema.my_table");
     }
-
-    /** */
-    private List<List<?>> executeSql(String sql) {
-        List<FieldsQueryCursor<List<?>>> cur = queryProcessor().query(null, "PUBLIC", sql);
-
-        try (QueryCursor<List<?>> srvCursor = cur.get(0)) {
-            return srvCursor.getAll();
-        }
-    }
-
-    /** */
-    private CalciteQueryProcessor queryProcessor() {
-        return Commons.lookupComponent(client.context(), CalciteQueryProcessor.class);
-    }
-
     /**
      * Matcher to verify that an object of the expected type and matches the given predicat.
      *
