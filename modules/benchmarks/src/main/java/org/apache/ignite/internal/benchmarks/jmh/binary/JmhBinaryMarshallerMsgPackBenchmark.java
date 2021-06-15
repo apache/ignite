@@ -19,27 +19,28 @@ package org.apache.ignite.internal.benchmarks.jmh.binary;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.benchmarks.jmh.JmhAbstractBenchmark;
-import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.msgpack.core.MessagePack;
+import org.msgpack.core.MessagePacker;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
+
+import java.io.ByteArrayOutputStream;
+import java.io.OutputStream;
 
 /**
  * Ignite marshaller vs MsgPack benchmark.
@@ -52,6 +53,8 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
 
     private ObjectWriter msgPackWriter;
 
+    private BinaryContext binaryCtx;
+
     /**
      * Setup routine. Child classes must invoke this method first.
      *
@@ -62,20 +65,69 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
         System.out.println();
         System.out.println("--------------------");
 
-        marshaller = createBinaryMarshaller(new NullLogger());
+        // Init Ignite.
+        IgniteConfiguration iCfg = new IgniteConfiguration()
+                .setBinaryConfiguration(
+                        new BinaryConfiguration().setCompactFooter(false)
+                )
+                .setClientMode(false)
+                .setDiscoverySpi(new TcpDiscoverySpi() {
+                    @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
+                        //No-op.
+                    }
+                });
+
+        BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), iCfg, new NullLogger());
+
+        MarshallerContextBenchImpl marshCtx = new MarshallerContextBenchImpl();
+
+        marshCtx.onMarshallerProcessorStarted(new GridBenchKernalContext(new NullLogger(), iCfg), null);
+
+        BinaryMarshaller marsh = new BinaryMarshaller();
+
+        marsh.setContext(marshCtx);
+
+        IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setBinaryContext", ctx, iCfg);
+
+        marshaller = marsh;
+        binaryCtx = ctx;
+
+
+        // Init MsgPack.
         msgPackMapper = new ObjectMapper(new MessagePackFactory());
         msgPackWriter = msgPackMapper.writerFor(IntPojo.class);
     }
 
-    @Benchmark
-    public byte[] writeMsgPack() throws Exception {
+    //@Benchmark
+    public byte[] writePojoMsgPack() throws Exception {
         return msgPackWriter.writeValueAsBytes(new IntPojo(randomInt()));
     }
 
-//    @Benchmark
-//    public byte[] writeIgnite() throws Exception {
-//        return marshaller.marshal(new IntPojo(randomInt()));
-//    }
+    //@Benchmark
+    public byte[] writePojoIgnite() throws Exception {
+        return marshaller.marshal(new IntPojo(randomInt()));
+    }
+
+    @Benchmark
+    public byte[] writePrimitivesMsgPack() throws Exception {
+        ByteArrayOutputStream s = new ByteArrayOutputStream();
+
+        msgPackWriter.writeValue(s, randomInt());
+        msgPackWriter.writeValue(s, "Hello world");
+
+        s.close();
+        return s.toByteArray();
+    }
+
+    //@Benchmark
+    public byte[] writePrimitivesIgnite() {
+        try (BinaryWriterExImpl writer = new BinaryWriterExImpl(binaryCtx)) {
+            writer.writeInt(randomInt());
+            writer.writeString("Hello world");
+
+            return writer.array();
+        }
+    }
 
     /**
      * Run benchmarks.
@@ -91,10 +143,21 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
 //
 //        System.out.println();
 
+
+
 //        ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
 //        ObjectWriter objectWriter = objectMapper.writerFor(IntPojo.class);
-//
+////
 //        printBytes(objectWriter.writeValueAsBytes(new IntPojo(25)));
+//
+//        long t = System.currentTimeMillis();
+//
+//        while (System.currentTimeMillis() - t < 10000)
+//        {
+//            objectWriter.writeValueAsBytes(new IntPojo((int) t));
+//        }
+
+
 
 
         JmhIdeBenchmarkRunner runner = JmhIdeBenchmarkRunner.create()
@@ -117,30 +180,4 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
         System.out.println();
     }
 
-    private BinaryMarshaller createBinaryMarshaller(IgniteLogger log) throws IgniteCheckedException {
-        IgniteConfiguration iCfg = new IgniteConfiguration()
-                .setBinaryConfiguration(
-                        new BinaryConfiguration().setCompactFooter(false)
-                )
-                .setClientMode(false)
-                .setDiscoverySpi(new TcpDiscoverySpi() {
-                    @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
-                        //No-op.
-                    }
-                });
-
-        BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), iCfg, new NullLogger());
-
-        MarshallerContextBenchImpl marshCtx = new MarshallerContextBenchImpl();
-
-        marshCtx.onMarshallerProcessorStarted(new GridBenchKernalContext(log, iCfg), null);
-
-        BinaryMarshaller marsh = new BinaryMarshaller();
-
-        marsh.setContext(marshCtx);
-
-        IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setBinaryContext", ctx, iCfg);
-
-        return marsh;
-    }
 }
