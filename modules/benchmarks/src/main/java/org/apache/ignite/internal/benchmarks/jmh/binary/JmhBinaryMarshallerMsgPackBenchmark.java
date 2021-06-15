@@ -117,6 +117,8 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
     public byte[] writePrimitivesMsgPack() throws Exception {
         ByteArrayOutputStream s = new ByteArrayOutputStream();
 
+        // TODO: This causes double buffering, which hurts perf.
+        // Find a way to pack directly into a stream.
         msgPackMapper.writeValue(s, "Hello world");
         msgPackMapper.writeValue(s, 42);
 
@@ -171,24 +173,26 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
 ////
 //        printBytes(objectWriter.writeValueAsBytes(new IntPojo(25)));
 //
-//        long t = System.currentTimeMillis();
+        long t = System.currentTimeMillis();
+
+        while (System.currentTimeMillis() - t < 10000)
+        {
+            // objectWriter.writeValueAsBytes(new IntPojo((int) t));
+            // bench.writePrimitivesMsgPackRaw();
+            bench.writePrimitivesMsgPack();
+        }
+
+
+
+//        JmhIdeBenchmarkRunner runner = JmhIdeBenchmarkRunner.create()
+//                .forks(1)
+//                .threads(1)
+//                .benchmarks(JmhBinaryMarshallerMsgPackBenchmark.class.getSimpleName())
+//                .jvmArguments("-Xms4g", "-Xmx4g");
 //
-//        while (System.currentTimeMillis() - t < 10000)
-//        {
-//            objectWriter.writeValueAsBytes(new IntPojo((int) t));
-//        }
-
-
-
-        JmhIdeBenchmarkRunner runner = JmhIdeBenchmarkRunner.create()
-                .forks(1)
-                .threads(1)
-                .benchmarks(JmhBinaryMarshallerMsgPackBenchmark.class.getSimpleName())
-                .jvmArguments("-Xms4g", "-Xmx4g");
-
-        runner
-                .benchmarkModes(Mode.Throughput)
-                .run();
+//        runner
+//                .benchmarkModes(Mode.Throughput)
+//                .run();
     }
 
     private static void printBytes(byte[] res) {
