@@ -33,6 +33,7 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.msgpack.core.MessagePack;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Mode;
@@ -64,13 +65,13 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
     }
 
     @Benchmark
-    public byte[] writeIgnite() throws Exception {
-        return marshaller.marshal(new IntValue(randomInt()));
+    public byte[] writeMsgPack() throws Exception {
+        return msgPackMapper.writeValueAsBytes(new IntValue(randomInt()));
     }
 
     @Benchmark
-    public byte[] writeMsgPack() throws Exception {
-        return msgPackMapper.writeValueAsBytes(new IntValue(randomInt()));
+    public byte[] writeIgnite() throws Exception {
+        return marshaller.marshal(new IntValue(randomInt()));
     }
 
     /**
@@ -80,6 +81,17 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
      * @throws Exception If failed.
      */
     public static void main(String[] args) throws Exception {
+//        JmhBinaryMarshallerMsgPackBenchmark bench = new JmhBinaryMarshallerMsgPackBenchmark();
+//        bench.setup();
+//
+//
+//        ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
+//
+//        printBytes(objectMapper.writeValueAsBytes(new IntValue(25)));
+//        printBytes(bench.writeIgnite());
+//
+//        System.out.println();
+
         JmhIdeBenchmarkRunner runner = JmhIdeBenchmarkRunner.create()
                 .forks(1)
                 .threads(1)
@@ -91,10 +103,19 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
                 .run();
     }
 
+    private static void printBytes(byte[] res) {
+        System.out.println();
+
+        for (byte b : res)
+            System.out.print(b + " ");
+
+        System.out.println();
+    }
+
     private BinaryMarshaller createBinaryMarshaller(IgniteLogger log) throws IgniteCheckedException {
         IgniteConfiguration iCfg = new IgniteConfiguration()
                 .setBinaryConfiguration(
-                        new BinaryConfiguration().setCompactFooter(true)
+                        new BinaryConfiguration().setCompactFooter(false)
                 )
                 .setClientMode(false)
                 .setDiscoverySpi(new TcpDiscoverySpi() {
