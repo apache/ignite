@@ -20,6 +20,9 @@ package org.apache.ignite.internal.benchmarks.jmh.binary;
 public class IntPojo {
     private int val;
 
+    public IntPojo() {
+    }
+
     public IntPojo(int val) {
         this.val = val;
     }

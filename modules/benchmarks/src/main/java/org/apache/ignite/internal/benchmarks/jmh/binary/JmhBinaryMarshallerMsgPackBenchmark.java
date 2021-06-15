@@ -66,7 +66,9 @@ import java.io.ByteArrayOutputStream;
  * JmhBinaryMarshallerMsgPackBenchmark.readPrimitivesIgnite       thrpt   10  19873521.096 ± 545779.558  ops/s
  * JmhBinaryMarshallerMsgPackBenchmark.readPrimitivesMsgPack      thrpt   10  29235107.372 ±  85371.004  ops/s
  *
- * TODO: Read benchmarks.
+ * JmhBinaryMarshallerMsgPackBenchmark.readPojoIgnite             thrpt   10  8437054.066 ± 104476.415  ops/s
+ * JmhBinaryMarshallerMsgPackBenchmark.readPojoMsgPack            thrpt   10  6292876.474 ±  73356.915  ops/s
+ *
  */
 @State(Scope.Benchmark)
 public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
@@ -108,7 +110,8 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
                 )
                 .setClientMode(false)
                 .setDiscoverySpi(new TcpDiscoverySpi() {
-                    @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
+                    @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteExceptiJmhBinaryMarshallerMsgPackBenchmark.readPojoIgnite   thrpt   10  8437054.066 ± 104476.415  ops/s
+JmhBinaryMarshallerMsgPackBenchmark.readPojoMsgPack  thrpt   10  6292876.474 ±  73356.915  ops/son {
                         //No-op.
                     }
                 });
@@ -127,6 +130,7 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
 
         marshaller = marsh;
         binaryCtx = ctx;
+        writePojoIgnite(); // Cache meta for read.
 
 
         // Init MsgPack.
