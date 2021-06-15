@@ -19,6 +19,7 @@ package org.apache.ignite.internal.benchmarks.jmh.binary;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -193,18 +194,28 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
         }
     }
 
-    @Benchmark
+    // @Benchmark
     public IgniteBiTuple<Integer, String> readPrimitivesIgnite() throws Exception {
         try (BinaryReaderExImpl reader = new BinaryReaderExImpl(binaryCtx, new BinaryHeapInputStream(ignitePrimitiveBytes), null, true)) {
             return new IgniteBiTuple<>(reader.readInt(), reader.readString());
         }
     }
 
-    @Benchmark
+    // @Benchmark
     public IgniteBiTuple<Integer, String> readPrimitivesMsgPack() throws Exception {
         msgPackUnpacker.reset(new ArrayBufferInput(msgPackPrimitiveBytes));
 
         return new IgniteBiTuple<>(msgPackUnpacker.unpackInt(), msgPackUnpacker.unpackString());
+    }
+
+    @Benchmark
+    public IntPojo readPojoIgnite() throws Exception {
+        return marshaller.unmarshal(ignitePojoBytes, null);
+    }
+
+    @Benchmark
+    public IntPojo readPojoMsgPack() throws Exception {
+        return msgPackMapper.readValue(msgPackPojoBytes, IntPojo.class);
     }
 
     /**
