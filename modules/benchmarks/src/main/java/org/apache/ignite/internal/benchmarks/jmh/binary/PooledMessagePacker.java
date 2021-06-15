@@ -9,6 +9,6 @@ public class PooledMessagePacker extends MessagePacker {
     }
 
     public byte[] toByteArray() {
-        return ((PooledMessageBufferOutput) out).getPooledArray();
+        return ((PooledMessageBufferOutput) out).getData();
     }
 }

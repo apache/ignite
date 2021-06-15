@@ -26,16 +26,19 @@ import java.io.IOException;
  * Fake pooled array output that gets rid of allocations in MsgPack benchmarks.
  */
 public class PooledMessageBufferOutput implements MessageBufferOutput {
-    private static final byte[] pooledArray = new byte[128];
+    private final byte[] data = new byte[128];
+
+    private int pos;
 
     @Override
     public MessageBuffer next(int i) throws IOException {
-        return MessageBuffer.wrap(pooledArray);
+        return MessageBuffer.wrap(data);
     }
 
     @Override
     public void writeBuffer(int position) throws IOException {
         // No-op.
+        pos = position;
     }
 
     @Override
@@ -58,7 +61,11 @@ public class PooledMessageBufferOutput implements MessageBufferOutput {
         // No-op.
     }
 
-    public byte[] getPooledArray() {
-        return pooledArray;
+    public byte[] getData() {
+        byte[] res = new byte[pos];
+
+        System.arraycopy(data, 0, res, 0, pos);
+
+        return res;
     }
 }
