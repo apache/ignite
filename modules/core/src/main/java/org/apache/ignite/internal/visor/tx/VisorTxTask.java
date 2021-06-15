@@ -74,6 +74,9 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    private static final int DEFAULT_LIMIT = 50;
+
     /** {@inheritDoc} */
     @Override protected VisorJob<VisorTxTaskArg, VisorTxTaskResult> job(VisorTxTaskArg arg) {
         return new VisorTxJob(arg, debug);
@@ -120,7 +123,11 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
 
     /** {@inheritDoc} */
     @Nullable @Override protected Map<ClusterNode, VisorTxTaskResult> reduce0(List<ComputeJobResult> results) throws IgniteException {
-        Map<ClusterNode, VisorTxTaskResult> mapRes = new TreeMap<>();
+        int limit = taskArg.getLimit() == null ? DEFAULT_LIMIT : taskArg.getLimit();
+
+        if (limit == 0) return Collections.emptyMap();
+
+        Map<ClusterNode, VisorTxTaskResult> mapRes = new HashMap<>();
 
         Map<UUID, ClusterNode> nodeMap = new HashMap<>();
 
@@ -217,7 +224,7 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
 
             List<VisorTxInfo> infos = new ArrayList<>();
 
-            int limit = arg.getLimit() == null ? DEFAULT_LIMIT : arg.getLimit();
+            int perNodelimit = DEFAULT_LIMIT;
 
             Pattern lbMatch = null;
 
@@ -333,7 +340,7 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
                 if (arg.getOperation() == VisorTxOperation.KILL)
                     killClo.apply(locTx, tm);
 
-                if (infos.size() == limit)
+                if (infos.size() == perNodelimit)
                     break;
             }
 
