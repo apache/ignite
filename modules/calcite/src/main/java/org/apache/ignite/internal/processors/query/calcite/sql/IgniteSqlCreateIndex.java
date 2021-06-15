@@ -24,6 +24,7 @@ import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
+import org.apache.calcite.sql.SqlNumericLiteral;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.SqlWriter;
@@ -44,21 +45,29 @@ public class IgniteSqlCreateIndex extends SqlCreate {
     private final SqlNodeList columnList;
 
     /** */
+    private final SqlNumericLiteral parallel;
+
+    /** */
+    private final SqlNumericLiteral inlineSize;
+
+    /** */
     private static final SqlOperator OPERATOR =
         new SqlSpecialOperator("CREATE INDEX", SqlKind.CREATE_INDEX);
 
     /** Creates a SqlCreateIndex. */
-    protected IgniteSqlCreateIndex(SqlParserPos pos, boolean ifNotExists,
-        SqlIdentifier idxName, SqlIdentifier tblName, SqlNodeList columnList) {
+    protected IgniteSqlCreateIndex(SqlParserPos pos, boolean ifNotExists, SqlIdentifier idxName, SqlIdentifier tblName,
+        SqlNodeList columnList, SqlNumericLiteral parallel, SqlNumericLiteral inlineSize) {
         super(OPERATOR, pos, false, ifNotExists);
         this.idxName = Objects.requireNonNull(idxName, "index name");
         this.tblName = Objects.requireNonNull(tblName, "table name");
         this.columnList = columnList;
+        this.parallel = parallel;
+        this.inlineSize = inlineSize;
     }
 
     /** {@inheritDoc} */
     @Override public List<SqlNode> getOperandList() {
-        return ImmutableNullableList.of(idxName, tblName, columnList);
+        return ImmutableNullableList.of(idxName, tblName, columnList, parallel, inlineSize);
     }
 
     /** {@inheritDoc} */
@@ -95,6 +104,18 @@ public class IgniteSqlCreateIndex extends SqlCreate {
         }
 
         writer.endList(frame);
+
+        if (parallel != null) {
+            writer.keyword("PARALLEL");
+
+            parallel.unparse(writer, 0, 0);
+        }
+
+        if (inlineSize != null) {
+            writer.keyword("INLINE_SIZE");
+
+            inlineSize.unparse(writer, 0, 0);
+        }
     }
 
     /**
@@ -116,6 +137,20 @@ public class IgniteSqlCreateIndex extends SqlCreate {
      */
     public SqlNodeList columnList() {
         return columnList;
+    }
+
+    /**
+     * @return PARALLEL clause.
+     */
+    public SqlNumericLiteral parallel() {
+        return parallel;
+    }
+
+    /**
+     * @return INLINE_SIZE clause.
+     */
+    public SqlNumericLiteral inlineSize() {
+        return inlineSize;
     }
 
     /**

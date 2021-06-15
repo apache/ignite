@@ -164,46 +164,6 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     }
 }
 
-SqlNodeList CreateIndexOptionList() :
-{
-    List<SqlNode> list = new ArrayList<SqlNode>();
-    final Span s = Span.of();
-    SqlNode option = null;
-}
-{
-    option = CreateTableOption() { list.add(option); }
-    (
-        <COMMA> { s.add(this); } option = CreateTableOption() { list.add(option); }
-    )*
-    {
-        return new SqlNodeList(list, s.end(this));
-    }
-}
-
-SqlNode CreateIndexOption() :
-{
-    final Span s;
-    final SqlLiteral key;
-    final SqlNode val;
-}
-{
-    key = CreateIndexOptionKey() { s = span(); }
-    <EQ>
-    val = Literal()
-    {
-        return new IgniteSqlCreateIndexOption(key, val, s.end(this));
-    }
-}
-
-SqlLiteral CreateIndexOptionKey() :
-{
-}
-{
-    <PARALLEL> { return SqlLiteral.createSymbol(IgniteSqlCreateIndexOptionEnum.PARALLEL, getPos()); }
-|
-    <INLINE_SIZE> { return SqlLiteral.createSymbol(IgniteSqlCreateIndexOptionEnum.INLINE_SIZE, getPos()); }
-}
-
 SqlNode IndexedColumn() :
 {
     final Span s;
@@ -245,6 +205,8 @@ SqlCreate SqlCreateIndex(Span s, boolean replace) :
     final SqlIdentifier idxId;
     final SqlIdentifier tblId;
     final SqlNodeList columnList;
+    SqlNumericLiteral parallel = null;
+    SqlNumericLiteral inlineSize = null;
 }
 {
     <INDEX>
@@ -253,8 +215,23 @@ SqlCreate SqlCreateIndex(Span s, boolean replace) :
     <ON>
     tblId = CompoundIdentifier()
     columnList = IndexedColumnList()
+    (
+        <PARALLEL> <UNSIGNED_INTEGER_LITERAL> {
+            if (parallel != null)
+                throw SqlUtil.newContextException(getPos(), IgniteResource.INSTANCE.optionAlreadyDefined("PARALLEL"));
+
+            parallel = SqlLiteral.createExactNumeric(token.image, getPos());
+        }
+    |
+        <INLINE_SIZE> <UNSIGNED_INTEGER_LITERAL> {
+            if (inlineSize != null)
+                throw SqlUtil.newContextException(getPos(), IgniteResource.INSTANCE.optionAlreadyDefined("INLINE_SIZE"));
+
+            inlineSize = SqlLiteral.createExactNumeric(token.image, getPos());
+        }
+    )*
     {
-        return new IgniteSqlCreateIndex(s.end(this), ifNotExists, idxId, tblId, columnList);
+        return new IgniteSqlCreateIndex(s.end(this), ifNotExists, idxId, tblId, columnList, parallel, inlineSize);
     }
 }
 

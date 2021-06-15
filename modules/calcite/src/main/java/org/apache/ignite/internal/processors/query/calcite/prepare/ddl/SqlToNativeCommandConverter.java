@@ -17,8 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare.ddl;
 
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlDdl;
+import org.apache.calcite.sql.SqlIdentifier;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
@@ -27,6 +33,7 @@ import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlDropInde
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
+import org.apache.ignite.internal.sql.command.SqlIndexColumn;
 
 import static org.apache.ignite.internal.processors.query.calcite.util.PlanUtils.deriveObjectName;
 import static org.apache.ignite.internal.processors.query.calcite.util.PlanUtils.deriveSchemaName;
@@ -71,40 +78,31 @@ public class SqlToNativeCommandConverter {
      * Converts CREATE INDEX command.
      */
     private static SqlCreateIndexCommand convertCreateIndex(IgniteSqlCreateIndex sqlCmd, PlanningContext ctx) {
-/*
-        CreateIndexCommand createIdxCmd = new CreateIndexCommand();
+        String schemaName = deriveSchemaName(sqlCmd.tableName(), ctx);
+        String tblName = deriveObjectName(sqlCmd.tableName(), ctx, "table name");
+        String idxName = sqlCmd.indexName().getSimple();
 
-        createIdxCmd.schemaName(deriveSchemaName(createIdxNode.tableName(), ctx));
-        createIdxCmd.tableName(deriveObjectName(createIdxNode.tableName(), ctx, "tableName"));
-        createIdxCmd.indexName(createIdxNode.indexName().getSimple());
-        createIdxCmd.ifNotExists(createIdxNode.ifNotExists());
+        List<SqlIndexColumn> cols = new ArrayList<>(sqlCmd.columnList().size());
 
-        List<Boolean> asc = new ArrayList<>(createIdxNode.columnList().size());
-        List<String> cols = new ArrayList<>(createIdxNode.columnList().size());
+        for (SqlNode col : sqlCmd.columnList().getList()) {
+            boolean desc = false;
 
-        for (SqlNode col : createIdxNode.columnList().getList()) {
             if (col.getKind() == SqlKind.DESCENDING) {
                 col = ((SqlCall)col).getOperandList().get(0);
 
-                asc.add(Boolean.FALSE);
+                desc = true;
             }
-            else
-                asc.add(Boolean.TRUE);
 
-            cols.add(((SqlIdentifier)col).getSimple());
+            cols.add(new SqlIndexColumn(((SqlIdentifier)col).getSimple(), desc));
         }
 
-        createIdxCmd.columns();
+        int parallel = sqlCmd.parallel() == null ? 0 : sqlCmd.parallel().intValue(true);
 
-        //IgnitePlanner planner = ctx.planner();
+        int inlineSize = sqlCmd.inlineSize() == null ? QueryIndex.DFLT_INLINE_SIZE :
+            sqlCmd.inlineSize().intValue(true);
 
-        return createIdxCmd;
-*/
-
-        SqlCreateIndexCommand cmd = new SqlCreateIndexCommand();
-        // TODO
-
-        return cmd;
+        return new SqlCreateIndexCommand(schemaName, tblName, idxName, sqlCmd.ifNotExists(), cols, false,
+            parallel, inlineSize);
     }
 
     /**

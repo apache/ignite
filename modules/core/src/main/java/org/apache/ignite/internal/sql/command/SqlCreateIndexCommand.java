@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.sql.command;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -90,8 +89,19 @@ public class SqlCreateIndexCommand implements SqlCommand {
     public SqlCreateIndexCommand() {
     }
 
+    /**
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @param idxName Index name.
+     * @param ifNotExists "If not exists" clause.
+     * @param cols Indexed columns.
+     * @param spatial Spatial flag.
+     * @param parallel Count of threads to rebuild.
+     * @param inlineSize Inline size.
+     */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public SqlCreateIndexCommand(String schemaName, String tblName, String idxName, boolean ifNotExists,
-        boolean spatial, int parallel, Collection<SqlIndexColumn> cols, int inlineSize) {
+        Collection<SqlIndexColumn> cols, boolean spatial, int parallel, int inlineSize) {
         this.schemaName = schemaName;
         this.tblName = tblName;
         this.idxName = idxName;

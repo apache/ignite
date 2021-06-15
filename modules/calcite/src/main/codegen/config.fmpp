@@ -31,8 +31,7 @@ data: {
       "org.apache.calcite.sql.SqlDrop",
       "org.apache.calcite.sql.SqlLiteral",
       "org.apache.calcite.schema.ColumnStrategy",
-      "org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTable",
-      "org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum",
+      "org.apache.ignite.internal.processors.query.calcite.util.IgniteResource",
       "org.apache.calcite.sql.ddl.SqlDdlNodes",
     ]
 
