@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.benchmarks.jmh.JmhAbstractBenchmark;
+import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -36,6 +37,7 @@ import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
@@ -142,7 +144,7 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
         return packer.toByteArray();
     }
 
-    // @Benchmark
+    @Benchmark
     public byte[] writePrimitivesIgnite() {
         try (BinaryWriterExImpl writer = new BinaryWriterExImpl(binaryCtx)) {
             writer.writeInt(randomInt());
@@ -165,7 +167,6 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
         printBytes(bench.writePrimitivesMsgPack());
         printBytes(bench.writePrimitivesMsgPackRaw());
 
-
         System.out.println();
 
 
@@ -175,26 +176,29 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
 ////
 //        printBytes(objectWriter.writeValueAsBytes(new IntPojo(25)));
 //
-        long t = System.currentTimeMillis();
-
-        while (System.currentTimeMillis() - t < 10000)
-        {
-            // objectWriter.writeValueAsBytes(new IntPojo((int) t));
-            // bench.writePrimitivesMsgPackRaw();
-            bench.writePrimitivesMsgPackRaw();
-        }
 
 
 
-//        JmhIdeBenchmarkRunner runner = JmhIdeBenchmarkRunner.create()
-//                .forks(1)
-//                .threads(1)
-//                .benchmarks(JmhBinaryMarshallerMsgPackBenchmark.class.getSimpleName())
-//                .jvmArguments("-Xms4g", "-Xmx4g");
+//        long t = System.currentTimeMillis();
 //
-//        runner
-//                .benchmarkModes(Mode.Throughput)
-//                .run();
+//        while (System.currentTimeMillis() - t < 10000)
+//        {
+//            // objectWriter.writeValueAsBytes(new IntPojo((int) t));
+//            // bench.writePrimitivesMsgPackRaw();
+//            bench.writePrimitivesMsgPackRaw();
+//        }
+
+
+
+        JmhIdeBenchmarkRunner runner = JmhIdeBenchmarkRunner.create()
+                .forks(1)
+                .threads(1)
+                .benchmarks(JmhBinaryMarshallerMsgPackBenchmark.class.getSimpleName())
+                .jvmArguments("-Xms4g", "-Xmx4g");
+
+        runner
+                .benchmarkModes(Mode.Throughput)
+                .run();
     }
 
     private static void printBytes(byte[] res) {
