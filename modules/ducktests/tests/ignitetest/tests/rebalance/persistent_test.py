@@ -66,11 +66,7 @@ class RebalancePersistentTest(IgniteTest):
 
         control_utility.add_to_baseline(new_node.nodes)
 
-        new_node.await_rebalance()
-
-        check_type_of_rebalancing(new_node.nodes)
-
-        control_utility.idle_verify()
+        await_and_check_rebalance(new_node, new_node.nodes)
 
         control_utility.deactivate()
 
@@ -114,11 +110,7 @@ class RebalancePersistentTest(IgniteTest):
 
         control_utility.remove_from_baseline([node])
 
-        ignites.await_rebalance()
-
-        check_type_of_rebalancing(ignites.nodes[:-1])
-
-        control_utility.idle_verify()
+        await_and_check_rebalance(ignites, ignites.nodes[:-1])
 
         control_utility.deactivate()
 
@@ -165,11 +157,7 @@ class RebalancePersistentTest(IgniteTest):
 
         ignites.stop_node(ignites.nodes[-1])
 
-        new_node.await_rebalance()
-
-        check_type_of_rebalancing(new_node.nodes)
-
-        control_utility.idle_verify()
+        await_and_check_rebalance(new_node, new_node.nodes)
 
         control_utility.deactivate()
 
@@ -222,11 +210,7 @@ class RebalancePersistentTest(IgniteTest):
                                  num_nodes=1)
         new_node.start()
 
-        ignites.await_rebalance()
-
-        check_type_of_rebalancing(reb_nodes)
-
-        control_utility.idle_verify()
+        await_and_check_rebalance(ignites, reb_nodes)
 
         control_utility.deactivate()
 
@@ -307,17 +291,31 @@ class RebalancePersistentTest(IgniteTest):
         ignites.start_node(node)
         ignites.await_started()
 
-        ignites.await_rebalance()
+        rebalance_nodes = [node]
 
-        check_type_of_rebalancing([node], is_full=False)
-
-        control_utility.idle_verify()
+        await_and_check_rebalance(ignites, rebalance_nodes, False)
 
         control_utility.deactivate()
 
         self.logger.debug(f'DB size after rebalance mb: {get_database_size_mb(ignites.nodes, ignites.database_dir)}')
 
-        return get_result([node], preload_time, 1, entry_count, entry_size)
+        return get_result(rebalance_nodes, preload_time, 1, entry_count, entry_size)
+
+
+def await_and_check_rebalance(service: IgniteService, rebalance_nodes: list, is_full: bool = True):
+    """
+    Check rebalance.
+
+    :param service: IgniteService.
+    :param rebalance_nodes: Ignite nodes in which rebalance will be awaited.
+    :param is_full: Expected type of rebalancing.
+    """
+
+    service.await_rebalance()
+
+    check_type_of_rebalancing(rebalance_nodes, is_full=is_full)
+
+    ControlUtility(service).idle_verify()
 
 
 def get_database_size_mb(nodes: list, database_dir: str) -> dict:

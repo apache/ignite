@@ -16,7 +16,7 @@
 """
 This package contains rebalance tests.
 """
-
+import sys
 from enum import IntEnum
 from typing import NamedTuple
 
@@ -107,7 +107,7 @@ def preload_data(context, config, preloaders, backups, cache_count, entry_count,
             min(map(lambda app: app.get_init_time(), apps))).total_seconds()
 
 
-def await_rebalance_start(nodes, timeout=30):
+def await_rebalance_start(nodes: list, timeout: int = 30):
     """
     Awaits rebalance starting on any test-cache on any node.
     :param nodes: Ignite nodes in which rebalance start will be awaited.
@@ -275,7 +275,7 @@ def start_ignite(test_context, ignite_version, trigger_event, backups, cache_cou
 
 
 # pylint: disable=too-many-arguments, too-many-locals
-def get_result(rebalance_nodes: dict, preload_time: int, cache_count: int, entry_count: int, entry_size: int):
+def get_result(rebalance_nodes: list, preload_time: int, cache_count: int, entry_count: int, entry_size: int) -> dict:
     """
 
     :param rebalance_nodes: Ignite nodes in which rebalance will be awaited.
@@ -300,17 +300,19 @@ def get_result(rebalance_nodes: dict, preload_time: int, cache_count: int, entry
     }
 
 
-def check_type_of_rebalancing(nodes: dict, is_full: bool = True):
+def check_type_of_rebalancing(rebalance_nodes: list, is_full: bool = True):
     """
     Check the type of rebalancing on node.
 
-    :param nodes: Ignite nodes in which rebalance will be awaited.
+    :param rebalance_nodes: Ignite nodes in which rebalance will be awaited.
     :param is_full: Expected type of rebalancing.
     """
 
-    for node in nodes:
+    for node in rebalance_nodes:
         output = node.account.ssh_output(f'grep "Starting rebalance routine" {node.log_file}', allow_fail=False,
-                                         combine_stderr=False).decode('utf-8').splitlines()
+                                         combine_stderr=False)\
+            .decode(sys.getdefaultencoding())\
+            .splitlines()
 
         msg = 'histPartitions=[]' if is_full else 'fullPartitions=[]'
 

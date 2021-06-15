@@ -559,12 +559,12 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         to the config.
 
         :param node: Node.
-        :param timeout_sec: timeout to wait the rebalance to complete.
+        :param timeout_sec: Timeout to wait the rebalance to complete.
         """
 
         delta_time = datetime.now() + timedelta(seconds=timeout_sec)
 
-        _node = node if node else random.choice(self.alive_nodes())
+        _node = node if node else random.choice(self.alive_nodes)
 
         rebalanced = False
         mbean = JmxClient(_node).find_mbean('.*name=cluster')
@@ -577,6 +577,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
         raise TimeoutError(f'Rebalancing was not completed within the time: {timeout_sec} seconds.')
 
+    @property
     def alive_nodes(self) -> list:
         """
         Alive nodes.
