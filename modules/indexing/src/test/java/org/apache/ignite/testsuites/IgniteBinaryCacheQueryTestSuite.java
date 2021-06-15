@@ -664,7 +664,9 @@ import org.junit.runners.Suite;
     SqlFieldTypeValidationTypesTest.class,
     SqlFieldTypeValidationOnKeyValueInsertTest.class,
 
-    InlineIndexKeyTypeRegistryTest.class
+    InlineIndexKeyTypeRegistryTest.class,
+
+    IgniteStatisticsTestSuite.class
 })
 public class IgniteBinaryCacheQueryTestSuite {
 }

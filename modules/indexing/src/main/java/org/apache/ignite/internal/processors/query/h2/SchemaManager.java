@@ -31,6 +31,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.BiConsumer;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -71,8 +73,10 @@ import org.apache.ignite.spi.systemview.view.SqlTableView;
 import org.apache.ignite.spi.systemview.view.SqlViewColumnView;
 import org.apache.ignite.spi.systemview.view.SqlViewView;
 import org.h2.index.Index;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Objects.requireNonNull;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
@@ -138,6 +142,12 @@ public class SchemaManager {
 
     /** Logger. */
     private final IgniteLogger log;
+
+    /** Drop column listeners. */
+    private final Set<BiConsumer<GridH2Table, List<String>>> dropColsLsnrs = ConcurrentHashMap.newKeySet();
+
+    /** Drop table listeners. */
+    private final Set<BiConsumer<String, String>> dropTblLsnrs = ConcurrentHashMap.newKeySet();
 
     /**
      * Constructor.
@@ -363,7 +373,7 @@ public class SchemaManager {
                 try {
                     tbl.table().setRemoveIndexOnDestroy(rmvIdx);
 
-                    dropTable(tbl);
+                    dropTable(tbl, rmvIdx);
                 }
                 catch (Exception e) {
                     U.error(log, "Failed to drop table on cache stop (will ignore): " + tbl.fullTableName(), e);
@@ -554,8 +564,9 @@ public class SchemaManager {
      * Drops table form h2 database and clear all related indexes (h2 text, lucene).
      *
      * @param tbl Table to unregister.
+     * @param destroy {@code true} when table destroyed (cache destroyed) otherwise {@code false}.
      */
-    private void dropTable(H2TableDescriptor tbl) {
+    private void dropTable(H2TableDescriptor tbl, boolean destroy) {
         assert tbl != null;
 
         if (log.isDebugEnabled())
@@ -573,6 +584,9 @@ public class SchemaManager {
                     log.debug("Dropping database index table with SQL: " + sql);
 
                 stmt.executeUpdate(sql);
+
+                if (destroy)
+                    afterDropTable(tbl.schemaName(), tbl.tableName());
             }
             catch (SQLException e) {
                 throw new IgniteSQLException("Failed to drop database index table [type=" + tbl.type().name() +
@@ -741,6 +755,8 @@ public class SchemaManager {
         }
 
         desc.table().dropColumns(cols, ifColExists);
+
+        dropColsLsnrs.forEach(l -> l.accept(desc.table(), cols));
     }
 
     /**
@@ -825,5 +841,59 @@ public class SchemaManager {
         }
 
         return null;
+    }
+
+    /**
+     * Register listener for drop columns event.
+     *
+     * @param lsnr Drop columns event listener.
+     */
+    public void registerDropColumnsListener(@NotNull BiConsumer<GridH2Table, List<String>> lsnr) {
+        requireNonNull(lsnr, "Drop columns listener should be not-null.");
+
+        dropColsLsnrs.add(lsnr);
+    }
+
+    /**
+     * Unregister listener for drop columns event.
+     *
+     * @param lsnr Drop columns event listener.
+     */
+    public void unregisterDropColumnsListener(@NotNull BiConsumer<GridH2Table, List<String>> lsnr) {
+        requireNonNull(lsnr, "Drop columns listener should be not-null.");
+
+        dropColsLsnrs.remove(lsnr);
+    }
+
+    /**
+     * Register listener for drop table event.
+     *
+     * @param lsnr Drop table event listener.
+     */
+    public void registerDropTableListener(@NotNull BiConsumer<String, String> lsnr) {
+        requireNonNull(lsnr, "Drop table listener should be not-null.");
+
+        dropTblLsnrs.add(lsnr);
+    }
+
+    /**
+     * Unregister listener for drop table event.
+     *
+     * @param lsnr Drop table event listener.
+     */
+    public void unregisterDropTableListener(@NotNull BiConsumer<String, String> lsnr) {
+        requireNonNull(lsnr, "Drop table listener should be not-null.");
+
+        dropTblLsnrs.remove(lsnr);
+    }
+
+    /**
+     * Fire each listener after table drop.
+     *
+     * @param schema Dropped table schema.
+     * @param tblName Dropped table name.
+     */
+    private void afterDropTable(String schema, String tblName) {
+        dropTblLsnrs.forEach(l -> l.accept(schema, tblName));
     }
 }

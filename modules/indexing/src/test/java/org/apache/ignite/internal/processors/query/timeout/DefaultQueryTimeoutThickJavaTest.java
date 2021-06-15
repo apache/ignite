@@ -17,47 +17,70 @@
 
 package org.apache.ignite.internal.processors.query.timeout;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 /**
  *
  */
+@RunWith(Parameterized.class)
 public class DefaultQueryTimeoutThickJavaTest extends AbstractDefaultQueryTimeoutTest {
-    /** Lazy. */
-    private final boolean lazy;
+    /** Lazy mode. */
+    @Parameterized.Parameter(value = 0)
+    public boolean lazy;
+
+    /** Execute update queries. */
+    @Parameterized.Parameter(value = 1)
+    public boolean update;
+
+    /** Execute local queries. */
+    @Parameterized.Parameter(value = 2)
+    public boolean local;
 
     /** */
-    public DefaultQueryTimeoutThickJavaTest() {
-        this(false, false);
+    @Parameterized.Parameters(name = "lazy={0}, update={1}, local={2}")
+    public static List<Object[]> parameters() {
+        ArrayList<Object[]> params = new ArrayList<>();
+
+        boolean[] arrBool = new boolean[] {true, false};
+
+        for (boolean lazy0 : arrBool) {
+            for (boolean update0 : arrBool) {
+                for (boolean local0 : arrBool) {
+                    if (local0 && update0)
+                        continue;
+
+                    params.add(new Object[] {lazy0, update0, local0});
+                }
+            }
+        }
+
+        return params;
     }
 
-    /** */
-    protected DefaultQueryTimeoutThickJavaTest(boolean updateQuery, boolean lazy) {
-        super(updateQuery);
-
-        this.lazy = lazy;
-    }
-
-    /** {@inheritDoc} */
+        /** {@inheritDoc} */
     @Override protected void prepareQueryExecution() throws Exception {
         super.prepareQueryExecution();
 
-        startClientGrid(10);
+        startClientGrid("cli");
     }
 
     /** {@inheritDoc} */
     @Override protected void executeQuery(String sql) throws Exception {
-        executeQuery0(new SqlFieldsQuery(sql).setLazy(lazy));
+        executeQuery0(new SqlFieldsQuery(sql));
     }
 
     /** {@inheritDoc} */
     @Override protected void executeQuery(String sql, int timeout) throws Exception {
         executeQuery0(new SqlFieldsQuery(sql)
-            .setLazy(lazy)
             .setTimeout(timeout, TimeUnit.MILLISECONDS));
     }
 
@@ -68,11 +91,17 @@ public class DefaultQueryTimeoutThickJavaTest extends AbstractDefaultQueryTimeou
     }
 
     /** */
+    @Override protected boolean updateQuery() {
+        return update;
+    }
+
+    /** */
     private void executeQuery0(SqlFieldsQuery qry) throws Exception {
-        IgniteEx cli = grid(10);
-
         qry.setLazy(lazy);
+        qry.setLocal(local);
 
-        cli.context().query().querySqlFields(qry, false).getAll();
+        IgniteEx ign = local ? grid(0) : grid("cli");
+
+        ign.context().query().querySqlFields(qry, false).getAll();
     }
 }

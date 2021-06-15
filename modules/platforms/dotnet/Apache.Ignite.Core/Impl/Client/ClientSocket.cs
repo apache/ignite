@@ -74,6 +74,8 @@ namespace Apache.Ignite.Core.Impl.Client
         private const byte ClientType = 2;
 
         /** Underlying socket. */
+        [SuppressMessage("Microsoft.Design", "CA2213:DisposableFieldsShouldBeDisposed",
+            Justification = "Disposed by _stream.Close call.")]
         private readonly Socket _socket;
 
         /** Underlying socket stream. */
@@ -208,6 +210,8 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Performs a send-receive operation.
         /// </summary>
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope",
+            Justification = "BinaryHeapStream does not need to be disposed.")]
         public T DoOutInOp<T>(ClientOp opId, Action<ClientRequestContext> writeAction,
             Func<ClientResponseContext, T> readFunc, Func<ClientStatusCode, string, T> errorFunc = null)
         {
@@ -237,7 +241,7 @@ namespace Apache.Ignite.Core.Impl.Client
             // Decode.
             if (syncCallback)
             {
-                return task.ContinueWith(responseTask => DecodeResponse(responseTask.Result, readFunc, errorFunc),
+                return task.ContWith(responseTask => DecodeResponse(responseTask.Result, readFunc, errorFunc),
                     TaskContinuationOptions.ExecuteSynchronously);
             }
 
@@ -412,6 +416,8 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Handles the response.
         /// </summary>
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope",
+            Justification = "BinaryHeapStream does not need to be disposed.")]
         private void HandleResponse(byte[] response)
         {
             var stream = new BinaryHeapStream(response);
@@ -761,6 +767,8 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Writes the message to a byte array.
         /// </summary>
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope",
+            Justification = "BinaryHeapStream does not need to be disposed.")]
         private static byte[] WriteMessage(Action<IBinaryStream> writeAction, int bufSize, out int messageLen)
         {
             var stream = new BinaryHeapStream(bufSize);
@@ -776,6 +784,8 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Writes the message to a byte array.
         /// </summary>
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope",
+            Justification = "BinaryHeapStream does not need to be disposed.")]
         private RequestMessage WriteMessage(Action<ClientRequestContext> writeAction, ClientOp opId)
         {
             _features.ValidateOp(opId);
@@ -873,6 +883,8 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Gets the socket stream.
         /// </summary>
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope",
+            Justification = "Stream is returned from this method.")]
         private static Stream GetSocketStream(Socket socket, IgniteClientConfiguration cfg, string host)
         {
             var stream = new NetworkStream(socket, ownsSocket: true)
@@ -995,7 +1007,7 @@ namespace Apache.Ignite.Core.Impl.Client
                 {
                     return;
                 }
-                
+
                 // Set disposed state before ending requests so that request continuations see disconnected socket.
                 _isDisposed = true;
 
