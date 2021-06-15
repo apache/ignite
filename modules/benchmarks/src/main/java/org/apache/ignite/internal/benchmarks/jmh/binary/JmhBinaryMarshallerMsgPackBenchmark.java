@@ -110,17 +110,19 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
         msgPackWriter = msgPackMapper.writerFor(IntPojo.class);
     }
 
-    //@Benchmark
+    @Benchmark
     public byte[] writePojoMsgPack() throws Exception {
+        // This uses TLS buffers and does not allocate on repeated calls.
         return msgPackWriter.writeValueAsBytes(new IntPojo(randomInt()));
     }
 
-    //@Benchmark
+    @Benchmark
     public byte[] writePojoIgnite() throws Exception {
+        // This uses TLS buffers and does not allocate on repeated calls.
         return marshaller.marshal(new IntPojo(randomInt()));
     }
 
-    //@Benchmark
+    @Benchmark
     public byte[] writePrimitivesMsgPack() throws Exception {
         ByteArrayOutputStream s = new ByteArrayOutputStream();
 
