@@ -117,8 +117,8 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
     public byte[] writePrimitivesMsgPack() throws Exception {
         ByteArrayOutputStream s = new ByteArrayOutputStream();
 
-        msgPackMapper.writeValue(s, randomInt());
         msgPackMapper.writeValue(s, "Hello world");
+        msgPackMapper.writeValue(s, 42);
 
         s.close();
         return s.toByteArray();
@@ -126,18 +126,19 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
 
     @Benchmark
     public byte[] writePrimitivesMsgPackRaw() throws Exception {
-        MessageBufferPacker packer = MessagePack.newDefaultBufferPacker();
+        ByteArrayOutputStream s = new ByteArrayOutputStream();
+        MessagePacker packer = MessagePack.newDefaultPacker(s);
 
         packer
-                .packInt(randomInt())
-                .packString("Hello world");
+                .packString("Hello world")
+                .packInt(42);
 
         packer.close();
 
-        return packer.toByteArray();
+        return s.toByteArray();
     }
 
-    @Benchmark
+    // @Benchmark
     public byte[] writePrimitivesIgnite() {
         try (BinaryWriterExImpl writer = new BinaryWriterExImpl(binaryCtx)) {
             writer.writeInt(randomInt());
@@ -154,12 +155,14 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
      * @throws Exception If failed.
      */
     public static void main(String[] args) throws Exception {
-//        JmhBinaryMarshallerMsgPackBenchmark bench = new JmhBinaryMarshallerMsgPackBenchmark();
-//        bench.setup();
-//
-//        printBytes(bench.writeIgnite());
-//
-//        System.out.println();
+        JmhBinaryMarshallerMsgPackBenchmark bench = new JmhBinaryMarshallerMsgPackBenchmark();
+        bench.setup();
+
+        printBytes(bench.writePrimitivesMsgPack());
+        printBytes(bench.writePrimitivesMsgPackRaw());
+
+
+        System.out.println();
 
 
 
