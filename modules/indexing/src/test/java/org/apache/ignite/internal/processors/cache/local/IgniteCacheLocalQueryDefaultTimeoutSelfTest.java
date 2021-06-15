@@ -144,9 +144,10 @@ public class IgniteCacheLocalQueryDefaultTimeoutSelfTest extends GridCommonAbstr
         try (QueryCursor<List<?>> ignored = cursor) {
             Iterator<List<?>> it = cursor.iterator();
 
-            if (qry.isLazy())
+            if (qry.isLazy()) {
                 while (it.hasNext())
                     it.next();
+            }
 
             fail("Expecting timeout");
         }
