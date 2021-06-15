@@ -396,35 +396,36 @@ public class SnapshotRestoreProcess {
      * Abort the currently running restore procedure (if any).
      *
      * @param reason Interruption reason.
-     * @param snpName Snapshot name.
+     * @param snpName Snapshot name or {@code null} to stop any running snapshot restore process.
      * @return Future that will be finished when process the process is complete. The result of this future will be
      * {@code false} if the restore process with the specified snapshot name is not running at all.
      */
     public IgniteInternalFuture<Boolean> interrupt(Exception reason, @Nullable String snpName) {
         SnapshotRestoreContext opCtx0 = opCtx;
+        boolean ctxStop = opCtx0 != null && (snpName == null || opCtx0.snpName.equals(snpName));
+
+        if (ctxStop) {
+            opCtx0.err.compareAndSet(null, reason);
+
+            IgniteFuture<?> stopFut;
+
+            synchronized (this) {
+                stopFut = opCtx0.stopFut;
+            }
+
+            if (stopFut != null)
+                stopFut.get();
+        }
+
         ClusterSnapshotFuture fut0 = fut;
 
-        if (opCtx0 == null || (snpName != null && !opCtx0.snpName.equals(snpName))) {
-            if (fut0 == null || (snpName != null && !fut0.name.equals(snpName)))
-                return new GridFinishedFuture<>(false);
-
+        if (fut0 != null && (snpName == null || fut0.name.equals(snpName))) {
             fut0.interruptEx = reason;
 
             return fut0.chain(f -> true);
         }
 
-        opCtx0.err.compareAndSet(null, reason);
-
-        IgniteFuture<?> stopFut;
-
-        synchronized (this) {
-            stopFut = opCtx0.stopFut;
-        }
-
-        if (stopFut != null)
-            stopFut.get();
-
-        return fut0 != null ? fut0.chain(f -> true) : new GridFinishedFuture<>(true);
+        return new GridFinishedFuture<>(ctxStop);
     }
 
     /**
