@@ -1361,7 +1361,11 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     @Override public void onBatchAcknowledged(final UUID routineId,
         GridContinuousBatch batch,
         final GridKernalContext ctx) {
-        sendBackupAcknowledge(ackBuf.onAcknowledged(batch), routineId, ctx);
+        IgniteBiTuple<Map<Integer, Long>, Set<AffinityTopologyVersion>> acknowledged = ackBuf.onAcknowledged(batch);
+
+        sendBackupAcknowledge(acknowledged, routineId, ctx);
+
+        cleanupBuffers(acknowledged);
     }
 
     /**
@@ -1405,6 +1409,26 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                     }
                 }
             });
+        }
+    }
+
+    /**
+     * @param acknowledged Acknowledge information.
+     */
+    private void cleanupBuffers(IgniteBiTuple<Map<Integer, Long>, Set<AffinityTopologyVersion>> acknowledged) {
+        if (acknowledged == null)
+            return;
+
+        Map<Integer, Long> updateCntrs = acknowledged.get1();
+
+        if (updateCntrs == null)
+            return;
+
+        for (Map.Entry<Integer, Long> e : updateCntrs.entrySet()) {
+            CacheContinuousQueryEventBuffer buf = entryBufs.get(e.getKey());
+
+            if (buf != null)
+                buf.cleanupEntries(e.getValue());
         }
     }
 

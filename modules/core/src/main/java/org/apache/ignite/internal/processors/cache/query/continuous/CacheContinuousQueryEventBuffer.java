@@ -118,6 +118,18 @@ public class CacheContinuousQueryEventBuffer {
         backupQ.removeIf(backupEntry -> backupEntry.updateCounter() <= updateCntr);
 
         ackedUpdCntr.setIfGreater(updateCntr);
+
+        cleanupEntries(updateCntr);
+    }
+
+    /**
+     * @param updateCntr Acknowledged counter.
+     */
+    void cleanupEntries(long updateCntr) {
+        Batch batch = curBatch.get();
+
+        if (batch != null)
+            batch.cleanupEntries(updateCntr);
     }
 
     /**
@@ -371,6 +383,21 @@ public class CacheContinuousQueryEventBuffer {
             this.entries = entries;
 
             endCntr = startCntr + BUF_SIZE - 1;
+        }
+
+        /**
+         * @param updateCntr Acknowledged counter.
+         */
+        synchronized void cleanupEntries(long updateCntr) {
+            if (entries == null)
+                return;
+
+            for (int i = 0; i < entries.length; i++) {
+                CacheContinuousQueryEntry e = entries[i];
+
+                if (e != null && e.updateCounter() <= updateCntr)
+                    entries[i] = null;
+            }
         }
 
         /**
