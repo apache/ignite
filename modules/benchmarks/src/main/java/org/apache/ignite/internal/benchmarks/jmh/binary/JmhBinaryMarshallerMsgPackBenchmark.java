@@ -46,10 +46,12 @@ import java.io.ByteArrayOutputStream;
 
 /**
  * Ignite marshaller vs MsgPack benchmark.
+ * Benchmark                                                       Mode  Cnt         Score        Error  Units
+ * JmhBinaryMarshallerMsgPackBenchmark.writePrimitivesIgnite      thrpt   10  12702562.838 ± 248094.068  ops/s
+ * JmhBinaryMarshallerMsgPackBenchmark.writePrimitivesMsgPack     thrpt   10   7709666.338 ±  30310.271  ops/s // Unpooled (allocates buffers)
+ * JmhBinaryMarshallerMsgPackBenchmark.writePrimitivesMsgPackRaw  thrpt   10  20952908.222 ±  93921.333  ops/s
  *
  * TODO: Read benchmarks.
- * TODO: Ignite uses TLS buffers, which gives unfair advantage.
- * We should be able to do the same with MsgPack!
  */
 @State(Scope.Benchmark)
 public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
