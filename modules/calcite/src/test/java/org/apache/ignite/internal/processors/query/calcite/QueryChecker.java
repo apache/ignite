@@ -313,8 +313,6 @@ public abstract class QueryChecker {
         List<List<?>> explainRes = explainCursor.getAll();
         String actualPlan = (String)explainRes.get(0).get(0);
 
-        System.err.println(actualPlan);
-
         if (!F.isEmpty(planMatchers)) {
             for (Matcher<String> matcher : planMatchers)
                 assertThat("Invalid plan:\n" + actualPlan, actualPlan, matcher);
