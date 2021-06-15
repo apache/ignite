@@ -87,8 +87,8 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
+import org.apache.ignite.internal.processors.query.aware.IndexBuildStatusStorage;
 import org.apache.ignite.internal.processors.query.aware.IndexRebuildFutureStorage;
-import org.apache.ignite.internal.processors.query.aware.IndexRebuildStateStorage;
 import org.apache.ignite.internal.processors.query.property.QueryBinaryProperty;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
@@ -247,8 +247,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** Index rebuild futures. */
     private final IndexRebuildFutureStorage idxRebuildFutStorage = new IndexRebuildFutureStorage();
 
-    /** Index rebuild states. */
-    private final IndexRebuildStateStorage idxRebuildStateStorage;
+    /** Index build statuses. */
+    private final IndexBuildStatusStorage idxBuildStatusStorage;
 
     /**
      * Constructor.
@@ -282,7 +282,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 U.warn(log, "Unsupported IO message: " + msg);
         };
 
-        idxRebuildStateStorage = new IndexRebuildStateStorage(ctx);
+        idxBuildStatusStorage = new IndexBuildStatusStorage(ctx);
     }
 
     /** {@inheritDoc} */
@@ -303,7 +303,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 ctxs.queries().evictDetailMetrics();
         }, QRY_DETAIL_METRICS_EVICTION_FREQ, QRY_DETAIL_METRICS_EVICTION_FREQ);
 
-        idxRebuildStateStorage.start();
+        idxBuildStatusStorage.start();
     }
 
     /** {@inheritDoc} */
@@ -326,7 +326,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         busyLock.block();
 
-        idxRebuildStateStorage.stop();
+        idxBuildStatusStorage.stop();
     }
 
     /** {@inheritDoc} */
@@ -357,7 +357,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 onSchemaPropose(schemaOp.proposeMessage());
         }
 
-        idxRebuildStateStorage.onCacheKernalStart();
+        idxBuildStatusStorage.onCacheKernalStart();
     }
 
     /**
@@ -1900,25 +1900,27 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     GridFutureAdapter<Void> createIdxFut = new GridFutureAdapter<>();
 
+                    GridCacheContext<?, ?> cacheCtx = cacheInfo.cacheContext();
+
                     visitor = new SchemaIndexCacheVisitorImpl(
-                        cacheInfo.cacheContext(),
+                        cacheCtx,
                         cancelTok,
                         createIdxFut
                     ) {
                         /** {@inheritDoc} */
                         @Override public void visit(SchemaIndexCacheVisitorClosure clo) {
-                            // TODO: 03.06.2021 Тут можно зафиксировать, что мы хотим добавить индекс
-
-                            super.visit(clo);
+                            idxBuildStatusStorage.onStartBuildNewIndex(cacheCtx);
 
                             try {
+                                super.visit(clo);
+
                                 buildIdxFut.get();
                             }
                             catch (Exception e) {
                                 throw new IgniteException(e);
+                            } finally {
+                                idxBuildStatusStorage.onFinishBuildNewIndex(cacheName);
                             }
-
-                            // TODO: 03.06.2021 Тут можно зафиксировать, что мы перестроили индекс
                         }
                     };
                 }
@@ -3895,7 +3897,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @see #rebuildIndexesCompleted
      */
     public void onStartRebuildIndexes(GridCacheContext cacheCtx) {
-        idxRebuildStateStorage.onStartRebuildIndexes(cacheCtx);
+        idxBuildStatusStorage.onStartRebuildIndexes(cacheCtx);
     }
 
     /**
@@ -3908,7 +3910,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cacheCtx Cache context.
      */
     public void onFinishRebuildIndexes(GridCacheContext cacheCtx) {
-        idxRebuildStateStorage.onFinishRebuildIndexes(cacheCtx.name());
+        idxBuildStatusStorage.onFinishRebuildIndexes(cacheCtx.name());
     }
 
     /**
@@ -3916,11 +3918,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param cacheCtx Cache context.
      * @return {@code True} if completed.
-     * @see #onStartRebuildIndexes
-     * @see #onFinishRebuildIndexes
      */
     public boolean rebuildIndexesCompleted(GridCacheContext cacheCtx) {
-        return idxRebuildStateStorage.completed(cacheCtx.name());
+        return idxBuildStatusStorage.rebuildCompleted(cacheCtx.name());
     }
 
     /**
@@ -3930,10 +3930,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * indexes is completed and the entry will be deleted from the MetaStorage
      * at the end of the checkpoint. Otherwise, delete the index rebuild entry.
      *
-     *
      * @param cacheName Cache name.
      */
     public void completeRebuildIndexes(String cacheName) {
-        idxRebuildStateStorage.onFinishRebuildIndexes(cacheName);
+        idxBuildStatusStorage.onFinishRebuildIndexes(cacheName);
     }
 }

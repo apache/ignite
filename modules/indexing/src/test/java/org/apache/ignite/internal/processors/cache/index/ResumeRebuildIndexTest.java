@@ -25,14 +25,14 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.BreakRebuildIndexConsumer;
 import org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.StopBuildIndexConsumer;
-import org.apache.ignite.internal.processors.query.aware.IndexRebuildStateStorage;
+import org.apache.ignite.internal.processors.query.aware.IndexBuildStatusStorage;
 import org.apache.ignite.internal.util.function.ThrowableFunction;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.prepareBeforeNodeStart;
-import static org.apache.ignite.internal.processors.query.aware.IndexRebuildStateStorage.KEY_PREFIX;
+import static org.apache.ignite.internal.processors.query.aware.IndexBuildStatusStorage.KEY_PREFIX;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.deleteCacheGrpDir;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
@@ -42,7 +42,7 @@ import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
  */
 public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
     /**
-     * Checking normal flow for {@link IndexRebuildStateStorage}.
+     * Checking normal flow for {@link IndexBuildStatusStorage}.
      *
      * @throws Exception If failed.
      */
@@ -63,7 +63,7 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
         assertTrue(forceRebuildIndexes(n, cacheCtx).isEmpty());
         IgniteInternalFuture<?> idxRebFut = indexRebuildFuture(n, cacheCtx.cacheId());
 
-        assertFalse(indexRebuildStateStorage(n).completed(cacheCtx.name()));
+        assertFalse(indexBuildStatusStorage(n).rebuildCompleted(cacheCtx.name()));
         assertNotNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheCtx.name())));
 
         stopRebuildIdxConsumer.startBuildIdxFut.get(getTestTimeout());
@@ -72,7 +72,7 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
         idxRebFut.get(getTestTimeout());
 
         assertEquals(1_000, stopRebuildIdxConsumer.visitCnt.get());
-        assertTrue(indexRebuildStateStorage(n).completed(cacheCtx.name()));
+        assertTrue(indexBuildStatusStorage(n).rebuildCompleted(cacheCtx.name()));
 
         dbMgr(n).enableCheckpoints(true).get(getTestTimeout());
         forceCheckpoint();
@@ -81,7 +81,7 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
     }
 
     /**
-     * Checking the flow in case of an error for {@link IndexRebuildStateStorage}.
+     * Checking the flow in case of an error for {@link IndexBuildStatusStorage}.
      *
      * @throws Exception If failed.
      */
@@ -101,7 +101,7 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
         assertTrue(forceRebuildIndexes(n, cacheCtx).isEmpty());
         IgniteInternalFuture<?> idxRebFut0 = indexRebuildFuture(n, cacheCtx.cacheId());
 
-        assertFalse(indexRebuildStateStorage(n).completed(cacheCtx.name()));
+        assertFalse(indexBuildStatusStorage(n).rebuildCompleted(cacheCtx.name()));
         assertNotNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheCtx.name())));
 
         breakRebuildIdxConsumer.startBuildIdxFut.get(getTestTimeout());
@@ -112,7 +112,7 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
 
         forceCheckpoint();
 
-        assertFalse(indexRebuildStateStorage(n).completed(cacheCtx.name()));
+        assertFalse(indexBuildStatusStorage(n).rebuildCompleted(cacheCtx.name()));
         assertNotNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheCtx.name())));
 
         StopBuildIndexConsumer stopRebuildIdxConsumer = addStopRebuildIndexConsumer(n, cacheCtx.name());
@@ -121,7 +121,7 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
         assertTrue(forceRebuildIndexes(n, cacheCtx).isEmpty());
         IgniteInternalFuture<?> idxRebFut1 = indexRebuildFuture(n, cacheCtx.cacheId());
 
-        assertFalse(indexRebuildStateStorage(n).completed(cacheCtx.name()));
+        assertFalse(indexBuildStatusStorage(n).rebuildCompleted(cacheCtx.name()));
         assertNotNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheCtx.name())));
 
         stopRebuildIdxConsumer.startBuildIdxFut.get(getTestTimeout());
@@ -130,7 +130,7 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
         idxRebFut1.get(getTestTimeout());
 
         assertEquals(1_000, stopRebuildIdxConsumer.visitCnt.get());
-        assertTrue(indexRebuildStateStorage(n).completed(cacheCtx.name()));
+        assertTrue(indexBuildStatusStorage(n).rebuildCompleted(cacheCtx.name()));
 
         dbMgr(n).enableCheckpoints(true).get(getTestTimeout());
         forceCheckpoint();
@@ -139,7 +139,7 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
     }
 
     /**
-     * Checking the flow in case of an restart node for {@link IndexRebuildStateStorage}.
+     * Checking the flow in case of an restart node for {@link IndexBuildStatusStorage}.
      *
      * @throws Exception If failed.
      */
@@ -166,7 +166,7 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
 
         forceCheckpoint();
 
-        assertFalse(indexRebuildStateStorage(n).completed(cacheCtx.name()));
+        assertFalse(indexBuildStatusStorage(n).rebuildCompleted(cacheCtx.name()));
         assertNotNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheCtx.name())));
 
         stopAllGrids();
@@ -176,7 +176,7 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
         prepareBeforeNodeStart();
         n = startGrid(0);
 
-        assertFalse(indexRebuildStateStorage(n).completed(cacheCtx.name()));
+        assertFalse(indexBuildStatusStorage(n).rebuildCompleted(cacheCtx.name()));
         assertNotNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheCtx.name())));
 
         stopRebuildIdxConsumer.startBuildIdxFut.get(getTestTimeout());
@@ -188,7 +188,7 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
         idxRebFut1.get(getTestTimeout());
 
         assertEquals(1_000, stopRebuildIdxConsumer.visitCnt.get());
-        assertTrue(indexRebuildStateStorage(n).completed(cacheCtx.name()));
+        assertTrue(indexBuildStatusStorage(n).rebuildCompleted(cacheCtx.name()));
         assertNotNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheCtx.name())));
 
         dbMgr(n).enableCheckpoints(true).get(getTestTimeout());
@@ -313,17 +313,17 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
         }
 
         n1.destroyCache(DEFAULT_CACHE_NAME + 0);
-        assertTrue(indexRebuildStateStorage(n1).completed(DEFAULT_CACHE_NAME + 0));
+        assertTrue(indexBuildStatusStorage(n1).rebuildCompleted(DEFAULT_CACHE_NAME + 0));
 
         n1.destroyCache(DEFAULT_CACHE_NAME + 1);
-        assertTrue(indexRebuildStateStorage(n1).completed(DEFAULT_CACHE_NAME + 1));
+        assertTrue(indexBuildStatusStorage(n1).rebuildCompleted(DEFAULT_CACHE_NAME + 1));
 
-        assertFalse(indexRebuildStateStorage(n1).completed(DEFAULT_CACHE_NAME + 2));
-        assertFalse(indexRebuildStateStorage(n1).completed(DEFAULT_CACHE_NAME + 3));
+        assertFalse(indexBuildStatusStorage(n1).rebuildCompleted(DEFAULT_CACHE_NAME + 2));
+        assertFalse(indexBuildStatusStorage(n1).rebuildCompleted(DEFAULT_CACHE_NAME + 3));
 
         forceCheckpoint(n1);
 
-        ConcurrentMap<String, Object> states = getFieldValue(indexRebuildStateStorage(n1), "states");
+        ConcurrentMap<String, Object> states = getFieldValue(indexBuildStatusStorage(n1), "statuses");
 
         assertFalse(states.containsKey(DEFAULT_CACHE_NAME + 0));
         assertFalse(states.containsKey(DEFAULT_CACHE_NAME + 1));
@@ -344,12 +344,12 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
 
         n1 = startGrid(getTestIgniteInstanceName(1));
 
-        assertTrue(indexRebuildStateStorage(n1).completed(DEFAULT_CACHE_NAME + 2));
-        assertTrue(indexRebuildStateStorage(n1).completed(DEFAULT_CACHE_NAME + 3));
+        assertTrue(indexBuildStatusStorage(n1).rebuildCompleted(DEFAULT_CACHE_NAME + 2));
+        assertTrue(indexBuildStatusStorage(n1).rebuildCompleted(DEFAULT_CACHE_NAME + 3));
 
         forceCheckpoint(n1);
 
-        states = getFieldValue(indexRebuildStateStorage(n1), "states");
+        states = getFieldValue(indexBuildStatusStorage(n1), "statuses");
 
         assertFalse(states.containsKey(DEFAULT_CACHE_NAME + 2));
         assertFalse(states.containsKey(DEFAULT_CACHE_NAME + 3));
@@ -445,12 +445,12 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
     }
 
     /**
-     * Getting {@code GridQueryProcessor#idxRebuildStateStorage}.
+     * Getting {@code GridQueryProcessor#idxBuildStatusStorage}.
      *
      * @param n Node.
-     * @return Index rebuild state storage.
+     * @return Index build status storage.
      */
-    private IndexRebuildStateStorage indexRebuildStateStorage(IgniteEx n) {
-        return getFieldValue(n.context().query(), "idxRebuildStateStorage");
+    private IndexBuildStatusStorage indexBuildStatusStorage(IgniteEx n) {
+        return getFieldValue(n.context().query(), "idxBuildStatusStorage");
     }
 }

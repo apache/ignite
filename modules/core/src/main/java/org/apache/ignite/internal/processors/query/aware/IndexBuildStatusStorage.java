@@ -38,23 +38,18 @@ import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
-import static org.apache.ignite.internal.processors.query.aware.IndexRebuildState.State.COMPLETED;
-import static org.apache.ignite.internal.processors.query.aware.IndexRebuildState.State.DELETE;
-import static org.apache.ignite.internal.processors.query.aware.IndexRebuildState.State.INIT;
+import static org.apache.ignite.internal.processors.query.aware.IndexBuildStatus.Status.COMPLETED;
+import static org.apache.ignite.internal.processors.query.aware.IndexBuildStatus.Status.DELETE;
 
 /**
- * Holder of up-to-date information about rebuilding cache indexes.
- * Helps to avoid the situation when the index rebuilding process is interrupted
- * and after a node restart/reactivation the indexes will become inconsistent.
+ * Holder of up-to-date information about cache index building operations (rebuilding indexes, building new indexes).
+ * Avoids index inconsistency when operations have completed, a checkpoint has not occurred, and the node has been restarted.
  * <p/>
- * To do this, before rebuilding the indexes, call {@link #onStartRebuildIndexes}
- * and after it {@link #onFinishRebuildIndexes}. Use {@link #completed} to check
- * if the index rebuild has completed.
- * <p/>
- * To prevent leaks, it is necessary to use {@link #onFinishRebuildIndexes}
- * when detecting the fact of destroying the cache.
+ * For rebuild indexes, use {@link #onStartRebuildIndexes} and {@link #onFinishRebuildIndexes}.
+ * For build new indexes, use {@link #onStartBuildNewIndex} and {@link #onFinishBuildNewIndex}.
+ * Use {@link #rebuildCompleted} to check that the index rebuild is complete.
  */
-public class IndexRebuildStateStorage implements MetastorageLifecycleListener, CheckpointListener {
+public class IndexBuildStatusStorage implements MetastorageLifecycleListener, CheckpointListener {
     /** Key prefix for the MetaStorage. */
     public static final String KEY_PREFIX = "rebuild-sql-indexes-";
 
@@ -67,15 +62,15 @@ public class IndexRebuildStateStorage implements MetastorageLifecycleListener, C
     /** Node stop lock. */
     private final GridBusyLock stopNodeLock = new GridBusyLock();
 
-    /** Current states. Mapping: cache name -> index rebuild state. */
-    private final ConcurrentMap<String, IndexRebuildState> states = new ConcurrentHashMap<>();
+    /** Current statuses. Mapping: cache name -> index build status. */
+    private final ConcurrentMap<String, IndexBuildStatus> statuses = new ConcurrentHashMap<>();
 
     /**
      * Constructor.
      *
      * @param ctx Kernal context.
      */
-    public IndexRebuildStateStorage(GridKernalContext ctx) {
+    public IndexBuildStatusStorage(GridKernalContext ctx) {
         this.ctx = ctx;
     }
 
@@ -90,7 +85,7 @@ public class IndexRebuildStateStorage implements MetastorageLifecycleListener, C
      * Callback on start of {@link GridCacheProcessor}.
      */
     public void onCacheKernalStart() {
-        Set<String> toComplete = new HashSet<>(states.keySet());
+        Set<String> toComplete = new HashSet<>(statuses.keySet());
         toComplete.removeAll(ctx.cache().cacheDescriptors().keySet());
 
         for (String cacheName : toComplete)
@@ -105,65 +100,61 @@ public class IndexRebuildStateStorage implements MetastorageLifecycleListener, C
     }
 
     /**
-     * Callback on start of rebuild cache indexes.
+     * Callback on the start of rebuilding cache indexes.
      * <p/>
-     * Adding an entry that rebuilding the cache indexes in progress.
-     * If the cache is persistent, then add this entry to the MetaStorage.
+     * Registers the start of rebuilding cache indexes, for persistent cache
+     * writes a entry to the MetaStorage so that if a failure occurs,
+     * the indexes are automatically rebuilt.
      *
      * @param cacheCtx Cache context.
      * @see #onFinishRebuildIndexes
      */
     public void onStartRebuildIndexes(GridCacheContext cacheCtx) {
-        if (!stopNodeLock.enterBusy())
-            throw new IgniteException("Node is stopping.");
-
-        try {
-            String cacheName = cacheCtx.name();
-            boolean persistent = CU.isPersistentCache(cacheCtx.config(), ctx.config().getDataStorageConfiguration());
-
-            states.compute(cacheName, (k, prev) -> {
-                if (prev != null) {
-                    prev.state(INIT);
-
-                    return prev;
-                }
-                else
-                    return new IndexRebuildState(persistent);
-            });
-
-            if (persistent) {
-                metaStorageOperation(metaStorage -> {
-                    assert metaStorage != null;
-
-                    metaStorage.write(metaStorageKey(cacheName), new IndexRebuildCacheInfo(cacheName));
-                });
-            }
-        }
-        finally {
-            stopNodeLock.leaveBusy();
-        }
+        onStartOperation(cacheCtx, true);
     }
 
     /**
-     * Callback on finish of rebuild cache indexes.
+     * Callback on the start of building a new cache index.
      * <p/>
-     * If the cache is persistent, then we mark that the rebuilding of the
-     * indexes is completed and the entry will be deleted from the MetaStorage
-     * at the end of the checkpoint. Otherwise, delete the index rebuild entry.
+     * Registers the start of building a new cache index, for persistent cache
+     * writes a entry to the MetaStorage so that if a failure occurs,
+     * the indexes are automatically rebuilt.
+     *
+     * @param cacheCtx Cache context.
+     * @see #onFinishBuildNewIndex
+     */
+    public void onStartBuildNewIndex(GridCacheContext cacheCtx) {
+        onStartOperation(cacheCtx, false);
+    }
+
+    /**
+     * Callback on the finish of rebuilding cache indexes.
+     * <p/>
+     * Registers the finish of rebuilding cache indexes, if all operations
+     * have been completed for persistent cache, then the entry will be deleted
+     * from the MetaStorage at the end of the checkpoint,
+     * otherwise for the in-memory cache the status will be deleted immediately.
      *
      * @param cacheName Cache name.
      * @see #onStartRebuildIndexes
      */
     public void onFinishRebuildIndexes(String cacheName) {
-        states.compute(cacheName, (k, prev) -> {
-            if (prev != null && prev.persistent()) {
-                prev.state(INIT, COMPLETED);
+        onFinishOperation(cacheName, true);
+    }
 
-                return prev;
-            }
-            else
-                return null;
-        });
+    /**
+     * Callback on the finish of building a new cache index.
+     * <p/>
+     * Registers the finish of building a new cache index, if all operations
+     * have been completed for persistent cache, then the entry will be deleted
+     * from the MetaStorage at the end of the checkpoint,
+     * otherwise for the in-memory cache the status will be deleted immediately.
+     *
+     * @param cacheName Cache name.
+     * @see #onStartBuildNewIndex
+     */
+    public void onFinishBuildNewIndex(String cacheName) {
+        onFinishOperation(cacheName, false);
     }
 
     /**
@@ -172,10 +163,10 @@ public class IndexRebuildStateStorage implements MetastorageLifecycleListener, C
      * @param cacheName Cache name.
      * @return {@code True} if completed.
      */
-    public boolean completed(String cacheName) {
-        IndexRebuildState state = states.get(cacheName);
+    public boolean rebuildCompleted(String cacheName) {
+        IndexBuildStatus status = statuses.get(cacheName);
 
-        return state == null || state.state() != INIT;
+        return status == null || !status.rebuild();
     }
 
     /** {@inheritDoc} */
@@ -197,7 +188,7 @@ public class IndexRebuildStateStorage implements MetastorageLifecycleListener, C
                     (k, v) -> {
                         IndexRebuildCacheInfo cacheInfo = (IndexRebuildCacheInfo)v;
 
-                        states.put(cacheInfo.cacheName(), new IndexRebuildState(true));
+                        statuses.put(cacheInfo.cacheName(), new IndexBuildStatus(true, true));
                     },
                     true
                 );
@@ -214,9 +205,9 @@ public class IndexRebuildStateStorage implements MetastorageLifecycleListener, C
             return;
 
         try {
-            for (IndexRebuildState state : states.values()) {
-                if (state.state(COMPLETED, DELETE))
-                    assert state.persistent();
+            for (IndexBuildStatus status : statuses.values()) {
+                if (status.delete())
+                    assert status.persistent();
             }
         }
         finally {
@@ -240,17 +231,17 @@ public class IndexRebuildStateStorage implements MetastorageLifecycleListener, C
             return;
 
         try {
-            for (String cacheName : states.keySet()) {
+            for (String cacheName : statuses.keySet()) {
                 // Trying to concurrently delete the state.
-                IndexRebuildState newVal =
-                    states.compute(cacheName, (k, prev) -> prev != null && prev.state() == DELETE ? null : prev);
+                IndexBuildStatus newVal =
+                    statuses.compute(cacheName, (k, prev) -> prev != null && prev.status() == DELETE ? null : prev);
 
                 // Assume that the state has been deleted.
                 if (newVal == null) {
                     metaStorageOperation(metaStorage -> {
                         assert metaStorage != null;
 
-                        if (!states.containsKey(cacheName))
+                        if (!statuses.containsKey(cacheName))
                             metaStorage.remove(metaStorageKey(cacheName));
                     });
                 }
@@ -294,5 +285,68 @@ public class IndexRebuildStateStorage implements MetastorageLifecycleListener, C
      */
     private static String metaStorageKey(String cacheName) {
         return KEY_PREFIX + cacheName;
+    }
+
+    /**
+     * Callback on the start of the cache index building operation.
+     * <p/>
+     * Registers the start of an index build operation, for persistent cache
+     * writes a entry to the MetaStorage so that if a failure occurs,
+     * the indexes are automatically rebuilt.
+     *
+     * @param cacheCtx Cache context.
+     * @param rebuild {@code True} if rebuilding indexes, otherwise building a new index.
+     * @see #onFinishOperation
+     */
+    private void onStartOperation(GridCacheContext cacheCtx, boolean rebuild) {
+        if (!stopNodeLock.enterBusy())
+            throw new IgniteException("Node is stopping.");
+
+        try {
+            String cacheName = cacheCtx.name();
+            boolean persistent = CU.isPersistentCache(cacheCtx.config(), ctx.config().getDataStorageConfiguration());
+
+            statuses.compute(cacheName, (k, prev) -> {
+                if (prev != null) {
+                    prev.onStartOperation(rebuild);
+
+                    return prev;
+                }
+                else
+                    return new IndexBuildStatus(persistent, rebuild);
+            });
+
+            if (persistent) {
+                metaStorageOperation(metaStorage -> {
+                    assert metaStorage != null;
+
+                    metaStorage.write(metaStorageKey(cacheName), new IndexRebuildCacheInfo(cacheName));
+                });
+            }
+        }
+        finally {
+            stopNodeLock.leaveBusy();
+        }
+    }
+
+    /**
+     * Callback on the finish of the cache index building operation.
+     * <p/>
+     * Registers the finish of the index build operation, if all operations
+     * have been completed for persistent cache, then the entry will be deleted
+     * from the MetaStorage at the end of the checkpoint,
+     * otherwise for the in-memory cache the status will be deleted immediately.
+     *
+     * @param cacheName Cache name.
+     * @param rebuild {@code True} if rebuilding indexes, otherwise building a new index.
+     * @see #onStartOperation
+     */
+    private void onFinishOperation(String cacheName, boolean rebuild) {
+        statuses.compute(cacheName, (k, prev) -> {
+            if (prev != null && prev.onFinishOperation(rebuild) == COMPLETED && !prev.persistent())
+                return null;
+            else
+                return prev;
+        });
     }
 }
