@@ -24,27 +24,45 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.benchmarks.jmh.JmhAbstractBenchmark;
 import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
+import org.apache.ignite.internal.benchmarks.model.IntValue;
 import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.logger.NullLogger;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
+import org.openjdk.jmh.annotations.State;
 
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Ignite marshaller vs MsgPack benchmark.
  */
+@State(Scope.Benchmark)
 public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
+    private BinaryMarshaller marshaller;
+
+    /**
+     * Setup routine. Child classes must invoke this method first.
+     *
+     * @throws Exception If failed.
+     */
+    @Setup
+    public void setup() throws Exception {
+        System.out.println();
+        System.out.println("--------------------");
+
+        marshaller = createBinaryMarshaller(new NullLogger());
+    }
+
     @Benchmark
-    public void writeIgnite() {
-        BinaryMarshaller bm = new BinaryMarshaller();
-        int key = ThreadLocalRandom.current().nextInt(100);
+    public void writeIgnite() throws IgniteCheckedException {
+        marshaller.marshal(new IntValue(randomInt()));
     }
 
     /**
