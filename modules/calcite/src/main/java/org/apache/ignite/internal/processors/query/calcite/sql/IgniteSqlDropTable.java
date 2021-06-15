@@ -24,15 +24,15 @@ import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.parser.SqlParserPos;
 
 /**
- * Parse tree for {@code DROP INDEX} statement
+ * Parse tree for {@code DROP TABLE} statement
  */
-public class IgniteSqlDropIndex extends IgniteSqlDrop {
+public class IgniteSqlDropTable extends IgniteSqlDrop {
     /** */
     private static final SqlOperator OPERATOR =
-        new SqlSpecialOperator("DROP INDEX", SqlKind.DROP_INDEX);
+        new SqlSpecialOperator("DROP TABLE", SqlKind.DROP_TABLE);
 
     /** */
-    protected IgniteSqlDropIndex(SqlParserPos pos, boolean ifExists, SqlIdentifier idxName) {
-        super(OPERATOR, pos, ifExists, Objects.requireNonNull(idxName, "index name"));
+    protected IgniteSqlDropTable(SqlParserPos pos, boolean ifExists, SqlIdentifier tblName) {
+        super(OPERATOR, pos, ifExists, Objects.requireNonNull(tblName, "table name"));
     }
 }

@@ -15,25 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.exec.cmd;
+package org.apache.ignite.internal.processors.query.calcite.sql;
 
-import java.util.Objects;
-import org.apache.ignite.internal.sql.command.SqlCommand;
+import org.apache.calcite.sql.SqlCall;
+import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.sql.parser.SqlParserPos;
 
 /**
- * Wrapper for Ignite core SqlCommand.
+ * SqlNode for Ignite commands.
  */
-public class NativeCommand {
-    /** */
-    private final SqlCommand cmd;
+public abstract class IgniteSqlCommand extends SqlCall {
+    /** Operator. */
+    private final SqlOperator operator;
 
     /** */
-    public NativeCommand(SqlCommand cmd) {
-        this.cmd = Objects.requireNonNull(cmd);
+    protected IgniteSqlCommand(SqlOperator op, SqlParserPos pos) {
+        super(pos);
+        operator = op;
     }
 
-    /** */
-    public SqlCommand command() {
-        return cmd;
+    /** {@inheritDoc} */
+    @Override public SqlOperator getOperator() {
+        return operator;
     }
 }

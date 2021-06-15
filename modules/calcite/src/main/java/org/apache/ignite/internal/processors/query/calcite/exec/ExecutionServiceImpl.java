@@ -27,7 +27,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
@@ -36,7 +35,6 @@ import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitDef;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.sql.SqlDdl;
 import org.apache.calcite.sql.SqlExplain;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlNode;
@@ -64,8 +62,6 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryCancellable;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
-import org.apache.ignite.internal.processors.query.calcite.exec.cmd.NativeCommandHandler;
-import org.apache.ignite.internal.processors.query.calcite.exec.cmd.NativeCommandPlan;
 import org.apache.ignite.internal.processors.query.calcite.exec.ddl.DdlCommandHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
@@ -101,7 +97,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.ValidationRes
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.DdlSqlToCommandConverter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
-import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlNativeCommand;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCommand;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTraitDef;
@@ -183,9 +179,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     /** */
     private final DdlSqlToCommandConverter ddlConverter;
 
-    /** */
-    private final NativeCommandHandler nativeCmdHnd;
-
     /**
      * @param ctx Kernal.
      */
@@ -200,8 +193,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         ddlCmdHnd = new DdlCommandHandler(
             ctx::query, ctx.cache(), ctx.security(), () -> schemaHolder().schema()
         );
-
-        nativeCmdHnd = new NativeCommandHandler(ctx, schemaHolder);
     }
 
     /**
@@ -553,8 +544,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         ctx.planner().reset();
 
-        if (sqlNode instanceof IgniteSqlNativeCommand)
-            return prepareNative(sqlNode, ctx);
+        if (sqlNode instanceof IgniteSqlCommand)
+            return prepareCommand(sqlNode, ctx);
 
         switch (sqlNode.getKind()) {
             case SELECT:
@@ -573,10 +564,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
             case EXPLAIN:
                 return prepareExplain(sqlNode, ctx);
-
-            case CREATE_TABLE:
-            case DROP_TABLE:
-                return prepareDdl(sqlNode, ctx);
 
             default:
                 throw new IgniteSQLException("Unsupported operation [" +
@@ -623,19 +610,10 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private QueryPlan prepareDdl(SqlNode sqlNode, PlanningContext ctx) {
-        assert sqlNode instanceof SqlDdl : sqlNode == null ? "null" : sqlNode.getClass().getName();
+    private QueryPlan prepareCommand(SqlNode sqlNode, PlanningContext ctx) {
+        assert sqlNode instanceof IgniteSqlCommand : sqlNode == null ? "null" : sqlNode.getClass().getName();
 
-        SqlDdl ddlNode = (SqlDdl)sqlNode;
-
-        return new DdlPlan(ddlConverter.convert(ddlNode, ctx));
-    }
-
-    /** */
-    private QueryPlan prepareNative(SqlNode sqlNode, PlanningContext ctx) {
-        assert sqlNode instanceof IgniteSqlNativeCommand : sqlNode == null ? "null" : sqlNode.getClass().getName();
-
-        return new NativeCommandPlan(nativeCmdHnd.convert((IgniteSqlNativeCommand)sqlNode, ctx));
+        return new DdlPlan(ddlConverter.convert((IgniteSqlCommand)sqlNode, ctx));
     }
 
     /** */
@@ -676,19 +654,16 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             case EXPLAIN:
                 return executeExplain((ExplainPlan)plan, pctx);
             case DDL:
-                return executeDdl((DdlPlan)plan, pctx);
-            case NATIVE:
-                return executeNative(qryId, (NativeCommandPlan)plan, pctx);
-
+                return executeDdl(qryId, (DdlPlan)plan, pctx);
             default:
                 throw new AssertionError("Unexpected plan type: " + plan);
         }
     }
 
     /** */
-    private FieldsQueryCursor<List<?>> executeDdl(DdlPlan plan, PlanningContext pctx) {
+    private FieldsQueryCursor<List<?>> executeDdl(UUID qryId, DdlPlan plan, PlanningContext pctx) {
         try {
-            ddlCmdHnd.handle(pctx, plan.command());
+            ddlCmdHnd.handle(qryId, plan.command(), pctx);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + pctx.query() +
@@ -696,18 +671,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         }
 
         return H2Utils.zeroCursor();
-    }
-
-    /** */
-    private FieldsQueryCursor<List<?>> executeNative(UUID qryId, NativeCommandPlan plan, PlanningContext pctx) {
-        try {
-            return nativeCmdHnd.handle(qryId, plan.command(), pctx);
-        }
-        catch (Exception e) {
-            throw new IgniteSQLException("Failed to execute native command [stmt=" + pctx.query() +
-                ", err=" + e.getMessage() + ']', e);
-        }
-
     }
 
     /** */

@@ -28,16 +28,13 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.sql.SqlDdl;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlNumericLiteral;
 import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
-import org.apache.calcite.sql.ddl.SqlDropTable;
 import org.apache.calcite.sql.ddl.SqlKeyConstraint;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -46,9 +43,11 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCommand;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTable;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOption;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlDropTable;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.calcite.sql.type.SqlTypeName.BOOLEAN;
@@ -119,12 +118,15 @@ public class DdlSqlToCommandConverter {
      * @param ddlNode Root node of the given AST.
      * @param ctx Planning context.
      */
-    public DdlCommand convert(SqlDdl ddlNode, PlanningContext ctx) {
+    public DdlCommand convert(IgniteSqlCommand ddlNode, PlanningContext ctx) {
         if (ddlNode instanceof IgniteSqlCreateTable)
             return convertCreateTable((IgniteSqlCreateTable)ddlNode, ctx);
 
-        if (ddlNode instanceof SqlDropTable)
-            return convertDropTable((SqlDropTable)ddlNode, ctx);
+        if (ddlNode instanceof IgniteSqlDropTable)
+            return convertDropTable((IgniteSqlDropTable)ddlNode, ctx);
+
+        if (SqlToNativeCommandConverter.isSupported(ddlNode))
+            return SqlToNativeCommandConverter.convert(ddlNode, ctx);
 
         throw new IgniteSQLException("Unsupported operation [" +
             "sqlNodeKind=" + ddlNode.getKind() + "; " +
@@ -214,12 +216,12 @@ public class DdlSqlToCommandConverter {
      * @param dropTblNode Root node of the given AST.
      * @param ctx Planning context.
      */
-    private DropTableCommand convertDropTable(SqlDropTable dropTblNode, PlanningContext ctx) {
+    private DropTableCommand convertDropTable(IgniteSqlDropTable dropTblNode, PlanningContext ctx) {
         DropTableCommand dropTblCmd = new DropTableCommand();
 
-        dropTblCmd.schemaName(deriveSchemaName(dropTblNode.name, ctx));
-        dropTblCmd.tableName(deriveObjectName(dropTblNode.name, ctx, "tableName"));
-        dropTblCmd.ifExists(dropTblNode.ifExists);
+        dropTblCmd.schemaName(deriveSchemaName(dropTblNode.name(), ctx));
+        dropTblCmd.tableName(deriveObjectName(dropTblNode.name(), ctx, "tableName"));
+        dropTblCmd.ifExists(dropTblNode.ifExists());
 
         return dropTblCmd;
     }

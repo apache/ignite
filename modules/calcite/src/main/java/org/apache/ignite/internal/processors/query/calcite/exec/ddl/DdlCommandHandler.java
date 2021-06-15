@@ -24,8 +24,8 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Supplier;
-
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Table;
 import org.apache.ignite.IgniteCheckedException;
@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.ColumnDef
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.CreateTableCommand;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.DdlCommand;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.DropTableCommand;
+import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.NativeCommandWrapper;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
@@ -68,22 +69,26 @@ public class DdlCommandHandler {
     private final Supplier<SchemaPlus> schemaSupp;
 
     /** */
+    private final NativeCommandHandler nativeCmdHandler;
+
+    /** */
     public DdlCommandHandler(Supplier<GridQueryProcessor> qryProcessorSupp, GridCacheProcessor cacheProcessor,
         IgniteSecurity security, Supplier<SchemaPlus> schemaSupp) {
         this.qryProcessorSupp = qryProcessorSupp;
         this.cacheProcessor = cacheProcessor;
         this.security = security;
         this.schemaSupp = schemaSupp;
+        nativeCmdHandler = new NativeCommandHandler(cacheProcessor.context().kernalContext(), schemaSupp);
     }
 
     /** */
-    public void handle(PlanningContext pctx, DdlCommand cmd) throws IgniteCheckedException {
+    public void handle(UUID qryId, DdlCommand cmd, PlanningContext pctx) throws IgniteCheckedException {
         if (cmd instanceof CreateTableCommand)
             handle0(pctx, (CreateTableCommand)cmd);
-
         else if (cmd instanceof DropTableCommand)
             handle0(pctx, (DropTableCommand)cmd);
-
+        else if (cmd instanceof NativeCommandWrapper)
+            nativeCmdHandler.handle(qryId, (NativeCommandWrapper)cmd, pctx);
         else {
             throw new IgniteSQLException("Unsupported DDL operation [" +
                 "cmdName=" + (cmd == null ? null : cmd.getClass().getSimpleName()) + "; " +

@@ -15,35 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.exec.cmd;
+package org.apache.ignite.internal.processors.query.calcite.prepare.ddl;
 
-import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlan;
+import java.util.Objects;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 
 /**
- * Plan for Ignite native (core module) commands.
+ * Wrapper for Ignite core SqlCommand.
  */
-public class NativeCommandPlan implements QueryPlan {
+public class NativeCommandWrapper implements DdlCommand {
     /** */
-    private final NativeCommand cmd;
+    private final SqlCommand cmd;
 
     /** */
-    public NativeCommandPlan(NativeCommand cmd) {
-        this.cmd = cmd;
+    public NativeCommandWrapper(SqlCommand cmd) {
+        this.cmd = Objects.requireNonNull(cmd);
     }
 
     /** */
-    public NativeCommand command() {
+    public SqlCommand command() {
         return cmd;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Type type() {
-        return Type.NATIVE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public QueryPlan copy() {
-        return this;
     }
 }

@@ -32,7 +32,7 @@ import org.apache.calcite.util.ImmutableNullableList;
 /**
  * Parse tree for {@code CREATE INDEX} statement
  */
-public class IgniteSqlCreateIndex extends IgniteSqlNativeCommand {
+public class IgniteSqlCreateIndex extends IgniteSqlCreate {
     /** */
     private final SqlIdentifier idxName;
 
@@ -43,17 +43,13 @@ public class IgniteSqlCreateIndex extends IgniteSqlNativeCommand {
     private final SqlNodeList columnList;
 
     /** */
-    private final boolean ifNotExists;
-
-    /** */
     private static final SqlOperator OPERATOR =
         new SqlSpecialOperator("CREATE INDEX", SqlKind.CREATE_INDEX);
 
     /** Creates a SqlCreateIndex. */
     protected IgniteSqlCreateIndex(SqlParserPos pos, boolean ifNotExists,
         SqlIdentifier idxName, SqlIdentifier tblName, SqlNodeList columnList) {
-        super(OPERATOR, pos);
-        this.ifNotExists = ifNotExists;
+        super(OPERATOR, pos, ifNotExists);
         this.idxName = Objects.requireNonNull(idxName, "index name");
         this.tblName = Objects.requireNonNull(tblName, "table name");
         this.columnList = columnList;
@@ -119,12 +115,5 @@ public class IgniteSqlCreateIndex extends IgniteSqlNativeCommand {
      */
     public SqlNodeList columnList() {
         return columnList;
-    }
-
-    /**
-     * @return Whether the IF NOT EXISTS is specified.
-     */
-    public boolean ifNotExists() {
-        return ifNotExists;
     }
 }
