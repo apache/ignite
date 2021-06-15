@@ -51,6 +51,9 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
     private static final String INDEX = "TEST_IDX";
 
     /** */
+    private static final String DESC_INDEX = "TEST_DESC_IDX";
+
+    /** */
     private static final int CNT = 10_000;
 
     /** */
@@ -214,6 +217,25 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
 
         checkPerson(cache.query(qry), lower, upper + 1);
 
+        // Lt as first condition.
+        qry = IndexQuery
+            .<Long, Person>forIndex(Person.class, INDEX)
+            .where(lt("id", 1), lte("secId", pivot));
+
+        checkPerson(cache.query(qry), 0, pivot + 1);
+
+        qry = IndexQuery
+            .<Long, Person>forIndex(Person.class, INDEX)
+            .where(lt("id", 1), eq("secId", pivot));
+
+        checkPerson(cache.query(qry), pivot, pivot + 1);
+
+        qry = IndexQuery
+            .<Long, Person>forIndex(Person.class, INDEX)
+            .where(lt("id", 1), between("secId", lower, upper));
+
+        checkPerson(cache.query(qry), lower, upper + 1);
+
         // Lte as first condition.
         qry = IndexQuery
             .<Long, Person>forIndex(Person.class, INDEX)
@@ -221,12 +243,55 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
 
         checkPerson(cache.query(qry), 0, pivot);
 
+        qry = IndexQuery
+            .<Long, Person>forIndex(Person.class, INDEX)
+            .where(lte("id", 1), between("secId", lower, upper));
+
+        checkPerson(cache.query(qry), lower, upper + 1);
+
+        qry = IndexQuery
+            .<Long, Person>forIndex(Person.class, INDEX)
+            .where(lte("id", 0), eq("secId", pivot));
+
+        checkPerson(cache.query(qry), pivot, pivot + 1);
+
+        // Gt as first condition.
+        qry = IndexQuery
+            .<Long, Person>forIndex(Person.class, INDEX)
+            .where(gt("id", -1), gte("secId", pivot));
+
+        checkPerson(cache.query(qry), pivot, CNT);
+
+        qry = IndexQuery
+            .<Long, Person>forIndex(Person.class, INDEX)
+            .where(gt("id", -1), eq("secId", pivot));
+
+        checkPerson(cache.query(qry), pivot, pivot + 1);
+
+        qry = IndexQuery
+            .<Long, Person>forIndex(Person.class, INDEX)
+            .where(gt("id", -1), between("secId", lower, upper));
+
+        checkPerson(cache.query(qry), lower, upper + 1);
+
         // Gte as first condition.
         qry = IndexQuery
             .<Long, Person>forIndex(Person.class, INDEX)
             .where(gte("id", 0), gt("secId", pivot));
 
         checkPerson(cache.query(qry), pivot + 1, CNT);
+
+        qry = IndexQuery
+            .<Long, Person>forIndex(Person.class, INDEX)
+            .where(gte("id", 0), between("secId", lower, upper));
+
+        checkPerson(cache.query(qry), lower, upper + 1);
+
+        qry = IndexQuery
+            .<Long, Person>forIndex(Person.class, INDEX)
+            .where(gte("id", 0), eq("secId", pivot));
+
+        checkPerson(cache.query(qry), pivot, pivot + 1);
 
         // Between as first condition.
         qry = IndexQuery
@@ -252,6 +317,166 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
             .where(between("id", -1, 1), gte("secId", pivot));
 
         checkPerson(cache.query(qry), pivot, CNT);
+
+        qry = IndexQuery
+            .<Long, Person>forIndex(Person.class, INDEX)
+            .where(between("id", -1, 1), eq("secId", pivot));
+
+        checkPerson(cache.query(qry), pivot, pivot + 1);
+    }
+
+    /** */
+    @Test
+    public void testLegalDifferentConditionsWithDescIdx() {
+        insertData();
+
+        int pivot = new Random().nextInt(CNT);
+        int lower = new Random().nextInt(CNT / 2);
+        int upper = lower + new Random().nextInt(CNT / 2);
+
+        // Eq as first condition.
+        IndexQuery<Long, Person> qry = IndexQuery
+            .<Long, Person>forIndex(Person.class, DESC_INDEX)
+            .where(eq("id", 1), lt("descId", pivot));
+
+        assertTrue(cache.query(qry).getAll().isEmpty());
+
+        qry = IndexQuery
+            .<Long, Person>forIndex(Person.class, DESC_INDEX)
+            .where(eq("id", 0), lt("descId", pivot));
+
+        checkPerson(cache.query(qry), 0, pivot);
+
+        qry = IndexQuery
+            .<Long, Person>forIndex(Person.class, DESC_INDEX)
+            .where(eq("id", 0), lte("descId", pivot));
+
+        checkPerson(cache.query(qry), 0, pivot + 1);
+
+        qry = IndexQuery
+            .<Long, Person>forIndex(Person.class, DESC_INDEX)
+            .where(eq("id", 0), gt("descId", pivot));
+
+        checkPerson(cache.query(qry), pivot + 1, CNT);
+
+        qry = IndexQuery
+            .<Long, Person>forIndex(Person.class, DESC_INDEX)
+            .where(eq("id", 0), gte("descId", pivot));
+
+        checkPerson(cache.query(qry), pivot, CNT);
+
+        qry = IndexQuery
+            .<Long, Person>forIndex(Person.class, DESC_INDEX)
+            .where(eq("id", 0), between("descId", lower, upper));
+
+        checkPerson(cache.query(qry), lower, upper + 1);
+
+        // Lt as first condition.
+        qry = IndexQuery
+            .<Long, Person>forIndex(Person.class, DESC_INDEX)
+            .where(lt("id", 1), gt("descId", pivot));
+
+        checkPerson(cache.query(qry), pivot + 1, CNT);
+
+        qry = IndexQuery
+            .<Long, Person>forIndex(Person.class, DESC_INDEX)
+            .where(lt("id", 1), gte("descId", pivot));
+
+        checkPerson(cache.query(qry), pivot, CNT);
+
+        qry = IndexQuery
+            .<Long, Person>forIndex(Person.class, DESC_INDEX)
+            .where(lt("id", 1), between("descId", lower, upper));
+
+        checkPerson(cache.query(qry), lower, upper + 1);
+
+        qry = IndexQuery
+            .<Long, Person>forIndex(Person.class, DESC_INDEX)
+            .where(lt("id", 1), eq("descId", pivot));
+
+        checkPerson(cache.query(qry), pivot, pivot + 1);
+
+        // Lte as first condition.
+        qry = IndexQuery
+            .<Long, Person>forIndex(Person.class, DESC_INDEX)
+            .where(lte("id", 0), gt("descId", pivot));
+
+        checkPerson(cache.query(qry), pivot + 1, CNT);
+
+        qry = IndexQuery
+            .<Long, Person>forIndex(Person.class, DESC_INDEX)
+            .where(lte("id", 0), gte("descId", pivot));
+
+        checkPerson(cache.query(qry), pivot, CNT);
+
+        qry = IndexQuery
+            .<Long, Person>forIndex(Person.class, DESC_INDEX)
+            .where(lte("id", 0), between("descId", lower, upper));
+
+        checkPerson(cache.query(qry), lower, upper + 1);
+
+        qry = IndexQuery
+            .<Long, Person>forIndex(Person.class, DESC_INDEX)
+            .where(lte("id", 0), eq("descId", pivot));
+
+        checkPerson(cache.query(qry), pivot, pivot + 1);
+
+        // Gte as first condition.
+        qry = IndexQuery
+            .<Long, Person>forIndex(Person.class, DESC_INDEX)
+            .where(gte("id", 0), lt("descId", pivot));
+
+        checkPerson(cache.query(qry), 0, pivot);
+
+        qry = IndexQuery
+            .<Long, Person>forIndex(Person.class, DESC_INDEX)
+            .where(gte("id", 0), lte("descId", pivot));
+
+        checkPerson(cache.query(qry), 0, pivot + 1);
+
+        qry = IndexQuery
+            .<Long, Person>forIndex(Person.class, DESC_INDEX)
+            .where(gte("id", 0), between("descId", lower, upper));
+
+        checkPerson(cache.query(qry), lower, upper + 1);
+
+        qry = IndexQuery
+            .<Long, Person>forIndex(Person.class, DESC_INDEX)
+            .where(gte("id", 0), eq("descId", pivot));
+
+        checkPerson(cache.query(qry), pivot, pivot + 1);
+
+        // Between as first condition.
+        qry = IndexQuery
+            .<Long, Person>forIndex(Person.class, DESC_INDEX)
+            .where(between("id", -1, 1), lt("descId", pivot));
+
+        checkPerson(cache.query(qry), 0, pivot);
+
+        qry = IndexQuery
+            .<Long, Person>forIndex(Person.class, DESC_INDEX)
+            .where(between("id", -1, 1), lte("descId", pivot));
+
+        checkPerson(cache.query(qry), 0, pivot + 1);
+
+        qry = IndexQuery
+            .<Long, Person>forIndex(Person.class, DESC_INDEX)
+            .where(between("id", -1, 1), gt("descId", pivot));
+
+        checkPerson(cache.query(qry), pivot + 1, CNT);
+
+        qry = IndexQuery
+            .<Long, Person>forIndex(Person.class, DESC_INDEX)
+            .where(between("id", -1, 1), gte("descId", pivot));
+
+        checkPerson(cache.query(qry), pivot, CNT);
+
+        qry = IndexQuery
+            .<Long, Person>forIndex(Person.class, DESC_INDEX)
+            .where(between("id", -1, 1), eq("descId", pivot));
+
+        checkPerson(cache.query(qry), pivot, pivot + 1);
+
     }
 
     /** */
@@ -265,8 +490,9 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
             .<Long, Person>forIndex(Person.class, INDEX)
             .where(lt("id", 1), gt("secId", pivot));
 
-        GridTestUtils.assertThrows(null,
-            () -> cache.query(qry).getAll(), CacheException.class, "Range query doesn't match index 'TEST_IDX'");
+        // TODO: fail or return empty result?
+//        GridTestUtils.assertThrows(null,
+//            () -> cache.query(qry).getAll(), CacheException.class, "Range query doesn't match index 'TEST_IDX'");
 
         IndexQuery<Long, Person> qry1 = IndexQuery
             .<Long, Person>forIndex(Person.class, INDEX)
@@ -277,10 +503,17 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
 
         IndexQuery<Long, Person> qry2 = IndexQuery
             .<Long, Person>forIndex(Person.class, INDEX)
-            .where(gt("id",2), lt("secId", pivot));
+            .where(gt("id", 2), lt("secId", pivot));
 
         GridTestUtils.assertThrows(null,
             () -> cache.query(qry2).getAll(), CacheException.class, "Range query doesn't match index 'TEST_IDX'");
+
+        IndexQuery<Long, Person> qry3 = IndexQuery
+            .<Long, Person>forIndex(Person.class, INDEX)
+            .where(gt("id", 2), eq("secId", pivot));
+
+        GridTestUtils.assertThrows(null,
+            () -> cache.query(qry3).getAll(), CacheException.class, "Range query doesn't match index 'TEST_IDX'");
     }
 
     /** */
@@ -342,7 +575,10 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
     /** */
     private static class Person {
         /** */
-        @QuerySqlField(orderedGroups = @QuerySqlField.Group(name = INDEX, order = 0))
+        @QuerySqlField(orderedGroups = {
+            @QuerySqlField.Group(name = INDEX, order = 0),
+            @QuerySqlField.Group(name = DESC_INDEX, order = 0)}
+        )
         final int id;
 
         /** */
@@ -350,9 +586,14 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
         final int secId;
 
         /** */
+        @QuerySqlField(orderedGroups = @QuerySqlField.Group(name = DESC_INDEX, order = 1, descending = true))
+        final int descId;
+
+        /** */
         Person(int secId) {
             this.id = 0;
             this.secId = secId;
+            this.descId = secId;
         }
 
         /** {@inheritDoc} */

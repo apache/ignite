@@ -274,17 +274,17 @@ public class IndexQueryProcessor {
             IndexKey u = key(c.upper(), def, hnd.indexKeyTypeSettings(), coctx);
 
             if (l != null) {
-                // This is completely wrong condition that returns incorrect result. Instead access predicate should be used.
-                if (lowerAllNulls && i > 0)
-                    throw new IgniteCheckedException("Range query doesn't match index '" + idx.name() + "'");
+                // TODO: check for bad queries like (lt + gt). Fail or continue?
+//                if (lowerAllNulls && i > 0)
+//                    throw new IgniteCheckedException("Range query doesn't match index '" + idx.name() + "'");
 
                 lowerAllNulls = false;
             }
 
             if (u != null) {
-                // This is completely wrong condition that returns incorrect result. Instead access predicate should be used.
-                if (upperAllNulls && i > 0)
-                    throw new IgniteCheckedException("Range query doesn't match index '" + idx.name() + "'");
+                // TODO: check for bad queries like (lt + gt). Fail or continue?
+//                if (upperAllNulls && i > 0)
+//                    throw new IgniteCheckedException("Range query doesn't match index '" + idx.name() + "'");
 
                 upperAllNulls = false;
             }
@@ -351,7 +351,7 @@ public class IndexQueryProcessor {
 
                     // Include all values on this field.
                     if (boundary.key(i) == null)
-                        return false;
+                        continue;
 
                     int cmp = rowCmp.compareKey(row, boundary, i);
 
