@@ -62,6 +62,9 @@ import java.io.ByteArrayOutputStream;
  * JmhBinaryMarshallerMsgPackBenchmark.writePojoMsgPack           thrpt   10   5386377.535 ±  33835.097  ops/s // Fields with names
  * JmhBinaryMarshallerMsgPackBenchmark.writePojoMsgPack2          thrpt   10   8505961.494 ± 465369.449  ops/s // Fields without names (array)
  *
+ * JmhBinaryMarshallerMsgPackBenchmark.readPrimitivesIgnite       thrpt   10  19873521.096 ± 545779.558  ops/s
+ * JmhBinaryMarshallerMsgPackBenchmark.readPrimitivesMsgPack      thrpt   10  29235107.372 ±  85371.004  ops/s
+ *
  * TODO: Read benchmarks.
  */
 @State(Scope.Benchmark)
