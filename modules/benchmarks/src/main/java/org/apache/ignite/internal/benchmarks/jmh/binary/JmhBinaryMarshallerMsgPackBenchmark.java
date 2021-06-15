@@ -51,6 +51,9 @@ import java.io.ByteArrayOutputStream;
  * JmhBinaryMarshallerMsgPackBenchmark.writePrimitivesMsgPackRaw  thrpt   10  20952908.222 ±  93921.333  ops/s // Without true array copy
  * JmhBinaryMarshallerMsgPackBenchmark.writePrimitivesMsgPackRaw  thrpt   10  16834154.556 ± 85624.143  ops/s // With true array copy
  * JmhBinaryMarshallerMsgPackBenchmark.writePrimitivesIgnite      thrpt   10  12702562.838 ± 248094.068  ops/s
+ *
+ * JmhBinaryMarshallerMsgPackBenchmark.writePojoIgnite            thrpt   10  11590924.790 ±  42061.734  ops/s
+ * JmhBinaryMarshallerMsgPackBenchmark.writePojoMsgPack           thrpt   10   5386377.535 ±  33835.097  ops/s // Because it writes field names
  * TODO: Read benchmarks.
  */
 @State(Scope.Benchmark)
