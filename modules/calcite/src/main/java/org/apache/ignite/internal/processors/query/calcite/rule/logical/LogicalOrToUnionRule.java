@@ -37,16 +37,16 @@ import org.apache.calcite.tools.RelBuilder;
  */
 public class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.Config> {
     /** */
-    private static final String DIRECT_ORDER_DESC = "LogicalOrToUnionRuleDO";
+    private static final String DIRECT_DESC = "LogicalOrToUnionRuleDirect";
 
     /** */
-    private static final String INVERSE_ORDER_DESC = "LogicalOrToUnionRuleIO";
+    private static final String INVERSE_DESC = "LogicalOrToUnionRuleInverse";
 
     /** Instance. */
-    public static final RelOptRule INSTANCE_DO = Config.DEFAULT.withDescription(DIRECT_ORDER_DESC).toRule();
+    public static final RelOptRule INSTANCE_DIRECT = Config.DEFAULT.withDescription(DIRECT_DESC).toRule();
 
     /** Instance */
-    public static final RelOptRule INSTANCE_IO = Config.DEFAULT.withDescription(INVERSE_ORDER_DESC).toRule();
+    public static final RelOptRule INSTANCE_INVERSE = Config.DEFAULT.withDescription(INVERSE_DESC).toRule();
 
     /** */
     private final boolean order;
@@ -129,9 +129,9 @@ public class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.Config> {
 
         /** {@inheritDoc} */
         @Override default LogicalOrToUnionRule toRule() {
-            if (DIRECT_ORDER_DESC.equals(description()))
+            if (DIRECT_DESC.equals(description()))
                 return new LogicalOrToUnionRule(this, true);
-            else if (INVERSE_ORDER_DESC.equals(description()))
+            else if (INVERSE_DESC.equals(description()))
                 return new LogicalOrToUnionRule(this, false);
             else
                 throw new IllegalArgumentException(description());
