@@ -35,6 +35,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.msgpack.core.MessageBufferPacker;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
+import org.msgpack.jackson.dataformat.JsonArrayFormat;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Mode;
@@ -63,12 +64,13 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
     private static final PooledMessageBufferOutput msgPackPooledOutput = new PooledMessageBufferOutput();
 
     private BinaryMarshaller marshaller;
+    private BinaryContext binaryCtx;
 
     private ObjectMapper msgPackMapper;
-
     private ObjectWriter msgPackWriter;
 
-    private BinaryContext binaryCtx;
+    private ObjectMapper msgPackMapper2;
+    private ObjectWriter msgPackWriter2;
 
     /**
      * Setup routine. Child classes must invoke this method first.
@@ -111,12 +113,22 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
         // Init MsgPack.
         msgPackMapper = new ObjectMapper(new MessagePackFactory(packerConfig));
         msgPackWriter = msgPackMapper.writerFor(IntPojo.class);
+
+        // Init MsgPack without field names.
+        msgPackMapper2 = new ObjectMapper(new MessagePackFactory(packerConfig)).setAnnotationIntrospector(new JsonArrayFormat());
+        msgPackWriter2 = msgPackMapper2.writerFor(IntPojo.class);
     }
 
     @Benchmark
     public byte[] writePojoMsgPack() throws Exception {
         // This uses TLS buffers and does not allocate on repeated calls.
         return msgPackWriter.writeValueAsBytes(new IntPojo(randomInt()));
+    }
+
+    @Benchmark
+    public byte[] writePojoMsgPack2() throws Exception {
+        // This uses TLS buffers and does not allocate on repeated calls.
+        return msgPackWriter2.writeValueAsBytes(new IntPojo(randomInt()));
     }
 
     @Benchmark
