@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.sql.command;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -82,6 +83,31 @@ public class SqlCreateIndexCommand implements SqlCommand {
 
     /** Inline size. Zero effectively disables inlining. */
     private int inlineSize = QueryIndex.DFLT_INLINE_SIZE;
+
+    /**
+     * Default constructor.
+     */
+    public SqlCreateIndexCommand() {
+    }
+
+    public SqlCreateIndexCommand(String schemaName, String tblName, String idxName, boolean ifNotExists,
+        boolean spatial, int parallel, Collection<SqlIndexColumn> cols, int inlineSize) {
+        this.schemaName = schemaName;
+        this.tblName = tblName;
+        this.idxName = idxName;
+        this.ifNotExists = ifNotExists;
+        this.spatial = spatial;
+        this.parallel = parallel;
+        this.inlineSize = inlineSize;
+        this.cols = cols;
+
+        colNames = new HashSet<>();
+
+        for (SqlIndexColumn col : cols) {
+            if (!colNames.add(col.name()))
+                throw new IllegalArgumentException("Column already defined: " + col.name());
+        }
+    }
 
     /** {@inheritDoc} */
     @Override public String schemaName() {

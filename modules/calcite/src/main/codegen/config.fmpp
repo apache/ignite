@@ -52,6 +52,8 @@ data: {
 #     "KEY_TYPE" // already presented in Calcite
       "VALUE_TYPE"
       "ENCRYPTED"
+      "PARALLEL"
+      "INLINE_SIZE"
     ]
 
     # List of non-reserved keywords to add;
@@ -69,6 +71,8 @@ data: {
 #     "KEY_TYPE" // already presented in Calcite
       "VALUE_TYPE"
       "ENCRYPTED"
+      "PARALLEL"
+      "INLINE_SIZE"
 
       # The following keywords are reserved in core Calcite,
       # are reserved in some version of SQL,

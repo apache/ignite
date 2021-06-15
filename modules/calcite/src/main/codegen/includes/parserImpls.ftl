@@ -164,6 +164,46 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     }
 }
 
+SqlNodeList CreateIndexOptionList() :
+{
+    List<SqlNode> list = new ArrayList<SqlNode>();
+    final Span s = Span.of();
+    SqlNode option = null;
+}
+{
+    option = CreateTableOption() { list.add(option); }
+    (
+        <COMMA> { s.add(this); } option = CreateTableOption() { list.add(option); }
+    )*
+    {
+        return new SqlNodeList(list, s.end(this));
+    }
+}
+
+SqlNode CreateIndexOption() :
+{
+    final Span s;
+    final SqlLiteral key;
+    final SqlNode val;
+}
+{
+    key = CreateIndexOptionKey() { s = span(); }
+    <EQ>
+    val = Literal()
+    {
+        return new IgniteSqlCreateIndexOption(key, val, s.end(this));
+    }
+}
+
+SqlLiteral CreateIndexOptionKey() :
+{
+}
+{
+    <PARALLEL> { return SqlLiteral.createSymbol(IgniteSqlCreateIndexOptionEnum.PARALLEL, getPos()); }
+|
+    <INLINE_SIZE> { return SqlLiteral.createSymbol(IgniteSqlCreateIndexOptionEnum.INLINE_SIZE, getPos()); }
+}
+
 SqlNode IndexedColumn() :
 {
     final Span s;
@@ -235,6 +275,17 @@ SqlDrop SqlDropTable(Span s, boolean replace) :
 {
     <TABLE> ifExists = IfExistsOpt() id = CompoundIdentifier() {
         return SqlDdlNodes.dropTable(s.end(this), ifExists, id);
+    }
+}
+
+SqlDrop SqlDropIndex(Span s, boolean replace) :
+{
+    final boolean ifExists;
+    final SqlIdentifier id;
+}
+{
+    <INDEX> ifExists = IfExistsOpt() id = CompoundIdentifier() {
+        return new IgniteSqlDropIndex(s.end(this), ifExists, id);
     }
 }
 
