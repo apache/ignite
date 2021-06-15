@@ -54,7 +54,9 @@ import java.io.ByteArrayOutputStream;
  * JmhBinaryMarshallerMsgPackBenchmark.writePrimitivesIgnite      thrpt   10  12702562.838 ± 248094.068  ops/s
  *
  * JmhBinaryMarshallerMsgPackBenchmark.writePojoIgnite            thrpt   10  11590924.790 ±  42061.734  ops/s
- * JmhBinaryMarshallerMsgPackBenchmark.writePojoMsgPack           thrpt   10   5386377.535 ±  33835.097  ops/s // Because it writes field names
+ * JmhBinaryMarshallerMsgPackBenchmark.writePojoMsgPack           thrpt   10   5386377.535 ±  33835.097  ops/s // Writes field names
+ * JmhBinaryMarshallerMsgPackBenchmark.writePojoMsgPack2          thrpt   10   8505961.494 ± 465369.449  ops/s // Fields without names (array)
+ *
  * TODO: Read benchmarks.
  */
 @State(Scope.Benchmark)
@@ -119,7 +121,7 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
         msgPackWriter2 = msgPackMapper2.writerFor(IntPojo.class);
     }
 
-    @Benchmark
+    //@Benchmark
     public byte[] writePojoMsgPack() throws Exception {
         // This uses TLS buffers and does not allocate on repeated calls.
         return msgPackWriter.writeValueAsBytes(new IntPojo(randomInt()));
@@ -131,13 +133,13 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
         return msgPackWriter2.writeValueAsBytes(new IntPojo(randomInt()));
     }
 
-    @Benchmark
+    //@Benchmark
     public byte[] writePojoIgnite() throws Exception {
         // This uses TLS buffers and does not allocate on repeated calls.
         return marshaller.marshal(new IntPojo(randomInt()));
     }
 
-    @Benchmark
+    //@Benchmark
     public byte[] writePrimitivesMsgPack() throws Exception {
         ByteArrayOutputStream s = new ByteArrayOutputStream();
 
@@ -150,7 +152,7 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
         return s.toByteArray();
     }
 
-    @Benchmark
+    //@Benchmark
     public byte[] writePrimitivesMsgPackRaw() throws Exception {
         PooledMessagePacker packer = new PooledMessagePacker(msgPackPooledOutput, packerConfig);
 
@@ -163,7 +165,7 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
         return packer.toByteArray();
     }
 
-    //@Benchmark
+    ////@Benchmark
     public byte[] writePrimitivesIgnite() {
         try (BinaryWriterExImpl writer = new BinaryWriterExImpl(binaryCtx)) {
             writer.writeInt(randomInt());
