@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.benchmarks.jmh.binary;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -49,6 +50,8 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
 
     private ObjectMapper msgPackMapper;
 
+    private ObjectWriter msgPackWriter;
+
     /**
      * Setup routine. Child classes must invoke this method first.
      *
@@ -61,17 +64,18 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
 
         marshaller = createBinaryMarshaller(new NullLogger());
         msgPackMapper = new ObjectMapper(new MessagePackFactory());
+        msgPackWriter = msgPackMapper.writerFor(IntPojo.class);
     }
 
     @Benchmark
     public byte[] writeMsgPack() throws Exception {
-        return msgPackMapper.writeValueAsBytes(new IntPojo(randomInt()));
+        return msgPackWriter.writeValueAsBytes(new IntPojo(randomInt()));
     }
 
-    @Benchmark
-    public byte[] writeIgnite() throws Exception {
-        return marshaller.marshal(new IntPojo(randomInt()));
-    }
+//    @Benchmark
+//    public byte[] writeIgnite() throws Exception {
+//        return marshaller.marshal(new IntPojo(randomInt()));
+//    }
 
     /**
      * Run benchmarks.
@@ -83,13 +87,15 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
 //        JmhBinaryMarshallerMsgPackBenchmark bench = new JmhBinaryMarshallerMsgPackBenchmark();
 //        bench.setup();
 //
-//
-        ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
-
-        printBytes(objectMapper.writeValueAsBytes(new IntPojo(25)));
 //        printBytes(bench.writeIgnite());
 //
 //        System.out.println();
+
+//        ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
+//        ObjectWriter objectWriter = objectMapper.writerFor(IntPojo.class);
+//
+//        printBytes(objectWriter.writeValueAsBytes(new IntPojo(25)));
+
 
         JmhIdeBenchmarkRunner runner = JmhIdeBenchmarkRunner.create()
                 .forks(1)
