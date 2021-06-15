@@ -47,10 +47,10 @@ import java.io.ByteArrayOutputStream;
 /**
  * Ignite marshaller vs MsgPack benchmark.
  * Benchmark                                                       Mode  Cnt         Score        Error  Units
- * JmhBinaryMarshallerMsgPackBenchmark.writePrimitivesIgnite      thrpt   10  12702562.838 ± 248094.068  ops/s
  * JmhBinaryMarshallerMsgPackBenchmark.writePrimitivesMsgPack     thrpt   10   7709666.338 ±  30310.271  ops/s // Unpooled (allocates buffers)
- * JmhBinaryMarshallerMsgPackBenchmark.writePrimitivesMsgPackRaw  thrpt   10  20952908.222 ±  93921.333  ops/s
- *
+ * JmhBinaryMarshallerMsgPackBenchmark.writePrimitivesMsgPackRaw  thrpt   10  20952908.222 ±  93921.333  ops/s // Without true array copy
+ * JmhBinaryMarshallerMsgPackBenchmark.writePrimitivesMsgPackRaw  thrpt   10  16834154.556 ± 85624.143  ops/s // With true array copy
+ * JmhBinaryMarshallerMsgPackBenchmark.writePrimitivesIgnite      thrpt   10  12702562.838 ± 248094.068  ops/s
  * TODO: Read benchmarks.
  */
 @State(Scope.Benchmark)
@@ -120,7 +120,7 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
         return marshaller.marshal(new IntPojo(randomInt()));
     }
 
-    @Benchmark
+    //@Benchmark
     public byte[] writePrimitivesMsgPack() throws Exception {
         ByteArrayOutputStream s = new ByteArrayOutputStream();
 
@@ -146,7 +146,7 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
         return packer.toByteArray();
     }
 
-    @Benchmark
+    //@Benchmark
     public byte[] writePrimitivesIgnite() {
         try (BinaryWriterExImpl writer = new BinaryWriterExImpl(binaryCtx)) {
             writer.writeInt(randomInt());
