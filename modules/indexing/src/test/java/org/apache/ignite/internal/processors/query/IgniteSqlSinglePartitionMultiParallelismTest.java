@@ -87,10 +87,10 @@ public class IgniteSqlSinglePartitionMultiParallelismTest extends AbstractIndexi
     }
 
     /**
-     * Check case with 1 partition. Partition segment must be calculated correctly.
+     * Check case with every single partition. Partition segment must be calculated correctly.
      */
     @Test
-    public void testWhereCountFirstPartitionQuery() throws Exception {
+    public void testWhereCounteryPartitionQuery() throws Exception {
         for (int segment = 0; segment < CACHE_PARALLELISM; segment++) {
             Integer keyForSegment = segmenKey(segment);
 
@@ -104,7 +104,7 @@ public class IgniteSqlSinglePartitionMultiParallelismTest extends AbstractIndexi
     }
 
     /**
-     * Check case with 2 partition. Multiple partitions should not be affected.
+     * Check case with 2 partitions. Multiple partitions should not be affected.
      */
     @Test
     public void testWhereCountMultiPartitionsQuery() throws Exception {
