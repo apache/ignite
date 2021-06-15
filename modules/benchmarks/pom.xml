@@ -81,7 +81,7 @@
         <dependency>
             <groupId>org.msgpack</groupId>
             <artifactId>jackson-dataformat-msgpack</artifactId>
-            <version>0.8.23</version>
+            <version>0.8.21</version>
         </dependency>
     </dependencies>
 

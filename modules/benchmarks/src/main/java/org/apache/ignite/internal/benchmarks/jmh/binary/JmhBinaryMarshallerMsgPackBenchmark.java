@@ -82,7 +82,7 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
     public static void main(String[] args) throws Exception {
         JmhIdeBenchmarkRunner runner = JmhIdeBenchmarkRunner.create()
                 .forks(1)
-                .threads(4)
+                .threads(1)
                 .benchmarks(JmhBinaryMarshallerMsgPackBenchmark.class.getSimpleName())
                 .jvmArguments("-Xms4g", "-Xmx4g");
 

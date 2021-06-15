@@ -21,6 +21,8 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
@@ -29,6 +31,7 @@ import org.apache.ignite.binary.Binarylizable;
 /**
  * Simple wrapped int value.
  */
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public class IntValue implements Externalizable, Binarylizable {
     /** Value. */
     private int val;
