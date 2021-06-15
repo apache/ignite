@@ -31,7 +31,6 @@ import org.apache.ignite.binary.Binarylizable;
 /**
  * Simple wrapped int value.
  */
-@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public class IntValue implements Externalizable, Binarylizable {
     /** Value. */
     private int val;

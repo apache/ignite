@@ -25,7 +25,6 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.benchmarks.jmh.JmhAbstractBenchmark;
 import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
-import org.apache.ignite.internal.benchmarks.model.IntValue;
 import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -66,12 +65,12 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
 
     @Benchmark
     public byte[] writeMsgPack() throws Exception {
-        return msgPackMapper.writeValueAsBytes(new IntValue(randomInt()));
+        return msgPackMapper.writeValueAsBytes(new IntPojo(randomInt()));
     }
 
     @Benchmark
     public byte[] writeIgnite() throws Exception {
-        return marshaller.marshal(new IntValue(randomInt()));
+        return marshaller.marshal(new IntPojo(randomInt()));
     }
 
     /**
@@ -85,9 +84,9 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
 //        bench.setup();
 //
 //
-//        ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
-//
-//        printBytes(objectMapper.writeValueAsBytes(new IntValue(25)));
+        ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
+
+        printBytes(objectMapper.writeValueAsBytes(new IntPojo(25)));
 //        printBytes(bench.writeIgnite());
 //
 //        System.out.println();
