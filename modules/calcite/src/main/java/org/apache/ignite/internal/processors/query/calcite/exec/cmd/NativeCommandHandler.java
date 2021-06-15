@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.exec.ddl;
+package org.apache.ignite.internal.processors.query.calcite.exec.cmd;
 
 import java.util.List;
 import java.util.UUID;
@@ -28,7 +28,7 @@ import org.apache.ignite.internal.processors.query.GridQuerySchemaManager;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
-import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.NativeCommandWrapper;
+import org.apache.ignite.internal.processors.query.calcite.prepare.cmd.NativeCommandWrapper;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.sql.SqlCommandProcessor;
 

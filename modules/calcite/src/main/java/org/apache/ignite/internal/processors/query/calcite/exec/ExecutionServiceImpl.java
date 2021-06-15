@@ -62,7 +62,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryCancellable;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
-import org.apache.ignite.internal.processors.query.calcite.exec.ddl.DdlCommandHandler;
+import org.apache.ignite.internal.processors.query.calcite.exec.cmd.CommandHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
@@ -78,7 +78,7 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapp
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.RemoteException;
 import org.apache.ignite.internal.processors.query.calcite.prepare.CacheKey;
-import org.apache.ignite.internal.processors.query.calcite.prepare.DdlPlan;
+import org.apache.ignite.internal.processors.query.calcite.prepare.CommandPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ExplainPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FieldsMetadata;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FieldsMetadataImpl;
@@ -94,7 +94,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCach
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryTemplate;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ValidationResult;
-import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.DdlSqlToCommandConverter;
+import org.apache.ignite.internal.processors.query.calcite.prepare.cmd.SqlToCommandConverter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCommand;
@@ -174,10 +174,10 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     private final RowHandler<Row> handler;
 
     /** */
-    private final DdlCommandHandler ddlCmdHnd;
+    private final CommandHandler cmdHnd;
 
     /** */
-    private final DdlSqlToCommandConverter ddlConverter;
+    private final SqlToCommandConverter cmdConverter;
 
     /**
      * @param ctx Kernal.
@@ -188,9 +188,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         discoLsnr = (e, c) -> onNodeLeft(e.eventNode().id());
         running = new ConcurrentHashMap<>();
-        ddlConverter = new DdlSqlToCommandConverter();
+        cmdConverter = new SqlToCommandConverter();
 
-        ddlCmdHnd = new DdlCommandHandler(
+        cmdHnd = new CommandHandler(
             ctx::query, ctx.cache(), ctx.security(), () -> schemaHolder().schema()
         );
     }
@@ -613,7 +613,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     private QueryPlan prepareCommand(SqlNode sqlNode, PlanningContext ctx) {
         assert sqlNode instanceof IgniteSqlCommand : sqlNode == null ? "null" : sqlNode.getClass().getName();
 
-        return new DdlPlan(ddlConverter.convert((IgniteSqlCommand)sqlNode, ctx));
+        return new CommandPlan(cmdConverter.convert((IgniteSqlCommand)sqlNode, ctx));
     }
 
     /** */
@@ -653,20 +653,20 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 return executeQuery(qryId, (MultiStepPlan) plan, pctx);
             case EXPLAIN:
                 return executeExplain((ExplainPlan)plan, pctx);
-            case DDL:
-                return executeDdl(qryId, (DdlPlan)plan, pctx);
+            case COMMAND:
+                return executeCommand(qryId, (CommandPlan)plan, pctx);
             default:
                 throw new AssertionError("Unexpected plan type: " + plan);
         }
     }
 
     /** */
-    private FieldsQueryCursor<List<?>> executeDdl(UUID qryId, DdlPlan plan, PlanningContext pctx) {
+    private FieldsQueryCursor<List<?>> executeCommand(UUID qryId, CommandPlan plan, PlanningContext pctx) {
         try {
-            ddlCmdHnd.handle(qryId, plan.command(), pctx);
+            cmdHnd.handle(qryId, plan.command(), pctx);
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + pctx.query() +
+            throw new IgniteSQLException("Failed to execute command [stmt=" + pctx.query() +
                 ", err=" + e.getMessage() + ']', e);
         }
 

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.query.calcite.prepare.ddl;
+package org.apache.ignite.internal.processors.query.calcite.prepare.cmd;
 
 import java.util.Objects;
 

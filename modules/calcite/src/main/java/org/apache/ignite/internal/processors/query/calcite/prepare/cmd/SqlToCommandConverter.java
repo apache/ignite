@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.prepare.ddl;
+package org.apache.ignite.internal.processors.query.calcite.prepare.cmd;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -66,7 +66,7 @@ import static org.apache.ignite.internal.processors.query.calcite.util.PlanUtils
 import static org.apache.ignite.internal.processors.query.calcite.util.PlanUtils.deriveSchemaName;
 
 /** */
-public class DdlSqlToCommandConverter {
+public class SqlToCommandConverter {
     /** Processor that validates a value is a Sql Identifier. */
     private static final BiFunction<IgniteSqlCreateTableOption, PlanningContext, String> VALUE_IS_IDENTIFIER_VALIDATOR = (opt, ctx) -> {
         if (!(opt.value() instanceof SqlIdentifier) || !((SqlIdentifier)opt.value()).isSimple())
@@ -113,23 +113,23 @@ public class DdlSqlToCommandConverter {
         ).collect(Collectors.toMap(TableOptionProcessor::key, Function.identity()));
 
     /**
-     * Converts a given ddl AST to a ddl command.
+     * Converts a given AST to a command.
      *
-     * @param ddlNode Root node of the given AST.
+     * @param cmdNode Root node of the given AST.
      * @param ctx Planning context.
      */
-    public DdlCommand convert(IgniteSqlCommand ddlNode, PlanningContext ctx) {
-        if (ddlNode instanceof IgniteSqlCreateTable)
-            return convertCreateTable((IgniteSqlCreateTable)ddlNode, ctx);
+    public Command convert(IgniteSqlCommand cmdNode, PlanningContext ctx) {
+        if (cmdNode instanceof IgniteSqlCreateTable)
+            return convertCreateTable((IgniteSqlCreateTable)cmdNode, ctx);
 
-        if (ddlNode instanceof IgniteSqlDropTable)
-            return convertDropTable((IgniteSqlDropTable)ddlNode, ctx);
+        if (cmdNode instanceof IgniteSqlDropTable)
+            return convertDropTable((IgniteSqlDropTable)cmdNode, ctx);
 
-        if (SqlToNativeCommandConverter.isSupported(ddlNode))
-            return SqlToNativeCommandConverter.convert(ddlNode, ctx);
+        if (SqlToNativeCommandConverter.isSupported(cmdNode))
+            return SqlToNativeCommandConverter.convert(cmdNode, ctx);
 
         throw new IgniteSQLException("Unsupported operation [" +
-            "sqlNodeKind=" + ddlNode.getKind() + "; " +
+            "sqlNodeKind=" + cmdNode.getKind() + "; " +
             "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
 

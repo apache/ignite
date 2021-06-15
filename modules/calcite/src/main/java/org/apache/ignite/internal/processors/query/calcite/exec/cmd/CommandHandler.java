@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.exec.ddl;
+package org.apache.ignite.internal.processors.query.calcite.exec.cmd;
 
 import java.lang.reflect.Type;
 import java.util.Collections;
@@ -38,11 +38,11 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
-import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.ColumnDefinition;
-import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.CreateTableCommand;
-import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.DdlCommand;
-import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.DropTableCommand;
-import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.NativeCommandWrapper;
+import org.apache.ignite.internal.processors.query.calcite.prepare.cmd.ColumnDefinition;
+import org.apache.ignite.internal.processors.query.calcite.prepare.cmd.Command;
+import org.apache.ignite.internal.processors.query.calcite.prepare.cmd.CreateTableCommand;
+import org.apache.ignite.internal.processors.query.calcite.prepare.cmd.DropTableCommand;
+import org.apache.ignite.internal.processors.query.calcite.prepare.cmd.NativeCommandWrapper;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
@@ -55,7 +55,7 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.convert;
 import static org.apache.ignite.internal.processors.query.QueryUtils.isDdlOnSchemaSupported;
 
 /** */
-public class DdlCommandHandler {
+public class CommandHandler {
     /** */
     private final Supplier<GridQueryProcessor> qryProcessorSupp;
 
@@ -72,7 +72,7 @@ public class DdlCommandHandler {
     private final NativeCommandHandler nativeCmdHandler;
 
     /** */
-    public DdlCommandHandler(Supplier<GridQueryProcessor> qryProcessorSupp, GridCacheProcessor cacheProcessor,
+    public CommandHandler(Supplier<GridQueryProcessor> qryProcessorSupp, GridCacheProcessor cacheProcessor,
         IgniteSecurity security, Supplier<SchemaPlus> schemaSupp) {
         this.qryProcessorSupp = qryProcessorSupp;
         this.cacheProcessor = cacheProcessor;
@@ -82,7 +82,7 @@ public class DdlCommandHandler {
     }
 
     /** */
-    public void handle(UUID qryId, DdlCommand cmd, PlanningContext pctx) throws IgniteCheckedException {
+    public void handle(UUID qryId, Command cmd, PlanningContext pctx) throws IgniteCheckedException {
         if (cmd instanceof CreateTableCommand)
             handle0(pctx, (CreateTableCommand)cmd);
         else if (cmd instanceof DropTableCommand)

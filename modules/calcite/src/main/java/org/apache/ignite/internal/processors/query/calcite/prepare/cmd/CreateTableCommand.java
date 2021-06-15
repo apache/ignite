@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.prepare.ddl;
+package org.apache.ignite.internal.processors.query.calcite.prepare.cmd;
 
 import java.util.List;
 
@@ -26,7 +26,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * CREATE TABLE statement.
  */
-public class CreateTableCommand implements DdlCommand {
+public class CreateTableCommand implements Command {
     /**
      * Schema name upon which this statement has been issued - <b>not</b> the name of the schema where this new table
      * will be created.
