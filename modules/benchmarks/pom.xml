@@ -83,6 +83,11 @@
             <artifactId>msgpack-core</artifactId>
             <version>0.8.23</version>
         </dependency>
+        <dependency>
+            <groupId>org.msgpack</groupId>
+            <artifactId>jackson-dataformat-msgpack</artifactId>
+            <version>0.8.23</version>
+        </dependency>
     </dependencies>
 
     <build>

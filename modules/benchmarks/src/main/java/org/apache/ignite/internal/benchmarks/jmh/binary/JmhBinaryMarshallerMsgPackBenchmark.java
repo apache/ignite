@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.benchmarks.jmh.binary;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -32,13 +33,12 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
-
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Ignite marshaller vs MsgPack benchmark.
@@ -46,6 +46,8 @@ import java.util.concurrent.ThreadLocalRandom;
 @State(Scope.Benchmark)
 public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
     private BinaryMarshaller marshaller;
+
+    private ObjectMapper msgPackMapper;
 
     /**
      * Setup routine. Child classes must invoke this method first.
@@ -58,11 +60,17 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
         System.out.println("--------------------");
 
         marshaller = createBinaryMarshaller(new NullLogger());
+        msgPackMapper = new ObjectMapper(new MessagePackFactory());
     }
 
     @Benchmark
-    public void writeIgnite() throws IgniteCheckedException {
-        marshaller.marshal(new IntValue(randomInt()));
+    public byte[] writeIgnite() throws Exception {
+        return marshaller.marshal(new IntValue(randomInt()));
+    }
+
+    @Benchmark
+    public byte[] writeMsgPack() throws Exception {
+        return msgPackMapper.writeValueAsBytes(new IntValue(randomInt()));
     }
 
     /**
