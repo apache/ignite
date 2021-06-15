@@ -23,7 +23,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.benchmarks.jmh.JmhAbstractBenchmark;
-import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -37,13 +36,11 @@ import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 
 import java.io.ByteArrayOutputStream;
-import java.io.OutputStream;
 
 /**
  * Ignite marshaller vs MsgPack benchmark.
@@ -55,6 +52,8 @@ import java.io.OutputStream;
 @State(Scope.Benchmark)
 public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
     private static final MessagePack.PackerConfig packerConfig = new MessagePack.PackerConfig().withBufferSize(128);
+
+    private static final PooledMessageBufferOutput msgPackPooledOutput = new PooledMessageBufferOutput();
 
     private BinaryMarshaller marshaller;
 
@@ -132,7 +131,7 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
 
     @Benchmark
     public byte[] writePrimitivesMsgPackRaw() throws Exception {
-        MessageBufferPacker packer = packerConfig.newBufferPacker();
+        PooledMessagePacker packer = new PooledMessagePacker(msgPackPooledOutput, packerConfig);
 
         packer
                 .packString("Hello world")
