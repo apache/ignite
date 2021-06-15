@@ -32,6 +32,7 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.msgpack.core.MessageBufferPacker;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
@@ -114,14 +115,27 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
     public byte[] writePrimitivesMsgPack() throws Exception {
         ByteArrayOutputStream s = new ByteArrayOutputStream();
 
-        msgPackWriter.writeValue(s, randomInt());
-        msgPackWriter.writeValue(s, "Hello world");
+        msgPackMapper.writeValue(s, randomInt());
+        msgPackMapper.writeValue(s, "Hello world");
 
         s.close();
         return s.toByteArray();
     }
 
-    //@Benchmark
+    @Benchmark
+    public byte[] writePrimitivesMsgPackRaw() throws Exception {
+        MessageBufferPacker packer = MessagePack.newDefaultBufferPacker();
+
+        packer
+                .packInt(randomInt())
+                .packString("Hello world");
+
+        packer.close();
+
+        return packer.toByteArray();
+    }
+
+    @Benchmark
     public byte[] writePrimitivesIgnite() {
         try (BinaryWriterExImpl writer = new BinaryWriterExImpl(binaryCtx)) {
             writer.writeInt(randomInt());
