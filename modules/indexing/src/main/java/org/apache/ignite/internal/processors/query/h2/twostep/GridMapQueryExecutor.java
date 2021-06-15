@@ -222,7 +222,7 @@ public class GridMapQueryExecutor {
         final List<Integer> cacheIds = req.caches();
 
         final boolean singlePart = parts != null && parts.length == 1;
-        final int parallelism = explain || replicated ? 1 :
+        final int parallelism = explain || replicated || F.isEmpty(cacheIds) ? 1 :
             CU.firstPartitioned(ctx.cache().context(), cacheIds).config().getQueryParallelism();
 
         final int segments = explain || replicated || singlePart ? 1 : parallelism;
