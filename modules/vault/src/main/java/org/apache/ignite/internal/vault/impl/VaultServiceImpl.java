@@ -25,8 +25,6 @@ import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.vault.common.Entry;
-import org.apache.ignite.internal.vault.common.VaultWatch;
-import org.apache.ignite.internal.vault.common.WatcherImpl;
 import org.apache.ignite.internal.vault.service.VaultService;
 import org.apache.ignite.lang.ByteArray;
 import org.jetbrains.annotations.NotNull;
@@ -41,13 +39,10 @@ public class VaultServiceImpl implements VaultService {
     /** Mutex. */
     private final Object mux = new Object();
 
-    private final WatcherImpl watcher;
-
     /**
      * Default constructor.
      */
     public VaultServiceImpl() {
-        this.watcher = new WatcherImpl();
         this.storage = new TreeMap<>();
     }
 
@@ -63,8 +58,6 @@ public class VaultServiceImpl implements VaultService {
         synchronized (mux) {
             storage.put(key, val);
 
-            watcher.notify(new Entry(key, val));
-
             return CompletableFuture.allOf();
         }
     }
@@ -73,8 +66,6 @@ public class VaultServiceImpl implements VaultService {
     @Override @NotNull public CompletableFuture<Void> remove(@NotNull ByteArray key) {
         synchronized (mux) {
             storage.remove(key);
-
-            watcher.notify(new Entry(key, null));
 
             return CompletableFuture.allOf();
         }
@@ -90,22 +81,6 @@ public class VaultServiceImpl implements VaultService {
                 res.add(new Entry(new ByteArray(e.getKey().bytes()), e.getValue().clone()));
 
             return res.iterator();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Long> watch(@NotNull VaultWatch vaultWatch) {
-        synchronized (mux) {
-            return watcher.register(vaultWatch);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public @NotNull CompletableFuture<Void> stopWatch(@NotNull Long id) {
-        synchronized (mux) {
-            watcher.cancel(id);
-
-            return CompletableFuture.allOf();
         }
     }
 

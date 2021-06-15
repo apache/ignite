@@ -185,7 +185,7 @@ public class TableManager extends Producer<TableEvent, TableEventParameters> imp
      * Compounds a RAFT group unique name.
      *
      * @param tableId Table identifier.
-     * @param partition Muber of table partition.
+     * @param partition Number of table partitions.
      * @return A RAFT group name.
      */
     @NotNull private String raftGroupName(UUID tableId, int partition) {

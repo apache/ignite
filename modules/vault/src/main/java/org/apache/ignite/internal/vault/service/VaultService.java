@@ -21,7 +21,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.internal.vault.common.Entry;
-import org.apache.ignite.internal.vault.common.VaultWatch;
 import org.apache.ignite.lang.ByteArray;
 import org.jetbrains.annotations.NotNull;
 
@@ -65,22 +64,6 @@ public interface VaultService {
      * @return Iterator built upon entries corresponding to the given range.
      */
     @NotNull Iterator<Entry> range(@NotNull ByteArray fromKey, @NotNull ByteArray toKey);
-
-    /**
-     * Subscribes on vault storage updates for the given key.
-     *
-     * @param vaultWatch Watch which will notify for each update.
-     * @return Subscription identifier. Could be used in {@link #stopWatch} method in order to cancel subscription.
-     */
-    @NotNull CompletableFuture<Long> watch(@NotNull VaultWatch vaultWatch);
-
-    /**
-     * Cancels subscription for the given identifier.
-     *
-     * @param id Subscription identifier.
-     * @return Future representing pending completion of the operation. Couldn't be {@code null}.
-     */
-    @NotNull CompletableFuture<Void> stopWatch(@NotNull Long id);
 
     /**
      * Inserts or updates entries with given keys and given values. If the given value in {@code vals} is null,

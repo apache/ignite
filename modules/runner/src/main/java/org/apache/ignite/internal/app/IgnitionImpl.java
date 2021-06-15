@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.app;
 
+import io.netty.util.internal.StringUtil;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import io.netty.util.internal.StringUtil;
 import org.apache.ignite.app.Ignite;
 import org.apache.ignite.app.Ignition;
 import org.apache.ignite.configuration.RootKey;
@@ -100,11 +100,11 @@ public class IgnitionImpl implements Ignition {
             TablesConfiguration.KEY
         );
 
-        List<ConfigurationStorage> configurationStorages =
+        List<ConfigurationStorage> cfgStorages =
             new ArrayList<>(Collections.singletonList(new LocalConfigurationStorage(vaultMgr)));
 
         // Bootstrap local configuration manager.
-        ConfigurationManager locConfigurationMgr = new ConfigurationManager(rootKeys, configurationStorages);
+        ConfigurationManager locConfigurationMgr = new ConfigurationManager(rootKeys, cfgStorages);
 
         if (!cfgBootstrappedFromPds && jsonStrBootstrapCfg != null)
             try {
@@ -147,10 +147,10 @@ public class IgnitionImpl implements Ignition {
         );
 
         // TODO IGNITE-14578 Bootstrap configuration manager with distributed configuration.
-        configurationStorages.add(new DistributedConfigurationStorage(metaStorageMgr));
+        cfgStorages.add(new DistributedConfigurationStorage(metaStorageMgr, vaultMgr));
 
         // Start configuration manager.
-        ConfigurationManager configurationMgr = new ConfigurationManager(rootKeys, configurationStorages);
+        ConfigurationManager configurationMgr = new ConfigurationManager(rootKeys, cfgStorages);
 
         // Baseline manager startup.
         BaselineManager baselineMgr = new BaselineManager(configurationMgr, metaStorageMgr, clusterNetSvc);

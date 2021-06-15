@@ -22,16 +22,12 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
+import org.apache.ignite.internal.util.ByteUtils;
 import org.apache.ignite.internal.vault.VaultManager;
 import org.apache.ignite.internal.vault.common.Entry;
-import org.apache.ignite.internal.vault.common.VaultListener;
-import org.apache.ignite.internal.vault.common.VaultWatch;
 import org.apache.ignite.lang.ByteArray;
 import org.apache.ignite.lang.IgniteInternalCheckedException;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -39,21 +35,20 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test for base vault manager contracts.
  */
 public class VaultBaseContractsTest {
     /** Vault. */
-    private VaultManager vaultManager;
+    private VaultManager vaultMgr;
 
     /**
      * Instantiate vault.
      */
     @BeforeEach
     public void setUp() {
-        vaultManager = new VaultManager(new VaultServiceImpl());
+        vaultMgr = new VaultManager(new VaultServiceImpl());
     }
 
     /**
@@ -64,18 +59,18 @@ public class VaultBaseContractsTest {
         ByteArray key = getKey(1);
         byte[] val = getValue(key, 1);
 
-        assertNull(vaultManager.get(key).get().value());
+        assertNull(vaultMgr.get(key).get().value());
 
-        vaultManager.put(key, val);
+        vaultMgr.put(key, val);
 
-        Entry v = vaultManager.get(key).get();
+        Entry v = vaultMgr.get(key).get();
 
         assertFalse(v.empty());
         assertEquals(val, v.value());
 
-        vaultManager.put(key, val);
+        vaultMgr.put(key, val);
 
-        v = vaultManager.get(key).get();
+        v = vaultMgr.get(key).get();
 
         assertFalse(v.empty());
         assertEquals(val, v.value());
@@ -89,24 +84,24 @@ public class VaultBaseContractsTest {
         ByteArray key = getKey(1);
         byte[] val = getValue(key, 1);
 
-        assertNull(vaultManager.get(key).get().value());
+        assertNull(vaultMgr.get(key).get().value());
 
         // Remove non-existent value.
-        vaultManager.remove(key);
+        vaultMgr.remove(key);
 
-        assertNull(vaultManager.get(key).get().value());
+        assertNull(vaultMgr.get(key).get().value());
 
-        vaultManager.put(key, val);
+        vaultMgr.put(key, val);
 
-        Entry v = vaultManager.get(key).get();
+        Entry v = vaultMgr.get(key).get();
 
         assertFalse(v.empty());
         assertEquals(val, v.value());
 
         // Remove existent value.
-        vaultManager.remove(key);
+        vaultMgr.remove(key);
 
-        v = vaultManager.get(key).get();
+        v = vaultMgr.get(key).get();
 
         assertNull(v.value());
     }
@@ -125,15 +120,15 @@ public class VaultBaseContractsTest {
 
             values.put(key, getValue(key, i));
 
-            assertNull(vaultManager.get(key).get().value());
+            assertNull(vaultMgr.get(key).get().value());
         }
 
-        values.forEach((k, v) -> vaultManager.put(k, v));
+        values.forEach((k, v) -> vaultMgr.put(k, v));
 
         for (Map.Entry<ByteArray, byte[]> entry : values.entrySet())
-            assertEquals(entry.getValue(), vaultManager.get(entry.getKey()).get().value());
+            assertEquals(entry.getValue(), vaultMgr.get(entry.getKey()).get().value());
 
-        Iterator<Entry> it = vaultManager.range(getKey(3), getKey(7));
+        Iterator<Entry> it = vaultMgr.range(getKey(3), getKey(7));
 
         List<Entry> rangeRes = new ArrayList<>();
 
@@ -147,52 +142,44 @@ public class VaultBaseContractsTest {
     }
 
     /**
-     * watch contract.
+     * putAll with applied revision contract.
      */
     @Test
-    public void watch() throws ExecutionException, InterruptedException {
-        ByteArray key;
+    public void putAllAndRevision() throws ExecutionException, InterruptedException, IgniteInternalCheckedException {
+        Map<ByteArray, byte[]> entries = new HashMap<>();
 
-        Map<ByteArray, byte[]> values = new HashMap<>();
+        int entriesNum = 100;
 
-        for (int i = 0; i < 10; i++) {
-            key = getKey(i);
+        ByteArray appRevKey = ByteArray.fromString("test_applied_revision");
 
-            values.put(key, getValue(key, i));
+        for (int i = 0; i < entriesNum; i++) {
+            ByteArray key = getKey(i);
+
+            entries.put(key, getValue(key, i));
         }
 
-        values.forEach((k, v) -> vaultManager.put(k, v));
+        for (int i = 0; i < entriesNum; i++) {
+            ByteArray key = getKey(i);
 
-        for (Map.Entry<ByteArray, byte[]> entry : values.entrySet())
-            assertEquals(entry.getValue(), vaultManager.get(entry.getKey()).get().value());
+            assertNull(vaultMgr.get(key).get().value());
+        }
 
-        CountDownLatch counter = new CountDownLatch(4);
+        vaultMgr.putAll(entries, appRevKey, 1L);
 
-        VaultWatch vaultWatch = new VaultWatch(getKey(3), getKey(7), new VaultListener() {
-            @Override public boolean onUpdate(@NotNull Iterable<Entry> entries) {
-                counter.countDown();
+        for (int i = 0; i < entriesNum; i++) {
+            ByteArray key = getKey(i);
 
-                return true;
-            }
+            assertArrayEquals(entries.get(key), vaultMgr.get(key).get().value());
+        }
 
-            @Override public void onError(@NotNull Throwable e) {
-                // no-op
-            }
-        });
-
-        vaultManager.watch(vaultWatch);
-
-        for (int i = 3; i < 7; i++)
-            vaultManager.put(getKey(i), ("new" + i).getBytes());
-
-        assertTrue(counter.await(1, TimeUnit.SECONDS));
+        assertEquals(1L, ByteUtils.bytesToLong(vaultMgr.get(appRevKey).get().value()));
     }
 
     /**
      * putAll contract.
      */
     @Test
-    public void putAllAndRevision() throws ExecutionException, InterruptedException, IgniteInternalCheckedException {
+    public void putAll() throws ExecutionException, InterruptedException {
         Map<ByteArray, byte[]> entries = new HashMap<>();
 
         int entriesNum = 100;
@@ -206,18 +193,16 @@ public class VaultBaseContractsTest {
         for (int i = 0; i < entriesNum; i++) {
             ByteArray key = getKey(i);
 
-            assertNull(vaultManager.get(key).get().value());
+            assertNull(vaultMgr.get(key).get().value());
         }
 
-        vaultManager.putAll(entries, 1L);
+        vaultMgr.putAll(entries);
 
         for (int i = 0; i < entriesNum; i++) {
             ByteArray key = getKey(i);
 
-            assertEquals(entries.get(key), vaultManager.get(key).get().value());
+            assertArrayEquals(entries.get(key), vaultMgr.get(key).get().value());
         }
-
-        assertEquals(1L, vaultManager.appliedRevision());
     }
 
     /**

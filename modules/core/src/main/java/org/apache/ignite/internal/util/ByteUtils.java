@@ -57,6 +57,17 @@ public class ByteUtils {
     }
 
     /**
+     * Constructs {@code long} from byte array with offset equals 0.
+     *
+     * @see #bytesToLong(byte[], int)
+     * @param bytes Array of bytes.
+     * @return Long value.
+     */
+    public static long bytesToLong(byte[] bytes) {
+        return bytesToLong(bytes, 0);
+    }
+
+    /**
      * Converts primitive {@code long} type to byte array.
      *
      * @param l Long value.

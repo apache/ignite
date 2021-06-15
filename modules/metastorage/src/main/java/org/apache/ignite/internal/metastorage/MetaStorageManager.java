@@ -43,6 +43,7 @@ import org.apache.ignite.internal.metastorage.watch.AggregatedWatch;
 import org.apache.ignite.internal.metastorage.watch.KeyCriterion;
 import org.apache.ignite.internal.metastorage.watch.WatchAggregator;
 import org.apache.ignite.internal.raft.Loza;
+import org.apache.ignite.internal.util.ByteUtils;
 import org.apache.ignite.internal.util.Cursor;
 import org.apache.ignite.internal.vault.VaultManager;
 import org.apache.ignite.lang.ByteArray;
@@ -68,6 +69,15 @@ import org.jetbrains.annotations.Nullable;
 public class MetaStorageManager {
     /** Meta storage raft group name. */
     private static final String METASTORAGE_RAFT_GROUP_NAME = "metastorage_raft_group";
+
+    /** Prefix added to configuration keys to distinguish them in the meta storage. Must end with a dot. */
+    public static final String DISTRIBUTED_PREFIX = "dst-cfg.";
+
+    /**
+     * Special key for the vault where the applied revision for {@link MetaStorageManager#storeEntries(Collection, long)}
+     * operation is stored. This mechanism is needed for committing processed watches to {@link VaultManager}.
+     */
+    public static final ByteArray APPLIED_REV = ByteArray.fromString(DISTRIBUTED_PREFIX + "applied_revision");
 
     /** Vault manager in order to commit processed watches with corresponding applied revision. */
     private final VaultManager vaultMgr;
@@ -103,6 +113,9 @@ public class MetaStorageManager {
      */
     private boolean deployed;
 
+    /** Flag indicates if meta storage nodes were set on start */
+    private boolean metaStorageNodesOnStart;
+
     /**
      * The constructor.
      *
@@ -129,6 +142,8 @@ public class MetaStorageManager {
             clusterNode -> Arrays.asList(metastorageNodes).contains(clusterNode.name());
 
         if (metastorageNodes.length > 0) {
+            metaStorageNodesOnStart = true;
+
             this.metaStorageSvcFut = CompletableFuture.completedFuture(new MetaStorageServiceImpl(
                     raftMgr.startRaftGroup(
                         METASTORAGE_RAFT_GROUP_NAME,
@@ -161,14 +176,22 @@ public class MetaStorageManager {
     public synchronized void deployWatches() {
         try {
             var watch = watchAggregator.watch(
-                vaultMgr.appliedRevision() + 1,
+                appliedRevision() + 1,
                 this::storeEntries
             );
 
             if (watch.isEmpty())
                 deployFut.complete(Optional.empty());
-            else
-                dispatchAppropriateMetaStorageWatch(watch.get()).thenAccept(id -> deployFut.complete(Optional.of(id))).join();
+            else {
+                CompletableFuture<Void> fut =
+                    dispatchAppropriateMetaStorageWatch(watch.get()).thenAccept(id -> deployFut.complete(Optional.of(id)));
+
+                if (metaStorageNodesOnStart)
+                    fut.join();
+                else {
+                    // TODO: need to wait for this future in init phase https://issues.apache.org/jira/browse/IGNITE-14414
+                }
+            }
         }
         catch (IgniteInternalCheckedException e) {
             throw new IgniteInternalException("Couldn't receive applied revision during deploy watches", e);
@@ -388,7 +411,7 @@ public class MetaStorageManager {
             metaStorageSvcFut,
             metaStorageSvcFut.thenApply(svc -> {
                 try {
-                    return svc.range(keyFrom, keyTo, vaultMgr.appliedRevision());
+                    return svc.range(keyFrom, keyTo, appliedRevision());
                 }
                 catch (IgniteInternalCheckedException e) {
                     throw new IgniteInternalException(e);
@@ -415,14 +438,31 @@ public class MetaStorageManager {
     }
 
     /**
+     * @return Applied revision for {@link VaultManager#putAll(Map, ByteArray, long)} operation.
+     * @throws IgniteInternalCheckedException If couldn't get applied revision from vault.
+     */
+    private long appliedRevision() throws IgniteInternalCheckedException {
+        byte[] appliedRevision;
+
+        try {
+            appliedRevision = vaultMgr.get(APPLIED_REV).get().value();
+        }
+        catch (InterruptedException | ExecutionException e) {
+            throw new IgniteInternalCheckedException("Error occurred when getting applied revision", e);
+        }
+
+        return appliedRevision == null ? 0L : ByteUtils.bytesToLong(appliedRevision);
+    }
+
+    /**
      * Stop current batch of consolidated watches and register new one from current {@link WatchAggregator}.
      *
      * @return Ignite UUID of new consolidated watch.
      */
     private CompletableFuture<Optional<IgniteUuid>> updateWatches() {
-        Long revision;
+        long revision;
         try {
-            revision = vaultMgr.appliedRevision() + 1;
+            revision = appliedRevision() + 1;
         }
         catch (IgniteInternalCheckedException e) {
             throw new IgniteInternalException("Couldn't receive applied revision during watch redeploy", e);
@@ -455,7 +495,7 @@ public class MetaStorageManager {
     private CompletableFuture<Void> storeEntries(Collection<IgniteBiTuple<ByteArray, byte[]>> entries, long revision) {
         try {
             return vaultMgr.putAll(entries.stream().collect(
-                Collectors.toMap(e -> e.getKey(), IgniteBiTuple::getValue)), revision);
+                Collectors.toMap(IgniteBiTuple::getKey, IgniteBiTuple::getValue)), APPLIED_REV, revision);
         }
         catch (IgniteInternalCheckedException e) {
             throw new IgniteInternalException("Couldn't put entries with considered revision.", e);
