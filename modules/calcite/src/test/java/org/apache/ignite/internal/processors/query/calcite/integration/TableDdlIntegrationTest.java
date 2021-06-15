@@ -286,6 +286,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
 
         executeSql("drop table if exists my_schema.my_table");
     }
+
     /**
      * Matcher to verify that an object of the expected type and matches the given predicat.
      *

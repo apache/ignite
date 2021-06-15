@@ -190,9 +190,9 @@ SqlNodeList IndexedColumnList() :
 }
 {
     <LPAREN> { s = span(); }
-    col = IndexedColumn(list) { list.add(col); }
+    col = IndexedColumn() { list.add(col); }
     (
-        <COMMA> IndexedColumn(list) { list.add(col); }
+        <COMMA> col = IndexedColumn() { list.add(col); }
     )*
     <RPAREN> {
         return new SqlNodeList(list, s.end(this));

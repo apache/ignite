@@ -318,10 +318,41 @@ public class SqlDdlParserTest extends GridCommonAbstractTest {
 
         assertEquals(20, createIdx.inlineSize().intValue(true));
         assertEquals(10, createIdx.parallel().intValue(true));
+    }
 
-        String errQry = "create index my_index on my_table(id) parallel 10 inline_size 20 parallel 10";
+    /**
+     * Create index with malformed statements.
+     */
+    @Test
+    public void createIndexMalformed() {
+        assertParserThrows("create index my_index on my_table(id) parallel 10 inline_size 20 parallel 10",
+            SqlValidatorException.class, "Option 'PARALLEL' has already been defined");
 
-        GridTestUtils.assertThrowsAnyCause(log, () -> parse(errQry), SqlValidatorException.class, "");
+        assertParserThrows("create index my_index on my_table(id) inline_size -1", SqlParseException.class);
+
+        assertParserThrows("create index my_index on my_table(id) inline_size = 1", SqlParseException.class);
+
+        assertParserThrows("create index my_index on my_table(id) inline_size", SqlParseException.class);
+
+        assertParserThrows("create index if exists my_index on my_table(id)", SqlParseException.class);
+
+        assertParserThrows("create index my_index on my_table(id asc desc)", SqlParseException.class);
+
+        assertParserThrows("create index my_index on my_table(id nulls first)", SqlParseException.class);
+
+        assertParserThrows("create index my_scheme.my_index on my_table(id)", SqlParseException.class);
+
+        assertParserThrows("create index my_index on my_table(id.id2)", SqlParseException.class);
+    }
+
+    /** */
+    private void assertParserThrows(String sql, Class<? extends Exception> cls) {
+        assertParserThrows(sql, cls, "");
+    }
+
+    /** */
+    private void assertParserThrows(String sql, Class<? extends Exception> cls, String msg) {
+        GridTestUtils.assertThrowsAnyCause(log, () -> parse(sql), cls, msg);
     }
 
     /**

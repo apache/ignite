@@ -51,6 +51,7 @@ data: {
 #     "KEY_TYPE" // already presented in Calcite
       "VALUE_TYPE"
       "ENCRYPTED"
+      "INDEX"
       "PARALLEL"
       "INLINE_SIZE"
     ]
