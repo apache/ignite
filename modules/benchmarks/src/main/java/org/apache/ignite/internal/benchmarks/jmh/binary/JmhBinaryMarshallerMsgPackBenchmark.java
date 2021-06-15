@@ -49,9 +49,13 @@ import java.io.OutputStream;
  * Ignite marshaller vs MsgPack benchmark.
  *
  * TODO: Read benchmarks.
+ * TODO: Ignite uses TLS buffers, which gives unfair advantage.
+ * We should be able to do the same with MsgPack!
  */
 @State(Scope.Benchmark)
 public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
+    private static final MessagePack.PackerConfig packerConfig = new MessagePack.PackerConfig().withBufferSize(128);
+
     private BinaryMarshaller marshaller;
 
     private ObjectMapper msgPackMapper;
@@ -99,7 +103,7 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
 
 
         // Init MsgPack.
-        msgPackMapper = new ObjectMapper(new MessagePackFactory());
+        msgPackMapper = new ObjectMapper(new MessagePackFactory(packerConfig));
         msgPackWriter = msgPackMapper.writerFor(IntPojo.class);
     }
 
@@ -128,8 +132,7 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
 
     @Benchmark
     public byte[] writePrimitivesMsgPackRaw() throws Exception {
-        ByteArrayOutputStream s = new ByteArrayOutputStream();
-        MessagePacker packer = MessagePack.newDefaultPacker(s);
+        MessageBufferPacker packer = packerConfig.newBufferPacker();
 
         packer
                 .packString("Hello world")
@@ -137,7 +140,7 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
 
         packer.close();
 
-        return s.toByteArray();
+        return packer.toByteArray();
     }
 
     // @Benchmark
@@ -179,7 +182,7 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
         {
             // objectWriter.writeValueAsBytes(new IntPojo((int) t));
             // bench.writePrimitivesMsgPackRaw();
-            bench.writePrimitivesMsgPack();
+            bench.writePrimitivesMsgPackRaw();
         }
 
 
