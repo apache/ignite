@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.prepare.cmd;
+package org.apache.ignite.internal.processors.query.calcite.prepare.ddl;
 
 import java.util.Objects;
 import org.apache.ignite.internal.sql.command.SqlCommand;
@@ -23,7 +23,7 @@ import org.apache.ignite.internal.sql.command.SqlCommand;
 /**
  * Wrapper for Ignite core SqlCommand.
  */
-public class NativeCommandWrapper implements Command {
+public class NativeCommandWrapper implements DdlCommand {
     /** */
     private final SqlCommand cmd;
 

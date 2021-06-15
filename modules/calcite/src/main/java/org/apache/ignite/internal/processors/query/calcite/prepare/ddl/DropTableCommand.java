@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.prepare.cmd;
+package org.apache.ignite.internal.processors.query.calcite.prepare.ddl;
 
 /**
  * DROP TABLE statement.
  */
-public class DropTableCommand implements Command {
+public class DropTableCommand implements DdlCommand {
     /** Schema name. */
     private String schemaName;
 

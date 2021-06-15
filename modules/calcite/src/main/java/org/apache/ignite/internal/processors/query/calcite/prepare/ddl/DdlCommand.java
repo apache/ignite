@@ -14,28 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.processors.query.calcite.prepare.ddl;
 
-package org.apache.ignite.internal.processors.query.calcite.sql;
-
-import org.apache.calcite.sql.SqlCall;
-import org.apache.calcite.sql.SqlOperator;
-import org.apache.calcite.sql.parser.SqlParserPos;
-
-/**
- * SqlNode for Ignite commands.
- */
-public abstract class IgniteSqlCommand extends SqlCall {
-    /** Operator. */
-    private final SqlOperator operator;
-
-    /** */
-    protected IgniteSqlCommand(SqlOperator op, SqlParserPos pos) {
-        super(pos);
-        operator = op;
-    }
-
-    /** {@inheritDoc} */
-    @Override public SqlOperator getOperator() {
-        return operator;
-    }
+/** Common interface to group all DDL operations. */
+public interface DdlCommand {
 }

@@ -15,12 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.prepare.cmd;
+package org.apache.ignite.internal.processors.query.calcite.prepare.ddl;
 
+import org.apache.calcite.sql.SqlDdl;
+import org.apache.calcite.sql.SqlNode;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
-import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCommand;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateIndex;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlDropIndex;
 import org.apache.ignite.internal.sql.command.SqlCommand;
@@ -37,7 +38,7 @@ public class SqlToNativeCommandConverter {
      *
      * @param sqlCmd Root node of the given AST.
      */
-    public static boolean isSupported(IgniteSqlCommand sqlCmd) {
+    public static boolean isSupported(SqlNode sqlCmd) {
         return sqlCmd instanceof IgniteSqlCreateIndex
             || sqlCmd instanceof IgniteSqlDropIndex;
     }
@@ -48,14 +49,14 @@ public class SqlToNativeCommandConverter {
      * @param sqlCmd Root node of the given AST.
      * @param pctx Planning context.
      */
-    public static NativeCommandWrapper convert(IgniteSqlCommand sqlCmd, PlanningContext pctx) {
+    public static NativeCommandWrapper convert(SqlDdl sqlCmd, PlanningContext pctx) {
         return new NativeCommandWrapper(convertSqlCmd(sqlCmd, pctx));
     }
 
     /**
      * Converts SqlNode to SqlCommand.
      */
-    private static SqlCommand convertSqlCmd(IgniteSqlCommand cmd, PlanningContext pctx) {
+    private static SqlCommand convertSqlCmd(SqlDdl cmd, PlanningContext pctx) {
         if (cmd instanceof IgniteSqlCreateIndex)
             return convertCreateIndex((IgniteSqlCreateIndex)cmd, pctx);
         else if (cmd instanceof IgniteSqlDropIndex)

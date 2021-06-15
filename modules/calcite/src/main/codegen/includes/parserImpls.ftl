@@ -234,7 +234,7 @@ SqlDrop SqlDropTable(Span s, boolean replace) :
 }
 {
     <TABLE> ifExists = IfExistsOpt() id = CompoundIdentifier() {
-        return new IgniteSqlDropTable(s.end(this), ifExists, id);
+        return SqlDdlNodes.dropTable(s.end(this), ifExists, id);
     }
 }
 

@@ -14,8 +14,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.query.calcite.prepare.cmd;
 
-/** Common interface to group all DDL operations. */
-public interface Command {
+package org.apache.ignite.internal.processors.query.calcite.prepare;
+
+import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.DdlCommand;
+
+/** */
+public class DdlPlan implements QueryPlan {
+    /** */
+    private final DdlCommand cmd;
+
+    /** */
+    public DdlPlan(DdlCommand cmd) {
+        this.cmd = cmd;
+    }
+
+    /** */
+    public DdlCommand command() {
+        return cmd;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Type type() {
+        return Type.DDL;
+    }
+
+    /** {@inheritDoc} */
+    @Override public QueryPlan copy() {
+        return this;
+    }
 }

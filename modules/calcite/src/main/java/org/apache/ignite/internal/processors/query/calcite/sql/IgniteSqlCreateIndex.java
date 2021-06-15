@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.sql;
 import java.util.List;
 import java.util.Objects;
 import org.apache.calcite.sql.SqlCall;
+import org.apache.calcite.sql.SqlCreate;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
@@ -32,7 +33,7 @@ import org.apache.calcite.util.ImmutableNullableList;
 /**
  * Parse tree for {@code CREATE INDEX} statement
  */
-public class IgniteSqlCreateIndex extends IgniteSqlCreate {
+public class IgniteSqlCreateIndex extends SqlCreate {
     /** */
     private final SqlIdentifier idxName;
 
@@ -49,7 +50,7 @@ public class IgniteSqlCreateIndex extends IgniteSqlCreate {
     /** Creates a SqlCreateIndex. */
     protected IgniteSqlCreateIndex(SqlParserPos pos, boolean ifNotExists,
         SqlIdentifier idxName, SqlIdentifier tblName, SqlNodeList columnList) {
-        super(OPERATOR, pos, ifNotExists);
+        super(OPERATOR, pos, false, ifNotExists);
         this.idxName = Objects.requireNonNull(idxName, "index name");
         this.tblName = Objects.requireNonNull(tblName, "table name");
         this.columnList = columnList;
@@ -115,5 +116,12 @@ public class IgniteSqlCreateIndex extends IgniteSqlCreate {
      */
     public SqlNodeList columnList() {
         return columnList;
+    }
+
+    /**
+     * @return Whether the IF NOT EXISTS is specified.
+     */
+    public boolean ifNotExists() {
+        return ifNotExists;
     }
 }

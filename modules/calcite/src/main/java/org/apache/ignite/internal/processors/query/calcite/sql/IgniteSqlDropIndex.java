@@ -16,23 +16,61 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.sql;
 
+import java.util.List;
 import java.util.Objects;
+import org.apache.calcite.sql.SqlDrop;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSpecialOperator;
+import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.util.ImmutableNullableList;
 
 /**
  * Parse tree for {@code DROP INDEX} statement
  */
-public class IgniteSqlDropIndex extends IgniteSqlDrop {
+public class IgniteSqlDropIndex extends SqlDrop {
+    /** */
+    private final SqlIdentifier name;
+
     /** */
     private static final SqlOperator OPERATOR =
         new SqlSpecialOperator("DROP INDEX", SqlKind.DROP_INDEX);
 
     /** */
     protected IgniteSqlDropIndex(SqlParserPos pos, boolean ifExists, SqlIdentifier idxName) {
-        super(OPERATOR, pos, ifExists, Objects.requireNonNull(idxName, "index name"));
+        super(OPERATOR, pos, ifExists);
+        name = Objects.requireNonNull(idxName, "index name");
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<SqlNode> getOperandList() {
+        return ImmutableNullableList.of(name);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
+        writer.keyword(getOperator().getName()); // "DROP ..."
+
+        if (ifExists)
+            writer.keyword("IF EXISTS");
+
+        name.unparse(writer, leftPrec, rightPrec);
+    }
+
+    /**
+     * @return Name of the object.
+     */
+    public SqlIdentifier name() {
+        return name;
+    }
+
+    /**
+     * @return Whether the IF EXISTS is specified.
+     */
+    public boolean ifExists() {
+        return ifExists;
     }
 }

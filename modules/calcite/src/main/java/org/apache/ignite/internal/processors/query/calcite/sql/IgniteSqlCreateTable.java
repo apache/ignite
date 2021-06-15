@@ -18,6 +18,8 @@ package org.apache.ignite.internal.processors.query.calcite.sql;
 
 import java.util.List;
 import java.util.Objects;
+
+import org.apache.calcite.sql.SqlCreate;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
@@ -32,7 +34,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 /**
  * Parse tree for {@code CREATE TABLE} statement with Ignite specific features.
  */
-public class IgniteSqlCreateTable extends IgniteSqlCreate {
+public class IgniteSqlCreateTable extends SqlCreate {
     /** */
     private final SqlIdentifier name;
 
@@ -49,7 +51,7 @@ public class IgniteSqlCreateTable extends IgniteSqlCreate {
     /** Creates a SqlCreateTable. */
     protected IgniteSqlCreateTable(SqlParserPos pos, boolean ifNotExists,
         SqlIdentifier name, @Nullable SqlNodeList columnList, @Nullable SqlNodeList createOptionList) {
-        super(OPERATOR, pos, ifNotExists);
+        super(OPERATOR, pos, false, ifNotExists);
         this.name = Objects.requireNonNull(name, "name");
         this.columnList = columnList;
         this.createOptionList = createOptionList;
@@ -104,5 +106,12 @@ public class IgniteSqlCreateTable extends IgniteSqlCreate {
      */
     public SqlNodeList createOptionList() {
         return createOptionList;
+    }
+
+    /**
+     * @return Whether the IF NOT EXISTS is specified.
+     */
+    public boolean ifNotExists() {
+        return ifNotExists;
     }
 }
