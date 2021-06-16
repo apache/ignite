@@ -59,6 +59,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.encryption.AbstractEncryptionTest;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
@@ -74,6 +75,7 @@ import org.apache.ignite.lang.IgniteFutureCancelledException;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
@@ -117,6 +119,9 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     /** Enable default data region persistence. */
     protected boolean persistence = true;
 
+    /** TODO */
+    protected volatile boolean encryption;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -127,6 +132,18 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
         if (dfltCacheCfg != null)
             cfg.setCacheConfiguration(dfltCacheCfg);
+
+        if (encryption && persistence) {
+            KeystoreEncryptionSpi encSpi = new KeystoreEncryptionSpi();
+
+            encSpi.setKeyStorePath(AbstractEncryptionTest.KEYSTORE_PATH);
+            encSpi.setKeyStorePassword(AbstractEncryptionTest.KEYSTORE_PASSWORD.toCharArray());
+
+            cfg.setEncryptionSpi(encSpi);
+
+            for(CacheConfiguration<?,?> cacheCfg : cfg.getCacheConfiguration())
+                cacheCfg.setEncryptionEnabled(true);
+        }
 
         return cfg.setConsistentId(igniteInstanceName)
             .setCommunicationSpi(new TestRecordingCommunicationSpi())
@@ -189,10 +206,12 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      */
     protected <K, V> CacheConfiguration<K, V> txCacheConfig(CacheConfiguration<K, V> ccfg) {
-        return ccfg.setCacheMode(CacheMode.PARTITIONED)
+        CacheConfiguration<K, V> cacheCfg = ccfg.setCacheMode(CacheMode.PARTITIONED)
             .setBackups(2)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setAffinity(new RendezvousAffinityFunction(false, CACHE_PARTS_COUNT));
+
+        return cacheCfg;
     }
 
     /**
@@ -271,7 +290,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         int grids,
         int keys,
         Function<Integer, V> factory,
-        CacheConfiguration<Integer, V>... ccfgs
+        CacheConfiguration<?, ?>... ccfgs
     ) throws Exception {
         for (int g = 0; g < grids; g++)
             startGrid(optimize(getConfiguration(getTestIgniteInstanceName(g))
@@ -283,7 +302,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         ig.cluster().state(ClusterState.ACTIVE);
 
         for (int i = 0; i < keys; i++) {
-            for (CacheConfiguration<Integer, V> ccfg : ccfgs)
+            for (CacheConfiguration<?, ?> ccfg : ccfgs)
                 ig.getOrCreateCache(ccfg.getName()).put(i, factory.apply(i));
         }
 

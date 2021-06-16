@@ -45,6 +45,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -117,24 +118,17 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     /** {@code true} if node should be started in separate jvm. */
     protected volatile boolean jvm;
 
-    protected volatile boolean encryption = true;
+    /**
+     * @param ccfg Default cache configuration.
+     * @return Cache configuration.
+     */
+    @Override
+    protected <K, V> CacheConfiguration<K, V> txCacheConfig(CacheConfiguration<K, V> ccfg) {
+        CacheConfiguration<K, V> cacheConfiguration = super.txCacheConfig(ccfg);
 
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+        cacheConfiguration.setEncryptionEnabled(encryption);
 
-        if(encryption){
-            KeystoreEncryptionSpi encSpi = new KeystoreEncryptionSpi();
-
-            encSpi.setKeyStorePath(AbstractEncryptionTest.KEYSTORE_PATH);
-            encSpi.setKeyStorePassword(AbstractEncryptionTest.KEYSTORE_PASSWORD.toCharArray());
-
-            cfg.setEncryptionSpi(encSpi);
-
-            dfltCacheCfg.setEncryptionEnabled(true);
-        }
-
-        return cfg;
+        return cacheConfiguration;
     }
 
     /** @throws Exception If fails. */
@@ -143,6 +137,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         super.beforeTestSnapshot();
 
         jvm = false;
+
+        encryption = true;
     }
 
     /**
@@ -354,7 +350,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         CacheConfiguration<Integer, Account> eastCcfg = txCacheConfig(new CacheConfiguration<>("east"));
         CacheConfiguration<Integer, Account> westCcfg = txCacheConfig(new CacheConfiguration<>("west"));
 
-        startGridsWithCache(grids, clientsCnt, key -> new Account(key, balance), eastCcfg, westCcfg);
+        startGridsWithCache(grids, clientsCnt, key -> new Account(key, balance), eastCcfg, westCcfg,
+            encryption ? dfltCacheCfg : null);
 
         Ignite client = startClientGrid(grids);
 
@@ -1228,7 +1225,9 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     public void testClusterSnapshotInMemoryFail() throws Exception {
         persistence = false;
 
-        IgniteEx srv = startGrid(0);
+        IgniteConfiguration cfg = getConfiguration();
+
+        IgniteEx srv = startGrid(cfg);
 
         srv.cluster().state(ACTIVE);
 
