@@ -18,7 +18,7 @@
 package org.apache.ignite.configuration;
 
 import org.apache.ignite.configuration.annotation.ConfigurationRoot;
-import org.apache.ignite.configuration.storage.ConfigurationType;
+import org.apache.ignite.configuration.annotation.ConfigurationType;
 
 /** */
 public class RootKey<T extends ConfigurationTree<VIEW, ?>, VIEW> {

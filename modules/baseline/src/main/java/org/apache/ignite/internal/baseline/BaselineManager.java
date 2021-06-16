@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.baseline;
 
 import java.util.Collection;
-import org.apache.ignite.configuration.internal.ConfigurationManager;
+import org.apache.ignite.internal.configuration.ConfigurationManager;
 import org.apache.ignite.internal.metastorage.MetaStorageManager;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;

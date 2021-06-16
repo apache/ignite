@@ -18,8 +18,8 @@
 package org.apache.ignite.configuration.schemas.network;
 
 import org.apache.ignite.configuration.annotation.ConfigurationRoot;
+import org.apache.ignite.configuration.annotation.ConfigurationType;
 import org.apache.ignite.configuration.annotation.Value;
-import org.apache.ignite.configuration.storage.ConfigurationType;
 import org.apache.ignite.configuration.validation.Max;
 import org.apache.ignite.configuration.validation.Min;
 

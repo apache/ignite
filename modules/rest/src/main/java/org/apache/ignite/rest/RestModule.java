@@ -17,6 +17,9 @@
 
 package org.apache.ignite.rest;
 
+import java.net.BindException;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import com.google.gson.JsonSyntaxException;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -29,13 +32,10 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
-import java.net.BindException;
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
-import org.apache.ignite.configuration.ConfigurationRegistry;
 import org.apache.ignite.configuration.schemas.rest.RestConfiguration;
 import org.apache.ignite.configuration.schemas.rest.RestView;
 import org.apache.ignite.configuration.validation.ConfigurationValidationException;
+import org.apache.ignite.internal.configuration.ConfigurationRegistry;
 import org.apache.ignite.rest.netty.RestApiInitializer;
 import org.apache.ignite.rest.presentation.ConfigurationPresentation;
 import org.apache.ignite.rest.presentation.json.JsonPresentation;

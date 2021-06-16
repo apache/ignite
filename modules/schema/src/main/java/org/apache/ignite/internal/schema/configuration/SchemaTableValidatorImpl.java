@@ -17,18 +17,17 @@
 
 package org.apache.ignite.internal.schema.configuration;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import org.apache.ignite.configuration.NamedListView;
 import org.apache.ignite.configuration.schemas.table.TableValidator;
 import org.apache.ignite.configuration.schemas.table.TableView;
-import org.apache.ignite.configuration.tree.NamedListView;
 import org.apache.ignite.configuration.validation.ValidationContext;
 import org.apache.ignite.configuration.validation.ValidationIssue;
 import org.apache.ignite.configuration.validation.Validator;
 import org.apache.ignite.internal.schema.SchemaTableImpl;
 import org.apache.ignite.internal.schema.builder.SchemaTableBuilderImpl;
 import org.apache.ignite.schema.Column;
-
-import java.util.ArrayList;
-import java.util.Collection;
 
 /**
  * SchemaTable validator implementation.

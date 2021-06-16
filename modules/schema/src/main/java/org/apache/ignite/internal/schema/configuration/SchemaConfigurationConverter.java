@@ -17,6 +17,14 @@
 
 package org.apache.ignite.internal.schema.configuration;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import org.apache.ignite.configuration.NamedListView;
 import org.apache.ignite.configuration.schemas.table.ColumnChange;
 import org.apache.ignite.configuration.schemas.table.ColumnTypeChange;
 import org.apache.ignite.configuration.schemas.table.ColumnTypeView;
@@ -29,7 +37,6 @@ import org.apache.ignite.configuration.schemas.table.TableIndexChange;
 import org.apache.ignite.configuration.schemas.table.TableIndexView;
 import org.apache.ignite.configuration.schemas.table.TableView;
 import org.apache.ignite.configuration.schemas.table.TablesChange;
-import org.apache.ignite.configuration.tree.NamedListView;
 import org.apache.ignite.internal.schema.ColumnImpl;
 import org.apache.ignite.internal.schema.HashIndexImpl;
 import org.apache.ignite.internal.schema.PartialIndexImpl;
@@ -48,14 +55,6 @@ import org.apache.ignite.schema.SortOrder;
 import org.apache.ignite.schema.SortedIndex;
 import org.apache.ignite.schema.SortedIndexColumn;
 import org.apache.ignite.schema.TableIndex;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 /**
  * Configuration to schema and vice versa converter.

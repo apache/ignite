@@ -17,24 +17,24 @@
 
 package org.apache.ignite.internal.app;
 
-import io.netty.util.internal.StringUtil;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import io.netty.util.internal.StringUtil;
 import org.apache.ignite.app.Ignite;
 import org.apache.ignite.app.Ignition;
 import org.apache.ignite.configuration.RootKey;
-import org.apache.ignite.configuration.internal.ConfigurationManager;
+import org.apache.ignite.configuration.annotation.ConfigurationType;
 import org.apache.ignite.configuration.schemas.network.NetworkConfiguration;
 import org.apache.ignite.configuration.schemas.network.NetworkView;
 import org.apache.ignite.configuration.schemas.runner.ClusterConfiguration;
 import org.apache.ignite.configuration.schemas.runner.NodeConfiguration;
 import org.apache.ignite.configuration.schemas.table.TablesConfiguration;
-import org.apache.ignite.configuration.storage.ConfigurationStorage;
-import org.apache.ignite.configuration.storage.ConfigurationType;
 import org.apache.ignite.internal.affinity.AffinityManager;
 import org.apache.ignite.internal.baseline.BaselineManager;
+import org.apache.ignite.internal.configuration.ConfigurationManager;
+import org.apache.ignite.internal.configuration.storage.ConfigurationStorage;
 import org.apache.ignite.internal.metastorage.MetaStorageManager;
 import org.apache.ignite.internal.raft.Loza;
 import org.apache.ignite.internal.schema.SchemaManager;

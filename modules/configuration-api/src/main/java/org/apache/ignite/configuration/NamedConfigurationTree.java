@@ -18,8 +18,6 @@
 package org.apache.ignite.configuration;
 
 import org.apache.ignite.configuration.notifications.ConfigurationNamedListListener;
-import org.apache.ignite.configuration.tree.NamedListChange;
-import org.apache.ignite.configuration.tree.NamedListView;
 
 /**
  * Configuration tree representing arbitrary set of named underlying configuration tree of the same type.

@@ -21,9 +21,9 @@ import java.util.Collections;
 import java.util.concurrent.ExecutionException;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
-import org.apache.ignite.configuration.ConfigurationRegistry;
-import org.apache.ignite.configuration.json.JsonConverter;
-import org.apache.ignite.configuration.internal.util.ConfigurationUtil;
+import org.apache.ignite.internal.configuration.ConfigurationRegistry;
+import org.apache.ignite.internal.configuration.json.JsonConverter;
+import org.apache.ignite.internal.configuration.util.ConfigurationUtil;
 import org.apache.ignite.rest.presentation.ConfigurationPresentation;
 
 /** */

@@ -668,7 +668,7 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-javadoc-plugin</artifactId>
                         <configuration>
-                            <excludePackageNames>org.apache.ignite.internal.*:org.apache.ignite.configuration.internal:org.apache.ignite.configuration.internal.*:org.apache.ignite.configuration.processor.internal</excludePackageNames>
+                            <excludePackageNames>org.apache.ignite.internal.*</excludePackageNames>
                         </configuration>
                         <executions>
                             <execution>
