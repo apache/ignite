@@ -19,7 +19,6 @@ package org.apache.ignite.internal.benchmarks.jmh.binary;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -36,10 +35,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.msgpack.core.MessageBufferPacker;
-import org.msgpack.core.MessageFormat;
 import org.msgpack.core.MessagePack;
-import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
 import org.msgpack.core.buffer.ArrayBufferInput;
 import org.msgpack.jackson.dataformat.JsonArrayFormat;
@@ -238,6 +234,12 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
      * @throws Exception If failed.
      */
     public static void main(String[] args) throws Exception {
+        runTests();
+
+        // runBenchmarks();
+    }
+
+    private static void runTests() throws Exception {
         JmhBinaryMarshallerMsgPackBenchmark bench = new JmhBinaryMarshallerMsgPackBenchmark();
         bench.setup();
 
@@ -250,24 +252,19 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
 
         System.out.println();
 
+        // runLoop(bench);
+    }
 
+    private static void runLoop(JmhBinaryMarshallerMsgPackBenchmark bench) throws Exception {
+        long t = System.currentTimeMillis();
 
-//        ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
-//        ObjectWriter objectWriter = objectMapper.writerFor(IntPojo.class);
-////
-//        printBytes(objectWriter.writeValueAsBytes(new IntPojo(25)));
-//
+        while (System.currentTimeMillis() - t < 20000)
+        {
+            bench.readPojoMsgPack();
+        }
+    }
 
-
-
-//        long t = System.currentTimeMillis();
-//
-//        while (System.currentTimeMillis() - t < 20000)
-//        {
-//            bench.readPojoMsgPack();
-//        }
-
-
+    private static void runBenchmarks() throws Exception {
         JmhIdeBenchmarkRunner runner = JmhIdeBenchmarkRunner.create()
                 .forks(1)
                 .threads(1)
