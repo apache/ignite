@@ -37,12 +37,14 @@ import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.msgpack.core.MessageBufferPacker;
+import org.msgpack.core.MessageFormat;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
 import org.msgpack.core.buffer.ArrayBufferInput;
 import org.msgpack.jackson.dataformat.JsonArrayFormat;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
+import org.msgpack.value.ImmutableValue;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Scope;
@@ -110,8 +112,7 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
                 )
                 .setClientMode(false)
                 .setDiscoverySpi(new TcpDiscoverySpi() {
-                    @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteExceptiJmhBinaryMarshallerMsgPackBenchmark.readPojoIgnite   thrpt   10  8437054.066 ± 104476.415  ops/s
-JmhBinaryMarshallerMsgPackBenchmark.readPojoMsgPack  thrpt   10  6292876.474 ±  73356.915  ops/son {
+                    @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
                         //No-op.
                     }
                 });
@@ -222,6 +223,13 @@ JmhBinaryMarshallerMsgPackBenchmark.readPojoMsgPack  thrpt   10  6292876.474 ± 
         return msgPackMapper.readValue(msgPackPojoBytes, IntPojo.class);
     }
 
+    @Benchmark
+    public ImmutableValue readPojoMsgPackRawBinary() throws Exception {
+        msgPackUnpacker.reset(new ArrayBufferInput(msgPackPojoBytes));
+
+        return msgPackUnpacker.unpackValue();
+    }
+
     /**
      * Run benchmarks.
      *
@@ -231,6 +239,8 @@ JmhBinaryMarshallerMsgPackBenchmark.readPojoMsgPack  thrpt   10  6292876.474 ± 
     public static void main(String[] args) throws Exception {
         JmhBinaryMarshallerMsgPackBenchmark bench = new JmhBinaryMarshallerMsgPackBenchmark();
         bench.setup();
+
+        System.out.println(bench.readPojoMsgPackRawBinary());
 
         printBytes(bench.writePrimitivesMsgPackRaw());
         printBytes(bench.writePrimitivesIgnite());
@@ -251,22 +261,21 @@ JmhBinaryMarshallerMsgPackBenchmark.readPojoMsgPack  thrpt   10  6292876.474 ± 
 
 //        long t = System.currentTimeMillis();
 //
-//        while (System.currentTimeMillis() - t < 10000)
+//        while (System.currentTimeMillis() - t < 20000)
 //        {
-//            bench.readPrimitivesMsgPack();
+//            bench.readPojoMsgPack();
 //        }
 
 
-
-        JmhIdeBenchmarkRunner runner = JmhIdeBenchmarkRunner.create()
-                .forks(1)
-                .threads(1)
-                .benchmarks(JmhBinaryMarshallerMsgPackBenchmark.class.getSimpleName())
-                .jvmArguments("-Xms4g", "-Xmx4g");
-
-        runner
-                .benchmarkModes(Mode.Throughput)
-                .run();
+//        JmhIdeBenchmarkRunner runner = JmhIdeBenchmarkRunner.create()
+//                .forks(1)
+//                .threads(1)
+//                .benchmarks(JmhBinaryMarshallerMsgPackBenchmark.class.getSimpleName())
+//                .jvmArguments("-Xms4g", "-Xmx4g");
+//
+//        runner
+//                .benchmarkModes(Mode.Throughput)
+//                .run();
     }
 
     private static void printBytes(byte[] res) {
