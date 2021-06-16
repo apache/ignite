@@ -335,7 +335,7 @@ public class RexUtils {
 
         for (RexNode rexNode : conjunctions) {
             if (!isBinaryComparison(rexNode))
-                continue;
+                return Collections.emptyMap();
 
             RexCall predCall = (RexCall)rexNode;
             RexSlot ref = (RexSlot)extractRef(predCall);

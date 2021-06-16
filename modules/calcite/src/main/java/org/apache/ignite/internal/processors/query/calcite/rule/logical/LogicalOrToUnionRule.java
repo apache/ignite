@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.rule.logical;
 
 import java.util.List;
+import com.google.common.collect.ImmutableMap;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -36,36 +37,16 @@ import org.apache.calcite.tools.RelBuilder;
  * Converts OR to UNION ALL.
  */
 public class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.Config> {
-    /** */
-    private static final String DIRECT_DESC = "LogicalOrToUnionRuleDirect";
-
-    /** */
-    private static final String INVERSE_DESC = "LogicalOrToUnionRuleInverse";
-
     /** Instance. */
-    public static final RelOptRule INSTANCE_DIRECT = Config.DEFAULT.withDescription(DIRECT_DESC).toRule();
-
-    /** Instance */
-    public static final RelOptRule INSTANCE_INVERSE = Config.DEFAULT.withDescription(INVERSE_DESC).toRule();
-
-    /** */
-    private final boolean order;
+    public static final RelOptRule INSTANCE = Config.DEFAULT.toRule();
 
     /**
      * Constructor.
      *
      * @param config Rule configuration.
      */
-    private LogicalOrToUnionRule(Config config, boolean order) {
+    private LogicalOrToUnionRule(Config config) {
         super(config);
-
-        this.order = order;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean matches(RelOptRuleCall call) {
-        final LogicalFilter rel = call.rel(0);
-        return rel.getCondition() != null;
     }
 
     /** {@inheritDoc} */
@@ -85,10 +66,11 @@ public class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.Config> {
 
         RelNode input = rel.getInput(0);
 
-        if (order)
-            call.transformTo(createUnionAll(cluster, input, operands.get(0), operands.get(1)));
-        else
-            call.transformTo(createUnionAll(cluster, input, operands.get(1), operands.get(0)));
+        RelNode rel0 = createUnionAll(cluster, input, operands.get(0), operands.get(1));
+
+        call.transformTo(rel0, ImmutableMap.of(
+            createUnionAll(cluster, input, operands.get(1), operands.get(0)), rel0
+        ));
     }
 
     /**
@@ -118,6 +100,7 @@ public class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.Config> {
         /** */
         Config DEFAULT = RelRule.Config.EMPTY
             .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER)
+            .withDescription("LogicalOrToUnionRule")
             .as(Config.class)
             .withOperandFor(LogicalFilter.class);
 
@@ -129,17 +112,7 @@ public class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.Config> {
 
         /** {@inheritDoc} */
         @Override default LogicalOrToUnionRule toRule() {
-            if (DIRECT_DESC.equals(description()))
-                return new LogicalOrToUnionRule(this, true);
-            else if (INVERSE_DESC.equals(description()))
-                return new LogicalOrToUnionRule(this, false);
-            else
-                throw new IllegalArgumentException(description());
-        }
-
-        /** */
-        default LogicalOrToUnionRule toRule(boolean order) {
-            return new LogicalOrToUnionRule(this, order);
+            return new LogicalOrToUnionRule(this);
         }
     }
 }
