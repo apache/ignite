@@ -68,8 +68,13 @@ public class LogicalOrToUnionRule extends RelRule<LogicalOrToUnionRule.Config> {
 
         RelNode rel0 = createUnionAll(cluster, input, operands.get(0), operands.get(1));
 
-        call.transformTo(rel0, ImmutableMap.of(
+/*        call.transformTo(rel0, ImmutableMap.of(
             createUnionAll(cluster, input, operands.get(1), operands.get(0)), rel0
+        ));*/
+
+        call.transformTo(rel, ImmutableMap.of(
+            createUnionAll(cluster, input, operands.get(0), operands.get(1)), rel,
+            createUnionAll(cluster, input, operands.get(1), operands.get(0)), rel
         ));
     }
 

@@ -133,7 +133,7 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testEqualityOrToUnionAllRewrite() throws Exception {
+    public void testEqualityOrToUnionAllRewrite() {
         checkQuery("SELECT * " +
             "FROM products " +
             "WHERE category = 'Video' " +
@@ -156,7 +156,7 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
      */
     @Test
     @Ignore("https://issues.apache.org/jira/browse/IGNITE-13710")
-    public void testNonDistinctOrToUnionAllRewrite() throws Exception {
+    public void testNonDistinctOrToUnionAllRewrite() {
         checkQuery("SELECT * " +
             "FROM products " +
             "WHERE subcategory = 'Camera Lens' " +
@@ -177,7 +177,7 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testMixedOrToUnionAllRewrite() throws Exception {
+    public void testMixedOrToUnionAllRewrite() {
         checkQuery("SELECT * " +
             "FROM products " +
             "WHERE category = 'Photo' " +
@@ -199,7 +199,7 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testRangeOrToUnionAllRewrite() throws Exception {
+    public void testRangeOrToUnionAllRewrite() {
         checkQuery("SELECT * " +
             "FROM products " +
             "WHERE cat_id > 1 " +
@@ -236,7 +236,7 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testAllNonIndexedOrToUnionAllRewrite() throws Exception {
+    public void testAllNonIndexedOrToUnionAllRewrite() {
         checkQuery("SELECT * " +
             "FROM products " +
             "WHERE name = 'Canon' " +
