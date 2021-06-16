@@ -227,6 +227,31 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
         return msgPackUnpacker.unpackValue();
     }
 
+    @Benchmark
+    public byte[] writeSqlQueryIgnite() {
+        try (BinaryWriterExImpl writer = new BinaryWriterExImpl(binaryCtx)) {
+            writer.writeString("select * from cars where year > ? and seats = ?");
+            writer.writeObjectArray(new Object[]{2005, 2});
+
+            return writer.array();
+        }
+    }
+
+    @Benchmark
+    public byte[] writeSqlQueryMsgPack() throws Exception {
+        PooledMessagePacker packer = new PooledMessagePacker(msgPackPooledOutput, packerConfig);
+
+        packer
+                .packString("select * from cars where year > ? and seats = ?")
+                .packArrayHeader(2)
+                .packInt(2005)
+                .packInt(2);
+
+        packer.close();
+
+        return packer.toByteArray();
+    }
+
     /**
      * Run benchmarks.
      *
