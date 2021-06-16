@@ -66,14 +66,9 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
      */
     @Test
     public void testGeneralFlow() throws Exception {
-        IgniteH2IndexingEx.prepareBeforeNodeStart();
-
-        IgniteEx n = startGrid(0);
-
         String cacheName = DEFAULT_CACHE_NAME;
-        populate(n.cache(cacheName), 10);
 
-        enableCheckpointsAsync(n, getTestIgniteInstanceName(), false).get(getTestTimeout());
+        IgniteEx n = prepareNodeToCreateNewIndex(cacheName, 10);
 
         String idxName = "IDX0";
         SlowdownBuildIndexConsumer slowdownIdxCreateConsumer = addSlowdownIdxCreateConsumer(n, idxName, 0);
@@ -82,22 +77,16 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
 
         slowdownIdxCreateConsumer.startBuildIdxFut.get(getTestTimeout());
 
-        checkStatus(statuses(n).get(cacheName), INIT, true, false, 1);
-        assertNotNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheName)));
-        assertTrue(indexBuildStatusStorage(n).rebuildCompleted(cacheName));
+        checkInitStatus(n, cacheName, false, 1);
 
         slowdownIdxCreateConsumer.finishBuildIdxFut.onDone();
         createIdxFut.get(getTestTimeout());
 
-        checkStatus(statuses(n).get(cacheName), COMPLETED, true, false, 0);
-        assertNotNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheName)));
-        assertTrue(indexBuildStatusStorage(n).rebuildCompleted(cacheName));
+        checkCompletedStatus(n, cacheName);
 
         enableCheckpointsAsync(n, getTestIgniteInstanceName(), true).get(getTestTimeout());
 
-        assertNull(statuses(n).get(cacheName));
-        assertNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheName)));
-        assertTrue(indexBuildStatusStorage(n).rebuildCompleted(cacheName));
+        checkNoStatus(n, cacheName);
     }
 
     /**
@@ -108,14 +97,9 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
      */
     @Test
     public void testNoCheckpointAfterIndexCreation() throws Exception {
-        IgniteH2IndexingEx.prepareBeforeNodeStart();
-
-        IgniteEx n = startGrid(0);
-
         String cacheName = DEFAULT_CACHE_NAME;
-        populate(n.cache(cacheName), 10);
 
-        enableCheckpointsAsync(n, getTestIgniteInstanceName(), false).get(getTestTimeout());
+        IgniteEx n = prepareNodeToCreateNewIndex(cacheName, 10);
 
         String idxName = "IDX0";
         SlowdownBuildIndexConsumer slowdownIdxCreateConsumer = addSlowdownIdxCreateConsumer(n, idxName, 0);
@@ -124,16 +108,12 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
 
         slowdownIdxCreateConsumer.startBuildIdxFut.get(getTestTimeout());
 
-        checkStatus(statuses(n).get(cacheName), INIT, true, false, 1);
-        assertNotNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheName)));
-        assertTrue(indexBuildStatusStorage(n).rebuildCompleted(cacheName));
+        checkInitStatus(n, cacheName, false, 1);
 
         slowdownIdxCreateConsumer.finishBuildIdxFut.onDone();
         createIdxFut.get(getTestTimeout());
 
-        checkStatus(statuses(n).get(cacheName), COMPLETED, true, false, 0);
-        assertNotNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheName)));
-        assertTrue(indexBuildStatusStorage(n).rebuildCompleted(cacheName));
+        checkCompletedStatus(n, cacheName);
 
         stopGrid(0);
 
@@ -146,17 +126,14 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
         IgniteInternalFuture<?> idxRebFut = indexRebuildFuture(n, CU.cacheId(cacheName));
         assertNotNull(idxRebFut);
 
-        checkStatus(statuses(n).get(cacheName), INIT, true, true, 0);
-        assertNotNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheName)));
-        assertFalse(indexBuildStatusStorage(n).rebuildCompleted(cacheName));
+        checkInitStatus(n, cacheName, true, 0);
 
         stopRebuildIdxConsumer.finishBuildIdxFut.onDone();
         idxRebFut.get(getTestTimeout());
+
         forceCheckpoint();
 
-        assertNull(statuses(n).get(cacheName));
-        assertNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheName)));
-        assertTrue(indexBuildStatusStorage(n).rebuildCompleted(cacheName));
+        checkNoStatus(n, cacheName);
     }
 
     /**
@@ -166,14 +143,9 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
      */
     @Test
     public void testErrorFlow() throws Exception {
-        IgniteH2IndexingEx.prepareBeforeNodeStart();
-
-        IgniteEx n = startGrid(0);
-
         String cacheName = DEFAULT_CACHE_NAME;
-        populate(n.cache(cacheName), 10);
 
-        enableCheckpointsAsync(n, getTestIgniteInstanceName(), false).get(getTestTimeout());
+        IgniteEx n = prepareNodeToCreateNewIndex(cacheName, 10);
 
         String idxName = "IDX0";
         BreakBuildIndexConsumer breakBuildIdxConsumer = addBreakIdxCreateConsumer(n, idxName, 1);
@@ -182,42 +154,30 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
 
         breakBuildIdxConsumer.startBuildIdxFut.get(getTestTimeout());
 
-        checkStatus(statuses(n).get(cacheName), INIT, true, false, 1);
-        assertNotNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheName)));
-        assertTrue(indexBuildStatusStorage(n).rebuildCompleted(cacheName));
+        checkInitStatus(n, cacheName, false, 1);
 
         breakBuildIdxConsumer.finishBuildIdxFut.onDone();
         assertThrows(log, () -> createIdxFut.get(getTestTimeout()), IgniteCheckedException.class, null);
 
-        checkStatus(statuses(n).get(cacheName), COMPLETED, true, false, 0);
-        assertNotNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheName)));
-        assertTrue(indexBuildStatusStorage(n).rebuildCompleted(cacheName));
+        checkCompletedStatus(n, cacheName);
 
         enableCheckpointsAsync(n, getTestIgniteInstanceName(), true).get(getTestTimeout());
 
-        assertNull(statuses(n).get(cacheName));
-        assertNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheName)));
-        assertTrue(indexBuildStatusStorage(n).rebuildCompleted(cacheName));
+        checkNoStatus(n, cacheName);
     }
 
     /**
-     * // TODO: 15.06.2021  
+     * Checks that building a new index and rebuilding indexes at the same time
+     * does not break the {@link IndexBuildStatus}.
+     * In this case, building a new index is completed earlier.
      *
      * @throws Exception If failed.
      */
     @Test
-    public void testConcurrentBuildNewIndexAndRebuildIndexes() throws Exception {
-        IgniteH2IndexingEx.prepareBeforeNodeStart();
-        IndexesRebuildTaskEx.prepareBeforeNodeStart();
-
-        IgniteEx n = startGrid(0);
-
+    public void testConcurrentBuildNewIndexAndRebuildIndexes0() throws Exception {
         String cacheName = DEFAULT_CACHE_NAME;
-        populate(n.cache(cacheName), 100_000);
 
-        enableCheckpointsAsync(n, getTestIgniteInstanceName(), false).get(getTestTimeout());
-
-        SlowdownBuildIndexConsumer slowdownRebuildIdxConsumer = addSlowdownRebuildIndexConsumer(n, cacheName, 100);
+        IgniteEx n = prepareNodeToCreateNewIndex(cacheName, 100_000);
 
         String idxName = "IDX0";
         SlowdownBuildIndexConsumer slowdownIdxCreateConsumer = addSlowdownIdxCreateConsumer(n, idxName, 0);
@@ -226,18 +186,15 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
 
         slowdownIdxCreateConsumer.startBuildIdxFut.get(getTestTimeout());
 
-        checkStatus(statuses(n).get(cacheName), INIT, true, false, 1);
-        assertNotNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheName)));
-        assertTrue(indexBuildStatusStorage(n).rebuildCompleted(cacheName));
+        checkInitStatus(n, cacheName, false, 1);
 
+        SlowdownBuildIndexConsumer slowdownRebuildIdxConsumer = addSlowdownRebuildIndexConsumer(n, cacheName, 100);
         assertTrue(forceRebuildIndexes(n, n.cachex(cacheName).context()).isEmpty());
+
+        checkInitStatus(n, cacheName, true, 1);
 
         IgniteInternalFuture<?> idxRebFut = indexRebuildFuture(n, CU.cacheId(cacheName));
         assertNotNull(idxRebFut);
-
-        checkStatus(statuses(n).get(cacheName), INIT, true, true, 1);
-        assertNotNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheName)));
-        assertFalse(indexBuildStatusStorage(n).rebuildCompleted(cacheName));
 
         slowdownIdxCreateConsumer.finishBuildIdxFut.onDone();
 
@@ -247,22 +204,65 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
         createIdxFut.get(getTestTimeout());
 
         assertFalse(idxRebFut.isDone());
-        checkStatus(statuses(n).get(cacheName), INIT, true, true, 0);
-        assertNotNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheName)));
-        assertFalse(indexBuildStatusStorage(n).rebuildCompleted(cacheName));
+        checkInitStatus(n, cacheName, true, 0);
 
         slowdownRebuildIdxConsumer.sleepTime.set(0);
         idxRebFut.get(getTestTimeout());
 
-        checkStatus(statuses(n).get(cacheName), COMPLETED, true, false, 0);
-        assertNotNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheName)));
-        assertTrue(indexBuildStatusStorage(n).rebuildCompleted(cacheName));
+        checkCompletedStatus(n, cacheName);
 
         enableCheckpointsAsync(n, getTestIgniteInstanceName(), true).get(getTestTimeout());
 
-        assertNull(statuses(n).get(cacheName));
-        assertNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheName)));
-        assertTrue(indexBuildStatusStorage(n).rebuildCompleted(cacheName));
+        checkNoStatus(n, cacheName);
+    }
+
+    /**
+     * Checks that building a new index and rebuilding indexes at the same time
+     * does not break the {@link IndexBuildStatus}.
+     * In this case, rebuilding indexes is completed earlier.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testConcurrentBuildNewIndexAndRebuildIndexes1() throws Exception {
+        String cacheName = DEFAULT_CACHE_NAME;
+
+        IgniteEx n = prepareNodeToCreateNewIndex(cacheName, 100_000);
+
+        SlowdownBuildIndexConsumer slowdownRebuildIdxConsumer = addSlowdownRebuildIndexConsumer(n, cacheName, 10);
+        assertTrue(forceRebuildIndexes(n, n.cachex(cacheName).context()).isEmpty());
+
+        checkInitStatus(n, cacheName, true, 0);
+
+        slowdownRebuildIdxConsumer.startBuildIdxFut.get(getTestTimeout());
+
+        IgniteInternalFuture<?> idxRebFut = indexRebuildFuture(n, CU.cacheId(cacheName));
+        assertNotNull(idxRebFut);
+
+        String idxName = "IDX0";
+        SlowdownBuildIndexConsumer slowdownIdxCreateConsumer = addSlowdownIdxCreateConsumer(n, idxName, 100);
+
+        IgniteInternalFuture<List<List<?>>> createIdxFut = createIdxAsync(n.cache(cacheName), idxName);
+
+        slowdownRebuildIdxConsumer.finishBuildIdxFut.onDone();
+        slowdownIdxCreateConsumer.startBuildIdxFut.get(getTestTimeout());
+
+        checkInitStatus(n, cacheName, true, 1);
+
+        slowdownRebuildIdxConsumer.sleepTime.set(0);
+        idxRebFut.get(getTestTimeout());
+
+        checkInitStatus(n, cacheName, false, 1);
+
+        slowdownIdxCreateConsumer.sleepTime.set(0);
+        slowdownIdxCreateConsumer.finishBuildIdxFut.onDone();
+        createIdxFut.get(getTestTimeout());
+
+        checkCompletedStatus(n, cacheName);
+
+        enableCheckpointsAsync(n, getTestIgniteInstanceName(), true).get(getTestTimeout());
+
+        checkNoStatus(n, cacheName);
     }
 
     @Test
@@ -421,5 +421,36 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
         assertEquals(expPersistent, status.persistent());
         assertEquals(expRebuild, status.rebuild());
         assertEquals(expNewIdx, status.buildNewIndexes());
+    }
+
+    private IgniteEx prepareNodeToCreateNewIndex(String cacheName, int cnt) throws Exception {
+        IgniteH2IndexingEx.prepareBeforeNodeStart();
+        IndexesRebuildTaskEx.prepareBeforeNodeStart();
+
+        IgniteEx n = startGrid(0);
+
+        populate(n.cache(cacheName), cnt);
+
+        enableCheckpointsAsync(n, getTestIgniteInstanceName(), false).get(getTestTimeout());
+
+        return n;
+    }
+
+    private void checkInitStatus(IgniteEx n, String cacheName, boolean expRebuild, int expNewIdx) throws Exception {
+        checkStatus(statuses(n).get(cacheName), INIT, true, expRebuild, expNewIdx);
+        assertNotNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheName)));
+        assertEquals(!expRebuild, indexBuildStatusStorage(n).rebuildCompleted(cacheName));
+    }
+
+    private void checkCompletedStatus(IgniteEx n, String cacheName) throws Exception {
+        checkStatus(statuses(n).get(cacheName), COMPLETED, true, false, 0);
+        assertNotNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheName)));
+        assertTrue(indexBuildStatusStorage(n).rebuildCompleted(cacheName));
+    }
+
+    private void checkNoStatus(IgniteEx n, String cacheName) throws Exception {
+        assertNull(statuses(n).get(cacheName));
+        assertNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheName)));
+        assertTrue(indexBuildStatusStorage(n).rebuildCompleted(cacheName));
     }
 }
