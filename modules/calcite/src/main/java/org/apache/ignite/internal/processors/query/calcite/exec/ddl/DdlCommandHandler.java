@@ -85,10 +85,13 @@ public class DdlCommandHandler {
     public void handle(UUID qryId, DdlCommand cmd, PlanningContext pctx) throws IgniteCheckedException {
         if (cmd instanceof CreateTableCommand)
             handle0(pctx, (CreateTableCommand)cmd);
+
         else if (cmd instanceof DropTableCommand)
             handle0(pctx, (DropTableCommand)cmd);
+
         else if (cmd instanceof NativeCommandWrapper)
             nativeCmdHandler.handle(qryId, (NativeCommandWrapper)cmd, pctx);
+
         else {
             throw new IgniteSQLException("Unsupported DDL operation [" +
                 "cmdName=" + (cmd == null ? null : cmd.getClass().getSimpleName()) + "; " +

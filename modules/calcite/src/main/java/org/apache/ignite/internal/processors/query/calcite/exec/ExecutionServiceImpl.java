@@ -656,6 +656,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 return executeExplain((ExplainPlan)plan, pctx);
             case DDL:
                 return executeDdl(qryId, (DdlPlan)plan, pctx);
+
             default:
                 throw new AssertionError("Unexpected plan type: " + plan);
         }
