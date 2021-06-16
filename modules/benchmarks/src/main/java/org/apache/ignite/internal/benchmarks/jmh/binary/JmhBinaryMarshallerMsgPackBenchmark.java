@@ -70,6 +70,7 @@ import java.io.ByteArrayOutputStream;
  *
  * JmhBinaryMarshallerMsgPackBenchmark.readPojoIgnite             thrpt   10  8437054.066 ± 104476.415  ops/s
  * JmhBinaryMarshallerMsgPackBenchmark.readPojoMsgPack            thrpt   10  6292876.474 ±  73356.915  ops/s
+ * JmhBinaryMarshallerMsgPackBenchmark.readPojoMsgPackBinary      thrpt   10  19223554.149 ± 114627.713  ops/s
  *
  */
 @State(Scope.Benchmark)
@@ -224,7 +225,7 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
     }
 
     @Benchmark
-    public ImmutableValue readPojoMsgPackRawBinary() throws Exception {
+    public ImmutableValue readPojoMsgPackBinary() throws Exception {
         msgPackUnpacker.reset(new ArrayBufferInput(msgPackPojoBytes));
 
         return msgPackUnpacker.unpackValue();
@@ -240,7 +241,7 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
         JmhBinaryMarshallerMsgPackBenchmark bench = new JmhBinaryMarshallerMsgPackBenchmark();
         bench.setup();
 
-        System.out.println(bench.readPojoMsgPackRawBinary());
+        System.out.println(bench.readPojoMsgPackBinary());
 
         printBytes(bench.writePrimitivesMsgPackRaw());
         printBytes(bench.writePrimitivesIgnite());
@@ -267,15 +268,15 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
 //        }
 
 
-//        JmhIdeBenchmarkRunner runner = JmhIdeBenchmarkRunner.create()
-//                .forks(1)
-//                .threads(1)
-//                .benchmarks(JmhBinaryMarshallerMsgPackBenchmark.class.getSimpleName())
-//                .jvmArguments("-Xms4g", "-Xmx4g");
-//
-//        runner
-//                .benchmarkModes(Mode.Throughput)
-//                .run();
+        JmhIdeBenchmarkRunner runner = JmhIdeBenchmarkRunner.create()
+                .forks(1)
+                .threads(1)
+                .benchmarks(JmhBinaryMarshallerMsgPackBenchmark.class.getSimpleName())
+                .jvmArguments("-Xms4g", "-Xmx4g");
+
+        runner
+                .benchmarkModes(Mode.Throughput)
+                .run();
     }
 
     private static void printBytes(byte[] res) {
