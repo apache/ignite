@@ -202,7 +202,7 @@ class RebalancePersistentTest(IgniteTest):
         ignites.stop_node(node)
         assert ignites.wait_node(node)
 
-        control_utility.remove_from_baseline([node], ignites.nodes[0])
+        control_utility.remove_from_baseline([node])
 
         await_rebalance_start(reb_nodes)
 
@@ -299,7 +299,7 @@ class RebalancePersistentTest(IgniteTest):
 
         self.logger.debug(f'DB size after rebalance mb: {get_database_size_mb(ignites.nodes, ignites.database_dir)}')
 
-        return get_result(rebalance_nodes, preload_time, 1, entry_count, entry_size)
+        return get_result(rebalance_nodes, preload_time, cache_count, entry_count, entry_size)
 
 
 def await_and_check_rebalance(service: IgniteService, rebalance_nodes: list, is_full: bool = True):
@@ -320,11 +320,23 @@ def await_and_check_rebalance(service: IgniteService, rebalance_nodes: list, is_
 
 def get_database_size_mb(nodes: list, database_dir: str) -> dict:
     """
-    Return databases size in megabites.
+    Return databases size in megabytes.
 
     :param nodes: List of nodes.
     :param database_dir: Path to database directory.
-    :return Dictionary with
+    :return Dictionary with node hostname -> list directories with size in megabytes.
+
+    {
+        'ducker02': [
+            '/mnt/service/work/db/wal -> 1664 mb.',
+            '/mnt/service/work/db/ducker02 -> 540 mb.',
+            '/mnt/service/work/db/marshaller -> 1 mb.',
+            '/mnt/service/work/db/binary_meta -> 1 mb.',
+            '/mnt/service/work/db -> 2204 mb.'
+        ],
+    ...
+    }
+
     """
     res = {}
     for node in nodes:
@@ -334,7 +346,7 @@ def get_database_size_mb(nodes: list, database_dir: str) -> dict:
         assert not err, f"Command failed: '{cmd}'.\nError: '{err}'"
 
         node_res = list(map(lambda v: ' -> '.join(v.split('\t')[::-1]), out.splitlines()))
-        node_res = list(map(lambda v: (v + 'mb.'), node_res))
+        node_res = list(map(lambda v: (v + ' mb.'), node_res))
 
         res[node.account.hostname] = node_res
 
