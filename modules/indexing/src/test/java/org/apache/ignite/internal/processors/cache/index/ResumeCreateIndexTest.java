@@ -68,7 +68,7 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
     public void testGeneralFlow() throws Exception {
         String cacheName = DEFAULT_CACHE_NAME;
 
-        IgniteEx n = prepareNodeToCreateNewIndex(cacheName, 10);
+        IgniteEx n = prepareNodeToCreateNewIndex(cacheName, 10, true);
 
         String idxName = "IDX0";
         SlowdownBuildIndexConsumer slowdownIdxCreateConsumer = addSlowdownIdxCreateConsumer(n, idxName, 0);
@@ -99,7 +99,7 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
     public void testNoCheckpointAfterIndexCreation() throws Exception {
         String cacheName = DEFAULT_CACHE_NAME;
 
-        IgniteEx n = prepareNodeToCreateNewIndex(cacheName, 10);
+        IgniteEx n = prepareNodeToCreateNewIndex(cacheName, 10, true);
 
         String idxName = "IDX0";
         SlowdownBuildIndexConsumer slowdownIdxCreateConsumer = addSlowdownIdxCreateConsumer(n, idxName, 0);
@@ -127,6 +127,7 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
         assertNotNull(idxRebFut);
 
         checkInitStatus(n, cacheName, true, 0);
+        assertTrue(allIndexes(n).containsKey(new QueryIndexKey(cacheName, idxName)));
 
         stopRebuildIdxConsumer.finishBuildIdxFut.onDone();
         idxRebFut.get(getTestTimeout());
@@ -134,6 +135,7 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
         forceCheckpoint();
 
         checkNoStatus(n, cacheName);
+        assertEquals(10, selectPersonByName(n.cache(cacheName)).size());
     }
 
     /**
@@ -145,7 +147,7 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
     public void testErrorFlow() throws Exception {
         String cacheName = DEFAULT_CACHE_NAME;
 
-        IgniteEx n = prepareNodeToCreateNewIndex(cacheName, 10);
+        IgniteEx n = prepareNodeToCreateNewIndex(cacheName, 10, true);
 
         String idxName = "IDX0";
         BreakBuildIndexConsumer breakBuildIdxConsumer = addBreakIdxCreateConsumer(n, idxName, 1);
@@ -177,7 +179,7 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
     public void testConcurrentBuildNewIndexAndRebuildIndexes0() throws Exception {
         String cacheName = DEFAULT_CACHE_NAME;
 
-        IgniteEx n = prepareNodeToCreateNewIndex(cacheName, 100_000);
+        IgniteEx n = prepareNodeToCreateNewIndex(cacheName, 100_000, true);
 
         String idxName = "IDX0";
         SlowdownBuildIndexConsumer slowdownIdxCreateConsumer = addSlowdownIdxCreateConsumer(n, idxName, 0);
@@ -227,7 +229,7 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
     public void testConcurrentBuildNewIndexAndRebuildIndexes1() throws Exception {
         String cacheName = DEFAULT_CACHE_NAME;
 
-        IgniteEx n = prepareNodeToCreateNewIndex(cacheName, 100_000);
+        IgniteEx n = prepareNodeToCreateNewIndex(cacheName, 100_000, true);
 
         SlowdownBuildIndexConsumer slowdownRebuildIdxConsumer = addSlowdownRebuildIndexConsumer(n, cacheName, 10);
         assertTrue(forceRebuildIndexes(n, n.cachex(cacheName).context()).isEmpty());
@@ -265,14 +267,17 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
         checkNoStatus(n, cacheName);
     }
 
+    /**
+     * Checks that if a checkpoint fails after building a new index and the
+     * node restarts, then the indexes will be rebuilt.
+     *
+     * @throws Exception If failed.
+     */
     @Test
-    public void test0() throws Exception {
-        IgniteH2IndexingEx.prepareBeforeNodeStart();
-
-        IgniteEx n = startGrid(0);
-
+    public void testPartialCheckpointNewIndexRows() throws Exception {
         String cacheName = DEFAULT_CACHE_NAME;
-        populate(n.cache(cacheName), 100_000);
+
+        IgniteEx n = prepareNodeToCreateNewIndex(cacheName, 100_000, false);
 
         String idxName = "IDX0";
         SlowdownBuildIndexConsumer slowdownIdxCreateConsumer = addSlowdownIdxCreateConsumer(n, idxName, 10);
@@ -280,6 +285,8 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
         IgniteInternalFuture<List<List<?>>> createIdxFut = createIdxAsync(n.cache(cacheName), idxName);
 
         slowdownIdxCreateConsumer.startBuildIdxFut.get(getTestTimeout());
+
+        checkInitStatus(n, cacheName, false, 1);
 
         String reason = getTestIgniteInstanceName();
         IgniteInternalFuture<Void> awaitBeforeCpBeginFut = awaitBeforeCheckpointBeginAsync(n, reason);
@@ -293,17 +300,28 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
 
         createIdxFut.get(getTestTimeout());
 
+        checkCompletedStatus(n, cacheName);
+
         stopGrid(0);
 
-        n = startGrid(0);
+        IndexesRebuildTaskEx.prepareBeforeNodeStart();
+        StopBuildIndexConsumer stopRebuildIdxConsumer = addStopRebuildIndexConsumer(n, cacheName);
 
-        assertTrue(allIndexes(n).containsKey(new QueryIndexKey(cacheName, idxName)));
+        n = startGrid(0);
+        stopRebuildIdxConsumer.startBuildIdxFut.get(getTestTimeout());
 
         IgniteInternalFuture<?> rebIdxFut = indexRebuildFuture(n, CU.cacheId(cacheName));
+        assertNotNull(rebIdxFut);
 
-        if (rebIdxFut != null)
-            rebIdxFut.get(getTestTimeout());
+        checkInitStatus(n, cacheName, true, 0);
+        assertTrue(allIndexes(n).containsKey(new QueryIndexKey(cacheName, idxName)));
 
+        stopRebuildIdxConsumer.finishBuildIdxFut.onDone();
+        rebIdxFut.get(getTestTimeout());
+
+        forceCheckpoint();
+
+        checkNoStatus(n, cacheName);
         assertEquals(100_000, selectPersonByName(n.cache(cacheName)).size());
     }
 
@@ -423,7 +441,7 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
         assertEquals(expNewIdx, status.buildNewIndexes());
     }
 
-    private IgniteEx prepareNodeToCreateNewIndex(String cacheName, int cnt) throws Exception {
+    private IgniteEx prepareNodeToCreateNewIndex(String cacheName, int cnt, boolean disableCp) throws Exception {
         IgniteH2IndexingEx.prepareBeforeNodeStart();
         IndexesRebuildTaskEx.prepareBeforeNodeStart();
 
@@ -431,7 +449,8 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
 
         populate(n.cache(cacheName), cnt);
 
-        enableCheckpointsAsync(n, getTestIgniteInstanceName(), false).get(getTestTimeout());
+        if (disableCp)
+            enableCheckpointsAsync(n, getTestIgniteInstanceName(), false).get(getTestTimeout());
 
         return n;
     }
