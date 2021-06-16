@@ -19,7 +19,6 @@ package org.apache.ignite.raft.jraft.rpc;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.MessageSerializationRegistryImpl;
@@ -34,23 +33,20 @@ import org.apache.ignite.raft.jraft.util.Endpoint;
  */
 public class IgniteRpcTest extends AbstractRpcTest {
     /**
-     * The logger.
-     */
-    private static final IgniteLogger LOG = IgniteLogger.forClass(IgniteRpcTest.class);
-
-    /**
      * Serialization registry.
      */
     private static final MessageSerializationRegistry SERIALIZATION_REGISTRY = new MessageSerializationRegistryImpl();
 
     /** The counter. */
-    private AtomicInteger cntr = new AtomicInteger();
+    private final AtomicInteger cntr = new AtomicInteger();
 
-    @Override public RpcServer createServer(Endpoint endpoint) {
+    /** {@inheritDoc} */
+    @Override public RpcServer<?> createServer(Endpoint endpoint) {
         return new TestIgniteRpcServer(endpoint, new NodeManager());
     }
 
-    @Override public RpcClient createClient() {
+    /** {@inheritDoc} */
+    @Override public RpcClient createClient0() {
         int i = cntr.incrementAndGet();
 
         ClusterService service = createService("client" + i, endpoint.getPort() - i, List.of(endpoint.toString()));

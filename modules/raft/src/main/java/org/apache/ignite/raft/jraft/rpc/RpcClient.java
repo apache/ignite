@@ -21,26 +21,26 @@ import org.apache.ignite.raft.jraft.Lifecycle;
 import org.apache.ignite.raft.jraft.error.RemotingException;
 import org.apache.ignite.raft.jraft.option.RpcOptions;
 import org.apache.ignite.raft.jraft.util.Endpoint;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
 public interface RpcClient extends Lifecycle<RpcOptions> {
-
     /**
      * Check connection for given address. // TODO asch rename to isAlive.
      *
      * @param endpoint target address
      * @return true if there is a connection and the connection is active and writable.
      */
-    boolean checkConnection(final Endpoint endpoint);
+    boolean checkConnection(Endpoint endpoint);
 
     /**
      * Register a connect event listener for the handler.
      *
      * @param handler The handler.
      */
-    void registerConnectEventListener(final TopologyEventHandler handler);
+    void registerConnectEventListener(TopologyEventHandler handler);
 
     /**
      * Synchronous invocation.
@@ -50,7 +50,7 @@ public interface RpcClient extends Lifecycle<RpcOptions> {
      * @param timeoutMs timeout millisecond
      * @return invoke result
      */
-    default Object invokeSync(final Endpoint endpoint, final Object request, final long timeoutMs)
+    default Object invokeSync(Endpoint endpoint, Object request, long timeoutMs)
         throws InterruptedException, RemotingException {
         return invokeSync(endpoint, request, null, timeoutMs);
     }
@@ -64,8 +64,8 @@ public interface RpcClient extends Lifecycle<RpcOptions> {
      * @param timeoutMs timeout millisecond
      * @return invoke result
      */
-    Object invokeSync(final Endpoint endpoint, final Object request, final InvokeContext ctx,
-        final long timeoutMs) throws InterruptedException, RemotingException;
+    Object invokeSync(Endpoint endpoint, Object request, @Nullable InvokeContext ctx,
+        long timeoutMs) throws InterruptedException, RemotingException;
 
     /**
      * Asynchronous invocation with a callback.
@@ -75,8 +75,8 @@ public interface RpcClient extends Lifecycle<RpcOptions> {
      * @param callback invoke callback
      * @param timeoutMs timeout millisecond
      */
-    default void invokeAsync(final Endpoint endpoint, final Object request, final InvokeCallback callback,
-        final long timeoutMs) throws InterruptedException, RemotingException {
+    default void invokeAsync(Endpoint endpoint, Object request, InvokeCallback callback,
+        long timeoutMs) throws InterruptedException, RemotingException {
         invokeAsync(endpoint, request, null, callback, timeoutMs);
     }
 
@@ -89,7 +89,7 @@ public interface RpcClient extends Lifecycle<RpcOptions> {
      * @param callback invoke callback
      * @param timeoutMs timeout millisecond
      */
-    void invokeAsync(final Endpoint endpoint, final Object request, final InvokeContext ctx,
-        final InvokeCallback callback,
-        final long timeoutMs) throws InterruptedException, RemotingException;
+    void invokeAsync(Endpoint endpoint, Object request, @Nullable InvokeContext ctx,
+        InvokeCallback callback,
+        long timeoutMs) throws InterruptedException, RemotingException;
 }

@@ -65,14 +65,17 @@ public class IgniteRpcClient implements RpcClientEx {
         return service;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean checkConnection(Endpoint endpoint) {
         return service.topologyService().getByAddress(endpoint.toString()) != null;
     }
 
+    /** {@inheritDoc} */
     @Override public void registerConnectEventListener(TopologyEventHandler handler) {
         service.topologyService().addEventHandler(handler);
     }
 
+    /** {@inheritDoc} */
     @Override public Object invokeSync(Endpoint endpoint, Object request, InvokeContext ctx,
         long timeoutMs) throws InterruptedException, RemotingException {
         if (!checkConnection(endpoint))
@@ -112,6 +115,7 @@ public class IgniteRpcClient implements RpcClientEx {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public void invokeAsync(Endpoint endpoint, Object request, InvokeContext ctx, InvokeCallback callback,
         long timeoutMs) throws InterruptedException, RemotingException {
         if (!checkConnection(endpoint))
@@ -170,10 +174,12 @@ public class IgniteRpcClient implements RpcClientEx {
         });
     }
 
+    /** {@inheritDoc} */
     @Override public boolean init(RpcOptions opts) {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public void shutdown() {
         try {
             if (!reuse)
@@ -184,10 +190,12 @@ public class IgniteRpcClient implements RpcClientEx {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public void blockMessages(BiPredicate<Object, String> predicate) {
         this.blockPred = predicate;
     }
 
+    /** {@inheritDoc} */
     @Override public void stopBlock() {
         ArrayList<Object[]> msgs = new ArrayList<>();
 
@@ -204,18 +212,22 @@ public class IgniteRpcClient implements RpcClientEx {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public void recordMessages(BiPredicate<Object, String> predicate) {
         this.recordPred = predicate;
     }
 
+    /** {@inheritDoc} */
     @Override public void stopRecord() {
         this.recordPred = null;
     }
 
+    /** {@inheritDoc} */
     @Override public Queue<Object[]> recordedMessages() {
         return recordedMsgs;
     }
 
+    /** {@inheritDoc} */
     @Override public Queue<Object[]> blockedMessages() {
         return blockedMsgs;
     }
