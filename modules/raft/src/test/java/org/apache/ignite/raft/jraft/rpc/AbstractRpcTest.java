@@ -16,8 +16,6 @@
  */
 package org.apache.ignite.raft.jraft.rpc;
 
-import java.net.Inet4Address;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
@@ -28,6 +26,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.ignite.raft.jraft.test.TestUtils;
 import org.apache.ignite.raft.jraft.util.Endpoint;
 import org.apache.ignite.raft.jraft.util.Utils;
 import org.junit.jupiter.api.AfterEach;
@@ -52,8 +51,8 @@ public abstract class AbstractRpcTest {
     private final List<RpcClient> clients = new ArrayList<>();
 
     @BeforeEach
-    public void setup() throws UnknownHostException {
-        endpoint = new Endpoint(Inet4Address.getLocalHost().getHostAddress(), INIT_PORT);
+    public void setup() {
+        endpoint = new Endpoint(TestUtils.getLocalAddress(), INIT_PORT);
 
         RpcServer<?> server = createServer(endpoint);
         server.registerProcessor(new Request1RpcProcessor());

@@ -19,18 +19,16 @@ package org.apache.ignite.raft.jraft.test;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
-import java.net.Inet4Address;
 import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BooleanSupplier;
+import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.raft.jraft.JRaftUtils;
 import org.apache.ignite.raft.jraft.conf.ConfigurationEntry;
@@ -47,7 +45,7 @@ import static java.lang.Thread.sleep;
  * Test helper
  */
 public class TestUtils {
-    public static ConfigurationEntry getConfEntry(final String confStr, final String oldConfStr) {
+    public static ConfigurationEntry getConfEntry(String confStr, String oldConfStr) {
         ConfigurationEntry entry = new ConfigurationEntry();
         entry.setConf(JRaftUtils.getConfiguration(confStr));
         entry.setOldConf(JRaftUtils.getConfiguration(oldConfStr));
@@ -57,9 +55,8 @@ public class TestUtils {
     public static void dumpThreads() {
         ThreadMXBean bean = ManagementFactory.getThreadMXBean();
         ThreadInfo[] infos = bean.dumpAllThreads(true, true);
-        for (ThreadInfo info : infos) {
+        for (ThreadInfo info : infos)
             System.out.println(info);
-        }
     }
 
     public static String mkTempDir() {
@@ -70,11 +67,11 @@ public class TestUtils {
         return path.toString();
     }
 
-    public static LogEntry mockEntry(final int index, final int term) {
+    public static LogEntry mockEntry(int index, int term) {
         return mockEntry(index, term, 0);
     }
 
-    public static LogEntry mockEntry(final int index, final int term, final int dataSize) {
+    public static LogEntry mockEntry(int index, int term, int dataSize) {
         LogEntry entry = new LogEntry(EnumOutter.EntryType.ENTRY_TYPE_NO_OP);
         entry.setId(new LogId(index, term));
         if (dataSize > 0) {
@@ -89,65 +86,50 @@ public class TestUtils {
         return mockEntries(10);
     }
 
-    public static String getMyIp() {
-        String ip = null;
+    /**
+     * Returns the localhost IP address.
+     *
+     * @return localhost IP address
+     */
+    public static String getLocalAddress() {
         try {
-            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
-            while (interfaces.hasMoreElements()) {
-                NetworkInterface iface = interfaces.nextElement();
-                // filters out 127.0.0.1 and inactive interfaces
-                if (iface.isLoopback() || !iface.isUp()) {
-                    continue;
-                }
-
-                Enumeration<InetAddress> addresses = iface.getInetAddresses();
-                while (addresses.hasMoreElements()) {
-                    InetAddress addr = addresses.nextElement();
-                    if (addr instanceof Inet4Address) {
-                        ip = addr.getHostAddress();
-                        break;
-                    }
-                }
-            }
-            return ip;
+            return InetAddress.getLocalHost().getHostAddress();
         }
-        catch (SocketException e) {
-            return "localhost";
+        catch (UnknownHostException e) {
+            throw new IgniteInternalException(e);
         }
     }
 
-    public static List<LogEntry> mockEntries(final int n) {
+    public static List<LogEntry> mockEntries(int n) {
         List<LogEntry> entries = new ArrayList<>();
         for (int i = 0; i < n; i++) {
             LogEntry entry = mockEntry(i, i);
-            if (i > 0) {
+            if (i > 0)
                 entry.setData(ByteBuffer.wrap(String.valueOf(i).getBytes()));
-            }
             entries.add(entry);
         }
         return entries;
     }
 
     public static RpcRequests.PingRequest createPingRequest() {
-        RpcRequests.PingRequest reqObject = RpcRequests.PingRequest.newBuilder()
-            .setSendTimestamp(System.currentTimeMillis()).build();
-        return reqObject;
+        return RpcRequests.PingRequest.newBuilder()
+            .setSendTimestamp(System.currentTimeMillis())
+            .build();
     }
 
     public static final int INIT_PORT = 5003;
 
-    public static List<PeerId> generatePeers(final int n) {
+    public static List<PeerId> generatePeers(int n) {
         List<PeerId> ret = new ArrayList<>();
-        for (int i = 0; i < n; i++) {
-            ret.add(new PeerId(getMyIp(), INIT_PORT + i));
-        }
+        for (int i = 0; i < n; i++)
+            ret.add(new PeerId(getLocalAddress(), INIT_PORT + i));
         return ret;
     }
 
-    public static List<PeerId> generatePriorityPeers(final int n, final List<Integer> priorities) {
+    public static List<PeerId> generatePriorityPeers(int n, List<Integer> priorities) {
         List<PeerId> ret = new ArrayList<>();
         for (int i = 0; i < n; i++) {
-            Endpoint endpoint = new Endpoint(getMyIp(), INIT_PORT + i);
+            Endpoint endpoint = new Endpoint(getLocalAddress(), INIT_PORT + i);
             PeerId peerId = new PeerId(endpoint, 0, priorities.get(i));
             ret.add(peerId);
         }
@@ -155,7 +137,7 @@ public class TestUtils {
     }
 
     public static byte[] getRandomBytes() {
-        final byte[] requestContext = new byte[ThreadLocalRandom.current().nextInt(10) + 1];
+        byte[] requestContext = new byte[ThreadLocalRandom.current().nextInt(10) + 1];
         ThreadLocalRandom.current().nextBytes(requestContext);
         return requestContext;
     }
