@@ -1,1 +1,1 @@
-org.apache.ignite.network.processor.internal.TransferableObjectProcessor
+org.apache.ignite.internal.network.processor.TransferableObjectProcessor

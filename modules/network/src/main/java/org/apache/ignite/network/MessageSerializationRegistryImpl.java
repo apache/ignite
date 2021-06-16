@@ -17,6 +17,7 @@
 
 package org.apache.ignite.network;
 
+import org.apache.ignite.internal.network.NetworkMessagesSerializationRegistryInitializer;
 import org.apache.ignite.network.serialization.MessageDeserializer;
 import org.apache.ignite.network.serialization.MessageSerializationFactory;
 import org.apache.ignite.network.serialization.MessageSerializationRegistry;

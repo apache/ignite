@@ -30,13 +30,13 @@ import java.util.Objects;
 import io.scalecube.cluster.transport.api.Message;
 import io.scalecube.cluster.transport.api.Transport;
 import io.scalecube.net.Address;
+import org.apache.ignite.internal.network.NetworkMessagesFactory;
+import org.apache.ignite.internal.network.message.ScaleCubeMessage;
+import org.apache.ignite.internal.network.netty.ConnectionManager;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.lang.IgniteLogger;
-import org.apache.ignite.network.NetworkMessagesFactory;
-import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.ClusterNode;
-import org.apache.ignite.network.internal.netty.ConnectionManager;
-import org.apache.ignite.network.scalecube.message.ScaleCubeMessage;
+import org.apache.ignite.network.NetworkMessage;
 import org.jetbrains.annotations.Nullable;
 import reactor.core.Disposable;
 import reactor.core.Disposables;
@@ -49,7 +49,7 @@ import reactor.core.publisher.MonoProcessor;
 /**
  * ScaleCube transport over {@link ConnectionManager}.
  */
-public class ScaleCubeDirectMarshallerTransport implements Transport {
+class ScaleCubeDirectMarshallerTransport implements Transport {
     /** Logger. */
     private static final IgniteLogger LOG = IgniteLogger.forClass(Transport.class);
 
@@ -82,7 +82,7 @@ public class ScaleCubeDirectMarshallerTransport implements Transport {
      * @param topologyService topology service
      * @param messageFactory message factory
      */
-    public ScaleCubeDirectMarshallerTransport(
+    ScaleCubeDirectMarshallerTransport(
         ConnectionManager connectionManager,
         ScaleCubeTopologyService topologyService,
         NetworkMessagesFactory messageFactory
