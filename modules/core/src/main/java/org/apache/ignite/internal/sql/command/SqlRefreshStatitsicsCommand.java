@@ -15,14 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.timeout;
+package org.apache.ignite.internal.sql.command;
 
 /**
- *
+ * REFRESH STATISTICS Command.
  */
-public class DefaultQueryTimeoutThickJavaUpdateTest extends DefaultQueryTimeoutThickJavaTest {
-    /** */
-    public DefaultQueryTimeoutThickJavaUpdateTest() {
-        super(true, false);
-    }
+public class SqlRefreshStatitsicsCommand extends SqlStatisticsCommands {
+
 }
