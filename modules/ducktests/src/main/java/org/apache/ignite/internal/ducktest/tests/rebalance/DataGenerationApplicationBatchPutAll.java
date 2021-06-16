@@ -62,7 +62,7 @@ public class DataGenerationApplicationBatchPutAll extends IgniteAwareApplication
 
         int i = from;
 
-        while(i < to) {
+        while (i < to) {
             map = new TreeMap<>();
 
             for (int j = 0; j < batchSize & i < to; j += entrySize, i++)
