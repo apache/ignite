@@ -47,11 +47,12 @@ class TriggerEvent(IntEnum):
     NODE_LEFT = 1
 
 
-# pylint: disable=R0914,E251
-def preload_data(context, config, preloaders, backups, cache_count, entry_count, entry_size,
-                 preload_class_name=
-                 "org.apache.ignite.internal.ducktest.tests.rebalance.DataGenerationApplicationStreamer",
-                 timeout=3600):
+# pylint: disable=R0914
+def preload_data(
+        context, config, preloaders, backups, cache_count, entry_count, entry_size,
+        preload_class_name="org.apache.ignite.internal.ducktest.tests.rebalance.DataGenerationApplicationStreamer",
+        timeout=3600
+):
     """
     Puts entry_count of key-value pairs of entry_size bytes to cache_count caches.
     :param context: Test context.
