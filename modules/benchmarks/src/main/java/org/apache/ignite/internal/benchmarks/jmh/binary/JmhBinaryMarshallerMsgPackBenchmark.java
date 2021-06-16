@@ -68,6 +68,9 @@ import java.io.ByteArrayOutputStream;
  * JmhBinaryMarshallerMsgPackBenchmark.readPojoMsgPack            thrpt   10  6292876.474 ±  73356.915  ops/s
  * JmhBinaryMarshallerMsgPackBenchmark.readPojoMsgPackBinary      thrpt   10  19223554.149 ± 114627.713  ops/s
  *
+ * JmhBinaryMarshallerMsgPackBenchmark.writeSqlQueryIgnite        thrpt   10   5756908.336 ±  42079.083  ops/s
+ * JmhBinaryMarshallerMsgPackBenchmark.writeSqlQueryMsgPack       thrpt   10  12380076.956 ± 150712.634  ops/s
+ *
  */
 @State(Scope.Benchmark)
 public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
@@ -210,17 +213,17 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
         return new IgniteBiTuple<>(msgPackUnpacker.unpackInt(), msgPackUnpacker.unpackString());
     }
 
-    @Benchmark
+    //@Benchmark
     public IntPojo readPojoIgnite() throws Exception {
         return marshaller.unmarshal(ignitePojoBytes, null);
     }
 
-    @Benchmark
+    //@Benchmark
     public IntPojo readPojoMsgPack() throws Exception {
         return msgPackMapper.readValue(msgPackPojoBytes, IntPojo.class);
     }
 
-    @Benchmark
+    //@Benchmark
     public ImmutableValue readPojoMsgPackBinary() throws Exception {
         msgPackUnpacker.reset(new ArrayBufferInput(msgPackPojoBytes));
 
@@ -259,9 +262,9 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
      * @throws Exception If failed.
      */
     public static void main(String[] args) throws Exception {
-        runTests();
+        // runTests();
 
-        // runBenchmarks();
+        runBenchmarks();
     }
 
     private static void runTests() throws Exception {
@@ -270,8 +273,8 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
 
         System.out.println(bench.readPojoMsgPackBinary());
 
-        printBytes(bench.writePrimitivesMsgPackRaw());
-        printBytes(bench.writePrimitivesIgnite());
+        printBytes(bench.writeSqlQueryMsgPack());
+        printBytes(bench.writeSqlQueryIgnite());
         printBytes(bench.writePojoMsgPack());
         printBytes(bench.writePojoIgnite());
 
@@ -302,7 +305,7 @@ public class JmhBinaryMarshallerMsgPackBenchmark extends JmhAbstractBenchmark {
     }
 
     private static void printBytes(byte[] res) {
-        System.out.println();
+        System.out.println(res.length + ": ");
 
         for (byte b : res)
             System.out.print(b + ", ");
