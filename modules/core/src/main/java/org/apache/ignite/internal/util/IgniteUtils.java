@@ -12233,4 +12233,16 @@ public abstract class IgniteUtils {
             return size;
         }
     }
+
+    /**
+     * Map object hash to some index between 0 and specified size via modulo operation.
+     *
+     * @param hash Object hash.
+     * @param size Size greater than 0.
+     * @return Calculated index in range [0..size).
+     */
+    public static int hashToIndex(int hash, int size) {
+        return safeAbs(hash % size);
+    }
+
 }
