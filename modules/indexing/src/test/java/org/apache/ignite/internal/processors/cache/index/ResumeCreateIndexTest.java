@@ -49,6 +49,9 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
+/**
+ * Test to check consistency when adding a new index.
+ */
 @WithSystemProperty(key = IGNITE_INDEX_REBUILD_BATCH_SIZE, value = "1")
 public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
     /** {@inheritDoc} */
@@ -251,13 +254,13 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
 
         checkInitStatus(n, cacheName, true, 1);
 
+        slowdownIdxCreateConsumer.finishBuildIdxFut.onDone();
         slowdownRebuildIdxConsumer.sleepTime.set(0);
         idxRebFut.get(getTestTimeout());
 
         checkInitStatus(n, cacheName, false, 1);
 
         slowdownIdxCreateConsumer.sleepTime.set(0);
-        slowdownIdxCreateConsumer.finishBuildIdxFut.onDone();
         createIdxFut.get(getTestTimeout());
 
         checkCompletedStatus(n, cacheName);
