@@ -444,6 +444,15 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
         assertEquals(expNewIdx, status.buildNewIndexes());
     }
 
+    /**
+     * Creating a node and filling the cache.
+     *
+     * @param cacheName Cache name.
+     * @param cnt Entry count.
+     * @param disableCp Disable checkpoint.
+     * @return New node.
+     * @throws Exception If failed.
+     */
     private IgniteEx prepareNodeToCreateNewIndex(String cacheName, int cnt, boolean disableCp) throws Exception {
         IgniteH2IndexingEx.prepareBeforeNodeStart();
         IndexesRebuildTaskEx.prepareBeforeNodeStart();
@@ -458,18 +467,41 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
         return n;
     }
 
+    /**
+     * Checking {@link Status#INIT} status.
+     *
+     * @param n Node.
+     * @param cacheName Cache name.
+     * @param expRebuild Expected rebuild flag.
+     * @param expNewIdx Expected count of new indexes being built.
+     * @throws Exception If failed.
+     */
     private void checkInitStatus(IgniteEx n, String cacheName, boolean expRebuild, int expNewIdx) throws Exception {
         checkStatus(statuses(n).get(cacheName), INIT, true, expRebuild, expNewIdx);
         assertNotNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheName)));
         assertEquals(!expRebuild, indexBuildStatusStorage(n).rebuildCompleted(cacheName));
     }
 
+    /**
+     * Checking {@link Status#COMPLETED} status.
+     *
+     * @param n Node.
+     * @param cacheName Cache name.
+     * @throws Exception If failed.
+     */
     private void checkCompletedStatus(IgniteEx n, String cacheName) throws Exception {
         checkStatus(statuses(n).get(cacheName), COMPLETED, true, false, 0);
         assertNotNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheName)));
         assertTrue(indexBuildStatusStorage(n).rebuildCompleted(cacheName));
     }
 
+    /**
+     * Checking for no status.
+     *
+     * @param n Node.
+     * @param cacheName Cache name.
+     * @throws Exception If failed.
+     */
     private void checkNoStatus(IgniteEx n, String cacheName) throws Exception {
         assertNull(statuses(n).get(cacheName));
         assertNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheName)));
