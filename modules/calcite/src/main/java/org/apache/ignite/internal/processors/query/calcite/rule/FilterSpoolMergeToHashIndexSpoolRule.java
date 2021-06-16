@@ -16,11 +16,8 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.isBinaryComparison;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -33,7 +30,6 @@ import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rex.RexBuilder;
-import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
@@ -43,6 +39,8 @@ import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrai
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
+
+import static org.apache.ignite.internal.processors.query.calcite.util.RexUtils.isBinaryComparison;
 
 /**
  * Rule that pushes filter into the spool.
