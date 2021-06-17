@@ -402,7 +402,7 @@ public class SnapshotRestoreProcess {
      */
     public boolean cancel(Exception reason, String snpName) {
         SnapshotRestoreContext opCtx0 = opCtx;
-        boolean ctxStop = opCtx0 != null && (snpName == null || opCtx0.snpName.equals(snpName));
+        boolean ctxStop = opCtx0 != null && opCtx0.snpName.equals(snpName);
 
         if (ctxStop)
             interrupt(opCtx0, reason);
@@ -494,15 +494,8 @@ public class SnapshotRestoreProcess {
             SnapshotRestoreContext opCtx0 = opCtx = prepareContext(req);
             ClusterSnapshotFuture fut0 = fut;
 
-            if (fut0 != null) {
-                Exception err = fut0.interruptEx;
-
-                if (err != null) {
-                    opCtx0.err.set(err);
-
-                    throw new IgniteCheckedException(err);
-                }
-            }
+            if (fut0 != null && fut0.interruptEx != null)
+                throw new IgniteCheckedException(fut0.interruptEx);
 
             if (opCtx0.dirs.isEmpty())
                 return new GridFinishedFuture<>();
