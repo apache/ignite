@@ -21,18 +21,18 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * Basic interface for all index query criteria.
+ * Basic interface for all {@link IndexQuery} criteria.
  */
 public interface IndexQueryCriteria extends Serializable {
     /**
-     * @return List of index fields that this query criteria applies to.
+     * @return List of fields that this query criteria applies to.
      */
     public abstract List<String> fields();
 
     /**
-     * Merges multiple index criteria.
+     * Merges multiple criteria.
      *
-     * @param criteria Index criteria to merge.
+     * @param criteria Criteria to merge.
      * @return This for chaining.
      */
     public abstract IndexQueryCriteria and(IndexQueryCriteria criteria);

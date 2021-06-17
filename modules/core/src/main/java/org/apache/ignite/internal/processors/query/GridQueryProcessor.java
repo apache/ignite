@@ -3335,9 +3335,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param filters Key and value filters.
      * @param <K> Key type.
      * @param <V> Value type.
+     * @param cacheName Cache name.
+     * @param valCls Cache value class.
+     * @param idxQryDesc Index query description.
+     * @param filters Key and value filters.
+     * @param keepBinary Keep binary flag.
      * @return Key/value rows.
      * @throws IgniteCheckedException If failed.
      */

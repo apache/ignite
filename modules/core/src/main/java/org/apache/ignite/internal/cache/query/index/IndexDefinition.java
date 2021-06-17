@@ -29,6 +29,8 @@ public interface IndexDefinition {
      */
     public IndexName idxName();
 
-    /** List of index key definitions. */
+    /**
+     * @return List of index key definitions.
+     */
     public List<IndexKeyDefinition> indexKeyDefinitions();
 }

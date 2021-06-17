@@ -31,18 +31,17 @@ public class RangeIndexQueryCriteria implements IndexQueryCriteria {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** List of criteria fields that should match index fields. */
+    /** List of criteria fields. */
     private final List<String> fields = new ArrayList<>();
 
-    /** List of criteria fields that should match index fields. */
+    /** List of criteria. Order is consistent with {@link #fields}. */
     private final List<RangeCriterion> fldCriteria = new ArrayList<>();
 
     /** */
     public RangeIndexQueryCriteria(String field, @Nullable Object lower, @Nullable Object upper, boolean lowIncl, boolean upIncl) {
         fields.add(field);
 
-        fldCriteria.add(
-            new RangeCriterion(lower, upper, lowIncl, upIncl));
+        fldCriteria.add(new RangeCriterion(lower, upper, lowIncl, upIncl));
     }
 
     /** {@inheritDoc} */
@@ -73,7 +72,7 @@ public class RangeIndexQueryCriteria implements IndexQueryCriteria {
         return fldCriteria;
     }
 
-    /** Represents info about signle field criterion. */
+    /** Represents signle field criterion. */
     public static class RangeCriterion implements Serializable {
         /** */
         private static final long serialVersionUID = 0L;

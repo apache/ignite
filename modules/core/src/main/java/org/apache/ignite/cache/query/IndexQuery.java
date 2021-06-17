@@ -30,13 +30,13 @@ public class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Index query criteria describes index query clause. */
+    /** Index query criteria. */
     private IndexQueryCriteria criteria;
 
     /** Cache Value class. Describes a table within a cache that runs a query. */
     private final String valCls;
 
-    /** Optional index name. Find index by fields in {@link #criteria}. */
+    /** Optional index name. */
     private final @Nullable String idxName;
 
     /**
@@ -83,7 +83,7 @@ public class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
     }
 
     /** Index query criteria. */
-    public IndexQueryCriteria getIndexCriteria() {
+    public IndexQueryCriteria getCriteria() {
         return criteria;
     }
 

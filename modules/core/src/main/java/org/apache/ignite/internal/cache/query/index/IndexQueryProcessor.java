@@ -25,9 +25,9 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.cache.query.IndexQueryCriteria;
 import org.apache.ignite.cache.query.IndexQueryCriteriaBuilder;
-import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.internal.cache.query.RangeIndexQueryCriteria;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
@@ -131,7 +131,7 @@ public class IndexQueryProcessor {
             if (!QueryUtils.PRIMARY_KEY_INDEX.equals(name))
                 name = name.toUpperCase();
 
-            String schema = idxProc.query().schemaName(cctx);
+            String schema = cctx.kernalContext().query().schemaName(cctx);
 
             IndexName idxName = new IndexName(cctx.name(), schema, tableName, name);
 
@@ -228,7 +228,7 @@ public class IndexQueryProcessor {
         if (criteria instanceof RangeIndexQueryCriteria)
             return treeIndexRange((InlineIndex) idx, (RangeIndexQueryCriteria) criteria, segment, qryCtx);
 
-        throw new IllegalStateException("Doesn't support index criterion: " + criteria.getClass().getName());
+        throw new IllegalStateException("Doesn't support index query criteria: " + criteria.getClass().getName());
     }
 
     /**

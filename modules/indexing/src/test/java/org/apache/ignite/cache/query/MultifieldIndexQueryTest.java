@@ -466,37 +466,30 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testIllegalDifferentCriteria() {
+    public void testNoRightIndexRangeDifferentCriteria() {
         insertData();
 
         int pivot = new Random().nextInt(CNT);
 
-//        IndexQuery<Long, Person> qry = IndexQuery
-//            .<Long, Person>forIndex(Person.class, INDEX)
-//            .where(lt("id", 1), gt("secId", pivot));
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, INDEX)
+            .setCriteria(lt("id", 1), gt("secId", pivot));
 
-        // TODO: fail or return empty result?
-//        GridTestUtils.assertThrows(null,
-//            () -> cache.query(qry).getAll(), CacheException.class, "Range query doesn't match index 'TEST_IDX'");
+        checkPerson(cache.query(qry), pivot + 1, CNT);
 
-//        IndexQuery<Long, Person> qry1 = IndexQuery
-//            .<Long, Person>forIndex(Person.class, INDEX)
-//            .where(lt("id", 1), gte("secId", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
+            .setCriteria(lt("id", 1), gte("secId", pivot));
 
-//        GridTestUtils.assertThrows(null,
-//            () -> cache.query(qry1).getAll(), CacheException.class, "Range query doesn't match index 'TEST_IDX'");
+        checkPerson(cache.query(qry), pivot, CNT);
 
-        IndexQuery<Long, Person> qry2 = new IndexQuery<Long, Person>(Person.class, INDEX)
+        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
             .setCriteria(gt("id", 2), lt("secId", pivot));
 
-        GridTestUtils.assertThrows(null,
-            () -> cache.query(qry2).getAll(), CacheException.class, "Range query doesn't match index 'TEST_IDX'");
+        assertTrue(cache.query(qry).getAll().isEmpty());
 
-        IndexQuery<Long, Person> qry3 = new IndexQuery<Long, Person>(Person.class, INDEX)
+        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
             .setCriteria(gt("id", 2), eq("secId", pivot));
 
-        GridTestUtils.assertThrows(null,
-            () -> cache.query(qry3).getAll(), CacheException.class, "Range query doesn't match index 'TEST_IDX'");
+        assertTrue(cache.query(qry).getAll().isEmpty());
     }
 
     /** */

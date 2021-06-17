@@ -21,10 +21,10 @@ import org.apache.ignite.internal.cache.query.RangeIndexQueryCriteria;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
- * Factory for {@link IndexQueryCriteria} for {@link IndexQuery}.
+ * Factory of {@link IndexQueryCriteria} for {@link IndexQuery}.
  */
 public class IndexQueryCriteriaBuilder {
-    /** Object to mark a boundary if {@code null} is specified. */
+    /** Object to mark a boundary if {@code null} is explicitly specified. */
     private static final Object NULL = new Null();
 
     /** Equal To. */
