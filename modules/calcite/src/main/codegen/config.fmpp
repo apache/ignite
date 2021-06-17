@@ -54,6 +54,8 @@ data: {
       "INDEX"
       "PARALLEL"
       "INLINE_SIZE"
+      "LOGGING"
+      "NOLOGGING"
     ]
 
     # List of non-reserved keywords to add;
@@ -73,6 +75,8 @@ data: {
       "ENCRYPTED"
       "PARALLEL"
       "INLINE_SIZE"
+      "LOGGING"
+      "NOLOGGING"
 
       # The following keywords are reserved in core Calcite,
       # are reserved in some version of SQL,
@@ -582,6 +586,7 @@ data: {
     # Return type of method implementation should be 'SqlNode'.
     # Example: "SqlShowDatabases()", "SqlShowTables()".
     statementParserMethods: [
+      "SqlAlterTable()"
     ]
 
     # List of methods for parsing extensions to "CREATE [OR REPLACE]" calls.
@@ -600,9 +605,9 @@ data: {
       "SqlDropIndex"
     ]
 
-    # List of methods for parsing extensions to "DROP" calls.
-    # Each must accept arguments "(SqlParserPos pos)".
-    # Example: "SqlDropSchema".
+    # List of methods for parsing extensions to "ALTER <scope>" calls.
+    # Where scope is SYSTEM or SESSION.
+    # Each must accept arguments "(SqlParserPos pos, String scope)".
     alterStatementParserMethods: [
     ]
 
