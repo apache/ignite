@@ -95,11 +95,8 @@ public class IndexBuildStatusHolder {
      * @see #onStartOperation
      */
     public synchronized Status onFinishOperation(boolean rebuild) {
-        if (rebuild) {
-            assert this.rebuild;
-
+        if (rebuild)
             this.rebuild = false;
-        }
         else {
             assert newIdx > 0;
 
