@@ -910,14 +910,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
     }
 
-    /**
-     * Cancel restore operation cluster-wide.
-     *
-     * @param name Snapshot name.
-     * @return Future that will be finished when process the process is complete on all nodes. The result of this
-     * future will be {@code false} if the restore process with the specified snapshot name is not running at all.
-     */
-    public IgniteFuture<Boolean> cancelRestore(String name) {
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Boolean> cancelSnapshotRestore(String name) {
         return executeRestoreManagementTask(SnapshotRestoreCancelTask.class, name);
     }
 
