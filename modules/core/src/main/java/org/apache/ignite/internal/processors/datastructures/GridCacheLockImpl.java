@@ -200,7 +200,7 @@ public final class GridCacheLockImpl extends AtomicDataStructureProxy<GridCacheL
 
         /** */
         private Map<String, Integer> processSignal() {
-            Map<String,Integer> ret = new HashMap<>(outgoingSignals);
+            Map<String, Integer> ret = new HashMap<>(outgoingSignals);
 
             outgoingSignals.clear();
 

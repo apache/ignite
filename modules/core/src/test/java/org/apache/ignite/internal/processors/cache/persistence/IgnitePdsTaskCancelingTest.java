@@ -198,7 +198,7 @@ public class IgnitePdsTaskCancelingTest extends GridCommonAbstractTest {
 
         DataStorageConfiguration dbCfg = getDataStorageConfiguration();
 
-        FilePageStore pageStore = new FilePageStore(PageMemory.FLAG_DATA, file::toPath, factory, dbCfg, val -> {});
+        FilePageStore pageStore = new FilePageStore(PageMemory.FLAG_DATA, file::toPath, factory, dbCfg.getPageSize(), val -> {});
 
         int pageSize = dbCfg.getPageSize();
 

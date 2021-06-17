@@ -56,7 +56,7 @@ public abstract class IgniteAggregate extends Aggregate implements IgniteRel {
         super(changeTraits(input, IgniteConvention.INSTANCE));
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public double estimateRowCount(RelMetadataQuery mq) {
         Double groupsCnt = mq.getDistinctRowCount(getInput(), groupSet, null);
 

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 /**
@@ -96,5 +97,19 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
         assertQuery("select avg(salary) from person")
             .returns(12.0)
             .check();
+    }
+
+    /** */
+    @Test
+    public void testMultipleRowsFromSingleAggr() {
+        createAndPopulateTable();
+
+        GridTestUtils.assertThrowsWithCause(() -> assertQuery("SELECT t._key, (SELECT x FROM " +
+                "TABLE(system_range(1, 5))) FROM person t").check(), IllegalArgumentException.class);
+
+        GridTestUtils.assertThrowsWithCause(() -> assertQuery("SELECT t._key, (SELECT x FROM " +
+                "TABLE(system_range(t._key, t._key + 1))) FROM person t").check(), IllegalArgumentException.class);
+
+        assertQuery("SELECT t._key, (SELECT x FROM TABLE(system_range(t._key, t._key))) FROM person t").check();
     }
 }

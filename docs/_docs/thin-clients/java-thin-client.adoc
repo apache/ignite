@@ -86,6 +86,22 @@ The following code sample illustrates how to use the partition awareness feature
 include::{sourceCodeFile}[tag=partition-awareness,indent=0]
 ----
 
+If a list of server nodes is dynamically changing or scaling, then it is possible to configure the connection with custom implementation of `ClientAddressFinder`. It should provide a number of current server addresses every time a client asks for them.
+The following code sample illustrates how to use it.
+
+[source, java]
+----
+include::{sourceCodeFile}[tag=client-address-finder,indent=0]
+----
+
+The code snippet shows how an example implementation might look like if you want clients to retrieve server addresses dynamically.
+
+* The `ClientAddressFinder` is a functional interface that provides the only method `getAddresses()`.
+* The `fetchServerAddress()` is a custom function that dynamically provides server addresses.
+* Configure client with `ClientConfiguration.setAddressFinder(finder)`.
+
+Also, you can check a real example of the interface implementation. `ThinClientKubernetesAddressFinder` is created to handle scalable Kubernetes environment.
+
 == Using Key-Value API
 
 The Java thin client supports most of the key-value operations available in the thick client.
@@ -141,7 +157,7 @@ To start a transaction, obtain the `ClientTransactions` object from `IgniteClien
 `ClientTransactions` has a number of  `txStart(...)` methods, each of which starts a new transaction and returns an object (`ClientTransaction`) that represents the transaction.
 Use this object to commit or rollback the transaction.
 
-[source, ruby]
+[source, java]
 ----
 include::{sourceCodeFile}[tags=tx,indent=0]
 ----
@@ -275,6 +291,8 @@ The example below shows how to invoke the service named `MyService`:
 include::{sourceCodeFile}[tag=client-services,indent=0]
 -------------------------------------------------------------------------------
 
+The deployed service can be implemented using Java or .NET.
+
 == Handling Exceptions
 
 === Handling Node Failures
@@ -327,3 +345,15 @@ include::{sourceCodeFile}[tag=client-authentication,indent=0]
 -------------------------------------------------------------------------------
 
 
+== Async APIs
+
+Most network-bound thin client APIs have an async counterpart, for example, `ClientCache.get` and `ClientCache.getAsync`.
+
+[source, java]
+-------------------------------------------------------------------------------
+include::{sourceCodeFile}[tag=async-api,indent=0]
+-------------------------------------------------------------------------------
+
+* Async methods do not block the calling thread
+* Async methods return `IgniteClientFuture<T>` which is a combination of `Future<T>` and `CompletionStage<T>`.
+* Async continuations are executed using `ClientConfiguration.AsyncContinuationExecutor`, which defaults to `ForkJoinPool#commonPool()`. For example, `cache.getAsync(1).thenAccept(val -> System.out.println(val))` will execute the `println` call using a thread from the `commonPool`.

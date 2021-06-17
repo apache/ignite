@@ -53,9 +53,10 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.apache.ignite.transactions.TransactionConcurrency;
-import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
+
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 
 /**
  *
@@ -157,7 +158,8 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
         );
 
         for (int it = 0; it < 10; it++) {
-            SingleMessageInterceptorCommunicationSpi spi = (SingleMessageInterceptorCommunicationSpi) ignite.configuration().getCommunicationSpi();
+            SingleMessageInterceptorCommunicationSpi spi =
+                (SingleMessageInterceptorCommunicationSpi) ignite.configuration().getCommunicationSpi();
             spi.clear();
 
             // Stop load future.
@@ -185,7 +187,7 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
                         .sorted()
                         .collect(Collectors.toList());
 
-                    try (Transaction tx = ignite.transactions().txStart(TransactionConcurrency.OPTIMISTIC, TransactionIsolation.READ_COMMITTED)) {
+                    try (Transaction tx = ignite.transactions().txStart(OPTIMISTIC, READ_COMMITTED)) {
                         for (Integer key : randomKeys)
                             txCache.put(key, key);
 
@@ -214,11 +216,20 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
                 for (int i = 0; i < interceptedMessages.size(); i++)
                     messagesMap.put(grid(i + 1).context().localNodeId(), interceptedMessages.get(i));
 
-                GridDhtPartitionsStateValidator validator = new GridDhtPartitionsStateValidator(ignite.context().cache().context());
+                GridDhtPartitionsStateValidator validator =
+                    new GridDhtPartitionsStateValidator(ignite.context().cache().context());
 
                 // Validate partition update counters. If counters are not consistent, exception will be thrown.
-                validator.validatePartitionsUpdateCounters(ignite.cachex(atomicCacheName).context().topology(), messagesMap, Collections.emptySet());
-                validator.validatePartitionsUpdateCounters(ignite.cachex(txCacheName).context().topology(), messagesMap, Collections.emptySet());
+                validator.validatePartitionsUpdateCounters(
+                    ignite.cachex(atomicCacheName).context().topology(),
+                    messagesMap,
+                    Collections.emptySet()
+                );
+                validator.validatePartitionsUpdateCounters(
+                    ignite.cachex(txCacheName).context().topology(),
+                    messagesMap,
+                    Collections.emptySet()
+                );
 
             } finally {
                 // Stop load and resume exchange.

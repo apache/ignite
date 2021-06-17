@@ -255,8 +255,6 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
 
         AffinityFunction aff = new RendezvousAffinityFunction(parts, null);
 
-        getTestResources().inject(aff);
-
         GridByteArrayWrapper[] keys = new GridByteArrayWrapper[512];
         Random rnd = new Random();
 

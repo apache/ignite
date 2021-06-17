@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
     /// LINQ test with simple name mapper.
     /// </summary>
     [TestFixture]
+    [Category(TestUtils.CategoryIntensive)]
     public class CacheLinqTestSqlEscapeAll : CacheLinqTest
     {
         /** <inheritdoc /> */

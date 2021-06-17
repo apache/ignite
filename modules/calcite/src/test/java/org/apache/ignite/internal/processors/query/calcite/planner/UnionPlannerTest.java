@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.calcite.tools.Frameworks.createRootSchema;
@@ -39,6 +40,7 @@ import static org.apache.calcite.tools.Frameworks.createRootSchema;
  */
 //@WithSystemProperty(key = "calcite.debug", value = "true")
 @SuppressWarnings({"TooBroadScope", "FieldCanBeLocal", "TypeMayBeWeakened"})
+@Ignore("https://issues.apache.org/jira/browse/IGNITE-14594")
 public class UnionPlannerTest extends AbstractPlannerTest {
     /**
      * @throws Exception If failed.

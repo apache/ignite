@@ -23,9 +23,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ExecutorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -43,6 +43,9 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
 
     /** Executor name for setExecutorConfiguration */
     private static final String CUSTOM_EXECUTOR_1 = "Custom executor 1";
+
+    /** */
+    public static final String IN_MEMORY_REGION = "userTransientDataRegion";
 
     /** */
     private GridStringLogger strLog = new GridStringLogger(false, this.log);
@@ -81,7 +84,9 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
     @Test
     public void testNodeMetricsLog() throws Exception {
         IgniteCache<Integer, String> cache1 = grid(0).createCache("TestCache1");
-        IgniteCache<Integer, String> cache2 = grid(1).createCache("TestCache2");
+        IgniteCache<Integer, String> cache2 = grid(1).createCache(
+            new CacheConfiguration<Integer, String>("TestCache2")
+            .setDataRegionName(persistenceEnabled() ? IN_MEMORY_REGION : "default"));
 
         cache1.put(1, "one");
         cache2.put(2, "two");
@@ -124,6 +129,7 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
         assertTrue(msg, fullLog.matches("(?s).*Outbound messages queue \\[size=.*].*"));
         assertTrue(msg, fullLog.matches("(?s).*Public thread pool \\[active=.*, idle=.*, qSize=.*].*"));
         assertTrue(msg, fullLog.matches("(?s).*System thread pool \\[active=.*, idle=.*, qSize=.*].*"));
+        assertTrue(msg, fullLog.matches("(?s).*Striped thread pool \\[active=.*, idle=.*, qSize=.*].*"));
         assertTrue(msg, fullLog.matches("(?s).*" + CUSTOM_EXECUTOR_0 + " \\[active=.*, idle=.*, qSize=.*].*"));
         assertTrue(msg, fullLog.matches("(?s).*" + CUSTOM_EXECUTOR_1 + " \\[active=.*, idle=.*, qSize=.*].*"));
     }
@@ -136,8 +142,8 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
     protected void checkDataRegionsMetrics(String logOutput) {
         Set<String> regions = new HashSet<>();
 
-        Matcher matcher = Pattern.compile("(?m).{2,} {3}(?<name>.+) region \\[type=(default|internal), " +
-                "persistence=(true|false), lazyAlloc=(true|false),\\s*\\.\\.\\.\\s*" +
+        Matcher matcher = Pattern.compile("(?m).{2,} {3}(?<name>.+) region \\[type=(default|internal|user), " +
+                "persistence=(?<persistent>true|false), lazyAlloc=(true|false),\\s*\\.\\.\\.\\s*" +
                 "initCfg=(?<init>[-\\d]+)MB, maxCfg=(?<max>[-\\d]+)MB, usedRam=(?<used>[-\\d]+).*MB, " +
                 "freeRam=(?<free>[-.\\d]+)%, allocRam=(?<alloc>[-\\d]+)MB(, allocTotal=(?<total>[-\\d]+)MB)?]")
             .matcher(logOutput);
@@ -150,6 +156,7 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
             int used = Integer.parseInt(matcher.group("used"));
             double free = Double.parseDouble(matcher.group("free"));
             int alloc = Integer.parseInt(matcher.group("alloc"));
+            boolean persistent = Boolean.parseBoolean(matcher.group("persistent"));
 
             assertTrue(init + " should be non negative: " + subj, init >= 0);
             assertTrue(max + " is less then " + init + ": " + subj, max >= init);
@@ -157,7 +164,7 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
             assertTrue(alloc + " is less then " + used + ": " + subj, alloc >= used);
             assertTrue(free + " is not between 0 and 100: " + subj, 0 <= free && free <= 100);
 
-            if (persistenceEnabled()) {
+            if (persistent) {
                 int total = Integer.parseInt(matcher.group("total"));
 
                 assertTrue(total + " is less then " + used + ": " + subj, total >= used);
@@ -171,7 +178,6 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
 
         Set<String> expRegions = grid(0).context().cache().context().database().dataRegions().stream()
             .map(v -> v.config().getName().trim())
-            .filter(regName -> !DataStructuresProcessor.VOLATILE_DATA_REGION_NAME.equals(regName))
             .collect(Collectors.toSet());
 
         assertFalse("No data regions in the log.", regions.isEmpty());

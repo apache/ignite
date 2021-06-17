@@ -255,7 +255,8 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
 
         entriesToRemove.forEach(t2 -> cache.remove(t2.get1()));
 
-        //During removing of entries free list grab a lot of free pages to itself so will do put/remove again for stabilization of free pages.
+        //During removing of entries free list grab a lot of free pages to itself
+        //so will do put/remove again for stabilization of free pages.
         entriesToRemove.forEach(t2 -> cache.put(t2.get1(), t2.get2()));
 
         entriesToRemove.forEach(t2 -> cache.remove(t2.get1()));
@@ -303,7 +304,8 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
 
         Optional<Long> totalPartSizeAfterRestore = totalPartitionsSize(cacheFolder);
 
-        //It allow that size after repeated put operations should be not more than on 15%(heuristic value) greater than before operations. In fact, it should not be multiplied in twice every time.
+        //It allow that size after repeated put operations should be not more than on 15%(heuristic value) greater than before operations.
+        //In fact, it should not be multiplied in twice every time.
         long correctedRestoreSize = totalPartSizeAfterRestore.get() - (long)(totalPartSizeBeforeStop.get() * 0.15);
 
         assertTrue("Size after repeated put operations should be not more than on 15% greater. " +

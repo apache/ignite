@@ -1,0 +1,10 @@
+>>> Events example started.
+
+>>> Listening for a local event...
+Local listener received an event [evt=TASK_STARTED]
+
+>>> Executing salary job for 20 employee(s) ...
+
+Local listener received an event [evt=TASK_REDUCED]
+Local listener received an event [evt=TASK_FINISHED]
+>>> Received events count: 3

@@ -25,6 +25,7 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.CacheState;
@@ -35,6 +36,8 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_GRP_STATE_LAZY_STORE;
 
 /**
  * Class represents checkpoint state.
@@ -114,7 +117,7 @@ public class CheckpointEntry {
     private GroupStateLazyStore initIfNeeded(IgniteWriteAheadLogManager wal) throws IgniteCheckedException {
         GroupStateLazyStore store = grpStateLazyStore.get();
 
-        if (store == null) {
+        if (store == null || IgniteSystemProperties.getBoolean(IGNITE_DISABLE_GRP_STATE_LAZY_STORE, false)) {
             store = new GroupStateLazyStore();
 
             grpStateLazyStore = new SoftReference<>(store);
@@ -130,16 +133,10 @@ public class CheckpointEntry {
      * @param grpId Cache group ID.
      * @param part Partition ID.
      * @return Partition counter or {@code null} if not found.
+     * @throws IgniteCheckedException If something is wrong when loading the counter from WAL history.
      */
-    public Long partitionCounter(IgniteWriteAheadLogManager wal, int grpId, int part) {
-        GroupStateLazyStore store;
-
-        try {
-            store = initIfNeeded(wal);
-        }
-        catch (IgniteCheckedException e) {
-            return null;
-        }
+    public Long partitionCounter(IgniteWriteAheadLogManager wal, int grpId, int part) throws IgniteCheckedException {
+        GroupStateLazyStore store = initIfNeeded(wal);
 
         return store.partitionCounter(grpId, part);
     }

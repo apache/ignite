@@ -83,7 +83,7 @@ public interface TableDescriptor extends RelProtoDataType, InitializerExpression
     }
 
     /**
-     * Returns row type of internal fields (either virtual or real) only.
+     * Returns row type including effectively virtual fields.
      *
      * @param factory Type factory.
      * @return Row type for SELECT operation.

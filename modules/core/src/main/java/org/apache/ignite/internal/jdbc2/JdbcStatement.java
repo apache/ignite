@@ -25,13 +25,9 @@ import java.sql.SQLWarning;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
@@ -64,12 +60,6 @@ public class JdbcStatement implements Statement {
 
     /** Fetch size. */
     private int fetchSize = DFLT_FETCH_SIZE;
-
-    /** Result sets. */
-    final Set<JdbcResultSet> resSets = new HashSet<>();
-
-    /** Fields indexes. */
-    Map<String, Integer> fieldsIdxs = new HashMap<>();
 
     /** Batch of statements. */
     private List<String> batch;
@@ -118,7 +108,13 @@ public class JdbcStatement implements Statement {
         boolean loc = nodeId == null;
         JdbcQueryMultipleStatementsTask qryTask;
 
-        if (!conn.isMultipleStatementsAllowed() && conn.isMultipleStatementsTaskV2Supported()) {
+        if (conn.isMultipleStatementsTaskV3Supported()) {
+            qryTask = new JdbcQueryMultipleStatementsTaskV3(loc ? ignite : null, conn.schemaName(),
+                sql, isQuery, loc, getArgs(), fetchSize, conn.isLocalQuery(),
+                conn.isCollocatedQuery(), conn.isDistributedJoins(), conn.isEnforceJoinOrder(), conn.isLazy(),
+                conn.isMultipleStatementsAllowed(), conn.clientDescriptor());
+        }
+        else if (!conn.isMultipleStatementsAllowed() && conn.isMultipleStatementsTaskV2Supported()) {
             qryTask = new JdbcQueryMultipleStatementsNotAllowTask(loc ? ignite : null, conn.schemaName(),
                 sql, isQuery, loc, getArgs(), fetchSize, conn.isLocalQuery(), conn.isCollocatedQuery(),
                 conn.isDistributedJoins(), conn.isEnforceJoinOrder(), conn.isLazy());
@@ -239,13 +235,7 @@ public class JdbcStatement implements Statement {
      * @throws SQLException On error.
      */
     void closeInternal() throws SQLException {
-        for (Iterator<JdbcResultSet> it = resSets.iterator(); it.hasNext(); ) {
-            JdbcResultSet rs = it.next();
-
-            rs.closeInternal();
-
-            it.remove();
-        }
+        closeResults();
 
         closed = true;
     }
@@ -696,5 +686,4 @@ public class JdbcStatement implements Statement {
             curRes = 0;
         }
     }
-
 }

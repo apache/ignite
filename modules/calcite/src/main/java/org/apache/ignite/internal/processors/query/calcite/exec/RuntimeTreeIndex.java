@@ -26,19 +26,17 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
-import org.apache.ignite.internal.processors.query.GridIndex;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Runtime sorted index based on on-heap tree.
  */
-public class RuntimeTreeIndex<Row> implements RuntimeIndex<Row>, GridIndex<Row> {
+public class RuntimeTreeIndex<Row> implements RuntimeIndex<Row>, TreeIndex<Row> {
     /** */
     protected final ExecutionContext<Row> ectx;
 
@@ -86,8 +84,8 @@ public class RuntimeTreeIndex<Row> implements RuntimeIndex<Row>, GridIndex<Row> 
     }
 
     /** {@inheritDoc} */
-    @Override public GridCursor<Row> find(Row lower, Row upper, BPlusTree.TreeRowClosure<Row, Row> filterC) {
-        assert filterC == null;
+    @Override public GridCursor<Row> find(Row lower, Row upper, IndexQueryContext qctx) {
+        assert qctx == null;
 
         int firstCol = F.first(collation.getKeys());
 
@@ -175,7 +173,7 @@ public class RuntimeTreeIndex<Row> implements RuntimeIndex<Row>, GridIndex<Row> 
          */
         IndexScan(
             RelDataType rowType,
-            GridIndex<Row> idx,
+            TreeIndex<Row> idx,
             Predicate<Row> filter,
             Supplier<Row> lowerBound,
             Supplier<Row> upperBound) {
@@ -193,7 +191,7 @@ public class RuntimeTreeIndex<Row> implements RuntimeIndex<Row>, GridIndex<Row> 
         }
 
         /** */
-        @Override protected BPlusTree.TreeRowClosure<Row, Row> filterClosure() {
+        @Override protected IndexQueryContext indexQueryContext() {
             return null;
         }
     }

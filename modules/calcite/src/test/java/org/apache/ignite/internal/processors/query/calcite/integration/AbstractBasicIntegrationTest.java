@@ -38,7 +38,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 @WithSystemProperty(key = "calcite.debug", value = "false")
 public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
     /** */
-    private static IgniteEx client;
+    protected static IgniteEx client;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {

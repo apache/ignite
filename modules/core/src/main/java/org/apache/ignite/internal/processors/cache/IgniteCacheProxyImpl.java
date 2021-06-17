@@ -31,6 +31,7 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
@@ -1910,7 +1911,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     @Override public IgniteFuture<?> destroyAsync() {
         GridCacheContext<K, V> ctx = getContextSafe();
 
-        return new IgniteFutureImpl<>(ctx.kernalContext().cache().dynamicDestroyCache(cacheName, false, true, false, null));
+        return new IgniteFutureImpl<>(ctx.kernalContext().cache().dynamicDestroyCache(cacheName, false, true, false, null), exec());
     }
 
     /** {@inheritDoc} */
@@ -1922,7 +1923,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     @Override public IgniteFuture<?> closeAsync() {
         GridCacheContext<K, V> ctx = getContextSafe();
 
-        return new IgniteFutureImpl<>(ctx.kernalContext().cache().dynamicCloseCache(cacheName));
+        return new IgniteFutureImpl<>(ctx.kernalContext().cache().dynamicCloseCache(cacheName), exec());
     }
 
     /** {@inheritDoc} */
@@ -2068,7 +2069,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
                 assert restartFut != null;
 
-                throw new IgniteCacheRestartingException(new IgniteFutureImpl<>(restartFut), cacheName);
+                throw new IgniteCacheRestartingException(new IgniteFutureImpl<>(restartFut, exec()), cacheName);
             }
             else
                 throw restartingException;
@@ -2076,7 +2077,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
         if (restartFut != null) {
             if (X.hasCause(e, CacheStoppedException.class) || X.hasSuppressed(e, CacheStoppedException.class))
-                throw new IgniteCacheRestartingException(new IgniteFutureImpl<>(restartFut), "Cache is restarting: " +
+                throw new IgniteCacheRestartingException(new IgniteFutureImpl<>(restartFut, exec()), "Cache is restarting: " +
                         cacheName, e);
         }
 
@@ -2104,7 +2105,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override protected <R> IgniteFuture<R> createFuture(IgniteInternalFuture<R> fut) {
-        return new IgniteCacheFutureImpl<>(fut);
+        return new IgniteCacheFutureImpl<>(fut, exec());
     }
 
     /**
@@ -2220,7 +2221,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     @Override public IgniteFuture<Boolean> rebalance() {
         GridCacheContext<K, V> ctx = getContextSafe();
 
-        return new IgniteFutureImpl<>(ctx.preloader().forceRebalance());
+        return new IgniteFutureImpl<>(ctx.preloader().forceRebalance(), exec());
     }
 
     /** {@inheritDoc} */
@@ -2232,7 +2233,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         if (fut == null)
             return new IgniteFinishedFutureImpl<>();
 
-        return new IgniteFutureImpl<>(fut);
+        return new IgniteFutureImpl<>(fut, exec());
     }
 
     /**
@@ -2260,7 +2261,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
                 //do nothing
             }
 
-            throw new IgniteCacheRestartingException(new IgniteFutureImpl<>(currentFut), cacheName);
+            throw new IgniteCacheRestartingException(new IgniteFutureImpl<>(currentFut, exec()), cacheName);
         }
     }
 
@@ -2367,6 +2368,13 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     }
 
     /**
+     * Async continuation executor.
+     */
+    private Executor exec() {
+        return context().kernalContext().getAsyncContinuationExecutor();
+    }
+
+    /**
      *
      */
     private class RestartFuture extends GridFutureAdapter<Void> {
@@ -2399,7 +2407,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
             }
 
             throw new IgniteCacheRestartingException(
-                new IgniteFutureImpl<>(this),
+                new IgniteFutureImpl<>(this, exec()),
                 "Cache is restarting: " + name
             );
         }

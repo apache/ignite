@@ -618,7 +618,10 @@ public class GridDhtPartitionSupplier {
      * @param demandMsg Demand message.
      */
     private String supplyRoutineInfo(int topicId, UUID demander, GridDhtPartitionDemandMessage demandMsg) {
-        return "grp=" + grp.cacheOrGroupName() + ", demander=" + demander + ", topVer=" + demandMsg.topologyVersion() + ", topic=" + topicId;
+        return "grp=" + grp.cacheOrGroupName() +
+            ", demander=" + demander +
+            ", topVer=" + demandMsg.topologyVersion() +
+            (topicId > 0 ? ", topic=" + topicId : "");
     }
 
     /**

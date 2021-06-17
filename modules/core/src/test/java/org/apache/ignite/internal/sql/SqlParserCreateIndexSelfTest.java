@@ -142,9 +142,18 @@ public class SqlParserCreateIndexSelfTest extends SqlParserAbstractSelfTest {
         parseValidate(null, "CREATE INDEX idx ON tbl(a DESC) PARALLEL  3", null, "TBL", "IDX", getProps(3, null), "A", true);
         parseValidate(null, "CREATE INDEX idx ON tbl(a DESC)   PARALLEL  7", null, "TBL", "IDX", getProps(7, null), "A", true);
         parseValidate(null, "CREATE INDEX idx ON tbl(a DESC)   PARALLEL  0", null, "TBL", "IDX", getProps(0, null), "A", true);
-        assertParseError(null, "CREATE INDEX idx ON tbl(a DESC) PARALLEL ", "Failed to parse SQL statement \"CREATE INDEX idx ON tbl(a DESC) PARALLEL [*]\"");
+        assertParseError(
+            null,
+            "CREATE INDEX idx ON tbl(a DESC) PARALLEL ",
+            "Failed to parse SQL statement \"CREATE INDEX idx ON tbl(a DESC) PARALLEL [*]\""
+        );
         assertParseError(null, "CREATE INDEX idx ON tbl(a DESC) PARALLEL abc", "Unexpected token: \"ABC\"");
-        assertParseError(null, "CREATE INDEX idx ON tbl(a DESC) PARALLEL -2", "Failed to parse SQL statement \"CREATE INDEX idx ON tbl(a DESC) PARALLEL -[*]2\": Illegal PARALLEL value. Should be positive: -2");
+        assertParseError(
+            null,
+            "CREATE INDEX idx ON tbl(a DESC) PARALLEL -2",
+            "Failed to parse SQL statement " +
+                "\"CREATE INDEX idx ON tbl(a DESC) PARALLEL -[*]2\": Illegal PARALLEL value. Should be positive: -2"
+        );
 
         // INLINE_SIZE option
         assertParseError(null, "CREATE INDEX ON tbl(a) INLINE_SIZE",
@@ -162,7 +171,11 @@ public class SqlParserCreateIndexSelfTest extends SqlParserAbstractSelfTest {
         assertParseError(null, "CREATE INDEX ON tbl(a) INLINE_SIZE " + Integer.MIN_VALUE,
             "Illegal INLINE_SIZE value. Should be positive: " + Integer.MIN_VALUE);
 
-        assertParseError(null, "CREATE INDEX ON tbl(a) INLINE_SIZE -1", "Failed to parse SQL statement \"CREATE INDEX ON tbl(a) INLINE_SIZE -[*]1\": Illegal INLINE_SIZE value. Should be positive: -1");
+        assertParseError(
+            null,
+            "CREATE INDEX ON tbl(a) INLINE_SIZE -1",
+            "Failed to parse SQL statement \"CREATE INDEX ON tbl(a) INLINE_SIZE -[*]1\": Illegal INLINE_SIZE value. Should be positive: -1"
+        );
 
         parseValidate(null, "CREATE INDEX idx ON schema.tbl(a) INLINE_SIZE 0", "SCHEMA", "TBL", "IDX", getProps(null, 0), "A", false);
         parseValidate(null, "CREATE INDEX idx ON schema.tbl(a) INLINE_SIZE 1", "SCHEMA", "TBL", "IDX", getProps(null, 1), "A", false);
@@ -170,13 +183,48 @@ public class SqlParserCreateIndexSelfTest extends SqlParserAbstractSelfTest {
             "SCHEMA", "TBL", "IDX", getProps(null, Integer.MAX_VALUE), "A", false);
 
         // Both parallel and inline size
-        parseValidate(null, "CREATE INDEX idx ON schema.tbl(a) INLINE_SIZE 5 PARALLEL 7", "SCHEMA", "TBL", "IDX", getProps(7, 5), "A", false);
-        parseValidate(null, "CREATE INDEX idx ON schema.tbl(a) PARALLEL 3 INLINE_SIZE 9 ", "SCHEMA", "TBL", "IDX", getProps(3, 9), "A", false);
+        parseValidate(
+            null,
+            "CREATE INDEX idx ON schema.tbl(a) INLINE_SIZE 5 PARALLEL 7",
+            "SCHEMA",
+            "TBL",
+            "IDX",
+            getProps(7, 5),
+            "A",
+            false
+        );
+        parseValidate(
+            null,
+            "CREATE INDEX idx ON schema.tbl(a) PARALLEL 3 INLINE_SIZE 9 ",
+            "SCHEMA",
+            "TBL",
+            "IDX",
+            getProps(3, 9),
+            "A",
+            false
+        );
 
-        assertParseError(null, "CREATE INDEX idx ON schema.tbl(a) PARALLEL 3 INLINE_SIZE 9 PARALLEL 2", "Failed to parse SQL statement \"CREATE INDEX idx ON schema.tbl(a) PARALLEL 3 INLINE_SIZE [*]9 PARALLEL 2\": Only one PARALLEL clause may be specified.");
-        assertParseError(null, "CREATE INDEX idx ON schema.tbl(a) PARALLEL 3 INLINE_SIZE 9 abc ", "Failed to parse SQL statement \"CREATE INDEX idx ON schema.tbl(a) PARALLEL 3 INLINE_SIZE 9 [*]abc \": Unexpected token: \"ABC\"");
-        assertParseError(null, "CREATE INDEX idx ON schema.tbl(a) PARALLEL  INLINE_SIZE 9 abc ", "Failed to parse SQL statement \"CREATE INDEX idx ON schema.tbl(a) PARALLEL  [*]INLINE_SIZE 9 abc \": Unexpected token: \"INLINE_SIZE\" (expected: \"[integer]\")");
-        assertParseError(null, "CREATE INDEX idx ON schema.tbl(a) PARALLEL 3 INLINE_SIZE abc ", "Failed to parse SQL statement \"CREATE INDEX idx ON schema.tbl(a) PARALLEL 3 INLINE_SIZE [*]abc \": Unexpected token: \"ABC\" (expected: \"[integer]\")");
+        assertParseError(
+            null,
+            "CREATE INDEX idx ON schema.tbl(a) PARALLEL 3 INLINE_SIZE 9 PARALLEL 2",
+            "Failed to parse SQL statement " +
+                "\"CREATE INDEX idx ON schema.tbl(a) PARALLEL 3 INLINE_SIZE [*]9 PARALLEL 2\": Only one PARALLEL clause may be specified."
+        );
+        assertParseError(
+            null, "CREATE INDEX idx ON schema.tbl(a) PARALLEL 3 INLINE_SIZE 9 abc ",
+            "Failed to parse SQL statement " +
+                "\"CREATE INDEX idx ON schema.tbl(a) PARALLEL 3 INLINE_SIZE 9 [*]abc \": Unexpected token: \"ABC\""
+        );
+        assertParseError(
+            null, "CREATE INDEX idx ON schema.tbl(a) PARALLEL  INLINE_SIZE 9 abc ",
+            "Failed to parse SQL statement \"CREATE INDEX idx ON schema.tbl(a) PARALLEL  [*]INLINE_SIZE 9 abc \": " +
+                "Unexpected token: \"INLINE_SIZE\" (expected: \"[integer]\")"
+        );
+        assertParseError(
+            null, "CREATE INDEX idx ON schema.tbl(a) PARALLEL 3 INLINE_SIZE abc ",
+            "Failed to parse SQL statement " +
+                "\"CREATE INDEX idx ON schema.tbl(a) PARALLEL 3 INLINE_SIZE [*]abc \": Unexpected token: \"ABC\" (expected: \"[integer]\")"
+        );
 
     }
 

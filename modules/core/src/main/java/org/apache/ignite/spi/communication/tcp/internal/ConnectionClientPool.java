@@ -25,18 +25,18 @@ import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteTooManyOpenFilesException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.processors.timeout.GridSpiTimeoutObject;
-import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.ipc.shmem.IpcOutOfSystemResourcesException;
@@ -57,9 +57,11 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationMetricsListener;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.internal.shmem.SHMemHandshakeClosure;
 import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
+import org.apache.ignite.thread.IgniteThreadFactory;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Objects.nonNull;
+import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.DISABLED_CLIENT_PORT;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.OUT_OF_RESOURCES_TCP_MSG;
 import static org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpUtils.handshakeTimeoutException;
@@ -104,9 +106,6 @@ public class ConnectionClientPool {
     /** Tcp communication spi. */
     private final TcpCommunicationSpi tcpCommSpi;
 
-    /** Time object processor. */
-    private final GridTimeoutProcessor timeObjProcessor;
-
     /** Cluster state provider. */
     private final ClusterStateProvider clusterStateProvider;
 
@@ -120,6 +119,13 @@ public class ConnectionClientPool {
     /** Stopping flag (set to {@code true} when SPI gets stopping signal). */
     private volatile boolean stopping = false;
 
+    /** Scheduled executor service which closed the socket if handshake timeout is out. **/
+    private final ScheduledExecutorService handshakeTimeoutExecutorService;
+
+    /** Enable forcible node kill. */
+    private boolean forcibleNodeKillEnabled = IgniteSystemProperties
+        .getBoolean(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
+
     /**
      * @param cfg Config.
      * @param attrs Attributes.
@@ -130,9 +136,9 @@ public class ConnectionClientPool {
      * @param msgFormatterSupplier Message formatter supplier.
      * @param registry Registry.
      * @param tcpCommSpi Tcp communication spi.
-     * @param timeObjProcessor Time object processor.
      * @param clusterStateProvider Cluster state provider.
      * @param nioSrvWrapper Nio server wrapper.
+     * @param igniteInstanceName Ignite instance name.
      */
     public ConnectionClientPool(
         TcpCommunicationConfiguration cfg,
@@ -144,9 +150,9 @@ public class ConnectionClientPool {
         Supplier<MessageFormatter> msgFormatterSupplier,
         WorkersRegistry registry,
         TcpCommunicationSpi tcpCommSpi,
-        GridTimeoutProcessor timeObjProcessor,
         ClusterStateProvider clusterStateProvider,
-        GridNioServerWrapper nioSrvWrapper
+        GridNioServerWrapper nioSrvWrapper,
+        String igniteInstanceName
     ) {
         this.cfg = cfg;
         this.attrs = attrs;
@@ -157,9 +163,12 @@ public class ConnectionClientPool {
         this.msgFormatterSupplier = msgFormatterSupplier;
         this.registry = registry;
         this.tcpCommSpi = tcpCommSpi;
-        this.timeObjProcessor = timeObjProcessor;
         this.clusterStateProvider = clusterStateProvider;
         this.nioSrvWrapper = nioSrvWrapper;
+
+        this.handshakeTimeoutExecutorService = newSingleThreadScheduledExecutor(
+            new IgniteThreadFactory(igniteInstanceName, "handshake-timeout-client")
+        );
     }
 
     /**
@@ -174,6 +183,8 @@ public class ConnectionClientPool {
                 fut.onDone(new IgniteSpiException("SPI is being stopped."));
             }
         }
+
+        handshakeTimeoutExecutorService.shutdown();
     }
 
     /**
@@ -186,7 +197,8 @@ public class ConnectionClientPool {
      */
     public GridCommunicationClient reserveClient(ClusterNode node, int connIdx) throws IgniteCheckedException {
         assert node != null;
-        assert (connIdx >= 0 && connIdx < cfg.connectionsPerNode()) || !(cfg.usePairedConnections() && usePairedConnections(node, attrs.pairedConnection())) : connIdx;
+        assert (connIdx >= 0 && connIdx < cfg.connectionsPerNode())
+            || !(cfg.usePairedConnections() && usePairedConnections(node, attrs.pairedConnection())) : connIdx;
 
         if (locNodeSupplier.get().isClient()) {
             if (node.isClient()) {
@@ -293,8 +305,12 @@ public class ConnectionClientPool {
                     catch (IgniteFutureTimeoutCheckedException ignored) {
                         currTimeout += clientReserveWaitTimeout;
 
-                        if (log.isDebugEnabled())
-                            log.debug("Still waiting for reestablishing connection to node [nodeId=" + node.id() + ", waitingTime=" + currTimeout + "ms]");
+                        if (log.isDebugEnabled()) {
+                            log.debug(
+                                "Still waiting for reestablishing connection to node " +
+                                    "[nodeId=" + node.id() + ", waitingTime=" + currTimeout + "ms]"
+                            );
+                        }
 
                         if (registry != null) {
                             GridWorker wrkr = registry.worker(Thread.currentThread().getName());
@@ -331,8 +347,8 @@ public class ConnectionClientPool {
     }
 
     /**
-     * Handles {@link NodeUnreachableException}. This means that the method will try to trigger client itself to open
-     * connection. The only possible way of doing this is to use {@link TcpCommunicationConfiguration#connectionRequestor()}'s trigger and wait.
+     * Handles {@link NodeUnreachableException}. This means that the method will try to trigger client itself to open connection.
+     * The only possible way of doing this is to use {@link TcpCommunicationConfiguration#connectionRequestor()}'s trigger and wait.
      * Specifics of triggers implementation technically should be considered unknown, but for now it's not true and we
      * expect that {@link NodeUnreachableException} won't be thrown in {@link IgniteDiscoveryThread}.
      *
@@ -353,6 +369,8 @@ public class ConnectionClientPool {
         if (cfg.connectionRequestor() != null) {
             ConnectFuture fut0 = (ConnectFuture)fut;
 
+            final ConnectionKey key = new ConnectionKey(node.id(), connIdx, -1);
+
             ConnectionRequestFuture triggerFut = new ConnectionRequestFuture();
 
             triggerFut.listen(f -> {
@@ -362,9 +380,12 @@ public class ConnectionClientPool {
                 catch (Throwable t) {
                     fut0.onDone(t);
                 }
+                finally {
+                    clientFuts.remove(key, triggerFut);
+                }
             });
 
-            clientFuts.put(new ConnectionKey(node.id(), connIdx, -1), triggerFut);
+            clientFuts.put(key, triggerFut);
 
             fut = triggerFut;
 
@@ -375,12 +396,19 @@ public class ConnectionClientPool {
                     ? cfg.failureDetectionTimeout()
                     : cfg.connectionTimeout();
 
-                fut.get(failTimeout);
+                    fut.get(failTimeout);
             }
-            catch (IgniteCheckedException triggerException) {
-                IgniteSpiException spiE = new IgniteSpiException(triggerException);
+            catch (Throwable triggerException) {
+                if (forcibleNodeKillEnabled
+                    && node.isClient()
+                    && triggerException instanceof IgniteFutureTimeoutCheckedException
+                ) {
+                    CommunicationTcpUtils.failNode(node, tcpCommSpi.getSpiContext(), triggerException, log);
+                }
 
-                spiE.addSuppressed(e);
+                IgniteSpiException spiE = new IgniteSpiException(e);
+
+                spiE.addSuppressed(triggerException);
 
                 String msg = "Failed to wait for establishing inverse communication connection from node " + node;
 
@@ -596,8 +624,12 @@ public class ConnectionClientPool {
         assert cfg.connectionsPerNode() > 0 : cfg.connectionsPerNode();
         assert connIdx == addClient.connectionIndex() : addClient;
 
-        if (log.isDebugEnabled())
-            log.debug("The node client is going to create a connection [nodeId=" + node.id() + ", connIdx=" + connIdx + ", client=" + addClient + "]");
+        if (log.isDebugEnabled()) {
+            log.debug(
+                "The node client is going to create a connection " +
+                    "[nodeId=" + node.id() + ", connIdx=" + connIdx + ", client=" + addClient + "]"
+            );
+        }
 
         if (connIdx >= cfg.connectionsPerNode()) {
             assert !(cfg.usePairedConnections() && usePairedConnections(node, attrs.pairedConnection()));
@@ -647,7 +679,9 @@ public class ConnectionClientPool {
         for (; ; ) {
             GridCommunicationClient[] curClients = clients.get(nodeId);
 
-            if (curClients == null || rmvClient.connectionIndex() >= curClients.length || curClients[rmvClient.connectionIndex()] != rmvClient)
+            if (curClients == null
+                || rmvClient.connectionIndex() >= curClients.length
+                || curClients[rmvClient.connectionIndex()] != rmvClient)
                 return false;
 
             GridCommunicationClient[] newClients = Arrays.copyOf(curClients, curClients.length);
@@ -780,24 +814,15 @@ public class ConnectionClientPool {
         UUID rmtNodeId,
         long timeout
     ) throws IgniteCheckedException {
-        HandshakeTimeoutObject<GridCommunicationClient> obj = new HandshakeTimeoutObject<>(client,
-            U.currentTimeMillis() + timeout);
+        HandshakeTimeoutObject obj = new HandshakeTimeoutObject(client);
 
-        if (timeObjProcessor != null)
-            timeObjProcessor.addTimeoutObject(new GridSpiTimeoutObject(obj));
-        else
-            clusterStateProvider.getSpiContext().addTimeoutObject(obj);
+        handshakeTimeoutExecutorService.schedule(obj, timeout, TimeUnit.MILLISECONDS);
 
         try {
             client.doHandshake(new SHMemHandshakeClosure(log, rmtNodeId, clusterStateProvider, locNodeSupplier));
         }
         finally {
-            if (obj.cancel())
-                if (timeObjProcessor != null)
-                    timeObjProcessor.removeTimeoutObject(new GridSpiTimeoutObject(obj));
-                else
-                    clusterStateProvider.getSpiContext().removeTimeoutObject(obj);
-            else
+            if (!obj.cancel())
                 throw handshakeTimeoutException();
         }
     }

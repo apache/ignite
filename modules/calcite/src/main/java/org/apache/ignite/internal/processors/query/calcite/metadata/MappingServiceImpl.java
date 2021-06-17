@@ -60,7 +60,8 @@ public class MappingServiceImpl extends AbstractService implements MappingServic
     }
 
     /** {@inheritDoc} */
-    @Override public List<UUID> executionNodes(@NotNull AffinityTopologyVersion topVer, boolean single, @Nullable Predicate<ClusterNode> nodeFilter) {
+    @Override public List<UUID> executionNodes(@NotNull AffinityTopologyVersion topVer, boolean single,
+        @Nullable Predicate<ClusterNode> nodeFilter) {
         List<ClusterNode> nodes = new ArrayList<>(discoveryManager.discoCache(topVer).serverNodes());
 
         if (nodeFilter != null)

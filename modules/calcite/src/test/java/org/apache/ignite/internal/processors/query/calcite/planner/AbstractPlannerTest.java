@@ -414,7 +414,8 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected List<UUID> intermediateMapping(@NotNull AffinityTopologyVersion topVer, boolean single, @Nullable Predicate<ClusterNode> filter) {
+    protected List<UUID> intermediateMapping(@NotNull AffinityTopologyVersion topVer, boolean single,
+        @Nullable Predicate<ClusterNode> filter) {
         return single ? select(nodes, 0) : select(nodes, 0, 1, 2, 3);
     }
 
@@ -473,6 +474,8 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     protected <T extends RelNode> void assertPlan(String sql, IgniteSchema schema, Predicate<T> predicate,
         String... disabledRules) throws Exception {
         IgniteRel plan = physicalPlan(sql, schema, disabledRules);
+
+        checkSplitAndSerialization(plan, schema);
 
         if (!predicate.test((T)plan)) {
             String invalidPlanMsg = "Invalid plan (" + lastErrorMsg + "):\n" +

@@ -1577,13 +1577,17 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             recordNodeId(affNodeId, topVer);
 
-            if (metrics && cctx.statisticsEnabled()) {
+            if (metrics && cctx.statisticsEnabled() && tx != null) {
                 cctx.cache().metrics0().onWrite();
 
-                T2<GridCacheOperation, CacheObject> entryProcRes = tx.entry(txKey()).entryProcessorCalculatedValue();
+                IgniteTxEntry txEntry = tx.entry(txKey());
 
-                if (entryProcRes != null && UPDATE.equals(entryProcRes.get1()))
-                    cctx.cache().metrics0().onInvokeUpdate(old != null);
+                if (txEntry != null) {
+                    T2<GridCacheOperation, CacheObject> entryProcRes = txEntry.entryProcessorCalculatedValue();
+
+                    if (entryProcRes != null && UPDATE.equals(entryProcRes.get1()))
+                        cctx.cache().metrics0().onInvokeUpdate(old != null);
+                }
             }
 
             if (evt && newVer != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_PUT)) {
@@ -2156,7 +2160,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     if (transformCloClsName != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ)) {
                         evtOld = cctx.unwrapTemporary(old);
 
-                        cctx.events().addEvent(partition(), key, cctx.localNodeId(),null, null,
+                        cctx.events().addEvent(partition(), key, cctx.localNodeId(), null, null,
                             (GridCacheVersion)null, EVT_CACHE_OBJECT_READ, evtOld, evtOld != null || hadVal, evtOld,
                             evtOld != null || hadVal, subjId, transformCloClsName, taskName, keepBinary);
                     }
@@ -2526,7 +2530,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (intercept && c.wasIntercepted) {
                 assert c.op == UPDATE || c.op == DELETE : c.op;
 
-                Cache.Entry<?,?> entry = new CacheLazyEntry<>(
+                Cache.Entry<?, ?> entry = new CacheLazyEntry<>(
                     cctx,
                     key,
                     null,
@@ -5280,7 +5284,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 else if (res.resultType() == ResultType.LOCKED) {
                     entry.unlockEntry();
 
-                    IgniteInternalFuture<?> lockFuture = cctx.kernalContext().coordinators().waitForLock(cctx, mvccVer, res.resultVersion());
+                    IgniteInternalFuture<?> lockFuture =
+                        cctx.kernalContext().coordinators().waitForLock(cctx, mvccVer, res.resultVersion());
 
                     lockFuture.listen(this);
 
@@ -7018,7 +7023,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @return Common serialization error.
      */
     private static IgniteTxSerializationCheckedException serializationError() {
-        return new IgniteTxSerializationCheckedException("Cannot serialize transaction due to write conflict (transaction is marked for rollback)");
+        return new IgniteTxSerializationCheckedException(
+            "Cannot serialize transaction due to write conflict (transaction is marked for rollback)"
+        );
     }
 
     /**

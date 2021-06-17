@@ -31,12 +31,11 @@ import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
-import org.apache.ignite.internal.processors.query.GridIndex;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
-import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -197,7 +196,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     }
 
     /** */
-    private static Object affinityIdentity(CacheConfiguration<?,?> ccfg) {
+    private static Object affinityIdentity(CacheConfiguration<?, ?> ccfg) {
         if (ccfg.getCacheMode() == CacheMode.PARTITIONED)
             return new AffinityIdentity(ccfg.getAffinity(), ccfg.getBackups(), ccfg.getNodeFilter());
         return null;
@@ -217,7 +216,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
 
     /** {@inheritDoc} */
     @Override public synchronized void onIndexCreated(String schemaName, String tblName, String idxName,
-        GridQueryIndexDescriptor idxDesc, @Nullable GridIndex<?> gridIdx) {
+        GridQueryIndexDescriptor idxDesc, @Nullable Index gridIdx) {
         IgniteSchema schema = igniteSchemas.get(schemaName);
         assert schema != null;
 
@@ -226,7 +225,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
 
         RelCollation idxCollation = deriveSecondaryIndexCollation(idxDesc, tbl);
 
-        IgniteIndex idx = new IgniteIndex(idxCollation, idxName, (GridIndex<H2Row>)gridIdx, tbl);
+        IgniteIndex idx = new IgniteIndex(idxCollation, idxName, gridIdx, tbl);
         tbl.addIndex(idx);
     }
 

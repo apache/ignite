@@ -27,8 +27,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -306,6 +309,22 @@ public class TableDdlIntegrationTest extends GridCommonAbstractTest {
         executeSql("insert into my_schema.my_table values (1, '1'),(2, '2')");
 
         assertThat(executeSql("select * from my_schema.my_table"), hasSize(4));
+    }
+
+    /**
+     * Creates a table for already existing cache.
+     */
+    @Test
+    public void createTableOnExistingCache() {
+        IgniteCache<Object, Object> cache = client.getOrCreateCache("my_cache");
+
+        executeSql("create table my_schema.my_table (f1 int, f2 varchar) with cache_name=\"my_cache\"");
+
+        executeSql("insert into my_schema.my_table(f1, f2) values (1, '1'),(2, '2')");
+
+        assertThat(executeSql("select * from my_schema.my_table"), hasSize(2));
+
+        assertEquals(2, cache.size(CachePeekMode.PRIMARY));
     }
 
     /**

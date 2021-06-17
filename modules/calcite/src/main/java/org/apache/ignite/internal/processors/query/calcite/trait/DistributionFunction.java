@@ -244,7 +244,8 @@ public abstract class DistributionFunction {
                     assert F.isEmpty(assignment) || assignment.size() == 1;
             }
 
-            AffinityAdapter<Row> affinity = new AffinityAdapter<>(affSrvc.affinity(CU.UNDEFINED_CACHE_ID), k.toIntArray(), ctx.rowHandler());
+            AffinityAdapter<Row> affinity = new AffinityAdapter<>(affSrvc.affinity(CU.UNDEFINED_CACHE_ID), k.toIntArray(),
+                ctx.rowHandler());
 
             return new Partitioned<>(assignments, affinity);
         }

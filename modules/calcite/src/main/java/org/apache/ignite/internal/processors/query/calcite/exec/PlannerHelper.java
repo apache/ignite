@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
@@ -49,7 +48,6 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.HintUtils;
-import org.apache.ignite.internal.util.typedef.F;
 
 /** */
 public class PlannerHelper {
@@ -72,7 +70,7 @@ public class PlannerHelper {
 
             RelNode rel = root.rel;
 
-            if (!F.isEmpty(root.hints))
+            if (HintUtils.containsDisabledRules(root.hints))
                 planner.setDisabledRules(HintUtils.disabledRules(root.hints));
 
             // Transformation chain

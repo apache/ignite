@@ -23,40 +23,38 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexSearchRowImpl;
+import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.query.GridIndex;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
-import org.apache.ignite.internal.processors.query.h2.H2Utils;
-import org.apache.ignite.internal.processors.query.h2.database.H2TreeFilterClosure;
-import org.apache.ignite.internal.processors.query.h2.opt.H2PlainRow;
-import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
-import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
+import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
-import org.h2.value.DataType;
-import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Scan on index.
  */
-public class IndexScan<Row> extends AbstractIndexScan<Row, H2Row> {
+public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
     /** */
     private final GridKernalContext kctx;
 
@@ -87,9 +85,16 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, H2Row> {
     /** */
     private final ImmutableBitSet requiredColumns;
 
+    /** */
+    private final InlineIndex idx;
+
+    /** Mapping from index keys to row fields. */
+    private final ImmutableIntList idxFieldMapping;
+
     /**
      * @param ectx Execution context.
      * @param desc Table descriptor.
+     * @param idxFieldMapping Mapping from index keys to row fields.
      * @param idx Phisycal index.
      * @param filters Additional filters.
      * @param lowerBound Lower index scan bound.
@@ -98,7 +103,8 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, H2Row> {
     public IndexScan(
         ExecutionContext<Row> ectx,
         TableDescriptor desc,
-        GridIndex<H2Row> idx,
+        InlineIndex idx,
+        ImmutableIntList idxFieldMapping,
         int[] parts,
         Predicate<Row> filters,
         Supplier<Row> lowerBound,
@@ -109,7 +115,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, H2Row> {
         super(
             ectx,
             desc.rowType(ectx.getTypeFactory(), requiredColumns),
-            idx,
+            new TreeIndexWrapper(idx),
             filters,
             lowerBound,
             upperBound,
@@ -117,6 +123,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, H2Row> {
         );
 
         this.desc = desc;
+        this.idx = idx;
         cctx = desc.cacheContext();
         kctx = cctx.kernalContext();
         coCtx = cctx.cacheObjectContext();
@@ -126,6 +133,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, H2Row> {
         this.parts = parts;
         mvccSnapshot = ectx.mvccSnapshot();
         this.requiredColumns = requiredColumns;
+        this.idxFieldMapping = idxFieldMapping;
     }
 
     /** {@inheritDoc} */
@@ -143,13 +151,37 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, H2Row> {
     }
 
     /** {@inheritDoc} */
-    @Override protected H2Row row2indexRow(Row bound) {
-        return new H2PlainRow(values(coCtx, ectx, bound));
+    @Override protected IndexRow row2indexRow(Row bound) {
+        if (bound == null)
+            return null;
+
+        InlineIndexRowHandler idxRowHnd = idx.segment(0).rowHandler();
+        RowHandler<Row> rowHnd = ectx.rowHandler();
+
+        IndexKey[] keys = new IndexKey[idxRowHnd.indexKeyDefinitions().size()];
+
+        assert keys.length >= idxFieldMapping.size() : "Unexpected index keys [keys.length=" + keys.length +
+            ", idxFieldMapping.size()=" + idxFieldMapping.size() + ']';
+
+        boolean nullSearchRow = true;
+
+        for (int i = 0; i < idxFieldMapping.size(); ++i) {
+            Object key = rowHnd.get(idxFieldMapping.getInt(i), bound);
+
+            if (key != null) {
+                keys[i] = IndexKeyFactory.wrap(key, idxRowHnd.indexKeyDefinitions().get(i).idxType(),
+                    cctx.cacheObjectContext(), idxRowHnd.indexKeyTypeSettings());
+
+                nullSearchRow = false;
+            }
+        }
+
+        return nullSearchRow ? null : new IndexSearchRowImpl(keys, idxRowHnd);
     }
 
     /** {@inheritDoc} */
-    @Override protected Row indexRow2Row(H2Row row) throws IgniteCheckedException {
-        return desc.toRow(ectx, (CacheDataRow)row, factory, requiredColumns);
+    @Override protected Row indexRow2Row(IndexRow row) throws IgniteCheckedException {
+        return desc.toRow(ectx, row.cacheDataRow(), factory, requiredColumns);
     }
 
     /** */
@@ -239,35 +271,31 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, H2Row> {
     }
 
     /** {@inheritDoc} */
-    @Override protected H2TreeFilterClosure filterClosure() {
+    @Override protected IndexQueryContext indexQueryContext() {
         IndexingQueryFilter filter = new IndexingQueryFilterImpl(kctx, topVer, parts);
-        IndexingQueryCacheFilter f = filter.forCache(cctx.name());
-        H2TreeFilterClosure filterC = null;
-
-        if (f != null || mvccSnapshot != null )
-            filterC = new H2TreeFilterClosure(f, mvccSnapshot, cctx, ectx.planningContext().logger());
-
-        return filterC;
+        return new IndexQueryContext(filter, mvccSnapshot);
     }
 
     /** */
-    private Value[] values(CacheObjectValueContext cctx, ExecutionContext<Row> ectx, Row row) {
-        try {
-            RowHandler<Row> rowHnd = ectx.rowHandler();
-            int rowLen = rowHnd.columnCount(row);
+    private static class TreeIndexWrapper implements TreeIndex<IndexRow> {
+        /** Underlying index. */
+        private final InlineIndex idx;
 
-            Value[] values = new Value[rowLen];
-            for (int i = 0; i < rowLen; i++) {
-                Object o = rowHnd.get(i, row);
-
-                if (o != null)
-                    values[i] = H2Utils.wrap(cctx, o, DataType.getTypeFromClass(o.getClass()));
-            }
-
-            return values;
+        /** */
+        private TreeIndexWrapper(InlineIndex idx) {
+            this.idx = idx;
         }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException("Failed to wrap object into H2 Value.", e);
+
+        /** {@inheritDoc} */
+        @Override public GridCursor<IndexRow> find(IndexRow lower, IndexRow upper, IndexQueryContext qctx) {
+            try {
+                int seg = 0; // TODO segments support
+
+                return idx.find(lower, upper, seg, qctx);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to find index rows", e);
+            }
         }
     }
 }

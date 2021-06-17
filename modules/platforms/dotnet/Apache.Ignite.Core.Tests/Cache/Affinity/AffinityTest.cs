@@ -122,6 +122,46 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         }
 
         /// <summary>
+        /// Tests that <see cref="AffinityKey"/> works when used as <see cref="QueryEntity.KeyType"/>.
+        /// </summary>
+        [Test]
+        public void TestAffinityKeyWithQueryEntity()
+        {
+            var cacheCfg = new CacheConfiguration(TestUtils.TestName)
+            {
+                QueryEntities = new List<QueryEntity>
+                {
+                    new QueryEntity(typeof(AffinityKey), typeof(QueryEntityValue))
+                }
+            };
+
+            var ignite = Ignition.GetIgnite("grid-0");
+            var cache = ignite.GetOrCreateCache<AffinityKey, QueryEntityValue>(cacheCfg);
+            var aff = ignite.GetAffinity(cache.Name);
+
+            var ignite2 = Ignition.GetIgnite("grid-1");
+            var cache2 = ignite2.GetOrCreateCache<AffinityKey, QueryEntityValue>(cacheCfg);
+            var aff2 = ignite2.GetAffinity(cache2.Name);
+
+            // Check mapping.
+            for (var i = 0; i < 100; i++)
+            {
+                Assert.AreEqual(aff.GetPartition(i), aff.GetPartition(new AffinityKey("foo" + i, i)));
+                Assert.AreEqual(aff2.GetPartition(i), aff2.GetPartition(new AffinityKey("bar" + i, i)));
+                Assert.AreEqual(aff.GetPartition(i), aff2.GetPartition(i));
+            }
+
+            // Check put/get.
+            var key = new AffinityKey("x", 123);
+            var expected = new QueryEntityValue {Name = "y", AffKey = 321};
+            cache[key] = expected;
+
+            var val = cache2[key];
+            Assert.AreEqual(expected.Name, val.Name);
+            Assert.AreEqual(expected.AffKey, val.AffKey);
+        }
+
+        /// <summary>
         /// Tests that <see cref="AffinityKeyMappedAttribute"/> works when used on a property of a type that is
         /// specified as <see cref="QueryEntity.KeyType"/> or <see cref="QueryEntity.ValueType"/>.
         /// </summary>

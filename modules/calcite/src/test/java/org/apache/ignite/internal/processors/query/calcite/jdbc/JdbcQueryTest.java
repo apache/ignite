@@ -81,7 +81,8 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
     public void testSimpleQuery() throws Exception {
         stmt.execute("CREATE TABLE Person(\"id\" INT, PRIMARY KEY(\"id\"), \"name\" VARCHAR)");
 
-        grid(0).context().cache().context().exchange().affinityReadyFuture(new AffinityTopologyVersion(3, 2)).get(10_000, TimeUnit.MILLISECONDS);
+        grid(0).context().cache().context().exchange().affinityReadyFuture(
+            new AffinityTopologyVersion(3, 2)).get(10_000, TimeUnit.MILLISECONDS);
 
         stmt.executeUpdate("INSERT INTO Person VALUES (10, 'Name')");
         try (ResultSet rs = stmt.executeQuery("select p.*, (1+1) as synthetic from Person p")) {

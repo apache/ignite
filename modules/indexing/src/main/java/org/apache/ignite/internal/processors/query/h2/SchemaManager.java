@@ -33,7 +33,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -49,7 +48,6 @@ import org.apache.ignite.internal.managers.systemview.walker.SqlViewViewWalker;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
-import org.apache.ignite.internal.processors.query.GridIndex;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -558,7 +556,7 @@ public class SchemaManager {
 
         GridH2RowDescriptor rowDesc = new GridH2RowDescriptor(tbl, tbl.type());
 
-        GridH2Table h2Tbl = H2TableEngine.createTable(conn.connection(), sql, rowDesc, tbl);
+        GridH2Table h2Tbl = H2TableEngine.createTable(conn.connection(), sql, rowDesc, tbl, ctx.indexProcessor());
 
         lsnr.onSqlTypeCreated(schemaName, tbl.type(), tbl.cacheInfo());
 
@@ -595,7 +593,8 @@ public class SchemaManager {
 
             QuerySysIndexDescriptorImpl desc = new QuerySysIndexDescriptorImpl(idxName, idxCols);
 
-            lsnr.onIndexCreated(schemaName, tbl.tableName(), idxName, desc, (GridIndex<?>)idx);
+            lsnr.onIndexCreated(schemaName, tbl.tableName(), idxName, desc,
+                ((GridH2IndexBase)idx).unwrap(org.apache.ignite.internal.cache.query.index.Index.class));
         }
     }
 
@@ -674,11 +673,12 @@ public class SchemaManager {
 
         GridQueryIndexDescriptor idxDesc = desc.type().indexes().get(h2Idx.getName());
 
-        lsnr.onIndexCreated(schemaName, desc.tableName(), h2Idx.getName(), idxDesc, h2Idx);
+        lsnr.onIndexCreated(schemaName, desc.tableName(), h2Idx.getName(), idxDesc,
+            h2Idx.unwrap(org.apache.ignite.internal.cache.query.index.Index.class));
     }
 
     /**
-     * Create index.
+     * Create index dynamically.
      *
      * @param schemaName Schema name.
      * @param tblName Table name.
@@ -701,18 +701,11 @@ public class SchemaManager {
         GridH2Table h2Tbl = desc.table();
 
         // Create index.
-        final GridH2IndexBase h2Idx = desc.createUserIndex(idxDesc);
+        final GridH2IndexBase h2Idx = desc.createUserIndex(idxDesc, cacheVisitor);
 
         h2Tbl.proposeUserIndex(h2Idx);
 
         try {
-            // Populate index with existing cache data.
-            IndexRebuildPartialClosure idxBuild = new IndexRebuildPartialClosure(h2Tbl.cacheContext());
-
-            idxBuild.addIndex(h2Tbl, h2Idx);
-
-            cacheVisitor.visit(idxBuild);
-
             // At this point index is in consistent state, promote it through H2 SQL statement, so that cached
             // prepared statements are re-built.
             String sql = H2Utils.indexCreateSql(desc.fullTableName(), h2Idx, ifNotExists);
@@ -726,7 +719,8 @@ public class SchemaManager {
             throw e;
         }
 
-        lsnr.onIndexCreated(schemaName, desc.tableName(), h2Idx.getName(), idxDesc, h2Idx);
+        lsnr.onIndexCreated(schemaName, desc.tableName(), h2Idx.getName(), idxDesc,
+            h2Idx.unwrap(org.apache.ignite.internal.cache.query.index.Index.class));
     }
 
     /**
@@ -916,7 +910,7 @@ public class SchemaManager {
 
         /** {@inheritDoc} */
         @Override public void onIndexCreated(String schemaName, String tblName, String idxName,
-            GridQueryIndexDescriptor idxDesc, GridIndex<?> idx) {}
+            GridQueryIndexDescriptor idxDesc, org.apache.ignite.internal.cache.query.index.Index idx) {}
 
         /** {@inheritDoc} */
         @Override public void onIndexDropped(String schemaName, String tblName, String idxName) {}
@@ -985,7 +979,8 @@ public class SchemaManager {
         }
 
         /** {@inheritDoc} */
-        @Override public void onIndexCreated(String schemaName, String tblName, String idxName, GridQueryIndexDescriptor idxDesc, GridIndex<?> idx) {
+        @Override public void onIndexCreated(String schemaName, String tblName, String idxName,
+            GridQueryIndexDescriptor idxDesc, org.apache.ignite.internal.cache.query.index.Index idx) {
             lsnrs.forEach(lsnr -> lsnr.onIndexCreated(schemaName, tblName, idxName, idxDesc, idx));
         }
 

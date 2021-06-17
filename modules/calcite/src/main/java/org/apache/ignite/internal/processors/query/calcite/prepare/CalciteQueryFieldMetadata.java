@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.sql.ResultSetMetaData;
 
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 
@@ -45,6 +46,9 @@ public class CalciteQueryFieldMetadata implements GridQueryFieldMetadata {
     /** */
     private int scale;
 
+    /** */
+    private boolean isNullable;
+
     /** Blank constructor for external serialization. */
     public CalciteQueryFieldMetadata() {
     }
@@ -57,13 +61,15 @@ public class CalciteQueryFieldMetadata implements GridQueryFieldMetadata {
      * @param precision Precision.
      * @param scale Scale.
      */
-    public CalciteQueryFieldMetadata(String schemaName, String typeName, String fieldName, String fieldTypeName, int precision, int scale) {
+    public CalciteQueryFieldMetadata(String schemaName, String typeName, String fieldName, String fieldTypeName,
+        int precision, int scale, boolean isNullable) {
         this.schemaName = schemaName;
         this.typeName = typeName;
         this.fieldName = fieldName;
         this.fieldTypeName = fieldTypeName;
         this.precision = precision;
         this.scale = scale;
+        this.isNullable = isNullable;
     }
 
     /** {@inheritDoc} */
@@ -114,5 +120,10 @@ public class CalciteQueryFieldMetadata implements GridQueryFieldMetadata {
         fieldTypeName = in.readUTF();
         precision = in.readInt();
         scale = in.readInt();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int nullability() {
+        return isNullable ? ResultSetMetaData.columnNullable : ResultSetMetaData.columnNoNulls;
     }
 }

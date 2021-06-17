@@ -183,7 +183,7 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
     /** {@inheritDoc} */
     @Override public Collection<GridDeployment> getDeployments() {
         synchronized (mux) {
-            return new LinkedList<GridDeployment>(cache.values());
+            return new LinkedList<>(cache.values());
         }
     }
 
