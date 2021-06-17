@@ -46,5 +46,4 @@ public interface IgniteResource {
 
     @Resources.BaseMessage("Option ''{0}'' has already been defined")
     Resources.ExInst<SqlValidatorException> optionAlreadyDefined(String optName);
-
 }

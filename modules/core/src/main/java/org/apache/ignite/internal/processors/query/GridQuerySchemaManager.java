@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query;
 
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Provides information about query engine schemas.
@@ -25,16 +26,22 @@ import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 public interface GridQuerySchemaManager {
     /**
      * Find type descriptor by schema and table name.
+     *
+     * @return Query type descriptor or {@code null} if descriptor was not found.
      */
-    public GridQueryTypeDescriptor typeDescriptorForTable(String schemaName, String tableName);
+    public @Nullable GridQueryTypeDescriptor typeDescriptorForTable(String schemaName, String tableName);
 
     /**
-     *  Find type descriptor by schema and index name.
+     * Find type descriptor by schema and index name.
+     *
+     * @return Query type descriptor or {@code null} if descriptor was not found.
      */
-    public GridQueryTypeDescriptor typeDescriptorForIndex(String schemaName, String idxName);
+    public @Nullable GridQueryTypeDescriptor typeDescriptorForIndex(String schemaName, String idxName);
 
     /**
-     *  Find cache info by schema and table name.
+     * Find cache info by schema and table name.
+     *
+     * @return Cache info or {@code null} if cache info was not found.
      */
-    public <K, V> GridCacheContextInfo<K, V> cacheInfoForTable(String schemaName, String tableName);
+    public @Nullable <K, V> GridCacheContextInfo<K, V> cacheInfoForTable(String schemaName, String tableName);
 }
