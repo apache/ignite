@@ -127,7 +127,7 @@ public class IndexQueryProcessor {
         if (idxQryDesc.idxName() != null) {
             String name = "_key_PK".equals(idxQryDesc.idxName()) ? "_key_PK" : idxQryDesc.idxName().toUpperCase();
 
-            String schema = idxQryDesc.schema() == null ? cctx.name() : idxQryDesc.schema();
+            String schema = idxProc.query().schemaName(cctx);
 
             IndexName idxName = new IndexName(cctx.name(), schema, tableName, name);
 

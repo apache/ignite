@@ -91,7 +91,7 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
         IgniteCache tableCache = crd.cache(CACHE_TABLE);
 
         IndexQuery<Long, Person> qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, DESC_ID_IDX, "PUBLIC")
+            .<Long, Person>forIndex(Person.class, DESC_ID_IDX)
             .where(lt("descId", Integer.MAX_VALUE));
 
         assertTrue(tableCache.query(qry).getAll().isEmpty());
@@ -109,7 +109,7 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
         IgniteCache tableCache = crd.cache(CACHE_TABLE);
 
         IndexQuery<Long, Person> qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, DESC_ID_IDX, "PUBLIC")
+            .<Long, Person>forIndex(Person.class, DESC_ID_IDX)
             .where(lt("descId", pivot));
 
         check(tableCache.query(qry), 0, pivot);
@@ -117,7 +117,7 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
         // Wrong fields in query.
         GridTestUtils.assertThrowsAnyCause(null, () -> {
             IndexQuery<Long, Person> wrongQry = IndexQuery
-                .<Long, Person>forIndex(Person.class, DESC_ID_IDX, "PUBLIC")
+                .<Long, Person>forIndex(Person.class, DESC_ID_IDX)
                 .where(lt("id", Integer.MAX_VALUE));
 
             return cache.query(wrongQry).getAll();
@@ -127,7 +127,7 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
         // Wrong cache name.
         GridTestUtils.assertThrowsAnyCause(null, () -> {
             IndexQuery<Long, Person> wrongQry = IndexQuery
-                .<Long, Person>forIndex(Person.class, DESC_ID_IDX, "PUBLIC")
+                .<Long, Person>forIndex(Person.class, DESC_ID_IDX)
                 .where(lt("descId", Integer.MAX_VALUE));
 
             return cache.query(wrongQry).getAll();
@@ -137,7 +137,7 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
         // Wrong schema name.
         GridTestUtils.assertThrowsAnyCause(null, () -> {
             IndexQuery<Long, Person> wrongQry = IndexQuery
-                .<Long, Person>forIndex(Person.class, DESC_ID_IDX, "DEFAULT")
+                .<Long, Person>forIndex(Person.class, DESC_ID_IDX)
                 .where(lt("descId", Integer.MAX_VALUE));
 
             return cache.query(wrongQry).getAll();

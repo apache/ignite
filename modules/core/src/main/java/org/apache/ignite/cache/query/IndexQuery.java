@@ -40,14 +40,10 @@ public class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** Optional index name. Find index by fields in condition. */
     private final @Nullable String idxName;
 
-    /** Optional schema name. User has to specify schema to run query over an index created with SQL. */
-    private final @Nullable String schema;
-
     /** */
-    private IndexQuery(String valCls, @Nullable String idxName, @Nullable String schema) {
+    private IndexQuery(String valCls, @Nullable String idxName) {
         this.valCls = valCls;
         this.idxName = idxName;
-        this.schema = schema;
     }
 
     /**
@@ -57,7 +53,7 @@ public class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
     public static <K, V> IndexQuery<K, V> forType(Class<V> valCls) {
         A.notNull(valCls, "valCls");
 
-        return new IndexQuery<>(valCls.getName(), null, null);
+        return new IndexQuery<>(valCls.getName(), null);
     }
 
     /**
@@ -67,19 +63,7 @@ public class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
         A.notNull(valCls, "valCls");
         A.notNullOrEmpty(idxName, "idxName");
 
-        return new IndexQuery<>(valCls.getName(), idxName, null);
-    }
-
-    /**
-     * Specify index with cache value class, index name and schema name.
-     * Note that schema is required parameter for indexes created with the "CREATE INDEX" SQL-clause.
-     */
-    public static <K, V> IndexQuery<K, V> forIndex(Class<V> valCls, String idxName, String schema) {
-        A.notNull(valCls, "valCls");
-        A.notNullOrEmpty(idxName, "idxName");
-        A.notNullOrEmpty(schema, "schema");
-
-        return new IndexQuery<>(valCls.getName(), idxName, schema);
+        return new IndexQuery<>(valCls.getName(), idxName);
     }
 
     /**
@@ -112,10 +96,5 @@ public class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** Index name. */
     public @Nullable String getIndexName() {
         return idxName;
-    }
-
-    /** Schema name. */
-    public @Nullable String getSchema() {
-        return schema;
     }
 }

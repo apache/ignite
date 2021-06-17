@@ -60,6 +60,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.util.GridAtomicLong;
@@ -607,4 +608,12 @@ public class IndexProcessor extends GridProcessorAdapter {
     public IgniteLogger logger() {
         return log;
     }
+
+    /**
+     * @return Grid query processor.
+     */
+    public GridQueryProcessor query() {
+        return ctx.query();
+    }
+
 }

@@ -2845,7 +2845,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         return executeQuerySafe(cctx, () -> {
             assert idx != null;
 
-            final String schemaName = getSchemaName(cctx, qry);
+            final String schemaName = qry.getSchema() == null ? schemaName(cctx) : qry.getSchema();
 
             IgniteOutClosureX<List<FieldsQueryCursor<List<?>>>> clo =
                 new IgniteOutClosureX<List<FieldsQueryCursor<List<?>>>>() {
@@ -2874,13 +2874,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /**
      * @param cctx Cache context.
-     * @param qry Query.
      * @return Schema name.
      */
-    private String getSchemaName(GridCacheContext<?, ?> cctx, SqlFieldsQuery qry) {
-        if (qry.getSchema() != null)
-            return qry.getSchema();
-        else if (cctx != null) {
+    public String schemaName(GridCacheContext<?, ?> cctx) {
+        if (cctx != null) {
             String cacheSchemaName = idx.schema(cctx.name());
 
             if (!F.isEmpty(cacheSchemaName))
