@@ -148,11 +148,11 @@ public class LocalWalModeNoChangeDuringRebalanceOnNonNodeAssignTest extends Grid
 
         ig4.cluster().setBaselineTopology(ig4.context().discovery().topologyVersion());
 
-        IgniteWalIteratorFactory iteratorFactory = new IgniteWalIteratorFactory(log);
+        IgniteWalIteratorFactory iterFactory = new IgniteWalIteratorFactory(log);
 
         String name = ig4.name();
 
-        try (WALIterator it = iteratorFactory.iterator(walPath(name), walArchivePath(name))) {
+        try (WALIterator it = iterFactory.iterator(walPath(name), walArchivePath(name))) {
             while (it.hasNext()) {
                 IgniteBiTuple<WALPointer, WALRecord> tup = it.next();
 

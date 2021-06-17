@@ -93,11 +93,11 @@ public class MvccStructuresOverheadTest extends GridCommonAbstractTest {
     private void restartClients() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        AtomicBoolean mvccMessageTranslated = new AtomicBoolean();
+        AtomicBoolean mvccMsgTranslated = new AtomicBoolean();
 
         ignite.context().io().addMessageListener(GridTopic.TOPIC_CACHE_COORDINATOR, (nodeId, msg, plc) -> {
             if (msg instanceof MvccRecoveryFinishedMessage)
-                mvccMessageTranslated.set(true);
+                mvccMsgTranslated.set(true);
         });
 
         Map recoveryBallotBoxes = U.field(ignite.context().coordinators(), "recoveryBallotBoxes");
@@ -112,14 +112,14 @@ public class MvccStructuresOverheadTest extends GridCommonAbstractTest {
             client.close();
 
             if (isMvccCache) {
-                assertTrue(GridTestUtils.waitForCondition(mvccMessageTranslated::get, 10_000));
+                assertTrue(GridTestUtils.waitForCondition(mvccMsgTranslated::get, 10_000));
 
                 assertTrue("Size of recoveryBallotBoxes " + recoveryBallotBoxes.size(), recoveryBallotBoxes.isEmpty());
 
-                mvccMessageTranslated.compareAndSet(true, false);
+                mvccMsgTranslated.compareAndSet(true, false);
             }
             else {
-                assertFalse(mvccMessageTranslated.get());
+                assertFalse(mvccMsgTranslated.get());
 
                 assertTrue("Size of recoveryBallotBoxes " + recoveryBallotBoxes.size(), recoveryBallotBoxes.isEmpty());
             }

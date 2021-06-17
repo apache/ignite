@@ -88,12 +88,12 @@ public class GridLocalConfigManager {
     public void saveCacheConfiguration(StoredCacheData storedCacheData, boolean overwrite) throws IgniteCheckedException {
         assert storedCacheData != null;
 
-        GridCacheSharedContext<Object, Object> sharedContext = cacheProcessor.context();
+        GridCacheSharedContext<Object, Object> sharedCtx = cacheProcessor.context();
 
-        if (sharedContext.pageStore() != null
-            && !sharedContext.kernalContext().clientNode()
-            && isPersistentCache(storedCacheData.config(), sharedContext.gridConfig().getDataStorageConfiguration()))
-            sharedContext.pageStore().storeCacheData(storedCacheData, overwrite);
+        if (sharedCtx.pageStore() != null
+            && !sharedCtx.kernalContext().clientNode()
+            && isPersistentCache(storedCacheData.config(), sharedCtx.gridConfig().getDataStorageConfiguration()))
+            sharedCtx.pageStore().storeCacheData(storedCacheData, overwrite);
     }
 
     /**

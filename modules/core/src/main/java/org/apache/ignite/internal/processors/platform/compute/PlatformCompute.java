@@ -167,9 +167,9 @@ public class PlatformCompute extends PlatformAbstractTarget {
 
                 PlatformCallable callable = new PlatformCallable(func, ptr);
 
-                IgniteFuture future = compute.affinityCallAsync(cacheNames, part, callable);
+                IgniteFuture fut = compute.affinityCallAsync(cacheNames, part, callable);
 
-                return wrapListenable(readAndListenFuture(reader, future));
+                return wrapListenable(readAndListenFuture(reader, fut));
             }
 
             case OP_AFFINITY_CALL: {
@@ -180,9 +180,9 @@ public class PlatformCompute extends PlatformAbstractTarget {
 
                 PlatformCallable callable = new PlatformCallable(func, ptr);
 
-                IgniteFuture future = compute.affinityCallAsync(cacheName, key, callable);
+                IgniteFuture fut = compute.affinityCallAsync(cacheName, key, callable);
 
-                return wrapListenable(readAndListenFuture(reader, future));
+                return wrapListenable(readAndListenFuture(reader, fut));
             }
 
             case OP_AFFINITY_RUN_PARTITION: {
@@ -193,9 +193,9 @@ public class PlatformCompute extends PlatformAbstractTarget {
 
                 PlatformRunnable runnable = new PlatformRunnable(func, ptr);
 
-                IgniteFuture future = compute.affinityRunAsync(cacheNames, part, runnable);
+                IgniteFuture fut = compute.affinityRunAsync(cacheNames, part, runnable);
 
-                return wrapListenable(readAndListenFuture(reader, future));
+                return wrapListenable(readAndListenFuture(reader, fut));
             }
 
             case OP_AFFINITY_RUN: {
@@ -206,9 +206,9 @@ public class PlatformCompute extends PlatformAbstractTarget {
 
                 PlatformRunnable runnable = new PlatformRunnable(func, ptr);
 
-                IgniteFuture future = compute.affinityRunAsync(cacheName, key, runnable);
+                IgniteFuture fut = compute.affinityRunAsync(cacheName, key, runnable);
 
-                return wrapListenable(readAndListenFuture(reader, future));
+                return wrapListenable(readAndListenFuture(reader, fut));
             }
 
             default:

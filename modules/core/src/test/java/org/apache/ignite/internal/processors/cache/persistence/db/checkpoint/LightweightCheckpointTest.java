@@ -130,8 +130,8 @@ public class LightweightCheckpointTest extends GridCommonAbstractTest {
         IgniteCache<Integer, Object> checkpointedCache = ignite0.cache(DEFAULT_CACHE_NAME);
         IgniteCache<Integer, Object> notCheckpointedCache = ignite0.cache(NOT_CHECKPOINTED_CACHE);
 
-        GridKernalContext context = ignite0.context();
-        GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)(context.cache().context().database());
+        GridKernalContext ctx = ignite0.context();
+        GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)(ctx.cache().context().database());
 
         waitForCondition(() -> !db.getCheckpointer().currentProgress().inProgress(), 10_000);
 
@@ -141,29 +141,29 @@ public class LightweightCheckpointTest extends GridCommonAbstractTest {
         DataRegion regionForCheckpoint = db.dataRegion(DFLT_DATA_REG_DEFAULT_NAME);
 
         //and: Create light checkpoint with only one region.
-        LightweightCheckpointManager lightweightCheckpointManager = new LightweightCheckpointManager(
-            context::log,
-            context.igniteInstanceName(),
+        LightweightCheckpointManager lightweightCheckpointMgr = new LightweightCheckpointManager(
+            ctx::log,
+            ctx.igniteInstanceName(),
             "light-test-checkpoint",
-            context.workersRegistry(),
-            context.config().getDataStorageConfiguration(),
+            ctx.workersRegistry(),
+            ctx.config().getDataStorageConfiguration(),
             () -> Arrays.asList(regionForCheckpoint),
-            grpId -> getPageMemoryForCacheGroup(grpId, db, context),
+            grpId -> getPageMemoryForCacheGroup(grpId, db, ctx),
             PageMemoryImpl.ThrottlingPolicy.CHECKPOINT_BUFFER_ONLY,
-            context.cache().context().snapshot(),
+            ctx.cache().context().snapshot(),
             db.persistentStoreMetricsImpl(),
-            context.longJvmPauseDetector(),
-            context.failure(),
-            context.cache()
+            ctx.longJvmPauseDetector(),
+            ctx.failure(),
+            ctx.cache()
         );
 
         //and: Add checkpoint listener for DEFAULT_CACHE in order of storing the meta pages.
-        lightweightCheckpointManager.addCheckpointListener(
-            (CheckpointListener)context.cache().cacheGroup(groupIdForCache(ignite0, DEFAULT_CACHE_NAME)).offheap(),
+        lightweightCheckpointMgr.addCheckpointListener(
+            (CheckpointListener)ctx.cache().cacheGroup(groupIdForCache(ignite0, DEFAULT_CACHE_NAME)).offheap(),
             regionForCheckpoint
         );
 
-        lightweightCheckpointManager.start();
+        lightweightCheckpointMgr.start();
 
         //when: Fill the caches
         for (int j = 0; j < 1024; j++) {
@@ -172,7 +172,7 @@ public class LightweightCheckpointTest extends GridCommonAbstractTest {
         }
 
         //and: Trigger and wait for the checkpoint.
-        lightweightCheckpointManager.forceCheckpoint("test", null)
+        lightweightCheckpointMgr.forceCheckpoint("test", null)
             .futureFor(CheckpointState.FINISHED)
             .get();
 

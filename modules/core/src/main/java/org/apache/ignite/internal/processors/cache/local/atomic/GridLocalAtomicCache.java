@@ -589,7 +589,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
         final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
 
-        Map<K, EntryProcessorResult<T>> entryProcessorRes = (Map<K, EntryProcessorResult<T>>) updateAllInternal(
+        Map<K, EntryProcessorResult<T>> entryProcRes = (Map<K, EntryProcessorResult<T>>) updateAllInternal(
                 TRANSFORM,
                 invokeMap.keySet(),
                 invokeMap.values(),
@@ -605,7 +605,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         if (statsEnabled)
             metrics0().addInvokeTimeNanos(System.nanoTime() - start);
 
-        return entryProcessorRes;
+        return entryProcRes;
     }
 
     /** {@inheritDoc} */
@@ -695,7 +695,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        Map<K, EntryProcessorResult<T>> entryProcessorResult = (Map<K, EntryProcessorResult<T>>) updateAllInternal(
+        Map<K, EntryProcessorResult<T>> entryProcResult = (Map<K, EntryProcessorResult<T>>) updateAllInternal(
                 TRANSFORM,
                 map.keySet(),
                 map.values(),
@@ -711,7 +711,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         if (statsEnabled)
             metrics0().addInvokeTimeNanos(System.nanoTime() - start);
 
-        return entryProcessorResult;
+        return entryProcResult;
     }
 
     /** {@inheritDoc} */
@@ -1093,7 +1093,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                             GridResourceIoc.AnnotationSet.ENTRY_PROCESSOR,
                             ctx.name());
 
-                        EntryProcessor<Object, Object, Object> entryProcessor =
+                        EntryProcessor<Object, Object, Object> entryProc =
                             (EntryProcessor<Object, Object, Object>)val;
 
                         CacheObject old = entry.innerGet(
@@ -1103,7 +1103,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                             /*update-metrics*/true,
                             /*event*/true,
                             subjId,
-                            entryProcessor,
+                            entryProc,
                             taskName,
                             null,
                             keepBinary);
@@ -1122,7 +1122,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                         IgniteThread.onEntryProcessorEntered(false);
 
                         try {
-                            Object computed = entryProcessor.process(invokeEntry, invokeArgs);
+                            Object computed = entryProc.process(invokeEntry, invokeArgs);
 
                             updatedVal = ctx.unwrapTemporary(invokeEntry.getValue());
 

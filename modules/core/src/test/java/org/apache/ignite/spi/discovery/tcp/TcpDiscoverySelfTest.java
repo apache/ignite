@@ -478,7 +478,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             final CountDownLatch pingLatch = new CountDownLatch(1);
 
-            final CountDownLatch eventLatch = new CountDownLatch(1);
+            final CountDownLatch evtLatch = new CountDownLatch(1);
 
             final AtomicBoolean pingRes = new AtomicBoolean(true);
 
@@ -491,7 +491,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                     @Override public boolean apply(Event event) {
                         if (((DiscoveryEvent)event).eventNode().id().equals(failedNodeId)) {
                             failRes.set(true);
-                            eventLatch.countDown();
+                            evtLatch.countDown();
                         }
 
                         return true;
@@ -532,7 +532,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             assertTrue(System.currentTimeMillis() - startTs <
                 pingingNode.configuration().getFailureDetectionTimeout() / 2);
 
-            assertTrue(eventLatch.await(7, TimeUnit.SECONDS));
+            assertTrue(evtLatch.await(7, TimeUnit.SECONDS));
             assertTrue(failRes.get());
         }
         finally {

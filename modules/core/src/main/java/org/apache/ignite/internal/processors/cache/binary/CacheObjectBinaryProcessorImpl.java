@@ -1551,14 +1551,14 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
         for (Map.Entry<Integer, BinaryMetadataHolder> metaEntry : newNodeMeta.entrySet()) {
             if (metadataLocCache.containsKey(metaEntry.getKey())) {
-                BinaryMetadataHolder localMetaHolder = metadataLocCache.get(metaEntry.getKey());
+                BinaryMetadataHolder locMetaHolder = metadataLocCache.get(metaEntry.getKey());
 
                 BinaryMetadata newMeta = metaEntry.getValue().metadata();
-                BinaryMetadata localMeta = localMetaHolder.metadata();
+                BinaryMetadata locMeta = locMetaHolder.metadata();
 
-                BinaryMetadata mergedMeta = mergeMetadata(localMeta, newMeta);
+                BinaryMetadata mergedMeta = mergeMetadata(locMeta, newMeta);
 
-                if (mergedMeta != localMeta) {
+                if (mergedMeta != locMeta) {
                     //put mergedMeta to local cache and store to disk
                     U.log(log,
                         String.format("Newer version of existing BinaryMetadata[typeId=%d, typeName=%s] " +
@@ -1569,8 +1569,8 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
                     metadataLocCache.put(metaEntry.getKey(),
                         new BinaryMetadataHolder(mergedMeta,
-                            localMetaHolder.pendingVersion(),
-                            localMetaHolder.acceptedVersion()));
+                            locMetaHolder.pendingVersion(),
+                            locMetaHolder.acceptedVersion()));
 
                     if (!ctx.clientNode())
                         metadataFileStore.writeMetadata(mergedMeta);
@@ -1603,14 +1603,14 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             for (Map.Entry<Integer, BinaryMetadataHolder> e : receivedData.entrySet()) {
                 BinaryMetadataHolder holder = e.getValue();
 
-                BinaryMetadataHolder localHolder = new BinaryMetadataHolder(holder.metadata(),
+                BinaryMetadataHolder locHolder = new BinaryMetadataHolder(holder.metadata(),
                         holder.pendingVersion(),
                         holder.pendingVersion());
 
                 if (log.isDebugEnabled())
-                    log.debug("Received metadata on join: " + localHolder);
+                    log.debug("Received metadata on join: " + locHolder);
 
-                metadataLocCache.put(e.getKey(), localHolder);
+                metadataLocCache.put(e.getKey(), locHolder);
 
                 if (!ctx.clientNode())
                     metadataFileStore.writeMetadata(holder.metadata());

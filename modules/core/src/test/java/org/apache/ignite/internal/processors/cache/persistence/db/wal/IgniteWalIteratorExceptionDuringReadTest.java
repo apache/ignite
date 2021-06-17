@@ -86,22 +86,22 @@ public class IgniteWalIteratorExceptionDuringReadTest extends GridCommonAbstract
 
         ig.cluster().active(false);
 
-        IgniteWalIteratorFactory iteratorFactory = new IgniteWalIteratorFactory(log);
+        IgniteWalIteratorFactory iterFactory = new IgniteWalIteratorFactory(log);
 
         WALPointer failOnPtr = new WALPointer(3, 1024 * 1024 * 5, 0);
 
-        String failMessage = "test fail message";
+        String failMsg = "test fail message";
 
         IteratorParametersBuilder builder = new IteratorParametersBuilder()
             .filesOrDirs(U.defaultWorkDirectory())
             .filter((r, ptr) -> {
                 if (ptr.compareTo(failOnPtr) >= 0)
-                    throw new TestRuntimeException(failMessage);
+                    throw new TestRuntimeException(failMsg);
 
                 return true;
             });
 
-        try (WALIterator it = iteratorFactory.iterator(builder)) {
+        try (WALIterator it = iterFactory.iterator(builder)) {
             WALPointer ptr = null;
 
             boolean failed = false;

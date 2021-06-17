@@ -275,9 +275,9 @@ public class IgniteThrottlingUnitTest {
 
         when(pageMemory2g.checkpointBufferPagesSize()).thenReturn(100);
 
-        AtomicInteger checkpointBufferPagesCount = new AtomicInteger(70);
+        AtomicInteger checkpointBufPagesCnt = new AtomicInteger(70);
 
-        when(pageMemory2g.checkpointBufferPagesCount()).thenAnswer(mock -> checkpointBufferPagesCount.get());
+        when(pageMemory2g.checkpointBufferPagesCount()).thenAnswer(mock -> checkpointBufPagesCnt.get());
 
         try {
             loadThreads.forEach(Thread::start);
@@ -290,7 +290,7 @@ public class IgniteThrottlingUnitTest {
                 assertTrue(t.getName(), waitForCondition(() -> t.getState() == TIMED_WAITING, 500L));
 
             // Disable throttling
-            checkpointBufferPagesCount.set(50);
+            checkpointBufPagesCnt.set(50);
 
             // Awaiting that all load threads are unparked.
             for (Thread t : loadThreads)

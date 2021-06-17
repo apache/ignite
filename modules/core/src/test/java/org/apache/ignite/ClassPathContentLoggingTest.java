@@ -83,7 +83,7 @@ public class ClassPathContentLoggingTest extends GridCommonAbstractTest {
      */
     @Test
     public void testClassPathContentLogging() throws Exception {
-        String javaClassPath = System.getProperty("java.class.path", ".");
+        String javaClsPath = System.getProperty("java.class.path", ".");
 
         LogListener lsnr = LogListener
             .matches("List of files containing in classpath")
@@ -110,7 +110,7 @@ public class ClassPathContentLoggingTest extends GridCommonAbstractTest {
         for (Path jar : jars)
             contenLsnrBuilder.andMatches(jar.getFileName().toString());
 
-        Arrays.stream(javaClassPath.split(File.separator))
+        Arrays.stream(javaClsPath.split(File.separator))
             .filter(fileName -> new File(fileName).isDirectory())
             .forEach(contenLsnrBuilder::andMatches);
 

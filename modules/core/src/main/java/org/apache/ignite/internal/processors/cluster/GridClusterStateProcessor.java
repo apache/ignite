@@ -1363,12 +1363,12 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 ", daemon " + ctx.isDaemon() + "]");
         }
 
-        ClusterGroupAdapter clusterGroupAdapter = (ClusterGroupAdapter)ctx.cluster().get().forServers();
+        ClusterGroupAdapter clusterGrpAdapter = (ClusterGroupAdapter)ctx.cluster().get().forServers();
 
-        if (F.isEmpty(clusterGroupAdapter.nodes()))
+        if (F.isEmpty(clusterGrpAdapter.nodes()))
             return new IgniteFinishedFutureImpl<>(INACTIVE);
 
-        return clusterGroupAdapter.compute().callAsync(new ClientGetClusterStateComputeRequest());
+        return clusterGrpAdapter.compute().callAsync(new ClientGetClusterStateComputeRequest());
     }
 
     /** {@inheritDoc} */
@@ -1531,11 +1531,11 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 ", nodeId=" + nodeId + "]");
         }
 
-        UUID requestId = msg.getRequestId();
+        UUID reqId = msg.getRequestId();
 
         final GridChangeGlobalStateFuture fut = stateChangeFut.get();
 
-        if (fut != null && requestId.equals(fut.requestId)) {
+        if (fut != null && reqId.equals(fut.requestId)) {
             if (fut.initFut.isDone())
                 fut.onResponse(nodeId, msg);
             else {

@@ -109,7 +109,7 @@ public class ClusterBaselineNodesMetricsSelfTest extends GridCommonAbstractTest 
 
         startGrid(1);
 
-        ClusterMetricsMXBean mxBeanLocalNode1 = mxBean(1, ClusterLocalNodeMetricsMXBeanImpl.class);
+        ClusterMetricsMXBean mxBeanLocNode1 = mxBean(1, ClusterLocalNodeMetricsMXBeanImpl.class);
 
         // State #2: 3 server nodes (2 total baseline nodes, 2 active baseline nodes), 1 client node
         log.info(String.format(">>> State #2: topology version = %d", ignite0.cluster().topologyVersion()));
@@ -122,7 +122,7 @@ public class ClusterBaselineNodesMetricsSelfTest extends GridCommonAbstractTest 
         assertEquals(2, mreg.<IntMetric>findMetric(TOTAL_BASELINE_NODES).value());
         assertEquals(2, mxBeanCluster.getActiveBaselineNodes());
         assertEquals(2, mreg.<IntMetric>findMetric(ACTIVE_BASELINE_NODES).value());
-        assertEquals(1, mxBeanLocalNode1.getTotalBaselineNodes());
+        assertEquals(1, mxBeanLocNode1.getTotalBaselineNodes());
         assertEquals(2, (baselineNodes = ignite0.cluster().currentBaselineTopology()) != null
             ? baselineNodes.size()
             : 0);

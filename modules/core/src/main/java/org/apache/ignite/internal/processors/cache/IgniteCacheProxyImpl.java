@@ -266,11 +266,11 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
                 ctx = this.ctx;
 
                 if (ctx == null) {
-                    GridCacheContext<K, V> context = oldContext;
+                    GridCacheContext<K, V> cctx = oldContext;
 
-                    assert context != null;
+                    assert cctx != null;
 
-                    return context;
+                    return cctx;
                 }
             }
         }
@@ -2057,9 +2057,9 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         GridFutureAdapter<Void> restartFut = this.restartFut.get();
 
         if (X.hasCause(e, IgniteCacheRestartingException.class)) {
-            IgniteCacheRestartingException restartingException = X.cause(e, IgniteCacheRestartingException.class);
+            IgniteCacheRestartingException restartingE = X.cause(e, IgniteCacheRestartingException.class);
 
-            if (restartingException.restartFuture() == null) {
+            if (restartingE.restartFuture() == null) {
                 if (restartFut == null)
                     restartFut = suspend();
 
@@ -2068,7 +2068,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
                 throw new IgniteCacheRestartingException(new IgniteFutureImpl<>(restartFut, exec()), cacheName);
             }
             else
-                throw restartingException;
+                throw restartingE;
         }
 
         if (restartFut != null) {
@@ -2243,12 +2243,12 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      * Throws {@code IgniteCacheRestartingException} if proxy is restarting.
      */
     public void checkRestart(boolean noWait) {
-        RestartFuture currentFut = restartFut.get();
+        RestartFuture curFut = restartFut.get();
 
-        if (currentFut != null) {
+        if (curFut != null) {
             try {
                 if (!noWait) {
-                    currentFut.get(1, TimeUnit.SECONDS);
+                    curFut.get(1, TimeUnit.SECONDS);
 
                     return;
                 }
@@ -2257,7 +2257,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
                 //do nothing
             }
 
-            throw new IgniteCacheRestartingException(new IgniteFutureImpl<>(currentFut, exec()), cacheName);
+            throw new IgniteCacheRestartingException(new IgniteFutureImpl<>(curFut, exec()), cacheName);
         }
     }
 
@@ -2302,10 +2302,10 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      * @param fut Finish restart future.
      */
     public void registrateFutureRestart(GridFutureAdapter<?> fut) {
-        RestartFuture currentFut = restartFut.get();
+        RestartFuture curFut = restartFut.get();
 
-        if (currentFut != null)
-            currentFut.addRestartFinishedFuture(fut);
+        if (curFut != null)
+            curFut.addRestartFinishedFuture(fut);
     }
 
     /**

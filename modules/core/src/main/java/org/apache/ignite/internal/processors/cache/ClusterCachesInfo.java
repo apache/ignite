@@ -1504,9 +1504,9 @@ public class ClusterCachesInfo {
                 cacheData.cacheConfigurationEnrichment()
             );
 
-            Collection<QueryEntity> localQueryEntities = getLocalQueryEntities(cfg.getName());
+            Collection<QueryEntity> locQryEntities = getLocalQueryEntities(cfg.getName());
 
-            QuerySchemaPatch schemaPatch = desc.makeSchemaPatch(localQueryEntities);
+            QuerySchemaPatch schemaPatch = desc.makeSchemaPatch(locQryEntities);
 
             if (schemaPatch.hasConflicts()) {
                 hasSchemaPatchConflict = true;
@@ -1515,7 +1515,7 @@ public class ClusterCachesInfo {
             }
             else if (!schemaPatch.isEmpty())
                 patchesToApply.put(desc, schemaPatch);
-            else if (!GridFunc.eqNotOrdered(desc.schema().entities(), localQueryEntities))
+            else if (!GridFunc.eqNotOrdered(desc.schema().entities(), locQryEntities))
                 cachesToSave.add(desc); //received config is different of local config - need to resave
 
             desc.receivedOnDiscovery(true);
@@ -2061,7 +2061,7 @@ public class ClusterCachesInfo {
         boolean hasSchemaPatchConflict = false;
         boolean active = ctx.state().clusterState().active();
 
-        boolean isMergeConfigSupport = isMergeConfigSupports(null);
+        boolean isMergeCfgSupport = isMergeConfigSupports(null);
 
         for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : joinData.caches().values()) {
             CacheConfiguration<?, ?> cfg = cacheInfo.cacheData().config();
@@ -2080,7 +2080,7 @@ public class ClusterCachesInfo {
 
                 registerNewCache(joinData, nodeId, cacheInfo);
             }
-            else if (!active && isMergeConfigSupport) {
+            else if (!active && isMergeCfgSupport) {
                 DynamicCacheDescriptor desc = registeredCaches.get(cfg.getName());
 
                 QuerySchemaPatch schemaPatch = desc.makeSchemaPatch(cacheInfo.cacheData());
@@ -2214,9 +2214,9 @@ public class ClusterCachesInfo {
         Collection<ClusterNode> nodes = discoCache.allNodes();
 
         for (ClusterNode node : nodes) {
-            IgniteProductVersion version = node.version();
+            IgniteProductVersion ver = node.version();
 
-            if (version.compareToIgnoreTimestamp(V_MERGE_CONFIG_SINCE) < 0)
+            if (ver.compareToIgnoreTimestamp(V_MERGE_CONFIG_SINCE) < 0)
                 return false;
         }
 

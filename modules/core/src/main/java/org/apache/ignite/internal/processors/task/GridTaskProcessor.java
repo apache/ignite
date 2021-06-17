@@ -804,12 +804,12 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                 assert taskWorker0 == null : "Session ID is not unique: " + sesId;
 
                 if (ctx.event().isRecordable(EVT_MANAGEMENT_TASK_STARTED) && dep.visorManagementTask(task, taskCls)) {
-                    VisorTaskArgument visorTaskArgument = (VisorTaskArgument)arg;
+                    VisorTaskArgument visorTaskArg = (VisorTaskArgument)arg;
 
                     Event evt = new TaskEvent(
                         ctx.discovery().localNode(),
-                        visorTaskArgument != null && visorTaskArgument.getArgument() != null
-                            ? visorTaskArgument.getArgument().toString() : "[]",
+                        visorTaskArg != null && visorTaskArg.getArgument() != null
+                            ? visorTaskArg.getArgument().toString() : "[]",
                         EVT_MANAGEMENT_TASK_STARTED,
                         ses.getId(),
                         taskCls == null ? null : taskCls.getSimpleName(),

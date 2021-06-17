@@ -107,8 +107,8 @@ public class VisorBaselineTaskResult extends VisorDataTransferObject {
             Collection<VisorBaselineNode.ResolvedAddresses> addrs = new ArrayList<>();
 
             if (node instanceof IgniteClusterNode) {
-                for (InetAddress inetAddress: resolveInetAddresses((ClusterNode)node))
-                    addrs.add(new VisorBaselineNode.ResolvedAddresses(inetAddress));
+                for (InetAddress inetAddr: resolveInetAddresses((ClusterNode)node))
+                    addrs.add(new VisorBaselineNode.ResolvedAddresses(inetAddr));
             }
 
             VisorBaselineNode dto = new VisorBaselineNode(node, addrs);

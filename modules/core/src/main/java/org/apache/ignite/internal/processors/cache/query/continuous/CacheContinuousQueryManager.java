@@ -895,9 +895,9 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
         GridKernalContext ctx = cctx.kernalContext();
 
         if (ctx.security().enabled() && allNodesSupports(ctx.discovery().allNodes(), CONT_QRY_SECURITY_AWARE)) {
-            final UUID subjectId = ctx.security().securityContext().subject().id();
+            final UUID subjId = ctx.security().securityContext().subject().id();
 
-            return f.apply(subjectId, component);
+            return f.apply(subjId, component);
         }
 
         return component;

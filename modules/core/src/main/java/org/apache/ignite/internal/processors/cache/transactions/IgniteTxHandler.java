@@ -2375,14 +2375,14 @@ public class IgniteTxHandler {
         AffinityTopologyVersion top = tx.topologyVersionSnapshot();
 
         for (PartitionUpdateCountersMessage partCntrs : updCntrs) {
-            GridDhtPartitionTopology topology = ctx.cacheContext(partCntrs.cacheId()).topology();
+            GridDhtPartitionTopology top0 = ctx.cacheContext(partCntrs.cacheId()).topology();
 
             PartitionUpdateCountersMessage resCntrs = new PartitionUpdateCountersMessage(partCntrs.cacheId(), partCntrs.size());
 
             for (int i = 0; i < partCntrs.size(); i++) {
                 int part = partCntrs.partition(i);
 
-                if (topology.nodes(part, top).indexOf(node) > 0)
+                if (top0.nodes(part, top).indexOf(node) > 0)
                     resCntrs.add(part, partCntrs.initialCounter(i), partCntrs.updatesCount(i));
             }
 

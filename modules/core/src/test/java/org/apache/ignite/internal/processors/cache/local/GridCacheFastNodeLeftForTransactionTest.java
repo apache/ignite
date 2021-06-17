@@ -116,8 +116,8 @@ public class GridCacheFastNodeLeftForTransactionTest extends GridCommonAbstractT
 
         IgniteEx crd = createCluster(nodes);
 
-        for (CacheConfiguration cacheConfig : createCacheConfigs()) {
-            String cacheName = cacheConfig.getName();
+        for (CacheConfiguration cacheCfg : createCacheConfigs()) {
+            String cacheName = cacheCfg.getName();
 
             IgniteCache<Object, Object> cache = crd.cache(cacheName);
 
@@ -164,8 +164,8 @@ public class GridCacheFastNodeLeftForTransactionTest extends GridCommonAbstractT
 
         IgniteEx crd = createCluster(nodes);
 
-        for (CacheConfiguration cacheConfig : createCacheConfigs()) {
-            String cacheName = cacheConfig.getName();
+        for (CacheConfiguration cacheCfg : createCacheConfigs()) {
+            String cacheName = cacheCfg.getName();
 
             IgniteCache<Object, Object> cache = crd.cache(cacheName);
 

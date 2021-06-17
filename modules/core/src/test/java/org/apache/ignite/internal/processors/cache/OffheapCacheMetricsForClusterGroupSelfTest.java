@@ -74,8 +74,8 @@ public class OffheapCacheMetricsForClusterGroupSelfTest extends GridCommonAbstra
     }
 
     private void assertGetOffHeapPrimaryEntriesCount(String cacheName, int count) throws Exception {
-        long localPrimary = 0L;
-        long localBackups = 0L;
+        long locPrimary = 0L;
+        long locBackups = 0L;
 
         for (int i = 0; i < GRID_CNT; i++) {
             IgniteCache<Integer, Integer> cache = grid("server-" + i).cache(cacheName);
@@ -84,12 +84,12 @@ public class OffheapCacheMetricsForClusterGroupSelfTest extends GridCommonAbstra
             assertEquals(count, cache.metrics().getOffHeapBackupEntriesCount());
             assertEquals(count, cache.mxBean().getOffHeapBackupEntriesCount());
 
-            localPrimary += cache.localMxBean().getOffHeapPrimaryEntriesCount();
-            localBackups += cache.localMxBean().getOffHeapPrimaryEntriesCount();
+            locPrimary += cache.localMxBean().getOffHeapPrimaryEntriesCount();
+            locBackups += cache.localMxBean().getOffHeapPrimaryEntriesCount();
         }
 
-        assertEquals(count, localPrimary);
-        assertEquals(count, localBackups);
+        assertEquals(count, locPrimary);
+        assertEquals(count, locBackups);
 
         for (int i = 0; i < CLIENT_CNT; i++) {
             IgniteCache<Integer, Integer> cache = grid("client-" + i).cache(cacheName);

@@ -79,7 +79,7 @@ public class GridAffinityAssignmentV2Test {
      */
     @Test
     public void testPrimaryBackupPartitions() {
-        GridAffinityAssignment gridAffinityAssignment = new GridAffinityAssignment(
+        GridAffinityAssignment gridAffAssignment = new GridAffinityAssignment(
             new AffinityTopologyVersion(1, 0),
             new ArrayList<List<ClusterNode>>() {{
                 add(new ArrayList<ClusterNode>() {{
@@ -102,7 +102,7 @@ public class GridAffinityAssignmentV2Test {
             new ArrayList<>()
         );
 
-        GridAffinityAssignmentV2 gridAffinityAssignment2 = new GridAffinityAssignmentV2(
+        GridAffinityAssignmentV2 gridAffAssignment2 = new GridAffinityAssignmentV2(
             new AffinityTopologyVersion(1, 0),
             new ArrayList<List<ClusterNode>>() {{
                 add(new ArrayList<ClusterNode>() {{
@@ -125,17 +125,17 @@ public class GridAffinityAssignmentV2Test {
             new ArrayList<>()
         );
 
-        assertPartitions(gridAffinityAssignment);
+        assertPartitions(gridAffAssignment);
 
-        assertPartitions(gridAffinityAssignment2);
+        assertPartitions(gridAffAssignment2);
 
         if (AffinityAssignment.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION)
-            assertSame(gridAffinityAssignment2.getIds(0), gridAffinityAssignment2.getIds(0));
+            assertSame(gridAffAssignment2.getIds(0), gridAffAssignment2.getIds(0));
         else
-            assertNotSame(gridAffinityAssignment2.getIds(0), gridAffinityAssignment2.getIds(0));
+            assertNotSame(gridAffAssignment2.getIds(0), gridAffAssignment2.getIds(0));
 
         try {
-            gridAffinityAssignment2.primaryPartitions(clusterNode1.id()).add(1000);
+            gridAffAssignment2.primaryPartitions(clusterNode1.id()).add(1000);
 
             fail("Unmodifiable exception expected");
         }
@@ -144,7 +144,7 @@ public class GridAffinityAssignmentV2Test {
         }
 
         try {
-            gridAffinityAssignment2.backupPartitions(clusterNode1.id()).add(1000);
+            gridAffAssignment2.backupPartitions(clusterNode1.id()).add(1000);
 
             fail("Unmodifiable exception expected");
         }
@@ -153,7 +153,7 @@ public class GridAffinityAssignmentV2Test {
         }
 
         Set<Integer> unwrapped = U.field(
-            gridAffinityAssignment2.primaryPartitions(clusterNode1.id()),
+            gridAffAssignment2.primaryPartitions(clusterNode1.id()),
             "delegate"
         );
 
@@ -206,7 +206,7 @@ public class GridAffinityAssignmentV2Test {
         for (int i = 0; i < 10; i++)
             nodes.add(node(metrics, ver, "1" + i));
 
-        GridAffinityAssignment gridAffinityAssignment = new GridAffinityAssignment(
+        GridAffinityAssignment gridAffAssignment = new GridAffinityAssignment(
             new AffinityTopologyVersion(1, 0),
             new ArrayList<List<ClusterNode>>() {{
                 add(nodes);
@@ -214,7 +214,7 @@ public class GridAffinityAssignmentV2Test {
             new ArrayList<>()
         );
 
-        assertSame(gridAffinityAssignment.getIds(0), gridAffinityAssignment.getIds(0));
+        assertSame(gridAffAssignment.getIds(0), gridAffAssignment.getIds(0));
     }
 
     /**
@@ -228,7 +228,7 @@ public class GridAffinityAssignmentV2Test {
         for (int i = 0; i < 10; i++)
             nodes.add(node(metrics, ver, "1" + i));
 
-        GridAffinityAssignmentV2 gridAffinityAssignment2 = new GridAffinityAssignmentV2(
+        GridAffinityAssignmentV2 gridAffAssignment2 = new GridAffinityAssignmentV2(
             new AffinityTopologyVersion(1, 0),
             new ArrayList<List<ClusterNode>>() {{
                 add(nodes);
@@ -240,13 +240,13 @@ public class GridAffinityAssignmentV2Test {
 
         ObjectOutputStream outputStream = new ObjectOutputStream(byteArrOutputStream);
 
-        outputStream.writeObject(gridAffinityAssignment2);
+        outputStream.writeObject(gridAffAssignment2);
 
         ObjectInputStream inputStream = new ObjectInputStream(new ByteArrayInputStream(byteArrOutputStream.toByteArray()));
 
         GridAffinityAssignmentV2 deserialized = (GridAffinityAssignmentV2)inputStream.readObject();
 
-        assertEquals(deserialized.topologyVersion(), gridAffinityAssignment2.topologyVersion());
+        assertEquals(deserialized.topologyVersion(), gridAffAssignment2.topologyVersion());
     }
 
     /**

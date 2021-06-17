@@ -342,12 +342,12 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
 
                 if (grpDesc != null) {
                     boolean globalWalEnabled = grpDesc.walEnabled();
-                    boolean localWalEnabled = true;
+                    boolean locWalEnabled = true;
 
                     if (globalWalEnabled && corruptedCacheNames.contains(desc.cacheName()))
-                        localWalEnabled = false;
+                        locWalEnabled = false;
 
-                    cachesInfo.put(desc.cacheName(), new IgniteBiTuple<>(globalWalEnabled, localWalEnabled));
+                    cachesInfo.put(desc.cacheName(), new IgniteBiTuple<>(globalWalEnabled, locWalEnabled));
                 }
             }
 

@@ -809,9 +809,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 }
 
                 Object val = map == null ? null : map.get(key);
-                EntryProcessor entryProcessor = transform ? invokeMap.get(key) : null;
+                EntryProcessor entryProc = transform ? invokeMap.get(key) : null;
 
-                if (val == null && entryProcessor == null) {
+                if (val == null && entryProc == null) {
                     setRollbackOnly();
 
                     throw new NullPointerException("Null value.");
@@ -820,7 +820,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 KeyCacheObject cacheKey = cacheCtx.toCacheKeyObject(key);
 
                 if (transform)
-                    enlisted.put(cacheKey, new GridInvokeValue(entryProcessor, invokeArgs));
+                    enlisted.put(cacheKey, new GridInvokeValue(entryProc, invokeArgs));
                 else
                     enlisted.put(cacheKey, val);
             }
@@ -1239,7 +1239,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     }
 
                     Object val = rmv || lookup == null ? null : lookup.get(key);
-                    EntryProcessor entryProcessor = invokeMap == null ? null : invokeMap.get(key);
+                    EntryProcessor entryProc = invokeMap == null ? null : invokeMap.get(key);
 
                     GridCacheVersion drVer;
                     long drTtl;
@@ -1272,7 +1272,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     drExpireTime = -1L;
                 }
 
-                    if (!rmv && val == null && entryProcessor == null) {
+                    if (!rmv && val == null && entryProc == null) {
                         setRollbackOnly();
 
                         throw new NullPointerException("Null value.");
@@ -1284,7 +1284,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         entryTopVer,
                         cacheKey,
                         val,
-                        entryProcessor,
+                        entryProc,
                         invokeArgs,
                         expiryPlc,
                         retval,
@@ -3967,13 +3967,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @return Amount of time in milliseconds.
      */
     public long systemTimeCurrent() {
-        long systemTime0 = systemTime.get();
+        long sysTime0 = systemTime.get();
 
-        long systemStartTime0 = systemStartTime.get();
+        long sysStartTime0 = systemStartTime.get();
 
-        long t = systemStartTime0 == 0 ? 0 : (System.nanoTime() - systemStartTime0);
+        long t = sysStartTime0 == 0 ? 0 : (System.nanoTime() - sysStartTime0);
 
-        return U.nanosToMillis(systemTime0 + t);
+        return U.nanosToMillis(sysTime0 + t);
     }
 
     /** {@inheritDoc} */
@@ -3987,13 +3987,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             if (!commitOrRollbackTime.compareAndSet(0, System.nanoTime() - commitOrRollbackStartTime.get()))
                 return res;
 
-            long systemTimeMillis = U.nanosToMillis(this.systemTime.get());
+            long sysTimeMillis = U.nanosToMillis(this.systemTime.get());
             long totalTimeMillis = System.currentTimeMillis() - startTime();
 
             // In some cases totalTimeMillis can be less than systemTimeMillis, as they are calculated with different precision.
-            long userTimeMillis = Math.max(totalTimeMillis - systemTimeMillis, 0);
+            long userTimeMillis = Math.max(totalTimeMillis - sysTimeMillis, 0);
 
-            cctx.txMetrics().onNearTxComplete(systemTimeMillis, userTimeMillis);
+            cctx.txMetrics().onNearTxComplete(sysTimeMillis, userTimeMillis);
 
             boolean willBeSkipped = txDumpsThrottling == null || txDumpsThrottling.skipCurrent();
 
@@ -4008,7 +4008,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     && ThreadLocalRandom.current().nextDouble() <= transactionTimeDumpSamplesCoefficient;
 
                 if (randomlyChosen || isLong) {
-                    String txDump = completedTransactionDump(state, systemTimeMillis, userTimeMillis, isLong);
+                    String txDump = completedTransactionDump(state, sysTimeMillis, userTimeMillis, isLong);
 
                     if (isLong)
                         log.warning(txDump);
@@ -5229,10 +5229,10 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * Leaves the section when system time for this transaction is counted.
      */
     public void leaveSystemSection() {
-        long systemStartTime0 = systemStartTime.getAndSet(0);
+        long sysStartTime0 = systemStartTime.getAndSet(0);
 
-        if (systemStartTime0 > 0)
-            systemTime.addAndGet(System.nanoTime() - systemStartTime0);
+        if (sysStartTime0 > 0)
+            systemTime.addAndGet(System.nanoTime() - sysStartTime0);
     }
 
     /**

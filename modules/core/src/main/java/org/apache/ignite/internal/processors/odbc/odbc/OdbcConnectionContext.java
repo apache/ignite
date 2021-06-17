@@ -155,7 +155,7 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
         authenticate(ses, user, passwd);
 
-        ClientListenerResponseSender sender = new ClientListenerResponseSender() {
+        ClientListenerResponseSender snd = new ClientListenerResponseSender() {
             @Override public void send(ClientListenerResponse resp) {
                 if (resp != null) {
                     if (log.isDebugEnabled())
@@ -168,7 +168,7 @@ public class OdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
         initClientDescriptor("odbc");
 
-        handler = new OdbcRequestHandler(ctx, busyLock, sender, maxCursors, distributedJoins, enforceJoinOrder,
+        handler = new OdbcRequestHandler(ctx, busyLock, snd, maxCursors, distributedJoins, enforceJoinOrder,
             replicatedOnly, collocated, lazy, skipReducerOnUpdate, nestedTxMode, ver, this);
 
         parser = new OdbcMessageParser(ctx, ver);

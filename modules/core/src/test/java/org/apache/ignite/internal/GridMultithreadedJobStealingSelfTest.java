@@ -153,7 +153,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
 
         jobExecutedLatch = new CountDownLatch(threadsNum);
 
-        final IgniteInternalFuture<Long> future = GridTestUtils.runMultiThreadedAsync(new Runnable() {
+        final IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
             /** */
             @Override public void run() {
                 try {
@@ -186,7 +186,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
             info("Metrics [nodeId=" + g.cluster().localNode().id() +
                 ", metrics=" + g.cluster().localNode().metrics() + ']');
 
-        future.get();
+        fut.get();
 
         assertNull("Test failed with exception: ", fail.get());
 

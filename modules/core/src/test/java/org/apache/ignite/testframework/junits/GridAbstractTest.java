@@ -345,8 +345,8 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      */
     protected void afterTest() throws Exception {
         try {
-            for (Logger logger : changedLevels.keySet())
-                logger.setLevel(changedLevels.get(logger));
+            for (Logger log : changedLevels.keySet())
+                log.setLevel(changedLevels.get(log));
         }
         finally {
             changedLevels.clear();
@@ -462,11 +462,11 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * default in {@link #afterTest()}.
      */
     protected final void setRootLoggerDebugLevel() {
-        Logger logger = Logger.getRootLogger();
+        Logger log = Logger.getRootLogger();
 
-        assertNull(logger + " level: " + Level.DEBUG, changedLevels.put(logger, logger.getLevel()));
+        assertNull(log + " level: " + Level.DEBUG, changedLevels.put(log, log.getLevel()));
 
-        logger.setLevel(Level.DEBUG);
+        log.setLevel(Level.DEBUG);
     }
 
     /**

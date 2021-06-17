@@ -638,7 +638,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         final Supplier<ClusterNode> locNodeSupplier = () -> getSpiContext().localNode();
         final Supplier<Ignite> igniteExSupplier = this::ignite;
         final Function<UUID, Boolean> pingNode = (nodeId) -> getSpiContext().pingNode(nodeId);
-        final Supplier<FailureProcessor> failureProcessorSupplier =
+        final Supplier<FailureProcessor> failureProcSupplier =
             () -> ignite instanceof IgniteEx ? ((IgniteEx)ignite).context().failure() : null;
         final Supplier<Boolean> isStopped = () -> getSpiContext().isStopping();
 
@@ -688,7 +688,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             clientPool,
             commWorker,
             connectGate,
-            failureProcessorSupplier,
+            failureProcSupplier,
             attributeNames,
             metricsLsnr,
             nioSrvWrapper,
@@ -911,7 +911,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             cfg,
             attributeNames,
             clientPool,
-            failureProcessorSupplier,
+            failureProcSupplier,
             nodeGetter,
             pingNode,
             this::getExceptionRegistry,

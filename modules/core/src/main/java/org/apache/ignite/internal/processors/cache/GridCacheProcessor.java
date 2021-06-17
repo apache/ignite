@@ -604,10 +604,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     "(it is recommended that you change deployment mode and restart): " + depMode);
         }
 
-        Collection<CacheStoreSessionListener> sessionListeners =
+        Collection<CacheStoreSessionListener> sesListeners =
             CU.startStoreSessionListeners(ctx, ctx.config().getCacheStoreSessionListenerFactories());
 
-        sharedCtx = createSharedContext(ctx, sessionListeners);
+        sharedCtx = createSharedContext(ctx, sesListeners);
 
         locCfgMgr = new GridLocalConfigManager(this, ctx);
 
@@ -1924,10 +1924,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     cacheStartFailHandler.handle(
                         cacheCtxEntry.getKey(),
                         cacheInfo -> {
-                            GridCacheContext<?, ?> cacheContext = cacheCtxEntry.getValue();
+                            GridCacheContext<?, ?> cacheCtx = cacheCtxEntry.getValue();
 
-                            if (cacheContext.isRecoveryMode())
-                                finishRecovery(cacheInfo.getExchangeTopVer(), cacheContext);
+                            if (cacheCtx.isRecoveryMode())
+                                finishRecovery(cacheInfo.getExchangeTopVer(), cacheCtx);
                             else
                                 onCacheStarted(cacheCtxEntry.getValue());
 
@@ -2002,12 +2002,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             assert cctx.isRecoveryMode();
 
-            QuerySchema localSchema = recovery.querySchemas.get(desc.cacheId());
+            QuerySchema locSchema = recovery.querySchemas.get(desc.cacheId());
 
-            QuerySchemaPatch localSchemaPatch = localSchema.makePatch(desc.schema().entities());
+            QuerySchemaPatch locSchemaPatch = locSchema.makePatch(desc.schema().entities());
 
             // Cache schema is changed after restart, workaround is stop existing cache and start new.
-            if (!localSchemaPatch.isEmpty() || localSchemaPatch.hasConflicts())
+            if (!locSchemaPatch.isEmpty() || locSchemaPatch.hasConflicts())
                 stopCacheSafely(cctx);
             else
                 return existingCache.context();
@@ -2097,12 +2097,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         AffinityTopologyVersion cacheStartVer,
         GridCacheContext<?, ?> cacheContext
     ) throws IgniteCheckedException {
-        CacheGroupContext groupContext = cacheContext.group();
+        CacheGroupContext grpCtx = cacheContext.group();
 
         // Take cluster-wide cache descriptor and try to update local cache and cache group parameters.
         DynamicCacheDescriptor updatedDescriptor = cacheDescriptor(cacheContext.cacheId());
 
-        groupContext.finishRecovery(
+        grpCtx.finishRecovery(
             cacheStartVer,
             updatedDescriptor.receivedFrom(),
             isLocalAffinity(updatedDescriptor.cacheConfiguration())
@@ -2110,14 +2110,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         cacheContext.finishRecovery(cacheStartVer, updatedDescriptor);
 
-        if (cacheContext.config().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT && groupContext.affinityNode())
+        if (cacheContext.config().getAtomicityMode() == TRANSACTIONAL_SNAPSHOT && grpCtx.affinityNode())
             sharedCtx.coordinators().ensureStarted();
 
         onKernalStart(cacheContext.cache());
 
         if (log.isInfoEnabled())
             log.info("Finished recovery for cache [cache=" + cacheContext.name()
-                + ", grp=" + groupContext.cacheOrGroupName() + ", startVer=" + cacheStartVer + "]");
+                + ", grp=" + grpCtx.cacheOrGroupName() + ", startVer=" + cacheStartVer + "]");
     }
 
     /**
@@ -2127,16 +2127,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public void shutdownNotFinishedRecoveryCaches() {
         for (GridCacheAdapter cacheAdapter : caches.values()) {
-            GridCacheContext cacheContext = cacheAdapter.context();
+            GridCacheContext cacheCtx = cacheAdapter.context();
 
-            if (cacheContext.isLocal())
+            if (cacheCtx.isLocal())
                 continue;
 
-            if (cacheContext.isRecoveryMode()) {
-                assert !isLocalAffinity(cacheContext.config())
+            if (cacheCtx.isRecoveryMode()) {
+                assert !isLocalAffinity(cacheCtx.config())
                     : "Cache " + cacheAdapter.context() + " is still in recovery mode after start, but not activated.";
 
-                stopCacheSafely(cacheContext);
+                stopCacheSafely(cacheCtx);
             }
         }
     }
@@ -5452,9 +5452,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             DetachedClusterNode clusterNode = new DetachedClusterNode(consistentId, ctx.nodeAttributes());
 
             for (DynamicCacheDescriptor cacheDescriptor : persistentCaches()) {
-                boolean affinityNode = CU.affinityNode(clusterNode, cacheDescriptor.cacheConfiguration().getNodeFilter());
+                boolean affNode = CU.affinityNode(clusterNode, cacheDescriptor.cacheConfiguration().getNodeFilter());
 
-                if (!affinityNode)
+                if (!affNode)
                     continue;
 
                 startCacheInRecoveryMode(cacheDescriptor);

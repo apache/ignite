@@ -65,9 +65,9 @@ public abstract class IgniteCacheAbstractExecutionContextTest extends IgniteCach
      */
     @Test
     public void testUsersClassLoader() throws Exception {
-        UsersClassLoader testClassLdr = (UsersClassLoader)grid(0).configuration().getClassLoader();
+        UsersClassLoader testClsLdr = (UsersClassLoader)grid(0).configuration().getClassLoader();
 
-        Object val = testClassLdr.loadClass(TEST_VALUE).newInstance();
+        Object val = testClsLdr.loadClass(TEST_VALUE).newInstance();
 
         IgniteCache<Object, Object> jcache = grid(0).cache(DEFAULT_CACHE_NAME);
 
@@ -79,7 +79,7 @@ public abstract class IgniteCacheAbstractExecutionContextTest extends IgniteCach
 
             // Check that entry was loaded by user's classloader.
             if (idx == 0)
-                assertEquals(testClassLdr, jcache.get(i).getClass().getClassLoader());
+                assertEquals(testClsLdr, jcache.get(i).getClass().getClassLoader());
             else
                 assertEquals(grid(idx).configuration().getClassLoader(),
                     grid(idx).cache(DEFAULT_CACHE_NAME).get(i).getClass().getClassLoader());

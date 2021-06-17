@@ -766,7 +766,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                 // Signal the server to go down.
                 ignite.semaphore("sync", 0, true, true).release();
 
-                boolean isExceptionThrown = false;
+                boolean isEThrown = false;
 
                 try {
                     // Wait for the server to go down.
@@ -780,10 +780,10 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                     fail("Interrupted exception not expected here.");
                 }
                 catch (IgniteException ignored) {
-                    isExceptionThrown = true;
+                    isEThrown = true;
                 }
                 finally {
-                    assertTrue(isExceptionThrown);
+                    assertTrue(isEThrown);
 
                     assertFalse(l.isHeldByCurrentThread());
                 }

@@ -105,9 +105,9 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
         namedCacheCfg.setAffinity(new RendezvousAffinityFunction());
 
         // Local cache configuration.
-        CacheConfiguration localCacheCfg = defaultCacheConfiguration();
+        CacheConfiguration locCacheCfg = defaultCacheConfiguration();
 
-        localCacheCfg.setCacheMode(LOCAL);
+        locCacheCfg.setCacheMode(LOCAL);
 
         // Modify cache config according to test parameters.
         if (igniteInstanceName.contains(WRONG_PRELOAD_MODE_IGNITE_INSTANCE_NAME))
@@ -126,7 +126,7 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
         else {
             // Normal configuration.
             if (!cfg.isClientMode())
-                cfg.setCacheConfiguration(dfltCacheCfg, namedCacheCfg, localCacheCfg);
+                cfg.setCacheConfiguration(dfltCacheCfg, namedCacheCfg, locCacheCfg);
         }
 
         if (igniteInstanceName.contains(RESERVED_FOR_DATASTRUCTURES_CACHE_NAME_IGNITE_INSTANCE_NAME))

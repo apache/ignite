@@ -158,7 +158,7 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
         Ignite ignite = startGrid(0);
         Ignite remote = startGrid(1);
 
-        IgniteCache cacheLocal = ignite.getOrCreateCache(defaultCacheConfiguration());
+        IgniteCache cacheLoc = ignite.getOrCreateCache(defaultCacheConfiguration());
         IgniteCache cacheRemote = remote.getOrCreateCache(defaultCacheConfiguration());
 
         ignite.events().remoteListen(null,
@@ -177,7 +177,7 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
             EVT_TX_STARTED);
 
         try (Transaction tx = ignite.transactions().withLabel("test").txStart()) {
-            cacheLocal.put(1, 1);
+            cacheLoc.put(1, 1);
 
             tx.commit();
         }
@@ -189,7 +189,7 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
         }
 
         try (Transaction tx = ignite.transactions().txStart()) {
-            cacheLocal.put(1, 3);
+            cacheLoc.put(1, 3);
 
             tx.commit();
 
@@ -225,7 +225,7 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
         Ignite ignite = startGrid(0);
         Ignite remote = startGrid(1);
 
-        IgniteCache cacheLocal = ignite.getOrCreateCache(defaultCacheConfiguration());
+        IgniteCache cacheLoc = ignite.getOrCreateCache(defaultCacheConfiguration());
         IgniteCache cacheRemote = remote.getOrCreateCache(defaultCacheConfiguration());
 
         ignite.events().remoteListen(null,
@@ -245,7 +245,7 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
 
         try (Transaction tx = ignite.transactions().txStart(
             TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ, 100, 2)) {
-            cacheLocal.put(1, 1);
+            cacheLoc.put(1, 1);
 
             tx.commit();
         }
@@ -258,7 +258,7 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
         }
 
         try (Transaction tx = ignite.transactions().txStart()) {
-            cacheLocal.put(1, 3);
+            cacheLoc.put(1, 3);
 
             tx.commit();
 
@@ -294,7 +294,7 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
         Ignite ignite = startGrid(0);
         Ignite remote = startGrid(1);
 
-        IgniteCache cacheLocal = ignite.getOrCreateCache(defaultCacheConfiguration());
+        IgniteCache cacheLoc = ignite.getOrCreateCache(defaultCacheConfiguration());
         IgniteCache cacheRemote = remote.getOrCreateCache(defaultCacheConfiguration());
 
         AtomicBoolean rollbackFailed = new AtomicBoolean();
@@ -328,7 +328,7 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
         assertFalse(alreadyRolledBack.get());
 
         try (Transaction tx = ignite.transactions().txStart()) {
-            cacheLocal.put(1, 1);
+            cacheLoc.put(1, 1);
 
             tx.commit();
 

@@ -979,10 +979,10 @@ public class BinaryContext {
                 if (typeCfgName != null && typeCfgName.endsWith(".*")) {
                     String pkgName = typeCfgName.substring(0, typeCfgName.length() - 2);
 
-                    int dotIndex = clsName.lastIndexOf('.');
+                    int dotIdx = clsName.lastIndexOf('.');
 
-                    if (dotIndex > 0) {
-                        String typePkgName = clsName.substring(0, dotIndex);
+                    if (dotIdx > 0) {
+                        String typePkgName = clsName.substring(0, dotIdx);
 
                         if (pkgName.equals(typePkgName)) {
                             // Resolve mapper.

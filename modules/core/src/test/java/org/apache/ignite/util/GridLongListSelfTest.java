@@ -175,21 +175,21 @@ public class GridLongListSelfTest {
     public void testArray() {
         GridLongList list = new GridLongList();
 
-        long[] array = list.array();
+        long[] arr = list.array();
 
-        assertNotNull(array);
+        assertNotNull(arr);
 
-        assertEquals(0, array.length);
+        assertEquals(0, arr.length);
 
         list.add(1L);
 
-        array = list.array();
+        arr = list.array();
 
-        assertNotNull(array);
+        assertNotNull(arr);
 
-        assertEquals(1, array.length);
+        assertEquals(1, arr.length);
 
-        assertEquals(1L, array[0]);
+        assertEquals(1L, arr[0]);
     }
 
     /** */

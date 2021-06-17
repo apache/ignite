@@ -1248,15 +1248,15 @@ public class PlatformCache extends PlatformAbstractTarget {
         if (e.getCause() instanceof EntryProcessorException)
             return (Exception)e.getCause();
 
-        TransactionDeadlockException deadlockException = X.cause(e, TransactionDeadlockException.class);
+        TransactionDeadlockException deadlockE = X.cause(e, TransactionDeadlockException.class);
 
-        if (deadlockException != null)
-            return deadlockException;
+        if (deadlockE != null)
+            return deadlockE;
 
-        TransactionTimeoutException timeoutException = X.cause(e, TransactionTimeoutException.class);
+        TransactionTimeoutException timeoutE = X.cause(e, TransactionTimeoutException.class);
 
-        if (timeoutException != null)
-            return timeoutException;
+        if (timeoutE != null)
+            return timeoutE;
 
         return super.convertException(e);
     }

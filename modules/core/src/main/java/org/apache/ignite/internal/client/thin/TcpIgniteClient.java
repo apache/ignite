@@ -108,9 +108,9 @@ public class TcpIgniteClient implements IgniteClient {
             BiFunction<ClientChannelConfiguration, ClientConnectionMultiplexer, ClientChannel> chFactory,
             ClientConfiguration cfg
     ) throws ClientException {
-        final ClientBinaryMetadataHandler metadataHandler = new ClientBinaryMetadataHandler();
+        final ClientBinaryMetadataHandler metadataHnd = new ClientBinaryMetadataHandler();
 
-        marsh = new ClientBinaryMarshaller(metadataHandler, new ClientMarshallerContext());
+        marsh = new ClientBinaryMarshaller(metadataHnd, new ClientMarshallerContext());
 
         marsh.setBinaryConfiguration(cfg.getBinaryConfiguration());
 
@@ -123,7 +123,7 @@ public class TcpIgniteClient implements IgniteClient {
         try {
             ch.channelsInit();
 
-            ch.addChannelFailListener(() -> metadataHandler.onReconnect());
+            ch.addChannelFailListener(() -> metadataHnd.onReconnect());
 
             transactions = new TcpClientTransactions(ch, marsh,
                     new ClientTransactionConfiguration(cfg.getTransactionConfiguration()));

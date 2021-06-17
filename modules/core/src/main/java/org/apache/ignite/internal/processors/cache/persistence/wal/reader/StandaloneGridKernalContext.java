@@ -191,10 +191,10 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         final GridKernalContext ctx,
         final File binaryMetadataFileStoreDir) throws IgniteCheckedException {
 
-        final CacheObjectBinaryProcessorImpl processor = new CacheObjectBinaryProcessorImpl(ctx);
-        processor.setBinaryMetadataFileStoreDir(binaryMetadataFileStoreDir);
-        processor.start();
-        return processor;
+        final CacheObjectBinaryProcessorImpl proc = new CacheObjectBinaryProcessorImpl(ctx);
+        proc.setBinaryMetadataFileStoreDir(binaryMetadataFileStoreDir);
+        proc.start();
+        return proc;
     }
 
     /**

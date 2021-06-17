@@ -199,7 +199,7 @@ public abstract class IgniteAbstractWalIteratorInvalidCrcTest extends GridCommon
         if (shouldFail) {
             WALPointer[] lastReadPtrRef = new WALPointer[1];
 
-            IgniteException igniteException = (IgniteException) GridTestUtils.assertThrows(log, () -> {
+            IgniteException igniteE = (IgniteException) GridTestUtils.assertThrows(log, () -> {
                 try (WALIterator iter = getWalIterator(walMgr, ignoreArchiveDir)) {
                     for (IgniteBiTuple<WALPointer, WALRecord> tuple : iter) {
                         WALPointer ptr = tuple.get1();
@@ -210,7 +210,7 @@ public abstract class IgniteAbstractWalIteratorInvalidCrcTest extends GridCommon
                 return null;
             }, IgniteException.class, "Failed to read WAL record");
 
-            assertTrue(igniteException.hasCause(IgniteDataIntegrityViolationException.class));
+            assertTrue(igniteE.hasCause(IgniteDataIntegrityViolationException.class));
 
             WALPointer lastReadPtr = lastReadPtrRef[0];
             assertNotNull(lastReadPtr);

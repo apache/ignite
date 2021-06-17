@@ -669,12 +669,12 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
             commSpi0.stopBlock();
         }
 
-        IgniteTxManager txManager = ((IgniteEx) ig).context().cache().context().tm();
+        IgniteTxManager txMgr0 = ((IgniteEx) ig).context().cache().context().tm();
 
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 try {
-                    U.invoke(IgniteTxManager.class, txManager, "collectTxCollisionsInfo");
+                    U.invoke(IgniteTxManager.class, txMgr0, "collectTxCollisionsInfo");
                 }
                 catch (IgniteCheckedException e) {
                     fail(e.toString());
@@ -790,7 +790,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
 
         CacheMetricsMXBean mxBeanCache = mxBean(0, cacheName, CacheLocalMetricsMXBeanImpl.class);
 
-        IgniteTxManager txManager = ((IgniteEx) ig).context().cache().context().tm();
+        IgniteTxManager txMgr0 = ((IgniteEx) ig).context().cache().context().tm();
 
         final TransactionsMXBean txMXBean1 = txMXBean(0);
 
@@ -806,7 +806,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
             mxBeanCache.clear();
 
             try {
-                U.invoke(IgniteTxManager.class, txManager, "collectTxCollisionsInfo");
+                U.invoke(IgniteTxManager.class, txMgr0, "collectTxCollisionsInfo");
             }
             catch (IgniteCheckedException e) {
                 fail(e.toString());

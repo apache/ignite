@@ -125,10 +125,10 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
 
             bean.configureHistogramMetric(metricName(TX_METRICS, METRIC_SYSTEM_TIME_HISTOGRAM), BOUNDS);
 
-            HistogramMetric systemTime = g.context().metric().registry(TX_METRICS)
+            HistogramMetric sysTime = g.context().metric().registry(TX_METRICS)
                 .findMetric(METRIC_SYSTEM_TIME_HISTOGRAM);
 
-            assertArrayEquals(BOUNDS, systemTime.bounds());
+            assertArrayEquals(BOUNDS, sysTime.bounds());
         }
     }
 

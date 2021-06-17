@@ -82,7 +82,7 @@ public class ExchangeLatchManagerTest extends GridCommonAbstractTest {
     public void testExcessAcknowledgeForNewCoordinator() throws Exception {
         gridLogger = new ListeningTestLogger(log);
 
-        LogListener staleMessageLsnr = LogListener.matches(STALE_ACK_LOG_MSG).build();
+        LogListener staleMsgLsnr = LogListener.matches(STALE_ACK_LOG_MSG).build();
         LogListener errorLsnr = LogListener.matches(ERROR_MSG).build();
 
         IgniteEx ignite0 = startGrids(3);
@@ -128,12 +128,12 @@ public class ExchangeLatchManagerTest extends GridCommonAbstractTest {
 
         assertTrue(exchangeDoingFut.isDone());
 
-        gridLogger.registerAllListeners(errorLsnr, staleMessageLsnr);
+        gridLogger.registerAllListeners(errorLsnr, staleMsgLsnr);
 
         spi1.stopBlock();
 
         assertTrue(GridTestUtils.waitForCondition(() ->
-            staleMessageLsnr.check(), 10_000));
+            staleMsgLsnr.check(), 10_000));
 
         assertFalse(errorLsnr.check());
     }

@@ -110,11 +110,11 @@ public class CorruptedTreeException extends IgniteCheckedException implements Co
     private static T2<Integer, Long>[] expandPagesArray(T2<Integer, Long>[] pages, Throwable cause) {
         Set<T2<Integer, Long>> res = new HashSet<>(asList(pages));
 
-        BPlusTreeRuntimeException treeRuntimeException = X.cause(cause, BPlusTreeRuntimeException.class);
+        BPlusTreeRuntimeException treeRuntimeE = X.cause(cause, BPlusTreeRuntimeException.class);
 
         // Add root exception pages ids if we have.
-        if (treeRuntimeException != null)
-            res.addAll(treeRuntimeException.pages());
+        if (treeRuntimeE != null)
+            res.addAll(treeRuntimeE.pages());
 
         Set<T2<Integer, Long>> partMetaPages = res.stream().map(page -> {
             int grpId = page.get1();
@@ -133,24 +133,24 @@ public class CorruptedTreeException extends IgniteCheckedException implements Co
 
     /** */
     private static String getMsg(String msg, String cacheName, String indexName, String grpName, T2<Integer, Long>... pages) {
-        GridStringBuilder stringBuilder = new GridStringBuilder("B+Tree is corrupted [")
+        GridStringBuilder strBuilder = new GridStringBuilder("B+Tree is corrupted [")
             .a("pages(groupId, pageId)=").a(Arrays.toString(pages));
 
         if (cacheName != null) {
-            stringBuilder
+            strBuilder
                 .a(", cacheId=").a(CU.cacheId(cacheName))
                 .a(", cacheName=").a(cacheName);
         }
 
         if (indexName != null)
-            stringBuilder.a(", indexName=").a(indexName);
+            strBuilder.a(", indexName=").a(indexName);
 
         if (grpName != null)
-            stringBuilder.a(", groupName=").a(grpName);
+            strBuilder.a(", groupName=").a(grpName);
 
-        stringBuilder.a(", msg=").a(msg).a("]");
+        strBuilder.a(", msg=").a(msg).a("]");
 
-        return stringBuilder.toString();
+        return strBuilder.toString();
     }
 
     /**

@@ -97,13 +97,13 @@ public class WalScannerTest {
         List<WALRecord> holder = new ArrayList<>();
         ScannerHandler recordCaptor = (rec) -> holder.add(rec.get2());
 
-        Set<T2<Integer, Long>> groupAndPageIds = new HashSet<>();
+        Set<T2<Integer, Long>> grpAndPageIds = new HashSet<>();
 
-        groupAndPageIds.add(new T2<>(grpId, expPageId));
+        grpAndPageIds.add(new T2<>(grpId, expPageId));
 
         // when: Scanning WAL for searching expected page.
         buildWalScanner(withIteratorParameters(), mockedFactory)
-            .findAllRecordsFor(groupAndPageIds)
+            .findAllRecordsFor(grpAndPageIds)
             .forEach(recordCaptor);
 
         // then: Should be find only expected value.
@@ -149,15 +149,15 @@ public class WalScannerTest {
         List<WALRecord> holder = new ArrayList<>();
         ScannerHandler recordCaptor = (rec) -> holder.add(rec.get2());
 
-        Set<T2<Integer, Long>> groupAndPageIds = new HashSet<>();
+        Set<T2<Integer, Long>> grpAndPageIds = new HashSet<>();
 
-        groupAndPageIds.add(new T2<>(grpId, expPageId1));
-        groupAndPageIds.add(new T2<>(grpId, expPageId2));
-        groupAndPageIds.add(new T2<>(grpId, expPageId3));
+        grpAndPageIds.add(new T2<>(grpId, expPageId1));
+        grpAndPageIds.add(new T2<>(grpId, expPageId2));
+        grpAndPageIds.add(new T2<>(grpId, expPageId3));
 
         // when: Scanning WAL for searching expected page.
         buildWalScanner(withIteratorParameters(), mockedFactory)
-            .findAllRecordsFor(groupAndPageIds)
+            .findAllRecordsFor(grpAndPageIds)
             .forEach(recordCaptor);
 
         // then: Should be find only expected value.
@@ -194,13 +194,13 @@ public class WalScannerTest {
         IgniteWalIteratorFactory factory = mock(IgniteWalIteratorFactory.class);
         when(factory.iterator(any(IteratorParametersBuilder.class))).thenReturn(mockedIter);
 
-        Set<T2<Integer, Long>> groupAndPageIds = new HashSet<>();
+        Set<T2<Integer, Long>> grpAndPageIds = new HashSet<>();
 
-        groupAndPageIds.add(new T2<>(grpId, expPageId));
+        grpAndPageIds.add(new T2<>(grpId, expPageId));
 
         // when: Scanning WAL for searching expected page.
         buildWalScanner(withIteratorParameters(), factory)
-            .findAllRecordsFor(groupAndPageIds)
+            .findAllRecordsFor(grpAndPageIds)
             .forEach(printToLog(log));
 
         // then: Should be find only expected value from log.
@@ -241,16 +241,16 @@ public class WalScannerTest {
         IgniteWalIteratorFactory factory = mock(IgniteWalIteratorFactory.class);
         when(factory.iterator(any(IteratorParametersBuilder.class))).thenReturn(mockedIter);
 
-        Set<T2<Integer, Long>> groupAndPageIds = new HashSet<>();
+        Set<T2<Integer, Long>> grpAndPageIds = new HashSet<>();
 
-        groupAndPageIds.add(new T2<>(grpId, expectedPageId));
+        grpAndPageIds.add(new T2<>(grpId, expectedPageId));
 
         List<String> actualRecords;
 
         try {
             // when: Scanning WAL for searching expected page.
             buildWalScanner(withIteratorParameters(), factory)
-                .findAllRecordsFor(groupAndPageIds)
+                .findAllRecordsFor(grpAndPageIds)
                 .forEach(printToFile(targetFile));
 
             actualRecords = Files.readAllLines(targetFile.toPath());
@@ -294,16 +294,16 @@ public class WalScannerTest {
         IgniteWalIteratorFactory factory = mock(IgniteWalIteratorFactory.class);
         when(factory.iterator(any(IteratorParametersBuilder.class))).thenReturn(mockedIter);
 
-        Set<T2<Integer, Long>> groupAndPageIds = new HashSet<>();
+        Set<T2<Integer, Long>> grpAndPageIds = new HashSet<>();
 
-        groupAndPageIds.add(new T2<>(grpId, expPageId));
+        grpAndPageIds.add(new T2<>(grpId, expPageId));
 
         List<String> actualFileRecords = null;
 
         try {
             // when: Scanning WAL for searching expected page.
             buildWalScanner(withIteratorParameters(), factory)
-                .findAllRecordsFor(groupAndPageIds)
+                .findAllRecordsFor(grpAndPageIds)
                 .forEach(printToLog(log).andThen(printToFile(targetFile)));
 
             actualFileRecords = Files.readAllLines(targetFile.toPath());

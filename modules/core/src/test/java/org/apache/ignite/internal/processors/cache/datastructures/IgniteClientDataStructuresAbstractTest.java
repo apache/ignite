@@ -200,19 +200,19 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
                 fail("Always should be exception because atomicLong was closed");
             }
             catch (IllegalStateException e) {
-                String expectedMessage = "Sequence was removed from cache";
+                String expectedMsg = "Sequence was removed from cache";
 
                 assertTrue(
-                    String.format("Exception should start with '%s' but was '%s'", expectedMessage, e.getMessage()),
-                    e.getMessage().startsWith(expectedMessage)
+                    String.format("Exception should start with '%s' but was '%s'", expectedMsg, e.getMessage()),
+                    e.getMessage().startsWith(expectedMsg)
                 );
             }
             catch (IgniteException e) {
-                String expectedMessage = "Failed to find atomic long:";
+                String expectedMsg = "Failed to find atomic long:";
 
                 assertTrue(
-                    String.format("Exception should start with '%s' but was '%s'", expectedMessage, e.getMessage()),
-                    e.getMessage().startsWith(expectedMessage)
+                    String.format("Exception should start with '%s' but was '%s'", expectedMsg, e.getMessage()),
+                    e.getMessage().startsWith(expectedMsg)
                 );
             }
         }

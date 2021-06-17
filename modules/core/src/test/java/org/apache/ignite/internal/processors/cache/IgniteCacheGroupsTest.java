@@ -4010,8 +4010,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
         final AtomicInteger cacheCntr = new AtomicInteger();
 
         try {
-            final int ITERATIONS_COUNT = SF.applyLB(10, 1);
-            for (int i = 0; i < ITERATIONS_COUNT; i++) {
+            final int ITERATIONS_CNT = SF.applyLB(10, 1);
+            for (int i = 0; i < ITERATIONS_CNT; i++) {
                 stop.set(false);
 
                 final AtomicReference<Exception> err = new AtomicReference<>();

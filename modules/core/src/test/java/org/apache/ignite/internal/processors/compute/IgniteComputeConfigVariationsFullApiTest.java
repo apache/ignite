@@ -482,8 +482,8 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
                 // Wait for results.
                 Collection<Object> results = new ArrayList<>(MAX_JOB_COUNT);
 
-                for (IgniteFuture<Object> future : futures)
-                    results.add(future.get());
+                for (IgniteFuture<Object> fut : futures)
+                    results.add(fut.get());
 
                 checkResultsClassCount(MAX_JOB_COUNT - 1, results, value(0).getClass());
                 assertCollectionsEquals("Results value mismatch", createGoldenResults(), results);
@@ -656,8 +656,8 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
 
                 // Wait for results.
                 Collection<Object> results = new ArrayList<>(MAX_JOB_COUNT);
-                for (IgniteFuture<Object> future : futures)
-                    results.add(future.get());
+                for (IgniteFuture<Object> fut : futures)
+                    results.add(fut.get());
 
                 checkResultsClassCount(MAX_JOB_COUNT - 1, results, value(0).getClass());
                 assertCollectionsEquals("Results value mismatch", createGoldenResults(), results);

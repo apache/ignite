@@ -1214,9 +1214,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             iterators.put(p, partIter);
         }
 
-        IgniteHistoricalIterator historicalIterator = historicalIterator(parts.historicalMap(), missing);
+        IgniteHistoricalIterator historicalIter = historicalIterator(parts.historicalMap(), missing);
 
-        IgniteRebalanceIterator iter = new IgniteRebalanceIteratorImpl(iterators, historicalIterator);
+        IgniteRebalanceIterator iter = new IgniteRebalanceIteratorImpl(iterators, historicalIter);
 
         for (Integer p : missing)
             iter.setPartitionMissing(p);
@@ -2993,7 +2993,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public void destroy() throws IgniteCheckedException {
-            final AtomicReference<IgniteCheckedException> exception = new AtomicReference<>();
+            final AtomicReference<IgniteCheckedException> ex = new AtomicReference<>();
 
             dataTree.destroy(new IgniteInClosure<CacheSearchRow>() {
                 @Override public void apply(CacheSearchRow row) {
@@ -3003,18 +3003,18 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to remove row [link=" + row.link() + "]");
 
-                        IgniteCheckedException ex = exception.get();
+                        IgniteCheckedException ex = ex.get();
 
                         if (ex == null)
-                            exception.set(e);
+                            ex.set(e);
                         else
                             ex.addSuppressed(e);
                     }
                 }
             }, false);
 
-            if (exception.get() != null)
-                throw new IgniteCheckedException("Failed to destroy store", exception.get());
+            if (ex.get() != null)
+                throw new IgniteCheckedException("Failed to destroy store", ex.get());
         }
 
         /** {@inheritDoc} */

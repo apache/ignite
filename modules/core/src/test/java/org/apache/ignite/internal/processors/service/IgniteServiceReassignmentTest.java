@@ -267,8 +267,8 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
                 }
             }, 5_000));
 
-            for (IgniteLogger logger : strLoggers)
-                assertFalse(logger.toString().contains("Getting affinity for topology version earlier than affinity is " +
+            for (IgniteLogger log : strLoggers)
+                assertFalse(log.toString().contains("Getting affinity for topology version earlier than affinity is " +
                     "calculated"));
         } finally {
             useStrLog = false;

@@ -696,8 +696,8 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         if (!F.isEmpty(url))
             parseUrl(url, props0);
 
-        for (ConnectionProperty aPropsArray : propsArray)
-            aPropsArray.init(props0);
+        for (ConnectionProperty aPropsArr : propsArray)
+            aPropsArr.init(props0);
 
         if (!F.isEmpty(props.getProperty("user"))) {
             setUsername(props.getProperty("user"));
@@ -735,18 +735,18 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         // Determine mode - semicolon or ampersand.
         int semicolonPos = url.indexOf(";");
         int slashPos = url.indexOf("/");
-        int queryPos = url.indexOf("?");
+        int qryPos = url.indexOf("?");
 
         boolean semicolonMode;
 
-        if (semicolonPos == -1 && slashPos == -1 && queryPos == -1)
+        if (semicolonPos == -1 && slashPos == -1 && qryPos == -1)
             // No special char -> any mode could be used, choose semicolon for simplicity.
             semicolonMode = true;
         else {
             if (semicolonPos != -1) {
                 // Use semicolon mode if it appears earlier than slash or query.
                 semicolonMode =
-                    (slashPos == -1 || semicolonPos < slashPos) && (queryPos == -1 || semicolonPos < queryPos);
+                    (slashPos == -1 || semicolonPos < slashPos) && (qryPos == -1 || semicolonPos < qryPos);
             }
             else
                 // Semicolon is not found.

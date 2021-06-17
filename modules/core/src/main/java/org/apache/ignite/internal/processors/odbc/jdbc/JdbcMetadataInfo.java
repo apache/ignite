@@ -234,13 +234,13 @@ public class JdbcMetadataInfo {
      * @return Sorted by index name collection of index info, filtered according to specified criterias.
      */
     public SortedSet<JdbcIndexMeta> getIndexesMeta(String schemaNamePtrn, String tblNamePtrn) {
-        final Comparator<JdbcIndexMeta> byIndexName = new Comparator<JdbcIndexMeta>() {
+        final Comparator<JdbcIndexMeta> byIdxName = new Comparator<JdbcIndexMeta>() {
             @Override public int compare(JdbcIndexMeta o1, JdbcIndexMeta o2) {
                 return o1.indexName().compareTo(o2.indexName());
             }
         };
 
-        TreeSet<JdbcIndexMeta> meta = new TreeSet<>(byIndexName);
+        TreeSet<JdbcIndexMeta> meta = new TreeSet<>(byIdxName);
 
         for (String cacheName : ctx.cache().publicCacheNames()) {
             for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {

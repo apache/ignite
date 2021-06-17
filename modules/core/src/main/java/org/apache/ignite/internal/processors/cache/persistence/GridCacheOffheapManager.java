@@ -191,13 +191,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         CacheDiagnosticManager diagnosticMgr = ctx.diagnostic();
 
         String reuseListName = grp.cacheOrGroupName() + "##ReuseList";
-        String indexStorageTreeName = grp.cacheOrGroupName() + "##IndexStorageTree";
+        String idxStorageTreeName = grp.cacheOrGroupName() + "##IndexStorageTree";
 
         RootPage reuseListRoot = metas.reuseListRoot;
 
-        GridCacheDatabaseSharedManager databaseSharedManager = (GridCacheDatabaseSharedManager)ctx.database();
+        GridCacheDatabaseSharedManager dbSharedMgr = (GridCacheDatabaseSharedManager)ctx.database();
 
-        pageListCacheLimit = databaseSharedManager.pageListCacheLimitHolder(grp.dataRegion());
+        pageListCacheLimit = dbSharedMgr.pageListCacheLimitHolder(grp.dataRegion());
 
         reuseList = new ReuseListImpl(
             grp.groupId(),
@@ -226,12 +226,12 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             metastoreRoot.pageId().pageId(),
             metastoreRoot.isAllocated(),
             ctx.kernalContext().failure(),
-            diagnosticMgr.pageLockTracker().createPageLockTracker(indexStorageTreeName)
+            diagnosticMgr.pageLockTracker().createPageLockTracker(idxStorageTreeName)
         );
 
-        persStoreMetrics = databaseSharedManager.persistentStoreMetricsImpl();
+        persStoreMetrics = dbSharedMgr.persistentStoreMetricsImpl();
 
-        databaseSharedManager.addCheckpointListener(this, grp.dataRegion());
+        dbSharedMgr.addCheckpointListener(this, grp.dataRegion());
     }
 
     /**
@@ -300,12 +300,12 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
      * @return Accumulated result for all page stores.
      */
     private long forGroupPageStores(CacheGroupContext gctx, ToLongFunction<PageStore> f) {
-        int groupId = gctx.groupId();
+        int grpId = gctx.groupId();
 
         long res = 0;
 
         try {
-            Collection<PageStore> stores = ((FilePageStoreManager)ctx.cache().context().pageStore()).getStores(groupId);
+            Collection<PageStore> stores = ((FilePageStoreManager)ctx.cache().context().pageStore()).getStores(grpId);
 
             if (stores != null) {
                 for (PageStore store : stores)
@@ -1194,7 +1194,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         if (grp.mvccEnabled()) // TODO IGNITE-7384
             return super.historicalIterator(partCntrs, missing);
 
-        GridCacheDatabaseSharedManager database = (GridCacheDatabaseSharedManager)grp.shared().database();
+        GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)grp.shared().database();
 
         Map<Integer, Long> partsCounters = new HashMap<>();
 
@@ -1206,10 +1206,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         try {
-            WALPointer minPtr = database.checkpointHistory().searchEarliestWalPointer(grp.groupId(),
+            WALPointer minPtr = db.checkpointHistory().searchEarliestWalPointer(grp.groupId(),
                 partsCounters, grp.hasAtomicCaches() ? walAtomicCacheMargin : 0L);
 
-            WALPointer latestReservedPointer = database.latestWalPointerReservedForPreloading();
+            WALPointer latestReservedPointer = db.latestWalPointerReservedForPreloading();
 
             assert latestReservedPointer == null || latestReservedPointer.compareTo(minPtr) <= 0
                 : "Historical iterator tries to iterate WAL out of reservation [cache=" + grp.cacheOrGroupName()

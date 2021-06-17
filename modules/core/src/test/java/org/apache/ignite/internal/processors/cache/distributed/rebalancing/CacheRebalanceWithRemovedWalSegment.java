@@ -116,10 +116,10 @@ public class CacheRebalanceWithRemovedWalSegment extends GridCommonAbstractTest 
 
         ignite.cluster().state(ClusterState.ACTIVE);
 
-        GridDhtPartitionsExchangeFuture exchangeFuture = ignite(0).context().cache().context().exchange().lastTopologyFuture();
+        GridDhtPartitionsExchangeFuture exchangeFut = ignite(0).context().cache().context().exchange().lastTopologyFuture();
 
         // Waiting for reservation, otherwise we can catch a problem during reservation.
-        exchangeFuture.get();
+        exchangeFut.get();
 
         TestRecordingCommunicationSpi.spi(ignite).waitForBlocked();
 
@@ -141,7 +141,7 @@ public class CacheRebalanceWithRemovedWalSegment extends GridCommonAbstractTest 
 
         LogListener lsnr = LogListener.matches("Failed to continue supplying [grp=" + DEFAULT_CACHE_NAME
             + ", demander=" + ignite.localNode().id()
-            + ", topVer=" + exchangeFuture.topologyVersion() + ']').build();
+            + ", topVer=" + exchangeFut.topologyVersion() + ']').build();
 
         listeningLog.registerListener(lsnr);
 

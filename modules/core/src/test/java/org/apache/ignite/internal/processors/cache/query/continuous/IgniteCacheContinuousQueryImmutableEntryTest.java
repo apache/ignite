@@ -121,10 +121,10 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
 
         assertTrue("There are not filtered events", !events.isEmpty());
 
-        for (CacheEntryEvent<?, ?> event : events) {
-            assertNotNull("Key is null", event.getKey());
-            assertNotNull("Value is null", event.getValue());
-            assertNotNull("Old value is null", event.getOldValue());
+        for (CacheEntryEvent<?, ?> evt : events) {
+            assertNotNull("Key is null", evt.getKey());
+            assertNotNull("Value is null", evt.getValue());
+            assertNotNull("Old value is null", evt.getOldValue());
         }
     }
 

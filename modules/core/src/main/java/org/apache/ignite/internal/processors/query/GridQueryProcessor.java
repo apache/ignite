@@ -492,13 +492,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         SB sb = new SB();
 
-        for (String indexFullname : local.keySet()) {
-            if (remote.containsKey(indexFullname)) {
-                int localInlineSize = local.get(indexFullname);
-                int remoteInlineSize = remote.get(indexFullname);
+        for (String idxFullname : local.keySet()) {
+            if (remote.containsKey(idxFullname)) {
+                int locInlineSize = local.get(idxFullname);
+                int remoteInlineSize = remote.get(idxFullname);
 
-                if (localInlineSize != remoteInlineSize)
-                    sb.a(indexFullname).a("(").a(localInlineSize).a(",").a(remoteInlineSize).a(")").a(",");
+                if (locInlineSize != remoteInlineSize)
+                    sb.a(idxFullname).a("(").a(locInlineSize).a(",").a(remoteInlineSize).a(")").a(",");
             }
         }
 

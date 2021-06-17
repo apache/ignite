@@ -83,13 +83,13 @@ public class SegmentAwareTest {
         //given: thread which awaited segment.
         SegmentAware aware = new SegmentAware(10, false, new NullLogger());
 
-        IgniteInternalFuture future = awaitThread(() -> aware.awaitSegment(5));
+        IgniteInternalFuture fut = awaitThread(() -> aware.awaitSegment(5));
 
         //when: set exact awaiting segment.
         aware.curAbsWalIdx(5);
 
         //then: waiting should finish immediately
-        future.get(20);
+        fut.get(20);
     }
 
     /**
@@ -100,13 +100,13 @@ public class SegmentAwareTest {
         //given: thread which awaited segment.
         SegmentAware aware = new SegmentAware(10, false, new NullLogger());
 
-        IgniteInternalFuture future = awaitThread(() -> aware.awaitSegment(5));
+        IgniteInternalFuture fut = awaitThread(() -> aware.awaitSegment(5));
 
         //when: set grater than awaiting segment.
         aware.curAbsWalIdx(10);
 
         //then: waiting should finish immediately
-        future.get(20);
+        fut.get(20);
     }
 
     /**
@@ -117,19 +117,19 @@ public class SegmentAwareTest {
         //given: thread which awaited segment.
         SegmentAware aware = new SegmentAware(10, false, new NullLogger());
 
-        IgniteInternalFuture future = awaitThread(() -> aware.awaitSegment(5));
+        IgniteInternalFuture fut = awaitThread(() -> aware.awaitSegment(5));
 
         //when: set less than awaiting segment.
         aware.curAbsWalIdx(4);
 
         //then: thread still waiting the segment
-        assertFutureIsNotFinish(future);
+        assertFutureIsNotFinish(fut);
 
         //when: trigger next segment.
         aware.nextAbsoluteSegmentIndex();
 
         //then: waiting should finish immediately
-        future.get(20);
+        fut.get(20);
     }
 
     /**
@@ -140,13 +140,13 @@ public class SegmentAwareTest {
         //given: thread which awaited segment.
         SegmentAware aware = new SegmentAware(10, false, new NullLogger());
 
-        IgniteInternalFuture future = awaitThread(() -> aware.awaitSegment(5));
+        IgniteInternalFuture fut = awaitThread(() -> aware.awaitSegment(5));
 
         //when: interrupt waiting.
         aware.interrupt();
 
         //then: IgniteInterruptedCheckedException should be throw.
-        assertTrue(future.get(20) instanceof IgniteInterruptedCheckedException);
+        assertTrue(fut.get(20) instanceof IgniteInterruptedCheckedException);
     }
 
     /**
@@ -160,13 +160,13 @@ public class SegmentAwareTest {
         aware.curAbsWalIdx(5);
         aware.setLastArchivedAbsoluteIndex(4);
 
-        IgniteInternalFuture future = awaitThread(aware::waitNextSegmentForArchivation);
+        IgniteInternalFuture fut = awaitThread(aware::waitNextSegmentForArchivation);
 
         //when: next work segment triggered.
         aware.nextAbsoluteSegmentIndex();
 
         //then: waiting should finish immediately.
-        future.get(20);
+        fut.get(20);
     }
 
     /**
@@ -180,13 +180,13 @@ public class SegmentAwareTest {
         aware.curAbsWalIdx(5);
         aware.setLastArchivedAbsoluteIndex(4);
 
-        IgniteInternalFuture future = awaitThread(aware::waitNextSegmentForArchivation);
+        IgniteInternalFuture fut = awaitThread(aware::waitNextSegmentForArchivation);
 
         //when: set work segment greater than required.
         aware.curAbsWalIdx(7);
 
         //then: waiting should finish immediately.
-        future.get(20);
+        fut.get(20);
     }
 
     /**
@@ -200,13 +200,13 @@ public class SegmentAwareTest {
         aware.curAbsWalIdx(5);
         aware.setLastArchivedAbsoluteIndex(4);
 
-        IgniteInternalFuture future = awaitThread(aware::waitNextSegmentForArchivation);
+        IgniteInternalFuture fut = awaitThread(aware::waitNextSegmentForArchivation);
 
         //when: interrupt waiting.
         aware.interrupt();
 
         //then: IgniteInterruptedCheckedException should be throw.
-        assertTrue(future.get(20) instanceof IgniteInterruptedCheckedException);
+        assertTrue(fut.get(20) instanceof IgniteInterruptedCheckedException);
     }
 
     /**
@@ -220,10 +220,10 @@ public class SegmentAwareTest {
         aware.curAbsWalIdx(5);
 
         //when: request next work segment.
-        long segmentIndex = aware.nextAbsoluteSegmentIndex();
+        long segmentIdx = aware.nextAbsoluteSegmentIndex();
 
         //then:
-        assertThat(segmentIndex, is(6L));
+        assertThat(segmentIdx, is(6L));
     }
 
     /**
@@ -237,13 +237,13 @@ public class SegmentAwareTest {
         aware.curAbsWalIdx(1);
         aware.setLastArchivedAbsoluteIndex(-1);
 
-        IgniteInternalFuture future = awaitThread(aware::nextAbsoluteSegmentIndex);
+        IgniteInternalFuture fut = awaitThread(aware::nextAbsoluteSegmentIndex);
 
         //when: mark first segment as moved.
         aware.markAsMovedToArchive(0);
 
         //then: waiting should finish immediately.
-        future.get(20);
+        fut.get(20);
     }
 
     /**
@@ -257,13 +257,13 @@ public class SegmentAwareTest {
         aware.curAbsWalIdx(1);
         aware.setLastArchivedAbsoluteIndex(-1);
 
-        IgniteInternalFuture future = awaitThread(aware::nextAbsoluteSegmentIndex);
+        IgniteInternalFuture fut = awaitThread(aware::nextAbsoluteSegmentIndex);
 
         //when: mark first segment as moved.
         aware.setLastArchivedAbsoluteIndex(0);
 
         //then: waiting should finish immediately.
-        future.get(20);
+        fut.get(20);
     }
 
     /**
@@ -277,19 +277,19 @@ public class SegmentAwareTest {
         aware.curAbsWalIdx(2);
         aware.setLastArchivedAbsoluteIndex(-1);
 
-        IgniteInternalFuture future = awaitThread(aware::nextAbsoluteSegmentIndex);
+        IgniteInternalFuture fut = awaitThread(aware::nextAbsoluteSegmentIndex);
 
         //when: interrupt waiting.
         aware.interrupt();
 
         //then: nothing to happen because nextAbsoluteSegmentIndex is not interrupt by "interrupt" call.
-        assertFutureIsNotFinish(future);
+        assertFutureIsNotFinish(fut);
 
         //when: force interrupt waiting.
         aware.forceInterrupt();
 
         //then: IgniteInterruptedCheckedException should be throw.
-        assertTrue(future.get(20) instanceof IgniteInterruptedCheckedException);
+        assertTrue(fut.get(20) instanceof IgniteInterruptedCheckedException);
     }
 
     /**
@@ -300,13 +300,13 @@ public class SegmentAwareTest {
         //given: thread which awaited segment.
         SegmentAware aware = new SegmentAware(10, false, new NullLogger());
 
-        IgniteInternalFuture future = awaitThread(() -> aware.awaitSegmentArchived(5));
+        IgniteInternalFuture fut = awaitThread(() -> aware.awaitSegmentArchived(5));
 
         //when: archived exact expected segment.
         aware.setLastArchivedAbsoluteIndex(5);
 
         //then: waiting should finish immediately.
-        future.get(20);
+        fut.get(20);
     }
 
     /**
@@ -317,13 +317,13 @@ public class SegmentAwareTest {
         //given: thread which awaited segment.
         SegmentAware aware = new SegmentAware(10, false, new NullLogger());
 
-        IgniteInternalFuture future = awaitThread(() -> aware.awaitSegmentArchived(5));
+        IgniteInternalFuture fut = awaitThread(() -> aware.awaitSegmentArchived(5));
 
         //when: mark exact segment as moved.
         aware.markAsMovedToArchive(5);
 
         //then: waiting should finish immediately.
-        future.get(20);
+        fut.get(20);
     }
 
     /**
@@ -334,13 +334,13 @@ public class SegmentAwareTest {
         //given: thread which awaited segment.
         SegmentAware aware = new SegmentAware(10, false, new NullLogger());
 
-        IgniteInternalFuture future = awaitThread(() -> aware.awaitSegmentArchived(5));
+        IgniteInternalFuture fut = awaitThread(() -> aware.awaitSegmentArchived(5));
 
         //when: archived greater than expected segment.
         aware.setLastArchivedAbsoluteIndex(7);
 
         //then: waiting should finish immediately.
-        future.get(20);
+        fut.get(20);
     }
 
     /**
@@ -351,13 +351,13 @@ public class SegmentAwareTest {
         //given: thread which awaited segment.
         SegmentAware aware = new SegmentAware(10, false, new NullLogger());
 
-        IgniteInternalFuture future = awaitThread(() -> aware.awaitSegmentArchived(5));
+        IgniteInternalFuture fut = awaitThread(() -> aware.awaitSegmentArchived(5));
 
         //when: moved greater than expected segment.
         aware.markAsMovedToArchive(7);
 
         //then: waiting should finish immediately.
-        future.get(20);
+        fut.get(20);
     }
 
     /**
@@ -371,13 +371,13 @@ public class SegmentAwareTest {
         aware.curAbsWalIdx(5);
         aware.setLastArchivedAbsoluteIndex(4);
 
-        IgniteInternalFuture future = awaitThread(() -> aware.awaitSegmentArchived(5));
+        IgniteInternalFuture fut = awaitThread(() -> aware.awaitSegmentArchived(5));
 
         //when: interrupt waiting.
         aware.interrupt();
 
         //then: IgniteInterruptedCheckedException should be throw.
-        assertTrue(future.get(20) instanceof IgniteInterruptedCheckedException);
+        assertTrue(fut.get(20) instanceof IgniteInterruptedCheckedException);
     }
 
     /**
@@ -390,13 +390,13 @@ public class SegmentAwareTest {
 
         assertTrue(aware.lock(5));
 
-        IgniteInternalFuture future = awaitThread(() -> aware.markAsMovedToArchive(5));
+        IgniteInternalFuture fut = awaitThread(() -> aware.markAsMovedToArchive(5));
 
         //when: release exact expected work segment.
         aware.unlock(5);
 
         //then: waiting should finish immediately.
-        future.get(20);
+        fut.get(20);
     }
 
     /**
@@ -409,13 +409,13 @@ public class SegmentAwareTest {
 
         assertTrue(aware.lock(5));
 
-        IgniteInternalFuture future = awaitThread(() -> aware.markAsMovedToArchive(5));
+        IgniteInternalFuture fut = awaitThread(() -> aware.markAsMovedToArchive(5));
 
         //when: interrupt waiting.
         aware.interrupt();
 
         //then: IgniteInterruptedCheckedException should be throw.
-        assertFalse(future.get(20) instanceof IgniteInterruptedCheckedException);
+        assertFalse(fut.get(20) instanceof IgniteInterruptedCheckedException);
 
         //and: last archived segment should be changed.
         assertEquals(5, aware.lastArchivedAbsoluteIndex());
@@ -431,13 +431,13 @@ public class SegmentAwareTest {
 
         aware.onSegmentCompressed(5);
 
-        IgniteInternalFuture future = awaitThread(aware::waitNextSegmentToCompress);
+        IgniteInternalFuture fut = awaitThread(aware::waitNextSegmentToCompress);
 
         //when: archived expected segment.
         aware.setLastArchivedAbsoluteIndex(6);
 
         //then: waiting should finish immediately.
-        future.get(20);
+        fut.get(20);
     }
 
     /**
@@ -450,13 +450,13 @@ public class SegmentAwareTest {
 
         aware.onSegmentCompressed(5);
 
-        IgniteInternalFuture future = awaitThread(aware::waitNextSegmentToCompress);
+        IgniteInternalFuture fut = awaitThread(aware::waitNextSegmentToCompress);
 
         //when: marked expected segment.
         aware.markAsMovedToArchive(6);
 
         //then: waiting should finish immediately.
-        future.get(20);
+        fut.get(20);
     }
 
     /**
@@ -481,13 +481,13 @@ public class SegmentAwareTest {
         SegmentAware aware = new SegmentAware(10, true, new NullLogger());
         aware.onSegmentCompressed(5);
 
-        IgniteInternalFuture future = awaitThread(aware::waitNextSegmentToCompress);
+        IgniteInternalFuture fut = awaitThread(aware::waitNextSegmentToCompress);
 
         //when: interrupt waiting.
         aware.interrupt();
 
         //then: IgniteInterruptedCheckedException should be throw.
-        assertTrue(future.get(20) instanceof IgniteInterruptedCheckedException);
+        assertTrue(fut.get(20) instanceof IgniteInterruptedCheckedException);
     }
 
     /**
@@ -798,7 +798,7 @@ public class SegmentAwareTest {
      */
     private IgniteInternalFuture awaitThread(Waiter waiter) throws IgniteCheckedException, InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
-        IgniteInternalFuture<Object> future = GridTestUtils.runAsync(
+        IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(
             () -> {
                 latch.countDown();
                 try {
@@ -814,9 +814,9 @@ public class SegmentAwareTest {
 
         latch.await();
 
-        assertFutureIsNotFinish(future);
+        assertFutureIsNotFinish(fut);
 
-        return future;
+        return fut;
     }
 
     /**

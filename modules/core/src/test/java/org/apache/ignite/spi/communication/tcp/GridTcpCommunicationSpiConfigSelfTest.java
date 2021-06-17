@@ -157,17 +157,17 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
     @Test
     @WithSystemProperty(key = "IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK", value = "true")
     public void testSendToNonInitializedTcpCommSpi() throws Exception {
-        ListeningTestLogger listeningLogger = new ListeningTestLogger(log);
+        ListeningTestLogger listeningLog = new ListeningTestLogger(log);
         LogListener npeLsnr = LogListener.matches("NullPointerException")
             .andMatches("InboundConnectionHandler.onMessageSent").build();
 
-        listeningLogger.registerListener(npeLsnr);
+        listeningLog.registerListener(npeLsnr);
 
         GridTestNode sendingNode = new GridTestNode();
         sendingNode.order(0);
         GridSpiTestContext sendingCtx = initSpiContext();
 
-        TcpCommunicationSpi sendingSpi = initializeSpi(sendingCtx, sendingNode, listeningLogger, false);
+        TcpCommunicationSpi sendingSpi = initializeSpi(sendingCtx, sendingNode, listeningLog, false);
         spisToStop.add(sendingSpi);
 
         sendingSpi.onContextInitialized(sendingCtx);
@@ -196,7 +196,7 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
             return new MetricRegistry(name, null, null, new NullLogger());
         });
 
-        TcpCommunicationSpi receiverSpi = initializeSpi(receiverCtx, receiverNode, listeningLogger, true);
+        TcpCommunicationSpi receiverSpi = initializeSpi(receiverCtx, receiverNode, listeningLog, true);
         spisToStop.add(receiverSpi);
 
         receiverCtx.remoteNodes().add(sendingNode);

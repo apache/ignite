@@ -2820,13 +2820,13 @@ public class IgnitionEx {
                         safeToStop = false;
 
                     if (safeToStop && !proposedSuppliers.isEmpty()) {
-                        Set<UUID> supportedPolicyNodes = proposedSuppliers.keySet().stream()
+                        Set<UUID> supportedPlcNodes = proposedSuppliers.keySet().stream()
                             .filter(nodeId ->
                                 IgniteFeatures.nodeSupports(grid0.cluster().node(nodeId), IgniteFeatures.SHUTDOWN_POLICY))
                             .collect(Collectors.toSet());
 
-                        if (!supportedPolicyNodes.isEmpty()) {
-                            safeToStop = grid0.compute(grid0.cluster().forNodeIds(supportedPolicyNodes))
+                        if (!supportedPlcNodes.isEmpty()) {
+                            safeToStop = grid0.compute(grid0.cluster().forNodeIds(supportedPlcNodes))
                                 .execute(CheckCpHistTask.class, proposedSuppliers);
                         }
                     }
@@ -2908,22 +2908,22 @@ public class IgnitionEx {
             if (fullMap == null)
                 return false;
 
-            UUID localNodeId = grid.getLocalNodeId();
+            UUID locNodeId = grid.getLocalNodeId();
 
-            GridDhtPartitionMap localPartMap = fullMap.get(localNodeId);
+            GridDhtPartitionMap locPartMap = fullMap.get(locNodeId);
 
             int parts = grpCtx.topology().partitions();
 
             List<List<ClusterNode>> idealAssignment = grpCtx.affinity().idealAssignmentRaw();
 
             for (int p = 0; p < parts; p++) {
-                if (localPartMap.get(p) != GridDhtPartitionState.OWNING)
+                if (locPartMap.get(p) != GridDhtPartitionState.OWNING)
                     continue;
 
                 boolean foundCopy = false;
 
                 for (Map.Entry<UUID, GridDhtPartitionMap> entry : fullMap.entrySet()) {
-                    if (localNodeId.equals(entry.getKey()) || nodesToExclude.contains(entry.getKey()))
+                    if (locNodeId.equals(entry.getKey()) || nodesToExclude.contains(entry.getKey()))
                         continue;
 
                     //This remote node does not present in ideal assignment.

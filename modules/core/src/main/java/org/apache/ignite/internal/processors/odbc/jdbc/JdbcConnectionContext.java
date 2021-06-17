@@ -211,7 +211,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
 
         parser = new JdbcMessageParser(ctx, protoCtx);
 
-        ClientListenerResponseSender sender = new ClientListenerResponseSender() {
+        ClientListenerResponseSender snd = new ClientListenerResponseSender() {
             @Override public void send(ClientListenerResponse resp) {
                 if (resp != null) {
                     if (log.isDebugEnabled())
@@ -222,7 +222,7 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
             }
         };
 
-        handler = new JdbcRequestHandler(busyLock, sender, maxCursors, distributedJoins, enforceJoinOrder,
+        handler = new JdbcRequestHandler(busyLock, snd, maxCursors, distributedJoins, enforceJoinOrder,
             collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, nestedTxMode,
             dataPageScanEnabled, updateBatchSize, ver, this);
 

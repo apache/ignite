@@ -411,10 +411,10 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             CacheGroupDescriptor desc = cctx.cache().cacheGroupDescriptor(grpDescId);
 
             if (desc != null && desc.persistenceEnabled()) {
-                boolean localEnabled = cctx.database().walEnabled(grpDescId, true);
+                boolean locEnabled = cctx.database().walEnabled(grpDescId, true);
                 boolean globalEnabled = cctx.database().walEnabled(grpDescId, false);
 
-                if (!localEnabled || !globalEnabled) {
+                if (!locEnabled || !globalEnabled) {
                     File dir = cacheWorkDir(desc.config());
 
                     if (Arrays.stream(
@@ -706,10 +706,10 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         );
 
         if (encrypted) {
-            int headerSize = pageStoreFactory.headerSize(pageStoreFactory.latestVersion());
+            int hdrSize = pageStoreFactory.headerSize(pageStoreFactory.latestVersion());
 
-            ((EncryptedFileIOFactory)pageStoreFileIoFactory).headerSize(headerSize);
-            ((EncryptedFileIOFactory)pageStoreV1FileIoFactory).headerSize(headerSize);
+            ((EncryptedFileIOFactory)pageStoreFileIoFactory).headerSize(hdrSize);
+            ((EncryptedFileIOFactory)pageStoreV1FileIoFactory).headerSize(hdrSize);
         }
 
         return pageStoreFactory;

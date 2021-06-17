@@ -59,6 +59,7 @@ public class IgniteAbbrevationsRule extends AbstractCheck {
      */
     private final Map<String, String> abbrevs = new HashMap<>();
 
+    /** Exclusions. */
     private final Set<String> excl = new HashSet<>();
 
     /** */
@@ -103,6 +104,11 @@ public class IgniteAbbrevationsRule extends AbstractCheck {
 
     /** {@inheritDoc} */
     @Override public void visitToken(DetailAST ast) {
+        DetailAST parent = ast.getParent();
+
+        if (parent.getType() == TokenTypes.OBJBLOCK)
+            return;
+
         DetailAST token = ast.findFirstToken(TokenTypes.IDENT);
 
         String varName = token.getText();

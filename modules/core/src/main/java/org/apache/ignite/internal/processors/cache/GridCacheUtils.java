@@ -1485,9 +1485,9 @@ public class GridCacheUtils {
 
         Map<UUID, Collection<ClusterNode>> neighbors = new HashMap<>(topSnapshot.size(), 1.0f);
 
-        for (Collection<ClusterNode> group : macMap.values())
-            for (ClusterNode node : group)
-                neighbors.put(node.id(), group);
+        for (Collection<ClusterNode> grp : macMap.values())
+            for (ClusterNode node : grp)
+                neighbors.put(node.id(), grp);
 
         return neighbors;
     }
@@ -1660,27 +1660,27 @@ public class GridCacheUtils {
         IgniteLogger log,
         boolean fail
     ) throws IgniteCheckedException {
-        Map<String, String> rmtAffinityKeys = CU.validateKeyConfigiration(groupName, cacheName, rmtCacheKeyCfgs, log, fail);
+        Map<String, String> rmtAffKeys = CU.validateKeyConfigiration(groupName, cacheName, rmtCacheKeyCfgs, log, fail);
 
-        Map<String, String> locAffinityKey = CU.validateKeyConfigiration(groupName, cacheName, locCacheKeyCfgs, log, fail);
+        Map<String, String> locAffKey = CU.validateKeyConfigiration(groupName, cacheName, locCacheKeyCfgs, log, fail);
 
-        if (rmtAffinityKeys.size() != locAffinityKey.size()) {
+        if (rmtAffKeys.size() != locAffKey.size()) {
             throwIgniteCheckedException(log, fail, "Affinity key configuration mismatch" +
                 "[" +
                 (groupName != null ? "cacheGroup=" + groupName + ", " : "") +
                 "cacheName=" + cacheName + ", " +
-                "remote keyConfiguration.length=" + rmtAffinityKeys.size() + ", " +
-                "local keyConfiguration.length=" + locAffinityKey.size() +
+                "remote keyConfiguration.length=" + rmtAffKeys.size() + ", " +
+                "local keyConfiguration.length=" + locAffKey.size() +
                 (rmtNodeId != null ? ", rmtNodeId=" + rmtNodeId : "") +
                 ']');
         }
 
-        for (Map.Entry<String, String> rmtAffinityKey : rmtAffinityKeys.entrySet()) {
-            String rmtTypeName = rmtAffinityKey.getKey();
+        for (Map.Entry<String, String> rmtAffKey : rmtAffKeys.entrySet()) {
+            String rmtTypeName = rmtAffKey.getKey();
 
-            String rmtFieldName = rmtAffinityKey.getValue();
+            String rmtFieldName = rmtAffKey.getValue();
 
-            String locFieldName = locAffinityKey.get(rmtTypeName);
+            String locFieldName = locAffKey.get(rmtTypeName);
 
             if (!rmtFieldName.equals(locFieldName)) {
                 throwIgniteCheckedException(log, fail, "Affinity key configuration mismatch [" +

@@ -185,16 +185,16 @@ public class CommunicationWorker extends GridWorker {
             throw t;
         }
         finally {
-            FailureProcessor failureProcessor = failureProcessorSupplier.get();
+            FailureProcessor failureProc = failureProcessorSupplier.get();
 
-            if (failureProcessor != null) {
+            if (failureProc != null) {
                 if (err == null && !stopping)
                     err = new IllegalStateException("Thread  " + spiName + " is terminated unexpectedly.");
 
                 if (err instanceof OutOfMemoryError)
-                    failureProcessor.process(new FailureContext(CRITICAL_ERROR, err));
+                    failureProc.process(new FailureContext(CRITICAL_ERROR, err));
                 else if (err != null)
-                    failureProcessor.process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
+                    failureProc.process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
             }
         }
     }

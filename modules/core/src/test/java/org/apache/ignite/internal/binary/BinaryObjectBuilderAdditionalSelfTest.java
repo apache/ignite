@@ -1498,11 +1498,11 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
      * @return Wrapper.
      */
     private BinaryObjectBuilderImpl newWrapper(String typeName) {
-        CacheObjectBinaryProcessorImpl processor = (CacheObjectBinaryProcessorImpl)(
+        CacheObjectBinaryProcessorImpl proc = (CacheObjectBinaryProcessorImpl)(
             (IgniteBinaryImpl)binaries()).processor();
 
-        return new BinaryObjectBuilderImpl(processor.binaryContext(), processor.typeId(typeName),
-            processor.binaryContext().userTypeName(typeName));
+        return new BinaryObjectBuilderImpl(proc.binaryContext(), proc.typeId(typeName),
+            proc.binaryContext().userTypeName(typeName));
     }
 
     /** */

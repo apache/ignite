@@ -64,9 +64,9 @@ public class ClientCachePartitionsRequest extends ClientRequest {
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         ArrayList<ClientCachePartitionAwarenessGroup> groups = new ArrayList<>(cacheIds.length);
-        HashMap<Integer, ClientCachePartitionAwarenessGroup> cacheGroupIds = new HashMap<>(cacheIds.length);
+        HashMap<Integer, ClientCachePartitionAwarenessGroup> cacheGrpIds = new HashMap<>(cacheIds.length);
 
-        ClientAffinityTopologyVersion affinityVer = ctx.checkAffinityTopologyVersion();
+        ClientAffinityTopologyVersion affVer = ctx.checkAffinityTopologyVersion();
 
         // As a fisrt step, get a set of mappings that we need to return.
         // To do that, check if any of the caches listed in request can be grouped.
@@ -77,14 +77,14 @@ public class ClientCachePartitionsRequest extends ClientRequest {
             if (cacheDesc == null)
                 continue;
 
-            ClientCachePartitionAwarenessGroup grp = processCache(ctx, groups, cacheGroupIds, affinityVer, cacheDesc);
+            ClientCachePartitionAwarenessGroup grp = processCache(ctx, groups, cacheGrpIds, affVer, cacheDesc);
 
             // Cache already processed.
             if (grp == null)
                 continue;
 
             groups.add(grp);
-            cacheGroupIds.put(cacheDesc.groupId(), grp);
+            cacheGrpIds.put(cacheDesc.groupId(), grp);
         }
 
         Map<String, DynamicCacheDescriptor> allCaches = ctx.kernalContext().cache().cacheDescriptors();
@@ -95,10 +95,10 @@ public class ClientCachePartitionsRequest extends ClientRequest {
             if (!cacheDesc.cacheType().userCache())
                 continue;
 
-            processCache(ctx, groups, cacheGroupIds, affinityVer, cacheDesc);
+            processCache(ctx, groups, cacheGrpIds, affVer, cacheDesc);
         }
 
-        return new ClientCachePartitionsResponse(requestId(), groups, affinityVer);
+        return new ClientCachePartitionsResponse(requestId(), groups, affVer);
     }
 
     /**
@@ -118,14 +118,14 @@ public class ClientCachePartitionsRequest extends ClientRequest {
         ClientAffinityTopologyVersion affinityVer,
         DynamicCacheDescriptor cacheDesc)
     {
-        int cacheGroupId = cacheDesc.groupId();
+        int cacheGrpId = cacheDesc.groupId();
         int cacheId = cacheDesc.cacheId();
 
-        ClientCachePartitionAwarenessGroup group = cacheGroupIds.get(cacheGroupId);
-        if (group != null) {
+        ClientCachePartitionAwarenessGroup grp = cacheGroupIds.get(cacheGrpId);
+        if (grp != null) {
             // Cache group is found. It means that cache belongs to one of cache groups with known mapping.
             // Just adding our cache to this group here.
-            group.addCache(cacheDesc);
+            grp.addCache(cacheDesc);
 
             return null;
         }
@@ -140,10 +140,10 @@ public class ClientCachePartitionsRequest extends ClientRequest {
         if (isApplicable(cacheDesc.cacheConfiguration()))
             mapping = new ClientCachePartitionMapping(cacheId, assignment);
 
-        group = getCompatibleGroup(groups, mapping);
-        if (group != null) {
-            group.addCache(cacheDesc);
-            cacheGroupIds.put(cacheGroupId, group);
+        grp = getCompatibleGroup(groups, mapping);
+        if (grp != null) {
+            grp.addCache(cacheDesc);
+            cacheGroupIds.put(cacheGrpId, grp);
 
             return null;
         }
@@ -162,9 +162,9 @@ public class ClientCachePartitionsRequest extends ClientRequest {
     @Nullable private static ClientCachePartitionAwarenessGroup getCompatibleGroup(
         List<ClientCachePartitionAwarenessGroup> groups,
         ClientCachePartitionMapping mapping) {
-        for (ClientCachePartitionAwarenessGroup group : groups) {
-            if (group.isCompatible(mapping))
-                return group;
+        for (ClientCachePartitionAwarenessGroup grp : groups) {
+            if (grp.isCompatible(mapping))
+                return grp;
         }
 
         return null;
@@ -180,8 +180,8 @@ public class ClientCachePartitionsRequest extends ClientRequest {
     @Nullable private static AffinityAssignment getCacheAssignment(ClientConnectionContext ctx,
         ClientAffinityTopologyVersion affinityVer, int cacheId) {
         try {
-            GridCacheContext cacheContext = ctx.kernalContext().cache().context().cacheContext(cacheId);
-            return cacheContext.affinity().assignment(affinityVer.getVersion());
+            GridCacheContext cacheCtx = ctx.kernalContext().cache().context().cacheContext(cacheId);
+            return cacheCtx.affinity().assignment(affinityVer.getVersion());
         } catch (Exception e) {
             return null;
         }

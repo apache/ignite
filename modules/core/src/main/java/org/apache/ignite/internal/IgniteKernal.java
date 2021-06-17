@@ -1206,11 +1206,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             startProcessor(new PdsConsistentIdProcessor(ctx));
 
-            MaintenanceProcessor mntcProcessor = new MaintenanceProcessor(ctx);
+            MaintenanceProcessor mntcProc = new MaintenanceProcessor(ctx);
 
-            startProcessor(mntcProcessor);
+            startProcessor(mntcProc);
 
-            if (mntcProcessor.isMaintenanceMode()) {
+            if (mntcProc.isMaintenanceMode()) {
                 if (log.isInfoEnabled()) {
                     log.info(
                         "Node is being started in maintenance mode. " +
@@ -1320,7 +1320,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             }
 
             // All components exept Discovery are started, time to check if maintenance is still needed.
-            mntcProcessor.prepareAndExecuteMaintenance();
+            mntcProc.prepareAndExecuteMaintenance();
 
             gw.writeLock();
 
@@ -2270,7 +2270,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         try {
             ClusterMetrics m = cluster().localNode().metrics();
 
-            int localCpus = m.getTotalCpus();
+            int locCpus = m.getTotalCpus();
             double cpuLoadPct = m.getCurrentCpuLoad() * 100;
             double avgCpuLoadPct = m.getAverageCpuLoad() * 100;
             double gcPct = m.getCurrentGcCpuLoad() * 100;
@@ -2311,16 +2311,16 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             ClusterNode locNode = ctx.discovery().localNode();
 
-            String networkDetails = "";
+            String netDetails = "";
 
             if (!F.isEmpty(cfg.getLocalHost()))
-                networkDetails += ", localHost=" + cfg.getLocalHost();
+                netDetails += ", localHost=" + cfg.getLocalHost();
 
             if (locNode instanceof TcpDiscoveryNode)
-                networkDetails += ", discoPort=" + ((TcpDiscoveryNode)locNode).discoveryPort();
+                netDetails += ", discoPort=" + ((TcpDiscoveryNode)locNode).discoveryPort();
 
             if (cfg.getCommunicationSpi() instanceof TcpCommunicationSpi)
-                networkDetails += ", commPort=" + ((TcpCommunicationSpi)cfg.getCommunicationSpi()).boundPort();
+                netDetails += ", commPort=" + ((TcpCommunicationSpi)cfg.getCommunicationSpi()).boundPort();
 
             SB msg = new SB();
 
@@ -2331,8 +2331,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 .a("    ^-- Cluster [hosts=").a(hosts).a(", CPUs=").a(cpus).a(", servers=").a(servers)
                 .a(", clients=").a(clients).a(", topVer=").a(topVer.topologyVersion())
                 .a(", minorTopVer=").a(topVer.minorTopologyVersion()).a("]").nl()
-                .a("    ^-- Network [addrs=").a(locNode.addresses()).a(networkDetails).a("]").nl()
-                .a("    ^-- CPU [CPUs=").a(localCpus).a(", curLoad=").a(dblFmt.format(cpuLoadPct))
+                .a("    ^-- Network [addrs=").a(locNode.addresses()).a(netDetails).a("]").nl()
+                .a("    ^-- CPU [CPUs=").a(locCpus).a(", curLoad=").a(dblFmt.format(cpuLoadPct))
                 .a("%, avgLoad=").a(dblFmt.format(avgCpuLoadPct)).a("%, GC=").a(dblFmt.format(gcPct)).a("%]").nl()
                 .a("    ^-- Heap [used=").a(dblFmt.format(heapUsedInMBytes))
                 .a("MB, free=").a(dblFmt.format(freeHeapPct))

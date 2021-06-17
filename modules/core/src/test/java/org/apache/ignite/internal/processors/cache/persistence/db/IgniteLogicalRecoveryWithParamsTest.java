@@ -164,7 +164,7 @@ public class IgniteLogicalRecoveryWithParamsTest extends GridCommonAbstractTest 
     private void testPartiallyCommitedTx() throws Exception {
         final String cacheName = "recovery";
 
-        int itmsCount = 30_000;
+        int itmsCnt = 30_000;
 
         AtomicBoolean failFileIO = new AtomicBoolean();
 
@@ -197,9 +197,9 @@ public class IgniteLogicalRecoveryWithParamsTest extends GridCommonAbstractTest 
             nearComm.blockMessages((node, msg) -> msg instanceof GridNearTxPrepareRequest);
 
             if (singleNodeTx)
-                keys = primaryKeys(srv.cache(cacheName), itmsCount, 0);
+                keys = primaryKeys(srv.cache(cacheName), itmsCnt, 0);
             else
-                keys = IntStream.range(0, itmsCount).boxed().collect(Collectors.toList());
+                keys = IntStream.range(0, itmsCnt).boxed().collect(Collectors.toList());
 
             Thread t = new Thread(() -> {
                 try (Transaction tx = clnt.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
@@ -247,7 +247,7 @@ public class IgniteLogicalRecoveryWithParamsTest extends GridCommonAbstractTest 
                 assertEquals("ethalon=" + pr + ", current=" + res + ", key=" + i, pr, res == null);
         }
 
-        assert (cSize == itmsCount || cSize == 0) : "unexpected cache size: " + cSize;
+        assert (cSize == itmsCnt || cSize == 0) : "unexpected cache size: " + cSize;
     }
 
     /** */

@@ -220,13 +220,13 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
      * @param cacheName Cache name.
      */
     public VisorCacheMetrics(IgniteEx ignite, String cacheName) {
-        GridCacheProcessor cacheProcessor = ignite.context().cache();
+        GridCacheProcessor cacheProc = ignite.context().cache();
 
-        IgniteCache<Object, Object> c = cacheProcessor.jcache(cacheName);
+        IgniteCache<Object, Object> c = cacheProc.jcache(cacheName);
 
         name = cacheName;
-        mode = cacheProcessor.cacheMode(cacheName);
-        sys = cacheProcessor.systemCache(cacheName);
+        mode = cacheProc.cacheMode(cacheName);
+        sys = cacheProc.systemCache(cacheName);
 
         CacheMetrics m = c.localMetrics();
 

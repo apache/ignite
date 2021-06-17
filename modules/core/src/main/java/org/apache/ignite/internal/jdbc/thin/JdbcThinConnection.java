@@ -1149,15 +1149,15 @@ public class JdbcThinConnection implements Connection {
 
         assert res.status() == ClientListenerResponse.STATUS_SUCCESS;
 
-        AffinityTopologyVersion resAffinityVer = res.affinityVersion();
+        AffinityTopologyVersion resAffVer = res.affinityVersion();
 
-        if (affinityCache.version().compareTo(resAffinityVer) < 0) {
+        if (affinityCache.version().compareTo(resAffVer) < 0) {
             affinityCache = new AffinityCache(
-                resAffinityVer,
+                resAffVer,
                 connProps.getPartitionAwarenessPartitionDistributionsCacheSize(),
                 connProps.getPartitionAwarenessSqlCacheSize());
         }
-        else if (affinityCache.version().compareTo(resAffinityVer) > 0) {
+        else if (affinityCache.version().compareTo(resAffVer) > 0) {
             // Jdbc thin affinity cache is binded to the newer affinity topology version, so we should ignore retrieved
             // partition distribution. Given situation might occur in case of concurrent race and is not
             // possible in single-threaded jdbc thin client, so it's a reserve for the future.

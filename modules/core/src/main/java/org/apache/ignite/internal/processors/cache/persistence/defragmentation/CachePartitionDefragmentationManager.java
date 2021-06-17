@@ -259,9 +259,9 @@ public class CachePartitionDefragmentationManager {
             oldStores.put(grpId, oldCacheDataStores);
         }
 
-        int partitionCount = oldStores.values().stream().mapToInt(List::size).sum();
+        int partitionCnt = oldStores.values().stream().mapToInt(List::size).sum();
 
-        status.onStart(cacheGrpCtxsForDefragmentation, partitionCount);
+        status.onStart(cacheGrpCtxsForDefragmentation, partitionCnt);
 
         try {
             // Now the actual process starts.
@@ -872,9 +872,9 @@ public class CachePartitionDefragmentationManager {
         CacheGroupContext newCtx,
         IntMap<LinkMap> mappingByPartition
     ) throws IgniteCheckedException {
-        GridQueryProcessor query = grpCtx.caches().get(0).kernalContext().query();
+        GridQueryProcessor qry = grpCtx.caches().get(0).kernalContext().query();
 
-        if (!query.moduleEnabled())
+        if (!qry.moduleEnabled())
             return;
 
         final IndexProcessor idx = grpCtx.caches().get(0).kernalContext().indexProcessor();

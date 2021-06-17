@@ -442,20 +442,20 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                 try {
                     StoreOperation op;
 
-                    V value;
+                    V val0;
 
                     if (writeCoalescing && val.nextOperation() != null) {
                         op = val.nextOperation();
 
-                        value = (op == StoreOperation.PUT) ? val.nextEntry().getValue() : null;
+                        val0 = (op == StoreOperation.PUT) ? val.nextEntry().getValue() : null;
                     } else {
                         op = val.operation();
 
-                        value = (op == StoreOperation.PUT) ? val.entry().getValue() : null;
+                        val0 = (op == StoreOperation.PUT) ? val.entry().getValue() : null;
                     }
 
                     if (op == StoreOperation.PUT)
-                        loaded.put(key, value);
+                        loaded.put(key, val0);
                     else
                         assert op == StoreOperation.RMV : op;
                 }
@@ -501,21 +501,21 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             try {
                 StoreOperation op;
 
-                V value;
+                V val0;
 
                 if (writeCoalescing && val.nextOperation() != null) {
                     op = val.nextOperation();
 
-                    value = (op == StoreOperation.PUT) ? val.nextEntry().getValue() : null;
+                    val0 = (op == StoreOperation.PUT) ? val.nextEntry().getValue() : null;
                 } else {
                     op = val.operation();
 
-                    value = (op == StoreOperation.PUT) ? val.entry().getValue() : null;
+                    val0 = (op == StoreOperation.PUT) ? val.entry().getValue() : null;
                 }
 
                 switch (op) {
                     case PUT:
-                        return value;
+                        return val0;
 
                     case RMV:
                         return null;

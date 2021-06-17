@@ -46,13 +46,13 @@ public class LinkMapTest extends GridCommonAbstractTest {
     public void test() throws Exception {
         PageMemory pageMem = createPageMemory();
 
-        int cacheGroupId = 1;
+        int cacheGrpId = 1;
 
-        String groupName = "test";
+        String grpName = "test";
 
-        FullPageId pageId = new FullPageId(pageMem.allocatePage(cacheGroupId, 0, PageIdAllocator.FLAG_DATA), cacheGroupId);
+        FullPageId pageId = new FullPageId(pageMem.allocatePage(cacheGrpId, 0, PageIdAllocator.FLAG_DATA), cacheGrpId);
 
-        LinkMap map = new LinkMap(cacheGroupId, groupName, pageMem, pageId.pageId(), true);
+        LinkMap map = new LinkMap(cacheGrpId, grpName, pageMem, pageId.pageId(), true);
 
         for (int i = 0; i < 10_000; i++)
             map.put(i, i + 1);

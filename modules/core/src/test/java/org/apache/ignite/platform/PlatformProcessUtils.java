@@ -80,18 +80,18 @@ public class PlatformProcessUtils {
                 process.destroyForcibly();
                 process = null;
 
-                String logString = String.join(System.lineSeparator(), log);
+                String logStr = String.join(System.lineSeparator(), log);
 
-                throw new Exception("Failed to wait for specified output ('" + waitForOutput + "'): " + logString, e);
+                throw new Exception("Failed to wait for specified output ('" + waitForOutput + "'): " + logStr, e);
             }
 
             if (!process.isAlive()) {
-                int exitValue = process.exitValue();
+                int exitVal = process.exitValue();
                 process = null;
 
-                String logString = String.join(System.lineSeparator(), log);
+                String logStr = String.join(System.lineSeparator(), log);
 
-                throw new Exception("Process has exited unexpectedly (" + exitValue + "): " + logString);
+                throw new Exception("Process has exited unexpectedly (" + exitVal + "): " + logStr);
             }
         }
 

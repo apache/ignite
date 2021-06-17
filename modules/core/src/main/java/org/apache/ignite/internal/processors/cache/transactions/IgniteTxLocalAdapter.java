@@ -941,9 +941,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     boolean persistenceEnabled = CU.isPersistenceEnabled(cctx.kernalContext().config());
 
                     if (persistenceEnabled) {
-                        GridCacheDatabaseSharedManager dbManager = (GridCacheDatabaseSharedManager)cctx.database();
+                        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)cctx.database();
 
-                        dbManager.getCheckpointer().skipCheckpointOnNodeStop(true);
+                        dbMgr.getCheckpointer().skipCheckpointOnNodeStop(true);
                     }
 
                     throw ex;
@@ -1337,9 +1337,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(txEntry.key(), key0, cacheVal,
                     val0, ver, txEntry.keepBinary(), txEntry.cached());
 
-                EntryProcessor<Object, Object, ?> entryProcessor = t.get1();
+                EntryProcessor<Object, Object, ?> entryProc = t.get1();
 
-                res = entryProcessor.process(invokeEntry, t.get2());
+                res = entryProc.process(invokeEntry, t.get2());
 
                 val0 = invokeEntry.getValue(txEntry.keepBinary());
 

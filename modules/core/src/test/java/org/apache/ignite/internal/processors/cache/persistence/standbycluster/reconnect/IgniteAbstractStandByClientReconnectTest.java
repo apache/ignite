@@ -189,15 +189,15 @@ public abstract class IgniteAbstractStandByClientReconnectTest extends GridCommo
 
         assertEquals("Node name: " + ig.name(), cacheNames.size() + 1, descs.size());
 
-        int systemCnt = 0;
+        int sysCnt = 0;
 
         for (DynamicCacheDescriptor desc : descs)
             if (!CU.isSystemCache(desc.cacheName()))
                 assertTrue(desc.cacheName(), cacheNames.contains(desc.cacheName()));
             else
-                systemCnt++;
+                sysCnt++;
 
-        assertEquals(1, systemCnt);
+        assertEquals(1, sysCnt);
     }
 
     /**

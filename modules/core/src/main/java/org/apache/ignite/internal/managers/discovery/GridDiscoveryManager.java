@@ -1174,7 +1174,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         boolean locP2pEnabled = locNode.attribute(ATTR_PEER_CLASSLOADING);
 
-        ShutdownPolicy locShutdownPolicy = ShutdownPolicy.fromOrdinal(locNode.attribute(ATTR_SHUTDOWN_POLICY));
+        ShutdownPolicy locShutdownPlc = ShutdownPolicy.fromOrdinal(locNode.attribute(ATTR_SHUTDOWN_POLICY));
 
         boolean ipV4Warned = false;
 
@@ -1292,13 +1292,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     ", locNodeId=" + locNode.id() + ", rmtNode=" + U.toShortString(n) + "]");
             }
 
-            ShutdownPolicy rmtShutdownPolicy = n.attribute(ATTR_SHUTDOWN_POLICY) == null ? null :
+            ShutdownPolicy rmtShutdownPlc = n.attribute(ATTR_SHUTDOWN_POLICY) == null ? null :
                 ShutdownPolicy.fromOrdinal(n.attribute(ATTR_SHUTDOWN_POLICY));
 
-            if (rmtShutdownPolicy != null && !F.eq(locShutdownPolicy, rmtShutdownPolicy)) {
+            if (rmtShutdownPlc != null && !F.eq(locShutdownPlc, rmtShutdownPlc)) {
                 throw new IgniteCheckedException("Remote node has shutdoun policy different from local" +
-                    " local [locId8=" + U.id8(locNode.id()) + ", locShutdownPolicy=" + locShutdownPolicy +
-                    ", rmtId8=" + U.id8(n.id()) + ", rmtShutdownPolicy=" + rmtShutdownPolicy +
+                    " local [locId8=" + U.id8(locNode.id()) + ", locShutdownPolicy=" + locShutdownPlc +
+                    ", rmtId8=" + U.id8(n.id()) + ", rmtShutdownPolicy=" + rmtShutdownPlc +
                     ", rmtAddrs=" + U.addressesAsString(n) + ", rmtNode=" + U.toShortString(n) + "]");
             }
 
@@ -2791,14 +2791,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     body0();
                 }
                 catch (Throwable t) {
-                    boolean isInterruptedException = X.hasCause(t, InterruptedException.class)
+                    boolean isInterruptedE = X.hasCause(t, InterruptedException.class)
                         || X.hasCause(t, IgniteInterruptedException.class)
                         || X.hasCause(t, IgniteInterruptedCheckedException.class);
 
-                    if (!isInterruptedException)
+                    if (!isInterruptedE)
                         U.error(log, "Exception in discovery notifier worker thread.", t);
 
-                    if (!isInterruptedException || !isCancelled) {
+                    if (!isInterruptedE || !isCancelled) {
                         FailureType type = t instanceof OutOfMemoryError ? CRITICAL_ERROR : SYSTEM_WORKER_TERMINATION;
 
                         ctx.failure().process(new FailureContext(type, t));

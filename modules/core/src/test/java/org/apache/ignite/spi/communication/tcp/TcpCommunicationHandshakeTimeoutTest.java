@@ -79,13 +79,13 @@ public class TcpCommunicationHandshakeTimeoutTest extends GridCommonAbstractTest
         IgniteEx g1 = startGrid(1);
 
         //and: One more node which communication connection can be delayed by demand.
-        AtomicBoolean delayHandshakeUntilSocketClosed = new AtomicBoolean();
+        AtomicBoolean delayHandshakeUntilSockClosed = new AtomicBoolean();
         IgniteEx g2 = startGrid(2, new DependencyResolver() {
             @Override public <T> T resolve(T instance) {
                 if (instance instanceof TcpHandshakeExecutor) {
                     TcpHandshakeExecutor gridNioServer = (TcpHandshakeExecutor)instance;
 
-                    return (T)new DelaydTcpHandshakeExecutor(gridNioServer, delayHandshakeUntilSocketClosed);
+                    return (T)new DelaydTcpHandshakeExecutor(gridNioServer, delayHandshakeUntilSockClosed);
                 }
 
                 return instance;
@@ -103,7 +103,7 @@ public class TcpCommunicationHandshakeTimeoutTest extends GridCommonAbstractTest
         g2.context().timeout().addTimeoutObject(new GridTimeoutObjectAdapter(0) {
 
             @Override public void onTimeout() {
-                delayHandshakeUntilSocketClosed.set(true);
+                delayHandshakeUntilSockClosed.set(true);
 
                 g2.compute(g2.cluster().forNodes(Arrays.asList(g1.localNode()))).withNoFailover().call(() -> true);
 

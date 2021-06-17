@@ -75,8 +75,8 @@ public class GridServiceContinuousQueryRedeployTest extends GridCommonAbstractTe
         qry.setLocalListener(new CacheEntryUpdatedListener<Object, Object>() {
             @Override public void onUpdated(
                 Iterable<CacheEntryEvent<?, ?>> iterable) throws CacheEntryListenerException {
-                for (CacheEntryEvent<?, ?> event : iterable)
-                    evts.add(event);
+                for (CacheEntryEvent<?, ?> evt : iterable)
+                    evts.add(evt);
             }
         });
 

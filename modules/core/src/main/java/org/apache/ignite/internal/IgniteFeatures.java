@@ -241,13 +241,13 @@ public enum IgniteFeatures {
     public static byte[] allFeatures() {
         final BitSet set = new BitSet();
 
-        for (IgniteFeatures value : IgniteFeatures.values()) {
-            if (value == PME_FREE_SWITCH && getBoolean(IGNITE_PME_FREE_SWITCH_DISABLED))
+        for (IgniteFeatures val : IgniteFeatures.values()) {
+            if (val == PME_FREE_SWITCH && getBoolean(IGNITE_PME_FREE_SWITCH_DISABLED))
                 continue;
 
-            final int featureId = value.getFeatureId();
+            final int featureId = val.getFeatureId();
 
-            assert !set.get(featureId) : "Duplicate feature ID found for [" + value + "] having same ID ["
+            assert !set.get(featureId) : "Duplicate feature ID found for [" + val + "] having same ID ["
                 + featureId + "]";
 
             set.set(featureId);

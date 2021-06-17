@@ -509,9 +509,9 @@ public class RecordUtils {
 
     /** **/
     public static MetastoreDataRecord buildMetastoreDataRecord() {
-        byte[] value = {1, 3, 5};
+        byte[] val = {1, 3, 5};
 
-        return new MetastoreDataRecord("key", value);
+        return new MetastoreDataRecord("key", val);
     }
 
     /** **/

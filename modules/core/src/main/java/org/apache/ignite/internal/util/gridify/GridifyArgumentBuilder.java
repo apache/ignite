@@ -142,12 +142,12 @@ public final class GridifyArgumentBuilder {
 
         assert paramCls != null;
 
-        Object paramValue = GridifyUtils.collectionToParameter(paramCls, input);
+        Object paramVal = GridifyUtils.collectionToParameter(paramCls, input);
 
-        if (paramValue == null)
+        if (paramVal == null)
             throw new IgniteCheckedException("Failed to create task argument for type: " + paramCls.getName());
 
-        mtdArgs[arg.getParamIndex()] = paramValue;
+        mtdArgs[arg.getParamIndex()] = paramVal;
 
         return res;
     }
@@ -180,12 +180,12 @@ public final class GridifyArgumentBuilder {
 
         assert paramCls != null;
 
-        Object paramValue = GridifyUtils.collectionToParameter(paramCls, input);
+        Object paramVal = GridifyUtils.collectionToParameter(paramCls, input);
 
-        if (paramValue == null)
+        if (paramVal == null)
             throw new IgniteException("Failed to create job argument for type: " + paramCls.getName());
 
-        mtdArgs[arg.getParamIndex()] = paramValue;
+        mtdArgs[arg.getParamIndex()] = paramVal;
 
         return res;
     }

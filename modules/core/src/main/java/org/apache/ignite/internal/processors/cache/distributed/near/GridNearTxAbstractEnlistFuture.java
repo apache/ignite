@@ -376,10 +376,10 @@ public abstract class GridNearTxAbstractEnlistFuture<T> extends GridCacheCompoun
             tx.setRollbackOnly();
 
         synchronized (this) {
-            GridDhtTxAbstractEnlistFuture localFuture0 = localEnlistFuture;
+            GridDhtTxAbstractEnlistFuture locFut0 = localEnlistFuture;
 
-            if (localFuture0 != null && (err != null || cancelled))
-                localFuture0.onDone(cancelled ? new IgniteFutureCancelledCheckedException("Future was cancelled: " + localFuture0) : err);
+            if (locFut0 != null && (err != null || cancelled))
+                locFut0.onDone(cancelled ? new IgniteFutureCancelledCheckedException("Future was cancelled: " + locFut0) : err);
 
             boolean done = super.onDone(res, err, cancelled);
 

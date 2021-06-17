@@ -350,9 +350,9 @@ public class CheckpointHistory {
 
         List<CheckpointEntry> removed = new ArrayList<>();
 
-        for (Iterator<Map.Entry<Long, CheckpointEntry>> iterator = histMap.entrySet().iterator();
-             iterator.hasNext() && removed.size() < countToRemove; ) {
-            Map.Entry<Long, CheckpointEntry> entry = iterator.next();
+        for (Iterator<Map.Entry<Long, CheckpointEntry>> iter = histMap.entrySet().iterator();
+             iter.hasNext() && removed.size() < countToRemove; ) {
+            Map.Entry<Long, CheckpointEntry> entry = iter.next();
 
             CheckpointEntry checkpoint = entry.getValue();
 

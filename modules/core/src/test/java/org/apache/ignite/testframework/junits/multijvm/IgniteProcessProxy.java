@@ -893,17 +893,17 @@ public class IgniteProcessProxy implements IgniteEx {
      * @return {@link IgniteCompute} instance to communicate with remote node.
      */
     public IgniteCompute remoteCompute() {
-        Ignite localJvmGrid = localJvmGrid();
+        Ignite locJvmGrid = localJvmGrid();
 
-        if (localJvmGrid == null)
+        if (locJvmGrid == null)
             return null;
 
-        ClusterGroup grp = localJvmGrid.cluster().forNodeId(id);
+        ClusterGroup grp = locJvmGrid.cluster().forNodeId(id);
 
         if (grp.nodes().isEmpty())
             throw new IllegalStateException("Could not found node with id=" + id + ".");
 
-        return localJvmGrid.compute(grp);
+        return locJvmGrid.compute(grp);
     }
 
     /**

@@ -98,8 +98,8 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
 
         int found = 0;
 
-        for (String message : messages) {
-            if (message.contains("Unordered map java.util.HashMap is used for putAll operation on cache exact. " +
+        for (String msg : messages) {
+            if (msg.contains("Unordered map java.util.HashMap is used for putAll operation on cache exact. " +
                 "This can lead to a distributed deadlock. Switch to a sorted map like TreeMap instead."))
                 found++;
         }
@@ -142,9 +142,9 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
 
         assertEquals(2, c.size());
 
-        for (String message : messages) {
-            assertFalse(message.contains("Unordered map"));
-            assertFalse(message.contains("operation on cache"));
+        for (String msg : messages) {
+            assertFalse(msg.contains("Unordered map"));
+            assertFalse(msg.contains("operation on cache"));
         }
     }
 
@@ -189,8 +189,8 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
 
         int found = 0;
 
-        for (String message : messages) {
-            if (message.contains("Unordered collection java.util.HashSet is used for invokeAll operation on cache invoke. "))
+        for (String msg : messages) {
+            if (msg.contains("Unordered collection java.util.HashSet is used for invokeAll operation on cache invoke. "))
                 found++;
         }
 
@@ -225,11 +225,11 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
 
         int found = 0;
 
-        for (String message : messages) {
-            if (message.contains("Unordered collection "))
+        for (String msg : messages) {
+            if (msg.contains("Unordered collection "))
                 found++;
 
-            if (message.contains("operation on cache"))
+            if (msg.contains("operation on cache"))
                 found++;
         }
 
@@ -267,10 +267,10 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
 
         assertEquals(0, c.size());
 
-        for (String message : messages) {
-            assertFalse(message.contains("Unordered collection "));
+        for (String msg : messages) {
+            assertFalse(msg.contains("Unordered collection "));
 
-            assertFalse(message.contains("operation on cache"));
+            assertFalse(msg.contains("operation on cache"));
         }
     }
 
@@ -305,10 +305,10 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
 
         assertEquals(0, c.size());
 
-        for (String message : messages) {
-            assertFalse(message.contains("Unordered "));
+        for (String msg : messages) {
+            assertFalse(msg.contains("Unordered "));
 
-            assertFalse(message.contains("operation on cache"));
+            assertFalse(msg.contains("operation on cache"));
         }
     }
 
@@ -338,11 +338,11 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
 
         int found = 0;
 
-        for (String message : messages) {
-            if (message.contains("Unordered collection "))
+        for (String msg : messages) {
+            if (msg.contains("Unordered collection "))
                 found++;
 
-            if (message.contains("operation on cache"))
+            if (msg.contains("operation on cache"))
                 found++;
         }
 
@@ -380,8 +380,8 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
 
         int found = 0;
 
-        for (String message : messages) {
-            if (message.contains("Unordered collection java.util.HashSet is used for getAll operation on cache getTx."))
+        for (String msg : messages) {
+            if (msg.contains("Unordered collection java.util.HashSet is used for getAll operation on cache getTx."))
                 found++;
         }
 
@@ -419,10 +419,10 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
 
         assertEquals(0, c.size());
 
-        for (String message : messages) {
-            assertFalse(message.contains("Unordered "));
+        for (String msg : messages) {
+            assertFalse(msg.contains("Unordered "));
 
-            assertFalse(message.contains("operation on cache"));
+            assertFalse(msg.contains("operation on cache"));
         }
     }
 }

@@ -95,8 +95,8 @@ public class CacheDistributionTask extends VisorMultiNodeTask<CacheDistributionT
                 if (arg.getUserAttributes() != null) {
                     info.setUserAttributes(new TreeMap<>());
 
-                    for (String userAttribute : arg.getUserAttributes())
-                        info.getUserAttributes().put(userAttribute, (String)node.attributes().get(userAttribute));
+                    for (String userAttr : arg.getUserAttributes())
+                        info.getUserAttributes().put(userAttr, (String)node.attributes().get(userAttr));
                 }
 
                 info.setGroups(new ArrayList<>());

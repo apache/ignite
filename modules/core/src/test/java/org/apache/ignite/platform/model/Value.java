@@ -40,8 +40,8 @@ public class Value {
             return true;
         if (o == null || getClass() != o.getClass())
             return false;
-        Value value = (Value)o;
-        return Objects.equals(val, value.val);
+        Value val = (Value)o;
+        return Objects.equals(this.val, val.val);
     }
 
     /** {@inheritDoc} */

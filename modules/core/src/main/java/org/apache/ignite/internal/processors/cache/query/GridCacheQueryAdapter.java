@@ -657,12 +657,12 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                 if (prj != null || part != null)
                     return nodes(cctx, prj, part);
 
-                GridDhtPartitionTopology topology = cctx.topology();
+                GridDhtPartitionTopology top = cctx.topology();
 
-                if (cctx.affinityNode() && !topology.localPartitionMap().hasMovingPartitions())
+                if (cctx.affinityNode() && !top.localPartitionMap().hasMovingPartitions())
                     return Collections.singletonList(cctx.localNode());
 
-                topology.readLock();
+                top.readLock();
 
                 try {
 
@@ -673,14 +673,14 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                     Collections.shuffle(nodes);
 
                     for (ClusterNode node : nodes) {
-                        if (!topology.partitions(node.id()).hasMovingPartitions())
+                        if (!top.partitions(node.id()).hasMovingPartitions())
                             return Collections.singletonList(node);
                     }
 
                     return affNodes;
                 }
                 finally {
-                    topology.readUnlock();
+                    top.readUnlock();
                 }
 
             case PARTITIONED:

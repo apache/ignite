@@ -1699,9 +1699,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 IgniteThread.onEntryProcessorEntered(true);
 
                 try {
-                    EntryProcessor<Object, Object, Object> processor = t.get1();
+                    EntryProcessor<Object, Object, Object> proc = t.get1();
 
-                    procRes = processor.process(invokeEntry, t.get2());
+                    procRes = proc.process(invokeEntry, t.get2());
 
                     val = invokeEntry.getValue();
 

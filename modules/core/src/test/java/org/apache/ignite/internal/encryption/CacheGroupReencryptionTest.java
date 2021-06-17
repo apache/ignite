@@ -791,8 +791,8 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
      */
     private boolean isReencryptionInProgress(Iterable<String> cacheGroups) {
         for (Ignite node : G.allGrids()) {
-            for (String groupName : cacheGroups) {
-                if (isReencryptionInProgress((IgniteEx)node, CU.cacheId(groupName)))
+            for (String grpName : cacheGroups) {
+                if (isReencryptionInProgress((IgniteEx)node, CU.cacheId(grpName)))
                     return true;
             }
         }

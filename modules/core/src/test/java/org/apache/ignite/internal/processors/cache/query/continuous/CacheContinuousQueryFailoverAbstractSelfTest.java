@@ -1211,8 +1211,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                 if (dup) {
                     for (List<CacheEntryEvent<?, ?>> e : lsnr.evts.values()) {
                         if (!e.isEmpty()) {
-                            for (CacheEntryEvent<?, ?> event : e)
-                                log.error("Got duplicate event: " + event);
+                            for (CacheEntryEvent<?, ?> evt : e)
+                                log.error("Got duplicate event: " + evt);
                         }
                     }
                 }
@@ -1704,7 +1704,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
             boolean filtered = false;
 
-            boolean processorPut = false;
+            boolean procPut = false;
 
             while (System.currentTimeMillis() < stopTime) {
                 Integer key = rnd.nextInt(PARTS);
@@ -1760,7 +1760,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
                 while (!updated) {
                     try {
-                        if (processorPut && prevVal != null) {
+                        if (procPut && prevVal != null) {
                             qryClnCache.invoke(key, new CacheEntryProcessor<Object, Object, Void>() {
                                 @Override public Void process(MutableEntry<Object, Object> entry,
                                     Object... arguments) throws EntryProcessorException {
@@ -1781,7 +1781,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                     }
                 }
 
-                processorPut = !processorPut;
+                procPut = !procPut;
 
                 vals.put(key, val);
 

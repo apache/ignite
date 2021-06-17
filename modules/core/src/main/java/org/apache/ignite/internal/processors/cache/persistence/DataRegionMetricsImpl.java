@@ -531,14 +531,14 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
             return pageMetrics;
 
         synchronized (cacheGrpMetricsLock) {
-            IntMap<PageMetrics> localCacheGrpMetrics = cacheGrpMetrics;
+            IntMap<PageMetrics> locCacheGrpMetrics = cacheGrpMetrics;
 
             // double check
-            PageMetrics doubleCheckPageMetrics = localCacheGrpMetrics.get(cacheGrpId);
+            PageMetrics doubleCheckPageMetrics = locCacheGrpMetrics.get(cacheGrpId);
             if (doubleCheckPageMetrics != null)
                 return doubleCheckPageMetrics;
 
-            IntMap<PageMetrics> copy = new IntHashMap<>(localCacheGrpMetrics);
+            IntMap<PageMetrics> copy = new IntHashMap<>(locCacheGrpMetrics);
 
             PageMetrics newMetrics = Optional.of(kernalCtx)
                 // both cache and group descriptor can be null

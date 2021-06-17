@@ -327,12 +327,12 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
         AbstractFileDescriptor fd = desc;
         SegmentIO fileIO = null;
-        SegmentHeader segmentHeader;
+        SegmentHeader segmentHdr;
         while (true) {
             try {
                 fileIO = fd.toReadOnlyIO(ioFactory);
 
-                segmentHeader = readSegmentHeader(fileIO, FILE_INPUT_FACTORY);
+                segmentHdr = readSegmentHeader(fileIO, FILE_INPUT_FACTORY);
 
                 break;
             }
@@ -350,17 +350,17 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             }
         }
 
-        return initReadHandle(fd, start, fileIO, segmentHeader);
+        return initReadHandle(fd, start, fileIO, segmentHdr);
     }
 
     /** {@inheritDoc} */
     @Override protected @NotNull WALRecord postProcessRecord(@NotNull final WALRecord rec) {
         GridKernalContext kernalCtx = sharedCtx.kernalContext();
-        IgniteCacheObjectProcessor processor = kernalCtx.cacheObjects();
+        IgniteCacheObjectProcessor proc = kernalCtx.cacheObjects();
 
-        if (processor != null && (rec.type() == RecordType.DATA_RECORD || rec.type() == RecordType.MVCC_DATA_RECORD)) {
+        if (proc != null && (rec.type() == RecordType.DATA_RECORD || rec.type() == RecordType.MVCC_DATA_RECORD)) {
             try {
-                return postProcessDataRecord((DataRecord)rec, kernalCtx, processor);
+                return postProcessDataRecord((DataRecord)rec, kernalCtx, proc);
             }
             catch (Exception e) {
                 log.error("Failed to perform post processing for data record ", e);

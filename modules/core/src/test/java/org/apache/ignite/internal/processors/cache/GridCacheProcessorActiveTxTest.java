@@ -141,14 +141,14 @@ public class GridCacheProcessorActiveTxTest extends GridCommonAbstractTest {
      */
     @Test
     public void testDynamicCacheClose() {
-        GridCacheProcessor cacheProcessor = NODE.context().cache();
+        GridCacheProcessor cacheProc = NODE.context().cache();
 
         String cacheName = DEFAULT_CACHE_NAME;
 
         NODE.getOrCreateCache(new CacheConfiguration<>(cacheName));
 
         opInActiveTx(
-            () -> cacheProcessor.dynamicCloseCache(cacheName),
+            () -> cacheProc.dynamicCloseCache(cacheName),
             cacheName,
             "dynamicCloseCache"
         );

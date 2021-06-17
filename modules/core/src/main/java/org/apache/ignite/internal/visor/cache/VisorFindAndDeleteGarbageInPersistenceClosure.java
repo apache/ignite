@@ -126,7 +126,7 @@ public class VisorFindAndDeleteGarbageInPersistenceClosure implements IgniteCall
                 }
             }));
 
-        Map<Integer, Map<Integer, Long>> grpIdToPartIdToGarbageCount = new HashMap<>();
+        Map<Integer, Map<Integer, Long>> grpIdToPartIdToGarbageCnt = new HashMap<>();
 
         int curPart = 0;
 
@@ -137,7 +137,7 @@ public class VisorFindAndDeleteGarbageInPersistenceClosure implements IgniteCall
                 Map<Integer, Map<Integer, Long>> partRes = fut.get();
 
                 for (Map.Entry<Integer, Map<Integer, Long>> e : partRes.entrySet()) {
-                    Map<Integer, Long> map = grpIdToPartIdToGarbageCount.computeIfAbsent(e.getKey(), (x) -> new HashMap<>());
+                    Map<Integer, Long> map = grpIdToPartIdToGarbageCnt.computeIfAbsent(e.getKey(), (x) -> new HashMap<>());
 
                     for (Map.Entry<Integer, Long> entry : e.getValue().entrySet())
                         map.compute(entry.getKey(), (k, v) -> (v == null ? 0 : v) + entry.getValue());
@@ -145,7 +145,7 @@ public class VisorFindAndDeleteGarbageInPersistenceClosure implements IgniteCall
             }
 
             if (deleteGarbage)
-                cleanup(grpIdToPartIdToGarbageCount);
+                cleanup(grpIdToPartIdToGarbageCnt);
 
             log.warning("VisorFindAndDeleteGarbageInPersistenceClosure finished: processed " + totalPartitions + " partitions.");
         }
@@ -156,7 +156,7 @@ public class VisorFindAndDeleteGarbageInPersistenceClosure implements IgniteCall
             throw unwrapFutureException(e);
         }
 
-        return new VisorFindAndDeleteGarbageInPersistenceJobResult(grpIdToPartIdToGarbageCount);
+        return new VisorFindAndDeleteGarbageInPersistenceJobResult(grpIdToPartIdToGarbageCnt);
     }
 
     /**
@@ -169,21 +169,21 @@ public class VisorFindAndDeleteGarbageInPersistenceClosure implements IgniteCall
         for (Map.Entry<Integer, Map<Integer, Long>> e : grpIdToPartIdToGarbageCount.entrySet()) {
             int grpId = e.getKey();
 
-            CacheGroupContext groupContext = ignite.context().cache().cacheGroup(grpId);
+            CacheGroupContext grpCtx = ignite.context().cache().cacheGroup(grpId);
 
-            assert groupContext != null;
+            assert grpCtx != null;
 
             for (Integer cacheId : e.getValue().keySet()) {
-                groupContext.shared().database().checkpointReadLock();
+                grpCtx.shared().database().checkpointReadLock();
                 try {
-                    groupContext.offheap().stopCache(cacheId, true);
+                    grpCtx.offheap().stopCache(cacheId, true);
                 }
                 finally {
-                    groupContext.shared().database().checkpointReadUnlock();
+                    grpCtx.shared().database().checkpointReadUnlock();
                 }
 
                 ((GridCacheOffheapManager)
-                    groupContext.offheap()).findAndCleanupLostIndexesForStoppedCache(cacheId);
+                    grpCtx.offheap()).findAndCleanupLostIndexesForStoppedCache(cacheId);
             }
         }
     }
@@ -218,16 +218,16 @@ public class VisorFindAndDeleteGarbageInPersistenceClosure implements IgniteCall
 
         if (!F.isEmpty(grpNames)) {
             for (String grpName : grpNames) {
-                CacheGroupContext groupContext = ignite.context().cache().cacheGroup(CU.cacheId(grpName));
+                CacheGroupContext grpCtx = ignite.context().cache().cacheGroup(CU.cacheId(grpName));
 
-                if (groupContext == null) {
+                if (grpCtx == null) {
                     missingCacheGroups.add(grpName);
 
                     continue;
                 }
 
-                if (groupContext.sharedGroup())
-                    grpIds.add(groupContext.groupId());
+                if (grpCtx.sharedGroup())
+                    grpIds.add(grpCtx.groupId());
                 else
                     log.warning("Group[name=" + grpName + "] is not shared one, it couldn't contain garbage from destroyed caches.");
             }

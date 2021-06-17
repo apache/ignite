@@ -221,8 +221,8 @@ public class ComputeTaskTest extends AbstractThinClientTest {
         try (IgniteClient client = startClient(0)) {
             IgniteClientFuture<Object> fut = client.compute().executeAsync2(TestExceptionalTask.class.getName(), null);
 
-            String errMessage = fut.handle((f, t) -> t.getMessage()).toCompletableFuture().get(2, TimeUnit.SECONDS);
-            assertTrue(errMessage.contains("cause=Foo"));
+            String errMsg = fut.handle((f, t) -> t.getMessage()).toCompletableFuture().get(2, TimeUnit.SECONDS);
+            assertTrue(errMsg.contains("cause=Foo"));
         }
     }
 

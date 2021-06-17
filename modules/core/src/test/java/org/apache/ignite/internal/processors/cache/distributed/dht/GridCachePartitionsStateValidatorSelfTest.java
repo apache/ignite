@@ -61,14 +61,14 @@ public class GridCachePartitionsStateValidatorSelfTest extends GridCommonAbstrac
         Mockito.when(topologyMock.groupId()).thenReturn(0);
         Mockito.when(topologyMock.partitions()).thenReturn(3);
 
-        List<GridDhtLocalPartition> localPartitions = Lists.newArrayList(
+        List<GridDhtLocalPartition> locPartitions = Lists.newArrayList(
             partitionMock(0, 1, 1),
             partitionMock(1, 2, 2),
             partitionMock(2, 3, 3)
         );
 
-        Mockito.when(topologyMock.localPartitions()).thenReturn(localPartitions);
-        Mockito.when(topologyMock.currentLocalPartitions()).thenReturn(localPartitions);
+        Mockito.when(topologyMock.localPartitions()).thenReturn(locPartitions);
+        Mockito.when(topologyMock.currentLocalPartitions()).thenReturn(locPartitions);
     }
 
     /**

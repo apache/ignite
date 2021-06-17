@@ -308,10 +308,10 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
                 "Please try again later.");
 
         if (!metastorage.compareAndSet(CLUSTER_ID_TAG_KEY, oldTag, new ClusterIdAndTag(oldTag.id(), newTag))) {
-            ClusterIdAndTag concurrentValue = metastorage.read(CLUSTER_ID_TAG_KEY);
+            ClusterIdAndTag concurrentVal = metastorage.read(CLUSTER_ID_TAG_KEY);
 
             throw new IgniteCheckedException("Cluster tag has been concurrently updated to different value: " +
-                concurrentValue.tag());
+                concurrentVal.tag());
         }
         else
             cluster.setTag(newTag);

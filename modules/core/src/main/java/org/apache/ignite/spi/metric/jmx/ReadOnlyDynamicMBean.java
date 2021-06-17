@@ -60,8 +60,8 @@ public abstract class ReadOnlyDynamicMBean implements DynamicMBean {
         AttributeList list = new AttributeList();
 
         try {
-            for (String attribute : attributes) {
-                Object val = getAttribute(attribute);
+            for (String attr : attributes) {
+                Object val = getAttribute(attr);
 
                 list.add(val);
             }

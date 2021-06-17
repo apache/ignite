@@ -453,9 +453,9 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         Map strMap = new TreeMap<>();
         List strList = new ArrayList<>(limit + 1);
 
-        TestClass1 testClass = new TestClass1();
-        testClass.strMap = strMap;
-        testClass.strListIncl = strList;
+        TestClass1 testCls = new TestClass1();
+        testCls.strMap = strMap;
+        testCls.strListIncl = strList;
 
         Map m = new TreeMap();
         m.put("m", strMap);
@@ -471,7 +471,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
             strList.add("e");
         }
 
-        checkColAndMap(testClass);
+        checkColAndMap(testCls);
     }
 
     /**

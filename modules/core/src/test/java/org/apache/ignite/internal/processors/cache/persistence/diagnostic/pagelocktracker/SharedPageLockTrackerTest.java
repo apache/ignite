@@ -309,11 +309,11 @@ public class SharedPageLockTrackerTest extends AbstractPageLockTest {
     public void testMemoryLeakOnThreadTerminates() throws Exception {
         int threadLimits = 1000;
         int timeOutWorkerInterval = 10_000;
-        Consumer<Set<SharedPageLockTracker.State>> handler = (threads) -> {
+        Consumer<Set<SharedPageLockTracker.State>> hnd = (threads) -> {
         };
 
         SharedPageLockTracker sharedPageLockTracker = new SharedPageLockTracker(
-            threadLimits, timeOutWorkerInterval, handler, new MemoryCalculator());
+            threadLimits, timeOutWorkerInterval, hnd, new MemoryCalculator());
 
         int threads = 10_000;
 

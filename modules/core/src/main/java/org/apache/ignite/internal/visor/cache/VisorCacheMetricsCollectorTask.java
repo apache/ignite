@@ -102,9 +102,9 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<VisorCach
 
             assert cacheNames != null;
 
-            GridCacheProcessor cacheProcessor = ignite.context().cache();
+            GridCacheProcessor cacheProc = ignite.context().cache();
 
-            Collection<IgniteCacheProxy<?, ?>> caches = cacheProcessor.jcaches();
+            Collection<IgniteCacheProxy<?, ?>> caches = cacheProc.jcaches();
 
             Collection<VisorCacheMetrics> res = new ArrayList<>(caches.size());
 

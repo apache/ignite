@@ -2027,16 +2027,16 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (op == GridCacheOperation.TRANSFORM) {
                 transformCloClsName = EntryProcessorResourceInjectorProxy.unwrap(writeObj).getClass().getName();
 
-                EntryProcessor<Object, Object, ?> entryProcessor = (EntryProcessor<Object, Object, ?>)writeObj;
+                EntryProcessor<Object, Object, ?> entryProc = (EntryProcessor<Object, Object, ?>)writeObj;
 
-                assert entryProcessor != null;
+                assert entryProc != null;
 
                 CacheInvokeEntry<Object, Object> entry = new CacheInvokeEntry<>(key, old, version(), keepBinary, this);
 
                 IgniteThread.onEntryProcessorEntered(false);
 
                 try {
-                    Object computed = entryProcessor.process(entry, invokeArgs);
+                    Object computed = entryProc.process(entry, invokeArgs);
 
                     transformOp = true;
 
@@ -2370,7 +2370,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         CacheObject evtVal;
 
                         if (op == GridCacheOperation.TRANSFORM) {
-                            EntryProcessor<Object, Object, ?> entryProcessor =
+                            EntryProcessor<Object, Object, ?> entryProc =
                                 (EntryProcessor<Object, Object, ?>)writeObj;
 
                             CacheInvokeEntry<Object, Object> entry =
@@ -2379,7 +2379,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             IgniteThread.onEntryProcessorEntered(true);
 
                             try {
-                                entryProcessor.process(entry, invokeArgs);
+                                entryProc.process(entry, invokeArgs);
 
                                 evtVal = entry.modified() ?
                                     cctx.toCacheObject(cctx.unwrapTemporary(entry.getValue())) : prevVal;
@@ -3375,16 +3375,16 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 @Override public boolean apply(@Nullable CacheDataRow row) {
                     boolean update0;
 
-                    GridCacheVersion currentVer = row != null ? row.version() : GridCacheMapEntry.this.ver;
+                    GridCacheVersion curVer = row != null ? row.version() : GridCacheMapEntry.this.ver;
 
-                    boolean isStartVer = cctx.shared().versions().isStartVersion(currentVer);
+                    boolean isStartVer = cctx.shared().versions().isStartVersion(curVer);
 
                     if (cctx.group().persistenceEnabled()) {
                         if (!isStartVer) {
                             if (cctx.atomic())
-                                update0 = ATOMIC_VER_COMPARATOR.compare(currentVer, ver) < 0;
+                                update0 = ATOMIC_VER_COMPARATOR.compare(curVer, ver) < 0;
                             else
-                                update0 = currentVer.compareTo(ver) < 0;
+                                update0 = curVer.compareTo(ver) < 0;
                         }
                         else
                             update0 = true;
@@ -5284,10 +5284,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 else if (res.resultType() == ResultType.LOCKED) {
                     entry.unlockEntry();
 
-                    IgniteInternalFuture<?> lockFuture =
+                    IgniteInternalFuture<?> lockFut0 =
                         cctx.kernalContext().coordinators().waitForLock(cctx, mvccVer, res.resultVersion());
 
-                    lockFuture.listen(this);
+                    lockFut0.listen(this);
 
                     return;
                 }
@@ -6781,19 +6781,19 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
          * @return Entry processor return value.
          */
         private IgniteBiTuple<Object, Exception> runEntryProcessor(CacheInvokeEntry<Object, Object> invokeEntry) {
-            EntryProcessor<Object, Object, ?> entryProcessor = SecurityUtils.sandboxedProxy(
+            EntryProcessor<Object, Object, ?> entryProc = SecurityUtils.sandboxedProxy(
                 entry.context().kernalContext(), EntryProcessor.class, (EntryProcessor<Object, Object, ?>)writeObj);
 
             IgniteThread.onEntryProcessorEntered(true);
 
             if (invokeEntry.cctx.kernalContext().deploy().enabled() &&
-                invokeEntry.cctx.kernalContext().deploy().isGlobalLoader(entryProcessor.getClass().getClassLoader())) {
+                invokeEntry.cctx.kernalContext().deploy().isGlobalLoader(entryProc.getClass().getClassLoader())) {
                 U.restoreDeploymentContext(invokeEntry.cctx.kernalContext(), invokeEntry.cctx.kernalContext()
-                    .deploy().getClassLoaderId(entryProcessor.getClass().getClassLoader()));
+                    .deploy().getClassLoaderId(entryProc.getClass().getClassLoader()));
             }
 
             try {
-                Object computed = entryProcessor.process(invokeEntry, invokeArgs);
+                Object computed = entryProc.process(invokeEntry, invokeArgs);
 
                 if (invokeEntry.modified()) {
                     GridCacheContext cctx = entry.context();

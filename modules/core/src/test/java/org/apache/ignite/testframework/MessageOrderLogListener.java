@@ -139,8 +139,8 @@ public class MessageOrderLogListener extends LogListener {
                 return true;
 
             if (groups != null) {
-                for (MessageGroup group : groups) {
-                    if (!matched.contains(group) || !group.check())
+                for (MessageGroup grp : groups) {
+                    if (!matched.contains(grp) || !grp.check())
                         return false;
                 }
 
@@ -159,8 +159,8 @@ public class MessageOrderLogListener extends LogListener {
             lastAcceptedIdx = 0;
 
             if (groups != null) {
-                for (MessageGroup group : groups)
-                    group.reset();
+                for (MessageGroup grp : groups)
+                    grp.reset();
             }
 
             for (Iterator<MessageGroup> iter = matched.iterator(); iter.hasNext();) {
@@ -195,15 +195,15 @@ public class MessageOrderLogListener extends LogListener {
                 if (groups != null) {
                     int i = 0;
 
-                    for (MessageGroup group : groups) {
+                    for (MessageGroup grp : groups) {
                         if (i < lastAcceptedIdx && ordered) {
                             i++;
 
                             continue;
                         }
 
-                        if (group.internalAccept(s)) {
-                            matched.add(group);
+                        if (grp.internalAccept(s)) {
+                            matched.add(grp);
 
                             lastAcceptedIdx = i;
 

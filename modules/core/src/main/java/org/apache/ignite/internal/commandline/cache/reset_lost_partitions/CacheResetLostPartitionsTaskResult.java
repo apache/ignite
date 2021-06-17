@@ -54,8 +54,8 @@ public class CacheResetLostPartitionsTaskResult extends VisorDataTransferObject 
         if (msgMap == null || msgMap.isEmpty())
             return;
 
-        for (String message : msgMap.values())
-            out.println(message);
+        for (String msg : msgMap.values())
+            out.println(msg);
     }
 
     /** */

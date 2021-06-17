@@ -190,7 +190,7 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
      * @return {@code false} if need to remap.
      */
     private boolean onResponse0(@NotNull MvccSnapshot res, @NotNull MvccSnapshotResponseListener lsnr) {
-        boolean ackQueryDone = false, needRemap = false;
+        boolean ackQryDone = false, needRemap = false;
 
         synchronized (this) {
             assert snapshot(state) == null : "[this=" + this + ", rcvdVer=" + res + "]";
@@ -202,14 +202,14 @@ public class MvccQueryTrackerImpl implements MvccQueryTracker {
             }
 
             if (crdVer != 0)
-                ackQueryDone = true;
+                ackQryDone = true;
             else if (!done)
                 needRemap = true;
         }
 
         if (needRemap) // Coordinator is failed or reassigned, need remap.
             tryRemap(coordinator().topologyVersion(), lsnr);
-        else if (ackQueryDone) // Coordinator is not failed, but the tracker is already closed.
+        else if (ackQryDone) // Coordinator is not failed, but the tracker is already closed.
             ackQueryDone(res);
 
         return false;

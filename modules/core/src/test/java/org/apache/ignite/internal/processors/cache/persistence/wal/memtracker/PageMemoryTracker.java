@@ -791,13 +791,13 @@ public class PageMemoryTracker implements IgnitePlugin {
 
         IgnitePageStoreManager pageStoreMgr = gridCtx.cache().context().pageStore();
 
-        for (Map.Entry<Integer, Long> groupPages : pagesByGroups.entrySet()) {
-            int grpId = groupPages.getKey();
+        for (Map.Entry<Integer, Long> grpPages : pagesByGroups.entrySet()) {
+            int grpId = grpPages.getKey();
             long grpPagesAllocated = pageStoreMgr.pagesAllocated(grpId);
 
-            if (grpPagesAllocated != groupPages.getValue()) {
+            if (grpPagesAllocated != grpPages.getValue()) {
                 log.error(">>> Page count for groupId " + grpId + ": allocated=" + grpPagesAllocated +
-                    ", tracked=" + groupPages.getValue());
+                    ", tracked=" + grpPages.getValue());
 
                 Map<Integer, Long> pagesByParts = pages.keySet().stream().filter(id -> id.groupId() == grpId)
                     .collect(Collectors.groupingBy(id -> PageIdUtils.partId(id.pageId()), Collectors.counting()));

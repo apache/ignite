@@ -61,8 +61,8 @@ public class DiscoveryClientSocketTest {
      */
     @Before
     public void before() {
-        SslContextFactory socketFactory = (SslContextFactory)GridTestUtils.sslTrustedFactory("node01", "trustone");
-        SSLContext sslCtx = socketFactory.create();
+        SslContextFactory sockFactory = (SslContextFactory)GridTestUtils.sslTrustedFactory("node01", "trustone");
+        SSLContext sslCtx = sockFactory.create();
 
         sslSrvSockFactory = sslCtx.getServerSocketFactory();
         sslSockFactory = sslCtx.getSocketFactory();

@@ -64,8 +64,8 @@ public class CacheResetLostPartitionsTask extends VisorOneNodeTask<CacheResetLos
                 res.setMessageMap(new HashMap<>());
 
                 if (!F.isEmpty(arg.getCaches())) {
-                    for (String groupName : arg.getCaches()) {
-                        final int grpId = CU.cacheId(groupName);
+                    for (String grpName : arg.getCaches()) {
+                        final int grpId = CU.cacheId(grpName);
 
                         CacheGroupContext grp = ignite.context().cache().cacheGroup(grpId);
 
@@ -77,14 +77,14 @@ public class CacheResetLostPartitionsTask extends VisorOneNodeTask<CacheResetLos
                             if (!F.isEmpty(cacheNames)) {
                                 ignite.resetLostPartitions(cacheNames);
 
-                                res.put(groupName, String.format("Reset LOST-partitions performed successfully. " +
+                                res.put(grpName, String.format("Reset LOST-partitions performed successfully. " +
                                         "Cache group (name = '%s', id = %d), caches (%s).",
-                                    groupName, grpId, cacheNames));
+                                    grpName, grpId, cacheNames));
                             }
                         }
                         else
-                            res.put(groupName, String.format("Cache group (name = '%s', id = %d) not found.",
-                                groupName, grpId));
+                            res.put(grpName, String.format("Cache group (name = '%s', id = %d) not found.",
+                                grpName, grpId));
                     }
                 }
 

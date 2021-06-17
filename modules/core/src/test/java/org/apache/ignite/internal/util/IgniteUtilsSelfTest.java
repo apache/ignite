@@ -763,9 +763,9 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testResolveLocalAddresses() throws Exception {
-        InetAddress inetAddress = InetAddress.getByName("0.0.0.0");
+        InetAddress inetAddr = InetAddress.getByName("0.0.0.0");
 
-        IgniteBiTuple<Collection<String>, Collection<String>> addrs = U.resolveLocalAddresses(inetAddress);
+        IgniteBiTuple<Collection<String>, Collection<String>> addrs = U.resolveLocalAddresses(inetAddr);
 
         Collection<String> hostNames = addrs.get2();
 
@@ -980,12 +980,12 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     public void testDoInParallel() throws Throwable {
         CyclicBarrier barrier = new CyclicBarrier(3);
 
-        ExecutorService executorService = Executors.newFixedThreadPool(3,
+        ExecutorService executorSrvc = Executors.newFixedThreadPool(3,
             new IgniteThreadFactory("testscope", "ignite-utils-test"));
 
         try {
             IgniteUtils.doInParallel(3,
-                executorService,
+                executorSrvc,
                 asList(1, 2, 3),
                 i -> {
                     try {
@@ -999,7 +999,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
                 }
             );
         } finally {
-            executorService.shutdownNow();
+            executorSrvc.shutdownNow();
         }
     }
 
@@ -1010,12 +1010,12 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     public void testDoInParallelBatch() {
         CyclicBarrier barrier = new CyclicBarrier(3);
 
-        ExecutorService executorService = Executors.newFixedThreadPool(3,
+        ExecutorService executorSrvc = Executors.newFixedThreadPool(3,
             new IgniteThreadFactory("testscope", "ignite-utils-test"));
 
         try {
             IgniteUtils.doInParallel(2,
-                executorService,
+                executorSrvc,
                 asList(1, 2, 3),
                 i -> {
                     try {
@@ -1034,7 +1034,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         catch (Exception e) {
             assertTrue(e.toString(), X.hasCause(e, TimeoutException.class));
         } finally {
-            executorService.shutdownNow();
+            executorSrvc.shutdownNow();
         }
     }
 
@@ -1075,15 +1075,15 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testDoInParallelResultsOrder() throws IgniteCheckedException {
-        ExecutorService executorService = Executors.newFixedThreadPool(4,
+        ExecutorService executorSrvc = Executors.newFixedThreadPool(4,
             new IgniteThreadFactory("testscope", "ignite-utils-test"));
 
         try {
             for (int parallelism = 1; parallelism < 16; parallelism++)
                 for (int size = 0; size < 10_000; size++)
-                    testOrder(executorService, size, parallelism);
+                    testOrder(executorSrvc, size, parallelism);
         } finally {
-            executorService.shutdownNow();
+            executorSrvc.shutdownNow();
         }
     }
 
@@ -1093,14 +1093,14 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     @Test
     public void testDoInParallelWithStealingJob() throws IgniteCheckedException {
         // Pool size should be less that input data collection.
-        ExecutorService executorService = Executors
+        ExecutorService executorSrvc = Executors
             .newSingleThreadExecutor(new IgniteThreadFactory("testscope", "ignite-utils-test"));
 
         CountDownLatch mainThreadLatch = new CountDownLatch(1);
         CountDownLatch poolThreadLatch = new CountDownLatch(1);
 
         // Busy one thread from the pool.
-        executorService.submit(new Runnable() {
+        executorSrvc.submit(new Runnable() {
             @Override public void run() {
                 try {
                     poolThreadLatch.await();
@@ -1121,7 +1121,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         AtomicInteger poolThreadCnt = new AtomicInteger();
 
         Collection<Integer> res = U.doInParallel(10,
-            executorService,
+            executorSrvc,
             data,
             new IgniteThrowableFunction<Integer, Integer>() {
                 @Override public Integer apply(Integer cnt) throws IgniteInterruptedCheckedException {
@@ -1166,12 +1166,12 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     @Test
     public void testDoInParallelWithStealingJobRunTaskInExecutor() throws Exception {
         // Pool size should be less that input data collection.
-        ExecutorService executorService = Executors.newFixedThreadPool(2,
+        ExecutorService executorSrvc = Executors.newFixedThreadPool(2,
             new IgniteThreadFactory("testscope", "ignite-utils-test"));
 
-        Future<?> f1 = executorService.submit(() -> runTask(executorService));
-        Future<?> f2 = executorService.submit(() -> runTask(executorService));
-        Future<?> f3 = executorService.submit(() -> runTask(executorService));
+        Future<?> f1 = executorSrvc.submit(() -> runTask(executorSrvc));
+        Future<?> f2 = executorSrvc.submit(() -> runTask(executorSrvc));
+        Future<?> f3 = executorSrvc.submit(() -> runTask(executorSrvc));
 
         f1.get();
         f2.get();
@@ -1264,19 +1264,19 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testDoInParallelException() {
-        String expectedException = "ExpectedException";
+        String expectedE = "ExpectedException";
 
-        ExecutorService executorService = Executors
+        ExecutorService executorSrvc = Executors
             .newSingleThreadExecutor(new IgniteThreadFactory("testscope", "ignite-utils-test"));
 
         try {
             IgniteUtils.doInParallel(
                 1,
-                executorService,
+                executorSrvc,
                 asList(1, 2, 3),
                 i -> {
                     if (Integer.valueOf(1).equals(i))
-                        throw new IgniteCheckedException(expectedException);
+                        throw new IgniteCheckedException(expectedE);
 
                     return null;
                 }
@@ -1285,9 +1285,9 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
             fail("Should throw ParallelExecutionException");
         }
         catch (IgniteCheckedException e) {
-            assertEquals(expectedException, e.getMessage());
+            assertEquals(expectedE, e.getMessage());
         } finally {
-            executorService.shutdownNow();
+            executorSrvc.shutdownNow();
         }
     }
 

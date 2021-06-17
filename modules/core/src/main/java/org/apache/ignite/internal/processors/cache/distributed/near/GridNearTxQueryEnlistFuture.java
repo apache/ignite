@@ -139,7 +139,7 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
 
             int idx = 0; boolean first = true, clientFirst = false;
 
-            GridDhtTxQueryEnlistFuture localFut = null;
+            GridDhtTxQueryEnlistFuture locFut = null;
 
             for (Map.Entry<ClusterNode, IntArrayHolder> entry : map.entrySet()) {
                 MiniFuture mini; ClusterNode node = entry.getKey(); IntArrayHolder parts = entry.getValue();
@@ -147,7 +147,7 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
                 add(mini = new MiniFuture(node));
 
                 if (node.isLocal()) {
-                    localFut = new GridDhtTxQueryEnlistFuture(
+                    locFut = new GridDhtTxQueryEnlistFuture(
                         cctx.localNode().id(),
                         lockVer,
                         mvccSnapshot,
@@ -165,9 +165,9 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
                         remainingTime(),
                         cctx);
 
-                    updateLocalFuture(localFut);
+                    updateLocalFuture(locFut);
 
-                    localFut.listen(new CI1<IgniteInternalFuture<Long>>() {
+                    locFut.listen(new CI1<IgniteInternalFuture<Long>>() {
                         @Override public void apply(IgniteInternalFuture<Long> fut) {
                             assert fut.error() != null || fut.result() != null : fut;
 
@@ -222,8 +222,8 @@ public class GridNearTxQueryEnlistFuture extends GridNearTxQueryAbstractEnlistFu
 
             markInitialized();
 
-            if (localFut != null)
-                localFut.init();
+            if (locFut != null)
+                locFut.init();
         }
         catch (Throwable e) {
             onDone(e);

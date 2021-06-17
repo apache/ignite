@@ -87,9 +87,9 @@ public class EntryProcessorResourceInjectorProxy<K, V, T> implements EntryProces
         if (proc == null || proc instanceof EntryProcessorResourceInjectorProxy)
             return proc;
 
-        GridResourceProcessor rsrcProcessor = ctx.resource();
+        GridResourceProcessor rsrcProc = ctx.resource();
 
-        return rsrcProcessor.isAnnotationsPresent(null, proc, GridResourceIoc.AnnotationSet.ENTRY_PROCESSOR) ?
+        return rsrcProc.isAnnotationsPresent(null, proc, GridResourceIoc.AnnotationSet.ENTRY_PROCESSOR) ?
             new EntryProcessorResourceInjectorProxy<>(proc) : proc;
     }
 

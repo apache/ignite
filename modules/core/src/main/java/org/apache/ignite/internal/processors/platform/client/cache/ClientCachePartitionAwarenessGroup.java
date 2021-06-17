@@ -97,10 +97,10 @@ class ClientCachePartitionAwarenessGroup {
 
             for (CacheKeyConfiguration keyCfg : keyCfgs) {
                 int keyTypeId = proc.typeId(keyCfg.getTypeName());
-                int affinityKeyFieldId = proc.binaryContext().fieldId(keyTypeId, keyCfg.getAffinityKeyFieldName());
+                int affKeyFieldId = proc.binaryContext().fieldId(keyTypeId, keyCfg.getAffinityKeyFieldName());
 
                 writer.writeInt(keyTypeId);
-                writer.writeInt(affinityKeyFieldId);
+                writer.writeInt(affKeyFieldId);
             }
         }
 

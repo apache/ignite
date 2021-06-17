@@ -1557,11 +1557,11 @@ public class IgniteServiceProcessor extends ServiceProcessorAdapter implements I
             }
 
             for (ServiceConfiguration srvcCfg : prepCfgs.cfgs) {
-                ServiceInfo serviceInfo = new ServiceInfo(ctx.localNodeId(), IgniteUuid.randomUuid(), srvcCfg, true);
+                ServiceInfo srvcInfo = new ServiceInfo(ctx.localNodeId(), IgniteUuid.randomUuid(), srvcCfg, true);
 
-                serviceInfo.context(ctx);
+                srvcInfo.context(ctx);
 
-                staticServicesInfo.add(serviceInfo);
+                staticServicesInfo.add(srvcInfo);
             }
         }
 

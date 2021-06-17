@@ -298,10 +298,10 @@ public class SharedPageLockTracker implements LifecycleAware, PageLockListener, 
     private synchronized Set<State> hangThreads() {
         Set<State> hangsThreads = new HashSet<>();
 
-        Map<Long, SharedPageLockTracker.State> currentThreadsOperationState = getThreadOperationState();
+        Map<Long, SharedPageLockTracker.State> curThreadsOperationState = getThreadOperationState();
 
         prevThreadsState.forEach((threadId, prevState) -> {
-            State state = currentThreadsOperationState.get(threadId);
+            State state = curThreadsOperationState.get(threadId);
 
             if (state == null)
                 return;
@@ -313,7 +313,7 @@ public class SharedPageLockTracker implements LifecycleAware, PageLockListener, 
                 hangsThreads.add(state);
         });
 
-        prevThreadsState = currentThreadsOperationState;
+        prevThreadsState = curThreadsOperationState;
 
         return hangsThreads;
     }

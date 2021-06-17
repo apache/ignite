@@ -62,8 +62,8 @@ public class ClusterProcessorCheckGlobalStateComputeRequestTest extends GridComm
      */
     private void checkBeanAttribute(Ignite ignite, String grp, String name, String attributeName, Object expAttributeVal) throws Exception {
         ObjectName mBeanName = IgniteUtils.makeMBeanName(ignite.name(), grp, name);
-        Object attributeVal = ignite.configuration().getMBeanServer().getAttribute(mBeanName, attributeName);
+        Object attrVal = ignite.configuration().getMBeanServer().getAttribute(mBeanName, attributeName);
 
-        assertEquals(expAttributeVal, attributeVal);
+        assertEquals(expAttributeVal, attrVal);
     }
 }

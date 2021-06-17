@@ -119,9 +119,9 @@ public class IgnitePdsPartitionsStateRecoveryTest extends GridCommonAbstractTest
             cache.put(key, payload);
         }
 
-        GridDhtPartitionTopology topology = ignite.cachex(DEFAULT_CACHE_NAME).context().topology();
+        GridDhtPartitionTopology top = ignite.cachex(DEFAULT_CACHE_NAME).context().topology();
 
-        Assert.assertFalse(topology.hasMovingPartitions());
+        Assert.assertFalse(top.hasMovingPartitions());
 
         log.info("Stopping grid...");
 
@@ -131,9 +131,9 @@ public class IgnitePdsPartitionsStateRecoveryTest extends GridCommonAbstractTest
 
         awaitPartitionMapExchange();
 
-        topology = ignite.cachex(DEFAULT_CACHE_NAME).context().topology();
+        top = ignite.cachex(DEFAULT_CACHE_NAME).context().topology();
 
-        Assert.assertFalse("Node restored moving partitions after join to topology.", topology.hasMovingPartitions());
+        Assert.assertFalse("Node restored moving partitions after join to topology.", top.hasMovingPartitions());
     }
 
     /**
@@ -160,9 +160,9 @@ public class IgnitePdsPartitionsStateRecoveryTest extends GridCommonAbstractTest
             cache.put(key, payload);
         }
 
-        GridDhtPartitionTopology topology = ignite.cachex(DEFAULT_CACHE_NAME).context().topology();
+        GridDhtPartitionTopology top = ignite.cachex(DEFAULT_CACHE_NAME).context().topology();
 
-        Assert.assertFalse(topology.hasMovingPartitions());
+        Assert.assertFalse(top.hasMovingPartitions());
 
         log.info("Stopping grid...");
 
@@ -172,8 +172,8 @@ public class IgnitePdsPartitionsStateRecoveryTest extends GridCommonAbstractTest
 
         awaitPartitionMapExchange();
 
-        topology = ignite.cachex(DEFAULT_CACHE_NAME).context().topology();
+        top = ignite.cachex(DEFAULT_CACHE_NAME).context().topology();
 
-        Assert.assertFalse("Node restored moving partitions after join to topology.", topology.hasMovingPartitions());
+        Assert.assertFalse("Node restored moving partitions after join to topology.", top.hasMovingPartitions());
     }
 }

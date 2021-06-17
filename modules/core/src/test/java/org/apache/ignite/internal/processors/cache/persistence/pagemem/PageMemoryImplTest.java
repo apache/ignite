@@ -527,13 +527,13 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
     private void acquireAndReleaseWriteLock(PageMemoryImpl memory, FullPageId fullPageId) throws IgniteCheckedException {
         long page = memory.acquirePage(1, fullPageId.pageId());
 
-        long address = memory.writeLock(1, fullPageId.pageId(), page);
+        long addr = memory.writeLock(1, fullPageId.pageId(), page);
 
-        PageIO.setPageId(address, fullPageId.pageId());
+        PageIO.setPageId(addr, fullPageId.pageId());
 
-        PageIO.setType(address, PageIO.T_BPLUS_META);
+        PageIO.setType(addr, PageIO.T_BPLUS_META);
 
-        PageUtils.putShort(address, PageIO.VER_OFF, (short)1);
+        PageUtils.putShort(addr, PageIO.VER_OFF, (short)1);
 
         memory.writeUnlock(1, fullPageId.pageId(), page, Boolean.FALSE, true);
 

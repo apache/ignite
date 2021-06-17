@@ -549,9 +549,9 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
                 affPrev = affCur;
             }
 
-            double goldenChangeAffinity = (double)aff1.partitions() / nodesCnt * (backups + 1);
+            double goldenChangeAff = (double)aff1.partitions() / nodesCnt * (backups + 1);
             info(String.format("Test %d nodes. Golden: %.1f; %s: %.1f; %s: %.1f;",
-                nodesCnt, goldenChangeAffinity,
+                nodesCnt, goldenChangeAff,
                 aff0.getClass().getSimpleName(),
                 (double)diffCnt0 / (MAX_EXPERIMENTS - 1),
                 aff1.getClass().getSimpleName(),

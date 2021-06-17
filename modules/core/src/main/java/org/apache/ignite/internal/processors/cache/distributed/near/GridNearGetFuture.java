@@ -289,11 +289,11 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
             else {
                 registrateFutureInMvccManager(this);
 
-                MiniFuture miniFuture = new MiniFuture(n, mappedKeys, saved, topVer);
+                MiniFuture miniFut = new MiniFuture(n, mappedKeys, saved, topVer);
 
-                GridNearGetRequest req = miniFuture.createGetRequest(futId);
+                GridNearGetRequest req = miniFut.createGetRequest(futId);
 
-                add(miniFuture); // Append new future.
+                add(miniFut); // Append new future.
 
                 try {
                     cctx.io().send(n, req, cctx.ioPolicy());
@@ -301,9 +301,9 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 catch (IgniteCheckedException e) {
                     // Fail the whole thing.
                     if (e instanceof ClusterTopologyCheckedException)
-                        miniFuture.onNodeLeft((ClusterTopologyCheckedException)e);
+                        miniFut.onNodeLeft((ClusterTopologyCheckedException)e);
                     else
-                        miniFuture.onResult(e);
+                        miniFut.onResult(e);
                 }
             }
         }
