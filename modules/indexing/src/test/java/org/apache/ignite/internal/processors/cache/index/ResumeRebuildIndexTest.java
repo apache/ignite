@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.BreakBuildIndexConsumer;
 import org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.StopBuildIndexConsumer;
-import org.apache.ignite.internal.processors.query.aware.IndexBuildStatus;
+import org.apache.ignite.internal.processors.query.aware.IndexBuildStatusHolder;
 import org.apache.ignite.internal.processors.query.aware.IndexBuildStatusStorage;
 import org.apache.ignite.internal.util.function.ThrowableFunction;
 import org.junit.Test;
@@ -320,7 +320,7 @@ public class ResumeRebuildIndexTest extends AbstractRebuildIndexTest {
 
         forceCheckpoint(n1);
 
-        ConcurrentMap<String, IndexBuildStatus> states = statuses(n1);
+        ConcurrentMap<String, IndexBuildStatusHolder> states = statuses(n1);
 
         assertFalse(states.containsKey(DEFAULT_CACHE_NAME + 0));
         assertFalse(states.containsKey(DEFAULT_CACHE_NAME + 1));

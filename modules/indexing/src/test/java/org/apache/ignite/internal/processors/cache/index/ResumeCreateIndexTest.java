@@ -33,8 +33,8 @@ import org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.StopB
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryIndexKey;
-import org.apache.ignite.internal.processors.query.aware.IndexBuildStatus;
-import org.apache.ignite.internal.processors.query.aware.IndexBuildStatus.Status;
+import org.apache.ignite.internal.processors.query.aware.IndexBuildStatusHolder;
+import org.apache.ignite.internal.processors.query.aware.IndexBuildStatusHolder.Status;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -42,8 +42,8 @@ import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_INDEX_REBUILD_BATCH_SIZE;
-import static org.apache.ignite.internal.processors.query.aware.IndexBuildStatus.Status.COMPLETED;
-import static org.apache.ignite.internal.processors.query.aware.IndexBuildStatus.Status.INIT;
+import static org.apache.ignite.internal.processors.query.aware.IndexBuildStatusHolder.Status.COMPLETE;
+import static org.apache.ignite.internal.processors.query.aware.IndexBuildStatusHolder.Status.INIT;
 import static org.apache.ignite.internal.processors.query.aware.IndexBuildStatusStorage.KEY_PREFIX;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
@@ -173,7 +173,7 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
 
     /**
      * Checks that building a new index and rebuilding indexes at the same time
-     * does not break the {@link IndexBuildStatus}.
+     * does not break the {@link IndexBuildStatusHolder}.
      * In this case, building a new index is completed earlier.
      *
      * @throws Exception If failed.
@@ -223,7 +223,7 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
 
     /**
      * Checks that building a new index and rebuilding indexes at the same time
-     * does not break the {@link IndexBuildStatus}.
+     * does not break the {@link IndexBuildStatusHolder}.
      * In this case, rebuilding indexes is completed earlier.
      *
      * @throws Exception If failed.
@@ -432,7 +432,7 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
      * @param expNewIdx Expected count of new indexes being built.
      */
     private void checkStatus(
-        IndexBuildStatus status,
+        IndexBuildStatusHolder status,
         Status expStatus,
         boolean expPersistent,
         boolean expRebuild,
@@ -483,14 +483,14 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
     }
 
     /**
-     * Checking {@link Status#COMPLETED} status.
+     * Checking {@link Status#COMPLETE} status.
      *
      * @param n Node.
      * @param cacheName Cache name.
      * @throws Exception If failed.
      */
     private void checkCompletedStatus(IgniteEx n, String cacheName) throws Exception {
-        checkStatus(statuses(n).get(cacheName), COMPLETED, true, false, 0);
+        checkStatus(statuses(n).get(cacheName), COMPLETE, true, false, 0);
         assertNotNull(metaStorageOperation(n, metaStorage -> metaStorage.read(KEY_PREFIX + cacheName)));
         assertTrue(indexBuildStatusStorage(n).rebuildCompleted(cacheName));
     }

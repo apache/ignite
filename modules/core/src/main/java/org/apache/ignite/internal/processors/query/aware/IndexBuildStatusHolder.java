@@ -19,27 +19,27 @@ package org.apache.ignite.internal.processors.query.aware;
 
 import org.apache.ignite.internal.util.typedef.internal.S;
 
-import static org.apache.ignite.internal.processors.query.aware.IndexBuildStatus.Status.COMPLETED;
-import static org.apache.ignite.internal.processors.query.aware.IndexBuildStatus.Status.DELETE;
-import static org.apache.ignite.internal.processors.query.aware.IndexBuildStatus.Status.INIT;
+import static org.apache.ignite.internal.processors.query.aware.IndexBuildStatusHolder.Status.COMPLETE;
+import static org.apache.ignite.internal.processors.query.aware.IndexBuildStatusHolder.Status.DELETE;
+import static org.apache.ignite.internal.processors.query.aware.IndexBuildStatusHolder.Status.INIT;
 
 /**
  * Cache index build status.
  * The following operations affect the status: rebuilding indexes and building a new index.
  * <p/>
  * If the operation starts executing, then the status is {@link Status#INIT INIT}.
- * If all operations are completed, then the status is {@link Status#COMPLETED COMPLETED}.
+ * If all operations are completed, then the status is {@link Status#COMPLETE COMPLETED}.
  * Status {@link Status#DELETE DELETE} is used for persistent cache to mark at the
  * beginning of a checkpoint that all operations have been completed and they will be committed to it.
  */
-public class IndexBuildStatus {
+public class IndexBuildStatusHolder {
     /** Enumeration of statuses. */
     public enum Status {
         /** Initial status - operation(s) in progress. */
         INIT,
 
-        /** All operations completed. */
-        COMPLETED,
+        /** All operations complete. */
+        COMPLETE,
 
         /** To be deleted. */
         DELETE
@@ -63,7 +63,7 @@ public class IndexBuildStatus {
      * @param persistent Persistent cache.
      * @param rebuild {@code True} if rebuilding indexes, otherwise building a new index.
      */
-    public IndexBuildStatus(boolean persistent, boolean rebuild) {
+    public IndexBuildStatusHolder(boolean persistent, boolean rebuild) {
         this.persistent = persistent;
 
         onStartOperation(rebuild);
@@ -80,8 +80,11 @@ public class IndexBuildStatus {
 
         if (rebuild)
             this.rebuild = true;
-        else
+        else {
+            assert newIdx >= 0;
+
             newIdx++;
+        }
     }
 
     /**
@@ -92,19 +95,25 @@ public class IndexBuildStatus {
      * @see #onStartOperation
      */
     public synchronized Status onFinishOperation(boolean rebuild) {
-        if (rebuild)
+        if (rebuild) {
+            assert this.rebuild;
+
             this.rebuild = false;
-        else
-            newIdx = Math.max(0, newIdx - 1);
+        }
+        else {
+            assert newIdx > 0;
+
+            newIdx--;
+        }
 
         if (!this.rebuild && newIdx == 0)
-            status = COMPLETED;
+            status = COMPLETE;
 
         return status;
     }
 
     /**
-     * Change of status to {@link Status#DELETE} if the current status is {@link Status#COMPLETED}.
+     * Change of status to {@link Status#DELETE} if the current status is {@link Status#COMPLETE}.
      * Note that this will only be for persistent cache.
      *
      * @return {@code True} if successful.
@@ -112,7 +121,7 @@ public class IndexBuildStatus {
     public boolean delete() {
         if (persistent) {
             synchronized (this) {
-                if (status == COMPLETED) {
+                if (status == COMPLETE) {
                     status = DELETE;
 
                     return true;
@@ -163,6 +172,6 @@ public class IndexBuildStatus {
 
     /** {@inheritDoc} */
     @Override public synchronized String toString() {
-        return S.toString(IndexBuildStatus.class, this);
+        return S.toString(IndexBuildStatusHolder.class, this);
     }
 }

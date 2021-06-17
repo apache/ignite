@@ -35,7 +35,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.BreakBuildIndexConsumer;
 import org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.SlowdownBuildIndexConsumer;
 import org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.StopBuildIndexConsumer;
-import org.apache.ignite.internal.processors.query.aware.IndexBuildStatus;
+import org.apache.ignite.internal.processors.query.aware.IndexBuildStatusHolder;
 import org.apache.ignite.internal.processors.query.aware.IndexBuildStatusStorage;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -292,7 +292,7 @@ public abstract class AbstractRebuildIndexTest extends GridCommonAbstractTest {
      * @param n Node.
      * @return Index build status storage.
      */
-    protected ConcurrentMap<String, IndexBuildStatus> statuses(IgniteEx n) {
+    protected ConcurrentMap<String, IndexBuildStatusHolder> statuses(IgniteEx n) {
         return getFieldValue(indexBuildStatusStorage(n), "statuses");
     }
 }

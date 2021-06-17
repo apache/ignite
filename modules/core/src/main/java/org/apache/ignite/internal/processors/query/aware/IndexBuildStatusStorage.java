@@ -38,8 +38,8 @@ import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
-import static org.apache.ignite.internal.processors.query.aware.IndexBuildStatus.Status.COMPLETED;
-import static org.apache.ignite.internal.processors.query.aware.IndexBuildStatus.Status.DELETE;
+import static org.apache.ignite.internal.processors.query.aware.IndexBuildStatusHolder.Status.COMPLETE;
+import static org.apache.ignite.internal.processors.query.aware.IndexBuildStatusHolder.Status.DELETE;
 
 /**
  * Holder of up-to-date information about cache index building operations (rebuilding indexes, building new indexes).
@@ -63,7 +63,7 @@ public class IndexBuildStatusStorage implements MetastorageLifecycleListener, Ch
     private final GridBusyLock stopNodeLock = new GridBusyLock();
 
     /** Current statuses. Mapping: cache name -> index build status. */
-    private final ConcurrentMap<String, IndexBuildStatus> statuses = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, IndexBuildStatusHolder> statuses = new ConcurrentHashMap<>();
 
     /**
      * Constructor.
@@ -164,7 +164,7 @@ public class IndexBuildStatusStorage implements MetastorageLifecycleListener, Ch
      * @return {@code True} if completed.
      */
     public boolean rebuildCompleted(String cacheName) {
-        IndexBuildStatus status = statuses.get(cacheName);
+        IndexBuildStatusHolder status = statuses.get(cacheName);
 
         return status == null || !status.rebuild();
     }
@@ -188,7 +188,7 @@ public class IndexBuildStatusStorage implements MetastorageLifecycleListener, Ch
                     (k, v) -> {
                         IndexRebuildCacheInfo cacheInfo = (IndexRebuildCacheInfo)v;
 
-                        statuses.put(cacheInfo.cacheName(), new IndexBuildStatus(true, true));
+                        statuses.put(cacheInfo.cacheName(), new IndexBuildStatusHolder(true, true));
                     },
                     true
                 );
@@ -205,7 +205,7 @@ public class IndexBuildStatusStorage implements MetastorageLifecycleListener, Ch
             return;
 
         try {
-            for (IndexBuildStatus status : statuses.values()) {
+            for (IndexBuildStatusHolder status : statuses.values()) {
                 if (status.delete())
                     assert status.persistent();
             }
@@ -233,7 +233,7 @@ public class IndexBuildStatusStorage implements MetastorageLifecycleListener, Ch
         try {
             for (String cacheName : statuses.keySet()) {
                 // Trying to concurrently delete the state.
-                IndexBuildStatus newVal =
+                IndexBuildStatusHolder newVal =
                     statuses.compute(cacheName, (k, prev) -> prev != null && prev.status() == DELETE ? null : prev);
 
                 // Assume that the state has been deleted.
@@ -313,7 +313,7 @@ public class IndexBuildStatusStorage implements MetastorageLifecycleListener, Ch
                     return prev;
                 }
                 else
-                    return new IndexBuildStatus(persistent, rebuild);
+                    return new IndexBuildStatusHolder(persistent, rebuild);
             });
 
             if (persistent) {
@@ -343,7 +343,7 @@ public class IndexBuildStatusStorage implements MetastorageLifecycleListener, Ch
      */
     private void onFinishOperation(String cacheName, boolean rebuild) {
         statuses.compute(cacheName, (k, prev) -> {
-            if (prev != null && prev.onFinishOperation(rebuild) == COMPLETED && !prev.persistent())
+            if (prev != null && prev.onFinishOperation(rebuild) == COMPLETE && !prev.persistent())
                 return null;
             else
                 return prev;
