@@ -918,9 +918,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /**
      * @param name Snapshot name.
      *
-     * @return {@code True} if the local snapshot restore task was canceled.
+     * @return Future that will be finished when process the process is complete. The result of this future will be
+     * {@code false} if the restore process with the specified snapshot name is not running at all.
      */
-    public boolean cancelLocalRestoreTask(String name) {
+    public IgniteFuture<Boolean> cancelLocalRestoreTask(String name) {
         return restoreCacheGrpProc.cancel(new IgniteException("Operation has been canceled by the user."), name);
     }
 

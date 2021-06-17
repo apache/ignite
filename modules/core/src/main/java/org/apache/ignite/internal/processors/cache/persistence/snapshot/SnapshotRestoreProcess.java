@@ -397,27 +397,30 @@ public class SnapshotRestoreProcess {
      *
      * @param reason Interruption reason.
      * @param snpName Snapshot name.
-     * @return {@code True} if the restore process with the specified snapshot name has been canceled, {@code False} if
-     * the restore process with the specified snapshot name is not running at all.
+     * @return Future that will be finished when process the process is complete. The result of this future will be
+     * {@code false} if the restore process with the specified snapshot name is not running at all.
      */
-    public boolean cancel(Exception reason, String snpName) {
-        SnapshotRestoreContext opCtx0 = opCtx;
+    public IgniteFuture<Boolean> cancel(Exception reason, String snpName) {
+        SnapshotRestoreContext opCtx0;
+        ClusterSnapshotFuture fut0 = null;
+
+        synchronized (this) {
+            opCtx0 = opCtx;
+
+            if (fut != null && fut.name.equals(snpName)) {
+                fut0 = fut;
+
+                fut0.interruptEx = reason;
+            }
+        }
+
         boolean ctxStop = opCtx0 != null && opCtx0.snpName.equals(snpName);
 
         if (ctxStop)
             interrupt(opCtx0, reason);
 
-        ClusterSnapshotFuture fut0 = fut;
-
-        if (fut0 != null && (snpName == null || fut0.name.equals(snpName))) {
-            fut0.interruptEx = reason;
-
-            new IgniteFutureImpl<>(fut0.chain(f -> null)).get();
-
-            return true;
-        }
-
-        return ctxStop;
+        return fut0 == null ? new IgniteFinishedFutureImpl<>(ctxStop) :
+            new IgniteFutureImpl<>(fut0.chain(f -> true));
     }
 
     /**
@@ -491,11 +494,16 @@ public class SnapshotRestoreProcess {
                 }
             }
 
-            SnapshotRestoreContext opCtx0 = opCtx = prepareContext(req);
-            ClusterSnapshotFuture fut0 = fut;
+            SnapshotRestoreContext opCtx0 = prepareContext(req);
 
-            if (fut0 != null && fut0.interruptEx != null)
-                throw new IgniteCheckedException(fut0.interruptEx);
+            synchronized (this) {
+                opCtx = opCtx0;
+
+                ClusterSnapshotFuture fut0 = fut;
+
+                if (fut0 != null && fut0.interruptEx != null)
+                    opCtx0.err.compareAndSet(null, fut0.interruptEx);
+            }
 
             if (opCtx0.dirs.isEmpty())
                 return new GridFinishedFuture<>();

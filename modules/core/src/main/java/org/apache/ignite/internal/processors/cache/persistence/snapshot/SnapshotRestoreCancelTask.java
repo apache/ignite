@@ -40,7 +40,7 @@ class SnapshotRestoreCancelTask extends SnapshotRestoreManagementTask {
             private transient IgniteEx ignite;
 
             @Override public Object execute() throws IgniteException {
-                return ignite.context().cache().context().snapshotMgr().cancelLocalRestoreTask(snpName);
+                return ignite.context().cache().context().snapshotMgr().cancelLocalRestoreTask(snpName).get();
             }
         };
     }
