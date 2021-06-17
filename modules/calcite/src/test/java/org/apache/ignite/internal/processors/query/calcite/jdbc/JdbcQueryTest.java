@@ -144,11 +144,11 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
             assertEquals(Types.VARCHAR, md.getColumnType(8));
             assertEquals(Types.FLOAT, md.getColumnType(9));
             assertEquals(Types.DOUBLE, md.getColumnType(10));
-            assertEquals(Types.INTEGER, md.getColumnType(11));
-            assertEquals(Types.BIGINT, md.getColumnType(12));
-            assertEquals(Types.BIGINT, md.getColumnType(13));
-            assertEquals(Types.BIGINT, md.getColumnType(14));
-            assertEquals(Types.INTEGER, md.getColumnType(15));
+            assertEquals(Types.TIME, md.getColumnType(11));
+            assertEquals(Types.TIMESTAMP, md.getColumnType(12));
+            assertEquals(Types.TIMESTAMP, md.getColumnType(13));
+            assertEquals(Types.TIMESTAMP, md.getColumnType(14));
+            assertEquals(Types.DATE, md.getColumnType(15));
         }
 
         stmt.execute("DROP TABLE t1");

@@ -16,6 +16,10 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import java.math.BigDecimal;
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -132,6 +136,64 @@ public class TableDdlIntegrationTest extends GridCommonAbstractTest {
                 )
             ))
         );
+    }
+
+    /**
+     * Creates table with columns of different data types and check DML on these columns.
+     */
+    @Test
+    public void createTableDifferentDataTypes() {
+        executeSql("create table my_table (" +
+            "id int primary key, " +
+            "c1 varchar, " +
+            "c2 date, " +
+            "c3 time, " +
+            "c4 timestamp, " +
+            "c5 integer, " +
+            "c6 bigint, " +
+            "c7 smallint, " +
+            "c8 tinyint, " +
+            "c9 boolean, " +
+            "c10 double, " +
+            "c11 float, " +
+            "c12 decimal(20, 10) " +
+            ")");
+
+        executeSql("insert into my_table values (" +
+            "0, " +
+            "'test', " +
+            "date '2021-01-01', " +
+            "time '12:34:56', " +
+            "timestamp '2021-01-01 12:34:56', " +
+            "1, " +
+            "9876543210, " +
+            "3, " +
+            "4, " +
+            "true, " +
+            "123.456, " +
+            "654.321, " +
+            "1234567890.1234567890" +
+            ")");
+
+        List<List<?>> res = executeSql("select * from my_table");
+
+        assertEquals(1, res.size());
+
+        List<?> row = res.get(0);
+
+        assertEquals(0, row.get(0));
+        assertEquals("test", row.get(1));
+        assertEquals(Date.valueOf("2021-01-01"), row.get(2));
+        assertEquals(Time.valueOf("12:34:56"), row.get(3));
+        assertEquals(Timestamp.valueOf("2021-01-01 12:34:56"), row.get(4));
+        assertEquals(1, row.get(5));
+        assertEquals(9876543210L, row.get(6));
+        assertEquals((short)3, row.get(7));
+        assertEquals((byte)4, row.get(8));
+        assertEquals(Boolean.TRUE, row.get(9));
+        assertEquals(123.456d, row.get(10));
+        assertEquals(654.321f, row.get(11));
+        assertEquals(new BigDecimal("1234567890.1234567890"), row.get(12));
     }
 
     /**

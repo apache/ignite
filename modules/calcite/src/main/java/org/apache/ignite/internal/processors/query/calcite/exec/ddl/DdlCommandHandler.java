@@ -183,7 +183,7 @@ public class DdlCommandHandler {
         for (ColumnDefinition col : cmd.columns()) {
             String name = col.name();
 
-            Type javaType = tf.getJavaClass(col.type());
+            Type javaType = tf.getResultClass(col.type());
 
             String typeName = javaType instanceof Class ? ((Class<?>)javaType).getName() : javaType.getTypeName();
 
