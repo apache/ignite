@@ -4,6 +4,7 @@
 # Ignored: https://issues.apache.org/jira/browse/IGNITE-14555
 # Ignored: https://issues.apache.org/jira/browse/IGNITE-14636
 # Ignored: https://issues.apache.org/jira/browse/IGNITE-14730
+# Ignored: https://issues.apache.org/jira/browse/IGNITE-14885
 
 statement ok
 PRAGMA enable_verification
@@ -66,14 +67,14 @@ SELECT COUNT(DISTINCT i), MIN(i), MAX(i), SUM(i) / COUNT(i) FROM (SELECT t::SMAL
 65535	-32767	32767	0
 
 # test result ordering of perfect HT
-statement error
+statement ok
 PRAGMA disable_verification
 
 statement ok
 create table dates as select date '1992-01-01' + concat(x, ' months')::interval as d from table(system_range(0, 99));
 
 query II
-select extract(year from d), extract(month from d) from dates group by extract(year from d), extract(month from d) order by 1, 2;
+select extract(year from d), extract(month from d) from dates group by 1, 2 order by 1, 2;
 ----
 1992	1
 1992	2

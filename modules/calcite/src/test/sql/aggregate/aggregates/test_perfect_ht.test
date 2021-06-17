@@ -63,7 +63,7 @@ SELECT COUNT(DISTINCT i), MIN(i), MAX(i), SUM(i) / COUNT(i) FROM (SELECT t::SMAL
 65535	-32767	32767	0
 
 # test result ordering of perfect HT
-statement error
+statement ok
 PRAGMA disable_verification
 
 statement ok
