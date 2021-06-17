@@ -102,6 +102,9 @@ public class QueryUtils {
     /** Default schema. */
     public static final String DFLT_SCHEMA = "PUBLIC";
 
+    /** Name of Primary Key index for every table. */
+    public static final String PRIMARY_KEY_INDEX = "_key_PK";
+
     /** Schema for system view. */
     public static final String SCHEMA_SYS = getBoolean(IGNITE_SQL_SYSTEM_SCHEMA_NAME_IGNITE) ? "IGNITE" : "SYS";
 

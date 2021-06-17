@@ -17,6 +17,9 @@
 
 package org.apache.ignite.cache.query;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
@@ -34,6 +37,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cache.query.IndexConditionBuilder.between;
 import static org.apache.ignite.cache.query.IndexConditionBuilder.eq;
@@ -43,6 +48,7 @@ import static org.apache.ignite.cache.query.IndexConditionBuilder.lt;
 import static org.apache.ignite.cache.query.IndexConditionBuilder.lte;
 
 /** */
+@RunWith(Parameterized.class)
 public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE = "TEST_CACHE";
@@ -57,14 +63,26 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
     private static final int CNT = 10_000;
 
     /** */
+    @Parameterized.Parameter(0)
+    public int nodesCnt;
+
+    /** */
     private Ignite ignite;
 
     /** */
     private IgniteCache cache;
 
-    /** {@inheritDoc} */
+    /** */
+    @Parameterized.Parameters(name = "nodesCnt={0}")
+    public static Collection<Object[]> testParams() {
+        return Arrays.asList(
+            new Object[] {1},
+            new Object[] {2});
+    }
+
+            /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        ignite = startGrids(2);
+        ignite = startGrids(nodesCnt);
 
         cache = ignite.cache(CACHE);
     }
@@ -123,6 +141,30 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
 
     /** */
     @Test
+    public void testCheckBoundaries() {
+        cache.put(1L, new Person(0, 1));
+        cache.put(2L, new Person(1, 0));
+        cache.put(3L, new Person(1, 1));
+
+        IndexQuery<Long, Person> qry = IndexQuery
+            .<Long, Person>forType(Person.class)
+            .where(between("id", 0, 1), eq("secId", 1));
+
+        List<Cache.Entry<Long, Person>> result = cache.query(qry).getAll();
+
+        assertEquals(2, result.size());
+
+        result.sort(Comparator.comparingLong(Cache.Entry::getKey));
+
+        assertEquals(1L, (long) result.get(0).getKey());
+        assertEquals(3L, (long) result.get(1).getKey());
+
+        assertEquals(new Person(0, 1), result.get(0).getValue());
+        assertEquals(new Person(1, 1), result.get(1).getValue());
+    }
+
+    /** */
+    @Test
     public void testLtQueryMultipleField() {
         insertData();
 
@@ -138,7 +180,7 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
         // Should return all data for ID and SECID that greater any inserted.
         qry = IndexQuery
             .<Long, Person>forType(Person.class)
-            .where(lt("id", 1), lt("secId", pivot * 10));
+            .where(lt("id", 1), lt("secId", CNT));
 
         checkPerson(cache.query(qry), 0, CNT);
 
@@ -486,20 +528,20 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
 
         int pivot = new Random().nextInt(CNT);
 
-        IndexQuery<Long, Person> qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, INDEX)
-            .where(lt("id", 1), gt("secId", pivot));
+//        IndexQuery<Long, Person> qry = IndexQuery
+//            .<Long, Person>forIndex(Person.class, INDEX)
+//            .where(lt("id", 1), gt("secId", pivot));
 
         // TODO: fail or return empty result?
 //        GridTestUtils.assertThrows(null,
 //            () -> cache.query(qry).getAll(), CacheException.class, "Range query doesn't match index 'TEST_IDX'");
 
-        IndexQuery<Long, Person> qry1 = IndexQuery
-            .<Long, Person>forIndex(Person.class, INDEX)
-            .where(lt("id", 1), gte("secId", pivot));
+//        IndexQuery<Long, Person> qry1 = IndexQuery
+//            .<Long, Person>forIndex(Person.class, INDEX)
+//            .where(lt("id", 1), gte("secId", pivot));
 
-        GridTestUtils.assertThrows(null,
-            () -> cache.query(qry1).getAll(), CacheException.class, "Range query doesn't match index 'TEST_IDX'");
+//        GridTestUtils.assertThrows(null,
+//            () -> cache.query(qry1).getAll(), CacheException.class, "Range query doesn't match index 'TEST_IDX'");
 
         IndexQuery<Long, Person> qry2 = IndexQuery
             .<Long, Person>forIndex(Person.class, INDEX)
@@ -592,6 +634,13 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
         /** */
         Person(int secId) {
             this.id = 0;
+            this.secId = secId;
+            this.descId = secId;
+        }
+
+        /** */
+        Person(int id, int secId) {
+            this.id = id;
             this.secId = secId;
             this.descId = secId;
         }

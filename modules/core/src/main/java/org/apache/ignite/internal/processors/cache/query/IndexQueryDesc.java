@@ -19,7 +19,8 @@ package org.apache.ignite.internal.processors.cache.query;
 
 import java.io.Serializable;
 import org.apache.ignite.cache.query.IndexQuery;
-import org.apache.ignite.internal.cache.query.IndexCondition;
+import org.apache.ignite.cache.query.IndexCondition;
+import org.apache.ignite.internal.util.typedef.internal.A;
 
 /** Internal representation of {@link IndexQuery}. */
 public class IndexQueryDesc implements Serializable {
@@ -37,6 +38,8 @@ public class IndexQueryDesc implements Serializable {
 
     /** */
     public IndexQueryDesc(IndexCondition idxCond, String idxName, String valCls) {
+        A.notNull(idxCond, "idxCond");
+
         this.idxCond = idxCond;
         this.idxName = idxName;
         this.valCls = valCls;

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.cache.query;
+package org.apache.ignite.cache.query;
 
 import java.io.Serializable;
 import java.util.List;

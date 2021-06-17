@@ -25,9 +25,9 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.query.IndexCondition;
 import org.apache.ignite.cache.query.IndexConditionBuilder;
 import org.apache.ignite.cache.query.IndexQuery;
-import org.apache.ignite.internal.cache.query.IndexCondition;
 import org.apache.ignite.internal.cache.query.RangeIndexCondition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.IndexQueryDesc;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -125,7 +126,10 @@ public class IndexQueryProcessor {
 
         // Find index by specified name.
         if (idxQryDesc.idxName() != null) {
-            String name = "_key_PK".equals(idxQryDesc.idxName()) ? "_key_PK" : idxQryDesc.idxName().toUpperCase();
+            String name = idxQryDesc.idxName();
+
+            if (!QueryUtils.PRIMARY_KEY_INDEX.equals(name))
+                name = name.toUpperCase();
 
             String schema = idxProc.query().schemaName(cctx);
 
@@ -301,9 +305,7 @@ public class IndexQueryProcessor {
 
         // Step 2. Scan and filter.
         return new GridCursor<IndexRow>() {
-            /** Whether returns first row. */
-            private boolean returnFirst;
-
+            /** */
             private final IndexRowComparator rowCmp = ((SortedIndexDefinition) idxProc.indexDefinition(idx.id())).rowComparator();
 
             /** {@inheritDoc} */
@@ -311,17 +313,10 @@ public class IndexQueryProcessor {
                 if (!findRes.next())
                     return false;
 
-                if (!returnFirst) {
-                    while (match(get(), lower, 1)) {
-                        if (!findRes.next())
-                            return false;
-                    }
-
-                    returnFirst = true;
+                while (match(get(), lower, 1) || match(get(), upper, -1)) {
+                    if (!findRes.next())
+                        return false;
                 }
-
-                if (match(get(), upper, -1))
-                    return false;
 
                 return true;
             }

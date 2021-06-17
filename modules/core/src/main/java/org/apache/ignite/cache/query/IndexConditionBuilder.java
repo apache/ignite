@@ -17,7 +17,6 @@
 
 package org.apache.ignite.cache.query;
 
-import org.apache.ignite.internal.cache.query.IndexCondition;
 import org.apache.ignite.internal.cache.query.RangeIndexCondition;
 import org.apache.ignite.internal.util.typedef.internal.A;
 

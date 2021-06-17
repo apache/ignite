@@ -20,6 +20,7 @@ package org.apache.ignite.internal.cache.query;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.ignite.cache.query.IndexCondition;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.jetbrains.annotations.Nullable;
 

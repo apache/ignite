@@ -18,7 +18,6 @@
 package org.apache.ignite.cache.query;
 
 import javax.cache.Cache;
-import org.apache.ignite.internal.cache.query.IndexCondition;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.jetbrains.annotations.Nullable;
