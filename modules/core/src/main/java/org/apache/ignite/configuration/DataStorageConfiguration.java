@@ -1228,7 +1228,7 @@ public class DataStorageConfiguration implements Serializable {
      */
     public DataStorageConfiguration setMinWalArchiveSize(long walArchiveMinSize) {
         if (walArchiveMinSize != HALF_MAX_WAL_ARCHIVE_SIZE) {
-            A.ensure(walArchiveMinSize > 0, "Max WAL archive size can be only greater than 0 " +
+            A.ensure(walArchiveMinSize > 0, "Min WAL archive size can be only greater than 0 " +
                 "or must be equal to " + HALF_MAX_WAL_ARCHIVE_SIZE + " (to be half of max WAL archive size)");
         }
 
