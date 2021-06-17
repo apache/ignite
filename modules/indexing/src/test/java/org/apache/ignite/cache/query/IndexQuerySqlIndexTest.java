@@ -34,7 +34,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.cache.query.IndexConditionBuilder.lt;
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lt;
 
 /** */
 public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
@@ -90,9 +90,8 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
 
         IgniteCache tableCache = crd.cache(CACHE_TABLE);
 
-        IndexQuery<Long, Person> qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, DESC_ID_IDX)
-            .where(lt("descId", Integer.MAX_VALUE));
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, DESC_ID_IDX)
+            .setCriteria(lt("descId", Integer.MAX_VALUE));
 
         assertTrue(tableCache.query(qry).getAll().isEmpty());
     }
@@ -108,17 +107,15 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
 
         IgniteCache tableCache = crd.cache(CACHE_TABLE);
 
-        IndexQuery<Long, Person> qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, DESC_ID_IDX)
-            .where(lt("descId", pivot));
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, DESC_ID_IDX)
+            .setCriteria(lt("descId", pivot));
 
         check(tableCache.query(qry), 0, pivot);
 
         // Wrong fields in query.
         GridTestUtils.assertThrowsAnyCause(null, () -> {
-            IndexQuery<Long, Person> wrongQry = IndexQuery
-                .<Long, Person>forIndex(Person.class, DESC_ID_IDX)
-                .where(lt("id", Integer.MAX_VALUE));
+            IndexQuery<Long, Person> wrongQry = new IndexQuery<Long, Person>(Person.class, DESC_ID_IDX)
+                .setCriteria(lt("id", Integer.MAX_VALUE));
 
             return cache.query(wrongQry).getAll();
 
@@ -126,9 +123,8 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
 
         // Wrong cache name.
         GridTestUtils.assertThrowsAnyCause(null, () -> {
-            IndexQuery<Long, Person> wrongQry = IndexQuery
-                .<Long, Person>forIndex(Person.class, DESC_ID_IDX)
-                .where(lt("descId", Integer.MAX_VALUE));
+            IndexQuery<Long, Person> wrongQry = new IndexQuery<Long, Person>(Person.class, DESC_ID_IDX)
+                .setCriteria(lt("descId", Integer.MAX_VALUE));
 
             return cache.query(wrongQry).getAll();
 
@@ -136,9 +132,8 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
 
         // Wrong schema name.
         GridTestUtils.assertThrowsAnyCause(null, () -> {
-            IndexQuery<Long, Person> wrongQry = IndexQuery
-                .<Long, Person>forIndex(Person.class, DESC_ID_IDX)
-                .where(lt("descId", Integer.MAX_VALUE));
+            IndexQuery<Long, Person> wrongQry = new IndexQuery<Long, Person>(Person.class, DESC_ID_IDX)
+                .setCriteria(lt("descId", Integer.MAX_VALUE));
 
             return cache.query(wrongQry).getAll();
 

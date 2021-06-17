@@ -43,12 +43,12 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
-import static org.apache.ignite.cache.query.IndexConditionBuilder.between;
-import static org.apache.ignite.cache.query.IndexConditionBuilder.eq;
-import static org.apache.ignite.cache.query.IndexConditionBuilder.gt;
-import static org.apache.ignite.cache.query.IndexConditionBuilder.gte;
-import static org.apache.ignite.cache.query.IndexConditionBuilder.lt;
-import static org.apache.ignite.cache.query.IndexConditionBuilder.lte;
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.between;
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.eq;
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gt;
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gte;
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lt;
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lte;
 
 /** */
 @RunWith(Parameterized.class)
@@ -194,9 +194,8 @@ public class IndexQueryRangeTest extends GridCommonAbstractTest {
     /** */
     public void checkRangeQueries() {
         // Query empty cache.
-        IndexQuery<Long, Person> qry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(lt("id", Integer.MAX_VALUE));
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(lt("id", Integer.MAX_VALUE));
 
         assertTrue(cache.query(qry).getAll().isEmpty());
 
@@ -206,37 +205,32 @@ public class IndexQueryRangeTest extends GridCommonAbstractTest {
         int pivot = new Random().nextInt(CNT);
 
         // Eq.
-        qry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(eq("id", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(eq("id", pivot));
 
         check(cache.query(qry), pivot, pivot + 1);
 
         // Lt.
-        qry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(lt("id", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(lt("id", pivot));
 
         check(cache.query(qry), 0, pivot);
 
         // Lte.
-        qry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(lte("id", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(lte("id", pivot));
 
         check(cache.query(qry), 0, pivot + 1);
 
         // Gt.
-        qry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(gt("id", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(gt("id", pivot));
 
         check(cache.query(qry), pivot + 1, CNT);
 
         // Gte.
-        qry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(gte("id", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(gte("id", pivot));
 
         check(cache.query(qry), pivot, CNT);
 
@@ -244,9 +238,8 @@ public class IndexQueryRangeTest extends GridCommonAbstractTest {
         int lower = new Random().nextInt(CNT / 2);
         int upper = lower + CNT / 20;
 
-        qry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(between("id", lower, upper));
+        qry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(between("id", lower, upper));
 
         check(cache.query(qry), lower, upper + 1);
     }
@@ -254,9 +247,8 @@ public class IndexQueryRangeTest extends GridCommonAbstractTest {
     /** */
     public void checkRangeDescQueries() {
         // Query empty cache.
-        IndexQuery<Long, Person> qry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(lt("id", Integer.MAX_VALUE));
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(lt("id", Integer.MAX_VALUE));
 
         assertTrue(cache.query(qry).getAll().isEmpty());
 
@@ -266,37 +258,32 @@ public class IndexQueryRangeTest extends GridCommonAbstractTest {
         int pivot = new Random().nextInt(CNT);
 
         // Eq.
-        qry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(eq("descId", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(eq("descId", pivot));
 
         check(cache.query(qry), pivot, pivot + 1);
 
         // Lt, desc index.
-        IndexQuery<Long, Person> descQry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(lt("descId", pivot));
+        IndexQuery<Long, Person> descQry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(lt("descId", pivot));
 
         check(cache.query(descQry), 0, pivot);
 
         // Lte, desc index.
-        descQry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(lte("descId", pivot));
+        descQry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(lte("descId", pivot));
 
         check(cache.query(descQry), 0, pivot + 1);
 
         // Gt, desc index.
-        descQry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(gt("descId", pivot));
+        descQry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(gt("descId", pivot));
 
         check(cache.query(descQry), pivot + 1, CNT);
 
         // Gte, desc index.
-        descQry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(gte("descId", pivot));
+        descQry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(gte("descId", pivot));
 
         check(cache.query(descQry), pivot, CNT);
 
@@ -304,9 +291,8 @@ public class IndexQueryRangeTest extends GridCommonAbstractTest {
         int lower = new Random().nextInt(CNT / 2);
         int upper = lower + CNT / 20;
 
-        descQry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(between("descId", lower, upper));
+        descQry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(between("descId", lower, upper));
 
         check(cache.query(descQry), lower, upper + 1);
     }

@@ -23,68 +23,68 @@ import org.apache.ignite.lang.IgniteExperimental;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Index query runs over internal index structure and returns cache entries for index rows that match specified condition.
+ * Index query runs over internal index structure and returns cache entries for index rows that match specified criteria.
  */
 @IgniteExperimental
 public class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Index condition describes index query clause. */
-    private IndexCondition idxCond;
+    /** Index query criteria describes index query clause. */
+    private IndexQueryCriteria criteria;
 
     /** Cache Value class. Describes a table within a cache that runs a query. */
     private final String valCls;
 
-    /** Optional index name. Find index by fields in condition. */
+    /** Optional index name. Find index by fields in {@link #criteria}. */
     private final @Nullable String idxName;
 
-    /** */
-    private IndexQuery(String valCls, @Nullable String idxName) {
-        this.valCls = valCls;
+    /**
+     * Specify index with cache value class.
+     *
+     * @param valCls Cache value class.
+     */
+    public IndexQuery(Class<V> valCls) {
+        this(valCls, null);
+    }
+
+    /**
+     * Specify index with cache value class and index name. If {@code idxName} is {@code null} then Ignite checks
+     * all indexes to find best match by {@link #valCls} and {@link IndexQueryCriteria#fields()}.
+     *
+     * @param valCls Cache value class.
+     * @param idxName Optional Index name.
+     */
+    public IndexQuery(Class<V> valCls, @Nullable String idxName) {
+        A.notNull(valCls, "valCls");
+
+        if (idxName != null)
+            A.notNullOrEmpty(idxName, "idxName");
+
+        this.valCls = valCls.getName();
         this.idxName = idxName;
     }
 
     /**
-     * Specify index with cache value class. Ignite checks all indexes to find best match by
-     * {@link #valCls} and {@link IndexCondition#fields()}.
+     * Provide multiple index query criteria joint with AND.
      */
-    public static <K, V> IndexQuery<K, V> forType(Class<V> valCls) {
-        A.notNull(valCls, "valCls");
+    public IndexQuery<K, V> setCriteria(IndexQueryCriteria criterion, IndexQueryCriteria... criteria) {
+        A.notNull(criterion, "criterion");
 
-        return new IndexQuery<>(valCls.getName(), null);
-    }
+        this.criteria = criterion;
 
-    /**
-     * Specify index with cache value class and index name.
-     */
-    public static <K, V> IndexQuery<K, V> forIndex(Class<V> valCls, String idxName) {
-        A.notNull(valCls, "valCls");
-        A.notNullOrEmpty(idxName, "idxName");
+        for (IndexQueryCriteria c: criteria) {
+            A.notNull(c, "criteria");
 
-        return new IndexQuery<>(valCls.getName(), idxName);
-    }
-
-    /**
-     * Provide multiple index conditions joint with AND. Order of conditons has to match index structure.
-     */
-    public IndexQuery<K, V> where(IndexCondition cond, IndexCondition... conds) {
-        A.notNull(cond, "cond");
-
-        idxCond = cond;
-
-        for (IndexCondition c: conds) {
-            A.notNull(c, "idxConds");
-
-            idxCond.and(c);
+            this.criteria.and(c);
         }
 
         return this;
     }
 
-    /** Index condition. */
-    public IndexCondition getIndexCondition() {
-        return idxCond;
+    /** Index query criteria. */
+    public IndexQueryCriteria getIndexCriteria() {
+        return criteria;
     }
 
     /** Cache value class. */

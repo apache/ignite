@@ -39,7 +39,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.cache.query.IndexConditionBuilder.lt;
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lt;
 
 /** */
 public class IndexQueryQueryEntityTest extends GridCommonAbstractTest {
@@ -112,35 +112,30 @@ public class IndexQueryQueryEntityTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testEmptyCache() {
-        IndexQuery<Long, Person> qry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(lt("id", Integer.MAX_VALUE));
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(lt("id", Integer.MAX_VALUE));
 
         assertTrue(cache.query(qry).getAll().isEmpty());
 
-        qry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(lt("descId", Integer.MAX_VALUE));
+        qry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(lt("descId", Integer.MAX_VALUE));
 
         assertTrue(cache.query(qry).getAll().isEmpty());
 
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, ID_IDX)
-            .where(lt("id", Integer.MAX_VALUE));
+        qry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(lt("id", Integer.MAX_VALUE));
 
         assertTrue(cache.query(qry).getAll().isEmpty());
 
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, DESC_ID_IDX)
-            .where(lt("descId", Integer.MAX_VALUE));
+        qry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(lt("descId", Integer.MAX_VALUE));
 
         assertTrue(cache.query(qry).getAll().isEmpty());
 
         // Wrong fields in query.
         GridTestUtils.assertThrows(null, () -> {
-            IndexQuery<Long, Person> wrongQry = IndexQuery
-                .<Long, Person>forIndex(Person.class, DESC_ID_IDX)
-                .where(lt("id", Integer.MAX_VALUE));
+            IndexQuery<Long, Person> wrongQry = new IndexQuery<Long, Person>(Person.class, DESC_ID_IDX)
+                .setCriteria(lt("id", Integer.MAX_VALUE));
 
             cache.query(wrongQry).getAll();
         }, IgniteException.class, null);
@@ -149,27 +144,23 @@ public class IndexQueryQueryEntityTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testEmptyCacheTableName() {
-        IndexQuery<Long, Person> qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, ID_IDX)
-            .where(lt("id", Integer.MAX_VALUE));
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, ID_IDX)
+            .setCriteria(lt("id", Integer.MAX_VALUE));
 
         assertTrue(cacheTblName.query(qry).getAll().isEmpty());
 
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, DESC_ID_IDX)
-            .where(lt("descId", Integer.MAX_VALUE));
+        qry = new IndexQuery<Long, Person>(Person.class, DESC_ID_IDX)
+            .setCriteria(lt("descId", Integer.MAX_VALUE));
 
         assertTrue(cacheTblName.query(qry).getAll().isEmpty());
 
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, ID_IDX)
-            .where(lt("id", Integer.MAX_VALUE));
+        qry = new IndexQuery<Long, Person>(Person.class, ID_IDX)
+            .setCriteria(lt("id", Integer.MAX_VALUE));
 
         assertTrue(cacheTblName.query(qry).getAll().isEmpty());
 
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, DESC_ID_IDX)
-            .where(lt("descId", Integer.MAX_VALUE));
+        qry = new IndexQuery<Long, Person>(Person.class, DESC_ID_IDX)
+            .setCriteria(lt("descId", Integer.MAX_VALUE));
 
         assertTrue(cacheTblName.query(qry).getAll().isEmpty());
     }
@@ -182,30 +173,26 @@ public class IndexQueryQueryEntityTest extends GridCommonAbstractTest {
         int pivot = new Random().nextInt(CNT);
 
         // Lt.
-        IndexQuery<Long, Person> qry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(lt("id", pivot));
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(lt("id", pivot));
 
         check(cache.query(qry), 0, pivot);
 
         // Lt, desc index.
-        IndexQuery<Long, Person> descQry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(lt("descId", pivot));
+        IndexQuery<Long, Person> descQry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(lt("descId", pivot));
 
         check(cache.query(descQry), 0, pivot);
 
         // Lt.
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, ID_IDX)
-            .where(lt("id", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class, ID_IDX)
+            .setCriteria(lt("id", pivot));
 
         check(cache.query(qry), 0, pivot);
 
         // Lt, desc index.
-        descQry = IndexQuery
-            .<Long, Person>forIndex(Person.class, DESC_ID_IDX)
-            .where(lt("descId", pivot));
+        descQry = new IndexQuery<Long, Person>(Person.class, DESC_ID_IDX)
+            .setCriteria(lt("descId", pivot));
 
         check(cache.query(descQry), 0, pivot);
     }
@@ -218,44 +205,38 @@ public class IndexQueryQueryEntityTest extends GridCommonAbstractTest {
         int pivot = new Random().nextInt(CNT);
 
         // Lt.
-        IndexQuery<Long, Person> qry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(lt("id", pivot));
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(lt("id", pivot));
 
         check(cacheTblName.query(qry), 0, pivot);
 
         // Lt, desc index.
-        IndexQuery<Long, Person> descQry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(lt("descId", pivot));
+        IndexQuery<Long, Person> descQry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(lt("descId", pivot));
 
         check(cacheTblName.query(descQry), 0, pivot);
 
         // Lt.
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, ID_IDX)
-            .where(lt("id", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class, ID_IDX)
+            .setCriteria(lt("id", pivot));
 
         check(cacheTblName.query(qry), 0, pivot);
 
         // Lt, desc index.
-        descQry = IndexQuery
-            .<Long, Person>forIndex(Person.class, DESC_ID_IDX)
-            .where(lt("descId", pivot));
+        descQry = new IndexQuery<Long, Person>(Person.class, DESC_ID_IDX)
+            .setCriteria(lt("descId", pivot));
 
         check(cacheTblName.query(descQry), 0, pivot);
 
         // Lt.
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, ID_IDX)
-            .where(lt("id", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class, ID_IDX)
+            .setCriteria(lt("id", pivot));
 
         check(cacheTblName.query(qry), 0, pivot);
 
         // Lt, desc index.
-        descQry = IndexQuery
-            .<Long, Person>forIndex(Person.class, DESC_ID_IDX)
-            .where(lt("descId", pivot));
+        descQry = new IndexQuery<Long, Person>(Person.class, DESC_ID_IDX)
+            .setCriteria(lt("descId", pivot));
 
         check(cacheTblName.query(descQry), 0, pivot);
     }

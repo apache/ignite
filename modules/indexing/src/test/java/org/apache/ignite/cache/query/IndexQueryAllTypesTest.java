@@ -44,10 +44,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.cache.query.IndexConditionBuilder.gt;
-import static org.apache.ignite.cache.query.IndexConditionBuilder.gte;
-import static org.apache.ignite.cache.query.IndexConditionBuilder.lt;
-import static org.apache.ignite.cache.query.IndexConditionBuilder.lte;
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gt;
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gte;
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lt;
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lte;
 
 /** */
 public class IndexQueryAllTypesTest extends GridCommonAbstractTest {
@@ -99,37 +99,32 @@ public class IndexQueryAllTypesTest extends GridCommonAbstractTest {
         int pivot = CNT / 5;
 
         // Should include nulls.
-        IndexQuery<Long, Person> qry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(lt("intNullId", pivot));
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(lt("intNullId", pivot));
 
         check(cache.query(qry), 0, CNT / 5, i -> i, persGen);
 
         // Should exclude nulls.
-        qry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(gte("intNullId", 0));
+        qry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(gte("intNullId", 0));
 
         check(cache.query(qry), CNT / 10, CNT, i -> i, persGen);
 
         // Should return only nulls.
-        qry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(lt("intNullId", 0));
+        qry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(lt("intNullId", 0));
 
         check(cache.query(qry), 0, CNT / 10, i -> i, persGen);
 
         // Should return only nulls.
-        qry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(lte("intNullId", null));
+        qry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(lte("intNullId", null));
 
         check(cache.query(qry), 0, CNT / 10, i -> i, persGen);
 
         // Should return all non nulls.
-        qry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(gt("intNullId", null));
+        qry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(gt("intNullId", null));
 
         check(cache.query(qry), CNT / 10, CNT, i -> i, persGen);
     }
@@ -242,30 +237,26 @@ public class IndexQueryAllTypesTest extends GridCommonAbstractTest {
         insertData(valGen, persGen, CNT);
 
         // Lt.
-        IndexQuery<Long, Person> qry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(lt("boolId", true));
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(lt("boolId", true));
 
         check(cache.query(qry), CNT / 2 + 1, CNT, valGen, persGen);
 
         // Lte.
-        qry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(lte("boolId", true));
+        qry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(lte("boolId", true));
 
         check(cache.query(qry), 0, CNT, valGen, persGen);
 
         // Gt.
-        qry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(gt("boolId", false));
+        qry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(gt("boolId", false));
 
         check(cache.query(qry), 0, CNT / 2 + 1, valGen, persGen);
 
         // Gte.
-        qry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(gte("boolId", false));
+        qry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(gte("boolId", false));
 
         check(cache.query(qry), 0, CNT, valGen, persGen);
     }
@@ -286,16 +277,14 @@ public class IndexQueryAllTypesTest extends GridCommonAbstractTest {
         T val = valGen.apply(pivot);
 
         // Lt.
-        IndexQuery<Long, Person> qry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(lt(fieldName, val));
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(lt(fieldName, val));
 
         check(cache.query(qry), 0, pivot, valGen, persGen);
 
         // Lte.
-        qry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(lte(fieldName, val));
+        qry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(lte(fieldName, val));
 
         check(cache.query(qry), 0, pivot + 1, valGen, persGen);
     }

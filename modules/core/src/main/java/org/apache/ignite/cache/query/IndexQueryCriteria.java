@@ -21,19 +21,19 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * Basic interface for all index conditions.
+ * Basic interface for all index query criteria.
  */
-public interface IndexCondition extends Serializable {
+public interface IndexQueryCriteria extends Serializable {
     /**
-     * @return List of index fields that this condition applies to.
+     * @return List of index fields that this query criteria applies to.
      */
     public abstract List<String> fields();
 
     /**
-     * Merges multiple index conditions. Order of conditons has to match index structure.
+     * Merges multiple index criteria.
      *
-     * @param cond Index condition to merge.
+     * @param criteria Index criteria to merge.
      * @return This for chaining.
      */
-    public abstract IndexCondition and(IndexCondition cond);
+    public abstract IndexQueryCriteria and(IndexQueryCriteria criteria);
 }

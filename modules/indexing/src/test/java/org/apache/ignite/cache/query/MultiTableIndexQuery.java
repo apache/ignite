@@ -32,7 +32,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.cache.query.IndexConditionBuilder.lt;
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lt;
 
 /** */
 public class MultiTableIndexQuery extends GridCommonAbstractTest {
@@ -74,9 +74,8 @@ public class MultiTableIndexQuery extends GridCommonAbstractTest {
     /** */
     @Test
     public void testEmptyCache() {
-        IndexQuery<Long, Person> qry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(lt("id", Integer.MAX_VALUE));
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(lt("id", Integer.MAX_VALUE));
 
         QueryCursor<Cache.Entry<Long, Person>> cursor = cache.query(qry);
 
@@ -90,9 +89,8 @@ public class MultiTableIndexQuery extends GridCommonAbstractTest {
 
         int pivot = new Random().nextInt(CNT);
 
-        IndexQuery<Long, SecondPerson> secQry = IndexQuery
-            .<Long, SecondPerson>forType(SecondPerson.class)
-            .where(lt("id", CNT + pivot));
+        IndexQuery<Long, SecondPerson> secQry = new IndexQuery<Long, SecondPerson>(SecondPerson.class)
+            .setCriteria(lt("id", CNT + pivot));
 
         checkSecondPerson(cache.query(secQry), CNT, CNT + pivot);
     }

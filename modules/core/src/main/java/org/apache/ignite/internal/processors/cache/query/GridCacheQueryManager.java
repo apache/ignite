@@ -2879,7 +2879,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return Created query.
      */
     public <R> CacheQuery<R> createIndexQuery(IndexQuery qry, boolean keepBinary) {
-        IndexQueryDesc desc = new IndexQueryDesc(qry.getIndexCondition(), qry.getIndexName(), qry.getValueClass());
+        IndexQueryDesc desc = new IndexQueryDesc(qry.getIndexCriteria(), qry.getIndexName(), qry.getValueClass());
 
         GridCacheQueryAdapter q = new GridCacheQueryAdapter<>(cctx, INDEX, desc, qry.getValueClass());
         q.keepBinary(keepBinary);

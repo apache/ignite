@@ -17,54 +17,54 @@
 
 package org.apache.ignite.cache.query;
 
-import org.apache.ignite.internal.cache.query.RangeIndexCondition;
+import org.apache.ignite.internal.cache.query.RangeIndexQueryCriteria;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
- * Factory for {@link IndexCondition} for {@link IndexQuery}.
+ * Factory for {@link IndexQueryCriteria} for {@link IndexQuery}.
  */
-public class IndexConditionBuilder {
+public class IndexQueryCriteriaBuilder {
     /** Object to mark a boundary if {@code null} is specified. */
     private static final Object NULL = new Null();
 
     /** Equal To. */
-    public static IndexCondition eq(String field, Object val) {
+    public static IndexQueryCriteria eq(String field, Object val) {
         return between(field, val, val);
     }
 
     /** Less Then. */
-    public static IndexCondition lt(String field, Object val) {
+    public static IndexQueryCriteria lt(String field, Object val) {
         A.notNullOrEmpty(field, "field");
 
-        return new RangeIndexCondition(field, null, wrapNull(val), true, false);
+        return new RangeIndexQueryCriteria(field, null, wrapNull(val), true, false);
     }
 
     /** Less Then or Equal. */
-    public static IndexCondition lte(String field, Object val) {
+    public static IndexQueryCriteria lte(String field, Object val) {
         A.notNullOrEmpty(field, "field");
 
-        return new RangeIndexCondition(field, null, wrapNull(val), true, true);
+        return new RangeIndexQueryCriteria(field, null, wrapNull(val), true, true);
     }
 
     /** Greater Then. */
-    public static IndexCondition gt(String field, Object val) {
+    public static IndexQueryCriteria gt(String field, Object val) {
         A.notNullOrEmpty(field, "field");
 
-        return new RangeIndexCondition(field, wrapNull(val), null, false, true);
+        return new RangeIndexQueryCriteria(field, wrapNull(val), null, false, true);
     }
 
     /** Greater Then or Equal. */
-    public static IndexCondition gte(String field, Object val) {
+    public static IndexQueryCriteria gte(String field, Object val) {
         A.notNullOrEmpty(field, "field");
 
-        return new RangeIndexCondition(field, wrapNull(val), null, true, true);
+        return new RangeIndexQueryCriteria(field, wrapNull(val), null, true, true);
     }
 
     /** Between. Lower and upper boundaries are inclusive. */
-    public static IndexCondition between(String field, Object lower, Object upper) {
+    public static IndexQueryCriteria between(String field, Object lower, Object upper) {
         A.notNullOrEmpty(field, "field");
 
-        return new RangeIndexCondition(field, wrapNull(lower), wrapNull(upper), true, true);
+        return new RangeIndexQueryCriteria(field, wrapNull(lower), wrapNull(upper), true, true);
     }
 
     /** */

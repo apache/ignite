@@ -20,29 +20,29 @@ package org.apache.ignite.internal.cache.query;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.ignite.cache.query.IndexCondition;
+import org.apache.ignite.cache.query.IndexQueryCriteria;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Range index condition that applies to BPlusTree based indexes.
+ * Range index criteria that applies to BPlusTree based indexes.
  */
-public class RangeIndexCondition implements IndexCondition {
+public class RangeIndexQueryCriteria implements IndexQueryCriteria {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** List of condition fields that should match index fields. */
+    /** List of criteria fields that should match index fields. */
     private final List<String> fields = new ArrayList<>();
 
-    /** List of condition fields that should match index fields. */
-    private final List<SingleFieldRangeCondition> fldConds = new ArrayList<>();
+    /** List of criteria fields that should match index fields. */
+    private final List<RangeCriterion> fldCriteria = new ArrayList<>();
 
     /** */
-    public RangeIndexCondition(String field, @Nullable Object lower, @Nullable Object upper, boolean lowIncl, boolean upIncl) {
+    public RangeIndexQueryCriteria(String field, @Nullable Object lower, @Nullable Object upper, boolean lowIncl, boolean upIncl) {
         fields.add(field);
 
-        fldConds.add(
-            new SingleFieldRangeCondition(lower, upper, lowIncl, upIncl));
+        fldCriteria.add(
+            new RangeCriterion(lower, upper, lowIncl, upIncl));
     }
 
     /** {@inheritDoc} */
@@ -51,37 +51,37 @@ public class RangeIndexCondition implements IndexCondition {
     }
 
     /** {@inheritDoc} */
-    @Override public IndexCondition and(IndexCondition cond) {
-        A.ensure(cond instanceof RangeIndexCondition, "Expect a range condition for chaining.");
+    @Override public IndexQueryCriteria and(IndexQueryCriteria criteria) {
+        A.ensure(criteria instanceof RangeIndexQueryCriteria, "Expect a range criteria for chaining.");
 
-        RangeIndexCondition rngCond = (RangeIndexCondition) cond;
+        RangeIndexQueryCriteria rngCrit = (RangeIndexQueryCriteria) criteria;
 
-        for (int i = 0; i < rngCond.fields.size(); i++) {
-            String f = rngCond.fields.get(i);
+        for (int i = 0; i < rngCrit.fields.size(); i++) {
+            String f = rngCrit.fields.get(i);
 
-            A.ensure(!fields.contains(f), "Duplicated field in conditions: " + f + ".");
+            A.ensure(!fields.contains(f), "Duplicated field in criteria: " + f + ".");
 
             fields.add(f);
-            fldConds.add(rngCond.fldConds.get(i));
+            fldCriteria.add(rngCrit.fldCriteria.get(i));
         }
 
         return this;
     }
 
     /** */
-    public List<SingleFieldRangeCondition> conditions() {
-        return fldConds;
+    public List<RangeCriterion> criteria() {
+        return fldCriteria;
     }
 
-    /** Represents info about signle field condition. */
-    public static class SingleFieldRangeCondition implements Serializable {
+    /** Represents info about signle field criterion. */
+    public static class RangeCriterion implements Serializable {
         /** */
         private static final long serialVersionUID = 0L;
 
-        /** List of lower bound conditions. */
+        /** Lower bound. */
         private final Object lower;
 
-        /** List of upper bound conditions. */
+        /** Upper bound. */
         private final Object upper;
 
         /** Should include lower value. */
@@ -91,7 +91,7 @@ public class RangeIndexCondition implements IndexCondition {
         private final boolean upperIncl;
 
         /** */
-        SingleFieldRangeCondition(Object lower, Object upper, boolean lowerIncl, boolean upperIncl) {
+        RangeCriterion(Object lower, Object upper, boolean lowerIncl, boolean upperIncl) {
             this.lower = lower;
             this.upper = upper;
             this.lowerIncl = lowerIncl;
@@ -99,8 +99,8 @@ public class RangeIndexCondition implements IndexCondition {
         }
 
         /** Swap boundaries. */
-        public SingleFieldRangeCondition swap() {
-            return new SingleFieldRangeCondition(upper, lower, upperIncl, lowerIncl);
+        public RangeCriterion swap() {
+            return new RangeCriterion(upper, lower, upperIncl, lowerIncl);
         }
 
         /** */

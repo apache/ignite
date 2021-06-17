@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.query;
 
 import java.io.Serializable;
 import org.apache.ignite.cache.query.IndexQuery;
-import org.apache.ignite.cache.query.IndexCondition;
+import org.apache.ignite.cache.query.IndexQueryCriteria;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
 /** Internal representation of {@link IndexQuery}. */
@@ -28,7 +28,7 @@ public class IndexQueryDesc implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final IndexCondition idxCond;
+    private final IndexQueryCriteria criteria;
 
     /** */
     private final String idxName;
@@ -37,17 +37,17 @@ public class IndexQueryDesc implements Serializable {
     private final String valCls;
 
     /** */
-    public IndexQueryDesc(IndexCondition idxCond, String idxName, String valCls) {
-        A.notNull(idxCond, "idxCond");
+    public IndexQueryDesc(IndexQueryCriteria criteria, String idxName, String valCls) {
+        A.notNull(criteria, "criteria");
 
-        this.idxCond = idxCond;
+        this.criteria = criteria;
         this.idxName = idxName;
         this.valCls = valCls;
     }
 
     /** */
-    public IndexCondition idxCond() {
-        return idxCond;
+    public IndexQueryCriteria criteria() {
+        return criteria;
     }
 
     /** */
@@ -65,6 +65,6 @@ public class IndexQueryDesc implements Serializable {
         return "IndexQuery[" +
             "idxName=" + idxName + ", " +
             "valCls=" + valCls + ", " +
-            "fields=" + idxCond.fields() + "]";
+            "fields=" + criteria.fields() + "]";
     }
 }

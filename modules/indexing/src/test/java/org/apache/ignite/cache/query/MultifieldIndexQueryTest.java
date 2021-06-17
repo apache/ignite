@@ -40,12 +40,12 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.cache.query.IndexConditionBuilder.between;
-import static org.apache.ignite.cache.query.IndexConditionBuilder.eq;
-import static org.apache.ignite.cache.query.IndexConditionBuilder.gt;
-import static org.apache.ignite.cache.query.IndexConditionBuilder.gte;
-import static org.apache.ignite.cache.query.IndexConditionBuilder.lt;
-import static org.apache.ignite.cache.query.IndexConditionBuilder.lte;
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.between;
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.eq;
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gt;
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gte;
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lt;
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lte;
 
 /** */
 @RunWith(Parameterized.class)
@@ -113,9 +113,8 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
 
         int pivot = new Random().nextInt(CNT);
 
-        IndexQuery<Long, Person> qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, "_key_PK")
-            .where(lt("_KEY", (long) pivot));
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, "_key_PK")
+            .setCriteria(lt("_KEY", (long) pivot));
 
         checkPerson(cache.query(qry), 0, pivot);
     }
@@ -123,18 +122,16 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testEmptyCacheQuery() {
-        IndexQuery<Long, Person> qry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(lt("id", Integer.MAX_VALUE), lt("secId", Integer.MAX_VALUE));
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(lt("id", Integer.MAX_VALUE), lt("secId", Integer.MAX_VALUE));
 
         QueryCursor<Cache.Entry<Long, Person>> cursor = cache.query(qry);
 
         assertTrue(cursor.getAll().isEmpty());
 
         // Check same query with specify index name.
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, INDEX)
-            .where(lt("id", Integer.MAX_VALUE), lt("secId", Integer.MAX_VALUE));
+        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
+            .setCriteria(lt("id", Integer.MAX_VALUE), lt("secId", Integer.MAX_VALUE));
 
         assertTrue(cache.query(qry).getAll().isEmpty());
     }
@@ -146,9 +143,8 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
         cache.put(2L, new Person(1, 0));
         cache.put(3L, new Person(1, 1));
 
-        IndexQuery<Long, Person> qry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(between("id", 0, 1), eq("secId", 1));
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(between("id", 0, 1), eq("secId", 1));
 
         List<Cache.Entry<Long, Person>> result = cache.query(qry).getAll();
 
@@ -171,359 +167,306 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
         int pivot = new Random().nextInt(CNT);
 
         // Should return empty result for ID that less any inserted.
-        IndexQuery<Long, Person> qry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(lt("id", -1), lt("secId", pivot));
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(lt("id", -1), lt("secId", pivot));
 
         assertTrue(cache.query(qry).getAll().isEmpty());
 
         // Should return all data for ID and SECID that greater any inserted.
-        qry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(lt("id", 1), lt("secId", CNT));
+        qry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(lt("id", 1), lt("secId", CNT));
 
         checkPerson(cache.query(qry), 0, CNT);
 
         // Should return part of data, as ID equals to inserted data ID field.
-        qry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(lt("id", 0), lt("secId", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(lt("id", 0), lt("secId", pivot));
 
         assertTrue(cache.query(qry).getAll().isEmpty());
 
         // Should return all data for ID greater any inserted.
-        qry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(lt("id", 1), lt("secId", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(lt("id", 1), lt("secId", pivot));
 
         checkPerson(cache.query(qry), 0, pivot);
 
         // Checks the same with query with specified index name.
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, INDEX)
-            .where(lt("id", -1), lt("secId", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(lt("id", -1), lt("secId", pivot));
 
         assertTrue(cache.query(qry).getAll().isEmpty());
 
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, INDEX)
-            .where(lt("id", 0), lt("secId", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(lt("id", 0), lt("secId", pivot));
 
         assertTrue(cache.query(qry).getAll().isEmpty());
 
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, INDEX)
-            .where(lt("id", 1), lt("secId", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(lt("id", 1), lt("secId", pivot));
 
         checkPerson(cache.query(qry), 0, pivot);
     }
 
     /** */
     @Test
-    public void testLegalDifferentConditions() {
+    public void testLegalDifferentCriteria() {
         insertData();
 
         int pivot = new Random().nextInt(CNT);
 
-        // Eq as first condition.
-        IndexQuery<Long, Person> qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, INDEX)
-            .where(eq("id", 1), lt("secId", pivot));
+        // Eq as first criterion.
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, INDEX)
+            .setCriteria(eq("id", 1), lt("secId", pivot));
 
         assertTrue(cache.query(qry).getAll().isEmpty());
 
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, INDEX)
-            .where(eq("id", 0), lte("secId", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
+            .setCriteria(eq("id", 0), lte("secId", pivot));
 
         checkPerson(cache.query(qry), 0, pivot + 1);
 
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, INDEX)
-            .where(eq("id", 0), gt("secId", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
+            .setCriteria(eq("id", 0), gt("secId", pivot));
 
         checkPerson(cache.query(qry), pivot + 1, CNT);
 
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, INDEX)
-            .where(eq("id", 0), gte("secId", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
+            .setCriteria(eq("id", 0), gte("secId", pivot));
 
         checkPerson(cache.query(qry), pivot, CNT);
 
         int lower = new Random().nextInt(CNT / 2);
         int upper = lower + new Random().nextInt(CNT / 2);
 
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, INDEX)
-            .where(eq("id", 0), between("secId", lower, upper));
+        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
+            .setCriteria(eq("id", 0), between("secId", lower, upper));
 
         checkPerson(cache.query(qry), lower, upper + 1);
 
-        // Lt as first condition.
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, INDEX)
-            .where(lt("id", 1), lte("secId", pivot));
+        // Lt as first criterion.
+        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
+            .setCriteria(lt("id", 1), lte("secId", pivot));
 
         checkPerson(cache.query(qry), 0, pivot + 1);
 
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, INDEX)
-            .where(lt("id", 1), eq("secId", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
+            .setCriteria(lt("id", 1), eq("secId", pivot));
 
         checkPerson(cache.query(qry), pivot, pivot + 1);
 
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, INDEX)
-            .where(lt("id", 1), between("secId", lower, upper));
+        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
+            .setCriteria(lt("id", 1), between("secId", lower, upper));
 
         checkPerson(cache.query(qry), lower, upper + 1);
 
-        // Lte as first condition.
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, INDEX)
-            .where(lte("id", 0), lt("secId", pivot));
+        // Lte as first criterion.
+        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
+            .setCriteria(lte("id", 0), lt("secId", pivot));
 
         checkPerson(cache.query(qry), 0, pivot);
 
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, INDEX)
-            .where(lte("id", 1), between("secId", lower, upper));
+        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
+            .setCriteria(lte("id", 1), between("secId", lower, upper));
 
         checkPerson(cache.query(qry), lower, upper + 1);
 
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, INDEX)
-            .where(lte("id", 0), eq("secId", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
+            .setCriteria(lte("id", 0), eq("secId", pivot));
 
         checkPerson(cache.query(qry), pivot, pivot + 1);
 
-        // Gt as first condition.
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, INDEX)
-            .where(gt("id", -1), gte("secId", pivot));
+        // Gt as first criterion.
+        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
+            .setCriteria(gt("id", -1), gte("secId", pivot));
 
         checkPerson(cache.query(qry), pivot, CNT);
 
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, INDEX)
-            .where(gt("id", -1), eq("secId", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
+            .setCriteria(gt("id", -1), eq("secId", pivot));
 
         checkPerson(cache.query(qry), pivot, pivot + 1);
 
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, INDEX)
-            .where(gt("id", -1), between("secId", lower, upper));
+        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
+            .setCriteria(gt("id", -1), between("secId", lower, upper));
 
         checkPerson(cache.query(qry), lower, upper + 1);
 
-        // Gte as first condition.
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, INDEX)
-            .where(gte("id", 0), gt("secId", pivot));
+        // Gte as first criterion.
+        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
+            .setCriteria(gte("id", 0), gt("secId", pivot));
 
         checkPerson(cache.query(qry), pivot + 1, CNT);
 
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, INDEX)
-            .where(gte("id", 0), between("secId", lower, upper));
+        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
+            .setCriteria(gte("id", 0), between("secId", lower, upper));
 
         checkPerson(cache.query(qry), lower, upper + 1);
 
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, INDEX)
-            .where(gte("id", 0), eq("secId", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
+            .setCriteria(gte("id", 0), eq("secId", pivot));
 
         checkPerson(cache.query(qry), pivot, pivot + 1);
 
-        // Between as first condition.
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, INDEX)
-            .where(between("id", -1, 1), lt("secId", pivot));
+        // Between as first criterion.
+        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
+            .setCriteria(between("id", -1, 1), lt("secId", pivot));
 
         checkPerson(cache.query(qry), 0, pivot);
 
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, INDEX)
-            .where(between("id", -1, 1), lte("secId", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
+            .setCriteria(between("id", -1, 1), lte("secId", pivot));
 
         checkPerson(cache.query(qry), 0, pivot + 1);
 
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, INDEX)
-            .where(between("id", -1, 1), gt("secId", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
+            .setCriteria(between("id", -1, 1), gt("secId", pivot));
 
         checkPerson(cache.query(qry), pivot + 1, CNT);
 
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, INDEX)
-            .where(between("id", -1, 1), gte("secId", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
+            .setCriteria(between("id", -1, 1), gte("secId", pivot));
 
         checkPerson(cache.query(qry), pivot, CNT);
 
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, INDEX)
-            .where(between("id", -1, 1), eq("secId", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
+            .setCriteria(between("id", -1, 1), eq("secId", pivot));
 
         checkPerson(cache.query(qry), pivot, pivot + 1);
     }
 
     /** */
     @Test
-    public void testLegalDifferentConditionsWithDescIdx() {
+    public void testLegalDifferentCriteriaWithDescIdx() {
         insertData();
 
         int pivot = new Random().nextInt(CNT);
         int lower = new Random().nextInt(CNT / 2);
         int upper = lower + new Random().nextInt(CNT / 2);
 
-        // Eq as first condition.
-        IndexQuery<Long, Person> qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, DESC_INDEX)
-            .where(eq("id", 1), lt("descId", pivot));
+        // Eq as first criteria.
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, DESC_INDEX)
+            .setCriteria(eq("id", 1), lt("descId", pivot));
 
         assertTrue(cache.query(qry).getAll().isEmpty());
 
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, DESC_INDEX)
-            .where(eq("id", 0), lt("descId", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class, DESC_INDEX)
+            .setCriteria(eq("id", 0), lt("descId", pivot));
 
         checkPerson(cache.query(qry), 0, pivot);
 
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, DESC_INDEX)
-            .where(eq("id", 0), lte("descId", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class, DESC_INDEX)
+            .setCriteria(eq("id", 0), lte("descId", pivot));
 
         checkPerson(cache.query(qry), 0, pivot + 1);
 
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, DESC_INDEX)
-            .where(eq("id", 0), gt("descId", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class, DESC_INDEX)
+            .setCriteria(eq("id", 0), gt("descId", pivot));
 
         checkPerson(cache.query(qry), pivot + 1, CNT);
 
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, DESC_INDEX)
-            .where(eq("id", 0), gte("descId", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class, DESC_INDEX)
+            .setCriteria(eq("id", 0), gte("descId", pivot));
 
         checkPerson(cache.query(qry), pivot, CNT);
 
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, DESC_INDEX)
-            .where(eq("id", 0), between("descId", lower, upper));
+        qry = new IndexQuery<Long, Person>(Person.class, DESC_INDEX)
+            .setCriteria(eq("id", 0), between("descId", lower, upper));
 
         checkPerson(cache.query(qry), lower, upper + 1);
 
-        // Lt as first condition.
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, DESC_INDEX)
-            .where(lt("id", 1), gt("descId", pivot));
+        // Lt as first criteria.
+        qry = new IndexQuery<Long, Person>(Person.class, DESC_INDEX)
+            .setCriteria(lt("id", 1), gt("descId", pivot));
 
         checkPerson(cache.query(qry), pivot + 1, CNT);
 
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, DESC_INDEX)
-            .where(lt("id", 1), gte("descId", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class, DESC_INDEX)
+            .setCriteria(lt("id", 1), gte("descId", pivot));
 
         checkPerson(cache.query(qry), pivot, CNT);
 
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, DESC_INDEX)
-            .where(lt("id", 1), between("descId", lower, upper));
+        qry = new IndexQuery<Long, Person>(Person.class, DESC_INDEX)
+            .setCriteria(lt("id", 1), between("descId", lower, upper));
 
         checkPerson(cache.query(qry), lower, upper + 1);
 
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, DESC_INDEX)
-            .where(lt("id", 1), eq("descId", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class, DESC_INDEX)
+            .setCriteria(lt("id", 1), eq("descId", pivot));
 
         checkPerson(cache.query(qry), pivot, pivot + 1);
 
-        // Lte as first condition.
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, DESC_INDEX)
-            .where(lte("id", 0), gt("descId", pivot));
+        // Lte as first criteria.
+        qry = new IndexQuery<Long, Person>(Person.class, DESC_INDEX)
+            .setCriteria(lte("id", 0), gt("descId", pivot));
 
         checkPerson(cache.query(qry), pivot + 1, CNT);
 
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, DESC_INDEX)
-            .where(lte("id", 0), gte("descId", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class, DESC_INDEX)
+            .setCriteria(lte("id", 0), gte("descId", pivot));
 
         checkPerson(cache.query(qry), pivot, CNT);
 
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, DESC_INDEX)
-            .where(lte("id", 0), between("descId", lower, upper));
+        qry = new IndexQuery<Long, Person>(Person.class, DESC_INDEX)
+            .setCriteria(lte("id", 0), between("descId", lower, upper));
 
         checkPerson(cache.query(qry), lower, upper + 1);
 
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, DESC_INDEX)
-            .where(lte("id", 0), eq("descId", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class, DESC_INDEX)
+            .setCriteria(lte("id", 0), eq("descId", pivot));
 
         checkPerson(cache.query(qry), pivot, pivot + 1);
 
-        // Gte as first condition.
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, DESC_INDEX)
-            .where(gte("id", 0), lt("descId", pivot));
+        // Gte as first criteria.
+        qry = new IndexQuery<Long, Person>(Person.class, DESC_INDEX)
+            .setCriteria(gte("id", 0), lt("descId", pivot));
 
         checkPerson(cache.query(qry), 0, pivot);
 
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, DESC_INDEX)
-            .where(gte("id", 0), lte("descId", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class, DESC_INDEX)
+            .setCriteria(gte("id", 0), lte("descId", pivot));
 
         checkPerson(cache.query(qry), 0, pivot + 1);
 
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, DESC_INDEX)
-            .where(gte("id", 0), between("descId", lower, upper));
+        qry = new IndexQuery<Long, Person>(Person.class, DESC_INDEX)
+            .setCriteria(gte("id", 0), between("descId", lower, upper));
 
         checkPerson(cache.query(qry), lower, upper + 1);
 
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, DESC_INDEX)
-            .where(gte("id", 0), eq("descId", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class, DESC_INDEX)
+            .setCriteria(gte("id", 0), eq("descId", pivot));
 
         checkPerson(cache.query(qry), pivot, pivot + 1);
 
-        // Between as first condition.
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, DESC_INDEX)
-            .where(between("id", -1, 1), lt("descId", pivot));
+        // Between as first criteria.
+        qry = new IndexQuery<Long, Person>(Person.class, DESC_INDEX)
+            .setCriteria(between("id", -1, 1), lt("descId", pivot));
 
         checkPerson(cache.query(qry), 0, pivot);
 
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, DESC_INDEX)
-            .where(between("id", -1, 1), lte("descId", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class, DESC_INDEX)
+            .setCriteria(between("id", -1, 1), lte("descId", pivot));
 
         checkPerson(cache.query(qry), 0, pivot + 1);
 
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, DESC_INDEX)
-            .where(between("id", -1, 1), gt("descId", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class, DESC_INDEX)
+            .setCriteria(between("id", -1, 1), gt("descId", pivot));
 
         checkPerson(cache.query(qry), pivot + 1, CNT);
 
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, DESC_INDEX)
-            .where(between("id", -1, 1), gte("descId", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class, DESC_INDEX)
+            .setCriteria(between("id", -1, 1), gte("descId", pivot));
 
         checkPerson(cache.query(qry), pivot, CNT);
 
-        qry = IndexQuery
-            .<Long, Person>forIndex(Person.class, DESC_INDEX)
-            .where(between("id", -1, 1), eq("descId", pivot));
+        qry = new IndexQuery<Long, Person>(Person.class, DESC_INDEX)
+            .setCriteria(between("id", -1, 1), eq("descId", pivot));
 
         checkPerson(cache.query(qry), pivot, pivot + 1);
-
     }
 
     /** */
     @Test
-    public void testIllegalDifferentConditions() {
+    public void testIllegalDifferentCriteria() {
         insertData();
 
         int pivot = new Random().nextInt(CNT);
@@ -543,16 +486,14 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
 //        GridTestUtils.assertThrows(null,
 //            () -> cache.query(qry1).getAll(), CacheException.class, "Range query doesn't match index 'TEST_IDX'");
 
-        IndexQuery<Long, Person> qry2 = IndexQuery
-            .<Long, Person>forIndex(Person.class, INDEX)
-            .where(gt("id", 2), lt("secId", pivot));
+        IndexQuery<Long, Person> qry2 = new IndexQuery<Long, Person>(Person.class, INDEX)
+            .setCriteria(gt("id", 2), lt("secId", pivot));
 
         GridTestUtils.assertThrows(null,
             () -> cache.query(qry2).getAll(), CacheException.class, "Range query doesn't match index 'TEST_IDX'");
 
-        IndexQuery<Long, Person> qry3 = IndexQuery
-            .<Long, Person>forIndex(Person.class, INDEX)
-            .where(gt("id", 2), eq("secId", pivot));
+        IndexQuery<Long, Person> qry3 = new IndexQuery<Long, Person>(Person.class, INDEX)
+            .setCriteria(gt("id", 2), eq("secId", pivot));
 
         GridTestUtils.assertThrows(null,
             () -> cache.query(qry3).getAll(), CacheException.class, "Range query doesn't match index 'TEST_IDX'");
@@ -564,9 +505,8 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
         insertData();
 
         // Use long boundary instead of int.
-        IndexQuery<Long, Person> qry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(lt("id", (long) 0));
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(lt("id", (long) 0));
 
         GridTestUtils.assertThrows(null,
             () -> cache.query(qry).getAll(), CacheException.class, null);
@@ -582,9 +522,8 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
 
         int pivot = new Random().nextInt(CNT);
 
-        IndexQuery<Long, Person> qry = IndexQuery
-            .<Long, Person>forType(Person.class)
-            .where(eq("id", 0), lt("secId", pivot), lt("_KEY", (long) pivot));
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(eq("id", 0), lt("secId", pivot), lt("_KEY", (long) pivot));
 
         checkPerson(cache.query(qry), 0, pivot);
     }
