@@ -62,7 +62,7 @@ public class IgnitePaths {
     public final Path workDir;
 
     /** Directory for storing server node configs. */
-    public final Path configDir;
+    public final Path cfgDir;
 
     /** Directory for server nodes logs */
     public final Path logDir;
@@ -78,56 +78,58 @@ public class IgnitePaths {
      *
      * @param binDir Bin directory.
      * @param workDir Work directory.
+     * @param cfgDir Config directory.
+     * @param logDir Log directory.
      * @param ver Ignite CLI version.
      */
-    public IgnitePaths(Path binDir, Path workDir, Path configDir, Path logDir, String ver) {
+    public IgnitePaths(Path binDir, Path workDir, Path cfgDir, Path logDir, String ver) {
         this.binDir = binDir;
         this.workDir = workDir;
-        this.configDir = configDir;
+        this.cfgDir = cfgDir;
         this.logDir = logDir;
         this.ver = ver;
     }
 
     /**
-     * Path where CLI module artifacts will be placed.
+     * @return Path where CLI module artifacts will be placed.
      */
     public Path cliLibsDir() {
         return binDir.resolve(ver).resolve("cli");
     }
 
     /**
-     * Path where Ignite server module artifacts will be placed.
+     * @return Path where Ignite server module artifacts will be placed.
      */
     public Path libsDir() {
         return binDir.resolve(ver).resolve("libs");
     }
 
     /**
-     * Path where Ignite node pid files will be created.
+     * @return Path where Ignite node pid files will be created.
      */
     public Path cliPidsDir() {
         return workDir.resolve("cli").resolve("pids");
     }
 
     /**
-     * Path to file with registry data for {@link org.apache.ignite.cli.builtins.module.ModuleRegistry}
+     * @return Path to file with registry data for {@link org.apache.ignite.cli.builtins.module.ModuleRegistry}
      */
     public Path installedModulesFile() {
         return workDir.resolve("modules.json");
     }
 
     /**
-     * Path to directory with Ignite nodes configs.
+     * @return Path to directory with Ignite nodes configs.
      */
     public Path serverConfigDir() {
         return workDir.resolve("config");
     }
 
     /**
-     * Path to default Ignite node config.
+     * @return Path to default Ignite node config.
      */
     public Path serverDefaultConfigFile() {
-        return configDir.resolve("default-config.xml");
+        return cfgDir.resolve("default-config.xml");
     }
 
     /**
@@ -138,7 +140,7 @@ public class IgnitePaths {
         initDirIfNeeded(binDir,"Can't create bin directory: " + binDir);
         initDirIfNeeded(libsDir(),"Can't create a directory for ignite modules: " + libsDir());
         initDirIfNeeded(cliLibsDir(),"Can't create a directory for cli modules: " + cliLibsDir());
-        initDirIfNeeded(configDir,"Can't create a directory for server configs: " + configDir);
+        initDirIfNeeded(cfgDir,"Can't create a directory for server configs: " + cfgDir);
         initDirIfNeeded(logDir,"Can't create a directory for server logs: " + logDir);
     }
 
@@ -164,7 +166,7 @@ public class IgnitePaths {
                 binDir.toFile().exists() &&
                 libsDir().toFile().exists() &&
                 cliLibsDir().toFile().exists() &&
-                configDir.toFile().exists() &&
+                cfgDir.toFile().exists() &&
                 logDir.toFile().exists();
     }
 }

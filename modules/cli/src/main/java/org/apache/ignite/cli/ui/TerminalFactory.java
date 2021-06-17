@@ -33,8 +33,10 @@ public class TerminalFactory {
      * Produce terminal instances.
      *
      * Important: It's always must be a singleton bean.
-     * JLine has an issues with building more than 1 terminal instance per process
-     * @return Terminal instance
+     * JLine has an issues with building more than 1 terminal instance per process.
+     *
+     * @return Terminal instance.
+     * @throws IOException if an error occurs.
      */
     @Bean(preDestroy = "close")
     @Singleton

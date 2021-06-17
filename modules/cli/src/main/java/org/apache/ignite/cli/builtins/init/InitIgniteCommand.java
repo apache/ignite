@@ -104,7 +104,7 @@ public class InitIgniteCommand {
 
         tbl.addRow("@|bold Binaries Directory|@", cfg.binDir);
         tbl.addRow("@|bold Work Directory|@", cfg.workDir);
-        tbl.addRow("@|bold Config Directory|@", cfg.configDir);
+        tbl.addRow("@|bold Config Directory|@", cfg.cfgDir);
         tbl.addRow("@|bold Log Directory|@", cfg.logDir);
 
         out.println(tbl);
