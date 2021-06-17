@@ -1110,8 +1110,7 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
 
         assertEqualsCollections(F.asList(0, 0, "Igor", 1), row);
 
-        //query = engine.query(null, "PUBLIC", "UPDATE DEVELOPER d SET name = 'Roman' WHERE id = ?", 0);
-        query = engine.query(null, "PUBLIC", "UPDATE DEVELOPER SET projectId = projectId + 2", 0);
+        query = engine.query(null, "PUBLIC", "UPDATE DEVELOPER d SET name = 'Roman' WHERE id = ?", 0);
 
         assertEquals(1, query.size());
 

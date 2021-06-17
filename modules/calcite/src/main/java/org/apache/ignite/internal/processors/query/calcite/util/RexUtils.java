@@ -542,8 +542,7 @@ public class RexUtils {
         if (nodes != null) {
 
             RexVisitor<Void> v = new RexVisitorImpl<Void>(true) {
-                @Override
-                public Void visitCorrelVariable(RexCorrelVariable correlVariable) {
+                @Override public Void visitCorrelVariable(RexCorrelVariable correlVariable) {
                     cors.add(correlVariable.id);
 
                     return null;

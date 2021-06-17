@@ -117,8 +117,7 @@ public class IgniteTableModify extends TableModify implements TraitsAwareIgniteR
     /**
      * {@inheritDoc}
      */
-    @Override
-    public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(RelTraitSet nodeTraits,
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(RelTraitSet nodeTraits,
                                                                           List<RelTraitSet> inTraits) {
         return ImmutableList.of(Pair.of(nodeTraits.replace(TraitUtils.rewindability(inTraits.get(0))),
                 inTraits));
@@ -127,8 +126,7 @@ public class IgniteTableModify extends TableModify implements TraitsAwareIgniteR
     /**
      * {@inheritDoc}
      */
-    @Override
-    public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveDistribution(RelTraitSet nodeTraits,
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveDistribution(RelTraitSet nodeTraits,
                                                                          List<RelTraitSet> inTraits) {
         IgniteDistribution distributionTrait = IgniteDistributions.affinity(0, "default",
                 nodeTraits.getTrait(DistributionTraitDef.INSTANCE));
@@ -148,8 +146,7 @@ public class IgniteTableModify extends TableModify implements TraitsAwareIgniteR
     /**
      * {@inheritDoc}
      */
-    @Override
-    public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(RelTraitSet nodeTraits,
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCollation(RelTraitSet nodeTraits,
                                                                       List<RelTraitSet> inTraits) {
         return ImmutableList.of(Pair.of(nodeTraits.replace(TraitUtils.collation(inTraits.get(0))),
                 inTraits));
@@ -158,8 +155,7 @@ public class IgniteTableModify extends TableModify implements TraitsAwareIgniteR
     /**
      *
      */
-    @Override
-    public Pair<RelTraitSet, List<RelTraitSet>> passThroughCorrelation(RelTraitSet nodeTraits,
+    @Override public Pair<RelTraitSet, List<RelTraitSet>> passThroughCorrelation(RelTraitSet nodeTraits,
                                                                        List<RelTraitSet> inTraits) {
         CorrelationTrait correlation = TraitUtils.correlation(nodeTraits);
 
@@ -169,8 +165,7 @@ public class IgniteTableModify extends TableModify implements TraitsAwareIgniteR
     /**
      *
      */
-    @Override
-    public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCorrelation(RelTraitSet nodeTraits,
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveCorrelation(RelTraitSet nodeTraits,
                                                                         List<RelTraitSet> inTraits) {
         return ImmutableList.of(Pair.of(nodeTraits.replace(TraitUtils.correlation(inTraits.get(0))), inTraits));
     }
