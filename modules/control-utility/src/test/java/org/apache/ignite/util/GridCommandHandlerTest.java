@@ -3226,7 +3226,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
     /** @throws Exception If fails. */
     @Test
-    public void testSnapshotRestoreCancel() throws Exception {
+    public void testSnapshotRestoreCancelAndStatus() throws Exception {
         int keysCnt = 10_000;
         String snpName = "snapshot_25052021";
         String missingSnpName = "snapshot_MISSING";
