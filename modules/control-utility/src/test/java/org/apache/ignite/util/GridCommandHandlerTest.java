@@ -3264,7 +3264,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         // Check wrong snapshot name.
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", missingSnpName, "--status"));
         assertContains(log, testOut.toString(),
-            "Snapshot cache group restore operation is stopped [snapshot=" + missingSnpName + ']');
+            "Snapshot cache group restore operation is NOT running [snapshot=" + missingSnpName + ']');
 
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", missingSnpName, "--cancel"));
         assertContains(log, testOut.toString(),
@@ -3288,7 +3288,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--status"));
         assertContains(log, testOut.toString(),
-            "Snapshot cache group restore operation is stopped [snapshot=" + snpName + ']');
+            "Snapshot cache group restore operation is NOT running [snapshot=" + snpName + ']');
     }
 
     /**

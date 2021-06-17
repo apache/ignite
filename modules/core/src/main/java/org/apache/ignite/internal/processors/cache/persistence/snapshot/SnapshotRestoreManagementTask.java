@@ -29,24 +29,24 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Snapshot resore management task.
+ * Snapshot restore management task.
  */
-abstract class SnapshotRestoreManagementTask<T> extends ComputeTaskAdapter<T, Boolean> {
+abstract class SnapshotRestoreManagementTask extends ComputeTaskAdapter<String, Boolean> {
    /**
      * @param param Compute job argument.
      * @return Compute job.
      */
-    protected abstract ComputeJob makeJob(T param);
+    protected abstract ComputeJob makeJob(String param);
 
     /** {@inheritDoc} */
     @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(
         List<ClusterNode> subgrid,
-        T param
+        String snpName
     ) throws IgniteException {
         Map<ComputeJob, ClusterNode> map = U.newHashMap(subgrid.size());
 
         for (ClusterNode node : subgrid)
-            map.put(makeJob(param), node);
+            map.put(makeJob(snpName), node);
 
         return map;
     }
@@ -59,7 +59,7 @@ abstract class SnapshotRestoreManagementTask<T> extends ComputeTaskAdapter<T, Bo
             if (r.getException() != null)
                 throw new IgniteException("Failed to execute job [nodeId=" + r.getNode().id() + ']', r.getException());
 
-            ret |= (boolean)r.getData();
+            ret |= Boolean.TRUE.equals(r.getData());
         }
 
         return ret;

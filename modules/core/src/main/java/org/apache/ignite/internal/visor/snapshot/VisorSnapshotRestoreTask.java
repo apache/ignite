@@ -114,8 +114,8 @@ public class VisorSnapshotRestoreTask extends VisorOneNodeTask<VisorSnapshotRest
         @Override protected String run(VisorSnapshotRestoreTaskArg arg) throws IgniteException {
             boolean state = ignite.context().cache().context().snapshotMgr().restoreStatus(arg.snapshotName()).get();
 
-            return "Snapshot cache group restore operation is " + (state ? "running" : "stopped") +
-                " [snapshot=" + arg.snapshotName() + ']';
+            return "Snapshot cache group restore operation is " + (state ? "" : "NOT ") +
+                "running [snapshot=" + arg.snapshotName() + ']';
         }
     }
 }

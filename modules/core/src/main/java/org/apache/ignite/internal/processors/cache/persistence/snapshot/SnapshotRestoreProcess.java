@@ -172,7 +172,7 @@ public class SnapshotRestoreProcess {
                 throw new IgniteException(OP_REJECT_MSG + "A cluster snapshot operation is in progress.");
 
             synchronized (this) {
-                if (snapshotName() != null)
+                if (restoringSnapshotName() != null)
                     throw new IgniteException(OP_REJECT_MSG + "The previous snapshot restore operation was not completed.");
 
                 fut = new ClusterSnapshotFuture(UUID.randomUUID(), snpName);
@@ -277,7 +277,7 @@ public class SnapshotRestoreProcess {
      *
      * @return Name of the snapshot currently being restored or {@code null} if the restore process is not running.
      */
-    public @Nullable String snapshotName() {
+    public @Nullable String restoringSnapshotName() {
         SnapshotRestoreContext opCtx0 = opCtx;
 
         if (opCtx0 != null)
@@ -393,39 +393,62 @@ public class SnapshotRestoreProcess {
     }
 
     /**
-     * Abort the currently running restore procedure (if any).
+     * Cancel the currently running local restore procedure.
      *
      * @param reason Interruption reason.
-     * @param snpName Snapshot name or {@code null} to stop any running snapshot restore process.
-     * @return Future that will be finished when process the process is complete. The result of this future will be
-     * {@code false} if the restore process with the specified snapshot name is not running at all.
+     * @param snpName Snapshot name.
+     * @return {@code True} if the restore process with the specified snapshot name has been canceled, {@code False} if
+     * the restore process with the specified snapshot name is not running at all.
      */
-    public IgniteInternalFuture<Boolean> interrupt(Exception reason, @Nullable String snpName) {
+    public boolean cancel(Exception reason, String snpName) {
         SnapshotRestoreContext opCtx0 = opCtx;
         boolean ctxStop = opCtx0 != null && (snpName == null || opCtx0.snpName.equals(snpName));
 
-        if (ctxStop) {
-            opCtx0.err.compareAndSet(null, reason);
-
-            IgniteFuture<?> stopFut;
-
-            synchronized (this) {
-                stopFut = opCtx0.stopFut;
-            }
-
-            if (stopFut != null)
-                stopFut.get();
-        }
+        if (ctxStop)
+            interrupt(opCtx0, reason);
 
         ClusterSnapshotFuture fut0 = fut;
 
         if (fut0 != null && (snpName == null || fut0.name.equals(snpName))) {
             fut0.interruptEx = reason;
 
-            return fut0.chain(f -> true);
+            new IgniteFutureImpl<>(fut0.chain(f -> null)).get();
+
+            return true;
         }
 
-        return new GridFinishedFuture<>(ctxStop);
+        return ctxStop;
+    }
+
+    /**
+     * Interrupt the currently running local restore procedure.
+     *
+     * @param reason Interruption reason.
+     */
+    public void interrupt(Exception reason) {
+        SnapshotRestoreContext opCtx0 = opCtx;
+
+        if (opCtx0 != null)
+            interrupt(opCtx0, reason);
+    }
+
+    /**
+     * Interrupt the currently running local restore procedure.
+     *
+     * @param opCtx Snapshot restore operation context.
+     * @param reason Interruption reason.
+     */
+    private void interrupt(SnapshotRestoreContext opCtx, Exception reason) {
+        opCtx.err.compareAndSet(null, reason);
+
+        IgniteFuture<?> stopFut;
+
+        synchronized (this) {
+            stopFut = opCtx.stopFut;
+        }
+
+        if (stopFut != null)
+            stopFut.get();
     }
 
     /**

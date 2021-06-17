@@ -17,20 +17,18 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.resources.IgniteInstanceResource;
 
 /**
  * Snapshot resore cancel task.
  */
 @GridInternal
-class SnapshotRestoreCancelTask extends SnapshotRestoreManagementTask<String> {
+class SnapshotRestoreCancelTask extends SnapshotRestoreManagementTask {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -42,12 +40,7 @@ class SnapshotRestoreCancelTask extends SnapshotRestoreManagementTask<String> {
             private transient IgniteEx ignite;
 
             @Override public Object execute() throws IgniteException {
-                try {
-                    return ignite.context().cache().context().snapshotMgr().cancelLocalRestoreTask(snpName);
-                }
-                catch (IgniteCheckedException e) {
-                    throw F.wrap(e);
-                }
+                return ignite.context().cache().context().snapshotMgr().cancelLocalRestoreTask(snpName);
             }
         };
     }

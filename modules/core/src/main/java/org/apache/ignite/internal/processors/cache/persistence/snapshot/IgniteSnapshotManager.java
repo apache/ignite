@@ -177,7 +177,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.io.Pa
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getPageIO;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getType;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getVersion;
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SKIP_AUTH;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
 import static org.apache.ignite.internal.util.GridUnsafe.bufferAddress;
@@ -437,7 +436,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         busyLock.block();
 
         try {
-            restoreCacheGrpProc.interrupt(new NodeStoppingException("Node is stopping."), null);
+            restoreCacheGrpProc.interrupt(new NodeStoppingException("Node is stopping."));
 
             // Try stop all snapshot processing if not yet.
             for (SnapshotFutureTask sctx : locSnpTasks.values())
@@ -473,7 +472,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
-        restoreCacheGrpProc.interrupt(new IgniteCheckedException("The cluster has been deactivated."), null);
+        restoreCacheGrpProc.interrupt(new IgniteCheckedException("The cluster has been deactivated."));
     }
 
     /**
@@ -789,7 +788,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return {@code True} if the snapshot restore operation is in progress.
      */
     public boolean isRestoring() {
-        return restoreCacheGrpProc.snapshotName() != null;
+        return restoreCacheGrpProc.restoringSnapshotName() != null;
     }
 
     /**
@@ -799,7 +798,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return {@code True} if the snapshot restore operation from the specified snapshot is in progress locally.
      */
     public boolean isRestoring(String snpName) {
-        return snpName.equals(restoreCacheGrpProc.snapshotName());
+        return snpName.equals(restoreCacheGrpProc.restoringSnapshotName());
     }
 
     /**
@@ -927,30 +926,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      *
      * @return {@code True} if the local snapshot restore task was canceled.
      */
-    public boolean cancelLocalRestoreTask(String name) throws IgniteCheckedException {
-        return restoreCacheGrpProc
-            .interrupt(new IgniteException("Operation has been interrupted by the user."), name)
-            .get();
-    }
-
-    /**
-     * @param taskCls Snapshot restore operation management task class.
-     * @param snpName Snapshot name.
-     */
-    private IgniteFuture<Boolean> executeRestoreManagementTask(
-        Class<? extends ComputeTask<String, Boolean>> taskCls,
-        String snpName
-    ) {
-        cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
-
-        Collection<ClusterNode> bltNodes = F.view(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
-            (node) -> CU.baselineNode(node, cctx.kernalContext().state().clusterState()));
-
-        cctx.kernalContext().task().setThreadContext(TC_SKIP_AUTH, true);
-        cctx.kernalContext().task().setThreadContext(TC_SUBGRID, bltNodes);
-        cctx.kernalContext().task().setThreadContext(TC_NO_FAILOVER, true);
-
-        return new IgniteFutureImpl<>(cctx.kernalContext().task().execute(taskCls, snpName));
+    public boolean cancelLocalRestoreTask(String name) {
+        return restoreCacheGrpProc.cancel(new IgniteException("Operation has been interrupted by the user."), name);
     }
 
     /**
@@ -1597,6 +1574,25 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         catch (IOException e) {
             throw new IgniteException(e);
         }
+    }
+
+    /**
+     * @param taskCls Snapshot restore operation management task class.
+     * @param snpName Snapshot name.
+     */
+    private IgniteFuture<Boolean> executeRestoreManagementTask(
+        Class<? extends ComputeTask<String, Boolean>> taskCls,
+        String snpName
+    ) {
+        cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
+
+        Collection<ClusterNode> bltNodes = F.view(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
+            (node) -> CU.baselineNode(node, cctx.kernalContext().state().clusterState()));
+
+        cctx.kernalContext().task().setThreadContext(TC_SKIP_AUTH, true);
+        cctx.kernalContext().task().setThreadContext(TC_SUBGRID, bltNodes);
+
+        return new IgniteFutureImpl<>(cctx.kernalContext().task().execute(taskCls, snpName));
     }
 
     /**

@@ -49,7 +49,7 @@ public class IgniteCacheSnapshotManager<T extends SnapshotOperation>
 
     /**
      * Try to start local snapshot operation if it's required by discovery event.
-     *
+     *private IgniteFuture<Boolean> executeRestoreManagementTask(
      * @param discoveryEvt Discovery event.
      * @param topVer topology version on the moment when this method was called
      *
