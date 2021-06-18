@@ -51,33 +51,28 @@ public class NodePageStream<R> extends PageStream<R> {
     }
 
     /**
-     * @return Head of stream and then clean it.
-     */
-    public R get() {
-        R ret = head;
-
-        head = null;
-
-        return ret;
-    }
-
-    /**
      * @return {@code true} If this stream has next row, {@code false} otherwise.
      */
     @Override public boolean hasNext() throws IgniteCheckedException {
         if (head != null)
             return true;
-
-        return super.hasNext();
+        else {
+            if (!super.hasNext())
+                return false;
+            else
+                return (head = super.next()) != null;
+        }
     }
 
     /**
      * @return Next item from this stream.
      */
     @Override public R next() throws IgniteCheckedException {
-        head = super.next();
+        R o = head;
 
-        return head;
+        head = null;
+
+        return o;
     }
 
     /**

@@ -115,20 +115,11 @@ public class MergeSortDistributedCacheQueryReducer<R> extends AbstractDistribute
         for (int i = streamOff; i < streams.length; i++) {
             NodePageStream s = streams[i];
 
-            // Skip if stream has head: on previous next() head extracts from stream[streamOff], others streams do
-            // have head or it is the first run.
-            if (s.head() != null)
-                break;
-
             if (!s.hasNext()) {
                 // Nullify obsolete stream, move left bound.
                 streamsMap.remove(s.nodeId());
                 streams[i] = null;
                 streamOff++;
-            }
-            else {
-                // Prefetch head value.
-                s.next();
             }
         }
 
@@ -142,7 +133,7 @@ public class MergeSortDistributedCacheQueryReducer<R> extends AbstractDistribute
         } else
             bubbleUp(streams, streamOff, streamCmp);
 
-        return streams[streamOff].get();
+        return streams[streamOff].next();
     }
 
     /** {@inheritDoc} */
