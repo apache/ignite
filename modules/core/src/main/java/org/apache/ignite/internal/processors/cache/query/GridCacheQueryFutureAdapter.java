@@ -28,7 +28,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
@@ -369,36 +368,35 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
         return obj != NULL ? obj : null;
     }
 
-    /** {@inheritDoc} */
+    /** Forces to stop query, don't care about result.  */
     @Override public Collection<R> get() throws IgniteCheckedException {
-        if (!isDone())
-            requestFullPages();
+        forceStopQuery();
 
         return super.get();
     }
 
-    /** {@inheritDoc} */
+    /** Forces to stop query, don't care about result.  */
     @Override public Collection<R> get(long timeout, TimeUnit unit) throws IgniteCheckedException {
-        if (!isDone())
-            requestFullPages();
+        forceStopQuery();
 
         return super.get(timeout, unit);
     }
 
-    /** {@inheritDoc} */
+    /** Forces to stop query, don't care about result.  */
     @Override public Collection<R> getUninterruptibly() throws IgniteCheckedException {
-        if (!isDone())
-            requestFullPages();
+        forceStopQuery();
 
         return super.getUninterruptibly();
     }
 
-    /**
-     * Loads all left pages.
-     *
-     * @throws IgniteInterruptedCheckedException If thread is interrupted.
-     */
-    protected abstract void requestFullPages() throws IgniteInterruptedCheckedException;
+    /** Force stop query future. */
+    private void forceStopQuery() {
+        if (!isDone()) {
+            reducer().onCancel();
+
+            onDone(Collections.emptyList());
+        }
+    }
 
     /**
      * Clears future.

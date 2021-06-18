@@ -225,21 +225,6 @@ class PageStream<R> {
     }
 
     /**
-     * Request pages with whole data from nodes.
-     */
-    void requestFullPages() {
-        Collection<UUID> nodes = null;
-
-        synchronized (queueLock) {
-            if (!noMorePages && !subgrid.isEmpty())
-                nodes = new ArrayList<>(subgrid);
-        }
-
-        if (nodes != null)
-            reqPages.accept(nodes, true);
-    }
-
-    /**
      * @param nodeId Node ID to check.
      * @return {@code true} if specified node still runs query.
      */

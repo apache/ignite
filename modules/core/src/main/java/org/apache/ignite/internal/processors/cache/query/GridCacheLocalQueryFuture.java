@@ -70,11 +70,6 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
     }
 
     /** {@inheritDoc} */
-    @Override protected void requestFullPages() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override protected CacheQueryReducer<R> reducer() {
         return reducer;
     }

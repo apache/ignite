@@ -60,4 +60,9 @@ public interface CacheQueryReducer<T> {
      * Callback that invokes after a query future is done.
      */
     public void onFinish();
+
+    /**
+     * Callback is invoked on the query cancellation.
+     */
+    public void onCancel();
 }

@@ -22,7 +22,6 @@ import java.util.HashSet;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryPageRequester;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryFutureAdapter;
 import org.jetbrains.annotations.Nullable;
@@ -86,14 +85,6 @@ public class UnsortedDistributedCacheQueryReducer<R> extends AbstractDistributed
     /** {@inheritDoc} */
     @Override public void onCancel() {
         pageStream.cancel((ns) -> pageRequester.cancelQueryRequest(reqId, ns, fut.fields()));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void requestFullPages() throws IgniteInterruptedCheckedException {
-        awaitInitialization();
-
-        if (loadAllowed())
-            pageStream.requestFullPages();
     }
 
     /** {@inheritDoc} */

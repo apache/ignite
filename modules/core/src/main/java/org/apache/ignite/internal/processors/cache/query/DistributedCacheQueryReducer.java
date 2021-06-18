@@ -25,14 +25,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
  */
 public interface DistributedCacheQueryReducer<T> extends CacheQueryReducer<T> {
     /**
-     * Requests full cache query result pages from remote nodes. It can be done for speedup operation if user invokes
-     * get() on {@link GridCacheQueryFutureAdapter} instead of using it as iterator.
-     *
-     * @throws IgniteInterruptedCheckedException If thread is interrupted.
-     */
-    public void requestFullPages() throws IgniteInterruptedCheckedException;
-
-    /**
      * Checks whether cache query still runs on specified node. If a query finished (send all pages) on this node, then
      * this method has to return {@code false}.
      *
@@ -45,9 +37,4 @@ public interface DistributedCacheQueryReducer<T> extends CacheQueryReducer<T> {
      * Blocks current thread until reducer will be ready to return the very first result item for the query.
      */
     public void awaitInitialization() throws IgniteInterruptedCheckedException;
-
-    /**
-     * Callback is invoked on the query cancellation.
-     */
-    public void onCancel();
 }

@@ -27,7 +27,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryPageRequester;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -162,16 +161,6 @@ public class MergeSortDistributedCacheQueryReducer<R> extends AbstractDistribute
     @Override public void onError() {
         for (NodePageStream<R> s: streamsMap.values())
             s.onError();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void requestFullPages() throws IgniteInterruptedCheckedException {
-        awaitInitialization();
-
-        if (loadAllowed()) {
-            for (NodePageStream<R> s: streamsMap.values())
-                s.requestFullPages();
-        }
     }
 
     /** {@inheritDoc} */

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.query;
 
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 
@@ -78,11 +77,6 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
         if (isDone() && error() != null)
             // Throw the exception if future failed.
             get();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void requestFullPages() throws IgniteInterruptedCheckedException {
-        reducer.requestFullPages();
     }
 
     /** {@inheritDoc} */

@@ -55,6 +55,11 @@ public class LocalCacheQueryReducer<R> implements CacheQueryReducer<R> {
     }
 
     /** {@inheritDoc} */
+    @Override public void onCancel() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public void onError() {
         pageStream.onError();
     }
