@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.commandline.snapshot;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
@@ -26,15 +30,17 @@ import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.visor.snapshot.VisorSnapshotRestoreTaskAction;
+import org.apache.ignite.internal.visor.snapshot.VisorSnapshotRestoreTaskArg;
 import org.apache.ignite.mxbean.SnapshotMXBean;
 
-import static java.util.Collections.singletonMap;
 import static org.apache.ignite.internal.commandline.CommandList.SNAPSHOT;
+import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommand.CANCEL;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommand.CHECK;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommand.CREATE;
+import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommand.RESTORE;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommand.of;
 
 /**
@@ -45,7 +51,7 @@ import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommand
  */
 public class SnapshotCommand extends AbstractCommand<Object> {
     /** Command argument. */
-    private String snpName;
+    private Object cmdArg;
 
     /** Snapshot sub-command to execute. */
     private SnapshotSubcommand cmd;
@@ -56,13 +62,16 @@ public class SnapshotCommand extends AbstractCommand<Object> {
             Object res = executeTaskByNameOnNode(
                 client,
                 cmd.taskName(),
-                snpName,
+                arg(),
                 null,
                 clientCfg
             );
 
             if (cmd == CHECK)
                 ((IdleVerifyResultV2)res).print(log::info, true);
+
+            if (cmd == RESTORE)
+                log.info(String.valueOf(res));
 
             return res;
         }
@@ -76,28 +85,68 @@ public class SnapshotCommand extends AbstractCommand<Object> {
 
     /** {@inheritDoc} */
     @Override public Object arg() {
-        return snpName;
+        return cmdArg;
     }
 
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
         cmd = of(argIter.nextArg("Expected snapshot action."));
-        snpName = argIter.nextArg("Expected snapshot name.");
+        String snpName = argIter.nextArg("Expected snapshot name.");
 
-        if (F.isEmpty(snpName))
-            throw new IllegalArgumentException("Expected snapshot name.");
+        if (cmd != RESTORE) {
+            cmdArg = snpName;
+
+            return;
+        }
+
+        VisorSnapshotRestoreTaskAction cmdAction =
+            VisorSnapshotRestoreTaskAction.fromCmdArg(argIter.nextArg("Restore action expected."));
+
+        Set<String> grpNames = null;
+
+        if (argIter.hasNextSubArg()) {
+            String arg = argIter.nextArg("");
+
+            if (cmdAction != VisorSnapshotRestoreTaskAction.START)
+                throw new IllegalArgumentException("Invalid argument \"" + arg + "\", no more arguments expected.");
+
+            grpNames = argIter.parseStringSet(arg);
+        }
+
+        cmdArg = new VisorSnapshotRestoreTaskArg(cmdAction, snpName, grpNames);
     }
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger log) {
-        Command.usage(log, "Create cluster snapshot:", SNAPSHOT, singletonMap("snapshot_name", "Snapshot name."),
-            CREATE.toString(), "snapshot_name");
+        Map<String, String> commonParams = Collections.singletonMap("snapshot_name", "Snapshot name.");
 
-        Command.usage(log, "Cancel running snapshot:", SNAPSHOT, singletonMap("snapshot_name", "Snapshot name."),
-            CANCEL.toString(), "snapshot_name");
+        Command.usage(log, "Create cluster snapshot:", SNAPSHOT, commonParams, CREATE.toString(), "snapshot_name");
+        Command.usage(log, "Cancel running snapshot:", SNAPSHOT, commonParams, CANCEL.toString(), "snapshot_name");
+        Command.usage(log, "Check snapshot:", SNAPSHOT, commonParams, CHECK.toString(), "snapshot_name");
 
-        Command.usage(log, "Check snapshot:", SNAPSHOT, singletonMap("snapshot_name", "Snapshot name."),
-            CHECK.toString(), "snapshot_name");
+        Map<String, String> startParams = new LinkedHashMap<>(commonParams);
+
+        startParams.put("group1,...groupN", "Cache group names.");
+
+        Command.usage(log, "Restore snapshot:", SNAPSHOT, startParams, RESTORE.toString(),
+            VisorSnapshotRestoreTaskAction.START.cmdName(), "snapshot_name", optional("group1,...groupN"));
+
+        Command.usage(log, "Snapshot restore operation status:", SNAPSHOT, commonParams, RESTORE.toString(),
+            VisorSnapshotRestoreTaskAction.STATUS.cmdName(), "snapshot_name");
+
+        Command.usage(log, "Cancel snapshot restore operation:", SNAPSHOT, commonParams, RESTORE.toString(),
+            VisorSnapshotRestoreTaskAction.CANCEL.cmdName(), "snapshot_name");
+    }
+
+    /** {@inheritDoc} */
+    @Override public String confirmationPrompt() {
+        if (cmd != RESTORE)
+            return null;
+
+        VisorSnapshotRestoreTaskArg arg = (VisorSnapshotRestoreTaskArg)cmdArg;
+
+        return arg.jobAction() == VisorSnapshotRestoreTaskAction.START && arg.groupNames() != null ? null :
+            "Warning: command will restore ALL PUBLIC CACHE GROUPS from the snapshot " + arg.snapshotName() + '.';
     }
 
     /** {@inheritDoc} */
