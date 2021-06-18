@@ -54,7 +54,7 @@ public abstract class H2TreeIndexBase extends GridH2IndexBase {
         HashSet<Column> allColumnsSet) {
         long rowCnt = getRowCountApproximation();
 
-        double baseCost = getCostRangeIndexEx(masks, rowCnt, filters, filter, sortOrder, false, allColumnsSet);
+        double baseCost = getCostRangeIndex(ses, masks, rowCnt, filters, filter, sortOrder, false, allColumnsSet);
 
         int mul = getDistributedMultiplier(ses, filters, filter);
 
