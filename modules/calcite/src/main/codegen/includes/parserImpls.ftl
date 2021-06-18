@@ -307,7 +307,7 @@ SqlNode ColumnWithType() :
     final Span s = Span.of();
 }
 {
-    id = CompoundIdentifier()
+    id = SimpleIdentifier()
     type = DataType()
     [
         <NOT> <NULL> {
