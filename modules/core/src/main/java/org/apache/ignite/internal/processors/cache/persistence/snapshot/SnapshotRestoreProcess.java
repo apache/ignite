@@ -400,7 +400,7 @@ public class SnapshotRestoreProcess {
      * @return Future that will be finished when process the process is complete. The result of this future will be
      * {@code false} if the restore process with the specified snapshot name is not running at all.
      */
-    public IgniteFuture<Boolean> cancel(Exception reason, String snpName) {
+    public IgniteFuture<Boolean> cancel(IgniteCheckedException reason, String snpName) {
         SnapshotRestoreContext opCtx0;
         ClusterSnapshotFuture fut0 = null;
 
@@ -428,7 +428,7 @@ public class SnapshotRestoreProcess {
      *
      * @param reason Interruption reason.
      */
-    public void interrupt(Exception reason) {
+    public void interrupt(IgniteCheckedException reason) {
         SnapshotRestoreContext opCtx0 = opCtx;
 
         if (opCtx0 != null)
@@ -441,7 +441,7 @@ public class SnapshotRestoreProcess {
      * @param opCtx Snapshot restore operation context.
      * @param reason Interruption reason.
      */
-    private void interrupt(SnapshotRestoreContext opCtx, Exception reason) {
+    private void interrupt(SnapshotRestoreContext opCtx, IgniteCheckedException reason) {
         opCtx.err.compareAndSet(null, reason);
 
         IgniteFuture<?> stopFut;
