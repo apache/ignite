@@ -407,9 +407,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         maxWalArchiveSize = dsCfg.getMaxWalArchiveSize();
 
-        minWalArchiveSize = walArchiveUnlimited() ? UNLIMITED_WAL_ARCHIVE :
-            dsCfg.getMinWalArchiveSize() == HALF_MAX_WAL_ARCHIVE_SIZE ?
-                maxWalArchiveSize / 2 : dsCfg.getMinWalArchiveSize();
+        minWalArchiveSize = minWalArchiveSize(dsCfg);
 
         evt = ctx.event();
         failureProcessor = ctx.failure();
@@ -3495,5 +3493,19 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 }
             }
         }
+    }
+
+    /**
+     * Getting min size(in bytes) of WAL archive directory(greater than 0,
+     * or {@link DataStorageConfiguration#UNLIMITED_WAL_ARCHIVE} if max WAL archive size is unlimited).
+     *
+     * @param dsCfg Memory configuration.
+     * @return Min allowed size(in bytes) of WAL archives.
+     */
+    static long minWalArchiveSize(DataStorageConfiguration dsCfg) {
+        long max = dsCfg.getMaxWalArchiveSize();
+        long min = dsCfg.getMinWalArchiveSize();
+
+        return max == UNLIMITED_WAL_ARCHIVE ? max : min == HALF_MAX_WAL_ARCHIVE_SIZE ? max / 2 : min;
     }
 }
