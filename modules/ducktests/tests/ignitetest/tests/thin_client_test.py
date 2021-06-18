@@ -16,13 +16,11 @@
 """
 This module contains client tests.
 """
-from ducktape.mark import matrix
-
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, IgniteThinClientConfiguration
 from ignitetest.services.utils.ssl.client_connector_configuration import ClientConnectorConfiguration
-from ignitetest.utils import cluster
+from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion
 
@@ -39,7 +37,8 @@ class ThinClientTest(IgniteTest):
     JAVA_CLIENT_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.thin_client_test.ThinClientSelfTestApplication"
 
     @cluster(num_nodes=2)
-    @matrix(server_version=[str(DEV_BRANCH), str(LATEST)], thin_client_version=[str(DEV_BRANCH), str(LATEST)])
+    @ignite_versions(str(DEV_BRANCH), str(LATEST), version_prefix="server_version")
+    @ignite_versions(str(DEV_BRANCH), str(LATEST), version_prefix="thin_client_version")
     def test_thin_client_compatibility(self, server_version, thin_client_version):
         """
         Thin client compatibility test.
