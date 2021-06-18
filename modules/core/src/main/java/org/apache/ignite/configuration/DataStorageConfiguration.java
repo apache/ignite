@@ -189,7 +189,7 @@ public class DataStorageConfiguration implements Serializable {
     public static final boolean DFLT_USE_ASYNC_FILE_IO_FACTORY = true;
 
     /** Value used to indicate the use of half of the {@link #getMaxWalArchiveSize}. */
-    public static final long HALF_MAX_WAL_ARCHIVE_SIZE = -2;
+    public static final long HALF_MAX_WAL_ARCHIVE_SIZE = -1;
 
     /** Initial size of a memory chunk reserved for system cache. */
     private long sysRegionInitSize = DFLT_SYS_REG_INIT_SIZE;

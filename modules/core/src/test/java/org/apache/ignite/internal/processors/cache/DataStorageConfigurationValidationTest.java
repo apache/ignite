@@ -22,7 +22,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.HALF_MAX_WAL_ARCHIVE_SIZE;
-import static org.apache.ignite.configuration.DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.junit.Assert.assertEquals;
 
@@ -51,10 +50,9 @@ public class DataStorageConfigurationValidationTest {
     public void testMinWalArchiveSize() {
         DataStorageConfiguration cfg = new DataStorageConfiguration();
 
-        assertEquals(-1, UNLIMITED_WAL_ARCHIVE);
-        assertEquals(-2, HALF_MAX_WAL_ARCHIVE_SIZE);
+        assertEquals(-1, HALF_MAX_WAL_ARCHIVE_SIZE);
 
-        for (long i : F.asList(Long.MIN_VALUE, 0L, UNLIMITED_WAL_ARCHIVE))
+        for (long i : F.asList(Long.MIN_VALUE, 0L))
             assertThrows(null, () -> cfg.setMinWalArchiveSize(i), IllegalArgumentException.class, null);
 
         for (long i : F.asList(1L, 100L, Long.MAX_VALUE, HALF_MAX_WAL_ARCHIVE_SIZE))
