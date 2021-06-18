@@ -25,7 +25,7 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.apache.ignite.lang.IgniteFuture;
 
 /**
- * Snapshot restore management task.
+ * Visor snapshot restore task.
  */
 @GridInternal
 public class VisorSnapshotRestoreTask extends VisorOneNodeTask<VisorSnapshotRestoreTaskArg, String> {

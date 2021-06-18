@@ -2052,7 +2052,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** Snapshot finish time. */
         volatile long endTime;
 
-        /** Interrupted exception. */
+        /** Operation interruption exception. */
         volatile IgniteCheckedException interruptEx;
 
         /**

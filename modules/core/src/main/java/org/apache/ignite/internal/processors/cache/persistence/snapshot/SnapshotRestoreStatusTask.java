@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.resources.IgniteInstanceResource;
 
 /**
- * Snapshot resore status task.
+ * Snapshot restore status task.
  */
 @GridInternal
 class SnapshotRestoreStatusTask extends SnapshotRestoreManagementTask {
