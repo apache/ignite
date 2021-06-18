@@ -33,7 +33,7 @@ public interface IndexQueryCriteria extends Serializable {
      * Merges multiple criteria.
      *
      * @param criteria Criteria to merge.
-     * @return This for chaining.
+     * @return New criteria.
      */
     public abstract IndexQueryCriteria and(IndexQueryCriteria criteria);
 }

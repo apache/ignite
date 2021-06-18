@@ -19,10 +19,11 @@ package org.apache.ignite.internal.cache.query;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.ignite.cache.query.IndexQueryCriteria;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Range index criteria that applies to BPlusTree based indexes.
@@ -32,16 +33,18 @@ public class RangeIndexQueryCriteria implements IndexQueryCriteria {
     private static final long serialVersionUID = 0L;
 
     /** List of criteria fields. */
-    private final List<String> fields = new ArrayList<>();
+    private final List<String> fields;
 
     /** List of criteria. Order is consistent with {@link #fields}. */
-    private final List<RangeCriterion> fldCriteria = new ArrayList<>();
+    private final List<RangeCriterion> fldCriteria;
 
     /** */
-    public RangeIndexQueryCriteria(String field, @Nullable Object lower, @Nullable Object upper, boolean lowIncl, boolean upIncl) {
-        fields.add(field);
+    public RangeIndexQueryCriteria(List<RangeCriterion> criterion) {
+        fldCriteria = Collections.unmodifiableList(new ArrayList<>(criterion));
 
-        fldCriteria.add(new RangeCriterion(lower, upper, lowIncl, upIncl));
+        List<String> fields = criterion.stream().map(c -> c.field).collect(Collectors.toList());
+
+        this.fields = Collections.unmodifiableList(fields);
     }
 
     /** {@inheritDoc} */
@@ -51,20 +54,21 @@ public class RangeIndexQueryCriteria implements IndexQueryCriteria {
 
     /** {@inheritDoc} */
     @Override public IndexQueryCriteria and(IndexQueryCriteria criteria) {
-        A.ensure(criteria instanceof RangeIndexQueryCriteria, "Expect a range criteria for chaining.");
+        A.ensure(criteria instanceof RangeIndexQueryCriteria, "Expect a range criteria for merging criteria.");
 
         RangeIndexQueryCriteria rngCrit = (RangeIndexQueryCriteria) criteria;
+
+        List<RangeCriterion> listCriteria = new ArrayList<>(fldCriteria);
 
         for (int i = 0; i < rngCrit.fields.size(); i++) {
             String f = rngCrit.fields.get(i);
 
             A.ensure(!fields.contains(f), "Duplicated field in criteria: " + f + ".");
 
-            fields.add(f);
-            fldCriteria.add(rngCrit.fldCriteria.get(i));
+            listCriteria.add(rngCrit.fldCriteria.get(i));
         }
 
-        return this;
+        return new RangeIndexQueryCriteria(listCriteria);
     }
 
     /** */
@@ -76,6 +80,9 @@ public class RangeIndexQueryCriteria implements IndexQueryCriteria {
     public static class RangeCriterion implements Serializable {
         /** */
         private static final long serialVersionUID = 0L;
+
+        /** Field. */
+        private final String field;
 
         /** Lower bound. */
         private final Object lower;
@@ -90,7 +97,8 @@ public class RangeIndexQueryCriteria implements IndexQueryCriteria {
         private final boolean upperIncl;
 
         /** */
-        RangeCriterion(Object lower, Object upper, boolean lowerIncl, boolean upperIncl) {
+        public RangeCriterion(String field, Object lower, Object upper, boolean lowerIncl, boolean upperIncl) {
+            this.field = field;
             this.lower = lower;
             this.upper = upper;
             this.lowerIncl = lowerIncl;
@@ -99,7 +107,7 @@ public class RangeIndexQueryCriteria implements IndexQueryCriteria {
 
         /** Swap boundaries. */
         public RangeCriterion swap() {
-            return new RangeCriterion(upper, lower, upperIncl, lowerIncl);
+            return new RangeCriterion(field, upper, lower, upperIncl, lowerIncl);
         }
 
         /** */

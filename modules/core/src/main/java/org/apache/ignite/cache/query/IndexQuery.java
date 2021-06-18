@@ -76,7 +76,7 @@ public class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
         for (IndexQueryCriteria c: criteria) {
             A.notNull(c, "criteria");
 
-            this.criteria.and(c);
+            this.criteria = this.criteria.and(c);
         }
 
         return this;
