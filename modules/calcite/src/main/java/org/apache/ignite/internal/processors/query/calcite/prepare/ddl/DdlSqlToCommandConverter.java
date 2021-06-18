@@ -45,6 +45,8 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlAlterTableAddColumn;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlAlterTableDropColumn;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTable;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOption;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateTableOptionEnum;
@@ -224,6 +226,64 @@ public class DdlSqlToCommandConverter {
         dropTblCmd.ifExists(dropTblNode.ifExists);
 
         return dropTblCmd;
+    }
+
+    /**
+     * Converts a given IgniteSqlAlterTableAddColumn AST to a AlterTableAddCommand.
+     *
+     * @param alterTblNode Root node of the given AST.
+     * @param ctx Planning context.
+     */
+    private AlterTableAddCommand convertAlterTableAdd(IgniteSqlAlterTableAddColumn alterTblNode, PlanningContext ctx) {
+        AlterTableAddCommand alterTblCmd = new AlterTableAddCommand();
+
+        alterTblCmd.schemaName(deriveSchemaName(alterTblNode.name(), ctx));
+        alterTblCmd.tableName(deriveObjectName(alterTblNode.name(), ctx, "table name"));
+        alterTblCmd.ifTableExists(alterTblNode.ifExists());
+        alterTblCmd.ifColumnNotExists(alterTblNode.ifNotExistsColumn());
+
+        List<ColumnDefinition> cols = new ArrayList<>();
+
+        for (SqlNode colNode : alterTblNode.columns()) {
+            assert colNode instanceof SqlColumnDeclaration : colNode.getClass();
+
+            SqlColumnDeclaration col = (SqlColumnDeclaration)colNode;
+
+            assert col.name.isSimple();
+
+            String name = col.name.getSimple();
+            RelDataType type = ctx.planner().convert(col.dataType);
+
+            assert col.expression == null : "Unexpected column default value" + col.expression;
+
+            cols.add(new ColumnDefinition(name, type, null));
+        }
+
+        alterTblCmd.columns(cols);
+
+        return alterTblCmd;
+    }
+
+    /**
+     * Converts a given IgniteSqlAlterTableDropColumn AST to a AlterTableDropCommand.
+     *
+     * @param alterTblNode Root node of the given AST.
+     * @param ctx Planning context.
+     */
+    private AlterTableDropCommand convertAlterTableDrop(IgniteSqlAlterTableDropColumn alterTblNode, PlanningContext ctx) {
+        AlterTableDropCommand alterTblCmd = new AlterTableDropCommand();
+
+        alterTblCmd.schemaName(deriveSchemaName(alterTblNode.name(), ctx));
+        alterTblCmd.tableName(deriveObjectName(alterTblNode.name(), ctx, "table name"));
+        alterTblCmd.ifTableExists(alterTblNode.ifExists());
+        alterTblCmd.ifColumnExists(alterTblNode.ifExistsColumn());
+
+        List<String> cols = new ArrayList<>();
+        alterTblNode.columns().forEach(c -> cols.add(((SqlIdentifier)c).getSimple()));
+
+        alterTblCmd.columns(cols);
+
+        return alterTblCmd;
     }
 
     /**

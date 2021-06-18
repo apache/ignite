@@ -28,8 +28,12 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlAlterTable;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlAlterTableAddColumn;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlAlterTableDropColumn;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateIndex;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlDropIndex;
+import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
@@ -47,7 +51,10 @@ public class SqlToNativeCommandConverter {
      */
     public static boolean isSupported(SqlNode sqlCmd) {
         return sqlCmd instanceof IgniteSqlCreateIndex
-            || sqlCmd instanceof IgniteSqlDropIndex;
+            || sqlCmd instanceof IgniteSqlDropIndex
+            || sqlCmd instanceof IgniteSqlAlterTable
+            || sqlCmd instanceof IgniteSqlAlterTableAddColumn
+            || sqlCmd instanceof IgniteSqlAlterTableDropColumn;
     }
 
     /**
@@ -68,6 +75,8 @@ public class SqlToNativeCommandConverter {
             return convertCreateIndex((IgniteSqlCreateIndex)cmd, pctx);
         else if (cmd instanceof IgniteSqlDropIndex)
             return convertDropIndex((IgniteSqlDropIndex)cmd, pctx);
+        else if (cmd instanceof IgniteSqlAlterTable)
+            return convertAlterTable((IgniteSqlAlterTable)cmd, pctx);
 
         throw new IgniteSQLException("Unsupported native operation [" +
             "cmdName=" + (cmd == null ? null : cmd.getClass().getSimpleName()) + "; " +
@@ -113,5 +122,15 @@ public class SqlToNativeCommandConverter {
         String idxName = deriveObjectName(sqlCmd.name(), ctx, "index name");
 
         return new SqlDropIndexCommand(schemaName, idxName, sqlCmd.ifExists());
+    }
+
+    /**
+     * Converts ALTER TABLE ... LOGGING/NOLOGGING command.
+     */
+    private static SqlAlterTableCommand convertAlterTable(IgniteSqlAlterTable sqlCmd, PlanningContext ctx) {
+        String schemaName = deriveSchemaName(sqlCmd.name(), ctx);
+        String tblName = deriveObjectName(sqlCmd.name(), ctx, "table name");
+
+        return new SqlAlterTableCommand(schemaName, tblName, sqlCmd.ifExists(), sqlCmd.logging());
     }
 }

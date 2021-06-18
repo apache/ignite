@@ -17,7 +17,7 @@
 package org.apache.ignite.internal.processors.query.calcite.sql;
 
 import java.util.Objects;
-import org.apache.calcite.sql.SqlAlter;
+import org.apache.calcite.sql.SqlDdl;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
@@ -28,7 +28,7 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 /**
  * Parse tree for {@code ALTER TABLE } statement
  */
-public abstract class IgniteAbstractSqlAlterTable extends SqlAlter {
+public abstract class IgniteAbstractSqlAlterTable extends SqlDdl {
     /** */
     protected final SqlIdentifier name;
 
@@ -41,7 +41,7 @@ public abstract class IgniteAbstractSqlAlterTable extends SqlAlter {
 
     /** */
     protected IgniteAbstractSqlAlterTable(SqlParserPos pos, boolean ifExists, SqlIdentifier tblName) {
-        super(pos, "TABLE");
+        super(OPERATOR, pos);
         this.ifExists = ifExists;
         name = Objects.requireNonNull(tblName, "table name");
     }
@@ -52,7 +52,9 @@ public abstract class IgniteAbstractSqlAlterTable extends SqlAlter {
     }
 
     /** {@inheritDoc} */
-    @Override protected void unparseAlterOperation(SqlWriter writer, int leftPrec, int rightPrec) {
+    @Override public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
+        writer.keyword(getOperator().getName());
+
         if (ifExists)
             writer.keyword("IF EXISTS");
 

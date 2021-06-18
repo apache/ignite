@@ -330,7 +330,7 @@ SqlNodeList ColumnWithTypeOrList() :
     list = ColumnWithTypeList() { return list; }
 }
 
-SqlAlter SqlAlterTable() :
+SqlNode SqlAlterTable() :
 {
     final Span s;
     final boolean ifExists;
