@@ -402,8 +402,8 @@ public class Tracer {
         if (isLabeled) {
             Set<Double> lbls = values.stream().map(LabeledVector::label).collect(Collectors.toSet());
             Random rnd = new Random(0);
-            for (Double label : lbls)
-                labelsMapping.put(label.intValue(), new Color(rnd.nextInt()));
+            for (Double lbl : lbls)
+                labelsMapping.put(lbl.intValue(), new Color(rnd.nextInt()));
         }
 
         showVectorsHtml(name, values, xIdx,

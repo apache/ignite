@@ -34,9 +34,9 @@ public class DiscreteNaiveBayesModelTest {
             {{0, 1}, {1. / 7, 2. / 7, 4. / 7}, {4. / 7, 3. / 7}, {2. / 7, 3. / 7, 2. / 7}, {4. / 7, 3. / 7}}
         };
 
-        double[] classProbabilities = new double[] {6. / 13, 7. / 13};
+        double[] clsProbabilities = new double[] {6. / 13, 7. / 13};
         double[][] thresholds = new double[][] {{.5}, {.2, .7}, {.5}, {.5, 1.5}, {.5}};
-        DiscreteNaiveBayesModel mdl = new DiscreteNaiveBayesModel(probabilities, classProbabilities,
+        DiscreteNaiveBayesModel mdl = new DiscreteNaiveBayesModel(probabilities, clsProbabilities,
                 new double[] {first, second}, thresholds, new DiscreteNaiveBayesSumsHolder());
         Vector observation = VectorUtils.of(2, 0, 1, 2, 0);
 

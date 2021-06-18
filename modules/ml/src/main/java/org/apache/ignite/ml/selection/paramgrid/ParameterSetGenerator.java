@@ -83,8 +83,8 @@ public class ParameterSetGenerator {
 
         Double[] valuesOfCurrDimension = map.get(dimensionNum);
 
-        for (Double specificValue : valuesOfCurrDimension) {
-            nextPnt[dimensionNum] = specificValue;
+        for (Double specificVal : valuesOfCurrDimension) {
+            nextPnt[dimensionNum] = specificVal;
             traverseTree(map, nextPnt, dimensionNum);
         }
     }

@@ -304,7 +304,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
             boolean quiet = Boolean.valueOf(System.getProperty(IGNITE_QUIET, "true"));
 
             boolean consoleAppenderFound = false;
-            Logger rootLogger = null;
+            Logger rootLog = null;
 
             for (Logger log = impl; log != null; ) {
                 if (!consoleAppenderFound) {
@@ -321,7 +321,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
                 }
 
                 if (log.getParent() == null) {
-                    rootLogger = log;
+                    rootLog = log;
 
                     break;
                 }
@@ -336,7 +336,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAware {
             if (!consoleAppenderFound && !quiet &&
                 Boolean.valueOf(System.getProperty(IGNITE_CONSOLE_APPENDER, "true"))) {
                 // Console appender not found => we've looked through all categories up to root.
-                assert rootLogger != null;
+                assert rootLog != null;
 
                 // User launched ignite in verbose mode and did not add console appender with INFO level
                 // to configuration and did not set IGNITE_CONSOLE_APPENDER to false.

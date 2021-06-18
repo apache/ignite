@@ -90,8 +90,8 @@ public class RandomForestClassifierTrainer
             return false;
 
         int i = 0;
-        for (Double label : uniqLabels)
-            lblMapping.put(label, i++);
+        for (Double lbl : uniqLabels)
+            lblMapping.put(lbl, i++);
 
         return super.init(dataset);
     }

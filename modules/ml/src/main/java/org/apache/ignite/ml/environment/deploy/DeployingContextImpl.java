@@ -55,17 +55,17 @@ public class DeployingContextImpl implements DeployingContext, Serializable {
         if (preprocessorCls != null)
             logger.warn("Reinitialize deploying context [class=" + jobObj.getClass().getName() + "]");
 
-        Object objectToDeploy = jobObj;
-        while (objectToDeploy instanceof DeployableObject) {
-            List<Object> deps = ((DeployableObject)objectToDeploy).getDependencies();
+        Object objToDeploy = jobObj;
+        while (objToDeploy instanceof DeployableObject) {
+            List<Object> deps = ((DeployableObject)objToDeploy).getDependencies();
             if (deps.isEmpty())
                 break;
             else
-                objectToDeploy = deps.get(0);
+                objToDeploy = deps.get(0);
         }
 
-        assert objectToDeploy != null;
-        preprocessorCls = objectToDeploy.getClass();
+        assert objToDeploy != null;
+        preprocessorCls = objToDeploy.getClass();
         clientClsLdr = preprocessorCls.getClassLoader();
     }
 

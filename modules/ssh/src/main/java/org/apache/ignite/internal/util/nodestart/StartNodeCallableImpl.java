@@ -588,8 +588,8 @@ public class StartNodeCallableImpl implements StartNodeCallable {
      * @param loggers Loggers.
      */
     private void info(String msg, IgniteLogger... loggers) {
-        for (IgniteLogger logger : loggers)
-            if (logger != null && logger.isInfoEnabled())
-                logger.info(msg);
+        for (IgniteLogger log : loggers)
+            if (log != null && log.isInfoEnabled())
+                log.info(msg);
     }
 }

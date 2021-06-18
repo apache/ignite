@@ -121,9 +121,9 @@ public final class OneHotEncoderPreprocessor<K, V> extends EncoderPreprocessor<K
      */
     private int getAdditionalSize(Map<String, Integer>[] encodingValues) {
         int newSize = 0;
-        for (Map<String, Integer> encodingValue : encodingValues) {
-            if (encodingValue != null)
-                newSize += encodingValue.size(); // - 1 if we don't keep NULL values and it has NULL values
+        for (Map<String, Integer> encodingVal : encodingValues) {
+            if (encodingVal != null)
+                newSize += encodingVal.size(); // - 1 if we don't keep NULL values and it has NULL values
         }
         return newSize;
     }

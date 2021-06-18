@@ -139,9 +139,9 @@ class GmmPartitionData implements AutoCloseable {
         @Override public GmmPartitionData build(LearningEnvironment env, Iterator<UpstreamEntry<K, V>> upstreamData,
             long upstreamDataSize, EmptyContext ctx) {
 
-            int rowsCount = Math.toIntExact(upstreamDataSize);
-            List<LabeledVector<Double>> xs = new ArrayList<>(rowsCount);
-            double[][] pcxi = new double[rowsCount][countOfComponents];
+            int rowsCnt = Math.toIntExact(upstreamDataSize);
+            List<LabeledVector<Double>> xs = new ArrayList<>(rowsCnt);
+            double[][] pcxi = new double[rowsCnt][countOfComponents];
 
             while (upstreamData.hasNext()) {
                 UpstreamEntry<K, V> entry = upstreamData.next();

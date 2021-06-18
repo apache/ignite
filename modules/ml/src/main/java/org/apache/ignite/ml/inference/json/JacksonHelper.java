@@ -27,13 +27,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class JacksonHelper {
     public static void readAndValidateBasicJsonModelProperties(Path path, ObjectMapper mapper, String className) throws IOException {
         Map jsonAsMap = mapper.readValue(new File(path.toAbsolutePath().toString()), LinkedHashMap.class);
-        String formatVersion = jsonAsMap.get("formatVersion").toString();
+        String formatVer = jsonAsMap.get("formatVersion").toString();
         Long timestamp = (Long) jsonAsMap.get("timestamp");
         String uid = jsonAsMap.get("uid").toString();
-        String modelClass = jsonAsMap.get("modelClass").toString();
+        String modelCls = jsonAsMap.get("modelClass").toString();
 
-        if (!modelClass.equals(className)) {
-            throw new IllegalArgumentException("You are trying to load " + modelClass + " model to " + className);
+        if (!modelCls.equals(className)) {
+            throw new IllegalArgumentException("You are trying to load " + modelCls + " model to " + className);
         }
     }
 }

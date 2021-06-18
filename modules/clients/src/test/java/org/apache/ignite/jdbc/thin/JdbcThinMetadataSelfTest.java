@@ -626,7 +626,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
 
             Set<String> actualUserCols = new HashSet<>(expectedCols.size());
 
-            Set<String> actualSystemCols = new HashSet<>();
+            Set<String> actualSysCols = new HashSet<>();
 
             while (rs.next()) {
                 int precision = rs.getInt("COLUMN_SIZE");
@@ -645,7 +645,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 if (!schemaName.equals(SCHEMA_SYS))
                     actualUserCols.add(colDefinition);
                 else
-                    actualSystemCols.add(colDefinition);
+                    actualSysCols.add(colDefinition);
             }
 
             Assert.assertEquals(expectedCols, actualUserCols);
@@ -1077,7 +1077,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.DS_SETS.SIZE.null.10"
                 ));
 
-            Assert.assertEquals(expectedCols, actualSystemCols);
+            Assert.assertEquals(expectedCols, actualSysCols);
         }
     }
 

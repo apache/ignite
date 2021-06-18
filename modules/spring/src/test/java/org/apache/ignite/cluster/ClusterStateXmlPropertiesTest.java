@@ -37,12 +37,12 @@ public class ClusterStateXmlPropertiesTest extends GridCommonAbstractTest {
      */
     @Test
     public void testXmlConfigurationWithSettedProperties() throws Exception {
-        IgniteConfiguration defaultCfg = new IgniteConfiguration();
+        IgniteConfiguration dfltCfg = new IgniteConfiguration();
 
-        assertFalse(getBooleanFieldFromConfig(defaultCfg, "activeOnStartPropSetFlag"));
-        assertFalse(getBooleanFieldFromConfig(defaultCfg, "autoActivationPropSetFlag"));
-        assertTrue(defaultCfg.isActiveOnStart());
-        assertTrue(defaultCfg.isAutoActivationEnabled());
+        assertFalse(getBooleanFieldFromConfig(dfltCfg, "activeOnStartPropSetFlag"));
+        assertFalse(getBooleanFieldFromConfig(dfltCfg, "autoActivationPropSetFlag"));
+        assertTrue(dfltCfg.isActiveOnStart());
+        assertTrue(dfltCfg.isAutoActivationEnabled());
 
         IgniteConfiguration cfg = IgnitionEx.loadConfiguration(
             U.resolveIgniteUrl("modules/spring/src/test/config/state/cluster-state.xml")

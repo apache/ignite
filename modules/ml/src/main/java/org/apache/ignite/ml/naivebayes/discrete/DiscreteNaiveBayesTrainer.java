@@ -134,15 +134,15 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
             int featureCnt = sumsHolder.valuesInBucketPerLbl.get(sortedLabels.get(0)).length;
 
             double[][][] probabilities = new double[lbCnt][featureCnt][];
-            double[] classProbabilities = new double[lbCnt];
+            double[] clsProbabilities = new double[lbCnt];
             double[] labels = new double[lbCnt];
             long datasetSize = sumsHolder.featureCountersPerLbl.values().stream().mapToInt(i -> i).sum();
 
             int lbl = 0;
 
-            for (Double label : sortedLabels) {
-                int cnt = sumsHolder.featureCountersPerLbl.get(label);
-                long[][] sum = sumsHolder.valuesInBucketPerLbl.get(label);
+            for (Double dblLbl : sortedLabels) {
+                int cnt = sumsHolder.featureCountersPerLbl.get(dblLbl);
+                long[][] sum = sumsHolder.valuesInBucketPerLbl.get(dblLbl);
 
                 for (int i = 0; i < featureCnt; i++) {
 
@@ -154,18 +154,18 @@ public class DiscreteNaiveBayesTrainer extends SingleLabelDatasetTrainer<Discret
                 }
 
                 if (equiprobableClasses)
-                    classProbabilities[lbl] = 1. / lbCnt;
+                    clsProbabilities[lbl] = 1. / lbCnt;
                 else if (priorProbabilities != null) {
-                    assert classProbabilities.length == priorProbabilities.length;
-                    classProbabilities[lbl] = priorProbabilities[lbl];
+                    assert clsProbabilities.length == priorProbabilities.length;
+                    clsProbabilities[lbl] = priorProbabilities[lbl];
                 }
                 else
-                    classProbabilities[lbl] = (double)cnt / datasetSize;
+                    clsProbabilities[lbl] = (double)cnt / datasetSize;
 
-                labels[lbl] = label;
+                labels[lbl] = dblLbl;
                 ++lbl;
             }
-            return new DiscreteNaiveBayesModel(probabilities, classProbabilities, labels, bucketThresholds, sumsHolder);
+            return new DiscreteNaiveBayesModel(probabilities, clsProbabilities, labels, bucketThresholds, sumsHolder);
         }
         catch (Exception e) {
             throw new RuntimeException(e);

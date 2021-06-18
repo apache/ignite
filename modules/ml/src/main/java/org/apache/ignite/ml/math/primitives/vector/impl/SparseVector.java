@@ -90,8 +90,8 @@ public class SparseVector extends AbstractVector implements StorageConstants {
             @Override public boolean tryAdvance(Consumer<? super Double> act) {
                 Set<Integer> indexes = storage().indexes();
 
-                for (Integer index : indexes)
-                    act.accept(storageGet(index));
+                for (Integer idx : indexes)
+                    act.accept(storageGet(idx));
 
                 return true;
             }

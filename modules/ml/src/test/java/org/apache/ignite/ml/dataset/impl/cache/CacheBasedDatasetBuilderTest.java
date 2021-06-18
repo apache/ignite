@@ -71,17 +71,17 @@ public class CacheBasedDatasetBuilderTest extends GridCommonAbstractTest {
             TestUtils.testEnvBuilder().buildForTrainer()
         );
 
-        Affinity<Integer> upstreamAffinity = ignite.affinity(upstreamCache.getName());
-        Affinity<Integer> datasetAffinity = ignite.affinity(dataset.getDatasetCache().getName());
+        Affinity<Integer> upstreamAff = ignite.affinity(upstreamCache.getName());
+        Affinity<Integer> datasetAff = ignite.affinity(dataset.getDatasetCache().getName());
 
-        int upstreamPartitions = upstreamAffinity.partitions();
-        int datasetPartitions = datasetAffinity.partitions();
+        int upstreamPartitions = upstreamAff.partitions();
+        int datasetPartitions = datasetAff.partitions();
 
         assertEquals(upstreamPartitions, datasetPartitions);
 
         for (int part = 0; part < upstreamPartitions; part++) {
-            Collection<ClusterNode> upstreamPartNodes = upstreamAffinity.mapPartitionToPrimaryAndBackups(part);
-            Collection<ClusterNode> datasetPartNodes = datasetAffinity.mapPartitionToPrimaryAndBackups(part);
+            Collection<ClusterNode> upstreamPartNodes = upstreamAff.mapPartitionToPrimaryAndBackups(part);
+            Collection<ClusterNode> datasetPartNodes = datasetAff.mapPartitionToPrimaryAndBackups(part);
 
             assertEqualsCollections(upstreamPartNodes, datasetPartNodes);
         }

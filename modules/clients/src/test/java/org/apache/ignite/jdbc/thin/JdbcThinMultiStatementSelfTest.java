@@ -117,7 +117,7 @@ public class JdbcThinMultiStatementSelfTest extends GridCommonAbstractTest {
 
         int delYounger = 19;
 
-        String complexQuery =
+        String complexQry =
             "INSERT INTO TEST_TX VALUES (5, ?, 'Leo'); " +   // 1
                 ";;;;" +
                 "BEGIN ; " +
@@ -127,7 +127,7 @@ public class JdbcThinMultiStatementSelfTest extends GridCommonAbstractTest {
                 "COMMIT;";
 
         try (Connection c = GridTestUtils.connect(grid(0), null)) {
-            try (PreparedStatement p = c.prepareStatement(complexQuery)) {
+            try (PreparedStatement p = c.prepareStatement(complexQry)) {
                 p.setInt(1, leoAge);
                 p.setString(2, nickolas);
                 p.setInt(3, gabAge);

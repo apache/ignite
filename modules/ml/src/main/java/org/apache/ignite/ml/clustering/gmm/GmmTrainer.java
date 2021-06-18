@@ -261,19 +261,19 @@ public class GmmTrainer extends SingleLabelDatasetTrainer<GmmModel> {
      */
     private Optional<GmmModel> fit(Dataset<EmptyContext, GmmPartitionData> dataset) {
         return init(dataset).map(model -> {
-            GmmModel currentModel = model;
+            GmmModel curModel = model;
 
             do {
-                UpdateResult updateResult = updateModel(dataset, currentModel);
-                currentModel = updateResult.model;
+                UpdateResult updateResult = updateModel(dataset, curModel);
+                curModel = updateResult.model;
 
-                double minCompProb = currentModel.componentsProbs().minElement().get();
+                double minCompProb = curModel.componentsProbs().minElement().get();
                 if (countOfComponents >= maxCountOfClusters || minCompProb < minClusterProbability)
                     break;
 
                 double maxXProb = updateResult.maxProbInDataset;
                 NewComponentStatisticsAggregator newMeanAdder = NewComponentStatisticsAggregator.computeNewMean(dataset,
-                    maxXProb, maxLikelihoodDivergence, currentModel);
+                    maxXProb, maxLikelihoodDivergence, curModel);
 
                 Vector newMean = newMeanAdder.mean();
                 if (newMeanAdder.rowCountForNewCluster() < minElementsForNewCluster)
@@ -281,21 +281,21 @@ public class GmmTrainer extends SingleLabelDatasetTrainer<GmmModel> {
 
                 countOfComponents += 1;
                 Vector[] newMeans = new Vector[countOfComponents];
-                for (int i = 0; i < currentModel.countOfComponents(); i++)
-                    newMeans[i] = currentModel.distributions().get(i).mean();
+                for (int i = 0; i < curModel.countOfComponents(); i++)
+                    newMeans[i] = curModel.distributions().get(i).mean();
                 newMeans[countOfComponents - 1] = newMean;
 
                 initialMeans = newMeans;
 
                 Optional<GmmModel> newModelOpt = init(dataset);
                 if (newModelOpt.isPresent())
-                    currentModel = newModelOpt.get();
+                    curModel = newModelOpt.get();
                 else
                     break;
             }
             while (true);
 
-            return filterModel(currentModel);
+            return filterModel(curModel);
         });
     }
 
@@ -379,7 +379,7 @@ public class GmmTrainer extends SingleLabelDatasetTrainer<GmmModel> {
      */
     @NotNull private UpdateResult updateModel(Dataset<EmptyContext, GmmPartitionData> dataset, GmmModel model) {
         boolean isConverged = false;
-        int countOfIterations = 0;
+        int cntOfIterations = 0;
         double maxProbInDataset = Double.NEGATIVE_INFINITY;
         while (!isConverged) {
             MeanWithClusterProbAggregator.AggregatedStats stats = MeanWithClusterProbAggregator.aggreateStats(dataset, countOfComponents);
@@ -394,8 +394,8 @@ public class GmmTrainer extends SingleLabelDatasetTrainer<GmmModel> {
                 List<MultivariateGaussianDistribution> components = buildComponents(newMeans, newCovs);
                 GmmModel newModel = new GmmModel(clusterProbs, components);
 
-                countOfIterations += 1;
-                isConverged = isConverged(model, newModel) || countOfIterations > maxCountOfIterations;
+                cntOfIterations += 1;
+                isConverged = isConverged(model, newModel) || cntOfIterations > maxCountOfIterations;
                 model = newModel;
                 maxProbInDataset = GmmPartitionData.updatePcxiAndComputeLikelihood(dataset, clusterProbs, components);
             }
@@ -441,18 +441,18 @@ public class GmmTrainer extends SingleLabelDatasetTrainer<GmmModel> {
 
                 dataset.compute(data -> GmmPartitionData.estimateLikelihoodClusters(data, initialMeans));
 
-                List<Matrix> initialCovs = CovarianceMatricesAggregator.computeCovariances(
+                List<Matrix> initCovs = CovarianceMatricesAggregator.computeCovariances(
                     dataset,
                     VectorUtils.fill(1. / countOfComponents, countOfComponents),
                     initialMeans
                 );
 
-                if (initialCovs.isEmpty())
+                if (initCovs.isEmpty())
                     return Optional.empty();
 
                 List<MultivariateGaussianDistribution> distributions = new ArrayList<>();
                 for (int i = 0; i < countOfComponents; i++)
-                    distributions.add(new MultivariateGaussianDistribution(initialMeans[i], initialCovs.get(i)));
+                    distributions.add(new MultivariateGaussianDistribution(initialMeans[i], initCovs.get(i)));
 
                 return Optional.of(new GmmModel(
                     VectorUtils.of(DoubleStream.generate(() -> 1. / countOfComponents).limit(countOfComponents).toArray()),

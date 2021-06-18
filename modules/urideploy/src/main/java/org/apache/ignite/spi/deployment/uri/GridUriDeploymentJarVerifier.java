@@ -309,9 +309,9 @@ final class GridUriDeploymentJarVerifier {
      * @throws IOException Thrown if read fails.
      */
     private static void verifyDigestsImplicitly(InputStream in) throws IOException {
-        byte[] buffer = new byte[BUF_SIZE];
+        byte[] buf = new byte[BUF_SIZE];
 
-        while (in.read(buffer, 0, buffer.length) != -1) {
+        while (in.read(buf, 0, buf.length) != -1) {
             // Just read the entry. Will throw a SecurityException if signature
             // or digest check fails. Since we instantiated JarFile with parameter
             // true, that tells it to verify that the files match the digests

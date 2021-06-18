@@ -178,12 +178,12 @@ public class CompoundNaiveBayesModel implements IgniteModel<Vector, Double>, Exp
         int newSize = vector.size() - featureIdsToSkip.size();
         double[] newFeaturesValues = new double[newSize];
 
-        int index = 0;
+        int idx = 0;
         for (int j = 0; j < vector.size(); j++) {
             if (featureIdsToSkip.contains(j)) continue;
 
-            newFeaturesValues[index] = vector.get(j);
-            ++index;
+            newFeaturesValues[idx] = vector.get(j);
+            ++idx;
         }
         return VectorUtils.of(newFeaturesValues);
     }

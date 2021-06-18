@@ -74,12 +74,12 @@ public class NewComponentStatisticsAggregatorTest {
     @Test
     public void testAdd() {
         NewComponentStatisticsAggregator agg = new NewComponentStatisticsAggregator();
-        int rowCount = 10;
-        for (int i = 0; i < rowCount; i++)
+        int rowCnt = 10;
+        for (int i = 0; i < rowCnt; i++)
             agg.add(VectorUtils.of(0, 1, 2), i % 2 == 0);
 
-        assertEquals(rowCount / 2, agg.rowCountForNewCluster());
-        assertEquals(rowCount, agg.totalRowCount());
+        assertEquals(rowCnt / 2, agg.rowCountForNewCluster());
+        assertEquals(rowCnt, agg.totalRowCount());
         assertArrayEquals(new double[] {0, 1, 2}, agg.mean().asArray(), 1e-4);
     }
 
@@ -88,16 +88,16 @@ public class NewComponentStatisticsAggregatorTest {
     public void testPlus() {
         NewComponentStatisticsAggregator agg1 = new NewComponentStatisticsAggregator();
         NewComponentStatisticsAggregator agg2 = new NewComponentStatisticsAggregator();
-        int rowCount = 10;
-        for (int i = 0; i < rowCount; i++)
+        int rowCnt = 10;
+        for (int i = 0; i < rowCnt; i++)
             agg1.add(VectorUtils.of(0, 1, 2), i % 2 == 0);
 
-        for (int i = 0; i < rowCount; i++)
+        for (int i = 0; i < rowCnt; i++)
             agg2.add(VectorUtils.of(2, 1, 0), i % 2 == 1);
 
         NewComponentStatisticsAggregator sum = agg1.plus(agg2);
-        assertEquals(rowCount, sum.rowCountForNewCluster());
-        assertEquals(rowCount * 2, sum.totalRowCount());
+        assertEquals(rowCnt, sum.rowCountForNewCluster());
+        assertEquals(rowCnt * 2, sum.totalRowCount());
         assertArrayEquals(new double[] {1, 1, 1}, sum.mean().asArray(), 1e-4);
     }
 

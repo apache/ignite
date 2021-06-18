@@ -3100,10 +3100,10 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
             GridRestCommand.CACHE_SIZE,
             GridRestCommand.CACHE_METADATA);
 
-        for (GridRestCommand command : cacheCommands) {
-            String ret = content(null, command);
+        for (GridRestCommand cmd : cacheCommands) {
+            String ret = content(null, cmd);
 
-            if (command == GridRestCommand.CACHE_METADATA)
+            if (cmd == GridRestCommand.CACHE_METADATA)
                 validateJsonResponse(ret);
             else {
                 JsonNode json = JSON_MAPPER.readTree(ret);
@@ -3134,17 +3134,17 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
             GridRestCommand.FETCH_SQL_QUERY,
             GridRestCommand.CLOSE_SQL_QUERY);
 
-        for (GridRestCommand command : qryCommands) {
-            String ret = content(null, command,
+        for (GridRestCommand cmd : qryCommands) {
+            String ret = content(null, cmd,
                 "pageSize", "1",
                 "qry", "SELECT * FROM table");
 
             JsonNode json = JSON_MAPPER.readTree(ret);
             assertFalse(json.isNull());
 
-            if (command == GridRestCommand.EXECUTE_SQL_QUERY ||
-                command == GridRestCommand.EXECUTE_SCAN_QUERY ||
-                command == GridRestCommand.EXECUTE_SQL_FIELDS_QUERY)
+            if (cmd == GridRestCommand.EXECUTE_SQL_QUERY ||
+                cmd == GridRestCommand.EXECUTE_SCAN_QUERY ||
+                cmd == GridRestCommand.EXECUTE_SQL_FIELDS_QUERY)
                 assertTrue(json.get("error").asText().contains(ERROR_MSG));
             else
                 assertFalse(json.get("error").asText().contains(ERROR_MSG));

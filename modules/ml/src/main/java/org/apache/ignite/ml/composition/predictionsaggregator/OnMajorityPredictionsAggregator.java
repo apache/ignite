@@ -32,9 +32,9 @@ public final class OnMajorityPredictionsAggregator implements PredictionsAggrega
 
         Map<Double, Integer> cntrsByCls = new HashMap<>();
 
-        for (Double predictedValue : estimations) {
-            Integer cntrVal = cntrsByCls.getOrDefault(predictedValue, 0) + 1;
-            cntrsByCls.put(predictedValue, cntrVal);
+        for (Double predictedVal : estimations) {
+            Integer cntrVal = cntrsByCls.getOrDefault(predictedVal, 0) + 1;
+            cntrsByCls.put(predictedVal, cntrVal);
         }
 
         return cntrsByCls.entrySet().stream()

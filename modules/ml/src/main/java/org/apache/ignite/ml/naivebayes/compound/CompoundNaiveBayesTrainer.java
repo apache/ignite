@@ -153,12 +153,12 @@ public class CompoundNaiveBayesTrainer extends SingleLabelDatasetTrainer<Compoun
             int newSize = size - featureIdsToSkip.size();
 
             double[] newFeaturesValues = new double[newSize];
-            int index = 0;
+            int idx = 0;
             for (int j = 0; j < size; j++) {
                 if (featureIdsToSkip.contains(j)) continue;
 
-                newFeaturesValues[index] = featureValues.get(j);
-                ++index;
+                newFeaturesValues[idx] = featureValues.get(j);
+                ++idx;
             }
             return new LabeledVector<>(VectorUtils.of(newFeaturesValues), featureValues.label());
         };
