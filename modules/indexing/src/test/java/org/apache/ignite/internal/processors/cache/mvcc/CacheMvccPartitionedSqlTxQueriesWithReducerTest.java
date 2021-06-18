@@ -69,7 +69,7 @@ public class CacheMvccPartitionedSqlTxQueriesWithReducerTest extends CacheMvccSq
 
         assertTrue(latch.await(TX_TIMEOUT, TimeUnit.MILLISECONDS));
 
-        CompletableFuture<Void> queryFut = CompletableFuture.runAsync(() -> updateNode
+        CompletableFuture<Void> qryFut = CompletableFuture.runAsync(() -> updateNode
             .cache(DEFAULT_CACHE_NAME)
             .query(new SqlFieldsQuery("INSERT INTO MvccTestSqlIndexValue (_key, idxVal1) VALUES (1,1),(2,2),(3,3)"))
             .getAll());
@@ -79,7 +79,7 @@ public class CacheMvccPartitionedSqlTxQueriesWithReducerTest extends CacheMvccSq
         spi.stopBlock();
 
         try {
-            queryFut.get(TX_TIMEOUT, TimeUnit.MILLISECONDS);
+            qryFut.get(TX_TIMEOUT, TimeUnit.MILLISECONDS);
         } catch (Exception e) {
             assertTrue(X.hasCause(e, ClusterTopologyException.class));
         }

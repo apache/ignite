@@ -615,9 +615,9 @@ public abstract class AbstractSchemaSelfTest extends AbstractIndexingCommonTest 
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
 
-            KeyClass keyClass = (KeyClass) o;
+            KeyClass keyCls = (KeyClass) o;
 
-            return id == keyClass.id;
+            return id == keyCls.id;
 
         }
 

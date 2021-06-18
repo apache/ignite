@@ -476,19 +476,19 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
 
     /** */
     private static int keyInSamePartition(Ignite ignite, String cacheName, int key) {
-        Affinity<Object> affinity = ignite.affinity(cacheName);
+        Affinity<Object> aff = ignite.affinity(cacheName);
 
         return IntStream.iterate(key + 1, i -> i + 1)
-            .filter(i -> affinity.partition(i) == affinity.partition(key))
+            .filter(i -> aff.partition(i) == aff.partition(key))
             .findFirst().getAsInt();
     }
 
     /** */
     private static int keyInDifferentPartition(Ignite ignite, String cacheName, int key) {
-        Affinity<Object> affinity = ignite.affinity(cacheName);
+        Affinity<Object> aff = ignite.affinity(cacheName);
 
         return IntStream.iterate(key + 1, i -> i + 1)
-            .filter(i -> affinity.partition(i) != affinity.partition(key))
+            .filter(i -> aff.partition(i) != aff.partition(key))
             .findFirst().getAsInt();
     }
 }

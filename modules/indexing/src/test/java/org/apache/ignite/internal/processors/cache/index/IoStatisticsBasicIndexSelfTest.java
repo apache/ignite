@@ -212,13 +212,13 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
 
         Assert.assertEquals(PK_HASH_INDEXES, hashIndexes);
 
-        Set<String> sortedIndexCaches = deriveStatisticNames(grid(), SORTED_INDEX);
+        Set<String> sortedIdxCaches = deriveStatisticNames(grid(), SORTED_INDEX);
 
-        Assert.assertEquals(1, sortedIndexCaches.size());
+        Assert.assertEquals(1, sortedIdxCaches.size());
 
         Set<String> sortedIdxNames = deriveStatisticSubNames(grid(), SORTED_INDEX);
 
-        Assert.assertEquals(sortedIndexCaches.toString(), indexes.size() + NUMBER_OF_PK_SORTED_INDEXES,
+        Assert.assertEquals(sortedIdxCaches.toString(), indexes.size() + NUMBER_OF_PK_SORTED_INDEXES,
             sortedIdxNames.size());
 
         for (String idxName : sortedIdxNames) {

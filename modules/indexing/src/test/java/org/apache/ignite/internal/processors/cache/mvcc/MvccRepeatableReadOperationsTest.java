@@ -176,13 +176,13 @@ public class MvccRepeatableReadOperationsTest extends MvccRepeatableReadBulkOpsT
 
         final Set<Integer> allKeys = generateKeySet(grid(0).cache(DEFAULT_CACHE_NAME), keysForUpdate, keysForRemove);
 
-        final Map<Integer, MvccTestAccount> initialMap = keysForRemove.stream().collect(
+        final Map<Integer, MvccTestAccount> initMap = keysForRemove.stream().collect(
             Collectors.toMap(k -> k, k -> new MvccTestAccount(k, 1)));
 
         Map<Integer, MvccTestAccount> updateMap = keysForUpdate.stream().collect(
             Collectors.toMap(k -> k, k -> new MvccTestAccount(k, 3)));
 
-        cache1.cache.putAll(initialMap);
+        cache1.cache.putAll(initMap);
 
         IgniteTransactions txs = node1.transactions();
         try (Transaction tx = txs.txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
@@ -197,7 +197,7 @@ public class MvccRepeatableReadOperationsTest extends MvccRepeatableReadBulkOpsT
             }
 
             for (Integer key : keysForRemove) {
-                assertEquals(initialMap.get(key), cache1.cache.getAndRemove(key)); // Check remove existed.
+                assertEquals(initMap.get(key), cache1.cache.getAndRemove(key)); // Check remove existed.
 
                 assertNull(cache1.cache.getAndRemove(key)); // Check remove non-existed.
             }
@@ -238,13 +238,13 @@ public class MvccRepeatableReadOperationsTest extends MvccRepeatableReadBulkOpsT
 
         final Set<Integer> allKeys = generateKeySet(grid(0).cache(DEFAULT_CACHE_NAME), keysForCreate, keysForUpdate);
 
-        final Map<Integer, MvccTestAccount> initialMap = keysForUpdate.stream().collect(
+        final Map<Integer, MvccTestAccount> initMap = keysForUpdate.stream().collect(
             Collectors.toMap(k -> k, k -> new MvccTestAccount(k, 1)));
 
         Map<Integer, MvccTestAccount> updatedMap = allKeys.stream().collect(
             Collectors.toMap(k -> k, k -> new MvccTestAccount(k, 1)));
 
-        cache1.cache.putAll(initialMap);
+        cache1.cache.putAll(initMap);
 
         IgniteTransactions txs = node1.transactions();
         try (Transaction tx = txs.txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
@@ -279,13 +279,13 @@ public class MvccRepeatableReadOperationsTest extends MvccRepeatableReadBulkOpsT
 
         final Set<Integer> allKeys = generateKeySet(grid(0).cache(DEFAULT_CACHE_NAME), existedKeys, nonExistedKeys);
 
-        final Map<Integer, MvccTestAccount> initialMap = existedKeys.stream().collect(
+        final Map<Integer, MvccTestAccount> initMap = existedKeys.stream().collect(
             Collectors.toMap(k -> k, k -> new MvccTestAccount(k, 1)));
 
         Map<Integer, MvccTestAccount> updateMap = existedKeys.stream().collect(
             Collectors.toMap(k -> k, k -> new MvccTestAccount(k, 3)));
 
-        cache1.cache.putAll(initialMap);
+        cache1.cache.putAll(initMap);
 
         IgniteTransactions txs = node1.transactions();
         try (Transaction tx = txs.txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {

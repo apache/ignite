@@ -120,14 +120,14 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
 
         cleanPersistenceDir();
 
-        Ignite local = startGrid(0);
+        Ignite loc = startGrid(0);
 
         for (int i = 0; i < RMT_NODES_CNT; ++i)
             startGrid("remote-" + i);
 
-        local.cluster().active(true);
+        loc.cluster().active(true);
 
-        IgniteCache c = local.cache(CACHE_NAME);
+        IgniteCache c = loc.cache(CACHE_NAME);
 
         Map<Long, Value> batch = new HashMap<>(BATCH_SIZE);
 
@@ -152,7 +152,7 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange(true, true, null);
 
-        local.cluster().active(false);
+        loc.cluster().active(false);
 
         stopAllGrids(false);
 

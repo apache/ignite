@@ -642,7 +642,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      */
     @Test
     public void testQueryConsistencyMultithreaded() throws Exception {
-        final int KEY_COUNT = 5000;
+        final int KEY_CNT = 5000;
 
         // Start complex topology.
         ignitionStart(serverConfiguration(1));
@@ -655,7 +655,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
         run(cli, createSql);
 
-        put(cli, 0, KEY_COUNT);
+        put(cli, 0, KEY_CNT);
 
         final AtomicBoolean stopped = new AtomicBoolean();
 
@@ -714,7 +714,7 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
                         List<Cache.Entry<BinaryObject, BinaryObject>> res = cache.query(
                             new SqlQuery<BinaryObject, BinaryObject>(valTypeName, "from " + TBL_NAME)).getAll();
 
-                        assertEquals(KEY_COUNT, res.size());
+                        assertEquals(KEY_CNT, res.size());
                     }
                     catch (Exception e) {
                         // Swallow retry exceptions.

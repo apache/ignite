@@ -308,7 +308,7 @@ public abstract class CacheMvccBackupsAbstractTest extends CacheMvccAbstractTest
         IgniteCache<?, ?> cache2 = node2.cache(DEFAULT_CACHE_NAME);
 
         AtomicInteger keyGen = new AtomicInteger();
-        Affinity affinity = affinity(clientCache);
+        Affinity aff = affinity(clientCache);
 
         ClusterNode cNode1 = ((IgniteEx)node1).localNode();
         ClusterNode cNode2 = ((IgniteEx)node2).localNode();
@@ -320,7 +320,7 @@ public abstract class CacheMvccBackupsAbstractTest extends CacheMvccAbstractTest
                 insert.append(',');
 
             // To make big batches in near results future.
-            Integer key = i < KEYS_CNT / 2 ? keyForNode(affinity, keyGen, cNode1) : keyForNode(affinity, keyGen, cNode2);
+            Integer key = i < KEYS_CNT / 2 ? keyForNode(aff, keyGen, cNode1) : keyForNode(aff, keyGen, cNode2);
 
             assert key != null;
 

@@ -381,7 +381,7 @@ public class GridReduceQueryExecutor {
 
         final boolean skipMergeTbl = !qry.explain() && qry.skipMergeTable() || singlePartMode;
 
-        final int segmentsPerIndex = qry.explain() || qry.isReplicatedOnly() ? 1 :
+        final int segmentsPerIdx = qry.explain() || qry.isReplicatedOnly() ? 1 :
             mapper.findFirstPartitioned(cacheIds).config().getQueryParallelism();
 
         final long retryTimeout = retryTimeout(timeoutMillis);
@@ -426,7 +426,7 @@ public class GridReduceQueryExecutor {
 
             try {
                 final ReduceQueryRun r = createReduceQueryRun(conn, mapQueries, nodes,
-                    pageSize, segmentsPerIndex, skipMergeTbl, qry.explain(), dataPageScanEnabled);
+                    pageSize, segmentsPerIdx, skipMergeTbl, qry.explain(), dataPageScanEnabled);
 
                 runs.put(qryReqId, r);
 
@@ -1240,7 +1240,7 @@ public class GridReduceQueryExecutor {
             else
                 data.columns = planColumns();
 
-            boolean sortedIndex = !F.isEmpty(qry.sortColumns());
+            boolean sortedIdx = !F.isEmpty(qry.sortColumns());
 
             ReduceTable tbl = new ReduceTable(data);
 
@@ -1248,9 +1248,9 @@ public class GridReduceQueryExecutor {
 
             if (explain) {
                 idxs.add(new UnsortedReduceIndexAdapter(ctx, tbl,
-                    sortedIndex ? MERGE_INDEX_SORTED : MERGE_INDEX_UNSORTED));
+                    sortedIdx ? MERGE_INDEX_SORTED : MERGE_INDEX_UNSORTED));
             }
-            else if (sortedIndex) {
+            else if (sortedIdx) {
                 List<GridSqlSortColumn> sortCols = (List<GridSqlSortColumn>)qry.sortColumns();
 
                 SortedReduceIndexAdapter sortedMergeIdx = new SortedReduceIndexAdapter(ctx, tbl, MERGE_INDEX_SORTED,

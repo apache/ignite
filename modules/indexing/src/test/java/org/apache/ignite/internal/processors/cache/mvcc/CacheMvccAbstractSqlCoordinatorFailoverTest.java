@@ -206,7 +206,7 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
 
         Semaphore sem = new Semaphore(0);
 
-        IgniteInternalFuture future = GridTestUtils.runAsync(() -> {
+        IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
             IgniteCache<Integer, Integer> cache0 = node.cache(DEFAULT_CACHE_NAME);
 
             try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
@@ -245,7 +245,7 @@ public abstract class CacheMvccAbstractSqlCoordinatorFailoverTest extends CacheM
 
         sem.release(2);
 
-        future.get(getTestTimeout());
+        fut.get(getTestTimeout());
     }
 
     /**

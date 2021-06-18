@@ -1783,7 +1783,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
 
         IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
-        Affinity<Object> affinity = internalCache0(cache).affinity();
+        Affinity<Object> aff = internalCache0(cache).affinity();
 
         int keysCnt = 10, retryCnt = 0;
 
@@ -1792,7 +1792,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
         Map<Integer, Integer> vals = new LinkedHashMap<>();
 
         while (vals.size() < keysCnt) {
-            int partition = affinity.partition(test);
+            int partition = aff.partition(test);
 
             if (partition == 1 || partition == 2)
                 vals.put(test, 0);
@@ -1830,7 +1830,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
 
         IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
-        Affinity<Object> affinity = internalCache0(cache).affinity();
+        Affinity<Object> aff = internalCache0(cache).affinity();
 
         int keysCnt = 10, retryCnt = 0;
 
@@ -1839,7 +1839,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
         Map<Integer, Integer> vals = new LinkedHashMap<>();
 
         while (vals.size() < keysCnt) {
-            int partition = affinity.partition(test);
+            int partition = aff.partition(test);
 
             if (partition == 1 || partition == 2)
                 vals.put(test, 0);
@@ -2090,8 +2090,8 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
                 return true;
             if (o == null || getClass() != o.getClass())
                 return false;
-            MvccTestSqlIndexValue value = (MvccTestSqlIndexValue)o;
-            return idxVal1 == value.idxVal1;
+            MvccTestSqlIndexValue val = (MvccTestSqlIndexValue)o;
+            return idxVal1 == val.idxVal1;
         }
 
         /** {@inheritDoc} */

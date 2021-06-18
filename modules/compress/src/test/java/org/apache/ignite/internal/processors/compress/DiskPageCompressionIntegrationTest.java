@@ -136,9 +136,9 @@ public class DiskPageCompressionIntegrationTest extends AbstractPageCompressionI
         GridCacheContext<?, ?> cctx = ignite.cachex(cacheName).context();
 
         int cacheId = cctx.cacheId();
-        int groupId = cctx.groupId();
+        int grpId = cctx.groupId();
 
-        assertEquals(cacheId, groupId);
+        assertEquals(cacheId, grpId);
 
         MetricRegistry mreg = ignite.context().metric().registry(
             metricName(CACHE_GROUP_METRICS_PREFIX, cctx.group().cacheOrGroupName()));

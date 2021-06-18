@@ -728,17 +728,17 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         cache.put(40, new Type2(2, "Type2 record #2"));
         cache.put(50, new Type2(3, "Type2 record #3"));
 
-        QueryCursor<List<?>> query = cache.query(
+        QueryCursor<List<?>> qry = cache.query(
             new SqlFieldsQuery("SELECT t2.name, t1.name FROM Type2 as t2 LEFT JOIN Type1 as t1 ON t1.id = t2.id")
                 .setDistributedJoins(cacheMode() == PARTITIONED));
 
-        assertEquals(2, query.getAll().size());
+        assertEquals(2, qry.getAll().size());
 
-        query = cache.query(
+        qry = cache.query(
             new SqlFieldsQuery("SELECT t2.name, t1.name FROM Type2 as t2 RIGHT JOIN Type1 as t1 ON t1.id = t2.id")
                 .setDistributedJoins(cacheMode() == PARTITIONED));
 
-        assertEquals(3, query.getAll().size());
+        assertEquals(3, qry.getAll().size());
     }
 
     /**
@@ -957,11 +957,11 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      */
     @Test
     public void testObjectQueryWithSwap() {
-        CacheConfiguration<Integer, ObjectValue> config = new CacheConfiguration<Integer, ObjectValue>(cacheConfiguration());
+        CacheConfiguration<Integer, ObjectValue> cfg = new CacheConfiguration<Integer, ObjectValue>(cacheConfiguration());
 
-        config.setOnheapCacheEnabled(true);
+        cfg.setOnheapCacheEnabled(true);
 
-        IgniteCache<Integer, ObjectValue> cache = jcache(ignite(), config, Integer.class, ObjectValue.class);
+        IgniteCache<Integer, ObjectValue> cache = jcache(ignite(), cfg, Integer.class, ObjectValue.class);
 
         boolean partitioned = cache.getConfiguration(CacheConfiguration.class).getCacheMode() == PARTITIONED;
 

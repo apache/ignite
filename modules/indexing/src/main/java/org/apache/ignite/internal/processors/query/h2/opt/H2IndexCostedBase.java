@@ -63,8 +63,8 @@ public abstract class H2IndexCostedBase extends BaseIndex {
             while (i < len) {
                 Column column = columns[i++];
 
-                int index = column.getColumnId();
-                int mask = masks[index];
+                int idx = column.getColumnId();
+                int mask = masks[idx];
 
                 if ((mask & IndexCondition.EQUALITY) == IndexCondition.EQUALITY) {
                     if (i == len && getIndexType().isUnique()) {
@@ -113,7 +113,7 @@ public abstract class H2IndexCostedBase extends BaseIndex {
 
         if (sortOrder != null && !isScanIndex) {
             boolean sortOrderMatches = true;
-            int coveringCount = 0;
+            int coveringCnt = 0;
             int[] sortTypes = sortOrder.getSortTypes();
 
             TableFilter tableFilter = filters == null ? null : filters[filter];
@@ -135,9 +135,9 @@ public abstract class H2IndexCostedBase extends BaseIndex {
                     break;
                 }
 
-                IndexColumn indexCol = indexColumns[i];
+                IndexColumn idxCol = indexColumns[i];
 
-                if (!col.equals(indexCol.column)) {
+                if (!col.equals(idxCol.column)) {
                     sortOrderMatches = false;
 
                     break;
@@ -145,20 +145,20 @@ public abstract class H2IndexCostedBase extends BaseIndex {
 
                 int sortType = sortTypes[i];
 
-                if (sortType != indexCol.sortType) {
+                if (sortType != idxCol.sortType) {
                     sortOrderMatches = false;
 
                     break;
                 }
 
-                coveringCount++;
+                coveringCnt++;
             }
 
             if (sortOrderMatches) {
                 // "coveringCount" makes sure that when we have two
                 // or more covering indexes, we choose the one
                 // that covers more.
-                sortingCost = 100 - coveringCount;
+                sortingCost = 100 - coveringCnt;
             }
         }
 
@@ -187,7 +187,7 @@ public abstract class H2IndexCostedBase extends BaseIndex {
         // If we have two indexes with the same cost, and one of the indexes can
         // satisfy the query without needing to read from the primary table
         // (scan index), make that one slightly lower cost.
-        boolean needsToReadFromScanIndex = true;
+        boolean needsToReadFromScanIdx = true;
 
         if (!isScanIndex && allColumnsSet != null && !skipColumnsIntersection && !allColumnsSet.isEmpty()) {
             boolean foundAllColumnsWeNeed = true;
@@ -211,14 +211,14 @@ public abstract class H2IndexCostedBase extends BaseIndex {
             }
 
             if (foundAllColumnsWeNeed)
-                needsToReadFromScanIndex = false;
+                needsToReadFromScanIdx = false;
         }
 
         long rc;
 
         if (isScanIndex)
             rc = rowsCost + sortingCost + 20;
-        else if (needsToReadFromScanIndex)
+        else if (needsToReadFromScanIdx)
             rc = rowsCost + rowsCost + sortingCost + 20;
         else {
             // The (20-x) calculation makes sure that when we pick a covering

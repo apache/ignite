@@ -386,8 +386,8 @@ public class IgniteSqlSkipReducerOnUpdateDmlSelfTest extends AbstractIndexingCom
                 if (qCol.isEmpty())
                     return false;
 
-                for (GridRunningQueryInfo queryInfo : qCol)
-                    queryInfo.cancel();
+                for (GridRunningQueryInfo qryInfo : qCol)
+                    qryInfo.cancel();
 
                 return true;
             }

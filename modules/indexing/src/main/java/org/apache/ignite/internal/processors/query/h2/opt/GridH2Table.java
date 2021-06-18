@@ -223,8 +223,8 @@ public class GridH2Table extends TableBase {
 
         List<Index> clones = new ArrayList<>(idxs.size());
 
-        for (Index index : idxs) {
-            Index clone = createDuplicateIndexIfNeeded(index);
+        for (Index idx : idxs) {
+            Index clone = createDuplicateIndexIfNeeded(idx);
 
             if (clone != null)
                 clones.add(clone);
@@ -232,15 +232,15 @@ public class GridH2Table extends TableBase {
 
         idxs.addAll(clones);
 
-        boolean hasHashIndex = idxs.size() >= 2 && index(0).getIndexType().isHash();
+        boolean hasHashIdx = idxs.size() >= 2 && index(0).getIndexType().isHash();
 
         // Add scan index at 0 which is required by H2.
-        if (hasHashIndex)
+        if (hasHashIdx)
             idxs.add(0, new H2TableScanIndex(this, index(1), index(0)));
         else
             idxs.add(0, new H2TableScanIndex(this, index(0), null));
 
-        pkIndexPos = hasHashIndex ? 2 : 1;
+        pkIndexPos = hasHashIdx ? 2 : 1;
 
         sysIdxsCnt = idxs.size();
 

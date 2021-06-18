@@ -469,17 +469,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 inlineSize
             );
 
-            org.apache.ignite.internal.cache.query.index.Index index;
+            org.apache.ignite.internal.cache.query.index.Index idx;
 
             if (cacheVisitor != null)
-                index = ctx.indexProcessor().createIndexDynamically(
+                idx = ctx.indexProcessor().createIndexDynamically(
                     tbl.cacheContext(), idxFactory, idxDef, cacheVisitor);
             else
-                index = ctx.indexProcessor().createIndex(tbl.cacheContext(), idxFactory, idxDef);
+                idx = ctx.indexProcessor().createIndex(tbl.cacheContext(), idxFactory, idxDef);
 
-            InlineIndexImpl queryIndex = index.unwrap(InlineIndexImpl.class);
+            InlineIndexImpl qryIdx = idx.unwrap(InlineIndexImpl.class);
 
-            return new H2TreeIndex(queryIndex, tbl, unwrappedCols.toArray(new IndexColumn[0]), pk, log);
+            return new H2TreeIndex(qryIdx, tbl, unwrappedCols.toArray(new IndexColumn[0]), pk, log);
         }
         else {
             ClientIndexDefinition d = new ClientIndexDefinition(
@@ -489,10 +489,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 inlineSize,
                 tbl.cacheInfo().config().getSqlIndexMaxInlineSize());
 
-            org.apache.ignite.internal.cache.query.index.Index index =
+            org.apache.ignite.internal.cache.query.index.Index idx0 =
                 ctx.indexProcessor().createIndex(tbl.cacheContext(), ClientIndexFactory.INSTANCE, d);
 
-            InlineIndex idx = index.unwrap(InlineIndex.class);
+            InlineIndex idx = idx0.unwrap(InlineIndex.class);
 
             IndexType idxType = pk ? IndexType.createPrimaryKey(false, false) :
                 IndexType.createNonUnique(false, false, false);
@@ -1941,10 +1941,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                     IndexColumn affCol = t.getExplicitAffinityKeyColumn();
 
-                    String affinityKeyCol = affCol != null ? affCol.columnName : null;
+                    String affKeyCol = affCol != null ? affCol.columnName : null;
 
                     return new TableInformation(t.getSchema().getName(), t.getName(), TableType.TABLE.name(), cacheGrpId,
-                        cacheGrpDesc.cacheOrGroupName(), t.cacheId(), t.cacheName(), affinityKeyCol,
+                        cacheGrpDesc.cacheOrGroupName(), t.cacheId(), t.cacheName(), affKeyCol,
                         type.keyFieldAlias(), type.valueFieldAlias(), type.keyTypeName(), type.valueTypeName());
                 })
                 .filter(Objects::nonNull)
@@ -2567,7 +2567,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 // Fallback to previous mode.
                 ress = new ArrayList<>(argss.size());
 
-                SQLException batchException = null;
+                SQLException batchE = null;
 
                 int[] cntPerRow = new int[argss.size()];
 
@@ -2593,15 +2593,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     catch (Exception e ) {
                         SQLException sqlEx = QueryUtils.toSqlException(e);
 
-                        batchException = DmlUtils.chainException(batchException, sqlEx);
+                        batchE = DmlUtils.chainException(batchE, sqlEx);
 
                         cntPerRow[cntr++] = Statement.EXECUTE_FAILED;
                     }
                 }
 
-                if (batchException != null) {
-                    BatchUpdateException e = new BatchUpdateException(batchException.getMessage(),
-                        batchException.getSQLState(), batchException.getErrorCode(), cntPerRow, batchException);
+                if (batchE != null) {
+                    BatchUpdateException e = new BatchUpdateException(batchE.getMessage(),
+                        batchE.getSQLState(), batchE.getErrorCode(), cntPerRow, batchE);
 
                     throw new IgniteCheckedException(e);
                 }
@@ -3066,11 +3066,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @Override public Map<String, Integer> secondaryIndexesInlineSize() {
         Map<String, Integer> map = new HashMap<>();
         for (GridH2Table table : schemaMgr.dataTables()) {
-            for (Index index : table.getIndexes()) {
-                if (index instanceof H2TreeIndexBase && !index.getIndexType().isPrimaryKey()) {
+            for (Index idx : table.getIndexes()) {
+                if (idx instanceof H2TreeIndexBase && !idx.getIndexType().isPrimaryKey()) {
                     map.put(
-                        index.getSchema().getName() + "#" + index.getTable().getName() + "#" + index.getName(),
-                        ((H2TreeIndexBase)index).inlineSize()
+                        idx.getSchema().getName() + "#" + idx.getTable().getName() + "#" + idx.getName(),
+                        ((H2TreeIndexBase)idx).inlineSize()
                     );
                 }
             }

@@ -164,7 +164,7 @@ public class PartitionExtractor {
         // Merge.
         PartitionNode tree = null;
 
-        AffinityTopologyVersion affinityTopVer = null;
+        AffinityTopologyVersion affTopVer = null;
 
         for (GridCacheSqlQuery qry : qrys) {
             PartitionResult qryRes = (PartitionResult)qry.derivedPartitions();
@@ -174,10 +174,10 @@ public class PartitionExtractor {
             else
                 tree = new PartitionCompositeNode(tree, qryRes.tree(), PartitionCompositeNodeOperator.OR);
 
-            if (affinityTopVer == null)
-                affinityTopVer = qryRes.topologyVersion();
+            if (affTopVer == null)
+                affTopVer = qryRes.topologyVersion();
             else
-                assert affinityTopVer.equals(qryRes.topologyVersion());
+                assert affTopVer.equals(qryRes.topologyVersion());
         }
 
         // Optimize.
@@ -194,9 +194,9 @@ public class PartitionExtractor {
         // Affinity topology version expected to be the same for all partition results derived from map queries.
         // TODO: 09.04.19 IGNITE-11507: SQL: Ensure that affinity topology version doesn't change
         // TODO: during PartitionResult construction/application.
-        assert affinityTopVer != null;
+        assert affTopVer != null;
         
-        return new PartitionResult(tree, aff, affinityTopVer);
+        return new PartitionResult(tree, aff, affTopVer);
     }
 
     /**

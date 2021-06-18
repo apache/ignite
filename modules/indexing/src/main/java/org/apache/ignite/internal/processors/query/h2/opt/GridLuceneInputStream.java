@@ -189,9 +189,9 @@ public class GridLuceneInputStream extends IndexInput implements Cloneable {
         if (offset < 0 || length < 0 || offset + length > this.length)
             throw new IllegalArgumentException("slice() " + sliceDescription + " out of bounds: " + this);
 
-        final String newResourceDescription = (sliceDescription == null) ? toString() : (toString() + " [slice=" + sliceDescription + "]");
+        final String newRsrcDescription = (sliceDescription == null) ? toString() : (toString() + " [slice=" + sliceDescription + "]");
 
-        return new SlicedInputStream(newResourceDescription, offset, length);
+        return new SlicedInputStream(newRsrcDescription, offset, length);
     }
 
     /**

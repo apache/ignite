@@ -131,12 +131,12 @@ public class LongIndexNameTest extends AbstractIndexingCommonTest {
         qe.setFields(fieldsMap);
 
         ArrayList<QueryIndex> indices = new ArrayList<>();
-        QueryIndex index = new QueryIndex("name", true, "LONG_NAME_123456789012345678901234567890" +
+        QueryIndex idx = new QueryIndex("name", true, "LONG_NAME_123456789012345678901234567890" +
             "12345678901234567890123456789012345678901234567890123456789012345678901234567890");
 
-        QueryIndex index2 = new QueryIndex("age", true, "AGE_IDX");
-        indices.add(index);
-        indices.add(index2);
+        QueryIndex idx2 = new QueryIndex("age", true, "AGE_IDX");
+        indices.add(idx);
+        indices.add(idx2);
 
         qe.setIndexes(indices);
 

@@ -36,19 +36,19 @@ public class IgniteSqlCreateTableTemplateTest extends AbstractIndexingCommonTest
         IgniteConfiguration configuration = new IgniteConfiguration();
         configuration.setIgniteInstanceName(name);
 
-        CacheConfiguration defaultCacheConfiguration = new CacheConfiguration();
+        CacheConfiguration dfltCacheConfiguration = new CacheConfiguration();
 
-        defaultCacheConfiguration.setName("DEFAULT_TEMPLATE*");
+        dfltCacheConfiguration.setName("DEFAULT_TEMPLATE*");
 
         CacheConfiguration customCacheConfiguration = new CacheConfiguration();
 
         customCacheConfiguration.setName("CUSTOM_TEMPLATE*");
 
-        MockAffinityKeyMapper customAffinityMapper = new MockAffinityKeyMapper();
+        MockAffinityKeyMapper customAffMapper = new MockAffinityKeyMapper();
 
-        customCacheConfiguration.setAffinityMapper(customAffinityMapper);
+        customCacheConfiguration.setAffinityMapper(customAffMapper);
 
-        configuration.setCacheConfiguration(defaultCacheConfiguration, customCacheConfiguration);
+        configuration.setCacheConfiguration(dfltCacheConfiguration, customCacheConfiguration);
 
         return configuration;
     }
@@ -76,21 +76,21 @@ public class IgniteSqlCreateTableTemplateTest extends AbstractIndexingCommonTest
         keyBuilder.setField("ID", 1);
         keyBuilder.setField("AFF_PERSON", 2);
 
-        BinaryObjectBuilder valueBuilder = ignite.binary().builder("PERSON_VALUE");
-        valueBuilder.setField("NAME", "test");
+        BinaryObjectBuilder valBuilder = ignite.binary().builder("PERSON_VALUE");
+        valBuilder.setField("NAME", "test");
 
-        ignite.cache("PERSON_CACHE").withKeepBinary().put(keyBuilder.build(), valueBuilder.build());
+        ignite.cache("PERSON_CACHE").withKeepBinary().put(keyBuilder.build(), valBuilder.build());
 
         keyBuilder = ignite.binary().builder("ORGANIZATION_KEY");
 
         keyBuilder.setField("ID", 1);
         keyBuilder.setField("AFF_ORGANIZATION", 2);
 
-        valueBuilder = ignite.binary().builder("ORGANIZATION_VALUE");
+        valBuilder = ignite.binary().builder("ORGANIZATION_VALUE");
 
-        valueBuilder.setField("NAME", "test");
+        valBuilder.setField("NAME", "test");
 
-        ignite.cache("ORGANIZATION_CACHE").withKeepBinary().put(keyBuilder.build(), valueBuilder.build());
+        ignite.cache("ORGANIZATION_CACHE").withKeepBinary().put(keyBuilder.build(), valBuilder.build());
 
         assertEquals(1, ignite.cache("PERSON_CACHE").query(
             new SqlFieldsQuery("Select NAME from PERSON where ID = 1")).getAll().size()

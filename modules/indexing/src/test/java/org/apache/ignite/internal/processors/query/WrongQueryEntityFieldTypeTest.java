@@ -235,11 +235,11 @@ public class WrongQueryEntityFieldTypeTest extends GridCommonAbstractTest {
 
             Class<?> organization = ldr.loadClass("org.apache.ignite.tests.p2p.cache.Organization");
             Class<?> person = ldr.loadClass("org.apache.ignite.tests.p2p.cache.Person");
-            Class<?> address = ldr.loadClass("org.apache.ignite.tests.p2p.cache.Address");
+            Class<?> addr = ldr.loadClass("org.apache.ignite.tests.p2p.cache.Address");
 
             Object p = person.getConstructor(String.class).newInstance("test");
 
-            return organization.getConstructor(String.class, person, address).newInstance("org", p, null);
+            return organization.getConstructor(String.class, person, addr).newInstance("org", p, null);
         }
         catch (Exception e) {
             throw new RuntimeException(e);

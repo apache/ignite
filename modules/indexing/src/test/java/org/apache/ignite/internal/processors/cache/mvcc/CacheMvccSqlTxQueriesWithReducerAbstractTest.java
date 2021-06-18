@@ -273,11 +273,11 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
         IgniteCache<Integer, CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue> cache =
             checkNode.cache(DEFAULT_CACHE_NAME);
 
-        final int count = 6;
+        final int cnt = 6;
 
-        Map<Integer, CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue> vals = new HashMap<>(count);
+        Map<Integer, CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue> vals = new HashMap<>(cnt);
 
-        for (int idx = 1; idx <= count; ++idx)
+        for (int idx = 1; idx <= cnt; ++idx)
             vals.put(idx, new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(idx));
 
         cache.putAll(vals);
@@ -296,7 +296,7 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
             IgniteCache<Object, Object> cache0 = updateNode.cache(DEFAULT_CACHE_NAME);
 
             try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
-                assertEquals((long)count, cur.iterator().next().get(0));
+                assertEquals((long)cnt, cur.iterator().next().get(0));
             }
 
             tx.commit();
@@ -328,11 +328,11 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
 
         cache.putAll(F.asMap(1, 1, 3, 3, 5, 5));
 
-        final int count = 6;
+        final int cnt = 6;
 
-        Map<Integer, CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue> vals = new HashMap<>(count);
+        Map<Integer, CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue> vals = new HashMap<>(cnt);
 
-        for (int idx = 1; idx <= count; ++idx)
+        for (int idx = 1; idx <= cnt; ++idx)
             vals.put(idx, new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(idx));
 
         IgniteCache<Object, Object> cache0 = updateNode.cache(DEFAULT_CACHE_NAME);
@@ -380,11 +380,11 @@ public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends Cache
 
         cache.putAll(F.asMap(1, 5, 3, 1, 5, 3));
 
-        final int count = 6;
+        final int cnt = 6;
 
-        Map<Integer, CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue> vals = new HashMap<>(count);
+        Map<Integer, CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue> vals = new HashMap<>(cnt);
 
-        for (int idx = 1; idx <= count; ++idx)
+        for (int idx = 1; idx <= cnt; ++idx)
             vals.put(idx, new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(idx));
 
         IgniteCache<Object, Object> cache0 = updateNode.cache(DEFAULT_CACHE_NAME);

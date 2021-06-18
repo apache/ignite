@@ -105,9 +105,9 @@ public class IgniteSqlBigIntegerKeyTest extends AbstractIndexingCommonTest {
     private void checkQuery(IgniteCache<Object, Object> cache, String sql, Object arg) {
         SqlFieldsQuery qry = new SqlFieldsQuery(sql).setArgs(arg);
 
-        QueryCursor<List<?>> query = cache.query(qry);
+        QueryCursor<List<?>> qryCursor = cache.query(qry);
 
-        List<List<?>> res = query.getAll();
+        List<List<?>> res = qryCursor.getAll();
 
         assertEquals(1, res.size());
 

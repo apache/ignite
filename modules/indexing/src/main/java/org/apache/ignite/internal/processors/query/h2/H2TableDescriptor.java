@@ -218,7 +218,7 @@ public class H2TableDescriptor {
         if (affCol != null && H2Utils.equals(affCol, keyCol))
             affCol = null;
 
-        List<IndexColumn> unwrappedKeyAndAffinityCols = extractKeyColumns(tbl, keyCol, affCol);
+        List<IndexColumn> unwrappedKeyAndAffCols = extractKeyColumns(tbl, keyCol, affCol);
 
         List<IndexColumn> wrappedKeyCols = H2Utils.treeIndexColumns(tbl.rowDescriptor(),
             new ArrayList<>(2), keyCol, affCol);
@@ -237,7 +237,7 @@ public class H2TableDescriptor {
             tbl,
             true,
             false,
-            unwrappedKeyAndAffinityCols,
+            unwrappedKeyAndAffCols,
             wrappedKeyCols,
             -1,
             null

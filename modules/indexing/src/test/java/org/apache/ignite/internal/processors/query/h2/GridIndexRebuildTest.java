@@ -313,10 +313,10 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
 
         VisorTaskArgument<VisorValidateIndexesTaskArg> visorTaskArg = new VisorTaskArgument<>(nodes, arg, true);
 
-        ComputeTaskInternalFuture<VisorValidateIndexesTaskResult> execute = grid1.context().task().
+        ComputeTaskInternalFuture<VisorValidateIndexesTaskResult> exec = grid1.context().task().
             execute(new VisorValidateIndexesTask(), visorTaskArg);
 
-        VisorValidateIndexesTaskResult res = execute.get();
+        VisorValidateIndexesTaskResult res = exec.get();
 
         Map<UUID, VisorValidateIndexesJobResult> results = res.results();
 
