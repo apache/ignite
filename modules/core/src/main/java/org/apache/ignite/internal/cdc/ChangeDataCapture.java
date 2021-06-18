@@ -27,7 +27,6 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
@@ -169,12 +168,7 @@ public class ChangeDataCapture implements Runnable {
         try {
             initWorkDir(this.igniteCfg);
 
-            log = U.initLogger(
-                igniteCfg.getGridLogger(),
-                "ignite-cdc",
-                igniteCfg.getNodeId() != null ? igniteCfg.getNodeId() : UUID.randomUUID(),
-                igniteCfg.getWorkDirectory()
-            );
+            log = U.initLogger(igniteCfg, "ignite-cdc");
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);

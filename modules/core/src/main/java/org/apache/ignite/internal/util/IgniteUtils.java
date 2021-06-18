@@ -4640,8 +4640,23 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * @param cfg Ignite configuration.
+     * @param app Application name.
+     * @return Initialized logger.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static IgniteLogger initLogger(IgniteConfiguration cfg, String app) throws IgniteCheckedException {
+        return initLogger(
+            cfg.getGridLogger(),
+            app,
+            cfg.getNodeId() != null ? cfg.getNodeId() : UUID.randomUUID(),
+            cfg.getWorkDirectory()
+        );
+    }
+
+    /**
      * @param cfgLog Configured logger.
-     * @param nodeId Local node ID.
+     * @param app Application name.
      * @param workDir Work directory.
      * @return Initialized logger.
      * @throws IgniteCheckedException If failed.
