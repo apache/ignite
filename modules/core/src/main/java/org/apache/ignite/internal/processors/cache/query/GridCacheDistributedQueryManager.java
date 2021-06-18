@@ -557,9 +557,34 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
         long reqId = cctx.io().nextIoId();
 
-        final GridCacheDistributedQueryFuture<K, V, ?> fut = initDistributedQuery(reqId, qry, nodes, fields);
+        final GridCacheDistributedQueryFuture fut = fields ?
+            new GridCacheDistributedFieldsQueryFuture(cctx, reqId, qry)
+            : new GridCacheDistributedQueryFuture(cctx, reqId, qry);
 
-        addQueryFuture(reqId, fut);
+        try {
+            DistributedCacheQueryReducer reducer = createReducer(fut.qry.query().type(), reqId, fut, nodes);
+
+            fut.reducer(reducer);
+
+            fut.qry.query().validate();
+
+            final Object topic = topic(cctx.nodeId(), reqId);
+
+            cctx.io().addOrderedCacheHandler(cctx.shared(), topic, resHnd);
+
+            fut.listen(new CI1<IgniteInternalFuture<?>>() {
+                @Override public void apply(IgniteInternalFuture<?> fut) {
+                    cctx.io().removeOrderedHandler(false, topic);
+                }
+            });
+
+            addQueryFuture(reqId, fut);
+
+            pageRequester.initRequestPages(reqId, fut, nodes);
+        }
+        catch (IgniteCheckedException e) {
+            fut.onDone(e);
+        }
 
         return fut;
     }
@@ -717,39 +742,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     /** {@inheritDoc} */
     @Override public CacheQueryFuture<?> queryFieldsDistributed(GridCacheQueryBean qry, Collection<ClusterNode> nodes) {
         return queryDistributed(qry, nodes, true);
-    }
-
-    /** Initialize distributed query: stores future, sends query requests to nodes. */
-    private GridCacheDistributedQueryFuture initDistributedQuery(long reqId, GridCacheQueryBean qry,
-        Collection<ClusterNode> nodes, boolean fields) {
-        final GridCacheDistributedQueryFuture fut = fields ?
-            new GridCacheDistributedFieldsQueryFuture(cctx, reqId, qry)
-            : new GridCacheDistributedQueryFuture(cctx, reqId, qry);
-
-        try {
-            DistributedCacheQueryReducer reducer = createReducer(fut.qry.query().type(), reqId, fut, nodes);
-
-            fut.reducer(reducer);
-
-            fut.qry.query().validate();
-
-            final Object topic = topic(cctx.nodeId(), reqId);
-
-            cctx.io().addOrderedCacheHandler(cctx.shared(), topic, resHnd);
-
-            fut.listen(new CI1<IgniteInternalFuture<?>>() {
-                @Override public void apply(IgniteInternalFuture<?> fut) {
-                    cctx.io().removeOrderedHandler(false, topic);
-                }
-            });
-
-            pageRequester.initRequestPages(reqId, fut, nodes);
-        }
-        catch (IgniteCheckedException e) {
-            fut.onDone(e);
-        }
-
-        return fut;
     }
 
     /** Creates a reducer depends on query type. */
