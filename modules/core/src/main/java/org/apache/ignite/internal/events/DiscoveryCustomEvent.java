@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.events;
 
+import java.util.UUID;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -49,6 +50,9 @@ public class DiscoveryCustomEvent extends DiscoveryEvent {
 
     /** Affinity topology version. */
     private AffinityTopologyVersion affTopVer;
+
+    /** The ID of the security subject that initiated the custom discovery message to which this event belongs. */
+    private UUID secSubjId;
 
     /**
      * Default constructor.
@@ -83,6 +87,19 @@ public class DiscoveryCustomEvent extends DiscoveryEvent {
      */
     public void affinityTopologyVersion(AffinityTopologyVersion affTopVer) {
         this.affTopVer = affTopVer;
+    }
+
+    /**
+     * Gets the ID of the security subject that initiated the custom discovery message to which this event belongs.
+     * {@code null} if security is disabled.
+      */
+    @Nullable public UUID securitySubjectId() {
+        return secSubjId;
+    }
+
+    /** Sets the ID of the security subject that initiated the custom discovery message to which this event belongs. */
+    public void securitySubjectId(UUID secSubjId) {
+        this.secSubjId = secSubjId;
     }
 
     /** {@inheritDoc} */
