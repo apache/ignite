@@ -35,6 +35,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -248,6 +249,26 @@ public class SecurityUtils {
         return instance instanceof GridInternalWrapper
             ? new Class[] {cls, GridInternalWrapper.class}
             : new Class[] {cls};
+    }
+
+    /** Wraps specified {@link Runnable} with one that changes security context before its execution to the specified one. */
+    public static Runnable wrapWithSecurityAware(IgniteSecurity security, UUID secSubjId, Runnable r) {
+        return () -> {
+            try (OperationSecurityContext ignored = security.withContext(secSubjId)) {
+                r.run();
+            }
+        };
+    }
+
+    /** Executes specified {@link Runnable} with specified security context if security is enabled. */
+    public static void withSecurityContext(IgniteSecurity security, UUID secSubjId, Runnable r) {
+        if (security.enabled() && secSubjId != null) {
+            try (OperationSecurityContext ignored = security.withContext(secSubjId)) {
+                r.run();
+            }
+        }
+        else
+            r.run();
     }
 
     /** */
