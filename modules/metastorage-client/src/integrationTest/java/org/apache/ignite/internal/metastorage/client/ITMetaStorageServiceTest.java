@@ -1013,11 +1013,7 @@ public class ITMetaStorageServiceTest {
     private MetaStorageService prepareMetaStorage(KeyValueStorage keyValStorageMock) {
         List<Peer> peers = List.of(new Peer(cluster.get(0).topologyService().localMember().address()));
 
-        metaStorageRaftSrv = new RaftServerImpl(
-            cluster.get(0),
-            FACTORY,
-            true
-        );
+        metaStorageRaftSrv = new RaftServerImpl(cluster.get(0), FACTORY);
 
         metaStorageRaftSrv.
             startRaftGroup(METASTORAGE_RAFT_GROUP_NAME, new MetaStorageListener(keyValStorageMock), peers);
@@ -1029,8 +1025,7 @@ public class ITMetaStorageServiceTest {
             10_000,
             peers,
             true,
-            200,
-            true
+            200
         );
 
         return new MetaStorageServiceImpl(metaStorageRaftGrpSvc);

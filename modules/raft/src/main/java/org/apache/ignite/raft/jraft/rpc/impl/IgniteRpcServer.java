@@ -21,11 +21,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
-import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.NetworkMessage;
-import org.apache.ignite.network.NetworkMessageHandler;
 import org.apache.ignite.network.TopologyEventHandler;
 import org.apache.ignite.raft.client.message.RaftClientMessagesFactory;
 import org.apache.ignite.raft.jraft.NodeManager;
@@ -59,30 +57,24 @@ public class IgniteRpcServer implements RpcServer<Void> {
     /** Factory. */
     private static final RaftClientMessagesFactory FACTORY = new RaftClientMessagesFactory();
 
-    /** The {@code true} to reuse cluster service. */
-    private final boolean reuse;
-
     private final ClusterService service;
 
-    private List<ConnectionClosedEventListener> listeners = new CopyOnWriteArrayList<>();
+    private final List<ConnectionClosedEventListener> listeners = new CopyOnWriteArrayList<>();
 
-    private Map<String, RpcProcessor> processors = new ConcurrentHashMap<>();
+    private final Map<String, RpcProcessor> processors = new ConcurrentHashMap<>();
 
     /**
      * @param service The cluster service.
-     * @param reuse {@code True} to reuse service (do no manage lifecycle).
      * @param nodeManager The node manager.
      * @param factory Message factory.
      * @param rpcExecutor The executor for RPC requests.
      */
     public IgniteRpcServer(
         ClusterService service,
-        boolean reuse,
         NodeManager nodeManager,
         RaftClientMessagesFactory factory,
         @Nullable Executor rpcExecutor
     ) {
-        this.reuse = reuse;
         this.service = service;
 
         // raft server RPC
@@ -112,60 +104,59 @@ public class IgniteRpcServer implements RpcServer<Void> {
         registerProcessor(new ActionRequestProcessor(rpcExecutor, FACTORY));
         registerProcessor(new org.apache.ignite.raft.jraft.rpc.impl.client.SnapshotRequestProcessor(rpcExecutor, FACTORY));
 
-        service.messagingService().addMessageHandler(new NetworkMessageHandler() {
-            @Override public void onReceived(NetworkMessage msg, ClusterNode sender, String corellationId) {
-                Class<? extends NetworkMessage> cls = msg.getClass();
-                RpcProcessor prc = processors.get(cls.getName());
+        service.messagingService().addMessageHandler((msg, sender, corellationId) -> {
+            Class<? extends NetworkMessage> cls = msg.getClass();
+            RpcProcessor<NetworkMessage> prc = processors.get(cls.getName());
 
-                // TODO asch cache mapping https://issues.apache.org/jira/browse/IGNITE-14832
-                if (prc == null) {
-                    for (Class<?> iface : cls.getInterfaces()) {
-                        prc = processors.get(iface.getName());
+            // TODO asch cache mapping https://issues.apache.org/jira/browse/IGNITE-14832
+            if (prc == null) {
+                for (Class<?> iface : cls.getInterfaces()) {
+                    prc = processors.get(iface.getName());
 
-                        if (prc != null)
-                            break;
-                    }
+                    if (prc != null)
+                        break;
                 }
-
-                if (prc == null)
-                    return;
-
-                RpcProcessor.ExecutorSelector selector = prc.executorSelector();
-
-                Executor executor = null;
-
-                if (selector != null) {
-                    executor = selector.select(prc.getClass().getName(), msg, nodeManager);
-                }
-
-                if (executor == null)
-                    executor = prc.executor();
-
-                if (executor == null)
-                    executor = rpcExecutor;
-
-                RpcProcessor finalPrc = prc;
-
-                executor.execute(() -> {
-                    finalPrc.handleRequest(new RpcContext() {
-                        @Override public NodeManager getNodeManager() {
-                            return nodeManager;
-                        }
-
-                        @Override public void sendResponse(Object responseObj) {
-                            service.messagingService().send(sender, (NetworkMessage) responseObj, corellationId);
-                        }
-
-                        @Override public String getRemoteAddress() {
-                            return sender.address();
-                        }
-
-                        @Override public String getLocalAddress() {
-                            return service.topologyService().localMember().address();
-                        }
-                    }, msg);
-                });
             }
+
+            if (prc == null)
+                return;
+
+            RpcProcessor.ExecutorSelector selector = prc.executorSelector();
+
+            Executor executor = null;
+
+            if (selector != null)
+                executor = selector.select(prc.getClass().getName(), msg, nodeManager);
+
+            if (executor == null)
+                executor = prc.executor();
+
+            if (executor == null)
+                executor = rpcExecutor;
+
+            RpcProcessor<NetworkMessage> finalPrc = prc;
+
+            executor.execute(() -> {
+                var context = new RpcContext() {
+                    @Override public NodeManager getNodeManager() {
+                        return nodeManager;
+                    }
+
+                    @Override public void sendResponse(Object responseObj) {
+                        service.messagingService().send(sender, (NetworkMessage) responseObj, corellationId);
+                    }
+
+                    @Override public String getRemoteAddress() {
+                        return sender.address();
+                    }
+
+                    @Override public String getLocalAddress() {
+                        return service.topologyService().localMember().address();
+                    }
+                };
+
+                finalPrc.handleRequest(context, msg);
+            });
         });
 
         service.topologyService().addEventHandler(new TopologyEventHandler() {
@@ -180,23 +171,24 @@ public class IgniteRpcServer implements RpcServer<Void> {
         });
     }
 
+    /** {@inheritDoc} */
     @Override public void registerConnectionClosedEventListener(ConnectionClosedEventListener listener) {
-        if (!listeners.contains(listeners))
+        if (!listeners.contains(listener))
             listeners.add(listener);
     }
 
+    /** {@inheritDoc} */
     @Override public void registerProcessor(RpcProcessor<?> processor) {
         processors.put(processor.interest(), processor);
     }
 
+    /** {@inheritDoc} */
     @Override public int boundPort() {
         return 0;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean init(Void opts) {
-        if (!reuse)
-            service.start();
-
         return true;
     }
 
@@ -204,15 +196,7 @@ public class IgniteRpcServer implements RpcServer<Void> {
         return service;
     }
 
+    /** {@inheritDoc} */
     @Override public void shutdown() {
-        if (reuse)
-            return;
-
-        try {
-            service.shutdown();
-        }
-        catch (Exception e) {
-            throw new IgniteInternalException(e);
-        }
     }
 }

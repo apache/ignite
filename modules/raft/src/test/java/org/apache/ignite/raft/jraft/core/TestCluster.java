@@ -30,6 +30,10 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.lang.IgniteLogger;
+import org.apache.ignite.network.ClusterLocalConfiguration;
+import org.apache.ignite.network.ClusterService;
+import org.apache.ignite.network.TestMessageSerializationRegistryImpl;
+import org.apache.ignite.network.scalecube.TestScaleCubeClusterServiceFactory;
 import org.apache.ignite.raft.jraft.JRaftServiceFactory;
 import org.apache.ignite.raft.jraft.JRaftUtils;
 import org.apache.ignite.raft.jraft.Node;
@@ -41,7 +45,6 @@ import org.apache.ignite.raft.jraft.option.NodeOptions;
 import org.apache.ignite.raft.jraft.option.RaftOptions;
 import org.apache.ignite.raft.jraft.rpc.TestIgniteRpcServer;
 import org.apache.ignite.raft.jraft.rpc.impl.IgniteRpcClient;
-import org.apache.ignite.raft.jraft.rpc.impl.IgniteRpcServer;
 import org.apache.ignite.raft.jraft.storage.SnapshotThrottle;
 import org.apache.ignite.raft.jraft.test.TestUtils;
 import org.apache.ignite.raft.jraft.util.Endpoint;
@@ -64,7 +67,7 @@ public class TestCluster {
     private final List<PeerId> peers;
     private final List<NodeImpl> nodes;
     private final LinkedHashMap<PeerId, MockStateMachine> fsms;
-    private final ConcurrentMap<String, RaftGroupService> serverMap = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Endpoint, RaftGroupService> serverMap = new ConcurrentHashMap<>();
     private final int electionTimeoutMs;
     private final Lock lock = new ReentrantLock();
     private final Consumer<NodeOptions> optsClo;
@@ -160,68 +163,93 @@ public class TestCluster {
         final boolean enableMetrics, final SnapshotThrottle snapshotThrottle,
         final RaftOptions raftOptions, final int priority) throws IOException {
 
-        if (this.serverMap.get(listenAddr.toString()) != null) {
-            return true;
-        }
-
-        final NodeOptions nodeOptions = new NodeOptions();
-
-        nodeOptions.setServerName(listenAddr.toString());
-
-        nodeOptions.setCommonExecutor(JRaftUtils.createCommonExecutor(nodeOptions));
-        nodeOptions.setStripedExecutor(JRaftUtils.createAppendEntriesExecutor(nodeOptions));
-        nodeOptions.setClientExecutor(JRaftUtils.createClientExecutor(nodeOptions, nodeOptions.getServerName()));
-        nodeOptions.setScheduler(JRaftUtils.createScheduler(nodeOptions));
-
-        nodeOptions.setElectionTimeoutMs(this.electionTimeoutMs);
-        nodeOptions.setEnableMetrics(enableMetrics);
-        nodeOptions.setSnapshotThrottle(snapshotThrottle);
-        nodeOptions.setSnapshotIntervalSecs(snapshotIntervalSecs);
-        nodeOptions.setServiceFactory(this.raftServiceFactory);
-        if (raftOptions != null) {
-            nodeOptions.setRaftOptions(raftOptions);
-        }
-        final String serverDataPath = this.dataPath + File.separator + listenAddr.toString().replace(':', '_');
-        new File(serverDataPath).mkdirs();
-        nodeOptions.setLogUri(serverDataPath + File.separator + "logs");
-        nodeOptions.setRaftMetaUri(serverDataPath + File.separator + "meta");
-        nodeOptions.setSnapshotUri(serverDataPath + File.separator + "snapshot");
-        nodeOptions.setElectionPriority(priority);
-
-        final MockStateMachine fsm = new MockStateMachine(listenAddr);
-        nodeOptions.setFsm(fsm);
-
-        if (!emptyPeers) {
-            nodeOptions.setInitialConf(new Configuration(this.peers, this.learners));
-        }
-
-        List<String> servers = emptyPeers ? List.of() : this.peers.stream().map(p -> p.getEndpoint().toString()).collect(Collectors.toList());
-
-        NodeManager nodeManager = new NodeManager();
-
-        final IgniteRpcServer rpcServer = new TestIgniteRpcServer(listenAddr, servers, nodeManager);
-        nodeOptions.setRpcClient(new IgniteRpcClient(rpcServer.clusterService(), true));
-
-        if (optsClo != null)
-            optsClo.accept(nodeOptions);
-
-        final RaftGroupService server = new RaftGroupService(this.name, new PeerId(listenAddr, 0, priority),
-            nodeOptions, rpcServer, nodeManager);
-
         this.lock.lock();
         try {
-            if (this.serverMap.put(listenAddr.toString(), server) == null) {
-                final Node node = server.start();
-
-                this.fsms.put(new PeerId(listenAddr, 0), fsm);
-                this.nodes.add((NodeImpl) node);
+            if (this.serverMap.get(listenAddr) != null) {
                 return true;
             }
+
+            final NodeOptions nodeOptions = new NodeOptions();
+
+            nodeOptions.setServerName(listenAddr.toString());
+
+            nodeOptions.setCommonExecutor(JRaftUtils.createCommonExecutor(nodeOptions));
+            nodeOptions.setStripedExecutor(JRaftUtils.createAppendEntriesExecutor(nodeOptions));
+            nodeOptions.setClientExecutor(JRaftUtils.createClientExecutor(nodeOptions, nodeOptions.getServerName()));
+            nodeOptions.setScheduler(JRaftUtils.createScheduler(nodeOptions));
+
+            nodeOptions.setElectionTimeoutMs(this.electionTimeoutMs);
+            nodeOptions.setEnableMetrics(enableMetrics);
+            nodeOptions.setSnapshotThrottle(snapshotThrottle);
+            nodeOptions.setSnapshotIntervalSecs(snapshotIntervalSecs);
+            nodeOptions.setServiceFactory(this.raftServiceFactory);
+            if (raftOptions != null) {
+                nodeOptions.setRaftOptions(raftOptions);
+            }
+            final String serverDataPath = this.dataPath + File.separator + listenAddr.toString().replace(':', '_');
+            new File(serverDataPath).mkdirs();
+            nodeOptions.setLogUri(serverDataPath + File.separator + "logs");
+            nodeOptions.setRaftMetaUri(serverDataPath + File.separator + "meta");
+            nodeOptions.setSnapshotUri(serverDataPath + File.separator + "snapshot");
+            nodeOptions.setElectionPriority(priority);
+
+            final MockStateMachine fsm = new MockStateMachine(listenAddr);
+            nodeOptions.setFsm(fsm);
+
+            if (!emptyPeers) {
+                nodeOptions.setInitialConf(new Configuration(this.peers, this.learners));
+            }
+
+            List<String> servers = emptyPeers ? List.of() : this.peers.stream().map(p -> p.getEndpoint().toString()).collect(Collectors.toList());
+
+            NodeManager nodeManager = new NodeManager();
+
+            ClusterService clusterService = createClusterService(listenAddr, servers);
+
+            var rpcClient = new IgniteRpcClient(clusterService);
+
+            nodeOptions.setRpcClient(rpcClient);
+
+            var rpcServer = new TestIgniteRpcServer(clusterService, servers, nodeManager);
+
+            clusterService.start();
+
+            if (optsClo != null)
+                optsClo.accept(nodeOptions);
+
+            final RaftGroupService server = new RaftGroupService(this.name, new PeerId(listenAddr, 0, priority),
+                nodeOptions, rpcServer, nodeManager) {
+                @Override public synchronized void shutdown() {
+                    super.shutdown();
+
+                    clusterService.shutdown();
+                }
+            };
+
+            this.serverMap.put(listenAddr, server);
+
+            final Node node = server.start();
+
+            this.fsms.put(new PeerId(listenAddr, 0), fsm);
+            this.nodes.add((NodeImpl) node);
+            return true;
         }
         finally {
             this.lock.unlock();
         }
-        return false;
+    }
+
+    /**
+     * Creates a non-started {@link ClusterService}.
+     */
+    private static ClusterService createClusterService(Endpoint endpoint, List<String> members) {
+        var registry = new TestMessageSerializationRegistryImpl();
+
+        var clusterConfig = new ClusterLocalConfiguration(endpoint.toString(), endpoint.getPort(), members, registry);
+
+        var clusterServiceFactory = new TestScaleCubeClusterServiceFactory();
+
+        return clusterServiceFactory.createClusterService(clusterConfig);
     }
 
     public Node getNode(Endpoint endpoint) {
@@ -240,7 +268,7 @@ public class TestCluster {
     }
 
     public RaftGroupService getServer(Endpoint endpoint) {
-        return serverMap.get(endpoint.toString());
+        return serverMap.get(endpoint);
     }
 
     public MockStateMachine getFsmByPeer(final PeerId peer) {
@@ -265,7 +293,7 @@ public class TestCluster {
 
     public boolean stop(final Endpoint listenAddr) throws InterruptedException {
         removeNode(listenAddr);
-        final RaftGroupService raftGroupService = this.serverMap.remove(listenAddr.toString());
+        final RaftGroupService raftGroupService = this.serverMap.remove(listenAddr);
         raftGroupService.shutdown();
         return true;
     }

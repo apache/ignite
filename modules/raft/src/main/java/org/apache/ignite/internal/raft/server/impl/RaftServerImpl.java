@@ -76,25 +76,16 @@ public class RaftServerImpl implements RaftServer {
     /** */
     private final Thread writeWorker;
 
-    /** */
-    private final boolean reuse;
-
     /**
      * @param service Network service.
      * @param clientMsgFactory Client message factory.
-     * @param reuse {@code True} to reuse cluster service.
      */
-    public RaftServerImpl(
-        ClusterService service,
-        RaftClientMessagesFactory clientMsgFactory,
-        boolean reuse
-    ) {
+    public RaftServerImpl(ClusterService service, RaftClientMessagesFactory clientMsgFactory) {
         Objects.requireNonNull(service);
         Objects.requireNonNull(clientMsgFactory);
 
         this.service = service;
         this.clientMsgFactory = clientMsgFactory;
-        this.reuse = reuse;
 
         readQueue = new ArrayBlockingQueue<>(QUEUE_SIZE);
         writeQueue = new ArrayBlockingQueue<>(QUEUE_SIZE);
@@ -123,9 +114,6 @@ public class RaftServerImpl implements RaftServer {
             }
             // TODO https://issues.apache.org/jira/browse/IGNITE-14775
         });
-
-        if (!reuse)
-            service.start();
 
         readWorker = new Thread(() -> processQueue(readQueue, RaftGroupListener::onRead), "read-cmd-worker#" + service.topologyService().localMember().toString());
         readWorker.setDaemon(true);
@@ -171,9 +159,6 @@ public class RaftServerImpl implements RaftServer {
 
         writeWorker.interrupt();
         writeWorker.join();
-
-        if (!reuse)
-            service.shutdown();
 
         LOG.info("Stopped replication server [node=" + service.toString() + ']');
     }

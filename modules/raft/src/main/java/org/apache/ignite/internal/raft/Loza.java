@@ -56,7 +56,7 @@ public class Loza {
     public Loza(ClusterService clusterNetSvc) {
         this.clusterNetSvc = clusterNetSvc;
 
-        this.raftServer = new RaftServerImpl(clusterNetSvc, FACTORY, true);
+        this.raftServer = new RaftServerImpl(clusterNetSvc, FACTORY);
     }
 
     /**
@@ -82,8 +82,7 @@ public class Loza {
             TIMEOUT,
             peers.stream().map(i -> new Peer(i.address())).collect(Collectors.toList()),
             true,
-            DELAY,
-            true
+            DELAY
         );
     }
 

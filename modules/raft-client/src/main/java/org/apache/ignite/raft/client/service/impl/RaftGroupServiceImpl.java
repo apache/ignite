@@ -90,9 +90,6 @@ public class RaftGroupServiceImpl implements RaftGroupService {
     /** */
     private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
 
-    /** */
-    private final boolean reuse;
-
     /**
      * @param groupId Group id.
      * @param cluster A cluster.
@@ -101,7 +98,6 @@ public class RaftGroupServiceImpl implements RaftGroupService {
      * @param peers Initial group configuration.
      * @param refreshLeader {@code True} to synchronously refresh leader on service creation.
      * @param retryDelay Retry delay.
-     * @param reuse {@code True} to reuse cluster service (avoid lifecycle management).
      */
     public RaftGroupServiceImpl(
         String groupId,
@@ -110,8 +106,7 @@ public class RaftGroupServiceImpl implements RaftGroupService {
         int timeout,
         List<Peer> peers,
         boolean refreshLeader,
-        long retryDelay,
-        boolean reuse
+        long retryDelay
     ) {
         this.cluster = requireNonNull(cluster);
         this.peers = requireNonNull(peers);
@@ -119,10 +114,6 @@ public class RaftGroupServiceImpl implements RaftGroupService {
         this.timeout = timeout;
         this.groupId = groupId;
         this.retryDelay = retryDelay;
-        this.reuse = reuse;
-
-        if (!reuse)
-            cluster.start();
 
         if (refreshLeader) {
             try {
@@ -342,8 +333,6 @@ public class RaftGroupServiceImpl implements RaftGroupService {
 
     /** {@inheritDoc} */
     @Override public void shutdown() {
-        if (!reuse)
-            cluster.shutdown();
     }
 
     /**

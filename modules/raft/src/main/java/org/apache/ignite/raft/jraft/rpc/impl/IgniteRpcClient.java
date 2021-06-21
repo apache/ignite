@@ -25,7 +25,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
-import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.TopologyEventHandler;
@@ -47,18 +46,11 @@ public class IgniteRpcClient implements RpcClientEx {
 
     private final ClusterService service;
 
-    private final boolean reuse;
-
     /**
      * @param service The service.
-     * @param reuse {@code True} to reuse already started service.
      */
-    public IgniteRpcClient(ClusterService service, boolean reuse) {
+    public IgniteRpcClient(ClusterService service) {
         this.service = service;
-        this.reuse = reuse;
-
-        if (!reuse) // TODO asch use init
-            service.start();
     }
 
     public ClusterService clusterService() {
@@ -181,13 +173,6 @@ public class IgniteRpcClient implements RpcClientEx {
 
     /** {@inheritDoc} */
     @Override public void shutdown() {
-        try {
-            if (!reuse)
-                service.shutdown();
-        }
-        catch (Exception e) {
-            throw new IgniteInternalException(e);
-        }
     }
 
     /** {@inheritDoc} */

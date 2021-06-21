@@ -18,63 +18,28 @@
 package org.apache.ignite.raft.jraft.rpc;
 
 import java.util.List;
-import org.apache.ignite.network.ClusterLocalConfiguration;
-import org.apache.ignite.network.MessageSerializationRegistryImpl;
-import org.apache.ignite.network.scalecube.ScaleCubeClusterServiceFactory;
-import org.apache.ignite.network.scalecube.TestScaleCubeClusterServiceFactory;
-import org.apache.ignite.network.serialization.MessageSerializationRegistry;
+import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.raft.client.message.RaftClientMessagesFactory;
 import org.apache.ignite.raft.jraft.JRaftUtils;
 import org.apache.ignite.raft.jraft.NodeManager;
 import org.apache.ignite.raft.jraft.option.NodeOptions;
 import org.apache.ignite.raft.jraft.rpc.impl.IgniteRpcServer;
-import org.apache.ignite.raft.jraft.util.Endpoint;
 
 /**
  * RPC server configured for integration tests.
  */
 public class TestIgniteRpcServer extends IgniteRpcServer {
     /**
-     * The registry.
+     * @param clusterService cluster service
+     * @param servers server list
+     * @param nodeManager node manager
      */
-    /** */
-    private static final MessageSerializationRegistry SERIALIZATION_REGISTRY = new MessageSerializationRegistryImpl();
-
-    /**
-     * Service factory.
-     */
-    private final static ScaleCubeClusterServiceFactory SERVICE_FACTORY = new TestScaleCubeClusterServiceFactory();
-
-    /**
-     * Message factory.
-     */
-    private static final RaftClientMessagesFactory MSG_FACTORY = new RaftClientMessagesFactory();
-
-    /**
-     * @param endpoint The endpoint.
-     * @param nodeManager The node manager.
-     */
-    public TestIgniteRpcServer(Endpoint endpoint, NodeManager nodeManager) {
-        this(endpoint.getIp() + ":" + endpoint.getPort(), endpoint.getPort(), List.of(), nodeManager);
-    }
-
-    /**
-     * @param endpoint The endpoint.
-     * @param servers Server list.
-     * @param nodeManager The node manager.
-     */
-    public TestIgniteRpcServer(Endpoint endpoint, List<String> servers, NodeManager nodeManager) {
-        this(endpoint.getIp() + ":" + endpoint.getPort(), endpoint.getPort(), servers, nodeManager);
-    }
-
-    /**
-     * @param name The name.
-     * @param port The port.
-     * @param servers Server list.
-     * @param nodeManager The node manager.
-     */
-    public TestIgniteRpcServer(String name, int port, List<String> servers, NodeManager nodeManager) {
-        super(SERVICE_FACTORY.createClusterService(new ClusterLocalConfiguration(name, port, servers, SERIALIZATION_REGISTRY)),
-            false, nodeManager, MSG_FACTORY, JRaftUtils.createRequestExecutor(new NodeOptions()));
+    public TestIgniteRpcServer(ClusterService clusterService, List<String> servers, NodeManager nodeManager) {
+        super(
+            clusterService,
+            nodeManager,
+            new RaftClientMessagesFactory(),
+            JRaftUtils.createRequestExecutor(new NodeOptions())
+        );
     }
 }

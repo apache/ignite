@@ -102,12 +102,12 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
     /**
      * Servers list.
      */
-    protected List<JRaftServerImpl> servers = new ArrayList<>();
+    protected final List<JRaftServerImpl> servers = new ArrayList<>();
 
     /**
      * Clients list.
      */
-    protected List<RaftGroupService> clients = new ArrayList<>();
+    private final List<RaftGroupService> clients = new ArrayList<>();
 
     /**
      * Data path.
@@ -146,9 +146,15 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
      */
     private JRaftServerImpl startServer(int idx, Consumer<RaftServer> clo) {
         ClusterService service = clusterService("server" + idx, PORT + idx,
-            List.of(getLocalAddress() + ":" + PORT), false);
+            List.of(getLocalAddress() + ":" + PORT), true);
 
-        JRaftServerImpl server = new JRaftServerImpl(service, dataPath, FACTORY, false);
+        JRaftServerImpl server = new JRaftServerImpl(service, dataPath, FACTORY) {
+            @Override public void shutdown() throws Exception {
+                super.shutdown();
+
+                service.shutdown();
+            }
+        };
 
         clo.accept(server);
 
@@ -166,11 +172,17 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
     private RaftGroupService startClient(String groupId) {
         String addr = getLocalAddress() + ":" + PORT;
 
-        ClusterService clientNode1 = clusterService("client_" + groupId + "_", CLIENT_PORT + clients.size(),
-            List.of(addr), false);
+        ClusterService clientNode = clusterService("client_" + groupId + "_", CLIENT_PORT + clients.size(),
+            List.of(addr), true);
 
-        RaftGroupServiceImpl client = new RaftGroupServiceImpl(groupId, clientNode1, FACTORY, 10_000,
-            List.of(new Peer(addr)), false, 200, false);
+        RaftGroupServiceImpl client = new RaftGroupServiceImpl(groupId, clientNode, FACTORY, 10_000,
+            List.of(new Peer(addr)), false, 200) {
+            @Override public void shutdown() {
+                super.shutdown();
+
+                clientNode.shutdown();
+            }
+        };
 
         clients.add(client);
 
@@ -345,7 +357,7 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
     public void testApplyWithFailure() throws Exception {
         listenerFactory = () -> new CounterListener() {
             @Override public void onWrite(Iterator<CommandClosure<WriteCommand>> iterator) {
-                Iterator<CommandClosure<WriteCommand>> wrapper = new Iterator<CommandClosure<WriteCommand>>() {
+                Iterator<CommandClosure<WriteCommand>> wrapper = new Iterator<>() {
                     @Override public boolean hasNext() {
                         return iterator.hasNext();
                     }
@@ -353,7 +365,7 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
                     @Override public CommandClosure<WriteCommand> next() {
                         CommandClosure<WriteCommand> cmd = iterator.next();
 
-                        IncrementAndGetCommand command = (IncrementAndGetCommand) cmd.command();
+                        IncrementAndGetCommand command = (IncrementAndGetCommand)cmd.command();
 
                         if (command.delta() == 10)
                             throw new IgniteInternalException("Very bad");

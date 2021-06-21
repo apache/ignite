@@ -34,9 +34,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.MessageSerializationRegistryImpl;
-import org.apache.ignite.network.scalecube.ScaleCubeClusterServiceFactory;
 import org.apache.ignite.network.scalecube.TestScaleCubeClusterServiceFactory;
-import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 import org.apache.ignite.raft.jraft.CliService;
 import org.apache.ignite.raft.jraft.JRaftUtils;
 import org.apache.ignite.raft.jraft.Node;
@@ -70,29 +68,21 @@ public class ITCliServiceTest {
     /**
      * The logger.
      */
-    static final Logger LOG = LoggerFactory.getLogger(ITCliServiceTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ITCliServiceTest.class);
 
-    /**
-     * The registry.
-     */
-    private static final MessageSerializationRegistry SERIALIZATION_REGISTRY = new MessageSerializationRegistryImpl();
-
-    /**
-     * The message factory.
-     */
-    private final static ScaleCubeClusterServiceFactory factory = new TestScaleCubeClusterServiceFactory();
+    private static final int LEARNER_PORT_STEP = 100;
 
     private String dataPath;
 
     private TestCluster cluster;
+
     private final String groupId = "CliServiceTest";
 
     private CliService cliService;
 
     private Configuration conf;
 
-    private static final int LEARNER_PORT_STEP = 100;
-
+    /** */
     @BeforeEach
     public void setup(TestInfo testInfo) throws Exception {
         LOG.info(">>>>>>>>>>>>>>> Start test method: " + testInfo.getDisplayName());
@@ -130,11 +120,26 @@ public class ITCliServiceTest {
         CliOptions opts = new CliOptions();
         opts.setClientExecutor(JRaftUtils.createClientExecutor(opts, "client"));
 
-        ClusterService clientSvc = factory.createClusterService(new ClusterLocalConfiguration("client",
-            TestUtils.INIT_PORT - 1, peers.stream().map(p -> p.getEndpoint().toString()).collect(Collectors.toList()),
-            SERIALIZATION_REGISTRY));
+        List<String> memberAddresses = peers.stream().map(p -> p.getEndpoint().toString()).collect(Collectors.toList());
 
-        IgniteRpcClient rpcClient = new IgniteRpcClient(clientSvc, false);
+        var registry = new MessageSerializationRegistryImpl();
+
+        var serviceConfig = new ClusterLocalConfiguration("client", TestUtils.INIT_PORT - 1, memberAddresses, registry);
+
+        var factory = new TestScaleCubeClusterServiceFactory();
+
+        ClusterService clientSvc = factory.createClusterService(serviceConfig);
+
+        clientSvc.start();
+
+        IgniteRpcClient rpcClient = new IgniteRpcClient(clientSvc) {
+            @Override public void shutdown() {
+                super.shutdown();
+
+                clientSvc.shutdown();
+            }
+        };
+
         opts.setRpcClient(rpcClient);
         assertTrue(cliService.init(opts));
     }

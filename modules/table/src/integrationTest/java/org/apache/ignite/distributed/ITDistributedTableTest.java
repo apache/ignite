@@ -158,17 +158,13 @@ public class ITDistributedTableTest {
     public void partitionListener() throws Exception {
         String grpId = "part";
 
-        RaftServer partSrv = new RaftServerImpl(
-            cluster.get(0),
-            FACTORY,
-            true
-        );
+        RaftServer partSrv = new RaftServerImpl(cluster.get(0), FACTORY);
 
         List<Peer> conf = List.of(new Peer(cluster.get(0).topologyService().localMember().address()));
 
         partSrv.startRaftGroup(grpId, new PartitionListener(), conf);
 
-        RaftGroupService partRaftGrp = new RaftGroupServiceImpl(grpId, client, FACTORY, 10_000, conf, true, 200, true);
+        RaftGroupService partRaftGrp = new RaftGroupServiceImpl(grpId, client, FACTORY, 10_000, conf, true, 200);
 
         Row testRow = getTestRow();
 
@@ -222,13 +218,8 @@ public class ITDistributedTableTest {
     public void partitionedTable() {
         HashMap<ClusterNode, RaftServer> raftServers = new HashMap<>(NODES);
 
-        for (int i = 0; i < NODES; i++) {
-            raftServers.put(cluster.get(i).topologyService().localMember(), new RaftServerImpl(
-                cluster.get(i),
-                FACTORY,
-                true
-            ));
-        }
+        for (int i = 0; i < NODES; i++)
+            raftServers.put(cluster.get(i).topologyService().localMember(), new RaftServerImpl(cluster.get(i), FACTORY));
 
         List<List<ClusterNode>> assignment = RendezvousAffinityFunction.assignPartitions(
             cluster.stream().map(node -> node.topologyService().localMember()).collect(Collectors.toList()),
@@ -251,7 +242,7 @@ public class ITDistributedTableTest {
 
             rs.startRaftGroup(grpId, new PartitionListener(), conf);
 
-            partMap.put(p, new RaftGroupServiceImpl(grpId, client, FACTORY, 10_000, conf, true, 200, true));
+            partMap.put(p, new RaftGroupServiceImpl(grpId, client, FACTORY, 10_000, conf, true, 200));
 
             p++;
         }

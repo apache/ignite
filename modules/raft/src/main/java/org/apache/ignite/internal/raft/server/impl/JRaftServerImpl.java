@@ -78,24 +78,21 @@ public class JRaftServerImpl implements RaftServer {
      * @param service Cluster service.
      * @param dataPath Data path.
      * @param factory The factory.
-     * @param reuse {@code True} to reuse cluster service (do not manage lifecyle)
      */
-    public JRaftServerImpl(ClusterService service, String dataPath, RaftClientMessagesFactory factory, boolean reuse) {
-        this(service, dataPath, factory, reuse, new NodeOptions());
+    public JRaftServerImpl(ClusterService service, String dataPath, RaftClientMessagesFactory factory) {
+        this(service, dataPath, factory, new NodeOptions());
     }
 
     /**
      * @param service Cluster service.
      * @param dataPath Data path.
      * @param factory The factory.
-     * @param reuse {@code True} to reuse cluster service (do not manage lifecyle)
      * @param opts Default node options.
      */
     public JRaftServerImpl(
         ClusterService service,
         String dataPath,
         RaftClientMessagesFactory factory,
-        boolean reuse,
         NodeOptions opts
     ) {
         this.service = service;
@@ -103,7 +100,7 @@ public class JRaftServerImpl implements RaftServer {
         this.nodeManager = new NodeManager();
         this.opts = opts;
 
-        assert !reuse || service.topologyService().localMember() != null;
+        assert service.topologyService().localMember() != null;
 
         if (opts.getServerName() == null)
             opts.setServerName(service.localConfiguration().getName());
@@ -120,7 +117,7 @@ public class JRaftServerImpl implements RaftServer {
         if (opts.getClientExecutor() == null)
             opts.setClientExecutor(JRaftUtils.createClientExecutor(opts, opts.getServerName()));
 
-        rpcServer = new IgniteRpcServer(service, reuse, nodeManager, factory, JRaftUtils.createRequestExecutor(opts));
+        rpcServer = new IgniteRpcServer(service, nodeManager, factory, JRaftUtils.createRequestExecutor(opts));
 
         rpcServer.init(null);
     }
@@ -164,14 +161,12 @@ public class JRaftServerImpl implements RaftServer {
         nodeOptions.setFsm(new DelegatingStateMachine(lsnr));
 
         if (initialConf != null) {
-            List<PeerId> mapped = initialConf.stream().map(p -> {
-                return PeerId.fromPeer(p);
-            }).collect(Collectors.toList());
+            List<PeerId> mapped = initialConf.stream().map(PeerId::fromPeer).collect(Collectors.toList());
 
             nodeOptions.setInitialConf(new Configuration(mapped, null));
         }
 
-        IgniteRpcClient client = new IgniteRpcClient(service, true);
+        IgniteRpcClient client = new IgniteRpcClient(service);
 
         nodeOptions.setRpcClient(client);
 

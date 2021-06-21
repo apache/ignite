@@ -46,7 +46,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 public abstract class AbstractRpcTest {
     protected Endpoint endpoint;
 
-    private final List<RpcServer<?>> servers = new ArrayList<>();
+    private RpcServer<?> server;
 
     private final List<RpcClient> clients = new ArrayList<>();
 
@@ -54,18 +54,18 @@ public abstract class AbstractRpcTest {
     public void setup() {
         endpoint = new Endpoint(TestUtils.getLocalAddress(), INIT_PORT);
 
-        RpcServer<?> server = createServer(endpoint);
+        server = createServer(endpoint);
+
         server.registerProcessor(new Request1RpcProcessor());
         server.registerProcessor(new Request2RpcProcessor());
         server.init(null);
-
-        servers.add(server);
     }
 
     @AfterEach
     public void tearDown() {
         clients.forEach(RpcClient::shutdown);
-        servers.forEach(RpcServer::shutdown);
+
+        server.shutdown();
     }
 
     /**
@@ -79,6 +79,8 @@ public abstract class AbstractRpcTest {
      */
     private RpcClient createClient() {
         RpcClient client = createClient0();
+
+        client.init(null);
 
         clients.add(client);
 
@@ -135,7 +137,7 @@ public abstract class AbstractRpcTest {
         assertTrue(client1.checkConnection(endpoint));
         assertTrue(client2.checkConnection(endpoint));
 
-        servers.get(0).shutdown();
+        server.shutdown();
 
         assertTrue(waitForTopology(client1, 2, 5_000));
         assertTrue(waitForTopology(client2, 2, 5_000));
