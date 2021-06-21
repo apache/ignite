@@ -64,7 +64,7 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.isDdlOnSche
 /**
  * Processor responsible for execution of native Ignite commands.
  */
-public abstract class SqlCommandProcessor {
+public class SqlCommandProcessor {
     /** Kernal context. */
     protected final GridKernalContext ctx;
 
@@ -79,7 +79,7 @@ public abstract class SqlCommandProcessor {
      *
      * @param ctx Kernal context.
      */
-    protected SqlCommandProcessor(GridKernalContext ctx, GridQuerySchemaManager schemaMgr) {
+    public SqlCommandProcessor(GridKernalContext ctx, GridQuerySchemaManager schemaMgr) {
         this.ctx = ctx;
         this.schemaMgr = schemaMgr;
         log = ctx.log(getClass());

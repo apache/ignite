@@ -445,7 +445,8 @@ public class SqlDdlParserTest extends GridCommonAbstractTest {
      * Matcher to verify name and direction of indexed column.
      *
      * @param name Expected name.
-     * @return {@code true} in case name in the column declaration equals to the expected one.
+     * @param desc Descending order.
+     * @return {@code true} in case name and order of the indexed column equal to expected values.
      */
     private static <T extends SqlColumnDeclaration> Matcher<T> indexedColumn(String name, boolean desc) {
         return new CustomMatcher<T>("column with name=" + name) {

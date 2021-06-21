@@ -38,13 +38,13 @@ import org.apache.ignite.internal.sql.SqlCommandProcessor;
  */
 public class NativeCommandHandler {
     /** Command processor. */
-    private final CommandProcessor proc;
+    private final SqlCommandProcessor proc;
 
     /**
      * @param ctx Context.
      */
     public NativeCommandHandler(GridKernalContext ctx, Supplier<SchemaPlus> schemaSupp) {
-        proc = new CommandProcessor(ctx, new SchemaManager(schemaSupp));
+        proc = new SqlCommandProcessor(ctx, new SchemaManager(schemaSupp));
     }
 
     /**
@@ -111,20 +111,6 @@ public class NativeCommandHandler {
             IgniteTable tbl = (IgniteTable)schema.getTable(tableName);
 
             return tbl == null ? null : (GridCacheContextInfo<K, V>)tbl.descriptor().cacheInfo();
-        }
-    }
-
-    /**
-     * Processor for executing Ignite native (core module) commands.
-     */
-    private static class CommandProcessor extends SqlCommandProcessor {
-        /**
-         * @param ctx       Context.
-         * @param schemaMgr Schema manager.
-         */
-        public CommandProcessor(GridKernalContext ctx,
-            GridQuerySchemaManager schemaMgr) {
-            super(ctx, schemaMgr);
         }
     }
 }
