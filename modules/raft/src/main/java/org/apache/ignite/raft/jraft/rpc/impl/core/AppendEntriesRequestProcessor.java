@@ -394,7 +394,7 @@ public class AppendEntriesRequestProcessor extends NodeRequestProcessor<AppendEn
     }
 
     private int getAndIncrementSequence(final String groupId, final PeerPair pair, NodeManager nodeManager) {
-        // TODO asch can use getPeerContext because it must already present (created before) ???
+        // TODO asch can use getPeerContext because it must already present (created before) ??? IGNITE-14832
         return getOrCreatePeerRequestContext(groupId, pair, nodeManager).getAndIncrementSequence();
     }
 
@@ -416,11 +416,14 @@ public class AppendEntriesRequestProcessor extends NodeRequestProcessor<AppendEn
 
             boolean isHeartbeat = isHeartbeatRequest(request);
             int reqSequence = -1;
+
             if (!isHeartbeat) {
                 reqSequence = getAndIncrementSequence(groupId, pair, done.getRpcCtx().getNodeManager());
             }
+
             final Message response = service.handleAppendEntriesRequest(request, new SequenceRpcRequestClosure(done,
                 defaultResp(), groupId, pair, reqSequence, isHeartbeat));
+
             if (response != null) {
                 // heartbeat or probe request
                 if (isHeartbeat) {
@@ -430,6 +433,7 @@ public class AppendEntriesRequestProcessor extends NodeRequestProcessor<AppendEn
                     sendSequenceResponse(groupId, pair, reqSequence, done.getRpcCtx(), response);
                 }
             }
+
             return null;
         }
         else {

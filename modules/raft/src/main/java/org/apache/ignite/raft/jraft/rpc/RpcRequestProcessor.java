@@ -46,6 +46,7 @@ public abstract class RpcRequestProcessor<T extends Message> implements RpcProce
     public void handleRequest(final RpcContext rpcCtx, final T request) {
         try {
             final Message msg = processRequest(request, new RpcRequestClosure(rpcCtx, this.defaultResp));
+
             if (msg != null) {
                 rpcCtx.sendResponse(msg);
             }

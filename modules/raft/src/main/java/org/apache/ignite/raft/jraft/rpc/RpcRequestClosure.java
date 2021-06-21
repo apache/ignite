@@ -58,6 +58,7 @@ public class RpcRequestClosure implements Closure {
             LOG.warn("A response: {} sent repeatedly!", msg);
             return;
         }
+
         this.rpcCtx.sendResponse(msg);
     }
 

@@ -30,16 +30,17 @@ import org.apache.ignite.raft.jraft.rpc.impl.IgniteRpcServer;
  */
 public class TestIgniteRpcServer extends IgniteRpcServer {
     /**
-     * @param clusterService cluster service
-     * @param servers server list
-     * @param nodeManager node manager
+     * @param clusterService Cluster service.
+     * @param servers Server list.
+     * @param nodeManager Node manager
+     * @param nodeOptions Node options.
      */
-    public TestIgniteRpcServer(ClusterService clusterService, List<String> servers, NodeManager nodeManager) {
+    public TestIgniteRpcServer(ClusterService clusterService, List<String> servers, NodeManager nodeManager, NodeOptions nodeOptions) {
         super(
             clusterService,
             nodeManager,
             new RaftClientMessagesFactory(),
-            JRaftUtils.createRequestExecutor(new NodeOptions())
+            JRaftUtils.createRequestExecutor(nodeOptions)
         );
     }
 }

@@ -36,6 +36,7 @@ import org.apache.ignite.raft.client.message.RaftClientMessagesFactory;
 import org.apache.ignite.raft.client.service.CommandClosure;
 import org.apache.ignite.raft.client.service.RaftGroupService;
 import org.apache.ignite.raft.client.service.impl.RaftGroupServiceImpl;
+import org.apache.ignite.raft.jraft.core.NodeImpl;
 import org.apache.ignite.raft.jraft.test.TestUtils;
 import org.apache.ignite.raft.jraft.util.Utils;
 import org.junit.jupiter.api.AfterEach;
@@ -43,6 +44,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
+import static org.apache.ignite.raft.jraft.core.State.STATE_ERROR;
+import static org.apache.ignite.raft.jraft.core.State.STATE_LEADER;
 import static org.apache.ignite.raft.jraft.test.TestUtils.getLocalAddress;
 import static org.apache.ignite.raft.jraft.test.TestUtils.waitForCondition;
 import static org.apache.ignite.raft.jraft.test.TestUtils.waitForTopology;
@@ -160,7 +163,7 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
 
         servers.add(server);
 
-        assertTrue(waitForTopology(service, servers.size(), 5_000));
+        assertTrue(waitForTopology(service, servers.size(), 15_000));
 
         return server;
     }
@@ -386,6 +389,11 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
         client1.refreshLeader().get();
         client2.refreshLeader().get();
 
+        NodeImpl leader = servers.stream().map(s -> ((NodeImpl) s.raftGroupService(COUNTER_GROUP_0).getRaftNode())).
+            filter(n -> n.getState() == STATE_LEADER).findFirst().orElse(null);
+
+        assertNotNull(leader);
+
         long val1 = applyIncrements(client1, 1, 5);
         long val2 = applyIncrements(client2, 1, 7);
 
@@ -407,11 +415,20 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
             assertTrue(cause instanceof RaftException);
         }
 
+        NodeImpl finalLeader = leader;
+        waitForCondition(() -> finalLeader.getState() == STATE_ERROR, 5_000);
+
+        // Client can't switch to new leader, because only one peer in the list.
         try {
             client1.<Long>run(new IncrementAndGetCommand(11)).get();
         }
         catch (Exception e) {
-            assertTrue(e.getCause() instanceof TimeoutException, "New leader should not get elected");
+            boolean isValid = e.getCause() instanceof TimeoutException;
+
+            if (!isValid)
+                LOG.error("Got unexpected exception", e);
+
+            assertTrue(isValid, "Expecting the timeout");
         }
     }
 

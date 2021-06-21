@@ -54,7 +54,7 @@ public class ScaleCubeClusterServiceFactory implements ClusterServiceFactory {
 
         var topologyService = new ScaleCubeTopologyService();
 
-        var messagingService = new ScaleCubeMessagingService(topologyService);
+        var messagingService = new ScaleCubeMessagingService();
 
         var messageFactory = new NetworkMessagesFactory();
 

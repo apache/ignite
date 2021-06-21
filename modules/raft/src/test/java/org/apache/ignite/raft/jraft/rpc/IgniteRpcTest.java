@@ -24,6 +24,7 @@ import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.MessageSerializationRegistryImpl;
 import org.apache.ignite.network.scalecube.TestScaleCubeClusterServiceFactory;
 import org.apache.ignite.raft.jraft.NodeManager;
+import org.apache.ignite.raft.jraft.option.NodeOptions;
 import org.apache.ignite.raft.jraft.rpc.impl.IgniteRpcClient;
 import org.apache.ignite.raft.jraft.util.Endpoint;
 
@@ -34,11 +35,10 @@ public class IgniteRpcTest extends AbstractRpcTest {
     /** The counter. */
     private final AtomicInteger cntr = new AtomicInteger();
 
-    /** {@inheritDoc} */
     @Override public RpcServer<?> createServer(Endpoint endpoint) {
         ClusterService service = createService(endpoint.toString(), endpoint.getPort(), List.of());
 
-        var server = new TestIgniteRpcServer(service, List.of(), new NodeManager()) {
+        var server = new TestIgniteRpcServer(service, List.of(), new NodeManager(), new NodeOptions()) {
             @Override public void shutdown() {
                 super.shutdown();
 

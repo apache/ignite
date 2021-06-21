@@ -33,6 +33,7 @@ import org.apache.ignite.raft.jraft.error.RemotingException;
 import org.apache.ignite.raft.jraft.option.RpcOptions;
 import org.apache.ignite.raft.jraft.rpc.InvokeCallback;
 import org.apache.ignite.raft.jraft.rpc.InvokeContext;
+import org.apache.ignite.raft.jraft.rpc.Message;
 import org.apache.ignite.raft.jraft.rpc.RpcClientEx;
 import org.apache.ignite.raft.jraft.util.Endpoint;
 import org.apache.ignite.raft.jraft.util.Utils;
@@ -68,52 +69,14 @@ public class IgniteRpcClient implements RpcClientEx {
     }
 
     /** {@inheritDoc} */
-    @Override public Object invokeSync(Endpoint endpoint, Object request, InvokeContext ctx,
-        long timeoutMs) throws InterruptedException, RemotingException {
-        if (!checkConnection(endpoint))
-            throw new RemotingException("Server is dead " + endpoint);
-
-        CompletableFuture<Object> fut = new CompletableFuture();
-
-        // Future hashcode used as corellation id.
-        if (recordPred != null && recordPred.test(request, endpoint.toString()))
-            recordedMsgs.add(new Object[] {request, endpoint.toString(), fut.hashCode(), System.currentTimeMillis(), null});
-
-        boolean wasBlocked;
-
-        synchronized (this) {
-            wasBlocked = blockPred != null && blockPred.test(request, endpoint.toString());
-
-            if (wasBlocked)
-                blockedMsgs.add(new Object[] {request, endpoint.toString(), fut.hashCode(), System.currentTimeMillis(), (Runnable) () -> send(endpoint, request, fut, timeoutMs)});
-        }
-
-        if (!wasBlocked)
-            send(endpoint, request, fut, timeoutMs);
-
-        try {
-            return fut.whenComplete((res, err) -> {
-                assert !(res == null && err == null) : res + " " + err;
-
-                if (err == null && recordPred != null && recordPred.test(res, this.toString()))
-                    recordedMsgs.add(new Object[] {res, this.toString(), fut.hashCode(), System.currentTimeMillis(), null});
-            }).get(timeoutMs, TimeUnit.MILLISECONDS);
-        }
-        catch (ExecutionException e) {
-            throw new RemotingException(e);
-        }
-        catch (TimeoutException e) {
-            throw new InvokeTimeoutException();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void invokeAsync(Endpoint endpoint, Object request, InvokeContext ctx, InvokeCallback callback,
-        long timeoutMs) throws InterruptedException, RemotingException {
-        if (!checkConnection(endpoint))
-            throw new RemotingException("Server is dead " + endpoint);
-
-        CompletableFuture<Object> fut = new CompletableFuture<>();
+    @Override public CompletableFuture<Message> invokeAsync(
+        Endpoint endpoint,
+        Object request,
+        InvokeContext ctx,
+        InvokeCallback callback,
+        long timeoutMs
+    ) throws InterruptedException, RemotingException {
+        CompletableFuture<Message> fut = new CompletableFuture<>();
 
         fut.orTimeout(timeoutMs, TimeUnit.MILLISECONDS).
             whenComplete((res, err) -> {
@@ -146,14 +109,16 @@ public class IgniteRpcClient implements RpcClientEx {
                     }
                 }});
 
-                return;
+                return fut;
             }
         }
 
         send(endpoint, request, fut, timeoutMs);
+
+        return fut;
     }
 
-    public void send(Endpoint endpoint, Object request, CompletableFuture<Object> fut, long timeout) {
+    public void send(Endpoint endpoint, Object request, CompletableFuture<Message> fut, long timeout) {
         CompletableFuture<NetworkMessage> fut0 = service.messagingService().invoke(endpoint.toString(), (NetworkMessage) request, timeout);
 
         fut0.whenComplete(new BiConsumer<NetworkMessage, Throwable>() {
@@ -161,7 +126,7 @@ public class IgniteRpcClient implements RpcClientEx {
                 if (err != null)
                     fut.completeExceptionally(err);
                 else
-                    fut.complete(resp);
+                    fut.complete((Message) resp);
             }
         });
     }

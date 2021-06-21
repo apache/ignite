@@ -173,7 +173,7 @@ public class JRaftServerImpl implements RaftServer {
         final RaftGroupService server = new RaftGroupService(groupId, new PeerId(endpoint, 0,
             ElectionPriority.DISABLED), nodeOptions, rpcServer, nodeManager, true);
 
-        server.start(false);
+        server.start();
 
         groups.put(groupId, server);
 

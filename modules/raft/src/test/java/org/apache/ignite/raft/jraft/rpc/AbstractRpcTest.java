@@ -21,14 +21,10 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.raft.jraft.test.TestUtils;
 import org.apache.ignite.raft.jraft.util.Endpoint;
-import org.apache.ignite.raft.jraft.util.Utils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -97,16 +93,6 @@ public abstract class AbstractRpcTest {
     }
 
     @Test
-    public void testSyncProcessing() throws Exception {
-        RpcClient client = createClient();
-        Response1 resp1 = (Response1) client.invokeSync(endpoint, new Request1(), new InvokeContext(), 5000);
-        assertNotNull(resp1);
-
-        Response2 resp2 = (Response2) client.invokeSync(endpoint, new Request2(), new InvokeContext(), 5000);
-        assertNotNull(resp2);
-    }
-
-    @Test
     public void testAsyncProcessing() throws Exception {
         RpcClient client = createClient();
 
@@ -144,52 +130,6 @@ public abstract class AbstractRpcTest {
 
         assertFalse(client1.checkConnection(endpoint));
         assertFalse(client2.checkConnection(endpoint));
-    }
-
-    @Test
-    public void testRecordedSync() throws Exception {
-        RpcClientEx client1 = (RpcClientEx) createClient();
-        client1.recordMessages((a, b) -> true);
-
-        assertTrue(client1.checkConnection(endpoint));
-
-        Response1 resp1 = (Response1) client1.invokeSync(endpoint, new Request1(), 500);
-        Response2 resp2 = (Response2) client1.invokeSync(endpoint, new Request2(), 500);
-
-        assertNotNull(resp1);
-        assertNotNull(resp2);
-
-        Queue<Object[]> recorded = client1.recordedMessages();
-
-        assertEquals(4, recorded.size());
-        assertTrue(recorded.poll()[0] instanceof Request1);
-        assertTrue(recorded.poll()[0] instanceof Response1);
-        assertTrue(recorded.poll()[0] instanceof Request2);
-        assertTrue(recorded.poll()[0] instanceof Response2);
-    }
-
-    @Test
-    public void testRecordedSyncTimeout() {
-        RpcClientEx client1 = (RpcClientEx) createClient();
-        client1.recordMessages((a, b) -> true);
-
-        assertTrue(client1.checkConnection(endpoint));
-
-        try {
-            Request1 request = new Request1();
-            request.val = 10_000;
-            client1.invokeSync(endpoint, request, 500);
-
-            fail();
-        }
-        catch (Exception ignored) {
-            // Expected.
-        }
-
-        Queue<Object[]> recorded = client1.recordedMessages();
-
-        assertEquals(1, recorded.size());
-        assertTrue(recorded.poll()[0] instanceof Request1);
     }
 
     @Test
@@ -245,35 +185,6 @@ public abstract class AbstractRpcTest {
     }
 
     @Test
-    public void testBlockedSync() throws Exception {
-        RpcClientEx client1 = (RpcClientEx) createClient();
-        client1.blockMessages((msg, id) -> msg instanceof Request1);
-
-        assertTrue(client1.checkConnection(endpoint));
-
-        Response2 resp2 = (Response2) client1.invokeSync(endpoint, new Request2(), 500);
-
-        assertEquals(1, resp2.val);
-
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
-
-        Future<Response1> resp = Utils.runInThread(executorService,
-            () -> (Response1) client1.invokeSync(endpoint, new Request1(), 30_000));
-
-        Thread.sleep(500);
-
-        Queue<Object[]> msgs = client1.blockedMessages();
-
-        assertEquals(1, msgs.size());
-
-        assertFalse(resp.isDone());
-
-        client1.stopBlock();
-
-        resp.get(5_000, TimeUnit.MILLISECONDS);
-    }
-
-    @Test
     public void testBlockedAsync() throws Exception {
         RpcClientEx client1 = (RpcClientEx) createClient();
         client1.blockMessages((msg, id) -> msg instanceof Request1);
@@ -282,7 +193,7 @@ public abstract class AbstractRpcTest {
 
         CompletableFuture<Object> resp = new CompletableFuture<>();
 
-        client1.invokeAsync(endpoint, new Request1(), (result, err) -> resp.complete(result), 30_000);
+        client1.invokeAsync(endpoint, new Request1(), null, (result, err) -> resp.complete(result), 30_000);
 
         Thread.sleep(500);
 

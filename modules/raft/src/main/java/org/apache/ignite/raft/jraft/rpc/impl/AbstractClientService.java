@@ -18,6 +18,7 @@ package org.apache.ignite.raft.jraft.rpc.impl;
 
 import java.net.ConnectException;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -39,6 +40,7 @@ import org.apache.ignite.raft.jraft.rpc.RpcResponseClosure;
 import org.apache.ignite.raft.jraft.util.Endpoint;
 import org.apache.ignite.raft.jraft.util.Utils;
 import org.apache.ignite.raft.jraft.util.concurrent.ConcurrentHashSet;
+import org.apache.ignite.raft.jraft.util.internal.ThrowUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +57,7 @@ public abstract class AbstractClientService implements ClientService, TopologyEv
     /**
      * The set of pinged addresses
      */
-    private Set<String> readyAddresses = new ConcurrentHashSet<>();
+    protected Set<String> readyAddresses = new ConcurrentHashSet<>();
 
     public RpcClient getRpcClient() {
         return this.rpcClient;
@@ -120,24 +122,28 @@ public abstract class AbstractClientService implements ClientService, TopologyEv
                 return true;
 
             try {
-                final RpcRequests.PingRequest req = RpcRequests.PingRequest.newBuilder() //
-                    .setSendTimestamp(System.currentTimeMillis()) //
+                final RpcRequests.PingRequest req = RpcRequests.PingRequest.newBuilder()
+                    .setSendTimestamp(System.currentTimeMillis())
                     .build();
 
-                final ErrorResponse resp = (ErrorResponse) rc.invokeSync(endpoint, req,
-                    this.rpcOptions.getRpcConnectTimeoutMs());
+                Future<Message> fut =
+                    invokeWithDone(endpoint, req, null, null, rpcOptions.getRpcConnectTimeoutMs(), rpcExecutor);
 
-                if (resp.getErrorCode() == 0) {
+                final ErrorResponse resp = (ErrorResponse) fut.get(); // Future will be certainly terminated by timeout.
+
+                if (resp != null && resp.getErrorCode() == 0) {
                     readyAddresses.add(endpoint.toString());
 
                     return true;
                 }
+                else
+                    return false;
             }
             catch (final InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
-            catch (final RemotingException e) {
-                LOG.error("Fail to connect {}, remoting exception: {}.", endpoint, e.getMessage());
+            catch (final ExecutionException e) {
+                LOG.error("Fail to connect {}, exception: {}.", endpoint, e.getMessage());
             }
         }
 
@@ -169,6 +175,7 @@ public abstract class AbstractClientService implements ClientService, TopologyEv
         final RpcClient rc = this.rpcClient;
         final FutureImpl<Message> future = new FutureImpl<>();
         final Executor currExecutor = rpcExecutor != null ? rpcExecutor : this.rpcExecutor;
+
         try {
             if (rc == null) {
                 // TODO asch replace with ignite exception, check all places IGNITE-14832
@@ -179,14 +186,9 @@ public abstract class AbstractClientService implements ClientService, TopologyEv
                 return future;
             }
 
-            rc.invokeAsync(endpoint, request, ctx, new InvokeCallback() {
+            return rc.invokeAsync(endpoint, request, ctx, new InvokeCallback() {
                 @Override
                 public void complete(final Object result, final Throwable err) {
-                    if (future.isCancelled()) {
-                        onCanceled(request, done);
-                        return;
-                    }
-
                     if (err == null) {
                         Status status = Status.OK();
                         Message msg;
@@ -213,8 +215,8 @@ public abstract class AbstractClientService implements ClientService, TopologyEv
                         }
                     }
                     else {
-                        if (err instanceof ConnectException)
-                            readyAddresses.remove(endpoint); // Force logical reconnect.
+                        if (ThrowUtil.hasCause(err, null, ConnectException.class))
+                            readyAddresses.remove(endpoint.toString()); // Force logical reconnect.
 
                         if (done != null) {
                             try {
@@ -249,7 +251,6 @@ public abstract class AbstractClientService implements ClientService, TopologyEv
             // should be in another thread to avoid dead locking.
             Utils.runClosureInExecutor(currExecutor, done, new Status(RaftError.EINTERNAL,
                 "Fail to send a RPC request:" + e.getMessage()));
-
         }
 
         return future;
@@ -261,16 +262,4 @@ public abstract class AbstractClientService implements ClientService, TopologyEv
         status.setErrorMsg(eResp.getErrorMsg());
         return status;
     }
-
-    private <T extends Message> void onCanceled(final Message request, final RpcResponseClosure<T> done) {
-        if (done != null) {
-            try {
-                done.run(new Status(RaftError.ECANCELED, "RPC request was canceled by future."));
-            }
-            catch (final Throwable t) {
-                LOG.error("Fail to run RpcResponseClosure, the request is {}.", request, t);
-            }
-        }
-    }
-
 }

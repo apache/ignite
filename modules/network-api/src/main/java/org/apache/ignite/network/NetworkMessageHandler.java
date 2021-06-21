@@ -22,8 +22,9 @@ package org.apache.ignite.network;
 public interface NetworkMessageHandler {
     /**
      * @param message Message which was received from the cluster.
-     * @param sender Sender.
+     * @param senderAddr Sender address. Use
+     * {@link TopologyService#getByAddress(String)} to resolve a cluster node.
      * @param correlationId Correlation id.
      */
-    void onReceived(NetworkMessage message, ClusterNode sender, String correlationId);
+    void onReceived(NetworkMessage message, String senderAddr, String correlationId);
 }

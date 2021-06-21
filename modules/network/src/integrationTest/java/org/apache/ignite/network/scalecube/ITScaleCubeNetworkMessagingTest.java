@@ -78,7 +78,7 @@ class ITScaleCubeNetworkMessagingTest {
 
         for (ClusterService member : testCluster.members) {
             member.messagingService().addMessageHandler(
-                (message, sender, correlationId) -> {
+                (message, senderAddr, correlationId) -> {
                     messageStorage.put(member.localConfiguration().getName(), (TestMessage)message);
                     messageReceivedLatch.countDown();
                 }
@@ -137,11 +137,11 @@ class ITScaleCubeNetworkMessagingTest {
         class Data {
             private final TestMessage message;
 
-            private final ClusterNode sender;
+            private final String sender;
 
             private final String correlationId;
 
-            private Data(TestMessage message, ClusterNode sender, String correlationId) {
+            private Data(TestMessage message, String sender, String correlationId) {
                 this.message = message;
                 this.sender = sender;
                 this.correlationId = correlationId;
@@ -151,7 +151,8 @@ class ITScaleCubeNetworkMessagingTest {
         var dataFuture = new CompletableFuture<Data>();
 
         member.messagingService().addMessageHandler(
-            (message, sender, correlationId) -> dataFuture.complete(new Data((TestMessage)message, sender, correlationId))
+            (message, senderAddr, correlationId) ->
+                dataFuture.complete(new Data((TestMessage)message, senderAddr, correlationId))
         );
 
         var requestMessage = messageFactory.testMessage().msg("request").build();
@@ -162,7 +163,7 @@ class ITScaleCubeNetworkMessagingTest {
         Data actualData = dataFuture.get(3, TimeUnit.SECONDS);
 
         assertThat(actualData.message.msg(), is(requestMessage.msg()));
-        assertThat(actualData.sender, is(self));
+        assertThat(actualData.sender, is(self.address()));
         assertThat(actualData.correlationId, is(correlationId));
     }
 
@@ -181,7 +182,7 @@ class ITScaleCubeNetworkMessagingTest {
         var requestMessage = messageFactory.testMessage().msg("request").build();
         var responseMessage = messageFactory.testMessage().msg("response").build();
 
-        member.messagingService().addMessageHandler((message, sender, correlationId) -> {
+        member.messagingService().addMessageHandler((message, senderAddr, correlationId) -> {
             if (message.equals(requestMessage))
                 member.messagingService().send(self, responseMessage, correlationId);
         });

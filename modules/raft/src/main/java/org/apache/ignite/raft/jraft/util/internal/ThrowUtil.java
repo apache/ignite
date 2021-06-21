@@ -16,24 +16,16 @@
  */
 package org.apache.ignite.raft.jraft.util.internal;
 
+import org.jetbrains.annotations.Nullable;
+
 /**
  * Throwing tool.
  */
 public final class ThrowUtil {
-
-    private static final ReferenceFieldUpdater<Throwable, Throwable> causeUpdater = Updaters.newReferenceFieldUpdater(
-        Throwable.class, "cause");
-
     /**
      * Raises an exception bypassing compiler checks for checked exceptions.
      */
     public static void throwException(final Throwable t) {
-//        if (UnsafeUtil.hasUnsafe()) {
-//            UnsafeUtil.throwException(t);
-//        } else {
-//            ThrowUtil.throwException0(t);
-//        }
-
         ThrowUtil.throwException0(t);
     }
 
@@ -46,17 +38,47 @@ public final class ThrowUtil {
         throw (E) t;
     }
 
-    public static <T extends Throwable> T cutCause(final T cause) {
-        Throwable rootCause = cause;
-        while (rootCause.getCause() != null) {
-            rootCause = rootCause.getCause();
+    /**
+     * Checks if passed in {@code 'Throwable'} has given class in {@code 'cause'} hierarchy
+     * <b>including</b> that throwable itself.
+     * <p>
+     * Note that this method follows includes {@link Throwable#getSuppressed()}
+     * into check.
+     *
+     * @param t Throwable to check (if {@code null}, {@code false} is returned).
+     * @param msg Message text that should be in cause.
+     * @param cls Cause classes to check (if {@code null} or empty, {@code false} is returned).
+     * @return {@code True} if one of the causing exception is an instance of passed in classes,
+     *      {@code false} otherwise.
+     */
+    public static boolean hasCause(@Nullable Throwable t, @Nullable String msg, Class<?> @Nullable... cls) {
+        if (t == null || cls == null || cls.length == 0)
+            return false;
+
+        for (Throwable th = t; th != null; th = th.getCause()) {
+            for (Class<?> c : cls) {
+                if (c.isAssignableFrom(th.getClass())) {
+                    if (msg != null) {
+                        if (th.getMessage() != null && th.getMessage().contains(msg))
+                            return true;
+                        else
+                            continue;
+                    }
+
+                    return true;
+                }
+            }
+
+            for (Throwable n : th.getSuppressed()) {
+                if (hasCause(n, msg, cls))
+                    return true;
+            }
+
+            if (th.getCause() == th)
+                break;
         }
 
-        if (rootCause != cause) {
-            cause.setStackTrace(rootCause.getStackTrace());
-            causeUpdater.set(cause, cause);
-        }
-        return cause;
+        return false;
     }
 
     private ThrowUtil() {

@@ -37,7 +37,6 @@ import static org.junit.Assert.assertTrue;
 
 @RunWith(value = MockitoJUnitRunner.class)
 public class LocalSnapshotReaderTest extends BaseStorageTest {
-
     private LocalSnapshotReader reader;
     @Mock
     private LocalSnapshotStorage snapshotStorage;
@@ -48,13 +47,13 @@ public class LocalSnapshotReaderTest extends BaseStorageTest {
     @Before
     public void setup() throws Exception {
         super.setup();
-        this.path = this.path + File.separator + Snapshot.JRAFT_SNAPSHOT_PREFIX + snapshotIndex;
-        new File(path).mkdirs();
+        String snapPath = this.path + File.separator + Snapshot.JRAFT_SNAPSHOT_PREFIX + snapshotIndex;
+        new File(snapPath).mkdirs();
         this.table = new LocalSnapshotMetaTable(new RaftOptions());
         this.table.addFile("testFile", LocalFileMetaOutter.LocalFileMeta.newBuilder().setChecksum("test").build());
-        table.saveToFile(path + File.separator + Snapshot.JRAFT_SNAPSHOT_META_FILE);
+        table.saveToFile(snapPath + File.separator + Snapshot.JRAFT_SNAPSHOT_META_FILE);
         this.reader = new LocalSnapshotReader(snapshotStorage, null, new Endpoint("localhost", 8081),
-            new RaftOptions(), path);
+            new RaftOptions(), snapPath);
         assertTrue(this.reader.init(null));
     }
 
