@@ -288,8 +288,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
         return datetime.strptime(match.group(), "[%Y-%m-%d %H:%M:%S,%f]") if match else None
 
-    @staticmethod
-    def get_event_time_on_node(node, log_pattern, from_the_beginning=True, timeout=15):
+    def get_event_time_on_node(self, node, log_pattern, from_the_beginning=True, timeout=15):
         """
         Extracts event time from ignite log by pattern .
         :param node: ducktape node to search ignite log on.
@@ -297,9 +296,9 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         :param from_the_beginning: switches searching log from its beginning.
         :param timeout: timeout to wait for the patters in the log.
         """
-        IgniteAwareService.await_event_on_node(log_pattern, node, timeout, from_the_beginning, 0)
+        self.await_event_on_node(log_pattern, node, timeout, from_the_beginning=from_the_beginning, backoff_sec=0)
 
-        return IgniteAwareService.event_time(log_pattern, node)
+        return self.event_time(log_pattern, node)
 
     def get_event_time(self, evt_message, selector=max):
         """

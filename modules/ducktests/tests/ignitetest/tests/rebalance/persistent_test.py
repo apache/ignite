@@ -25,8 +25,8 @@ from ignitetest.services.utils.ignite_aware import IgniteAwareService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
-from ignitetest.tests.rebalance import DEFAULT_DATA_REGION_SZ, NUM_NODES, start_ignite, TriggerEvent, preload_data, \
-    get_result, check_type_of_rebalancing, await_rebalance_start
+from ignitetest.tests.rebalance.util import DEFAULT_DATA_REGION_SZ, NUM_NODES, start_ignite, TriggerEvent, \
+    preload_data, get_result, check_type_of_rebalancing, await_rebalance_start
 from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion
@@ -110,7 +110,7 @@ class RebalancePersistentTest(IgniteTest):
 
         control_utility.remove_from_baseline([node])
 
-        await_and_check_rebalance(ignites, ignites.nodes[:-1])
+        await_and_check_rebalance(ignites, ignites.alive_nodes)
 
         control_utility.deactivate()
 
@@ -118,7 +118,7 @@ class RebalancePersistentTest(IgniteTest):
 
         return get_result(ignites.nodes[:-1], preload_time, cache_count, entry_count, entry_size)
 
-    @cluster(num_nodes=NUM_NODES+1)
+    @cluster(num_nodes=NUM_NODES + 1)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
     @defaults(backups=[1], cache_count=[1], entry_count=[50_000], entry_size=[50_000], preloaders=[1],
               thread_pool_size=[None], batch_size=[None], batches_prefetch_count=[None], throttle=[None])
@@ -153,11 +153,11 @@ class RebalancePersistentTest(IgniteTest):
 
         control_utility.add_to_baseline(new_node.nodes)
 
-        await_rebalance_start(new_node.nodes)
+        await_rebalance_start(new_node)
 
         ignites.stop_node(ignites.nodes[-1])
 
-        await_and_check_rebalance(new_node, new_node.nodes)
+        await_and_check_rebalance(new_node, new_node.alive_nodes)
 
         control_utility.deactivate()
 
@@ -204,7 +204,7 @@ class RebalancePersistentTest(IgniteTest):
 
         control_utility.remove_from_baseline([node])
 
-        await_rebalance_start(reb_nodes)
+        await_rebalance_start(ignites)
 
         new_node = IgniteService(self.test_context, ignites.config._replace(discovery_spi=from_ignite_cluster(ignites)),
                                  num_nodes=1)
@@ -311,6 +311,8 @@ def await_and_check_rebalance(service: IgniteService, rebalance_nodes: list, is_
     :param is_full: Expected type of rebalancing.
     """
 
+    await_rebalance_start(service)
+
     service.await_rebalance()
 
     check_type_of_rebalancing(rebalance_nodes, is_full=is_full)
@@ -334,9 +336,8 @@ def get_database_size_mb(nodes: list, database_dir: str) -> dict:
             '/mnt/service/work/db/binary_meta -> 1 mb.',
             '/mnt/service/work/db -> 2204 mb.'
         ],
-    ...
+        ...
     }
-
     """
     res = {}
     for node in nodes:
