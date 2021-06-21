@@ -49,6 +49,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.cache.CacheException;
 import javax.cache.expiry.Duration;
+import javax.cache.expiry.EternalExpiryPolicy;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
@@ -646,6 +647,30 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             this::partStatesViewSupplier,
             Function.identity()
         );
+    }
+
+    /**
+     * Build formatted string with expire policy info.
+     *
+     * @param cacheCtx - cache context.
+     * @return formatted expire policy info.
+     */
+    private String buildExpirePolicyInfo(GridCacheContext cacheCtx) {
+        ExpiryPolicy expPlc = cacheCtx.expiry();
+        if (expPlc == null || expPlc instanceof EternalExpiryPolicy) return null;
+
+        Duration dur;
+        if (expPlc.getExpiryForCreation() != null)
+            dur = expPlc.getExpiryForCreation();
+        else if (expPlc.getExpiryForUpdate() != null)
+            dur = expPlc.getExpiryForUpdate();
+        else
+            dur = expPlc.getExpiryForAccess();
+
+        if (dur == null || dur.getTimeUnit() == null) return null;
+
+        return "expirePolicy=[duration=" + dur.getTimeUnit().toMillis(dur.getDurationAmount()) +
+                "ms, isEagerTtl=" + cacheCtx.ttl().eagerTtlEnabled() + ']';
     }
 
     /**
@@ -2299,6 +2324,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (log.isInfoEnabled()) {
             String expPlcInfo = "";//cfg.getExpirePolicyInfo();
 
+            for (StackTraceElement stackTraceElement : Thread.currentThread().getStackTrace())
+                System.out.println(stackTraceElement.toString());
+
             log.info("Started cache [name=" + cfg.getName() +
                 ", id=" + cacheCtx.cacheId() +
                 (cfg.getGroupName() != null ? ", group=" + cfg.getGroupName() : "") +
@@ -2381,6 +2409,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (log.isInfoEnabled()) {
             String expPlcInfo = "";//cfg.getExpirePolicyInfo();
+
+            for (StackTraceElement stackTraceElement : Thread.currentThread().getStackTrace())
+                System.out.println(stackTraceElement.toString());
 
             log.info("Started cache in recovery mode [name=" + cfg.getName() +
                 ", id=" + cacheCtx.cacheId() +

@@ -1565,12 +1565,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         startTimer.finishGlobalStage("Await exchange");
 
-        for (GridCacheContext cacheCtx : ctx.cache().context().cacheContexts()) {
-            System.out.println("====================================");
-            System.out.println("cache=" + cacheCtx.cache().name() +
-                    ", expirePlc=" + buildExpirePolicyInfo(cacheCtx));
-            System.out.println("====================================");
-        }
+//        for (GridCacheContext cacheCtx : ctx.cache().context().cacheContexts()) {
+//            final String expPlcInfo = buildExpirePolicyInfo(cacheCtx);
+//            if (log.isInfoEnabled() && expPlcInfo != null)
+//                log.info("cache=" + cacheCtx.cache().name() + ", " + buildExpirePolicyInfo(cacheCtx));
+//        }
     }
 
     /**
