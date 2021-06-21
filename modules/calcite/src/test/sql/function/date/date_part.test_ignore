@@ -1,9 +1,7 @@
 # name: test/sql/function/date/date_part_stats.test
 # description: Test date part stats on empty table
 # group: [date]
-
-statement ok
-PRAGMA enable_verification
+# Ignored: https://issues.apache.org/jira/browse/IGNITE-14955
 
 statement ok
 CREATE TABLE dates(d DATE);
@@ -100,94 +98,100 @@ statement ok
 INSERT INTO dates VALUES (DATE '1992-01-01'), (DATE '2000-12-31');
 
 query I
-SELECT stats(EXTRACT(YEAR FROM d)) FROM dates LIMIT 1;
+SELECT EXTRACT(YEAR FROM d) as y FROM dates ORDER BY y;
 ----
-<REGEX>:.*1992.*2000.*
+1992
+2000
 
 query I
-SELECT stats(EXTRACT(month FROM d)) FROM dates LIMIT 1;
+SELECT EXTRACT(month FROM d) as m FROM dates ORDER BY m;
 ----
-<REGEX>:.*1.*12.*
+1
+12
 
 query I
-SELECT stats(EXTRACT(day FROM d)) FROM dates LIMIT 1;
+SELECT EXTRACT(day FROM d) as d FROM dates ORDER BY d;
 ----
-<REGEX>:.*1.*31.*
+1
+31
 
 query I
-SELECT stats(EXTRACT(decade FROM d)) FROM dates LIMIT 1;
+SELECT EXTRACT(decade FROM d) as d FROM dates ORDER BY d;
 ----
-<REGEX>:.*199.*200.*
+199
+200
 
 query I
-SELECT stats(EXTRACT(century FROM d)) FROM dates LIMIT 1;
+SELECT EXTRACT(century FROM d) as c FROM dates ORDER BY c;
 ----
-<REGEX>:.*20.*20.*
+20
+20
 
 query I
-SELECT stats(EXTRACT(millennium FROM d)) FROM dates LIMIT 1;
+SELECT EXTRACT(millennium FROM d) as m FROM dates ORDER BY m;
 ----
-<REGEX>:.*2.*2.*
+2
+2
 
 query I
-SELECT stats(EXTRACT(microseconds FROM d)) FROM dates LIMIT 1;
+SELECT EXTRACT(second FROM d) as s FROM dates ORDER BY s;
 ----
-<REGEX>:.*0.*60000000.*
+0
+0
 
 query I
-SELECT stats(EXTRACT(milliseconds FROM d)) FROM dates LIMIT 1;
+SELECT EXTRACT(minute FROM d) as m FROM dates ORDER BY m;
 ----
-<REGEX>:.*0.*60000.*
+0
+0
 
 query I
-SELECT stats(EXTRACT(second FROM d)) FROM dates LIMIT 1;
+SELECT EXTRACT(hour FROM d) h FROM dates;
 ----
-<REGEX>:.*0.*60.*
+0
+0
 
 query I
-SELECT stats(EXTRACT(minute FROM d)) FROM dates LIMIT 1;
+SELECT EXTRACT(dow FROM d) as d FROM dates ORDER BY d;
 ----
-<REGEX>:.*0.*60.*
+1
+4
 
 query I
-SELECT stats(EXTRACT(hour FROM d)) FROM dates LIMIT 1;
+SELECT EXTRACT(isodow FROM d) as d FROM dates ORDER BY d;
 ----
-<REGEX>:.*0.*24.*
+3
+7
 
 query I
-SELECT stats(EXTRACT(dow FROM d)) FROM dates LIMIT 1;
+SELECT EXTRACT(week FROM d) as w FROM dates ORDER BY w;
 ----
-<REGEX>:.*0.*6.*
+1
+52
 
 query I
-SELECT stats(EXTRACT(isodow FROM d)) FROM dates LIMIT 1;
+SELECT EXTRACT(doy FROM d) as d FROM dates ORDER BY d;
 ----
-<REGEX>:.*1.*7.*
+1
+366
 
 query I
-SELECT stats(EXTRACT(week FROM d)) FROM dates LIMIT 1;
+SELECT EXTRACT(quarter FROM d) as q FROM dates ORDER BY q;
 ----
-<REGEX>:.*1.*54.*
+1
+4
+
 
 query I
-SELECT stats(EXTRACT(doy FROM d)) FROM dates LIMIT 1;
+SELECT DAYOFMONTH(d) as d FROM dates ORDER BY d;
 ----
-<REGEX>:.*1.*366.*
-
-query I
-SELECT stats(EXTRACT(quarter FROM d)) FROM dates LIMIT 1;
-----
-<REGEX>:.*1.*4.*
+1
+31
 
 query I
 SELECT stats(YEARWEEK(d)) FROM dates LIMIT 1;
 ----
 <REGEX>:.*199201.*200052.*
-
-query I
-SELECT stats(DAYOFMONTH(d)) FROM dates LIMIT 1;
-----
-<REGEX>:.*1.*31.*
 
 query I
 SELECT stats(WEEKDAY(d)) FROM dates LIMIT 1;
