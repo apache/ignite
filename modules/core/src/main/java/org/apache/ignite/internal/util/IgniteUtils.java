@@ -350,6 +350,9 @@ public abstract class IgniteUtils {
     private static final int[] GRID_EVTS;
 
     /** Empty integers array. */
+    public static final byte[] EMPTY_BYTES = new byte[0];
+
+    /** Empty integers array. */
     public static final int[] EMPTY_INTS = new int[0];
 
     /** Empty  longs. */

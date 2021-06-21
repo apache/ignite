@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -26,6 +27,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -58,6 +60,14 @@ public class SnapshotMetadata implements Serializable {
     @GridToStringInclude
     private final List<Integer> grpIds;
 
+    //TODO
+    @GridToStringInclude
+    private final Map<Integer, byte[]> encrGrpKeys;
+
+    //TODO
+    @GridToStringInclude
+    private final byte[] masterSign;
+
     /** The set of affected by snapshot baseline nodes. */
     @GridToStringInclude
     private final Set<String> bltNodes;
@@ -85,6 +95,8 @@ public class SnapshotMetadata implements Serializable {
         String folderName,
         int pageSize,
         List<Integer> grpIds,
+        Map<Integer, byte[]> encrGrpKeys,
+        byte[] masterSign,
         Set<String> bltNodes,
         Set<GroupPartitionId> pairs
     ) {
@@ -94,7 +106,15 @@ public class SnapshotMetadata implements Serializable {
         this.folderName = folderName;
         this.pageSize = pageSize;
         this.grpIds = grpIds;
+        this.encrGrpKeys = encrGrpKeys;
+        this.masterSign = masterSign;
         this.bltNodes = bltNodes;
+
+        assert (masterSign().length == 0 && encrGroupKeys().isEmpty()) || (masterSign().length > 0 && !encrGroupKeys().isEmpty()) :
+            "Encrypted groups and master key signature must be both set or be empty.";
+
+        assert encrGroupKeys().isEmpty() || grpIds.containsAll(encrGroupKeys().keySet()) :
+            "Shapshot group ids must contain all the encrypted groups ids.";
 
         pairs.forEach(p ->
             locParts.computeIfAbsent(p.getGroupId(), k -> new HashSet<>())
@@ -156,6 +176,26 @@ public class SnapshotMetadata implements Serializable {
      */
     public Map<Integer, Set<Integer>> partitions() {
         return locParts;
+    }
+
+    //TODO
+    Map<Integer, byte[]> encrGroupKeys(){
+        return encrGrpKeys == null ? Collections.emptyMap() : encrGrpKeys;
+    }
+
+    //TODO
+    public boolean isEncryptedGrp(int grpId){
+        return encrGroupKeys().containsKey(grpId);
+    }
+
+    //TODO
+    public byte[] masterSign(){
+        return masterSign == null ? IgniteUtils.EMPTY_BYTES : masterSign;
+    }
+
+    //TODO
+    public boolean encryption(){
+        return !encrGroupKeys().isEmpty();
     }
 
     /**

@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -41,6 +42,9 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider;
+import org.apache.ignite.internal.managers.encryption.GroupKey;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
@@ -57,6 +61,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -204,11 +209,21 @@ public class SnapshotPartitionsVerifyTask
                 rqGrps.stream().map(CU::cacheId).collect(Collectors.toSet());
             Set<File> partFiles = new HashSet<>();
 
+            if (meta.encryption() &&
+                !Arrays.equals(meta.masterSign(), ignite.context().config().getEncryptionSpi().masterKeyDigest()))
+                throw new IgniteException("Snapshot '" + meta.snapshotName() + "' has different signature of its master key.");
+
             for (File dir : snpMgr.snapshotCacheDirectories(snpName, meta.folderName())) {
                 int grpId = CU.cacheId(cacheGroupName(dir));
 
                 if (!grps.remove(grpId))
                     continue;
+
+                CacheGroupContext grpCtx = ignite.context().cache().cacheGroup(grpId);
+
+                if (meta.isEncryptedGrp(grpId) && grpCtx != null && !grpCtx.config().isEncryptionEnabled())
+                    throw new IgniteException("Unable to read cache group " + grpId + ". It is encrypted in snapshot '"
+                        + meta.snapshotName() + "' but has no encryption on local node.");
 
                 Set<Integer> parts = new HashSet<>(meta.partitions().get(grpId));
 
@@ -238,6 +253,11 @@ public class SnapshotPartitionsVerifyTask
             ThreadLocal<ByteBuffer> buff = ThreadLocal.withInitial(() -> ByteBuffer.allocateDirect(meta.pageSize())
                 .order(ByteOrder.nativeOrder()));
 
+            FilePageStoreManager storeMgr = (FilePageStoreManager)ignite.context().cache().context().pageStore();
+
+            EncryptionCacheKeyProvider snapsKeyProvider = meta.encryption() ?
+                new SnapshotEncrKeyProvider(meta, ignite.context().config().getEncryptionSpi()) : null;
+
             try {
                 U.doInParallel(
                     ignite.context().getSystemExecutorService(),
@@ -247,14 +267,11 @@ public class SnapshotPartitionsVerifyTask
                         int grpId = CU.cacheId(grpName);
                         int partId = partId(part.getName());
 
-                        FilePageStoreManager storeMgr = (FilePageStoreManager)ignite.context().cache().context().pageStore();
-
                         try {
-                            try (FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(grpId, false)
-                                .createPageStore(getTypeByPartId(partId),
-                                    part::toPath,
-                                    val -> {
-                                    })
+                            try (FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(grpId,
+                                meta.isEncryptedGrp(grpId) ? snapsKeyProvider : null).createPageStore(getTypeByPartId(partId),
+                                part::toPath, val -> {
+                                })
                             ) {
                                 if (partId == INDEX_PARTITION) {
                                     checkPartitionsPageCrcSum(() -> pageStore, INDEX_PARTITION, FLAG_IDX);
@@ -302,7 +319,7 @@ public class SnapshotPartitionsVerifyTask
                                     GridDhtPartitionState.OWNING,
                                     false,
                                     size,
-                                    snpMgr.partitionRowIterator(snpName, meta.folderName(), grpName, partId));
+                                    snpMgr.partitionRowIterator(snpName, meta.folderName(), grpName, partId, snapsKeyProvider));
 
                                 assert hash != null : "OWNING must have hash: " + key;
 
@@ -340,6 +357,36 @@ public class SnapshotPartitionsVerifyTask
         /** {@inheritDoc} */
         @Override public int hashCode() {
             return Objects.hash(snpName, consId);
+        }
+    }
+
+    //TODO
+    private static class SnapshotEncrKeyProvider implements EncryptionCacheKeyProvider {
+        //TODO
+        private final SnapshotMetadata snapMeta;
+
+        //TODO
+        private final EncryptionSpi encrSpi;
+
+        private final ConcurrentHashMap<Integer, GroupKey> encryptedKeys = new ConcurrentHashMap<>();
+
+        //TODO
+        private SnapshotEncrKeyProvider(SnapshotMetadata snapMeta, EncryptionSpi encrSpi) {
+            this.snapMeta = snapMeta;
+            this.encrSpi = encrSpi;
+        }
+
+        /** {@inheritDoc} */
+        @Override public @Nullable GroupKey getActiveKey(int grpId) {
+            return groupKey(grpId, 0);
+        }
+
+        //TODO
+        @Override public @Nullable GroupKey groupKey(int grpId, int keyId) {
+            GroupKey key = encryptedKeys.computeIfAbsent(grpId,
+                gid-> new GroupKey(keyId, encrSpi.decryptKey(snapMeta.encrGroupKeys().get(gid))));
+
+            return key;
         }
     }
 }

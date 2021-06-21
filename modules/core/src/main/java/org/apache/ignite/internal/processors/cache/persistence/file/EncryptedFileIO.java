@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.file;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
-import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
+import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider;
 import org.apache.ignite.internal.managers.encryption.GroupKey;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 
@@ -51,9 +51,9 @@ public class EncryptedFileIO implements FileIO {
     private final int headerSize;
 
     /**
-     * Shared database manager.
+     * Encryption key provider.
      */
-    private final GridEncryptionManager encMgr;
+    private final EncryptionCacheKeyProvider keyProvider;
 
     /**
      * Shared database manager.
@@ -68,15 +68,15 @@ public class EncryptedFileIO implements FileIO {
      * @param groupId Group id.
      * @param pageSize Size of plain data page in bytes.
      * @param headerSize Size of file header in bytes.
-     * @param encMgr Encryption manager.
+     * @param keyProvider Encryption key provider.
      */
-    EncryptedFileIO(FileIO plainFileIO, int groupId, int pageSize, int headerSize,
-        GridEncryptionManager encMgr, EncryptionSpi encSpi) {
+    EncryptedFileIO(FileIO plainFileIO, int groupId, int pageSize, int headerSize, EncryptionCacheKeyProvider keyProvider,
+        EncryptionSpi encSpi) {
         this.plainFileIO = plainFileIO;
         this.groupId = groupId;
         this.pageSize = pageSize;
         this.headerSize = headerSize;
-        this.encMgr = encMgr;
+        this.keyProvider = keyProvider;
         this.encSpi = encSpi;
 
         this.encUtil = new EncryptionUtil(encSpi, pageSize);
@@ -212,7 +212,7 @@ public class EncryptedFileIO implements FileIO {
     private void encrypt(ByteBuffer srcBuf, ByteBuffer res) throws IOException {
         assert position() >= headerSize;
 
-        GroupKey grpKey = encMgr.getActiveKey(groupId);
+        GroupKey grpKey = keyProvider.getActiveKey(groupId);
 
         encUtil.encrypt(srcBuf, res, grpKey);
     }
@@ -235,7 +235,7 @@ public class EncryptedFileIO implements FileIO {
     private void decrypt(ByteBuffer encrypted, ByteBuffer destBuf) throws IOException {
         int keyId = encrypted.get(encryptedDataSize() + 4 /* CRC size. */) & 0xff;
 
-        GroupKey grpKey = encMgr.groupKey(groupId, keyId);
+        GroupKey grpKey = keyProvider.groupKey(groupId, keyId);
 
         assert grpKey != null : keyId;
 

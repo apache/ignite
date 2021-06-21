@@ -22,7 +22,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -112,7 +111,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
     /** Local buffer to perform copy-on-write operations for {@link PageStoreSerialWriter}. */
     private final ThreadLocal<ByteBuffer> locBuff;
 
-    /** TODO: rename and fix the text. Not-encrypted factory. IO factory which will be used for creating snapshot delta-writers. */
+    /** IO factory which will be used for creating snapshot delta-writers. */
     private final FileIOFactory ioFactory;
 
     /**
@@ -620,7 +619,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
 
             partDeltaWriters.put(pair, new PageStoreSerialWriter(store,
                 partDeltaFile(cacheWorkDir(tmpConsIdDir, dirName), partId),
-                cctx.snapshotMgr().isEncrypted(grpId) ? grpId : null));
+                cctx.cache().isEncrypted(grpId) ? grpId : null));
 
             partFileLengths.put(pair, store.size());
         }
@@ -949,7 +948,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
 
                     // Page marked as written to delta file, so there is no need to
                     // copy it from file when the first checkpoint associated with
-                    // current snapshot task ends.F
+                    // current snapshot task ends.
                     writtenPages.touch(pageIdx);
                 }
             }
@@ -985,6 +984,18 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
 
             // Write buffer to the end of the file.
             deltaFileIo.writeFully(pageBuf);
+
+            if (log.isInfoEnabled()) {
+                pageBuf.rewind();
+
+                log.info("afterPageWrite [pageId=" + pageId +
+                    ", pageIdBuff=" + PageIO.getPageId(pageBuf) +
+                    ", fileSize=" + deltaFileIo.size() +
+                    ", crcBuff=" + FastCrc.calcCrc(pageBuf, pageBuf.limit()) +
+                    ", crcPage=" + PageIO.getCrc(pageBuf) + ']');
+
+                pageBuf.rewind();
+            }
         }
 
         /** {@inheritDoc} */

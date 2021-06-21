@@ -93,10 +93,10 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If fails. */
     @Test
     public void testSnapshotLocalPartitions() throws Exception {
-        IgniteEx ig = startGridsWithCache(1, 4096, key -> new Account(key, key),
+        IgniteEx ig = startGridsWithCache(1, 0, key -> new Account(key, key),
             new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
-        for (int i = 4096; i < 8192; i++) {
+        for (int i = 4096; i < 4097; i++) {
             ig.cache(DEFAULT_CACHE_NAME).put(i, new Account(i, i) {
                 @Override public String toString() {
                     return "_" + super.toString();
@@ -434,7 +434,8 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRowIterator(SNAPSHOT_NAME,
             ignite.context().pdsFolderResolver().resolveFolders().folderName(),
             ccfg.getName(),
-            0)
+            0,
+            ignite.context().encryption())
         ) {
             CacheObjectContext coctx = ignite.cachex(ccfg.getName()).context().cacheObjectContext();
 
@@ -477,7 +478,8 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRowIterator(SNAPSHOT_NAME,
             ignite.context().pdsFolderResolver().resolveFolders().folderName(),
             dfltCacheCfg.getName(),
-            0)
+            0,
+            ignite.context().encryption())
         ) {
             CacheObjectContext coctx = ignite.cachex(dfltCacheCfg.getName()).context().cacheObjectContext();
 
@@ -519,7 +521,8 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         try (GridCloseableIterator<CacheDataRow> iter = snp(ignite).partitionRowIterator(SNAPSHOT_NAME,
             ignite.context().pdsFolderResolver().resolveFolders().folderName(),
             dfltCacheCfg.getName(),
-            0)
+            0,
+            ignite.context().encryption())
         ) {
             CacheObjectContext coctx = ignite.cachex(dfltCacheCfg.getName()).context().cacheObjectContext();
 

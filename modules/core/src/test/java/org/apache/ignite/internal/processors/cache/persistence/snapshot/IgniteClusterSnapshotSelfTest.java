@@ -45,7 +45,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -55,7 +54,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.encryption.AbstractEncryptionTest;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
@@ -80,7 +78,6 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
@@ -118,27 +115,12 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     /** {@code true} if node should be started in separate jvm. */
     protected volatile boolean jvm;
 
-    /**
-     * @param ccfg Default cache configuration.
-     * @return Cache configuration.
-     */
-    @Override
-    protected <K, V> CacheConfiguration<K, V> txCacheConfig(CacheConfiguration<K, V> ccfg) {
-        CacheConfiguration<K, V> cacheConfiguration = super.txCacheConfig(ccfg);
-
-        cacheConfiguration.setEncryptionEnabled(encryption);
-
-        return cacheConfiguration;
-    }
-
     /** @throws Exception If fails. */
     @Before
     @Override public void beforeTestSnapshot() throws Exception {
         super.beforeTestSnapshot();
 
         jvm = false;
-
-        encryption = true;
     }
 
     /**
@@ -350,8 +332,10 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         CacheConfiguration<Integer, Account> eastCcfg = txCacheConfig(new CacheConfiguration<>("east"));
         CacheConfiguration<Integer, Account> westCcfg = txCacheConfig(new CacheConfiguration<>("west"));
 
-        startGridsWithCache(grids, clientsCnt, key -> new Account(key, balance), eastCcfg, westCcfg,
-            encryption ? dfltCacheCfg : null);
+        if(encryption)
+            startGridsWithCache(grids, clientsCnt, key -> new Account(key, balance), eastCcfg, westCcfg, dfltCacheCfg);
+        else
+            startGridsWithCache(grids, clientsCnt, key -> new Account(key, balance), eastCcfg, westCcfg);
 
         Ignite client = startClientGrid(grids);
 
@@ -1088,54 +1072,6 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
     /** @throws Exception If fails. */
     @Test
-    public void testEncryption() throws Exception {
-        int keysRange = 1024;
-
-        Random rnd = new Random();
-
-        AtomicBoolean stop = new AtomicBoolean();
-
-        Map<Integer, Integer> values = new ConcurrentHashMap<>();
-
-        try {
-            startGridsWithCache(2, dfltCacheCfg, keysRange);
-
-            grid(0).cluster().state(ACTIVE);
-
-            IgniteEx client = startClientGrid();
-
-            IgniteInternalFuture<?> txLoadFut = GridTestUtils.runMultiThreadedAsync(
-                () -> {
-                    while (!stop.get()) {
-                        int key = rnd.nextInt(keysRange);
-
-                        int val = rnd.nextInt(keysRange);
-
-                        client.cache(defaultCacheConfiguration().getName()).put(key, val);
-
-                        values.put(key, val);
-                    }
-                }, 1, "cacheLoader"
-            );
-
-            grid(0).snapshot().createSnapshot(SNAPSHOT_NAME).get();
-
-            waitForEvents(Arrays.asList(EVT_CLUSTER_SNAPSHOT_STARTED, EVT_CLUSTER_SNAPSHOT_FINISHED));
-        }
-        finally {
-            stop.set(true);
-        }
-
-        stopAllGrids();
-
-        IgniteEx snp = startGridsFromSnapshot(2, SNAPSHOT_NAME);
-
-        awaitPartitionMapExchange();
-        assertSnapshotCacheKeys(snp.cache(dfltCacheCfg.getName()));
-    }
-
-    /** @throws Exception If fails. */
-    @Test
     public void testClusterSnapshotFromClient() throws Exception {
         startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
         IgniteEx clnt = startClientGrid(2);
@@ -1225,9 +1161,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     public void testClusterSnapshotInMemoryFail() throws Exception {
         persistence = false;
 
-        IgniteConfiguration cfg = getConfiguration();
-
-        IgniteEx srv = startGrid(cfg);
+        IgniteEx srv = startGrid(0);
 
         srv.cluster().state(ACTIVE);
 

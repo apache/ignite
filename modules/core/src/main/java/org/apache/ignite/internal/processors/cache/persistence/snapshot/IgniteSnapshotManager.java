@@ -54,7 +54,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -75,6 +74,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
+import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -91,7 +91,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
@@ -288,7 +287,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private volatile FileIOFactory ioFactory = new RandomAccessFileIOFactory();
 
     /** Factory to create page store for restore. */
-    private volatile BiFunction<Integer, Boolean, FileVersionCheckingFactory> storeFactory;
+//    private volatile BiFunction<Integer, Boolean, FileVersionCheckingFactory> storeFactory;
+    private volatile FilePageStoreManager storeMgr;
 
     /** Snapshot thread pool to perform local partition snapshots. */
     private ExecutorService snpRunner;
@@ -369,7 +369,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         assert cctx.pageStore() instanceof FilePageStoreManager;
 
-        FilePageStoreManager storeMgr = (FilePageStoreManager)cctx.pageStore();
+//        FilePageStoreManager storeMgr = (FilePageStoreManager)cctx.pageStore();
+        storeMgr = (FilePageStoreManager)cctx.pageStore();
 
         pdsSettings = cctx.kernalContext().pdsFolderResolver().resolveFolders();
 
@@ -396,7 +397,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             "The list of names of all snapshots currently saved on the local node with respect to " +
                 "the configured via IgniteConfiguration snapshot working path.");
 
-        storeFactory = storeMgr::getPageStoreFactory;
+//        storeFactory = storeMgr::getPageStoreFactory;
 
         cctx.exchange().registerExchangeAwareComponent(this);
         ctx.internalSubscriptionProcessor().registerMetastorageListener(this);
@@ -646,6 +647,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                             pdsSettings.folderName(),
                             cctx.gridConfig().getDataStorageConfiguration().getPageSize(),
                             grpIds,
+                            req.encrGrpKeys(),
+                            req.encrGrpKeys().isEmpty() ? null : cctx.gridConfig().getEncryptionSpi().masterKeyDigest(),
                             blts,
                             fut.result()),
                         out);
@@ -1169,10 +1172,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     recordSnapshotEvent(name, SNAPSHOT_FAILED_MSG + f.error().getMessage(), EVT_CLUSTER_SNAPSHOT_FAILED);
             });
 
+            Map<Integer, byte[]> encrGrpKeys = grps.stream().map(CU::cacheId).filter(gid -> cctx.cache().isEncrypted(gid))
+                .collect(Collectors.toMap(Function.identity(),
+                    gid->cctx.gridConfig().getEncryptionSpi().encryptKey(
+                        cctx.kernalContext().encryption().getActiveKey(gid).key())));
+
             startSnpProc.start(snpFut0.rqId, new SnapshotOperationRequest(snpFut0.rqId,
                 cctx.localNodeId(),
                 name,
                 grps,
+                encrGrpKeys,
                 new HashSet<>(F.viewReadOnly(srvNodes,
                     F.node2id(),
                     (node) -> CU.baselineNode(node, clusterState)))));
@@ -1251,11 +1260,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             ((DiscoveryCustomEvent)evt).customMessage() instanceof SnapshotStartDiscoveryMessage;
     }
 
-    /** TODO */
-    public boolean isEncrypted(int grpId){
-        return grpId != METASTORAGE_CACHE_ID && cctx.cache().cacheGroup(grpId).config().isEncryptionEnabled();
-    }
-
     /** {@inheritDoc} */
     @Override public void onDoneBeforeTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
         if (clusterSnpReq == null || cctx.kernalContext().clientNode())
@@ -1309,13 +1313,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param folderName The node folder name, usually it's the same as the U.maskForFileName(consistentId).
      * @param grpName Cache group name.
      * @param partId Partition id.
+     * @param encrKeyProvider Encryption key provider. If {@code null}, no encription is used.
      * @return Iterator over partition.
      * @throws IgniteCheckedException If and error occurs.
      */
     public GridCloseableIterator<CacheDataRow> partitionRowIterator(String snpName,
         String folderName,
         String grpName,
-        int partId
+        int partId,
+        EncryptionCacheKeyProvider encrKeyProvider
     ) throws IgniteCheckedException {
         File snpDir = snapshotLocalDir(snpName);
 
@@ -1345,9 +1351,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         File snpPart = getPartitionFile(new File(snapshotLocalDir(snpName), databaseRelativePath(folderName)),
             grps.get(0).getName(), partId);
 
-        FilePageStore pageStore = (FilePageStore)storeFactory
-            .apply(CU.cacheId(grpName), isEncrypted(CU.cacheId(grpName)))
-            .createPageStore(getTypeByPartId(partId),
+        int grpId = CU.cacheId(grpName);
+
+//        FilePageStore pageStore = (FilePageStore)storeFactory
+//            .apply(grpId, encrKeyProvider.getActiveKey(grpId) == null ? null : encrKeyProvider)
+//            .createPageStore(getTypeByPartId(partId),
+//                snpPart::toPath,
+//                val -> {
+//                });
+
+        FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(grpId,
+            encrKeyProvider == null || encrKeyProvider.getActiveKey(grpId) == null ? null : encrKeyProvider).
+            createPageStore(getTypeByPartId(partId),
                 snpPart::toPath,
                 val -> {
                 });
@@ -1888,17 +1903,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     ", delta=" + delta + ']');
             }
 
-            boolean encrypted = isEncrypted(pair.getGroupId());
+            boolean encrypted = cctx.cache().isEncrypted(pair.getGroupId());
 
             FileIOFactory deltaIOFactory = encrypted ?
                 ((FilePageStoreManager)cctx.pageStore()).getEncryptedFileIoFactory(ioFactory, pair.getGroupId()) :
                 ioFactory;
 
             try (FileIO deltaIO = deltaIOFactory.create(delta, READ);
-                 FilePageStore pageStore = (FilePageStore)storeFactory.apply(pair.getGroupId(), encrypted)
+                 FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(pair.getGroupId(), encrypted)
                      .createPageStore(getTypeByPartId(pair.getPartitionId()), snpPart::toPath, v -> {})
             ) {
-                ByteBuffer pageBuf = ByteBuffer.allocate(pageSize)
+                ByteBuffer deltaPageBuf = ByteBuffer.allocate(pageSize)
                     .order(ByteOrder.nativeOrder());
 
                 long totalBytes = deltaIO.size();
@@ -1908,31 +1923,28 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 pageStore.beginRecover();
 
                 for (long pos = 0; pos < totalBytes; pos += pageSize) {
-                    long read = deltaIO.readFully(pageBuf, pos);
+                    long read = deltaIO.readFully(deltaPageBuf, pos);
 
-                    assert read == pageBuf.capacity();
+                    assert read == deltaPageBuf.capacity();
 
-                    pageBuf.flip();
+                    deltaPageBuf.flip();
 
-                    if (log.isDebugEnabled()) {
-                        log.debug("Read page given delta file [path=" + delta.getName() +
-                            ", pageId=" + PageIO.getPageId(pageBuf) + ", pos=" + pos + ", pages=" + (totalBytes / pageSize) +
-                            ", crcBuff=" + FastCrc.calcCrc(pageBuf, pageBuf.limit()) + ", crcPage=" + PageIO.getCrc(pageBuf) + ']');
+                    if (log.isInfoEnabled()) {
+                        log.info("Read page given delta file [path=" + delta.getName() +
+                            ", pageId=" + PageIO.getPageId(deltaPageBuf) + ", pos=" + pos + ", pages=" + (totalBytes / pageSize) +
+                            ", crcBuff=" + FastCrc.calcCrc(deltaPageBuf, deltaPageBuf.limit()) + ", crcPage=" + PageIO.getCrc(deltaPageBuf) + ']');
 
-                        pageBuf.rewind();
+                        deltaPageBuf.rewind();
                     }
 
-                    pageStore.write(PageIO.getPageId(pageBuf), pageBuf, 0, false);
+                    deltaPageBuf.rewind();
 
-                    pageBuf.flip();
+                    pageStore.write(PageIO.getPageId(deltaPageBuf), deltaPageBuf, 0, false);
+
+                    deltaPageBuf.flip();
                 }
 
                 pageStore.finishRecover();
-
-                if (log.isInfoEnabled()) {
-                    log.info("Finished partition snapshot recovery with the given delta page file [part=" + snpPart +
-                        ", delta=" + delta + ']');
-                }
             }
             catch (IOException | IgniteCheckedException e) {
                 throw new IgniteException(e);

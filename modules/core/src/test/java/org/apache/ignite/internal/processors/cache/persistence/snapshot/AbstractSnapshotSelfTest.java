@@ -66,6 +66,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
+import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -120,7 +121,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     protected boolean persistence = true;
 
     /** TODO */
-    protected volatile boolean encryption;
+    protected volatile boolean encryption = true;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -132,6 +133,23 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
         if (dfltCacheCfg != null)
             cfg.setCacheConfiguration(dfltCacheCfg);
+
+        return cfg.setConsistentId(igniteInstanceName)
+            .setCommunicationSpi(new TestRecordingCommunicationSpi())
+            .setDataStorageConfiguration(new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                    .setMaxSize(100L * 1024 * 1024)
+                    .setPersistenceEnabled(persistence))
+                .setCheckpointFrequency(3000)
+                .setPageSize(DFLT_PAGE_SIZE))
+            .setClusterStateOnStart(INACTIVE)
+            .setIncludeEventTypes(EVTS_CLUSTER_SNAPSHOT)
+            .setDiscoverySpi(discoSpi);
+    }
+
+    //TODO
+    @Override protected Ignite startGrid(String igniteInstanceName, IgniteConfiguration cfg,
+        GridSpringResourceContext ctx) throws Exception {
 
         if (encryption && persistence) {
             KeystoreEncryptionSpi encSpi = new KeystoreEncryptionSpi();
@@ -145,17 +163,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
                 cacheCfg.setEncryptionEnabled(true);
         }
 
-        return cfg.setConsistentId(igniteInstanceName)
-            .setCommunicationSpi(new TestRecordingCommunicationSpi())
-            .setDataStorageConfiguration(new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                    .setMaxSize(100L * 1024 * 1024)
-                    .setPersistenceEnabled(persistence))
-                .setCheckpointFrequency(3000)
-                .setPageSize(DFLT_PAGE_SIZE))
-            .setClusterStateOnStart(INACTIVE)
-            .setIncludeEventTypes(EVTS_CLUSTER_SNAPSHOT)
-            .setDiscoverySpi(discoSpi);
+        return super.startGrid(igniteInstanceName, cfg, ctx);
     }
 
     /** @throws Exception If fails. */
@@ -206,12 +214,10 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      */
     protected <K, V> CacheConfiguration<K, V> txCacheConfig(CacheConfiguration<K, V> ccfg) {
-        CacheConfiguration<K, V> cacheCfg = ccfg.setCacheMode(CacheMode.PARTITIONED)
+        return ccfg.setCacheMode(CacheMode.PARTITIONED)
             .setBackups(2)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setAffinity(new RendezvousAffinityFunction(false, CACHE_PARTS_COUNT));
-
-        return cacheCfg;
     }
 
     /**
