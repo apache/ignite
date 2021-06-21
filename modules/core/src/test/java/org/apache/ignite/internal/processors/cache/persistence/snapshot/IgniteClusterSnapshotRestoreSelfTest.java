@@ -65,6 +65,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
@@ -97,6 +98,10 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
     /** {@inheritDoc} */
     @Override protected Function<Integer, Object> valueBuilder() {
         return valBuilder;
+    }
+
+    @Override protected long getTestTimeout() {
+        return 2 * 60 * 1000;
     }
 
     /** @throws Exception If failed. */

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -49,10 +48,6 @@ public class SnapshotOperationRequest implements Serializable {
     @GridToStringInclude
     private final Collection<String> grps;
 
-    //TODO
-    @GridToStringInclude
-    Map<Integer, byte[]> grpKeys;
-
     /** Operational node ID. */
     private final UUID opNodeId;
 
@@ -79,7 +74,6 @@ public class SnapshotOperationRequest implements Serializable {
         this.opNodeId = opNodeId;
         this.snpName = snpName;
         this.grps = grps;
-        this.grpKeys = grpKeys;
         this.nodes = nodes;
     }
 
@@ -102,11 +96,6 @@ public class SnapshotOperationRequest implements Serializable {
      */
     public @Nullable Collection<String> groups() {
         return grps;
-    }
-
-    //TODO
-    public Map<Integer, byte[]> encrGrpKeys(){
-        return grpKeys == null ? Collections.emptyMap() : grpKeys;
     }
 
     /**

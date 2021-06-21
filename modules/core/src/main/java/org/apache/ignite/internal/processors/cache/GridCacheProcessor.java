@@ -215,7 +215,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CACHE_PROC;
-import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.META_STORAGE;
 import static org.apache.ignite.internal.IgniteComponentType.JTA;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistentCache;
@@ -3722,7 +3721,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             failIfExists,
             checkThreadTx,
             disabledAfterStart,
-            null);
+            null,
+            Collections.emptyMap());
     }
 
     /**
@@ -3733,6 +3733,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
      * @param disabledAfterStart If true, cache proxies will be only activated after {@link #restartProxies()}.
      * @param restartId Restart requester id (it'll allow to start this cache only him).
+     * @param reuseEncrKeys If not empty, these keys will be used for the encrypted caches instead of new keys generated.
      * @return Future that will be completed when all caches are deployed.
      */
     public IgniteInternalFuture<Boolean> dynamicStartCachesByStoredConf(
@@ -3740,7 +3741,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean failIfExists,
         boolean checkThreadTx,
         boolean disabledAfterStart,
-        IgniteUuid restartId
+        IgniteUuid restartId,
+        Map<Integer, byte[]> reuseEncrKeys
     ) {
         if (checkThreadTx) {
             sharedCtx.tm().checkEmptyTransactions(() -> {
@@ -3761,7 +3763,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             Iterator<byte[]> grpKeysIter = grpKeys.iterator();
 
             for (StoredCacheData ccfg : storedCacheDataList) {
-                assert !ccfg.config().isEncryptionEnabled() || grpKeysIter.hasNext();
+                int gid = CU.cacheGroupId(ccfg.config().getName(), ccfg.config().getGroupName());
+
+                assert !ccfg.config().isEncryptionEnabled() || grpKeysIter.hasNext() || reuseEncrKeys.containsKey(gid);
 
                 DynamicCacheChangeRequest req = prepareCacheChangeRequest(
                     ccfg.config(),
@@ -3774,7 +3778,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     restartId,
                     disabledAfterStart,
                     ccfg.queryEntities(),
-                    ccfg.config().isEncryptionEnabled() ? grpKeysIter.next() : null,
+                    ccfg.config().isEncryptionEnabled() ? (reuseEncrKeys.containsKey(gid) ? reuseEncrKeys.get(gid) : grpKeysIter.next()) :
+                        null,
                     ccfg.config().isEncryptionEnabled() ? masterKeyDigest : null);
 
                 if (req != null) {
@@ -3818,7 +3823,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         int encGrpCnt = 0;
 
         for (StoredCacheData ccfg : storedCacheDataList) {
-            if (ccfg.config().isEncryptionEnabled())
+            int gid = CU.cacheGroupId(ccfg.config().getName(), ccfg.config().getGroupName());
+
+            if (ccfg.config().isEncryptionEnabled() && !reuseEncrKeys.containsKey(gid))
                 encGrpCnt++;
         }
 

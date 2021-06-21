@@ -19,6 +19,7 @@ package org.apache.ignite.internal.managers.encryption;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -34,6 +35,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
+import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionKey;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -211,8 +213,12 @@ class CacheGroupEncryptionKeys {
 
         GroupKey grpKey = new GroupKey(newEncKey.id(), encSpi.decryptKey(newEncKey.key()));
 
-        if (!keys.contains(grpKey))
+        if (!keys.contains(grpKey)) {
+            System.err.println("TEST | adding key for groupId " +
+                grpId + " : " + Arrays.hashCode(((KeystoreEncryptionKey)grpKey.key()).key().getEncoded()));
+
             return keys.add(grpKey);
+        }
 
         return false;
     }

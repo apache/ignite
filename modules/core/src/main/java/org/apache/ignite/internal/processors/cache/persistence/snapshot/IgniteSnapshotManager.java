@@ -639,6 +639,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 smf.getParentFile().mkdirs();
 
+                //TODO : log debug cache not present on this node
+                //Node might have no certain cache deployed due to the node filter.
+                Map<Integer, byte[]> encrGrpKeys =
+                    grpIds.stream().filter(gid -> cctx.cache().cacheGroup(gid) != null && cctx.cache().isEncrypted(gid)).collect(
+                        Collectors.toMap(Function.identity(), gid -> cctx.gridConfig().getEncryptionSpi()
+                            .encryptKey(cctx.kernalContext().encryption().getActiveKey(gid).key())));
+
                 try (OutputStream out = new BufferedOutputStream(new FileOutputStream(smf))) {
                     U.marshal(marsh,
                         new SnapshotMetadata(req.requestId(),
@@ -647,8 +654,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                             pdsSettings.folderName(),
                             cctx.gridConfig().getDataStorageConfiguration().getPageSize(),
                             grpIds,
-                            req.encrGrpKeys(),
-                            req.encrGrpKeys().isEmpty() ? null : cctx.gridConfig().getEncryptionSpi().masterKeyDigest(),
+                            encrGrpKeys,
+                            encrGrpKeys.isEmpty() ? null : cctx.gridConfig().getEncryptionSpi().masterKeyDigest(),
                             blts,
                             fut.result()),
                         out);
