@@ -18,10 +18,12 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.ddl;
 
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -31,13 +33,20 @@ import org.apache.calcite.schema.Table;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.GridQuerySchemaManager;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
+import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.AlterTableAddCommand;
+import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.AlterTableDropCommand;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.ColumnDefinition;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.CreateTableCommand;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.DdlCommand;
@@ -69,7 +78,10 @@ public class DdlCommandHandler {
     private final Supplier<SchemaPlus> schemaSupp;
 
     /** */
-    private final NativeCommandHandler nativeCmdHandler;
+    private final NativeCommandHandler nativeCmdHnd;
+
+    /** */
+    private final GridQuerySchemaManager schemaMgr;
 
     /** */
     public DdlCommandHandler(Supplier<GridQueryProcessor> qryProcessorSupp, GridCacheProcessor cacheProcessor,
@@ -78,24 +90,36 @@ public class DdlCommandHandler {
         this.cacheProcessor = cacheProcessor;
         this.security = security;
         this.schemaSupp = schemaSupp;
-        nativeCmdHandler = new NativeCommandHandler(cacheProcessor.context().kernalContext(), schemaSupp);
+        schemaMgr = new SchemaManager(schemaSupp);
+        nativeCmdHnd = new NativeCommandHandler(cacheProcessor.context().kernalContext(), schemaMgr);
     }
 
     /** */
     public void handle(UUID qryId, DdlCommand cmd, PlanningContext pctx) throws IgniteCheckedException {
-        if (cmd instanceof CreateTableCommand)
-            handle0(pctx, (CreateTableCommand)cmd);
+        try {
+            if (cmd instanceof CreateTableCommand)
+                handle0(pctx, (CreateTableCommand)cmd);
 
-        else if (cmd instanceof DropTableCommand)
-            handle0(pctx, (DropTableCommand)cmd);
+            else if (cmd instanceof DropTableCommand)
+                handle0(pctx, (DropTableCommand)cmd);
 
-        else if (cmd instanceof NativeCommandWrapper)
-            nativeCmdHandler.handle(qryId, (NativeCommandWrapper)cmd, pctx);
+            else if (cmd instanceof AlterTableAddCommand)
+                handle0(pctx, (AlterTableAddCommand)cmd);
 
-        else {
-            throw new IgniteSQLException("Unsupported DDL operation [" +
-                "cmdName=" + (cmd == null ? null : cmd.getClass().getSimpleName()) + "; " +
-                "querySql=\"" + pctx.query() + "\"]", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+            else if (cmd instanceof AlterTableDropCommand)
+                handle0(pctx, (AlterTableDropCommand)cmd);
+
+            else if (cmd instanceof NativeCommandWrapper)
+                nativeCmdHnd.handle(qryId, (NativeCommandWrapper)cmd, pctx);
+
+            else {
+                throw new IgniteSQLException("Unsupported DDL operation [" +
+                    "cmdName=" + (cmd == null ? null : cmd.getClass().getSimpleName()) + "; " +
+                    "querySql=\"" + pctx.query() + "\"]", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+            }
+        }
+        catch (SchemaOperationException e) {
+            throw convert(e);
         }
     }
 
@@ -171,6 +195,119 @@ public class DdlCommandHandler {
         security.authorize(cacheName, SecurityPermission.CACHE_DESTROY);
 
         qryProcessorSupp.get().dynamicTableDrop(cacheName, cmd.tableName(), cmd.ifExists());
+    }
+
+    /** */
+    private void handle0(PlanningContext pctx, AlterTableAddCommand cmd) throws IgniteCheckedException {
+        isDdlOnSchemaSupported(cmd.schemaName());
+
+        GridQueryTypeDescriptor typeDesc = schemaMgr.typeDescriptorForTable(cmd.schemaName(), cmd.tableName());
+
+        if (typeDesc == null) {
+            if (!cmd.ifTableExists())
+                throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, cmd.tableName());
+        }
+        else {
+            if (QueryUtils.isSqlType(typeDesc.valueClass())) {
+                throw new SchemaOperationException("Cannot add column(s) because table was created " +
+                    "with WRAP_VALUE=false option.");
+            }
+
+            List<QueryField> cols = new ArrayList<>(cmd.columns().size());
+
+            boolean allFieldsNullable = true;
+
+            for (ColumnDefinition col : cmd.columns()) {
+                if (typeDesc.fields().containsKey(col.name())) {
+                    if ((!cmd.ifColumnNotExists() || cmd.columns().size() != 1))
+                        throw new SchemaOperationException(SchemaOperationException.CODE_COLUMN_EXISTS, col.name());
+                    else {
+                        cols = null;
+
+                        break;
+                    }
+                }
+
+                Type javaType = pctx.typeFactory().getResultClass(col.type());
+
+                String typeName = javaType instanceof Class ? ((Class<?>)javaType).getName() : javaType.getTypeName();
+
+                QueryField field = new QueryField(col.name(), typeName,
+                    col.type().isNullable(), col.defaultValue(),
+                    col.precision(), col.scale());
+
+                cols.add(field);
+
+                allFieldsNullable &= field.isNullable();
+            }
+
+            if (cols != null) {
+                GridCacheContextInfo<?, ?> ctxInfo = schemaMgr.cacheInfoForTable(cmd.schemaName(), cmd.tableName());
+
+                assert ctxInfo != null;
+
+                if (!allFieldsNullable)
+                    QueryUtils.checkNotNullAllowed(ctxInfo.config());
+
+                qryProcessorSupp.get().dynamicColumnAdd(ctxInfo.name(), cmd.schemaName(),
+                    typeDesc.tableName(), cols, cmd.ifTableExists(), cmd.ifColumnNotExists()).get();
+            }
+        }
+    }
+
+    /** */
+    private void handle0(PlanningContext pctx, AlterTableDropCommand cmd) throws IgniteCheckedException {
+        isDdlOnSchemaSupported(cmd.schemaName());
+
+        GridQueryTypeDescriptor typeDesc = schemaMgr.typeDescriptorForTable(cmd.schemaName(), cmd.tableName());
+
+        if (typeDesc == null) {
+            if (!cmd.ifTableExists())
+                throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, cmd.tableName());
+        }
+        else {
+            GridCacheContextInfo<?, ?> ctxInfo = schemaMgr.cacheInfoForTable(cmd.schemaName(), cmd.tableName());
+
+            GridCacheContext<?, ?> cctx = ctxInfo.cacheContext();
+
+            assert cctx != null;
+
+            if (cctx.mvccEnabled()) {
+                throw new IgniteSQLException("Cannot drop column(s) with enabled MVCC. " +
+                    "Operation is unsupported at the moment.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+            }
+
+            if (QueryUtils.isSqlType(typeDesc.valueClass())) {
+                throw new SchemaOperationException("Cannot drop column(s) because table was created " +
+                    "with WRAP_VALUE=false option.");
+            }
+
+            List<String> cols = new ArrayList<>(cmd.columns().size());
+
+            for (String colName : cmd.columns()) {
+                if (!typeDesc.fields().containsKey(colName)) {
+                    if ((!cmd.ifColumnExists() || cmd.columns().size() != 1))
+                        throw new SchemaOperationException(SchemaOperationException.CODE_COLUMN_NOT_FOUND, colName);
+                    else {
+                        cols = null;
+
+                        break;
+                    }
+                }
+
+                SchemaOperationException err = QueryUtils.validateDropColumn(typeDesc, colName);
+
+                if (err != null)
+                    throw err;
+
+                cols.add(colName);
+            }
+
+            if (cols != null) {
+                qryProcessorSupp.get().dynamicColumnRemove(ctxInfo.name(), cmd.schemaName(),
+                    typeDesc.tableName(), cols, cmd.ifTableExists(), cmd.ifColumnExists()).get();
+            }
+        }
     }
 
     /** */

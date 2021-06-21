@@ -29,8 +29,6 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlAlterTable;
-import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlAlterTableAddColumn;
-import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlAlterTableDropColumn;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlCreateIndex;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlDropIndex;
 import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
@@ -52,9 +50,7 @@ public class SqlToNativeCommandConverter {
     public static boolean isSupported(SqlNode sqlCmd) {
         return sqlCmd instanceof IgniteSqlCreateIndex
             || sqlCmd instanceof IgniteSqlDropIndex
-            || sqlCmd instanceof IgniteSqlAlterTable
-            || sqlCmd instanceof IgniteSqlAlterTableAddColumn
-            || sqlCmd instanceof IgniteSqlAlterTableDropColumn;
+            || sqlCmd instanceof IgniteSqlAlterTable;
     }
 
     /**

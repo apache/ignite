@@ -127,6 +127,12 @@ public class DdlSqlToCommandConverter {
         if (ddlNode instanceof SqlDropTable)
             return convertDropTable((SqlDropTable)ddlNode, ctx);
 
+        if (ddlNode instanceof IgniteSqlAlterTableAddColumn)
+            return convertAlterTableAdd((IgniteSqlAlterTableAddColumn)ddlNode, ctx);
+
+        if (ddlNode instanceof IgniteSqlAlterTableDropColumn)
+            return convertAlterTableDrop((IgniteSqlAlterTableDropColumn)ddlNode, ctx);
+
         if (SqlToNativeCommandConverter.isSupported(ddlNode))
             return SqlToNativeCommandConverter.convert(ddlNode, ctx);
 
