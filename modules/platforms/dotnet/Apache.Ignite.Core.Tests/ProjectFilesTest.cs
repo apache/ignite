@@ -151,6 +151,7 @@ namespace Apache.Ignite.Core.Tests
             var excludedFiles = new[]
             {
                 "IgnitionStartTest.cs",
+                "ShellTests.cs",
                 "Common\\TestFixtureSetUp.cs",
                 "Common\\TestFixtureTearDown.cs",
                 "Client\\Cache\\CacheTestAsyncAwait.cs",

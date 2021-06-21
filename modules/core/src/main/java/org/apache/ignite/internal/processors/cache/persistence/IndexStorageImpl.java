@@ -329,7 +329,7 @@ public class IndexStorageImpl implements IndexStorage {
     /**
      *
      */
-    private static class IndexItem {
+    public static class IndexItem {
         /** */
         private byte[] idxName;
 
@@ -343,6 +343,16 @@ public class IndexStorageImpl implements IndexStorage {
         private IndexItem(final byte[] idxName, final long pageId) {
             this.idxName = idxName;
             this.pageId = pageId;
+        }
+
+        /** */
+        public long pageId() {
+            return pageId;
+        }
+
+        /** */
+        public String nameString() {
+            return new String(idxName);
         }
 
         /** {@inheritDoc} */
