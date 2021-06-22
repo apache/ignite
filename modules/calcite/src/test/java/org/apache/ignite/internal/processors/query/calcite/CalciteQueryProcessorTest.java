@@ -1022,9 +1022,11 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
      * Verifies infix cast operator.
      */
     @Test
-    public void testInfixTypeCast() {
+    public void testInfixTypeCast() throws Exception {
         execute(client, "drop table if exists test_tbl");
         execute(client, "create table test_tbl(id int primary key, val varchar)");
+
+        awaitPartitionMapExchange();
 
         QueryEngine engineSrv = Commons.lookupComponent(grid(1).context(), QueryEngine.class);
 

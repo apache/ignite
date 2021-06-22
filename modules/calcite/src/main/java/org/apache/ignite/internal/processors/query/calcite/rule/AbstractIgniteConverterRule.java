@@ -34,7 +34,8 @@ public abstract class AbstractIgniteConverterRule<T extends RelNode> extends Con
 
     /** */
     protected AbstractIgniteConverterRule(Class<T> clazz, String descriptionPrefix) {
-        super(clazz, Convention.NONE, IgniteConvention.INSTANCE, descriptionPrefix);
+        super(Config.INSTANCE
+            .withConversion(clazz, Convention.NONE, IgniteConvention.INSTANCE, descriptionPrefix));
     }
 
     /** {@inheritDoc} */
