@@ -41,7 +41,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 
 /** */
 public abstract class ProjectScanMergeRule<T extends ProjectableFilterableTableScan>
-    extends RelRule<ProjectScanMergeRule.Config>{
+    extends RelRule<ProjectScanMergeRule.Config> {
     /** Instance. */
     public static final ProjectScanMergeRule<IgniteLogicalIndexScan> INDEX_SCAN =
         new ProjectScanMergeRule<IgniteLogicalIndexScan>(Config.INDEX_SCAN) {
