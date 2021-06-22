@@ -667,6 +667,8 @@ import org.junit.runners.Suite;
 
     InlineIndexKeyTypeRegistryTest.class,
 
+    IgniteStatisticsTestSuite.class,
+
     // CDC tests.
     SqlChangeDataCaptureTest.class
 })

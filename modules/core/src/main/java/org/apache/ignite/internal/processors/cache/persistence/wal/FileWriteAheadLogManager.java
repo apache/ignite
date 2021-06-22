@@ -134,10 +134,11 @@ import static java.nio.file.StandardOpenOption.WRITE;
 import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THRESHOLD_WAIT_TIME_NEXT_WAL_SEGMENT;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_COMPRESSOR_WORKER_THREAD_CNT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_MMAP;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VERSION;
+import static org.apache.ignite.configuration.DataStorageConfiguration.HALF_MAX_WAL_ARCHIVE_SIZE;
+import static org.apache.ignite.configuration.DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE;
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_COMPACTED;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
@@ -208,9 +209,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** @see IgniteSystemProperties#IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE */
     public static final double DFLT_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE = 0.25;
 
-    /** @see IgniteSystemProperties#IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE */
-    public static final double DFLT_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE = 0.5;
-
     /** @see IgniteSystemProperties#IGNITE_THRESHOLD_WAIT_TIME_NEXT_WAL_SEGMENT */
     public static final long DFLT_THRESHOLD_WAIT_TIME_NEXT_WAL_SEGMENT = 1000L;
 
@@ -243,8 +241,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      */
     private final long maxSegCountWithoutCheckpoint;
 
-    /** Size of wal archive since which removing of old archive should be started. */
-    private final long allowedThresholdWalArchiveSize;
+    /** Maximum size of the WAL archive in bytes. */
+    private final long maxWalArchiveSize;
+
+    /** Minimum size of the WAL archive in bytes. */
+    private final long minWalArchiveSize;
 
     /** */
     private final WALMode mode;
@@ -417,10 +418,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (walForceArchiveTimeout > 0)
             lastRolloverMs = new AtomicLong();
 
-        double thresholdWalArchiveSizePercentage = IgniteSystemProperties.getDouble(
-            IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE, DFLT_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE);
+        maxWalArchiveSize = dsCfg.getMaxWalArchiveSize();
 
-        allowedThresholdWalArchiveSize = (long)(dsCfg.getMaxWalArchiveSize() * thresholdWalArchiveSizePercentage);
+        minWalArchiveSize = minWalArchiveSize(dsCfg);
 
         evt = ctx.event();
         failureProcessor = ctx.failure();
@@ -3151,7 +3151,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * @return {@code True} if unlimited.
      */
     private boolean walArchiveUnlimited() {
-        return dsCfg.getMaxWalArchiveSize() == DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE;
+        return maxWalArchiveSize == UNLIMITED_WAL_ARCHIVE;
     }
 
     /**
@@ -3201,7 +3201,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             try {
                 while (!isCancelled()) {
-                    segmentAware.awaitExceedMaxArchiveSize(allowedThresholdWalArchiveSize);
+                    segmentAware.awaitExceedMaxArchiveSize(minWalArchiveSize);
                     segmentAware.awaitAvailableTruncateArchive();
 
                     FileDescriptor[] walArchiveFiles = walArchiveFiles();
@@ -3218,7 +3218,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                             high = fileDesc;
 
                             // Ensure that there will be exactly removed at least one segment.
-                            if (totalSize - (size += fileDesc.file.length()) < allowedThresholdWalArchiveSize)
+                            if (totalSize - (size += fileDesc.file.length()) < minWalArchiveSize)
                                 break;
                         }
                     }
@@ -3229,7 +3229,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         if (log.isInfoEnabled()) {
                             log.info("Starting to clean WAL archive [highIdx=" + highPtr.index()
                                 + ", currSize=" + U.humanReadableByteCount(totalSize)
-                                + ", maxSize=" + U.humanReadableByteCount(dsCfg.getMaxWalArchiveSize()) + ']');
+                                + ", maxSize=" + U.humanReadableByteCount(maxWalArchiveSize) + ']');
                         }
 
                         ((GridCacheDatabaseSharedManager)cctx.database()).onWalTruncated(highPtr);
@@ -3239,7 +3239,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         if (log.isInfoEnabled()) {
                             log.info("Finish clean WAL archive [cleanCnt=" + truncated
                                 + ", currSize=" + U.humanReadableByteCount(totalSize(walArchiveFiles()))
-                                + ", maxSize=" + U.humanReadableByteCount(dsCfg.getMaxWalArchiveSize()) + ']');
+                                + ", maxSize=" + U.humanReadableByteCount(maxWalArchiveSize) + ']');
                         }
                     }
                 }
@@ -3540,5 +3540,19 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 }
             }
         }
+    }
+
+    /**
+     * Getting min size(in bytes) of WAL archive directory(greater than 0,
+     * or {@link DataStorageConfiguration#UNLIMITED_WAL_ARCHIVE} if max WAL archive size is unlimited).
+     *
+     * @param dsCfg Memory configuration.
+     * @return Min allowed size(in bytes) of WAL archives.
+     */
+    static long minWalArchiveSize(DataStorageConfiguration dsCfg) {
+        long max = dsCfg.getMaxWalArchiveSize();
+        long min = dsCfg.getMinWalArchiveSize();
+
+        return max == UNLIMITED_WAL_ARCHIVE ? max : min == HALF_MAX_WAL_ARCHIVE_SIZE ? max / 2 : min;
     }
 }
