@@ -20,6 +20,7 @@ Utils for rebalanced tests.
 import sys
 from enum import IntEnum
 from typing import NamedTuple
+from itertools import product, chain
 
 # pylint: disable=W0622
 from ducktape.errors import TimeoutError
@@ -66,8 +67,8 @@ def preload_data(context, config, preloaders, backups, cache_count, entry_count,
 
     apps = []
 
-    def start_app(from_, to_):
-        app0 = IgniteApplicationService(
+    def start_app(_from, _to):
+        app = IgniteApplicationService(
             context,
             config=config,
             java_class_name="org.apache.ignite.internal.ducktest.tests.rebalance.DataGenerationApplication",
@@ -75,27 +76,26 @@ def preload_data(context, config, preloaders, backups, cache_count, entry_count,
                 "backups": backups,
                 "cacheCount": cache_count,
                 "entrySize": entry_size,
-                "from": from_,
-                "to": to_
+                "from": _from,
+                "to": _to
             },
             shutdown_timeout_sec=timeout)
-        app0.start_async()
+        app.start_async()
 
-        apps.append(app0)
+        apps.append(app)
 
     count = int(entry_count / preloaders)
-    _from = 0
-    _to = 0
+    end = 0
 
     for _ in range(preloaders - 1):
-        _from = _to
-        _to += count
-        start_app(_from, _to)
+        start = end
+        end += count
+        start_app(start, end)
 
-    start_app(_to, entry_count)
+    start_app(end, entry_count)
 
-    for app1 in apps:
-        app1.await_stopped()
+    for app in apps:
+        app.await_stopped()
 
     return (max(map(lambda app: app.get_finish_time(), apps)) -
             min(map(lambda app: app.get_init_time(), apps))).total_seconds()
@@ -154,6 +154,7 @@ class RebalanceMetrics(NamedTuple):
     node: str = None
 
 
+# pylint: disable=W0640
 def aggregate_rebalance_stats(nodes, cache_count):
     """
     Aggregates rebalance stats for specified nodes and cache count.
@@ -174,19 +175,15 @@ def aggregate_rebalance_stats(nodes, cache_count):
 
         metrics = list(map(lambda node: get_rebalance_metrics(node, cache_name), nodes))
 
-        def __key(tup):
-            return tup[1]
+        for prop, func in chain(product(['start_time', 'end_time'], [min, max]),
+                                product(['duration', 'received_bytes'], [min, max, sum])):
 
-        stats["start_time"]["min"] = min(map(lambda item: (item.node, item.start_time), metrics), key=__key)
-        stats["start_time"]["max"] = max(map(lambda item: (item.node, item.start_time), metrics), key=__key)
-        stats["end_time"]["min"] = min(map(lambda item: (item.node, item.end_time), metrics), key=__key)
-        stats["end_time"]["max"] = max(map(lambda item: (item.node, item.end_time), metrics), key=__key)
-        stats["duration"]["min"] = min(map(lambda item: (item.node, item.duration), metrics), key=__key)
-        stats["duration"]["max"] = max(map(lambda item: (item.node, item.duration), metrics), key=__key)
-        stats["duration"]["sum"] = sum(map(lambda item: item.duration, metrics))
-        stats["received_bytes"]["min"] = min(map(lambda item: (item.node, item.received_bytes), metrics), key=__key)
-        stats["received_bytes"]["max"] = max(map(lambda item: (item.node, item.received_bytes), metrics), key=__key)
-        stats["received_bytes"]["sum"] = sum(map(lambda item: item.received_bytes, metrics))
+            if func.__name__ == 'sum':
+                val = func(map(lambda item: getattr(item, prop), metrics))
+            else:
+                val = func(map(lambda item: (item.node, getattr(item, prop)), metrics), key=lambda tup: tup[1])
+
+            stats[prop][func.__name__] = val
 
         return stats
 
