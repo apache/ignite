@@ -2,9 +2,6 @@
 # description: Test LEAST/GREATEST
 # group: [generic]
 
-statement ok
-PRAGMA enable_verification
-
 # scalar usage
 query I
 SELECT LEAST(1)
@@ -69,12 +66,6 @@ SELECT LEAST(DATE '1992-01-01', DATE '1994-02-02', DATE '1991-01-01', NULL)
 ----
 NULL
 
-# test mix of types
-query T
-SELECT LEAST(DATE '1992-01-01', 'hello', 123)
-----
-123
-
 # tables
 statement ok
 CREATE TABLE t1(i INTEGER, j INTEGER)
@@ -115,13 +106,6 @@ query II
 SELECT LEAST(i, j), GREATEST(i, j) FROM t1 WHERE j IS NOT NULL ORDER BY i
 ----
 1	2
-3	7
-
-# row ids
-query II
-SELECT LEAST(rowid + 10, i, j), GREATEST(i, rowid + 4, j) FROM t1 WHERE j IS NOT NULL ORDER BY i
-----
-1	5
 3	7
 
 # generated strings
