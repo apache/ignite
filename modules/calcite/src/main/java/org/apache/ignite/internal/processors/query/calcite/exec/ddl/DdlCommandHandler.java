@@ -219,29 +219,29 @@ public class DdlCommandHandler {
 
             for (ColumnDefinition col : cmd.columns()) {
                 if (typeDesc.fields().containsKey(col.name())) {
-                    if ((!cmd.ifColumnNotExists() || cmd.columns().size() != 1))
+                    if (!cmd.ifColumnNotExists())
                         throw new SchemaOperationException(SchemaOperationException.CODE_COLUMN_EXISTS, col.name());
-                    else {
-                        cols = null;
-
-                        break;
-                    }
+                    else
+                        continue;
                 }
 
                 Type javaType = pctx.typeFactory().getResultClass(col.type());
 
                 String typeName = javaType instanceof Class ? ((Class<?>)javaType).getName() : javaType.getTypeName();
 
+                Integer precession = col.precision();
+                Integer scale = col.scale();
+
                 QueryField field = new QueryField(col.name(), typeName,
                     col.type().isNullable(), col.defaultValue(),
-                    col.precision(), col.scale());
+                    precession == null ? -1 : precession, scale == null ? -1 : scale);
 
                 cols.add(field);
 
                 allFieldsNullable &= field.isNullable();
             }
 
-            if (cols != null) {
+            if (!F.isEmpty(cols)) {
                 GridCacheContextInfo<?, ?> ctxInfo = schemaMgr.cacheInfoForTable(cmd.schemaName(), cmd.tableName());
 
                 assert ctxInfo != null;
@@ -286,13 +286,10 @@ public class DdlCommandHandler {
 
             for (String colName : cmd.columns()) {
                 if (!typeDesc.fields().containsKey(colName)) {
-                    if ((!cmd.ifColumnExists() || cmd.columns().size() != 1))
+                    if (!cmd.ifColumnExists())
                         throw new SchemaOperationException(SchemaOperationException.CODE_COLUMN_NOT_FOUND, colName);
-                    else {
-                        cols = null;
-
-                        break;
-                    }
+                    else
+                        continue;
                 }
 
                 SchemaOperationException err = QueryUtils.validateDropColumn(typeDesc, colName);
@@ -303,7 +300,7 @@ public class DdlCommandHandler {
                 cols.add(colName);
             }
 
-            if (cols != null) {
+            if (!F.isEmpty(cols)) {
                 qryProcessorSupp.get().dynamicColumnRemove(ctxInfo.name(), cmd.schemaName(),
                     typeDesc.tableName(), cols, cmd.ifTableExists(), cmd.ifColumnExists()).get();
             }
