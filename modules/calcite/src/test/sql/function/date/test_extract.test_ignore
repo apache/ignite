@@ -1,6 +1,8 @@
 # name: test/sql/function/date/test_extract.test
 # description: Extract function
 # group: [date]
+# Ignored: https://issues.apache.org/jira/browse/IGNITE-14960
+# Ignored: https://issues.apache.org/jira/browse/IGNITE-14955
 
 statement ok
 CREATE TABLE dates(i DATE)
@@ -42,6 +44,13 @@ query I
 SELECT EXTRACT(century FROM i) FROM dates ORDER BY i
 ----
 20
+NULL
+
+# day of the week (Sunday = 0, Saturday = 6)
+query I
+SELECT EXTRACT(DOW FROM i) FROM dates ORDER BY i
+----
+6
 NULL
 
 # day of the year (1 - 365/366)
@@ -91,3 +100,14 @@ SELECT EXTRACT(hour FROM i) FROM dates ORDER BY i
 0
 NULL
 
+query I
+SELECT EXTRACT(milliseconds FROM i) FROM dates ORDER BY i
+----
+0
+NULL
+
+query I
+SELECT EXTRACT(microsecond FROM i) FROM dates ORDER BY i
+----
+0
+NULL
