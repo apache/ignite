@@ -549,23 +549,22 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
             node.account.ssh(f'rm -rf {self.database_dir}', allow_fail=False)
             node.account.ssh(f'cp -r {snapshot_db} {self.work_dir}', allow_fail=False)
 
-    def await_rebalance(self, node=None, timeout_sec=600):
+    def await_rebalance(self, timeout_sec=600):
         """
         Waiting for the rebalance to complete.
         For the method, you need to set the
         metric_exporter='org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi'
         to the config.
 
-        :param node: Node.
         :param timeout_sec: Timeout to wait the rebalance to complete.
         """
 
         delta_time = datetime.now() + timedelta(seconds=timeout_sec)
 
-        _node = node if node else random.choice(self.alive_nodes)
+        node = random.choice(self.alive_nodes)
 
         rebalanced = False
-        mbean = JmxClient(_node).find_mbean('.*name=cluster')
+        mbean = JmxClient(node).find_mbean('.*name=cluster')
 
         while datetime.now() < delta_time and not rebalanced:
             rebalanced = next(mbean.Rebalanced) == 'true'
