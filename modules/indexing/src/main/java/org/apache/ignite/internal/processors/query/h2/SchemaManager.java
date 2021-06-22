@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
+import org.apache.ignite.internal.processors.query.GridQuerySchemaManager;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
@@ -86,7 +87,7 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
 /**
  * Schema manager. Responsible for all manipulations on schema objects.
  */
-public class SchemaManager {
+public class SchemaManager implements GridQuerySchemaManager {
     /** */
     public static final String SQL_SCHEMA_VIEW = "schemas";
 
@@ -888,6 +889,27 @@ public class SchemaManager {
         }
 
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridQueryTypeDescriptor typeDescriptorForTable(String schemaName, String tableName) {
+        GridH2Table dataTable = dataTable(schemaName, tableName);
+
+        return dataTable == null ? null : dataTable.rowDescriptor().type();
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridQueryTypeDescriptor typeDescriptorForIndex(String schemaName, String idxName) {
+        GridH2Table dataTable = dataTableForIndex(schemaName, idxName);
+
+        return dataTable == null ? null : dataTable.rowDescriptor().type();
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> GridCacheContextInfo<K, V> cacheInfoForTable(String schemaName, String tableName) {
+        GridH2Table dataTable = dataTable(schemaName, tableName);
+
+        return dataTable == null ? null : (GridCacheContextInfo<K, V>)dataTable.cacheInfo();
     }
 
     /** */

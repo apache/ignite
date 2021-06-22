@@ -164,6 +164,77 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     }
 }
 
+SqlNode IndexedColumn() :
+{
+    final Span s;
+    SqlNode col;
+}
+{
+    col = SimpleIdentifier()
+    (
+        <ASC>
+    |   <DESC> {
+            col = SqlStdOperatorTable.DESC.createCall(getPos(), col);
+        }
+    )?
+    {
+        return col;
+    }
+}
+
+SqlNodeList IndexedColumnList() :
+{
+    final Span s;
+    final List<SqlNode> list = new ArrayList<SqlNode>();
+    SqlNode col = null;
+}
+{
+    <LPAREN> { s = span(); }
+    col = IndexedColumn() { list.add(col); }
+    (
+        <COMMA> col = IndexedColumn() { list.add(col); }
+    )*
+    <RPAREN> {
+        return new SqlNodeList(list, s.end(this));
+    }
+}
+
+SqlCreate SqlCreateIndex(Span s, boolean replace) :
+{
+    final boolean ifNotExists;
+    final SqlIdentifier idxId;
+    final SqlIdentifier tblId;
+    final SqlNodeList columnList;
+    SqlNumericLiteral parallel = null;
+    SqlNumericLiteral inlineSize = null;
+}
+{
+    <INDEX>
+    ifNotExists = IfNotExistsOpt()
+    idxId = SimpleIdentifier()
+    <ON>
+    tblId = CompoundIdentifier()
+    columnList = IndexedColumnList()
+    (
+        <PARALLEL> <UNSIGNED_INTEGER_LITERAL> {
+            if (parallel != null)
+                throw SqlUtil.newContextException(getPos(), IgniteResource.INSTANCE.optionAlreadyDefined("PARALLEL"));
+
+            parallel = SqlLiteral.createExactNumeric(token.image, getPos());
+        }
+    |
+        <INLINE_SIZE> <UNSIGNED_INTEGER_LITERAL> {
+            if (inlineSize != null)
+                throw SqlUtil.newContextException(getPos(), IgniteResource.INSTANCE.optionAlreadyDefined("INLINE_SIZE"));
+
+            inlineSize = SqlLiteral.createExactNumeric(token.image, getPos());
+        }
+    )*
+    {
+        return new IgniteSqlCreateIndex(s.end(this), ifNotExists, idxId, tblId, columnList, parallel, inlineSize);
+    }
+}
+
 boolean IfExistsOpt() :
 {
 }
@@ -181,6 +252,17 @@ SqlDrop SqlDropTable(Span s, boolean replace) :
 {
     <TABLE> ifExists = IfExistsOpt() id = CompoundIdentifier() {
         return SqlDdlNodes.dropTable(s.end(this), ifExists, id);
+    }
+}
+
+SqlDrop SqlDropIndex(Span s, boolean replace) :
+{
+    final boolean ifExists;
+    final SqlIdentifier id;
+}
+{
+    <INDEX> ifExists = IfExistsOpt() id = CompoundIdentifier() {
+        return new IgniteSqlDropIndex(s.end(this), ifExists, id);
     }
 }
 

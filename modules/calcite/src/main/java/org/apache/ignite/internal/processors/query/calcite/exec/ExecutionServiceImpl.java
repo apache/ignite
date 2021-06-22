@@ -27,7 +27,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
@@ -39,6 +38,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.SqlDdl;
 import org.apache.calcite.sql.SqlExplain;
 import org.apache.calcite.sql.SqlExplainLevel;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.parser.SqlParseException;
@@ -545,6 +545,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         ctx.planner().reset();
 
+        if (SqlKind.DDL.contains(sqlNode.getKind()))
+            return prepareDdl(sqlNode, ctx);
+
         switch (sqlNode.getKind()) {
             case SELECT:
             case ORDER_BY:
@@ -562,10 +565,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
             case EXPLAIN:
                 return prepareExplain(sqlNode, ctx);
-
-            case CREATE_TABLE:
-            case DROP_TABLE:
-                return prepareDdl(sqlNode, ctx);
 
             default:
                 throw new IgniteSQLException("Unsupported operation [" +
@@ -615,9 +614,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     private QueryPlan prepareDdl(SqlNode sqlNode, PlanningContext ctx) {
         assert sqlNode instanceof SqlDdl : sqlNode == null ? "null" : sqlNode.getClass().getName();
 
-        SqlDdl ddlNode = (SqlDdl)sqlNode;
-
-        return new DdlPlan(ddlConverter.convert(ddlNode, ctx));
+        return new DdlPlan(ddlConverter.convert((SqlDdl)sqlNode, ctx));
     }
 
     /** */
@@ -658,7 +655,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             case EXPLAIN:
                 return executeExplain((ExplainPlan)plan, pctx);
             case DDL:
-                return executeDdl((DdlPlan)plan, pctx);
+                return executeDdl(qryId, (DdlPlan)plan, pctx);
 
             default:
                 throw new AssertionError("Unexpected plan type: " + plan);
@@ -666,9 +663,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private FieldsQueryCursor<List<?>> executeDdl(DdlPlan plan, PlanningContext pctx) {
+    private FieldsQueryCursor<List<?>> executeDdl(UUID qryId, DdlPlan plan, PlanningContext pctx) {
         try {
-            ddlCmdHnd.handle(pctx, plan.command());
+            ddlCmdHnd.handle(qryId, plan.command(), pctx);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSQLException("Failed to execute DDL statement [stmt=" + pctx.query() +
