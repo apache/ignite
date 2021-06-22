@@ -187,13 +187,13 @@ public class SnapshotMetadata implements Serializable {
     public boolean isEncryptedGrp(int grpId){
         return encrGroupKeys().containsKey(grpId);
     }
-
-    //TODO
+//
+//    //TODO
     public byte[] masterSign(){
         return masterSign == null ? IgniteUtils.EMPTY_BYTES : masterSign;
     }
-
-    //TODO
+//
+//    //TODO
     public boolean encryption(){
         return !encrGroupKeys().isEmpty();
     }

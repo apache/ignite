@@ -214,8 +214,8 @@ class CacheGroupEncryptionKeys {
         GroupKey grpKey = new GroupKey(newEncKey.id(), encSpi.decryptKey(newEncKey.key()));
 
         if (!keys.contains(grpKey)) {
-            System.err.println("TEST | adding key for groupId " +
-                grpId + " : " + Arrays.hashCode(((KeystoreEncryptionKey)grpKey.key()).key().getEncoded()));
+//            System.err.println("TEST | adding key for groupId " +
+//                grpId + " : " + Arrays.hashCode(((KeystoreEncryptionKey)grpKey.key()).key().getEncoded()));
 
             return keys.add(grpKey);
         }

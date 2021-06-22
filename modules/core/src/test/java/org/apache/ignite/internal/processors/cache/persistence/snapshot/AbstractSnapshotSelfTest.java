@@ -159,8 +159,9 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
             cfg.setEncryptionSpi(encSpi);
 
-            for(CacheConfiguration<?,?> cacheCfg : cfg.getCacheConfiguration())
-                cacheCfg.setEncryptionEnabled(true);
+            if (cfg.getCacheConfiguration() != null)
+                for (CacheConfiguration<?, ?> cacheCfg : cfg.getCacheConfiguration())
+                    cacheCfg.setEncryptionEnabled(true);
         }
 
         return super.startGrid(igniteInstanceName, cfg, ctx);

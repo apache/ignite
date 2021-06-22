@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
@@ -59,7 +58,6 @@ public class SnapshotOperationRequest implements Serializable {
      * @param opNodeId Operational node ID.
      * @param snpName Snapshot name.
      * @param grps List of cache group names.
-     * @param grpKeys Encrypted group keys for encrypted caches.
      * @param nodes Baseline node IDs that must be alive to complete the operation.
      */
     public SnapshotOperationRequest(
@@ -67,7 +65,6 @@ public class SnapshotOperationRequest implements Serializable {
         UUID opNodeId,
         String snpName,
         @Nullable Collection<String> grps,
-        Map<Integer, byte[]> grpKeys,
         Set<UUID> nodes
     ) {
         this.reqId = reqId;

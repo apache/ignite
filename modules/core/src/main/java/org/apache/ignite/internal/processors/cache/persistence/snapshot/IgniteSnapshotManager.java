@@ -646,6 +646,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         Collectors.toMap(Function.identity(), gid -> cctx.gridConfig().getEncryptionSpi()
                             .encryptKey(cctx.kernalContext().encryption().getActiveKey(gid).key())));
 
+                for(Integer gid : grpIds){
+                    if(gid != METASTORAGE_CACHE_ID && cctx.cache().cacheGroup(gid) == null )
+                        System.err.println("TEST | gid " + gid + " not exists on node " + cctx.kernalContext().localNodeId());
+                }
+
                 try (OutputStream out = new BufferedOutputStream(new FileOutputStream(smf))) {
                     U.marshal(marsh,
                         new SnapshotMetadata(req.requestId(),
@@ -1179,16 +1184,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     recordSnapshotEvent(name, SNAPSHOT_FAILED_MSG + f.error().getMessage(), EVT_CLUSTER_SNAPSHOT_FAILED);
             });
 
-            Map<Integer, byte[]> encrGrpKeys = grps.stream().map(CU::cacheId).filter(gid -> cctx.cache().isEncrypted(gid))
-                .collect(Collectors.toMap(Function.identity(),
-                    gid->cctx.gridConfig().getEncryptionSpi().encryptKey(
-                        cctx.kernalContext().encryption().getActiveKey(gid).key())));
-
             startSnpProc.start(snpFut0.rqId, new SnapshotOperationRequest(snpFut0.rqId,
                 cctx.localNodeId(),
                 name,
                 grps,
-                encrGrpKeys,
                 new HashSet<>(F.viewReadOnly(srvNodes,
                     F.node2id(),
                     (node) -> CU.baselineNode(node, clusterState)))));
@@ -1360,13 +1359,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         int grpId = CU.cacheId(grpName);
 
-//        FilePageStore pageStore = (FilePageStore)storeFactory
-//            .apply(grpId, encrKeyProvider.getActiveKey(grpId) == null ? null : encrKeyProvider)
-//            .createPageStore(getTypeByPartId(partId),
-//                snpPart::toPath,
-//                val -> {
-//                });
-
         FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(grpId,
             encrKeyProvider == null || encrKeyProvider.getActiveKey(grpId) == null ? null : encrKeyProvider).
             createPageStore(getTypeByPartId(partId),
@@ -1412,6 +1404,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         try {
             if (locSnpTasks.containsKey(snpName))
                 return new SnapshotFutureTask(new IgniteCheckedException("Snapshot with requested name is already scheduled: " + snpName));
+
+            for (Integer grpId : parts.keySet())
+                if (!withMetaStorage && cctx.cache().isEncrypted(grpId))
+                    return new SnapshotFutureTask(new IgniteCheckedException("Snapshot contains encrypted cache group " + grpId +
+                        ". Snapshot must must include metastore."));
 
             SnapshotFutureTask snpFutTask;
 

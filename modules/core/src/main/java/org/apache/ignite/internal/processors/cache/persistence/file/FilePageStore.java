@@ -706,8 +706,8 @@ public class FilePageStore implements PageStore {
     @Override public void write(long pageId, ByteBuffer pageBuf, int tag, boolean calculateCrc) throws IgniteCheckedException {
         init();
 
-        if(pageId==844420635164672L)
-            System.err.println("TEST | writting page 844420635164672 with " + this.fileIO.getClass().getSimpleName() + ". Path: " + getFileAbsolutePath());
+//        if(pageId==844420635164672L)
+//            System.err.println("TEST | writting page 844420635164672 with " + this.fileIO.getClass().getSimpleName() + ". Path: " + getFileAbsolutePath());
 
         boolean interrupted = false;
 

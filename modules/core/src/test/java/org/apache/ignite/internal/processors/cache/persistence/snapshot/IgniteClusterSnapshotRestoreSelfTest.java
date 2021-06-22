@@ -65,7 +65,6 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
@@ -517,8 +516,9 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         GridTestUtils.assertThrowsAnyCause(
             log,
             () -> startGrid(3),
-            IgniteSpiException.class,
-            "to add the node to cluster - remove directories with the caches"
+            encryption ? IllegalStateException.class : IgniteSpiException.class,
+            encryption ? "Make sure the cache exists in the cluster or current node has no cache persistent data" :
+                "to add the node to cluster - remove directories with the caches"
         );
     }
 

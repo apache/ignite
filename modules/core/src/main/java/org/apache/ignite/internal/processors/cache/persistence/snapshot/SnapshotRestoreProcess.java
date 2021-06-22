@@ -258,7 +258,7 @@ public class SnapshotRestoreProcess {
             }
 
             SnapshotOperationRequest req = new SnapshotOperationRequest(
-                fut0.rqId, F.first(dataNodes), snpName, cacheGrpNames, null, dataNodes);
+                fut0.rqId, F.first(dataNodes), snpName, cacheGrpNames, dataNodes);
 
             prepareRestoreProc.start(req.requestId(), req);
         });

@@ -46,6 +46,7 @@ import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider
 import org.apache.ignite.internal.managers.encryption.GroupKey;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
@@ -208,6 +209,7 @@ public class SnapshotPartitionsVerifyTask
             Set<Integer> grps = rqGrps.isEmpty() ? new HashSet<>(meta.partitions().keySet()) :
                 rqGrps.stream().map(CU::cacheId).collect(Collectors.toSet());
             Set<File> partFiles = new HashSet<>();
+//            MetaStorage snpMetaStorage = new MetaStorage(, new DataRegion(), true);
 
             if (meta.encryption() &&
                 !Arrays.equals(meta.masterSign(), ignite.context().config().getEncryptionSpi().masterKeyDigest()))
@@ -273,6 +275,11 @@ public class SnapshotPartitionsVerifyTask
                                 part::toPath, val -> {
                                 })
                             ) {
+//                            try (FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(grpId,
+//                                ignite.context().cache().isEncrypted(grpId)).createPageStore(getTypeByPartId(partId),
+//                                part::toPath, val -> {
+//                                })
+//                            ) {
                                 if (partId == INDEX_PARTITION) {
                                     checkPartitionsPageCrcSum(() -> pageStore, INDEX_PARTITION, FLAG_IDX);
 

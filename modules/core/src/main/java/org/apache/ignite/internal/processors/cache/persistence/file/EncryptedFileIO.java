@@ -20,12 +20,9 @@ package org.apache.ignite.internal.processors.cache.persistence.file;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
-import java.util.Arrays;
-import java.util.Objects;
 import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider;
 import org.apache.ignite.internal.managers.encryption.GroupKey;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
-import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionKey;
 
 /**
  * Implementation of {@code FileIO} that supports encryption(decryption) of pages written(readed) to(from) file.
@@ -190,11 +187,6 @@ public class EncryptedFileIO implements FileIO {
         }
         else
             return plainFileIO.writeFully(encrypt(srcBuf));
-
-//        assert position() == 0;
-//        assert headerSize == srcBuf.capacity();
-//
-//        return plainFileIO.write(srcBuf);
     }
 
     /** {@inheritDoc} */
@@ -220,12 +212,19 @@ public class EncryptedFileIO implements FileIO {
     private void encrypt(ByteBuffer srcBuf, ByteBuffer res) throws IOException {
         assert position() >= headerSize;
 
-        GroupKey grpKey = keyProvider.getActiveKey(groupId);
+        encUtil.encrypt(srcBuf, res, grpKey(groupId, 0));
+    }
 
-//        System.err.println("TEST | key to encrypt for groupId " +
-//            groupId + " : " + Arrays.hashCode(((KeystoreEncryptionKey)grpKey.key()).key().getEncoded()));
+    //TODO
+    private GroupKey grpKey(int grpId, int keyId) {
+        GroupKey key = keyProvider.groupKey(grpId, keyId);
 
-        encUtil.encrypt(srcBuf, res, grpKey);
+        if (key == null)
+            throw new IllegalStateException("Unable to find " + (keyId == 0 ? "active encription key" : "encryption key #" + keyId) +
+                " for cache group " + grpId + ". Make sure the cache exists in the cluster or current node has no cache persistent data. " +
+                "Check the encription configuration.");
+
+        return key;
     }
 
     /** TODO */
@@ -246,14 +245,7 @@ public class EncryptedFileIO implements FileIO {
     private void decrypt(ByteBuffer encrypted, ByteBuffer destBuf) throws IOException {
         int keyId = encrypted.get(encryptedDataSize() + 4 /* CRC size. */) & 0xff;
 
-        GroupKey grpKey = keyProvider.groupKey(groupId, keyId);
-
-        assert grpKey != null : keyId;
-
-//        System.err.println("TEST | key to decrypt for groupId " +
-//            groupId + " : " + Arrays.hashCode(((KeystoreEncryptionKey)grpKey.key()).key().getEncoded()));
-
-        encUtil.decrypt(encrypted, destBuf, grpKey);
+        encUtil.decrypt(encrypted, destBuf, grpKey(groupId, keyId));
     }
 
     /**
