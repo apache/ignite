@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.local;
 
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
@@ -28,6 +29,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
+import org.apache.ignite.internal.processors.query.timeout.TimedQueryHelper;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -39,21 +41,22 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
  */
 public class IgniteCacheLocalQueryDefaultTimeoutSelfTest extends GridCommonAbstractTest {
     /** Cache size. */
-    private static final int CACHE_SIZE = 10_000;
+    private static final int CACHE_SIZE = 1_000;
 
     /** Default query timeout */
     private static final long DEFAULT_QUERY_TIMEOUT = 1000;
 
     /** */
-    private static final String QUERY = "select a._val, b._val from String a, String b";
+    private static final String QUERY = "select a._val, b._val, longProcess(a._key, 5) from String a, String b";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration<Integer, String> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
-        ccfg.setIndexedTypes(Integer.class, String.class);
-        ccfg.setCacheMode(LOCAL);
+        CacheConfiguration<Integer, String> ccfg = new CacheConfiguration<Integer, String>(DEFAULT_CACHE_NAME)
+            .setIndexedTypes(Integer.class, String.class)
+            .setCacheMode(LOCAL)
+            .setSqlFunctionClasses(TimedQueryHelper.class);
 
         cfg.setCacheConfiguration(ccfg);
         cfg.setSqlConfiguration(new SqlConfiguration().setDefaultQueryTimeout(DEFAULT_QUERY_TIMEOUT));
@@ -139,7 +142,12 @@ public class IgniteCacheLocalQueryDefaultTimeoutSelfTest extends GridCommonAbstr
         }
 
         try (QueryCursor<List<?>> ignored = cursor) {
-            cursor.iterator();
+            Iterator<List<?>> it = cursor.iterator();
+
+            if (qry.isLazy()) {
+                while (it.hasNext())
+                    it.next();
+            }
 
             fail("Expecting timeout");
         }

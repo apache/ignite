@@ -128,5 +128,24 @@ namespace Apache.Ignite.Core.Impl.Common
                 }
             });
         }
+
+        /// <summary>
+        /// Sets this task as result for a <see cref="TaskCompletionSource{TResult}"/>.
+        /// </summary>
+        public static void SetAsResult<T>(this Task task, TaskCompletionSource<T> tcs)
+        {
+            if (task.IsCanceled)
+            {
+                tcs.SetCanceled();
+            }
+            else if (task.Exception != null)
+            {
+                tcs.SetException(task.Exception);
+            }
+            else
+            {
+                tcs.SetResult(default(T));
+            }
+        }
     }
 }

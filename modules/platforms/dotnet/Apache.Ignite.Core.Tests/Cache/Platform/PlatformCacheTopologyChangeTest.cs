@@ -186,7 +186,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                     break;
 
                 default:
-                    throw new ArgumentOutOfRangeException();
+                    throw new ArgumentOutOfRangeException("checkMode", checkMode, "Invalid check mode");
             }
 
             // Updates are propagated to client platform cache.

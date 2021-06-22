@@ -24,18 +24,27 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertThat;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
+import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 
 /**
  * Test suite for checking WAL archive size configuration validation.
  */
 public class WalArchiveSizeConfigurationTest extends GridCommonAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        stopAllGrids();
+        cleanPersistenceDir();
+    }
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
@@ -75,17 +84,18 @@ public class WalArchiveSizeConfigurationTest extends GridCommonAbstractTest {
     @Test
     public void testIncorrectMaxArchiveSizeConfiguration() throws Exception {
         DataStorageConfiguration dataStorageConfiguration = new DataStorageConfiguration()
-            .setWalSegmentSize((int) U.MB)
+            .setWalSegmentSize((int)U.MB)
             .setMaxWalArchiveSize(10)
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration().setPersistenceEnabled(true)
             );
 
-        try {
-            startGrid(0, (IgniteConfiguration cfg) -> cfg.setDataStorageConfiguration(dataStorageConfiguration));
-        } catch (IgniteCheckedException e) {
-            assertThat(e.getCause().getMessage(), containsString("maxWalArchiveSize must be no less than"));
-        }
+        assertThrowsAnyCause(
+            log,
+            () -> startGrid(0, (IgniteConfiguration cfg) -> cfg.setDataStorageConfiguration(dataStorageConfiguration)),
+            IgniteCheckedException.class,
+            "maxWalArchiveSize must be no less than"
+        );
     }
 
     /**
@@ -101,6 +111,39 @@ public class WalArchiveSizeConfigurationTest extends GridCommonAbstractTest {
             );
 
         startGrid(0, (IgniteConfiguration cfg) -> cfg.setDataStorageConfiguration(dataStorageConfiguration));
+    }
+
+    /**
+     * Checks that an exception is thrown if min WAL archive size is larger than max WAL archive size.
+     */
+    @Test
+    public void testIncorrectMinArchiveSizeConfiguration() {
+        DataStorageConfiguration dsCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true))
+            .setMinWalArchiveSize(Long.MAX_VALUE);
+
+        assertThrowsAnyCause(
+            log,
+            () -> startGrid(0, (IgniteConfiguration cfg) -> cfg.setDataStorageConfiguration(dsCfg)),
+            IgniteCheckedException.class,
+            "DataRegionConfiguration.minWalArchiveSize must be less than or equal to"
+        );
+    }
+
+    /**
+     * Checks that no exceptions are thrown when min WAL archive size is correct.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testCorrectMinArchiveSizeConfiguration() throws Exception {
+        DataStorageConfiguration dsCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true));
+
+        IgniteEx n = startGrid(0, (IgniteConfiguration cfg) -> cfg.setDataStorageConfiguration(dsCfg));
+
+        assertEquals(dsCfg.getMaxWalArchiveSize(), (long)getFieldValue(walMgr(n), "maxWalArchiveSize"));
+        assertEquals(dsCfg.getMaxWalArchiveSize() / 2, (long)getFieldValue(walMgr(n), "minWalArchiveSize"));
     }
 
     /**

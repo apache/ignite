@@ -47,6 +47,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -62,6 +63,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.SnapshotEvent;
@@ -786,7 +788,40 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return {@code True} if the snapshot restore operation is in progress.
      */
     public boolean isRestoring() {
-        return restoreCacheGrpProc.isRestoring();
+        return restoreCacheGrpProc.restoringSnapshotName() != null;
+    }
+
+    /**
+     * Check if snapshot restore process is currently running.
+     *
+     * @param snpName Snapshot name.
+     * @return {@code True} if the snapshot restore operation from the specified snapshot is in progress locally.
+     */
+    public boolean isRestoring(String snpName) {
+        return snpName.equals(restoreCacheGrpProc.restoringSnapshotName());
+    }
+
+    /**
+     * Check if the cache or group with the specified name is currently being restored from the snapshot.
+     *
+     * @param cacheName Cache name.
+     * @param grpName Cache group name.
+     * @return {@code True} if the cache or group with the specified name is being restored.
+     */
+    public boolean isRestoring(String cacheName, @Nullable String grpName) {
+        return restoreCacheGrpProc.isRestoring(cacheName, grpName);
+    }
+
+    /**
+     * Status of the restore operation cluster-wide.
+     *
+     * @param snpName Snapshot name.
+     * @return Future that will be completed when the status of the restore operation is received from all the server
+     * nodes. The result of this future will be {@code false} if the restore process with the specified snapshot name is
+     * not running on all nodes.
+     */
+    public IgniteFuture<Boolean> restoreStatus(String snpName) {
+        return executeRestoreManagementTask(SnapshotRestoreStatusTask.class, snpName);
     }
 
     /**
@@ -799,17 +834,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return Collections.emptySet();
 
         return restoreCacheGrpProc.cacheStartRequiredAliveNodes(restoreId);
-    }
-
-    /**
-     * Check if the cache or group with the specified name is currently being restored from the snapshot.
-     *
-     * @param cacheName Cache name.
-     * @param grpName Cache group name.
-     * @return {@code True} if the cache or group with the specified name is being restored.
-     */
-    public boolean isRestoring(String cacheName, @Nullable String grpName) {
-        return restoreCacheGrpProc.isRestoring(cacheName, grpName);
     }
 
     /**
@@ -886,6 +910,21 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Boolean> cancelSnapshotRestore(String name) {
+        return executeRestoreManagementTask(SnapshotRestoreCancelTask.class, name);
+    }
+
+    /**
+     * @param name Snapshot name.
+     *
+     * @return Future that will be finished when process the process is complete. The result of this future will be
+     * {@code false} if the restore process with the specified snapshot name is not running at all.
+     */
+    public IgniteFuture<Boolean> cancelLocalRestoreTask(String name) {
+        return restoreCacheGrpProc.cancel(new IgniteCheckedException("Operation has been canceled by the user."), name);
+    }
+
     /**
      * @param name Snapshot name.
      * @return {@code true} if snapshot is OK.
@@ -894,40 +933,36 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
 
-        GridFutureAdapter<IdleVerifyResultV2> res = new GridFutureAdapter<>();
+        cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
 
-        collectSnapshotMetadata(name).listen(f0 -> {
-                if (f0.error() == null) {
-                    Map<ClusterNode, List<SnapshotMetadata>> metas = f0.result();
-
-                    runSnapshotVerification(metas).listen(f1 -> {
-                        if (f1.error() == null)
-                            res.onDone(f1.result());
-                        else if (f1.error() instanceof IgniteSnapshotVerifyException)
-                            res.onDone(new IdleVerifyResultV2(((IgniteSnapshotVerifyException)f1.error()).exceptions()));
-                        else
-                            res.onDone(f1.error());
-                    });
-                }
-                else {
-                    if (f0.error() instanceof IgniteSnapshotVerifyException)
-                        res.onDone(new IdleVerifyResultV2(((IgniteSnapshotVerifyException)f0.error()).exceptions()));
-                    else
-                        res.onDone(f0.error());
-                }
-            });
-
-        return res;
+        return checkSnapshot(name, null).chain(f -> {
+            try {
+                return f.get().idleVerifyResult();
+            }
+            catch (Throwable t) {
+                throw new GridClosureException(t);
+            }
+        });
     }
 
     /**
+     * The check snapshot procedure performs compute operation over the whole cluster to verify the snapshot
+     * entirety and partitions consistency. The result future will be completed with an exception if this
+     * exception is not related to the check procedure, and will be completed normally with the {@code IdleVerifyResult}.
+     *
      * @param name Snapshot name.
-     * @return Future with snapshot metadata obtained from nodes.
+     * @param grps Collection of cache group names to check.
+     * @return {@code true} if snapshot is OK.
      */
-    IgniteInternalFuture<Map<ClusterNode, List<SnapshotMetadata>>> collectSnapshotMetadata(String name) {
-        GridKernalContext kctx0 = cctx.kernalContext();
+    public IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> checkSnapshot(String name, @Nullable Collection<String> grps) {
+        A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
+        A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
+        A.ensure(grps == null || grps.stream().filter(Objects::isNull).collect(Collectors.toSet()).isEmpty(),
+            "Collection of cache groups names cannot contain null elements.");
 
-        kctx0.security().authorize(ADMIN_SNAPSHOT);
+        GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> res = new GridFutureAdapter<>();
+
+        GridKernalContext kctx0 = cctx.kernalContext();
 
         Collection<ClusterNode> bltNodes = F.view(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
             (node) -> CU.baselineNode(node, kctx0.state().clusterState()));
@@ -935,20 +970,51 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         kctx0.task().setThreadContext(TC_SKIP_AUTH, true);
         kctx0.task().setThreadContext(TC_SUBGRID, bltNodes);
 
-        return kctx0.task().execute(SnapshotMetadataCollectorTask.class, name);
-    }
+        kctx0.task().execute(SnapshotMetadataCollectorTask.class, name).listen(f0 -> {
+            if (f0.error() == null) {
+                Map<ClusterNode, List<SnapshotMetadata>> metas = f0.result();
 
-    /**
-     * @param metas Nodes snapshot metadata.
-     * @return Future with the verification results.
-     */
-    IgniteInternalFuture<IdleVerifyResultV2> runSnapshotVerification(Map<ClusterNode, List<SnapshotMetadata>> metas) {
-        GridKernalContext kctx0 = cctx.kernalContext();
+                Map<Integer, String> grpIds = grps == null ? Collections.emptyMap() :
+                    grps.stream().collect(Collectors.toMap(CU::cacheId, v -> v));
 
-        kctx0.task().setThreadContext(TC_SKIP_AUTH, true);
-        kctx0.task().setThreadContext(TC_SUBGRID, new ArrayList<>(metas.keySet()));
+                for (List<SnapshotMetadata> nodeMetas : metas.values()) {
+                    for (SnapshotMetadata meta : nodeMetas)
+                        grpIds.keySet().removeAll(meta.partitions().keySet());
+                }
 
-        return kctx0.task().execute(SnapshotPartitionsVerifyTask.class, metas);
+                if (!grpIds.isEmpty()) {
+                    res.onDone(new SnapshotPartitionsVerifyTaskResult(metas,
+                        new IdleVerifyResultV2(Collections.singletonMap(cctx.localNode(),
+                            new IllegalArgumentException("Cache group(s) was not " +
+                                "found in the snapshot [groups=" + grpIds.values() + ", snapshot=" + name + ']')))));
+
+                    return;
+                }
+
+                kctx0.task().setThreadContext(TC_SKIP_AUTH, true);
+                kctx0.task().setThreadContext(TC_SUBGRID, new ArrayList<>(metas.keySet()));
+
+                kctx0.task().execute(SnapshotPartitionsVerifyTask.class, new SnapshotPartitionsVerifyTaskArg(grps, metas))
+                    .listen(f1 -> {
+                        if (f1.error() == null)
+                            res.onDone(f1.result());
+                        else if (f1.error() instanceof IgniteSnapshotVerifyException)
+                            res.onDone(new SnapshotPartitionsVerifyTaskResult(metas,
+                                new IdleVerifyResultV2(((IgniteSnapshotVerifyException)f1.error()).exceptions())));
+                        else
+                            res.onDone(f1.error());
+                    });
+            }
+            else {
+                if (f0.error() instanceof IgniteSnapshotVerifyException)
+                    res.onDone(new SnapshotPartitionsVerifyTaskResult(null,
+                        new IdleVerifyResultV2(((IgniteSnapshotVerifyException)f0.error()).exceptions())));
+                else
+                    res.onDone(f0.error());
+            }
+        });
+
+        return res;
     }
 
     /**
@@ -1506,6 +1572,25 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
+     * @param taskCls Snapshot restore operation management task class.
+     * @param snpName Snapshot name.
+     */
+    private IgniteFuture<Boolean> executeRestoreManagementTask(
+        Class<? extends ComputeTask<String, Boolean>> taskCls,
+        String snpName
+    ) {
+        cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
+
+        Collection<ClusterNode> bltNodes = F.view(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
+            (node) -> CU.baselineNode(node, cctx.kernalContext().state().clusterState()));
+
+        cctx.kernalContext().task().setThreadContext(TC_SKIP_AUTH, true);
+        cctx.kernalContext().task().setThreadContext(TC_SUBGRID, bltNodes);
+
+        return new IgniteFutureImpl<>(cctx.kernalContext().task().execute(taskCls, snpName));
+    }
+
+    /**
      * Ves pokrit assertami absolutely ves,
      * PageScan iterator in the ignite core est.
      */
@@ -1966,6 +2051,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         /** Snapshot finish time. */
         volatile long endTime;
+
+        /** Operation interruption exception. */
+        volatile IgniteCheckedException interruptEx;
 
         /**
          * Default constructor.

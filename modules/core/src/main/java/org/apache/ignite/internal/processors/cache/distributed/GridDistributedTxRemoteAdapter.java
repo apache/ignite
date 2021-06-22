@@ -423,7 +423,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
             if (pessimistic() || isSystemInvalidate())
                 state(PREPARED);
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteCheckedException | IgniteException e) {
             setRollbackOnly();
 
             throw e;
@@ -811,7 +811,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                             ptr = cctx.wal().log(new DataRecord(entriesWithCounters));
                         }
 
-                        if (ptr != null && !cctx.tm().logTxRecords())
+                        if (ptr != null)
                             cctx.wal().flush(ptr, false);
                     }
                     catch (Throwable ex) {

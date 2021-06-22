@@ -2394,7 +2394,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 long offHeapUsed = region.pageMemory().systemPageSize() * pagesCnt;
                 long offHeapInit = regCfg.getInitialSize();
                 long offHeapMax = regCfg.getMaxSize();
-                long offHeapComm = region.memoryMetrics().getOffHeapSize();
+                long offHeapComm = region.metrics().getOffHeapSize();
 
                 long offHeapUsedInMBytes = offHeapUsed / MEGABYTE;
                 long offHeapMaxInMBytes = offHeapMax / MEGABYTE;
@@ -2434,7 +2434,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     .a("%, allocRam=").a(dblFmt.format(offHeapCommInMBytes)).a("MB");
 
                 if (regCfg.isPersistenceEnabled()) {
-                    long pdsUsed = region.memoryMetrics().getTotalAllocatedSize();
+                    long pdsUsed = region.metrics().getTotalAllocatedSize();
                     long pdsUsedInMBytes = pdsUsed / MEGABYTE;
 
                     pdsUsedSummary += pdsUsed;

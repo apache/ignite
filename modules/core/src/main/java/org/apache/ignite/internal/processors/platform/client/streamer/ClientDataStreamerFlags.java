@@ -15,14 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.timeout;
+package org.apache.ignite.internal.processors.platform.client.streamer;
 
 /**
- *
+ * Data streamer flags.
  */
-public class DefaultQueryTimeoutThickJavaUpdateLazyTest extends DefaultQueryTimeoutThickJavaTest {
-    /** */
-    public DefaultQueryTimeoutThickJavaUpdateLazyTest() {
-        super(true, true);
-    }
+public class ClientDataStreamerFlags {
+    /** Allow overwrite flag mask. */
+    public static final byte ALLOW_OVERWRITE = 0x01;
+
+    /** Skip store flag mask. */
+    public static final byte SKIP_STORE = 0x02;
+
+    /** Keep binary flag mask. */
+    public static final byte KEEP_BINARY = 0x04;
+
+    /** Streamer flush flag mask. */
+    public static final byte FLUSH = 0x08;
+
+    /** Streamer close flag mask. */
+    public static final byte CLOSE = 0x10;
 }
