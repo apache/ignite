@@ -20,7 +20,7 @@
         <property name="dataStorageConfiguration">
             <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
                 {% if config.max_wal_archive_size %}
-                <property name="maxWalArchiveSize" value="{{ config.max_wal_archive_size }}"/>
+                    <property name="maxWalArchiveSize" value="{{ config.max_wal_archive_size }}"/>
                 {% endif %}
                 <property name="defaultDataRegionConfiguration">
                     {{ data_region(config.default) }}
