@@ -17,18 +17,21 @@
 
 package org.apache.ignite.internal.ducktest.tests.rebalance;
 
+import java.util.concurrent.ThreadLocalRandom;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
 /**
  * Application generates cache data by specified parameters.
  */
-public class DataGenerationApplicationStreamer extends IgniteAwareApplication {
+public class DataGenerationApplication extends IgniteAwareApplication {
     /** Max streamer data size. */
-    static final int MAX_STREAMER_DATA_SIZE = 100_000_000;
+    private static final int MAX_STREAMER_DATA_SIZE = 100_000_000;
 
     /** {@inheritDoc} */
     @Override protected void run(JsonNode jsonNode) throws Exception {
@@ -41,8 +44,8 @@ public class DataGenerationApplicationStreamer extends IgniteAwareApplication {
         markInitialized();
 
         for (int i = 1; i <= cacheCnt; i++) {
-            IgniteCache<Integer, DataModel> cache = ignite.getOrCreateCache(
-                new CacheConfiguration<Integer, DataModel>("test-cache-" + i)
+            IgniteCache<Integer, BinaryObject> cache = ignite.getOrCreateCache(
+                new CacheConfiguration<Integer, BinaryObject>("test-cache-" + i)
                     .setBackups(backups));
 
             generateCacheData(cache.getName(), entrySize, from, to);
@@ -61,9 +64,18 @@ public class DataGenerationApplicationStreamer extends IgniteAwareApplication {
         int flushEach = MAX_STREAMER_DATA_SIZE / entrySize + (MAX_STREAMER_DATA_SIZE % entrySize == 0 ? 0 : 1);
         int logEach = (to - from) / 10;
 
-        try (IgniteDataStreamer<Integer, DataModel> stmr = ignite.dataStreamer(cacheName)) {
+        BinaryObjectBuilder builder = ignite.binary().builder("org.apache.ignite.ducktest.DataBinary");
+
+        byte[] data = new byte[entrySize];
+
+        ThreadLocalRandom.current().nextBytes(data);
+
+        try (IgniteDataStreamer<Integer, BinaryObject> stmr = ignite.dataStreamer(cacheName)) {
             for (int i = from; i < to; i++) {
-                stmr.addData(i, new DataModel(entrySize));
+                builder.setField("key", i);
+                builder.setField("data", data);
+
+                stmr.addData(i, builder.build());
 
                 if ((i - from + 1) % logEach == 0 && log.isDebugEnabled())
                     log.debug("Streamed " + (i - from + 1) + " entries into " + cacheName);

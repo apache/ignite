@@ -46,11 +46,7 @@ class TriggerEvent(IntEnum):
 
 
 # pylint: disable=R0914
-def preload_data(
-        context, config, preloaders, backups, cache_count, entry_count, entry_size,
-        preload_class_name="org.apache.ignite.internal.ducktest.tests.rebalance.DataGenerationApplicationStreamer",
-        timeout=3600
-):
+def preload_data(context, config, preloaders, backups, cache_count, entry_count, entry_size, timeout=3600):
     """
     Puts entry_count of key-value pairs of entry_size bytes to cache_count caches.
     :param context: Test context.
@@ -60,7 +56,6 @@ def preload_data(
     :param cache_count: Cache count.
     :param entry_count: Cache entry count.
     :param entry_size: Entry size in bytes.
-    :param preload_class_name: Preload java class name
     :param timeout: Timeout in seconds for application finished.
     :return: Time taken for data preloading.
     """
@@ -75,7 +70,7 @@ def preload_data(
         app0 = IgniteApplicationService(
             context,
             config=config,
-            java_class_name=preload_class_name,
+            java_class_name="org.apache.ignite.internal.ducktest.tests.rebalance.DataGenerationApplication",
             params={
                 "backups": backups,
                 "cacheCount": cache_count,

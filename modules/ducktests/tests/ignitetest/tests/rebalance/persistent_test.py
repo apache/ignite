@@ -261,7 +261,7 @@ class RebalancePersistentTest(IgniteTest):
         preloader = IgniteApplicationService(
             self.test_context,
             preloader_config,
-            java_class_name="org.apache.ignite.internal.ducktest.tests.rebalance.DataGenerationApplicationBatchPutAll",
+            java_class_name="org.apache.ignite.internal.ducktest.tests.rebalance.DataGenerationApplication",
             params={"backups": 1, "cacheCount": 1, "entrySize": 1, "from": 0, "to": preload_entries}
         )
 
@@ -279,9 +279,7 @@ class RebalancePersistentTest(IgniteTest):
         preload_time = preload_data(
             self.test_context,
             ignites.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites)),
-            preloaders, backups, cache_count, entry_count, entry_size,
-            "org.apache.ignite.internal.ducktest.tests.rebalance.DataGenerationApplicationBatchPutAll"
-        )
+            preloaders, backups, cache_count, entry_count, entry_size)
 
         control_utility.deactivate()
         control_utility.activate()
