@@ -14,21 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.query.calcite;
 
-/** Stubs */
-public class Stubs {
+package org.apache.ignite.internal.processors.query.calcite.exec.exp.agg;
+
+/** */
+public interface AccumulatorWrapper<Row> {
     /** */
-    public static int intFoo(Object... args) {
-        return args == null ? 0 : args.length;
-    }
-
-    public static boolean boolFoo(Object... args) {
-        return args == null;
-    }
+    void add(Row row);
 
     /** */
-    public static String stringFoo(Object... args) {
-        return args == null ? "null" : "not null";
-    }
+    Object end();
+
+    /** */
+    void apply(Accumulator accumulator);
+
+    /** */
+    Accumulator accumulator();
 }

@@ -65,6 +65,7 @@ import org.apache.calcite.util.Litmus;
 import org.apache.calcite.util.Util;
 import org.apache.calcite.util.mapping.MappingType;
 import org.apache.calcite.util.mapping.Mappings;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.calcite.sql.SqlKind.EQUALS;
@@ -72,7 +73,6 @@ import static org.apache.calcite.sql.SqlKind.GREATER_THAN;
 import static org.apache.calcite.sql.SqlKind.GREATER_THAN_OR_EQUAL;
 import static org.apache.calcite.sql.SqlKind.LESS_THAN;
 import static org.apache.calcite.sql.SqlKind.LESS_THAN_OR_EQUAL;
-import static org.apache.ignite.internal.processors.query.calcite.Stubs.boolFoo;
 import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
 
 /** */
@@ -109,7 +109,7 @@ public class RexUtils {
 
     /** */
     public static RexNode makeCase(RexBuilder builder, RexNode... operands) {
-        if (boolFoo()/*U.assertionsEnabled()*/) {
+        if (IgniteUtils.assertionsEnabled()) {
             // each odd operand except last one has to return a boolean type
             for (int i = 0; i < operands.length; i += 2) {
                 if (operands[i].getType().getSqlTypeName() != SqlTypeName.BOOLEAN && i < operands.length - 1) {
@@ -199,7 +199,7 @@ public class RexUtils {
             RexNode bestLower = null;
 
             for (RexCall pred : collFldPreds) {
-                if (boolFoo()/*U.assertionsEnabled()*/) {
+                if (IgniteUtils.assertionsEnabled()) {
                     RexNode cond = RexUtil.removeCast(pred.operands.get(1));
 
                     assert idxOpSupports(cond) : cond;
@@ -305,7 +305,7 @@ public class RexUtils {
                 break;
 
             for (RexCall pred : collFldPreds) {
-                if (boolFoo()/*U.assertionsEnabled()*/) {
+                if (IgniteUtils.assertionsEnabled()) {
                     RexNode cond = RexUtil.removeCast(pred.operands.get(1));
 
                     assert idxOpSupports(cond) : cond;

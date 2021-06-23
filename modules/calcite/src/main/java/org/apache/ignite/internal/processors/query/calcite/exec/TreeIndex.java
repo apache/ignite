@@ -14,21 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.query.calcite;
+package org.apache.ignite.internal.processors.query.calcite.exec;
 
-/** Stubs */
-public class Stubs {
-    /** */
-    public static int intFoo(Object... args) {
-        return args == null ? 0 : args.length;
-    }
+import org.apache.ignite.internal.util.Cursor;
 
-    public static boolean boolFoo(Object... args) {
-        return args == null;
-    }
-
-    /** */
-    public static String stringFoo(Object... args) {
-        return args == null ? "null" : "not null";
-    }
+/**
+ * Tree index interface.
+ *
+ * @param <R> Indexing row type.
+ */
+public interface TreeIndex<R> {
+    /**
+     * Index lookup method.
+     *
+     * @param lower Lower bound.
+     * @param upper Upper bound.
+     * @return Cursor over the rows within bounds.
+     */
+    Cursor<R> find(R lower, R upper);
 }

@@ -21,6 +21,10 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 
 import org.apache.ignite.lang.IgniteInternalException;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Utility class for tests.
@@ -112,5 +116,72 @@ public final class IgniteTestUtils {
         catch (NoSuchFieldException | IllegalAccessException e) {
             throw new IgniteInternalException("Failed to set object field [obj=" + obj + ", field=" + fieldName + ']', e);
         }
+    }
+
+    /**
+     * Checks whether runnable throws exception, which is itself of a specified
+     * class, or has a cause of the specified class.
+     *
+     * @param run Runnable to check.
+     * @param cls Expected exception class.
+     * @return Thrown throwable.
+     */
+    @Nullable public static Throwable assertThrowsWithCause(
+        @NotNull Runnable run,
+        @NotNull Class<? extends Throwable> cls
+    ) {
+        try {
+            run.run();
+        }
+        catch (Throwable e) {
+            if (!hasCause(e, cls, null))
+                fail("Exception is neither of a specified class, nor has a cause of the specified class: " + cls, e);
+
+            return e;
+        }
+
+        throw new AssertionError("Exception has not been thrown.");
+    }
+
+    /**
+     * Checks if passed in {@code 'Throwable'} has given class in {@code 'cause'} hierarchy
+     * <b>including</b> that throwable itself.
+     * <p>
+     * Note that this method follows includes {@link Throwable#getSuppressed()}
+     * into check.
+     *
+     * @param t Throwable to check.
+     * @param cls Cause classes to check.
+     * @param msg Message text that should be in cause (if {@code null}, message won't be checked).
+     * @return {@code True} if one of the causing exception is an instance of passed in classes,
+     *      {@code false} otherwise.
+     */
+    private static boolean hasCause(
+        @NotNull Throwable t,
+        @NotNull Class<?> cls,
+        @Nullable String msg
+    ) {
+        for (Throwable th = t; th != null; th = th.getCause()) {
+            if (cls.isAssignableFrom(th.getClass())) {
+                if (msg != null) {
+                    if (th.getMessage() != null && th.getMessage().contains(msg))
+                        return true;
+                    else
+                        continue;
+                }
+
+                return true;
+            }
+
+            for (Throwable n : th.getSuppressed()) {
+                if (hasCause(n, cls, msg))
+                    return true;
+            }
+
+            if (th.getCause() == th)
+                break;
+        }
+
+        return false;
     }
 }

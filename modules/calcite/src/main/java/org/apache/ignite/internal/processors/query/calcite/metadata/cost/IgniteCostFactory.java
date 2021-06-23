@@ -38,7 +38,7 @@ public class IgniteCostFactory implements RelOptCostFactory {
     private final double networkWeight;
 
     /**
-     * Cerates a factory with default weights equal to 1.
+     * Creates a factory with default weights equal to 1.
      */
     public IgniteCostFactory() {
         cpuWeight = 1;
@@ -74,6 +74,8 @@ public class IgniteCostFactory implements RelOptCostFactory {
      * @param io Amount of consumed Io.
      * @param memory Amount of consumed Memory.
      * @param network Amount of consumed Network.
+     *
+     * @return Cost object.
      */
     public RelOptCost makeCost(double rowCount, double cpu, double io, double memory, double network) {
         return new IgniteCost(rowCount, cpu * cpuWeight, memory * memoryWeight, io * ioWeight, network * networkWeight);

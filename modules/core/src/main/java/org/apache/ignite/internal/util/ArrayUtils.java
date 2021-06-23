@@ -262,6 +262,7 @@ public final class ArrayUtils {
      * @param <T> Array type.
      * @return {@link List} instance for array.
      */
+    @SafeVarargs
     public static <T> List<T> asList(@Nullable T... vals) {
         return nullOrEmpty(vals) ? Collections.emptyList() : Arrays.asList(vals);
     }
@@ -273,6 +274,7 @@ public final class ArrayUtils {
      * @param obj One or more elements.
      * @return Concatenated array.
      */
+    @SafeVarargs
     public static <T> T[] concat(@Nullable T[] arr, T... obj) {
         T[] newArr;
 

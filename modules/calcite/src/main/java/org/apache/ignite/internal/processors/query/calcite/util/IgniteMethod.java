@@ -20,12 +20,37 @@ package org.apache.ignite.internal.processors.query.calcite.util;
 import java.lang.reflect.Method;
 
 import org.apache.calcite.linq4j.tree.Types;
+import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteSqlFunctions;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.Scalar;
 import org.apache.ignite.internal.processors.query.calcite.metadata.IgniteMetadata.FragmentMappingMetadata;
 
 /**
  * Contains methods used in metadata definitions.
  */
 public enum IgniteMethod {
+    /** See {@link RowHandler#set(int, Object, Object)} */
+    ROW_HANDLER_SET(RowHandler.class, "set", int.class, Object.class, Object.class),
+
+    /** See {@link RowHandler#get(int, Object)} */
+    ROW_HANDLER_GET(RowHandler.class, "get", int.class, Object.class),
+
+    /** See {@link ExecutionContext#rowHandler()} */
+    CONTEXT_ROW_HANDLER(ExecutionContext.class, "rowHandler"),
+
+    /** See {@link ExecutionContext#getCorrelated(int)} */
+    CONTEXT_GET_CORRELATED_VALUE(ExecutionContext.class, "getCorrelated", int.class),
+
+    /** See {@link Scalar#execute(ExecutionContext, Object, Object)} */
+    SCALAR_EXECUTE(Scalar.class, "execute", ExecutionContext.class, Object.class, Object.class),
+
+    /** */
+    SYSTEM_RANGE2(IgniteSqlFunctions.class, "systemRange", Object.class, Object.class),
+
+    /** */
+    SYSTEM_RANGE3(IgniteSqlFunctions.class, "systemRange", Object.class, Object.class, Object.class),
+
     /** See {@link FragmentMappingMetadata#fragmentMapping()} */
     FRAGMENT_MAPPING(FragmentMappingMetadata.class, "fragmentMapping");
 

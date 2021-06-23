@@ -21,7 +21,7 @@ import java.util.Objects;
 import org.apache.calcite.rel.type.RelDataType;
 import org.jetbrains.annotations.Nullable;
 
-/** Definies a particular column within table. */
+/** Defines a particular column within table. */
 public class ColumnDefinition {
     /** */
     private final String name;

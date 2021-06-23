@@ -14,21 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.query.calcite;
 
-/** Stubs */
-public class Stubs {
-    /** */
-    public static int intFoo(Object... args) {
-        return args == null ? 0 : args.length;
+package org.apache.ignite.internal.processors.query.calcite.exec.rel;
+
+import java.util.UUID;
+
+/** */
+public interface Mailbox<T> extends Node<T> {
+    /**
+     * @return Query ID.
+     */
+    default UUID queryId() {
+        return context().queryId();
     }
 
-    public static boolean boolFoo(Object... args) {
-        return args == null;
+    /**
+     * @return Fragment ID.
+     */
+    default long fragmentId() {
+        return context().fragmentId();
     }
 
-    /** */
-    public static String stringFoo(Object... args) {
-        return args == null ? "null" : "not null";
-    }
+    /**
+     * @return Exchange ID.
+     */
+    long exchangeId();
 }

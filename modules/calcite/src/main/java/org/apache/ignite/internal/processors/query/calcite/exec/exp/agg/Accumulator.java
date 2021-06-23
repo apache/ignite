@@ -14,21 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.query.calcite;
 
-/** Stubs */
-public class Stubs {
+package org.apache.ignite.internal.processors.query.calcite.exec.exp.agg;
+
+import java.io.Serializable;
+import java.util.List;
+
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+
+/** */
+public interface Accumulator extends Serializable {
     /** */
-    public static int intFoo(Object... args) {
-        return args == null ? 0 : args.length;
-    }
-
-    public static boolean boolFoo(Object... args) {
-        return args == null;
-    }
+    void add(Object... args);
 
     /** */
-    public static String stringFoo(Object... args) {
-        return args == null ? "null" : "not null";
-    }
+    void apply(Accumulator other);
+
+    /** */
+    Object end();
+
+    /** */
+    List<RelDataType> argumentTypes(IgniteTypeFactory typeFactory);
+
+    /** */
+    RelDataType returnType(IgniteTypeFactory typeFactory);
 }

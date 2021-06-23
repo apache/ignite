@@ -18,22 +18,33 @@
 package org.apache.ignite.internal.processors.query.calcite.util;
 
 import java.lang.reflect.Type;
+import java.sql.Timestamp;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TimeZone;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import com.google.common.collect.ImmutableSet;
+import org.apache.calcite.DataContext;
+import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.RelOptTable;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
 import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.util.Pair;
+import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.TableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -45,6 +56,21 @@ import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
 
 /** */
 public class TypeUtils {
+    /** */
+    private static final EnumSet<SqlTypeName> CONVERTABLE_SQL_TYPES = EnumSet.of(
+        SqlTypeName.DATE,
+        SqlTypeName.TIME,
+        SqlTypeName.TIMESTAMP
+    );
+
+    /** */
+    private static final Set<Type> CONVERTABLE_TYPES = ImmutableSet.of(
+        java.util.Date.class,
+        java.sql.Date.class,
+        java.sql.Time.class,
+        java.sql.Timestamp.class
+    );
+
     /** */
     public static RelDataType combinedRowType(IgniteTypeFactory typeFactory, RelDataType... types) {
 
@@ -183,4 +209,89 @@ public class TypeUtils {
         return fldDesc.storageType();
     }
 
+    /** */
+    public static <Row> Function<Row, Row> resultTypeConverter(ExecutionContext<Row> ectx, RelDataType resultType) {
+        assert resultType.isStruct();
+
+        if (hasConvertableFields(resultType)) {
+            RowHandler<Row> handler = ectx.rowHandler();
+            List<RelDataType> types = RelOptUtil.getFieldTypeList(resultType);
+            RowHandler.RowFactory<Row> factory = handler.factory(ectx.getTypeFactory(), types);
+            List<Function<Object, Object>> converters = transform(types, t -> fieldConverter(ectx, t));
+            return r -> {
+                Row newRow = factory.create();
+                assert handler.columnCount(newRow) == converters.size();
+                assert handler.columnCount(r) == converters.size();
+                for (int i = 0; i < converters.size(); i++)
+                    handler.set(i, newRow, converters.get(i).apply(handler.get(i, r)));
+                return newRow;
+            };
+        }
+
+        return Function.identity();
+    }
+
+    /** */
+    private static Function<Object, Object> fieldConverter(ExecutionContext<?> ectx, RelDataType fieldType) {
+        if (CONVERTABLE_SQL_TYPES.contains(fieldType.getSqlTypeName())) {
+            Type storageType = ectx.getTypeFactory().getJavaClass(fieldType);
+            return v -> fromInternal(ectx, v, storageType);
+        }
+        return Function.identity();
+    }
+
+    /** */
+    public static boolean isConvertableType(Type type) {
+        return CONVERTABLE_TYPES.contains(type);
+    }
+
+    /** */
+    public static boolean isConvertableType(RelDataType type) {
+        return CONVERTABLE_SQL_TYPES.contains(type.getSqlTypeName());
+    }
+
+    /** */
+    private static boolean hasConvertableFields(RelDataType resultType) {
+        return RelOptUtil.getFieldTypeList(resultType).stream()
+            .anyMatch(t -> CONVERTABLE_SQL_TYPES.contains(t.getSqlTypeName()));
+    }
+
+    /** */
+    public static Object toInternal(ExecutionContext<?> ectx, Object val) {
+        return val == null ? null : toInternal(ectx, val, val.getClass());
+    }
+
+    /** */
+    public static Object toInternal(ExecutionContext<?> ectx, Object val, Type storageType) {
+        if (val == null)
+            return null;
+        else if (storageType == java.sql.Date.class)
+            return (int)(SqlFunctions.toLong((java.util.Date)val, DataContext.Variable.TIME_ZONE.get(ectx)) / DateTimeUtils.MILLIS_PER_DAY);
+        else if (storageType == java.sql.Time.class)
+            return (int)(SqlFunctions.toLong((java.util.Date)val, DataContext.Variable.TIME_ZONE.get(ectx)) % DateTimeUtils.MILLIS_PER_DAY);
+        else if (storageType == Timestamp.class)
+            return SqlFunctions.toLong((java.util.Date)val, DataContext.Variable.TIME_ZONE.get(ectx));
+        else if (storageType == java.util.Date.class)
+            return SqlFunctions.toLong((java.util.Date)val, DataContext.Variable.TIME_ZONE.get(ectx));
+        else
+            return val;
+    }
+
+    /** */
+    public static Object fromInternal(ExecutionContext<?> ectx, Object val, Type storageType) {
+        if (val == null)
+            return null;
+        else if (storageType == java.sql.Date.class && val instanceof Integer) {
+            final long t = (Integer)val * DateTimeUtils.MILLIS_PER_DAY;
+            return new java.sql.Date(t - DataContext.Variable.TIME_ZONE.<TimeZone>get(ectx).getOffset(t));
+        }
+        else if (storageType == java.sql.Time.class && val instanceof Integer)
+            return new java.sql.Time((Integer)val - DataContext.Variable.TIME_ZONE.<TimeZone>get(ectx).getOffset((Integer)val));
+        else if (storageType == Timestamp.class && val instanceof Long)
+            return new Timestamp((Long)val - DataContext.Variable.TIME_ZONE.<TimeZone>get(ectx).getOffset((Long)val));
+        else if (storageType == java.util.Date.class && val instanceof Long)
+            return new java.util.Date((Long)val - DataContext.Variable.TIME_ZONE.<TimeZone>get(ectx).getOffset((Long)val));
+        else
+            return val;
+    }
 }

@@ -57,6 +57,7 @@ import org.apache.calcite.util.mapping.Mapping;
 import org.apache.calcite.util.mapping.MappingType;
 import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.generated.query.calcite.sql.IgniteSqlParserImpl;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteSqlOperatorTable;
@@ -77,6 +78,9 @@ import static org.apache.ignite.internal.util.CollectionUtils.nullOrEmpty;
  * Utility methods.
  */
 public final class Commons {
+    /** */
+    public static final int IN_BUFFER_SIZE = 512;
+
     /** */
     public static final FrameworkConfig FRAMEWORK_CONFIG = Frameworks.newConfigBuilder()
         .executor(EXECUTOR)
@@ -317,7 +321,7 @@ public final class Commons {
             IClassBodyEvaluator cbe = compilerFactory.newClassBodyEvaluator();
 
             cbe.setImplementedInterfaces(new Class[]{ interfaceType });
-//            cbe.setParentClassLoader(ExpressionFactoryImpl.class.getClassLoader());
+            cbe.setParentClassLoader(ExpressionFactoryImpl.class.getClassLoader());
 
             if (debug)
                 // Add line numbers to the generated janino class
@@ -337,7 +341,7 @@ public final class Commons {
 
     /** */
     public static <T> T[] ensureCapacity(T[] array, int required) {
-        if (required >= 0)
+        if (required < 0)
             throw new IllegalArgumentException("Capacity must not be negative");
 
         return array.length <= required ? Arrays.copyOf(array, nextPowerOf2(required)) : array;
@@ -350,7 +354,8 @@ public final class Commons {
      * @return Next closest power of 2.
      */
     public static int nextPowerOf2(int v) {
-//        A.ensure(v >= 0, "v must not be negative");
+        if (v < 0)
+            throw new IllegalArgumentException("v must not be negative");
 
         if (v == 0)
             return 1;
@@ -424,5 +429,21 @@ public final class Commons {
         }
 
         return res;
+    }
+
+    /**
+     * Quietly closes given object ignoring possible checked exception.
+     *
+     * @param obj Object to close. If it's {@code null} - it's no-op.
+     */
+    public static void closeQuiet(@Nullable Object obj) {
+        if (obj instanceof AutoCloseable) {
+            try {
+                ((AutoCloseable)obj).close();
+            }
+            catch (Exception ignored) {
+                // No-op.
+            }
+        }
     }
 }

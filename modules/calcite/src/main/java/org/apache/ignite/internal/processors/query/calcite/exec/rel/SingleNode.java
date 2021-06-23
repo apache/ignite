@@ -14,21 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.query.calcite;
 
-/** Stubs */
-public class Stubs {
+package org.apache.ignite.internal.processors.query.calcite.exec.rel;
+
+import java.util.List;
+
+import org.jetbrains.annotations.NotNull;
+
+import static org.apache.ignite.internal.util.CollectionUtils.first;
+
+/**
+ * A node with a single input
+ */
+public interface SingleNode<Row> extends Node<Row> {
     /** */
-    public static int intFoo(Object... args) {
-        return args == null ? 0 : args.length;
+    default void register(@NotNull Node<Row> src) {
+        register(List.of(src));
     }
 
-    public static boolean boolFoo(Object... args) {
-        return args == null;
-    }
-
     /** */
-    public static String stringFoo(Object... args) {
-        return args == null ? "null" : "not null";
+    default @NotNull Node<Row> source() {
+        return first(sources());
     }
 }

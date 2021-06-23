@@ -14,21 +14,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.query.calcite;
 
-/** Stubs */
-public class Stubs {
-    /** */
-    public static int intFoo(Object... args) {
-        return args == null ? 0 : args.length;
+package org.apache.ignite.internal.processors.query.calcite.util;
+
+import java.util.Iterator;
+import java.util.function.Function;
+
+public class TransformingIterator<Tin, Tout> implements Iterator<Tout> {
+    private final Iterator<Tin> delegate;
+
+    private final Function<Tin, Tout> transformation;
+
+    public TransformingIterator(Iterator<Tin> delegate, Function<Tin, Tout> transformation) {
+        this.delegate = delegate;
+        this.transformation = transformation;
     }
 
-    public static boolean boolFoo(Object... args) {
-        return args == null;
+    /** {@inheritDoc} */
+    @Override public boolean hasNext() {
+        return delegate.hasNext();
     }
 
-    /** */
-    public static String stringFoo(Object... args) {
-        return args == null ? "null" : "not null";
+    /** {@inheritDoc} */
+    @Override public Tout next() {
+        return transformation.apply(delegate.next());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void remove() {
+        delegate.remove();
     }
 }

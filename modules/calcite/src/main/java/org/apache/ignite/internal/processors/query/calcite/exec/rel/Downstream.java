@@ -14,21 +14,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.query.calcite;
 
-/** Stubs */
-public class Stubs {
-    /** */
-    public static int intFoo(Object... args) {
-        return args == null ? 0 : args.length;
-    }
+package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
-    public static boolean boolFoo(Object... args) {
-        return args == null;
-    }
+/**
+ * Represents an abstract data consumer.
+ *
+ * <b>Note</b>: except several cases (like consumer node and mailboxes), {@link Node#request(int)},
+ * {@link Downstream#push(Object)} and {@link Downstream#end()} methods should be used from one single thread.
+ */
+public interface Downstream<Row> {
+    /**
+     * Pushes a row to consumer.
+     *
+     * @param row Data row.
+     */
+    void push(Row row) throws Exception;
 
-    /** */
-    public static String stringFoo(Object... args) {
-        return args == null ? "null" : "not null";
-    }
+    /**
+     * Signals that data is over.
+     */
+    void end() throws Exception;
+
+    /**
+     * Notifies consumer about error.
+     *
+     * @param e Error to notify consumer about.
+     */
+    void onError(Throwable e);
 }
