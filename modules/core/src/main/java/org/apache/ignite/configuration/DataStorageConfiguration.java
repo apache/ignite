@@ -69,10 +69,10 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_ASYNC_FILE_IO_
  * </pre>
  */
 public class DataStorageConfiguration implements Serializable {
-    /** */
+    /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /** Value used for making WAL archive size unlimited */
+    /** Value used for making WAL archive size unlimited. */
     public static final long UNLIMITED_WAL_ARCHIVE = -1;
 
     /** Default data region start size (256 MB). */
@@ -128,7 +128,7 @@ public class DataStorageConfiguration implements Serializable {
     /** Default number of checkpoints to be kept in WAL after checkpoint is finished */
     public static final int DFLT_WAL_HISTORY_SIZE = 20;
 
-    /** Default max size of WAL archive files, in bytes */
+    /** Default max size of WAL archive files, in bytes. */
     public static final long DFLT_WAL_ARCHIVE_MAX_SIZE = 1024 * 1024 * 1024;
 
     /** */
@@ -188,6 +188,9 @@ public class DataStorageConfiguration implements Serializable {
     /** @see IgniteSystemProperties#IGNITE_USE_ASYNC_FILE_IO_FACTORY */
     public static final boolean DFLT_USE_ASYNC_FILE_IO_FACTORY = true;
 
+    /** Value used to indicate the use of half of the {@link #getMaxWalArchiveSize}. */
+    public static final long HALF_MAX_WAL_ARCHIVE_SIZE = -1;
+
     /** Initial size of a memory chunk reserved for system cache. */
     private long sysRegionInitSize = DFLT_SYS_REG_INIT_SIZE;
 
@@ -226,7 +229,7 @@ public class DataStorageConfiguration implements Serializable {
     /** Number of checkpoints to keep */
     private int walHistSize = DFLT_WAL_HISTORY_SIZE;
 
-    /** Maximum size of wal archive folder, in bytes */
+    /** Maximum size of wal archive folder, in bytes. */
     private long maxWalArchiveSize = DFLT_WAL_ARCHIVE_MAX_SIZE;
 
     /** Number of work WAL segments. */
@@ -325,6 +328,9 @@ public class DataStorageConfiguration implements Serializable {
 
     /** Maximum number of partitions which can be defragmented at the same time. */
     private int defragmentationThreadPoolSize = DFLT_DEFRAGMENTATION_THREAD_POOL_SIZE;
+
+    /** Minimum size of wal archive folder, in bytes. */
+    private long minWalArchiveSize = HALF_MAX_WAL_ARCHIVE_SIZE;
 
     /**
      * Creates valid durable memory configuration with all default values.
@@ -1201,6 +1207,34 @@ public class DataStorageConfiguration implements Serializable {
      */
     public int getDefragmentationThreadPoolSize() {
         return defragmentationThreadPoolSize;
+    }
+
+    /**
+     * Gets a min allowed size(in bytes) of WAL archives.
+     *
+     * @return min size(in bytes) of WAL archive directory(greater than 0, or {@link #HALF_MAX_WAL_ARCHIVE_SIZE}).
+     */
+    public long getMinWalArchiveSize() {
+        return minWalArchiveSize;
+    }
+
+    /**
+     * Sets a min allowed size(in bytes) of WAL archives.
+     *
+     * If value is not positive, {@link #HALF_MAX_WAL_ARCHIVE_SIZE} will be used.
+     *
+     * @param walArchiveMinSize min size(in bytes) of WAL archive directory.
+     * @return {@code this} for chaining.
+     */
+    public DataStorageConfiguration setMinWalArchiveSize(long walArchiveMinSize) {
+        if (walArchiveMinSize != HALF_MAX_WAL_ARCHIVE_SIZE) {
+            A.ensure(walArchiveMinSize > 0, "Min WAL archive size can be only greater than 0 " +
+                "or must be equal to " + HALF_MAX_WAL_ARCHIVE_SIZE + " (to be half of max WAL archive size)");
+        }
+
+        this.minWalArchiveSize = walArchiveMinSize;
+
+        return this;
     }
 
     /** {@inheritDoc} */
