@@ -28,20 +28,20 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.cdc.ChangeDataCapture;
+import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.util.typedef.CI3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.cdc.AbstractChangeDataCaptureTest.ChangeEventType.DELETE;
-import static org.apache.ignite.cdc.AbstractChangeDataCaptureTest.ChangeEventType.UPDATE;
+import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.DELETE;
+import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.UPDATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
-public abstract class AbstractChangeDataCaptureTest extends GridCommonAbstractTest {
+public abstract class AbstractCdcTest extends GridCommonAbstractTest {
     /** */
     public static final String JOHN = "John Connor";
 
@@ -63,10 +63,10 @@ public abstract class AbstractChangeDataCaptureTest extends GridCommonAbstractTe
     /** */
     public void addAndWaitForConsumption(
         UserCdcConsumer cnsmr,
-        ChangeDataCapture cdc,
-        IgniteCache<Integer, ChangeDataCaptureSelfTest.User> cache,
-        IgniteCache<Integer, ChangeDataCaptureSelfTest.User> txCache,
-        CI3<IgniteCache<Integer, ChangeDataCaptureSelfTest.User>, Integer, Integer> addData,
+        CdcMain cdc,
+        IgniteCache<Integer, CdcSelfTest.User> cache,
+        IgniteCache<Integer, CdcSelfTest.User> txCache,
+        CI3<IgniteCache<Integer, CdcSelfTest.User>, Integer, Integer> addData,
         int from,
         int to,
         long timeout
@@ -99,7 +99,7 @@ public abstract class AbstractChangeDataCaptureTest extends GridCommonAbstractTe
     public boolean waitForSize(
         int expSz,
         String cacheName,
-        ChangeDataCaptureSelfTest.ChangeEventType evtType,
+        CdcSelfTest.ChangeEventType evtType,
         long timeout,
         TestCdcConsumer<?>... cnsmrs
     ) throws IgniteInterruptedCheckedException {
@@ -112,8 +112,8 @@ public abstract class AbstractChangeDataCaptureTest extends GridCommonAbstractTe
     }
 
     /** */
-    public ChangeDataCaptureConfiguration cdcConfig(ChangeDataCaptureConsumer cnsmr) {
-        ChangeDataCaptureConfiguration cdcCfg = new ChangeDataCaptureConfiguration();
+    public CdcConfiguration cdcConfig(CdcConsumer cnsmr) {
+        CdcConfiguration cdcCfg = new CdcConfiguration();
 
         cdcCfg.setConsumer(cnsmr);
         cdcCfg.setKeepBinary(false);
@@ -122,7 +122,7 @@ public abstract class AbstractChangeDataCaptureTest extends GridCommonAbstractTe
     }
 
     /** */
-    public abstract static class TestCdcConsumer<T> implements ChangeDataCaptureConsumer {
+    public abstract static class TestCdcConsumer<T> implements CdcConsumer {
         /** Keys */
         final ConcurrentMap<IgniteBiTuple<ChangeEventType, Integer>, List<T>> data = new ConcurrentHashMap<>();
 
@@ -140,7 +140,7 @@ public abstract class AbstractChangeDataCaptureTest extends GridCommonAbstractTe
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onEvents(Iterator<ChangeDataCaptureEvent> evts) {
+        @Override public boolean onEvents(Iterator<CdcEvent> evts) {
             evts.forEachRemaining(evt -> {
                 if (!evt.primary())
                     return;
@@ -156,10 +156,10 @@ public abstract class AbstractChangeDataCaptureTest extends GridCommonAbstractTe
         }
 
         /** */
-        public abstract void checkEvent(ChangeDataCaptureEvent evt);
+        public abstract void checkEvent(CdcEvent evt);
 
         /** */
-        public abstract T extract(ChangeDataCaptureEvent evt);
+        public abstract T extract(CdcEvent evt);
 
         /** */
         protected boolean commit() {
@@ -180,7 +180,7 @@ public abstract class AbstractChangeDataCaptureTest extends GridCommonAbstractTe
     /** */
     public static class UserCdcConsumer extends TestCdcConsumer<Integer> {
         /** {@inheritDoc} */
-        @Override public void checkEvent(ChangeDataCaptureEvent evt) {
+        @Override public void checkEvent(CdcEvent evt) {
             assertNull(evt.version().otherClusterVersion());
 
             if (evt.value() == null)
@@ -193,7 +193,7 @@ public abstract class AbstractChangeDataCaptureTest extends GridCommonAbstractTe
         }
 
         /** {@inheritDoc} */
-        @Override public Integer extract(ChangeDataCaptureEvent evt) {
+        @Override public Integer extract(CdcEvent evt) {
             return (Integer)evt.key();
         }
     }

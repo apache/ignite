@@ -21,7 +21,7 @@ import java.net.URL;
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.cdc.ChangeDataCapture;
+import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -30,17 +30,17 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
 
 /**
- * Utility class to load {@link ChangeDataCapture} from Spring XML configuration.
+ * Utility class to load {@link CdcMain} from Spring XML configuration.
  */
-public class ChangeDataCaptureLoader {
+public class CdcLoader {
     /**
-     * Loads {@link ChangeDataCapture} from XML configuration file.
+     * Loads {@link CdcMain} from XML configuration file.
      *
      * @param springXmlPath Path to XML configuration file.
      * @return {@code ChangeDataCapture} instance.
      * @throws IgniteCheckedException If failed.
      */
-    public static ChangeDataCapture loadChangeDataCapture(String springXmlPath) throws IgniteCheckedException {
+    public static CdcMain loadCdc(String springXmlPath) throws IgniteCheckedException {
         URL cfgUrl = U.resolveSpringUrl(springXmlPath);
 
         IgniteSpringHelper spring = SPRING.create(false);
@@ -54,8 +54,8 @@ public class ChangeDataCaptureLoader {
             );
         }
 
-        IgniteBiTuple<Collection<ChangeDataCaptureConfiguration>, ? extends GridSpringResourceContext> cdcCfgs =
-            spring.loadConfigurations(cfgUrl, ChangeDataCaptureConfiguration.class);
+        IgniteBiTuple<Collection<CdcConfiguration>, ? extends GridSpringResourceContext> cdcCfgs =
+            spring.loadConfigurations(cfgUrl, CdcConfiguration.class);
 
         if (cdcCfgs.get1().size() > 1) {
             throw new IgniteCheckedException(
@@ -64,7 +64,7 @@ public class ChangeDataCaptureLoader {
             );
         }
 
-        return new ChangeDataCapture(
+        return new CdcMain(
             cfgTuple.get1().iterator().next(),
             cfgTuple.get2(),
             cdcCfgs.get1().iterator().next()

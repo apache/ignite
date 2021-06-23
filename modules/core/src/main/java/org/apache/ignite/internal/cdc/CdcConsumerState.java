@@ -25,8 +25,8 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Iterator;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cdc.ChangeDataCaptureConsumer;
-import org.apache.ignite.cdc.ChangeDataCaptureEvent;
+import org.apache.ignite.cdc.CdcConsumer;
+import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
@@ -38,15 +38,15 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.WALPoi
 /**
  * Change Data Capture Consumer state.
  *
- * Each time {@link ChangeDataCaptureConsumer#onEvents(Iterator)} returns {@code true}
+ * Each time {@link CdcConsumer#onEvents(Iterator)} returns {@code true}
  * current offset in WAL segment saved to file.
- * This allows to the {@link ChangeDataCaptureConsumer} to continue consumption of the {@link ChangeDataCaptureEvent}
+ * This allows to the {@link CdcConsumer} to continue consumption of the {@link CdcEvent}
  * from the last saved offset in case of fail or restart.
  *
- * @see ChangeDataCaptureConsumer#onEvents(Iterator)
- * @see ChangeDataCapture
+ * @see CdcConsumer#onEvents(Iterator)
+ * @see CdcMain
  */
-public class ChangeDataCaptureConsumerState {
+public class CdcConsumerState {
     /** */
     public static final String STATE_FILE_NAME = "cdc-state" + FILE_SUFFIX;
 
@@ -59,7 +59,7 @@ public class ChangeDataCaptureConsumerState {
     /**
      * @param stateDir State directory.
      */
-    public ChangeDataCaptureConsumerState(Path stateDir) {
+    public CdcConsumerState(Path stateDir) {
         state = stateDir.resolve(STATE_FILE_NAME);
         tmp = stateDir.resolve(STATE_FILE_NAME + TMP_SUFFIX);
     }

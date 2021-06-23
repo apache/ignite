@@ -22,9 +22,9 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.cdc.ChangeDataCaptureConfiguration;
-import org.apache.ignite.cdc.ChangeDataCaptureLoader;
-import org.apache.ignite.internal.cdc.ChangeDataCapture;
+import org.apache.ignite.cdc.CdcConfiguration;
+import org.apache.ignite.cdc.CdcLoader;
+import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
 import org.apache.ignite.internal.util.typedef.X;
 import org.jetbrains.annotations.Nullable;
@@ -46,9 +46,9 @@ import static org.apache.ignite.startup.cmdline.CommandLineStartup.isHelp;
  * this startup and you can use them as an example.
  * <p>
  *
- * @see ChangeDataCapture
+ * @see CdcMain
  */
-public class ChangeDataCaptureCommandLineStartup {
+public class CdcCommandLineStartup {
     /** Quite log flag. */
     private static final boolean QUITE = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_QUIET);
 
@@ -80,10 +80,10 @@ public class ChangeDataCaptureCommandLineStartup {
         if (args.length > 0 && args[0].charAt(0) == '-')
             exit("Invalid arguments: " + args[0], true, -1);
 
-        AtomicReference<ChangeDataCapture> cdc = new AtomicReference<>();
+        AtomicReference<CdcMain> cdc = new AtomicReference<>();
 
         try {
-            cdc.set(ChangeDataCaptureLoader.loadChangeDataCapture(args[0]));
+            cdc.set(CdcLoader.loadCdc(args[0]));
 
             if (!IgniteSystemProperties.getBoolean(IGNITE_NO_SHUTDOWN_HOOK, false)) {
                 Runtime.getRuntime().addShutdownHook(new Thread("cdc-shutdown-hook") {
@@ -121,16 +121,16 @@ public class ChangeDataCaptureCommandLineStartup {
      * @return CDC consumer defined in spring configuration.
      * @throws IgniteCheckedException in case of load error.
      */
-    private static ChangeDataCaptureConfiguration consumerConfig(
+    private static CdcConfiguration consumerConfig(
         URL cfgUrl,
         IgniteSpringHelper spring
     ) throws IgniteCheckedException {
-        Map<Class<?>, Object> cdcCfgs = spring.loadBeans(cfgUrl, ChangeDataCaptureConfiguration.class);
+        Map<Class<?>, Object> cdcCfgs = spring.loadBeans(cfgUrl, CdcConfiguration.class);
 
         if (cdcCfgs == null || cdcCfgs.size() != 1)
             exit("Exact 1 CaptureDataChangeConfiguration configuration should be defined", false, 1);
 
-        return (ChangeDataCaptureConfiguration)cdcCfgs.values().iterator().next();
+        return (CdcConfiguration)cdcCfgs.values().iterator().next();
     }
 
     /**

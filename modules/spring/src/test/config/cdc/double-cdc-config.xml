@@ -26,5 +26,5 @@
         http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
     <import resource="correct-cdc-config.xml" />
 
-    <bean id="cdc.cfg2" class="org.apache.ignite.cdc.ChangeDataCaptureConfiguration" />
+    <bean id="cdc.cfg2" class="org.apache.ignite.cdc.CdcConfiguration" />
 </beans>
