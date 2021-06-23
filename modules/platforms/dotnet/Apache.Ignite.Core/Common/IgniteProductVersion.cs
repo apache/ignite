@@ -155,7 +155,7 @@ namespace Apache.Ignite.Core.Common
             string hash = null;
             if (RevisionHash != null)
             {
-                hash = BitConverter.ToString(RevisionHash).Replace("-", "")
+                hash = BitConverter.ToString(RevisionHash).Replace("-", "", StringComparison.Ordinal)
                     .ToLowerInvariant()
                     .Substring(0, Math.Min(RevisionHash.Length, 8));
             }
