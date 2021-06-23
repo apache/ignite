@@ -469,9 +469,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 "write ahead log archive directory"
             );
 
-            if (dsCfg.isChangeDataCaptureEnabled()) {
+            if (dsCfg.isCdcEnabled()) {
                 walCdcDir = initDirectory(
-                    dsCfg.getChangeDataCaptureWalPath(),
+                    dsCfg.getCdcWalPath(),
                     DataStorageConfiguration.DFLT_WAL_CDC_PATH,
                     resolveFolders.folderName(),
                     "change data capture directory"
@@ -2036,7 +2036,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 Files.move(dstTmpFile.toPath(), dstFile.toPath());
 
-                if (dsCfg.isChangeDataCaptureEnabled())
+                if (dsCfg.isCdcEnabled())
                     Files.createLink(walCdcDir.toPath().resolve(dstFile.getName()), dstFile.toPath());
 
                 if (mode != WALMode.NONE) {

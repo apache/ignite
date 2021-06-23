@@ -29,7 +29,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.cdc.ChangeDataCapture;
+import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
@@ -56,7 +56,7 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
-public class ChangeDataCaptureCacheVersionTest extends AbstractChangeDataCaptureTest {
+public class CdcCacheVersionTest extends AbstractCdcTest {
     /** */
     public static final String FOR_OTHER_CLUSTER_ID = "for-other-cluster-id";
 
@@ -74,7 +74,7 @@ public class ChangeDataCaptureCacheVersionTest extends AbstractChangeDataCapture
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-            .setChangeDataCaptureEnabled(true)
+            .setCdcEnabled(true)
             .setWalForceArchiveTimeout(WAL_ARCHIVE_TIMEOUT)
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)));
 
@@ -112,13 +112,13 @@ public class ChangeDataCaptureCacheVersionTest extends AbstractChangeDataCapture
         ign.cluster().state(ACTIVE);
 
         UserCdcConsumer cnsmr = new UserCdcConsumer() {
-            @Override public void checkEvent(ChangeDataCaptureEvent evt) {
+            @Override public void checkEvent(CdcEvent evt) {
                 assertEquals(DFLT_CLUSTER_ID, evt.version().clusterId());
                 assertEquals(OTHER_CLUSTER_ID, evt.version().otherClusterVersion().clusterId());
             }
         };
 
-        ChangeDataCapture cdc = new ChangeDataCapture(cfg, null, cdcConfig(cnsmr));
+        CdcMain cdc = new CdcMain(cfg, null, cdcConfig(cnsmr));
 
         IgniteCache<Integer, User> cache = ign.getOrCreateCache(FOR_OTHER_CLUSTER_ID);
 
@@ -136,10 +136,10 @@ public class ChangeDataCaptureCacheVersionTest extends AbstractChangeDataCapture
 
         AtomicLong updCntr = new AtomicLong(0);
 
-        ChangeDataCaptureConsumer cnsmr = new ChangeDataCaptureConsumer() {
+        CdcConsumer cnsmr = new CdcConsumer() {
             private long order = -1;
 
-            @Override public boolean onEvents(Iterator<ChangeDataCaptureEvent> evts) {
+            @Override public boolean onEvents(Iterator<CdcEvent> evts) {
                 evts.forEachRemaining(evt -> {
                     assertEquals(KEY_TO_UPD, evt.key());
 
@@ -162,7 +162,7 @@ public class ChangeDataCaptureCacheVersionTest extends AbstractChangeDataCapture
             }
         };
 
-        ChangeDataCapture cdc = new ChangeDataCapture(cfg, null, cdcConfig(cnsmr));
+        CdcMain cdc = new CdcMain(cfg, null, cdcConfig(cnsmr));
 
         IgniteCache<Integer, User> cache = ign.getOrCreateCache("my-cache");
 

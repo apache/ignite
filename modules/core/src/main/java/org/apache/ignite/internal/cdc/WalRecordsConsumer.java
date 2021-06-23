@@ -22,8 +22,8 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cdc.ChangeDataCaptureConsumer;
-import org.apache.ignite.cdc.ChangeDataCaptureEvent;
+import org.apache.ignite.cdc.CdcConsumer;
+import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.UnwrappedDataEntry;
@@ -38,17 +38,17 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 
 /**
- * Transform {@link DataEntry} to {@link ChangeDataCaptureEvent} and sends it to {@link ChangeDataCaptureConsumer}.
+ * Transform {@link DataEntry} to {@link CdcEvent} and sends it to {@link CdcConsumer}.
  *
- * @see ChangeDataCapture
- * @see ChangeDataCaptureConsumer
+ * @see CdcMain
+ * @see CdcConsumer
  */
 public class WalRecordsConsumer<K, V> {
     /** Ignite logger. */
     private final IgniteLogger log;
 
     /** Data change events consumer. */
-    private final ChangeDataCaptureConsumer consumer;
+    private final CdcConsumer consumer;
 
     /** Operations types we interested in. */
     private static final EnumSet<GridCacheOperation> OPERATIONS_TYPES = EnumSet.of(CREATE, UPDATE, DELETE, TRANSFORM);
@@ -69,7 +69,7 @@ public class WalRecordsConsumer<K, V> {
      * @param consumer User provided CDC consumer.
      * @param log Logger.
      */
-    public WalRecordsConsumer(ChangeDataCaptureConsumer consumer, IgniteLogger log) {
+    public WalRecordsConsumer(CdcConsumer consumer, IgniteLogger log) {
         this.consumer = consumer;
         this.log = log;
     }
@@ -83,9 +83,9 @@ public class WalRecordsConsumer<K, V> {
      * @return {@code True} if current offset in WAL should be commited.
      */
     public boolean onRecords(Iterator<DataRecord> recs) {
-        Iterator<ChangeDataCaptureEvent> evts = new Iterator<ChangeDataCaptureEvent>() {
+        Iterator<CdcEvent> evts = new Iterator<CdcEvent>() {
             /** */
-            private Iterator<ChangeDataCaptureEvent> entries;
+            private Iterator<CdcEvent> entries;
 
             @Override public boolean hasNext() {
                 advance();
@@ -93,7 +93,7 @@ public class WalRecordsConsumer<K, V> {
                 return hasCurrent();
             }
 
-            @Override public ChangeDataCaptureEvent next() {
+            @Override public CdcEvent next() {
                 advance();
 
                 if (!hasCurrent())
@@ -122,10 +122,10 @@ public class WalRecordsConsumer<K, V> {
             }
 
             /** */
-            private ChangeDataCaptureEvent transform(DataEntry e) {
+            private CdcEvent transform(DataEntry e) {
                 UnwrappedDataEntry ue = (UnwrappedDataEntry)e;
 
-                return new ChangeDataCaptureEventImpl(
+                return new CdcEventImpl(
                     ue.unwrappedKey(),
                     ue.unwrappedValue(),
                     (e.flags() & DataEntry.PRIMARY_FLAG) != 0,
@@ -163,7 +163,7 @@ public class WalRecordsConsumer<K, V> {
     }
 
     /** @return Change Data Capture Consumer. */
-    public ChangeDataCaptureConsumer consumer() {
+    public CdcConsumer consumer() {
         return consumer;
     }
 

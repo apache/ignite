@@ -32,14 +32,14 @@
                         <property name="persistenceEnabled" value="true" />
                     </bean>
                 </property>
-                <property name="changeDataCaptureEnabled" value="true" />
+                <property name="cdcEnabled" value="true" />
             </bean>
         </property>
     </bean>
 
-    <bean id="cdc.cfg" class="org.apache.ignite.cdc.ChangeDataCaptureConfiguration">
+    <bean id="cdc.cfg" class="org.apache.ignite.cdc.CdcConfiguration">
         <property name="consumer">
-            <bean class="org.apache.ignite.cdc.ChangeDataCaptureConfigurationTest$TestCdcConsumer" />
+            <bean class="org.apache.ignite.cdc.CdcConfigurationTest$TestCdcConsumer" />
         </property>
     </bean>
 

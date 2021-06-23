@@ -25,7 +25,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.cdc.ChangeDataCapture;
+import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.cdc.WalRecordsConsumer;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.resources.SpringApplicationContextResource;
@@ -35,33 +35,33 @@ import org.junit.Test;
 import org.springframework.context.ApplicationContext;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.apache.ignite.cdc.ChangeDataCaptureLoader.loadChangeDataCapture;
-import static org.apache.ignite.internal.cdc.ChangeDataCapture.ERR_MSG;
+import static org.apache.ignite.cdc.CdcLoader.loadCdc;
+import static org.apache.ignite.internal.cdc.CdcMain.ERR_MSG;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /** */
-public class ChangeDataCaptureConfigurationTest extends GridCommonAbstractTest {
+public class CdcConfigurationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testLoadConfig() throws Exception {
         assertThrows(
             null,
-            () -> loadChangeDataCapture("modules/spring/src/test/config/cdc/double-ignite-config.xml"),
+            () -> loadCdc("modules/spring/src/test/config/cdc/double-ignite-config.xml"),
             IgniteCheckedException.class,
             "Exact 1 IgniteConfiguration should be defined. Found 2"
         );
 
         assertThrows(
             null,
-            () -> loadChangeDataCapture("modules/spring/src/test/config/cdc/double-cdc-config.xml"),
+            () -> loadCdc("modules/spring/src/test/config/cdc/double-cdc-config.xml"),
             IgniteCheckedException.class,
             "Exact 1 CaptureDataChangeConfiguration configuration should be defined. Found 2"
         );
 
-        ChangeDataCapture cdc =
-            loadChangeDataCapture("modules/spring/src/test/config/cdc/cdc-config-without-persistence.xml");
+        CdcMain cdc =
+            loadCdc("modules/spring/src/test/config/cdc/cdc-config-without-persistence.xml");
 
         assertNotNull(cdc);
 
@@ -71,8 +71,8 @@ public class ChangeDataCaptureConfigurationTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testInjectResources() throws Exception {
-        ChangeDataCapture cdc =
-            loadChangeDataCapture("modules/spring/src/test/config/cdc/correct-cdc-config.xml");
+        CdcMain cdc =
+            loadCdc("modules/spring/src/test/config/cdc/correct-cdc-config.xml");
 
         try (IgniteEx ign = startGrid((IgniteConfiguration)getFieldValue(cdc, "igniteCfg"))) {
             TestCdcConsumer cnsmr =
@@ -101,7 +101,7 @@ public class ChangeDataCaptureConfigurationTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public static class TestCdcConsumer implements ChangeDataCaptureConsumer {
+    public static class TestCdcConsumer implements CdcConsumer {
         /** */
         @LoggerResource
         private IgniteLogger log;
@@ -128,7 +128,7 @@ public class ChangeDataCaptureConfigurationTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onEvents(Iterator<ChangeDataCaptureEvent> events) {
+        @Override public boolean onEvents(Iterator<CdcEvent> events) {
             return false;
         }
 

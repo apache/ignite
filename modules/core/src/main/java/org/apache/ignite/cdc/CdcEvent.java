@@ -20,7 +20,7 @@ package org.apache.ignite.cdc;
 import java.io.Serializable;
 import org.apache.ignite.cache.CacheEntryVersion;
 import org.apache.ignite.cache.affinity.Affinity;
-import org.apache.ignite.internal.cdc.ChangeDataCapture;
+import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.spi.systemview.view.CacheView;
 import org.jetbrains.annotations.Nullable;
@@ -29,11 +29,11 @@ import org.jetbrains.annotations.Nullable;
  * Event of single entry change.
  * Instance presents new value of modified entry.
  *
- * @see ChangeDataCapture
- * @see ChangeDataCaptureConsumer
+ * @see CdcMain
+ * @see CdcConsumer
  */
 @IgniteExperimental
-public interface ChangeDataCaptureEvent extends Serializable {
+public interface CdcEvent extends Serializable {
     /**
      * @return Key for the changed entry.
      */
@@ -54,7 +54,7 @@ public interface ChangeDataCaptureEvent extends Serializable {
 
     /**
      * Ignite split dataset into smaller chunks to distribute them across the cluster.
-     * {@link ChangeDataCaptureConsumer} implementations can use {@link #partition()} to split changes processing
+     * {@link CdcConsumer} implementations can use {@link #partition()} to split changes processing
      * in the same way as it done for the cache.
      *
      * @return Partition number.

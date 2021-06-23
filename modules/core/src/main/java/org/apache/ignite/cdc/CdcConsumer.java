@@ -20,13 +20,13 @@ package org.apache.ignite.cdc;
 import java.util.Iterator;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheEntryVersion;
-import org.apache.ignite.internal.cdc.ChangeDataCapture;
+import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.resources.LoggerResource;
 
 /**
  * Consumer of WAL data change events.
- * This consumer will receive data change events during {@link ChangeDataCapture} application invocation.
+ * This consumer will receive data change events during {@link CdcMain} application invocation.
  * The lifecycle of the consumer is the following:
  * <ul>
  *     <li>Start of the consumer {@link #start()}.</li>
@@ -44,15 +44,15 @@ import org.apache.ignite.resources.LoggerResource;
  * }
  * }</pre>
  *
- * Note, consumption of the {@link ChangeDataCaptureEvent} will be started from the last saved offset.
+ * Note, consumption of the {@link CdcEvent} will be started from the last saved offset.
  * The offset of consumptions is saved on the disk every time {@link #onEvents(Iterator)} returns {@code true}.
  *
- * @see ChangeDataCapture
- * @see ChangeDataCaptureEvent
+ * @see CdcMain
+ * @see CdcEvent
  * @see CacheEntryVersion
  */
 @IgniteExperimental
-public interface ChangeDataCaptureConsumer {
+public interface CdcConsumer {
     /**
      * Starts the consumer.
      */
@@ -67,7 +67,7 @@ public interface ChangeDataCaptureConsumer {
      * @return {@code True} if current offset should be saved on the disk
      * to continue from it in case any failures or restart.
      */
-    public boolean onEvents(Iterator<ChangeDataCaptureEvent> events);
+    public boolean onEvents(Iterator<CdcEvent> events);
 
     /**
      * Stops the consumer.

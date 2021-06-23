@@ -20,9 +20,9 @@ package org.apache.ignite.internal.cdc;
 import java.util.List;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cdc.AbstractChangeDataCaptureTest;
-import org.apache.ignite.cdc.ChangeDataCaptureConfiguration;
-import org.apache.ignite.cdc.ChangeDataCaptureEvent;
+import org.apache.ignite.cdc.AbstractCdcTest;
+import org.apache.ignite.cdc.CdcConfiguration;
+import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -30,14 +30,14 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.junit.Test;
 
-import static org.apache.ignite.cdc.AbstractChangeDataCaptureTest.ChangeEventType.DELETE;
-import static org.apache.ignite.cdc.AbstractChangeDataCaptureTest.ChangeEventType.UPDATE;
+import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.DELETE;
+import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.UPDATE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /** */
-public class SqlChangeDataCaptureTest extends AbstractChangeDataCaptureTest {
+public class SqlCdcTest extends AbstractCdcTest {
     /** */
     private static final String SARAH = "Sarah Connor";
 
@@ -58,7 +58,7 @@ public class SqlChangeDataCaptureTest extends AbstractChangeDataCaptureTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-            .setChangeDataCaptureEnabled(true)
+            .setCdcEnabled(true)
             .setWalForceArchiveTimeout(WAL_ARCHIVE_TIMEOUT)
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)));
 
@@ -76,11 +76,11 @@ public class SqlChangeDataCaptureTest extends AbstractChangeDataCaptureTest {
 
         BinaryCdcConsumer cnsmr = new BinaryCdcConsumer();
 
-        ChangeDataCaptureConfiguration cdcCfg = new ChangeDataCaptureConfiguration();
+        CdcConfiguration cdcCfg = new CdcConfiguration();
 
         cdcCfg.setConsumer(cnsmr);
 
-        ChangeDataCapture cdc = new ChangeDataCapture(cfg, null, cdcCfg);
+        CdcMain cdc = new CdcMain(cfg, null, cdcCfg);
 
         IgniteInternalFuture<?> fut = runAsync(cdc);
 
@@ -133,9 +133,9 @@ public class SqlChangeDataCaptureTest extends AbstractChangeDataCaptureTest {
     }
 
     /** */
-    public static class BinaryCdcConsumer extends TestCdcConsumer<ChangeDataCaptureEvent> {
+    public static class BinaryCdcConsumer extends TestCdcConsumer<CdcEvent> {
         /** {@inheritDoc} */
-        @Override public void checkEvent(ChangeDataCaptureEvent evt) {
+        @Override public void checkEvent(CdcEvent evt) {
             if (evt.value() == null)
                 return;
 
@@ -167,7 +167,7 @@ public class SqlChangeDataCaptureTest extends AbstractChangeDataCaptureTest {
         }
 
         /** {@inheritDoc} */
-        @Override public ChangeDataCaptureEvent extract(ChangeDataCaptureEvent evt) {
+        @Override public CdcEvent extract(CdcEvent evt) {
             return evt;
         }
     }
