@@ -99,10 +99,6 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         return valBuilder;
     }
 
-    @Override protected long getTestTimeout() {
-        return 2 * 60 * 1000;
-    }
-
     /** @throws Exception If failed. */
     @Test
     public void testRestoreAllGroups() throws Exception {
@@ -516,9 +512,8 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         GridTestUtils.assertThrowsAnyCause(
             log,
             () -> startGrid(3),
-            encryption ? IllegalStateException.class : IgniteSpiException.class,
-            encryption ? "Make sure the cache exists in the cluster or current node has no cache persistent data" :
-                "to add the node to cluster - remove directories with the caches"
+            encryption ? IgniteCheckedException.class : IgniteSpiException.class,
+            "to add the node to cluster - remove directories with the caches"
         );
     }
 

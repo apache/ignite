@@ -236,6 +236,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Total number of thread to perform local snapshot. */
     private static final int SNAPSHOT_THREAD_POOL_SIZE = 4;
 
+    /** Name prefix to save cache group encryption keys in snapshot meta. */
+    private static final String SNAPSHOT_META_GRP_KEY_PREFIX = "CacheGrpEncrKey_";
+
+    /** Name of master encryption key signature in snapshot meta. */
+    private static final String SNAPSHOT_META_MASTER_KEY_SIGN = "MasterKeySign";
+
     /**
      * Local buffer to perform copy-on-write operations with pages for {@code SnapshotFutureTask.PageStoreSerialWriter}s.
      * It is important to have only only buffer per thread (instead of creating each buffer per
@@ -286,8 +292,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Factory to working with delta as file storage. */
     private volatile FileIOFactory ioFactory = new RandomAccessFileIOFactory();
 
-    /** Factory to create page store for restore. */
-//    private volatile BiFunction<Integer, Boolean, FileVersionCheckingFactory> storeFactory;
+    /** File manager to create page store for restore. */
     private volatile FilePageStoreManager storeMgr;
 
     /** Snapshot thread pool to perform local partition snapshots. */
@@ -369,7 +374,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         assert cctx.pageStore() instanceof FilePageStoreManager;
 
-//        FilePageStoreManager storeMgr = (FilePageStoreManager)cctx.pageStore();
         storeMgr = (FilePageStoreManager)cctx.pageStore();
 
         pdsSettings = cctx.kernalContext().pdsFolderResolver().resolveFolders();
@@ -396,8 +400,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         mreg.register("LocalSnapshotNames", this::localSnapshotNames, List.class,
             "The list of names of all snapshots currently saved on the local node with respect to " +
                 "the configured via IgniteConfiguration snapshot working path.");
-
-//        storeFactory = storeMgr::getPageStoreFactory;
 
         cctx.exchange().registerExchangeAwareComponent(this);
         ctx.internalSubscriptionProcessor().registerMetastorageListener(this);
@@ -639,30 +641,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 smf.getParentFile().mkdirs();
 
-                //TODO : log debug cache not present on this node
-                //Node might have no certain cache deployed due to the node filter.
-                Map<Integer, byte[]> encrGrpKeys =
-                    grpIds.stream().filter(gid -> cctx.cache().cacheGroup(gid) != null && cctx.cache().isEncrypted(gid)).collect(
-                        Collectors.toMap(Function.identity(), gid -> cctx.gridConfig().getEncryptionSpi()
-                            .encryptKey(cctx.kernalContext().encryption().getActiveKey(gid).key())));
-
-                for(Integer gid : grpIds){
-                    if(gid != METASTORAGE_CACHE_ID && cctx.cache().cacheGroup(gid) == null )
-                        System.err.println("TEST | gid " + gid + " not exists on node " + cctx.kernalContext().localNodeId());
-                }
-
                 try (OutputStream out = new BufferedOutputStream(new FileOutputStream(smf))) {
                     U.marshal(marsh,
-                        new SnapshotMetadata(req.requestId(),
+                        //Store encryption keys to have ability to verify/restore snapshot without restart and without
+                        //manual data files (and metastore) replacing.
+                        addEncrKeys(new SnapshotMetadata(req.requestId(),
                             req.snapshotName(),
                             cctx.localNode().consistentId().toString(),
                             pdsSettings.folderName(),
                             cctx.gridConfig().getDataStorageConfiguration().getPageSize(),
                             grpIds,
-                            encrGrpKeys,
-                            encrGrpKeys.isEmpty() ? null : cctx.gridConfig().getEncryptionSpi().masterKeyDigest(),
                             blts,
-                            fut.result()),
+                            fut.result())),
                         out);
 
                     log.info("Snapshot metafile has been created: " + smf.getAbsolutePath());
@@ -1319,7 +1309,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param folderName The node folder name, usually it's the same as the U.maskForFileName(consistentId).
      * @param grpName Cache group name.
      * @param partId Partition id.
-     * @param encrKeyProvider Encryption key provider. If {@code null}, no encription is used.
+     * @param encrKeyProvider Encryption key provider for encrypted IO. If {@code null}, no encrypted IO is used.
      * @return Iterator over partition.
      * @throws IgniteCheckedException If and error occurs.
      */
@@ -1405,10 +1395,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (locSnpTasks.containsKey(snpName))
                 return new SnapshotFutureTask(new IgniteCheckedException("Snapshot with requested name is already scheduled: " + snpName));
 
-            for (Integer grpId : parts.keySet())
-                if (!withMetaStorage && cctx.cache().isEncrypted(grpId))
+            for (Integer grpId : parts.keySet()) {
+                if (!withMetaStorage && cctx.cache().isEncrypted(grpId)) {
                     return new SnapshotFutureTask(new IgniteCheckedException("Snapshot contains encrypted cache group " + grpId +
-                        ". Snapshot must must include metastore."));
+                        " but doesn't include metastore. Metastore is requird because it contains encryption keys required to start with " +
+                        "encrypted caches contained in the snapshot."));
+                }
+            }
 
             SnapshotFutureTask snpFutTask;
 
@@ -1506,6 +1499,52 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     FileIOFactory ioFactory() {
         return ioFactory;
+    }
+
+    /**
+     * If {@code snpMeta} contains encrypted cache groups, additionally stores active encryption keys.
+     *
+     * @return {@code snpMeta}.
+     */
+    private SnapshotMetadata addEncrKeys(SnapshotMetadata snpMeta) {
+        Map<Integer, byte[]> encrGrpKeys =
+            snpMeta.cacheGroupIds().stream().filter(gid -> cctx.cache().cacheGroup(gid) != null && cctx.cache().isEncrypted(gid)).collect(
+                Collectors.toMap(Function.identity(), gid -> cctx.gridConfig().getEncryptionSpi()
+                    .encryptKey(cctx.kernalContext().encryption().getActiveKey(gid).key())));
+
+        if (!encrGrpKeys.isEmpty()) {
+            snpMeta.addMetaRecord(SNAPSHOT_META_MASTER_KEY_SIGN, cctx.gridConfig().getEncryptionSpi().masterKeyDigest());
+
+            encrGrpKeys.forEach((key, value) -> snpMeta.addMetaRecord(SNAPSHOT_META_GRP_KEY_PREFIX + key, value));
+        }
+
+        return snpMeta;
+    }
+
+    /**
+     * @return Cache group encription keys stored in {@code snpMeta}. If no encrypted cache groups stored in {@code snpMeta}, returns empty
+     * map.
+     */
+    static Map<Integer, byte[]> snapshotEncrKeys(SnapshotMetadata snpMeta) {
+        if (snpMeta.metaRecord(SNAPSHOT_META_MASTER_KEY_SIGN) == null)
+            return Collections.emptyMap();
+
+        Map<Integer, byte[]> keys = new HashMap<>();
+
+        snpMeta.allMetaRecords().forEach((name, val) -> {
+            if (name.startsWith(SNAPSHOT_META_GRP_KEY_PREFIX))
+                keys.put(Integer.valueOf(name.substring(SNAPSHOT_META_GRP_KEY_PREFIX.length())), (byte[])val);
+        });
+
+        return keys;
+    }
+
+    /**
+     * @return Signature of master encryption key stored in {@code snpMeta}. {@code Null} if no encripted cache groups stored in {@code
+     * snpMeta}.
+     */
+    static byte[] snapshotMasterSign(SnapshotMetadata snpMeta) {
+        return (byte[])snpMeta.metaRecord(SNAPSHOT_META_MASTER_KEY_SIGN);
     }
 
     /**
@@ -1909,43 +1948,42 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             boolean encrypted = cctx.cache().isEncrypted(pair.getGroupId());
 
-            FileIOFactory deltaIOFactory = encrypted ?
-                ((FilePageStoreManager)cctx.pageStore()).getEncryptedFileIoFactory(ioFactory, pair.getGroupId()) :
-                ioFactory;
+            FileIOFactory ioFactory = encrypted ?
+                ((FilePageStoreManager)cctx.pageStore()).getEncryptedFileIoFactory(IgniteSnapshotManager.this.ioFactory, pair.getGroupId()) :
+                IgniteSnapshotManager.this.ioFactory;
 
-            try (FileIO deltaIO = deltaIOFactory.create(delta, READ);
+            try (FileIO fileIo = ioFactory.create(delta, READ);
                  FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(pair.getGroupId(), encrypted)
-                     .createPageStore(getTypeByPartId(pair.getPartitionId()), snpPart::toPath, v -> {})
+                     .createPageStore(getTypeByPartId(pair.getPartitionId()), snpPart::toPath, v -> {
+                     })
             ) {
-                ByteBuffer deltaPageBuf = ByteBuffer.allocate(pageSize)
+                ByteBuffer pageBuf = ByteBuffer.allocate(pageSize)
                     .order(ByteOrder.nativeOrder());
 
-                long totalBytes = deltaIO.size();
+                long totalBytes = fileIo.size();
 
-                assert totalBytes % pageSize == 0 : "Given file with delta pages has incorrect size: " + deltaIO.size();
+                assert totalBytes % pageSize == 0 : "Given file with delta pages has incorrect size: " + fileIo.size();
 
                 pageStore.beginRecover();
 
                 for (long pos = 0; pos < totalBytes; pos += pageSize) {
-                    long read = deltaIO.readFully(deltaPageBuf, pos);
+                    long read = fileIo.readFully(pageBuf, pos);
 
-                    assert read == deltaPageBuf.capacity();
+                    assert read == pageBuf.capacity();
 
-                    deltaPageBuf.flip();
+                    pageBuf.flip();
 
-                    if (log.isInfoEnabled()) {
-                        log.info("Read page given delta file [path=" + delta.getName() +
-                            ", pageId=" + PageIO.getPageId(deltaPageBuf) + ", pos=" + pos + ", pages=" + (totalBytes / pageSize) +
-                            ", crcBuff=" + FastCrc.calcCrc(deltaPageBuf, deltaPageBuf.limit()) + ", crcPage=" + PageIO.getCrc(deltaPageBuf) + ']');
+                    if (log.isDebugEnabled()) {
+                        log.debug("Read page given delta file [path=" + delta.getName() +
+                            ", pageId=" + PageIO.getPageId(pageBuf) + ", pos=" + pos + ", pages=" + (totalBytes / pageSize) +
+                            ", crcBuff=" + FastCrc.calcCrc(pageBuf, pageBuf.limit()) + ", crcPage=" + PageIO.getCrc(pageBuf) + ']');
 
-                        deltaPageBuf.rewind();
+                        pageBuf.rewind();
                     }
 
-                    deltaPageBuf.rewind();
+                    pageStore.write(PageIO.getPageId(pageBuf), pageBuf, 0, false);
 
-                    pageStore.write(PageIO.getPageId(deltaPageBuf), deltaPageBuf, 0, false);
-
-                    deltaPageBuf.flip();
+                    pageBuf.flip();
                 }
 
                 pageStore.finishRecover();

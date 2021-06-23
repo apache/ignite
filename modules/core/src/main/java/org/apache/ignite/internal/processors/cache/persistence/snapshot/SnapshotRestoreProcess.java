@@ -667,7 +667,7 @@ public class SnapshotRestoreProcess {
         Map<Integer, StoredCacheData> cfgsById =
             cfgsByName.values().stream().collect(Collectors.toMap(v -> CU.cacheId(v.config().getName()), v -> v));
 
-        return new SnapshotRestoreContext(req, cacheDirs, cfgsById, meta.encrGroupKeys());
+        return new SnapshotRestoreContext(req, cacheDirs, cfgsById, IgniteSnapshotManager.snapshotEncrKeys(meta));
     }
 
     /**
@@ -748,8 +748,7 @@ public class SnapshotRestoreProcess {
 
         // We set the topology node IDs required to successfully start the cache, if any of the required nodes leave
         // the cluster during the cache startup, the whole procedure will be rolled back.
-        return ctx.cache().dynamicStartCachesByStoredConf(ccfgs, true, true, false,
-            IgniteUuid.fromUuid(reqId), opCtx0.encrGrpKeys);
+        return ctx.cache().dynamicStartCachesByStoredConf(ccfgs, true, true, false, IgniteUuid.fromUuid(reqId), opCtx0.encrGrpKeys);
     }
 
     /**
@@ -911,7 +910,7 @@ public class SnapshotRestoreProcess {
         /** Graceful shutdown future. */
         private volatile IgniteFuture<?> stopFut;
 
-        //TODO
+        /** Encrypted keys for encrypted cache groups. */
         private final Map<Integer, byte[]> encrGrpKeys;
 
         /**

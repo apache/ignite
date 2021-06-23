@@ -120,7 +120,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     /** Enable default data region persistence. */
     protected boolean persistence = true;
 
-    /** TODO */
+    /** Enable encryption of all caches in {@code IgniteConfiguration} before start. */
     protected volatile boolean encryption = true;
 
     /** {@inheritDoc} */
@@ -147,7 +147,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
             .setDiscoverySpi(discoSpi);
     }
 
-    //TODO
+    /** {@inheritDoc} */
     @Override protected Ignite startGrid(String igniteInstanceName, IgniteConfiguration cfg,
         GridSpringResourceContext ctx) throws Exception {
 
@@ -297,7 +297,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         int grids,
         int keys,
         Function<Integer, V> factory,
-        CacheConfiguration<?, ?>... ccfgs
+        CacheConfiguration<Integer, V>... ccfgs
     ) throws Exception {
         for (int g = 0; g < grids; g++)
             startGrid(optimize(getConfiguration(getTestIgniteInstanceName(g))
@@ -309,7 +309,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         ig.cluster().state(ClusterState.ACTIVE);
 
         for (int i = 0; i < keys; i++) {
-            for (CacheConfiguration<?, ?> ccfg : ccfgs)
+            for (CacheConfiguration<Integer, V> ccfg : ccfgs)
                 ig.getOrCreateCache(ccfg.getName()).put(i, factory.apply(i));
         }
 

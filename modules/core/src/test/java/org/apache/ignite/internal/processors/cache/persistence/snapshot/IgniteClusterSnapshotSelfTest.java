@@ -27,10 +27,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
@@ -332,10 +330,11 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         CacheConfiguration<Integer, Account> eastCcfg = txCacheConfig(new CacheConfiguration<>("east"));
         CacheConfiguration<Integer, Account> westCcfg = txCacheConfig(new CacheConfiguration<>("west"));
 
-        if(encryption)
-            startGridsWithCache(grids, clientsCnt, key -> new Account(key, balance), eastCcfg, westCcfg, dfltCacheCfg);
-        else
-            startGridsWithCache(grids, clientsCnt, key -> new Account(key, balance), eastCcfg, westCcfg);
+        startGridsWithCache(grids, clientsCnt, key -> new Account(key, balance), eastCcfg, westCcfg);
+
+        // To prevent encrypted cache creation from client, we create it on the server side.
+        if (encryption)
+            grid(0).getOrCreateCache(new CacheConfiguration<>(dfltCacheCfg).setEncryptionEnabled(true));
 
         Ignite client = startClientGrid(grids);
 

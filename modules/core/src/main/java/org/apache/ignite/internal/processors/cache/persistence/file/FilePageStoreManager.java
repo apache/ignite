@@ -676,17 +676,17 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
-     * @param grpId     Cache group id.
+     * @param grpId Cache group id.
      * @param encrypted {@code true} if cache group encryption enabled.
-     * @return Factory to create page stores with default internal encription keys.
+     * @return Factory to create page stores with stored internal encription keys.
      */
     public FileVersionCheckingFactory getPageStoreFactory(int grpId, boolean encrypted) {
         return getPageStoreFactory(grpId, encrypted ? cctx.kernalContext().encryption() : null);
     }
 
     /**
-     * @param grpId           Cache group id.
-     * @param encrKeyProvider Encryption key provider. If {@code null}, no encryption is used.
+     * @param grpId Cache group id.
+     * @param encrKeyProvider Encryption key provider for encrypted IO. If {@code null}, no encryption is used.
      * @return Factory to create page stores.
      */
     public FileVersionCheckingFactory getPageStoreFactory(int grpId, EncryptionCacheKeyProvider encrKeyProvider) {
@@ -1402,7 +1402,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
-     * @return TODO.
+     * @return Encrypted file IO factory.
      */
     public EncryptedFileIOFactory getEncryptedFileIoFactory(FileIOFactory plainFileIOFactory, int cacheGrpId,
         EncryptionCacheKeyProvider encrKeyProvider) {
@@ -1415,7 +1415,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
-     * @return TODO.
+     * @return Encrypted file IO factory with stored internal encryption keys.
      */
     public EncryptedFileIOFactory getEncryptedFileIoFactory(FileIOFactory plainFileIOFactory, int cacheGrpId) {
         return getEncryptedFileIoFactory(plainFileIOFactory, cacheGrpId, cctx.kernalContext().encryption());

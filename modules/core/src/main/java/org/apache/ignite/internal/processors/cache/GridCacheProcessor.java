@@ -3733,7 +3733,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
      * @param disabledAfterStart If true, cache proxies will be only activated after {@link #restartProxies()}.
      * @param restartId Restart requester id (it'll allow to start this cache only him).
-     * @param reuseEncrKeys If not empty, these keys will be used for the encrypted caches instead of new keys generated.
+     * @param reuseEncrKeys Encryption keys by cache group id. If not empty, will be added instead of new keys generation.
      * @return Future that will be completed when all caches are deployed.
      */
     public IgniteInternalFuture<Boolean> dynamicStartCachesByStoredConf(
@@ -3757,46 +3757,46 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         GridPlainClosure2<Collection<byte[]>, byte[], IgniteInternalFuture<Boolean>> startCacheClsr =
             (grpKeys, masterKeyDigest) -> {
-            List<DynamicCacheChangeRequest> srvReqs = null;
-            Map<String, DynamicCacheChangeRequest> clientReqs = null;
+                List<DynamicCacheChangeRequest> srvReqs = null;
+                Map<String, DynamicCacheChangeRequest> clientReqs = null;
 
-            Iterator<byte[]> grpKeysIter = grpKeys.iterator();
+                Iterator<byte[]> grpKeysIter = grpKeys.iterator();
 
-            for (StoredCacheData ccfg : storedCacheDataList) {
-                int gid = CU.cacheGroupId(ccfg.config().getName(), ccfg.config().getGroupName());
+                for (StoredCacheData ccfg : storedCacheDataList) {
+                    int gid = CU.cacheGroupId(ccfg.config().getName(), ccfg.config().getGroupName());
 
-                assert !ccfg.config().isEncryptionEnabled() || grpKeysIter.hasNext() || reuseEncrKeys.containsKey(gid);
+                    assert !ccfg.config().isEncryptionEnabled() || grpKeysIter.hasNext() || reuseEncrKeys.containsKey(gid);
 
-                DynamicCacheChangeRequest req = prepareCacheChangeRequest(
-                    ccfg.config(),
-                    ccfg.config().getName(),
-                    null,
-                    resolveCacheType(ccfg.config()),
-                    ccfg.sql(),
-                    failIfExists,
-                    true,
-                    restartId,
-                    disabledAfterStart,
-                    ccfg.queryEntities(),
-                    ccfg.config().isEncryptionEnabled() ? (reuseEncrKeys.containsKey(gid) ? reuseEncrKeys.get(gid) : grpKeysIter.next()) :
+                    DynamicCacheChangeRequest req = prepareCacheChangeRequest(
+                        ccfg.config(),
+                        ccfg.config().getName(),
                         null,
-                    ccfg.config().isEncryptionEnabled() ? masterKeyDigest : null);
+                        resolveCacheType(ccfg.config()),
+                        ccfg.sql(),
+                        failIfExists,
+                        true,
+                        restartId,
+                        disabledAfterStart,
+                        ccfg.queryEntities(),
+                        ccfg.config().isEncryptionEnabled() ? (reuseEncrKeys.containsKey(gid) ? reuseEncrKeys.get(gid) : grpKeysIter.next()) :
+                            null,
+                        ccfg.config().isEncryptionEnabled() ? masterKeyDigest : null);
 
-                if (req != null) {
-                    if (req.clientStartOnly()) {
-                        if (clientReqs == null)
-                            clientReqs = U.newLinkedHashMap(storedCacheDataList.size());
+                    if (req != null) {
+                        if (req.clientStartOnly()) {
+                            if (clientReqs == null)
+                                clientReqs = U.newLinkedHashMap(storedCacheDataList.size());
 
-                        clientReqs.put(req.cacheName(), req);
-                    }
-                    else {
-                        if (srvReqs == null)
-                            srvReqs = new ArrayList<>(storedCacheDataList.size());
+                            clientReqs.put(req.cacheName(), req);
+                        }
+                        else {
+                            if (srvReqs == null)
+                                srvReqs = new ArrayList<>(storedCacheDataList.size());
 
-                        srvReqs.add(req);
+                            srvReqs.add(req);
+                        }
                     }
                 }
-            }
 
             if (srvReqs == null && clientReqs == null)
                 return new GridFinishedFuture<>();
@@ -4019,8 +4019,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return CacheType.USER;
     }
 
-    //TODO:
-    public boolean isEncrypted(int cacheGrpId){
+    /**
+     * @return {@code True} if cache group {@code cacheGrpId} is encrypted. {@code False} otherwise.
+     */
+    public boolean isEncrypted(int cacheGrpId) {
         return cacheGrpId != MetaStorage.METASTORAGE_CACHE_ID && cacheGroup(cacheGrpId).config().isEncryptionEnabled();
     }
 

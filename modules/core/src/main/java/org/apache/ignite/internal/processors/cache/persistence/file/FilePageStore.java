@@ -509,9 +509,6 @@ public class FilePageStore implements PageStore {
                 ", allocated=" + allocated.get() + ", headerSize=" + headerSize() + ", cfgFile=" +
                 pathProvider.apply().toAbsolutePath();
 
-//            if(pageId==844420635164672L)
-//                System.err.println("TEST | reading page 844420635164672 with " + this.fileIO.getClass().getSimpleName() + ". Path: " + getFileAbsolutePath());
-
             int n = readWithFailover(pageBuf, off);
 
             // If page was not written yet, nothing to read.
@@ -705,9 +702,6 @@ public class FilePageStore implements PageStore {
     /** {@inheritDoc} */
     @Override public void write(long pageId, ByteBuffer pageBuf, int tag, boolean calculateCrc) throws IgniteCheckedException {
         init();
-
-//        if(pageId==844420635164672L)
-//            System.err.println("TEST | writting page 844420635164672 with " + this.fileIO.getClass().getSimpleName() + ". Path: " + getFileAbsolutePath());
 
         boolean interrupted = false;
 

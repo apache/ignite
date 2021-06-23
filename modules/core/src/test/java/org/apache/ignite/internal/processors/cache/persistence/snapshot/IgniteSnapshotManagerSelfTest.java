@@ -93,10 +93,10 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If fails. */
     @Test
     public void testSnapshotLocalPartitions() throws Exception {
-        IgniteEx ig = startGridsWithCache(1, 0, key -> new Account(key, key),
+        IgniteEx ig = startGridsWithCache(1, 4096, key -> new Account(key, key),
             new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
-        for (int i = 4096; i < 4097; i++) {
+        for (int i = 4096; i < 8192; i++) {
             ig.cache(DEFAULT_CACHE_NAME).put(i, new Account(i, i) {
                 @Override public String toString() {
                     return "_" + super.toString();
@@ -196,7 +196,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         SnapshotFutureTask snpFutTask = mgr.registerSnapshotTask(SNAPSHOT_NAME,
             cctx.localNodeId(),
             F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
-            true,
+            encryption,
             new DelegateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSenderFactory().apply(SNAPSHOT_NAME)) {
                 @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
                     try {

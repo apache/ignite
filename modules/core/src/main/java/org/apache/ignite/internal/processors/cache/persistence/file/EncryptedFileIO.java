@@ -212,22 +212,32 @@ public class EncryptedFileIO implements FileIO {
     private void encrypt(ByteBuffer srcBuf, ByteBuffer res) throws IOException {
         assert position() >= headerSize;
 
-        encUtil.encrypt(srcBuf, res, grpKey(groupId, 0));
+        try {
+            encUtil.encrypt(srcBuf, res, grpKey(groupId, 0));
+        }
+        catch (EncryptionKeyNotFoundException e) {
+            throw new IOException("Failed to encrypt data for cache group " + groupId + '.', e);
+        }
     }
 
-    //TODO
-    private GroupKey grpKey(int grpId, int keyId) {
+    /**
+     * Finds encryption key for cache group {@code grpId}.
+     *
+     * @return Encryption key if found.
+     * @throws {@code EncryptionKeyNotFoundException} if the key isn't found.
+     */
+    private GroupKey grpKey(int grpId, int keyId) throws EncryptionKeyNotFoundException {
         GroupKey key = keyProvider.groupKey(grpId, keyId);
 
         if (key == null)
-            throw new IllegalStateException("Unable to find " + (keyId == 0 ? "active encription key" : "encryption key #" + keyId) +
-                " for cache group " + grpId + ". Make sure the cache exists in the cluster or current node has no cache persistent data. " +
-                "Check the encription configuration.");
+            throw new EncryptionKeyNotFoundException(grpId, keyId);
 
         return key;
     }
 
-    /** TODO */
+    /**
+     * @return Encrypted data.
+     */
     private ByteBuffer encrypt(ByteBuffer srcBuf) throws IOException {
         ByteBuffer encrypted = ByteBuffer.allocate(pageSize);
 
@@ -245,7 +255,12 @@ public class EncryptedFileIO implements FileIO {
     private void decrypt(ByteBuffer encrypted, ByteBuffer destBuf) throws IOException {
         int keyId = encrypted.get(encryptedDataSize() + 4 /* CRC size. */) & 0xff;
 
-        encUtil.decrypt(encrypted, destBuf, grpKey(groupId, keyId));
+        try {
+            encUtil.decrypt(encrypted, destBuf, grpKey(groupId, keyId));
+        }
+        catch (EncryptionKeyNotFoundException e) {
+            throw new IOException("Faled to decrypt data for cache group " + groupId + '.', e);
+        }
     }
 
     /**

@@ -46,7 +46,6 @@ import org.apache.ignite.internal.managers.encryption.EncryptionCacheKeyProvider
 import org.apache.ignite.internal.managers.encryption.GroupKey;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
@@ -209,10 +208,9 @@ public class SnapshotPartitionsVerifyTask
             Set<Integer> grps = rqGrps.isEmpty() ? new HashSet<>(meta.partitions().keySet()) :
                 rqGrps.stream().map(CU::cacheId).collect(Collectors.toSet());
             Set<File> partFiles = new HashSet<>();
-//            MetaStorage snpMetaStorage = new MetaStorage(, new DataRegion(), true);
 
-            if (meta.encryption() &&
-                !Arrays.equals(meta.masterSign(), ignite.context().config().getEncryptionSpi().masterKeyDigest()))
+            if (IgniteSnapshotManager.snapshotMasterSign(meta) != null && !Arrays.equals(IgniteSnapshotManager.snapshotMasterSign(meta),
+                ignite.context().config().getEncryptionSpi().masterKeyDigest()))
                 throw new IgniteException("Snapshot '" + meta.snapshotName() + "' has different signature of its master key.");
 
             for (File dir : snpMgr.snapshotCacheDirectories(snpName, meta.folderName())) {
@@ -220,12 +218,6 @@ public class SnapshotPartitionsVerifyTask
 
                 if (!grps.remove(grpId))
                     continue;
-
-                CacheGroupContext grpCtx = ignite.context().cache().cacheGroup(grpId);
-
-                if (meta.isEncryptedGrp(grpId) && grpCtx != null && !grpCtx.config().isEncryptionEnabled())
-                    throw new IgniteException("Unable to read cache group " + grpId + ". It is encrypted in snapshot '"
-                        + meta.snapshotName() + "' but has no encryption on local node.");
 
                 Set<Integer> parts = new HashSet<>(meta.partitions().get(grpId));
 
@@ -257,7 +249,7 @@ public class SnapshotPartitionsVerifyTask
 
             FilePageStoreManager storeMgr = (FilePageStoreManager)ignite.context().cache().context().pageStore();
 
-            EncryptionCacheKeyProvider snapsKeyProvider = meta.encryption() ?
+            EncryptionCacheKeyProvider snpEncrKeyProvider = IgniteSnapshotManager.snapshotMasterSign(meta) != null ?
                 new SnapshotEncrKeyProvider(meta, ignite.context().config().getEncryptionSpi()) : null;
 
             try {
@@ -270,16 +262,11 @@ public class SnapshotPartitionsVerifyTask
                         int partId = partId(part.getName());
 
                         try {
-                            try (FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(grpId,
-                                meta.isEncryptedGrp(grpId) ? snapsKeyProvider : null).createPageStore(getTypeByPartId(partId),
-                                part::toPath, val -> {
-                                })
+                            try (FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(grpId, snpEncrKeyProvider).
+                                createPageStore(getTypeByPartId(partId),
+                                    part::toPath, val -> {
+                                    })
                             ) {
-//                            try (FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(grpId,
-//                                ignite.context().cache().isEncrypted(grpId)).createPageStore(getTypeByPartId(partId),
-//                                part::toPath, val -> {
-//                                })
-//                            ) {
                                 if (partId == INDEX_PARTITION) {
                                     checkPartitionsPageCrcSum(() -> pageStore, INDEX_PARTITION, FLAG_IDX);
 
@@ -326,7 +313,7 @@ public class SnapshotPartitionsVerifyTask
                                     GridDhtPartitionState.OWNING,
                                     false,
                                     size,
-                                    snpMgr.partitionRowIterator(snpName, meta.folderName(), grpName, partId, snapsKeyProvider));
+                                    snpMgr.partitionRowIterator(snpName, meta.folderName(), grpName, partId, snpEncrKeyProvider));
 
                                 assert hash != null : "OWNING must have hash: " + key;
 
@@ -367,19 +354,26 @@ public class SnapshotPartitionsVerifyTask
         }
     }
 
-    //TODO
+    /**
+     * Provides encryption keys stored with encrypted cache groups within snapshot meta.
+     */
     private static class SnapshotEncrKeyProvider implements EncryptionCacheKeyProvider {
-        //TODO
-        private final SnapshotMetadata snapMeta;
+        /** Encrypted keys. */
+        private final Map<Integer, byte[]> encryptedKeys;
 
-        //TODO
+        /** Encryption SPI to decrypt the keys. */
         private final EncryptionSpi encrSpi;
 
-        private final ConcurrentHashMap<Integer, GroupKey> encryptedKeys = new ConcurrentHashMap<>();
+        /** Dencrypted keys. */
+        private final ConcurrentHashMap<Integer, GroupKey> decryptedKeys = new ConcurrentHashMap<>();
 
-        //TODO
-        private SnapshotEncrKeyProvider(SnapshotMetadata snapMeta, EncryptionSpi encrSpi) {
-            this.snapMeta = snapMeta;
+        /**
+         *
+         * @param snpMeta Snapshot metadata.
+         * @param encrSpi Encryption SPI to decrypt the keys.
+         */
+        private SnapshotEncrKeyProvider(SnapshotMetadata snpMeta, EncryptionSpi encrSpi) {
+            this.encryptedKeys = IgniteSnapshotManager.snapshotEncrKeys(snpMeta);
             this.encrSpi = encrSpi;
         }
 
@@ -388,12 +382,9 @@ public class SnapshotPartitionsVerifyTask
             return groupKey(grpId, 0);
         }
 
-        //TODO
+        /** {@inheritDoc} */
         @Override public @Nullable GroupKey groupKey(int grpId, int keyId) {
-            GroupKey key = encryptedKeys.computeIfAbsent(grpId,
-                gid-> new GroupKey(keyId, encrSpi.decryptKey(snapMeta.encrGroupKeys().get(gid))));
-
-            return key;
+            return decryptedKeys.computeIfAbsent(grpId, gid -> new GroupKey(keyId, encrSpi.decryptKey(encryptedKeys.get(gid))));
         }
     }
 }

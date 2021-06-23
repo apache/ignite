@@ -825,7 +825,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
         /** Partition delta file to store delta pages into. */
         private final File deltaFile;
 
-        /** TODO */
+        /** Id of related encrypted cache group. If {@code Null}, no encrypted IO is used. */
         private final Integer encryptedGrpId;
 
         /** Busy lock to protect write operations. */
@@ -852,6 +852,7 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
         /**
          * @param store Partition page store.
          * @param deltaFile Destination file to write pages to.
+         * @param encryptedGrpId Id of related encrypted cache group. If {@code Null}, no encrypted IO is used.
          */
         public PageStoreSerialWriter(PageStore store, File deltaFile, Integer encryptedGrpId) {
             assert store != null;
@@ -972,8 +973,8 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
             assert pageBuf.order() == ByteOrder.nativeOrder() : "Page buffer order " + pageBuf.order()
                 + " should be same with " + ByteOrder.nativeOrder();
 
-            if (log.isInfoEnabled()) {
-                log.info("onPageWrite [pageId=" + pageId +
+            if (log.isDebugEnabled()) {
+                log.debug("onPageWrite [pageId=" + pageId +
                     ", pageIdBuff=" + PageIO.getPageId(pageBuf) +
                     ", fileSize=" + deltaFileIo.size() +
                     ", crcBuff=" + FastCrc.calcCrc(pageBuf, pageBuf.limit()) +
@@ -984,18 +985,6 @@ class SnapshotFutureTask extends GridFutureAdapter<Set<GroupPartitionId>> implem
 
             // Write buffer to the end of the file.
             deltaFileIo.writeFully(pageBuf);
-
-            if (log.isInfoEnabled()) {
-                pageBuf.rewind();
-
-                log.info("afterPageWrite [pageId=" + pageId +
-                    ", pageIdBuff=" + PageIO.getPageId(pageBuf) +
-                    ", fileSize=" + deltaFileIo.size() +
-                    ", crcBuff=" + FastCrc.calcCrc(pageBuf, pageBuf.limit()) +
-                    ", crcPage=" + PageIO.getCrc(pageBuf) + ']');
-
-                pageBuf.rewind();
-            }
         }
 
         /** {@inheritDoc} */
