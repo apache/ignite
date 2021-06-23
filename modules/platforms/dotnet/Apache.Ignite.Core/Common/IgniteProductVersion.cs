@@ -150,6 +150,7 @@ namespace Apache.Ignite.Core.Common
 
         /** <inheritDoc /> */
         [SuppressMessage("Microsoft.Globalization", "CA1308:NormalizeStringsToUppercase")]
+        [SuppressMessage("Microsoft.Globalization", "CA1307:SpecifyStringComparison", Justification = "Not available on .NET FW")]
         public override string ToString()
         {
             string hash = null;
