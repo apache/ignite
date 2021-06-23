@@ -25,7 +25,9 @@ import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptTable;
+import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.RelFactories;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
@@ -34,13 +36,17 @@ import org.apache.ignite.internal.util.typedef.F;
 /**
  *
  */
-public class ExposeIndexRule extends RelOptRule {
+public class ExposeIndexRule extends RelRule<ExposeIndexRule.Config> {
     /** */
-    public static final RelOptRule INSTANCE = new ExposeIndexRule();
+    public static final RelOptRule INSTANCE = Config.DEFAULT.toRule();
 
-    /** */
-    public ExposeIndexRule() {
-        super(operandJ(IgniteLogicalTableScan.class, null, ExposeIndexRule::preMatch, any()));
+    /**
+     * Constructor
+     *
+     * @param config Expose index rule config.
+     */
+    public ExposeIndexRule(Config config) {
+        super(config);
     }
 
     /** */
@@ -68,5 +74,23 @@ public class ExposeIndexRule extends RelOptRule {
             equivMap.put(indexes.get(i), scan);
 
         call.transformTo(F.first(indexes), equivMap);
+    }
+
+    /** */
+    @SuppressWarnings("ClassNameSameAsAncestorName")
+    public interface Config extends RelRule.Config {
+        /** */
+        Config DEFAULT = EMPTY
+            .withRelBuilderFactory(RelFactories.LOGICAL_BUILDER)
+            .withOperandSupplier(b ->
+                b.operand(IgniteLogicalTableScan.class)
+                    .predicate(ExposeIndexRule::preMatch)
+                    .anyInputs())
+            .as(Config.class);
+
+        /** {@inheritDoc} */
+        @Override default ExposeIndexRule toRule() {
+            return new ExposeIndexRule(this);
+        }
     }
 }
