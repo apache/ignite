@@ -914,7 +914,7 @@ namespace Apache.Ignite.Core
             /** <inheritdoc /> */
             public override int GetHashCode()
             {
-                return _name == null ? 0 : _name.GetHashCode(StringComparison.Ordinal);
+                return _name == null ? 0 : _name.GetHashCode();
             }
         }
 
