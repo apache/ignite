@@ -690,26 +690,26 @@ public class SegmentAwareTest {
 
         IgniteInternalFuture<?> fut = awaitThread(() -> aware.awaitExceedMaxArchiveSize(10));
 
-        aware.addCurrentWalArchiveSize(4);
+        aware.addSizes(4, 0);
         assertFutureIsNotFinish(fut);
 
-        aware.addReservedWalArchiveSize(4);
+        aware.addSizes(0, 4);
         assertFutureIsNotFinish(fut);
 
-        aware.addCurrentWalArchiveSize(4);
+        aware.addSizes(4, 0);
         fut.get(20);
 
         aware.resetWalArchiveSizes();
 
         fut = awaitThread(() -> aware.awaitExceedMaxArchiveSize(10));
 
-        aware.addCurrentWalArchiveSize(4);
+        aware.addSizes(4, 0);
         assertFutureIsNotFinish(fut);
 
-        aware.addReservedWalArchiveSize(4);
+        aware.addSizes(0, 4);
         assertFutureIsNotFinish(fut);
 
-        aware.addReservedWalArchiveSize(4);
+        aware.addSizes(0, 4);
         fut.get(20);
 
         aware.resetWalArchiveSizes();

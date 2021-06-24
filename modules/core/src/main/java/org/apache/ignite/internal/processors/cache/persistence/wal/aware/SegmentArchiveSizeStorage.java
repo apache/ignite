@@ -24,37 +24,28 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
  * Allows to track the exceeding of the maximum archive size.
  */
 class SegmentArchiveSizeStorage {
-    /** Current WAL archive size in bytes. */
+    /** Current WAL archive size in bytes. Guarded by {@code this}. */
     private long curr;
 
-    /** Reserved WAL archive size in bytes. */
+    /** Reserved WAL archive size in bytes. Guarded by {@code this}. */
     private long reserved;
 
-    /** Flag of interrupt waiting on this object. */
-    private volatile boolean interrupted;
+    /** Flag of interrupt waiting on this object. Guarded by {@code this}. */
+    private boolean interrupted;
 
     /**
-     * Adding current WAL archive size in bytes.
+     * Adding WAL archive sizes.
+     * Reservation defines a hint to determine if the maximum size is exceeded
+     * before the completion of the operation on the segment.
      *
-     * @param size Size in bytes.
+     * @param curr Current WAL archive size in bytes.
+     * @param reserved Reserved WAL archive size in bytes.
      */
-    synchronized void addCurrentSize(long size) {
-        curr += size;
+    synchronized void addSizes(long curr, long reserved) {
+        this.curr += curr;
+        this.reserved += reserved;
 
-        if (size > 0)
-            notifyAll();
-    }
-
-    /**
-     * Adding reserved WAL archive size in bytes.
-     * Defines a hint to determine if the maximum size is exceeded before a new segment is archived.
-     *
-     * @param size Size in bytes.
-     */
-    synchronized void addReservedSize(long size) {
-        reserved += size;
-
-        if (size > 0)
+        if (curr > 0 || reserved > 0)
             notifyAll();
     }
 
@@ -68,7 +59,7 @@ class SegmentArchiveSizeStorage {
 
     /**
      * Waiting for exceeding the maximum WAL archive size.
-     * To track size of WAL archive, need to use {@link #addCurrentSize} and {@link #addReservedSize}.
+     * To track size of WAL archive, need to use {@link #addSizes}.
      *
      * @param max Maximum WAL archive size in bytes.
      * @throws IgniteInterruptedCheckedException If it was interrupted.
@@ -98,7 +89,7 @@ class SegmentArchiveSizeStorage {
     /**
      * Reset interrupted flag.
      */
-    void reset() {
+    synchronized void reset() {
         interrupted = false;
     }
 }

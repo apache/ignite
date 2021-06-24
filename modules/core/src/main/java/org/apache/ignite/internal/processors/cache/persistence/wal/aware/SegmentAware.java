@@ -318,22 +318,15 @@ public class SegmentAware {
     }
 
     /**
-     * Adding current WAL archive size in bytes.
+     * Adding WAL archive sizes.
+     * Reservation defines a hint to determine if the maximum size is exceeded
+     * before the completion of the operation on the segment.
      *
-     * @param size Size in bytes.
+     * @param curr Current WAL archive size in bytes.
+     * @param reserved Reserved WAL archive size in bytes.
      */
-    public void addCurrentWalArchiveSize(long size) {
-        archiveSizeStorage.addCurrentSize(size);
-    }
-
-    /**
-     * Adding reserved WAL archive size in bytes.
-     * Defines a hint to determine if the maximum size is exceeded before a new segment is archived.
-     *
-     * @param size Size in bytes.
-     */
-    public void addReservedWalArchiveSize(long size) {
-        archiveSizeStorage.addReservedSize(size);
+    public void addSizes(long curr, long reserved) {
+        archiveSizeStorage.addSizes(curr, reserved);
     }
 
     /**
@@ -344,8 +337,8 @@ public class SegmentAware {
     }
 
     /**
-     * Waiting for exceeding the maximum WAL archive size. To track size of WAL archive,
-     * need to use {@link #addCurrentWalArchiveSize} and {@link #addReservedWalArchiveSize}.
+     * Waiting for exceeding the maximum WAL archive size.
+     * To track size of WAL archive, need to use {@link #addSizes}.
      *
      * @param max Maximum WAL archive size in bytes.
      * @throws IgniteInterruptedCheckedException If it was interrupted.
