@@ -560,11 +560,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        if (destroy) {
-            grp.metrics().remove();
+        grp.metrics().remove(destroy);
 
-            grp.removeIOStatistic();
-        }
+        grp.removeIOStatistic(destroy);
 
         sharedCtx.evict().cleanupRemovedGroup(grp.groupId());
 

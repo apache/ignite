@@ -99,6 +99,7 @@ import org.apache.ignite.internal.processors.database.BPlusTreeFakeReuseSelfTest
 import org.apache.ignite.internal.processors.database.BPlusTreeReuseSelfTest;
 import org.apache.ignite.internal.processors.database.BPlusTreeSelfTest;
 import org.apache.ignite.internal.processors.database.CacheFreeListSelfTest;
+import org.apache.ignite.internal.metric.MetricsClusterActivationTest;
 import org.apache.ignite.internal.processors.database.DataRegionMetricsSelfTest;
 import org.apache.ignite.internal.processors.database.IndexStorageSelfTest;
 import org.apache.ignite.internal.processors.database.SwapPathConstructionSelfTest;
@@ -236,6 +237,7 @@ import org.junit.runners.Suite;
     IndexStorageSelfTest.class,
     CacheFreeListSelfTest.class,
     DataRegionMetricsSelfTest.class,
+    MetricsClusterActivationTest.class,
     SwapPathConstructionSelfTest.class,
     BitSetIntSetTest.class,
     ImmutableIntSetTest.class,
