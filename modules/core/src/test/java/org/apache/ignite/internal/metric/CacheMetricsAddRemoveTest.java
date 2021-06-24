@@ -28,6 +28,8 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
+import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -36,6 +38,7 @@ import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.junit.Assert.assertArrayEquals;
 
 /** */
 @RunWith(Parameterized.class)
@@ -45,6 +48,12 @@ public class CacheMetricsAddRemoveTest extends GridCommonAbstractTest {
 
     /** */
     public static final String CACHE_PUTS = "CachePuts";
+
+    /** */
+    public static final String GET_TIME = "GetTime";
+
+    /** Test bounds. */
+    public static final long[] BOUNDS = new long[] {50, 100};
 
     /** Cache modes. */
     @Parameterized.Parameters(name = "cacheMode={0},nearEnabled={1}")
@@ -100,7 +109,7 @@ public class CacheMetricsAddRemoveTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testCacheMetricsNotRemovedOnStop() throws Exception {
+    public void testCacheMetricsConfigurationNotRemovedOnStop() throws Exception {
         String cachePrefix = cacheMetricsRegistryName("other-cache", false);
 
         checkMetricsEmpty(cachePrefix);
@@ -138,12 +147,12 @@ public class CacheMetricsAddRemoveTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void createCache() throws InterruptedException {
+    private void createCache() throws Exception {
         createCache(null, null);
     }
 
     /** */
-    private void createCache(@Nullable String dataRegionName, @Nullable String cacheName) throws InterruptedException {
+    private void createCache(@Nullable String dataRegionName, @Nullable String cacheName) throws Exception {
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         if (dataRegionName != null)
@@ -158,6 +167,10 @@ public class CacheMetricsAddRemoveTest extends GridCommonAbstractTest {
         grid("client").createCache(ccfg);
 
         awaitPartitionMapExchange();
+
+        grid("client").context().metric().configureHistogram(
+            MetricUtils.metricName(cacheMetricsRegistryName(ccfg.getName(), false), GET_TIME),
+            BOUNDS);
     }
 
     /** */
@@ -169,12 +182,15 @@ public class CacheMetricsAddRemoveTest extends GridCommonAbstractTest {
 
             assertNotNull(mreg.findMetric(CACHE_GETS));
             assertNotNull(mreg.findMetric(CACHE_PUTS));
+            assertNotNull(mreg.findMetric(GET_TIME));
+            assertArrayEquals(BOUNDS, mreg.<HistogramMetric>findMetric(GET_TIME).bounds());
 
             if (nearEnabled) {
                 mreg = mmgr.registry(metricName(cachePrefix, "near"));
 
                 assertNotNull(mreg.findMetric(CACHE_GETS));
                 assertNotNull(mreg.findMetric(CACHE_PUTS));
+                assertNotNull(mreg.findMetric(GET_TIME));
             }
         }
     }
