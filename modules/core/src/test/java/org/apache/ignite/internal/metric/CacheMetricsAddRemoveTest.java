@@ -114,7 +114,7 @@ public class CacheMetricsAddRemoveTest extends GridCommonAbstractTest {
         //Cache will be stopped during deactivation.
         grid("client").cluster().state(ClusterState.INACTIVE);
 
-        checkMetricsNotEmpty(cachePrefix);
+        checkMetricsEmpty(cachePrefix);
 
         grid("client").cluster().state(ClusterState.ACTIVE);
 
