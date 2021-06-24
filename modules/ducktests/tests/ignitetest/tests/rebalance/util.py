@@ -239,9 +239,9 @@ def aggregate_rebalance_stats(nodes, cache_count):
 
             if prop == 'duration':
                 if func.__name__ == 'sum':
-                    val = f'{val // 1000, 3} s.'
+                    val = f'{round(val / 1000, 3)} s.'
                 else:
-                    val[1] = f'{val[1] // 1000, 3} s.'
+                    val[1] = f'{round(val[1] / 1000, 3)} s.'
 
             stats[prop][func.__name__] = val
 
