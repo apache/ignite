@@ -21,7 +21,7 @@ from ducktape.mark import defaults
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.tests.rebalance.util import preload_data, start_ignite, get_result, TriggerEvent, NUM_NODES, \
-    await_rebalance_start
+    await_rebalance_start, RebalanceParams
 from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST
@@ -84,9 +84,12 @@ class RebalanceInMemoryTest(IgniteTest):
         :param throttle: rebalanceThrottle config property.
         :return: Rebalance and data preload stats.
         """
-        ignites = start_ignite(self.test_context, ignite_version, trigger_event, backups, cache_count,
-                               entry_count, entry_size, preloaders, thread_pool_size, batch_size,
-                               batches_prefetch_count, throttle)
+        reb_params = RebalanceParams(trigger_event=trigger_event, backups=backups, cache_count=cache_count,
+                                     entry_count=entry_count, entry_size=entry_size, preloaders=preloaders,
+                                     thread_pool_size=thread_pool_size, batch_size=batch_size,
+                                     batches_prefetch_count=batches_prefetch_count, throttle=throttle)
+
+        ignites = start_ignite(self.test_context, ignite_version, reb_params)
 
         preload_time = preload_data(
             self.test_context,

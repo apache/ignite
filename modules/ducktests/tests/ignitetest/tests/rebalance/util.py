@@ -16,11 +16,10 @@
 """
 Utils for rebalanced tests.
 """
-
 import sys
+from datetime import datetime
 from enum import IntEnum
 from typing import NamedTuple
-from itertools import product, chain
 
 # pylint: disable=W0622
 from ducktape.errors import TimeoutError
@@ -143,6 +142,31 @@ def get_rebalance_metrics(node, cache_group):
         node=node.name)
 
 
+class RebalanceParams(NamedTuple):
+    """
+    Rebalance parameters
+    """
+    trigger_event: TriggerEvent = TriggerEvent.NODE_JOIN
+    backups: int = 1
+    cache_count: int = 1
+    entry_count: int = 15_000
+    entry_size: int = 50_000
+    preloaders: int = 1
+    thread_pool_size: int = None
+    batch_size: int = None
+    batches_prefetch_count: int = None
+    throttle: int = None
+    persistent: bool = False
+    jvm_opts: list = None
+
+    @property
+    def max_size(self):
+        """
+        Max size for DataRegionConfiguration.
+        """
+        return max(self.cache_count * self.entry_count * self.entry_size * (self.backups + 1), DEFAULT_DATA_REGION_SZ)
+
+
 class RebalanceMetrics(NamedTuple):
     """
     Rebalance metrics
@@ -169,75 +193,81 @@ def aggregate_rebalance_stats(nodes, cache_count):
             "cache": cache_name,
             "start_time": {},
             "end_time": {},
-            "duration": {},
+            "duration_sec": {},
             "received_bytes": {}
         }
 
         metrics = list(map(lambda node: get_rebalance_metrics(node, cache_name), nodes))
 
-        for prop, func in chain(product(['start_time', 'end_time'], [min, max]),
-                                product(['duration', 'received_bytes'], [min, max, sum])):
+        def __key(tup):
+            return tup[1]
 
-            if func.__name__ == 'sum':
-                val = func(map(lambda item: getattr(item, prop), metrics))
-            else:
-                val = func(map(lambda item: (item.node, getattr(item, prop)), metrics), key=lambda tup: tup[1])
-
-            stats[prop][func.__name__] = val
+        stats["start_time"]["min"] = min(
+            map(lambda item: (item.node, to_time_format(item.start_time)), metrics), key=__key)
+        stats["start_time"]["max"] = max(
+            map(lambda item: (item.node, to_time_format(item.start_time)), metrics), key=__key)
+        stats["end_time"]["min"] = min(map(lambda item: (item.node, to_time_format(item.end_time)), metrics), key=__key)
+        stats["end_time"]["max"] = max(map(lambda item: (item.node, to_time_format(item.end_time)), metrics), key=__key)
+        stats["duration_sec"]["min"] = min(map(lambda item: (item.node, item.duration // 1000), metrics), key=__key)
+        stats["duration_sec"]["max"] = max(map(lambda item: (item.node, item.duration // 1000), metrics), key=__key)
+        stats["duration_sec"]["sum"] = sum(map(lambda item: item.duration // 1000, metrics))
+        stats["received_bytes"]["min"] = min(map(lambda item: (item.node, item.received_bytes), metrics), key=__key)
+        stats["received_bytes"]["max"] = max(map(lambda item: (item.node, item.received_bytes), metrics), key=__key)
+        stats["received_bytes"]["sum"] = sum(map(lambda item: item.received_bytes, metrics))
 
         return stats
 
     return list(map(__stats, range(cache_count)))
 
 
-# pylint: disable=too-many-arguments, too-many-locals
-def start_ignite(test_context, ignite_version, trigger_event, backups, cache_count, entry_count, entry_size, preloaders,
-                 thread_pool_size, batch_size, batches_prefetch_count, throttle, persistent: bool = False):
+def to_time_format(timestamp: int, fmt: str = '%Y-%m-%d %H:%M:%S'):
+    """
+    Convert timestamp to string using format.
 
+    :param timestamp: Timestamp in ms
+    :param fmt: Format.
+    :return:
+    """
+    return datetime.fromtimestamp(int(timestamp) // 1000).strftime(fmt)
+
+
+# pylint: disable=too-many-arguments, too-many-locals
+def start_ignite(test_context, ignite_version: str, rebalance_params: RebalanceParams) -> IgniteService:
     """
     Start IgniteService:
 
     :param test_context: Test context.
     :param ignite_version: Ignite version.
-    :param trigger_event: Trigger event.
-    :param backups: Backup count.
-    :param cache_count: Cache count.
-    :param entry_count: Cache entry count.
-    :param entry_size: Cache entry size.
-    :param preloaders: Preload application nodes count.
-    :param thread_pool_size: rebalanceThreadPoolSize config property.
-    :param batch_size: rebalanceBatchSize config property.
-    :param batches_prefetch_count: rebalanceBatchesPrefetchCount config property.
-    :param throttle: rebalanceThrottle config property.
-    :param persistent: Persistent enabled.
+    :param rebalance_params: Rebalance parameters.
     :return: IgniteService.
     """
-    node_count = len(test_context.cluster) - preloaders
+    node_count = len(test_context.cluster) - rebalance_params.preloaders
 
-    if persistent:
+    if rebalance_params.persistent:
         data_storage = DataStorageConfiguration(
-            max_wal_archive_size=max(cache_count * entry_count * entry_size * (backups + 1), DEFAULT_DATA_REGION_SZ),
+            max_wal_archive_size=2 * rebalance_params.max_size,
             default=DataRegionConfiguration(
                 persistent=True,
-                max_size=max(cache_count * entry_count * entry_size * (backups + 1), DEFAULT_DATA_REGION_SZ),
+                max_size=rebalance_params.max_size
             )
         )
     else:
         data_storage = DataStorageConfiguration(
-            default=DataRegionConfiguration(
-                max_size=max(cache_count * entry_count * entry_size * (backups + 1), DEFAULT_DATA_REGION_SZ)))
+            default=DataRegionConfiguration(max_size=rebalance_params.max_size)
+        )
 
     node_config = IgniteConfiguration(
         version=IgniteVersion(ignite_version),
         data_storage=data_storage,
         metric_exporter="org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi",
-        rebalance_thread_pool_size=thread_pool_size,
-        rebalance_batch_size=batch_size,
-        rebalance_batches_prefetch_count=batches_prefetch_count,
-        rebalance_throttle=throttle)
+        rebalance_thread_pool_size=rebalance_params.thread_pool_size,
+        rebalance_batch_size=rebalance_params.batch_size,
+        rebalance_batches_prefetch_count=rebalance_params.batches_prefetch_count,
+        rebalance_throttle=rebalance_params.throttle)
 
     ignites = IgniteService(test_context, config=node_config,
-                            num_nodes=node_count if trigger_event else node_count - 1)
+                            num_nodes=node_count if rebalance_params.trigger_event else node_count - 1,
+                            jvm_opts=rebalance_params.jvm_opts)
     ignites.start()
 
     return ignites
@@ -260,7 +290,7 @@ def get_result(rebalance_nodes: list, preload_time: int, cache_count: int, entry
     return {
         "rebalance_nodes": len(rebalance_nodes),
         "rebalance_stats": stats,
-        "preload_time": int(preload_time * 1000),
+        "preload_time_sec": int(preload_time),
         "preloaded_bytes": cache_count * entry_count * entry_size
     }
 
