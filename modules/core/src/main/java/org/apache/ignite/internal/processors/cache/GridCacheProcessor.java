@@ -39,6 +39,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -325,7 +327,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private CacheConfigurationSplitter splitter;
 
     /** Cache configuration enricher. */
-    private CacheConfigurationEnricher enricher;
+    private final CacheConfigurationEnricher enricher;
+
+    /** Pool to use while restoring partition states. */
+    private final ForkJoinPool restorePartitionsPool;
 
     /**
      * @param ctx Kernal context.
@@ -340,6 +345,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         marsh = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
         splitter = new CacheConfigurationSplitterImpl(ctx, marsh);
         enricher = new CacheConfigurationEnricher(ctx, marsh, U.resolveClassLoader(ctx.config()));
+
+        ForkJoinPool.ForkJoinWorkerThreadFactory factory = new ForkJoinPool.ForkJoinWorkerThreadFactory() {
+            @Override public ForkJoinWorkerThread newThread(ForkJoinPool pool) {
+                ForkJoinWorkerThread worker = ForkJoinPool.defaultForkJoinWorkerThreadFactory.newThread(pool);
+
+                worker.setName("restore-partition-states-" + worker.getPoolIndex());
+
+                return worker;
+            }
+        };
+
+        int stripesCnt = ctx.getStripedExecutorService().stripesCount();
+        restorePartitionsPool = new ForkJoinPool(stripesCnt, factory, null, false);
     }
 
     /**
@@ -759,6 +777,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         sharedCtx.cleanup();
 
+        restorePartitionsPool.shutdownNow();
+
         if (log.isDebugEnabled())
             log.debug("Stopped cache processor.");
     }
@@ -781,6 +801,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         for (CacheGroupContext grp : cacheGrps.values())
             stopCacheGroup(grp.groupId(), false);
+    }
+
+    /**
+     * Returns {@code ForkJoinPool} instance to be used in partition states restoration.<br/>
+     * It's more convenient than regular pools because it can be used to parallel by cache groups and by partitions
+     * without sacrificing code simplicity (cache group tasks won't exclusively occupy their threads and won't block
+     * partition tasks as a result).<br/>
+     * <br/>
+     * There's a chance that this pool will later be replaced with a more common one, like system pool, for example.
+     *
+     * @return Pool instance.
+     */
+    public ForkJoinPool restorePartitionsPool() {
+        return restorePartitionsPool;
     }
 
     /**
@@ -5511,7 +5545,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             long totalPart = forGroups.stream().mapToLong(grpCtx -> grpCtx.affinity().partitions()).sum();
 
             for (CacheGroupContext grp : forGroups) {
-                sysPool.execute(() -> {
+                restorePartitionsPool.submit(() -> {
                     try {
                         Map<Integer, Long> processed = grp.offheap().restorePartitionStates(partStates);
 
