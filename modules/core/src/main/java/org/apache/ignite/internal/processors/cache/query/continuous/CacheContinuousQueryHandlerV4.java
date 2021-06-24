@@ -17,23 +17,26 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import javax.cache.configuration.Factory;
+import javax.cache.event.CacheEntryEvent;
+import javax.cache.event.CacheEntryEventFilter;
+import javax.cache.event.CacheEntryUpdatedListener;
+
 import org.apache.ignite.cache.query.ContinuousQueryWithTransformer;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteClosure;
 import org.jetbrains.annotations.Nullable;
 
-import javax.cache.configuration.Factory;
-import javax.cache.event.CacheEntryEvent;
-import javax.cache.event.CacheEntryEventFilter;
-import javax.cache.event.CacheEntryUpdatedListener;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-
 /**
  * Continuous query handler V4 version.
  */
 public class CacheContinuousQueryHandlerV4<K, V> extends CacheContinuousQueryHandlerV3<K, V> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** */
     protected String locLsnrClsName;
 

@@ -533,6 +533,24 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
     {
         IgniteOutClosure<CacheContinuousQueryHandler> clsr;
 
+        clsr = new IgniteOutClosure<CacheContinuousQueryHandler>() {
+            @Override public CacheContinuousQueryHandler apply() {
+                return new CacheContinuousQueryHandlerV4(
+                        cctx.name(),
+                        TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
+                        locLsnr,
+                        locTransLsnr,
+                        securityAwareFilterFactory(rmtFilterFactory),
+                        securityAwareTransformerFactory(rmtTransFactory),
+                        true,
+                        false,
+                        !includeExpired,
+                        false
+                );
+            }
+        };
+
+        /*
         if (rmtTransFactory != null) {
             clsr = new IgniteOutClosure<CacheContinuousQueryHandler>() {
                 @Override public CacheContinuousQueryHandler apply() {
@@ -581,7 +599,7 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
                         false);
                 }
             };
-        }
+        }*/
 
         return executeQuery0(
             locLsnr,
