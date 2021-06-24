@@ -21,8 +21,8 @@ import java.net.InetSocketAddress;
 import java.security.cert.Certificate;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
+import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -51,7 +51,7 @@ public class GridRestRequest {
     private GridRestCommand cmd;
 
     /** */
-    private AuthorizationContext authCtx;
+    private SecurityContext secCtx;
 
     /** User attributes. */
     Map<String, String> userAttrs;
@@ -156,17 +156,17 @@ public class GridRestRequest {
     }
 
     /**
-     * @return Authorization context.
+     * @return Security context.
      */
-    @Nullable public AuthorizationContext authorizationContext() {
-        return authCtx;
+    @Nullable public SecurityContext securityContext() {
+        return secCtx;
     }
 
     /**
-     * @param authCtx Authorization context.
+     * @param secCtx Security context.
      */
-    public void authorizationContext(AuthorizationContext authCtx) {
-        this.authCtx = authCtx;
+    public void securityContext(SecurityContext secCtx) {
+        this.secCtx = secCtx;
     }
 
     /**

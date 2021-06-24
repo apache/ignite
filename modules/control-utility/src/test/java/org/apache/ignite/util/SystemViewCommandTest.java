@@ -132,9 +132,9 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
 
     /** Latch that indicates number of compute jobs to be blocked.*/
     private static final CountDownLatch COMPUTE_JOB_BLOCK_LATCH = new CountDownLatch(5);
-    
+
     /** Name of the test data region. */
-    private static final String DATA_REGION_NAME = "in-memory"; 
+    private static final String DATA_REGION_NAME = "in-memory";
 
     /** Test node with 0 index. */
     private IgniteEx ignite0;
@@ -444,7 +444,10 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
             "PARTITION_STATES",
             "BINARY_METADATA",
             "METASTORAGE",
-            "DISTRIBUTED_METASTORAGE"
+            "DISTRIBUTED_METASTORAGE",
+            "STATISTICS_CONFIGURATION",
+            "STATISTICS_PARTITION_DATA",
+            "STATISTICS_LOCAL_DATA"
         ));
 
         Set<String> viewNames = new HashSet<>();

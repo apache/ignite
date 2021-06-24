@@ -43,6 +43,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
@@ -103,6 +104,7 @@ import org.apache.ignite.internal.processors.cache.warmup.BlockedWarmUpConfigura
 import org.apache.ignite.internal.processors.cache.warmup.BlockedWarmUpStrategy;
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpTestPluginProvider;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
+import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.GridFunc;
@@ -161,6 +163,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -1017,7 +1020,11 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
             List<String> nodesInfo = findBaselineNodesInfo();
             assertEquals(1, nodesInfo.size());
-            assertContains(log, nodesInfo.get(0), "Addresses=188.166.164.247.hostname/188.166.164.247,10.19.112.175.hostname/10.19.112.175");
+            assertContains(
+                log,
+                nodesInfo.get(0),
+                "Addresses=188.166.164.247.hostname/188.166.164.247,10.19.112.175.hostname/10.19.112.175"
+            );
         }
 
         { // empty resolved addresses
@@ -2548,7 +2555,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
                         doSleep(3000);
 
-                        try (Transaction tx = grid(0).transactions().withLabel("label1").txStart(PESSIMISTIC, READ_COMMITTED, Integer.MAX_VALUE, 0)) {
+                        try (Transaction tx =
+                                 grid(0).transactions().withLabel("label1").txStart(PESSIMISTIC, READ_COMMITTED, Integer.MAX_VALUE, 0)) {
                             grid(0).cache(DEFAULT_CACHE_NAME).putAll(generate(200, 110));
 
                             grid(0).cache(DEFAULT_CACHE_NAME).put(0, 0);
@@ -3103,6 +3111,184 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         ((IdleVerifyResultV2)h.getLastOperationResult()).print(sb::append, true);
 
         assertContains(log, sb.toString(), "The check procedure has finished, no conflicts have been found");
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testSnapshotRestore() throws Exception {
+        int keysCnt = 100;
+        String snpName = "snapshot_02052020";
+        String cacheName1 = "cache1";
+        String cacheName2 = "cache2";
+        String cacheName3 = "cache3";
+
+        IgniteEx ig = startGrids(2);
+
+        ig.cluster().state(ACTIVE);
+
+        injectTestSystemOut();
+
+        createCacheAndPreload(ig, cacheName1, keysCnt, 32, null);
+        createCacheAndPreload(ig, cacheName2, keysCnt, 32, null);
+        createCacheAndPreload(ig, cacheName3, keysCnt, 32, null);
+
+        ig.snapshot().createSnapshot(snpName).get(getTestTimeout());
+
+        IgniteCache<Integer, Integer> cache1 = ig.cache(cacheName1);
+        IgniteCache<Integer, Integer> cache2 = ig.cache(cacheName2);
+        IgniteCache<Integer, Integer> cache3 = ig.cache(cacheName3);
+
+        cache1.destroy();
+        cache2.destroy();
+        cache3.destroy();
+
+        awaitPartitionMapExchange();
+
+        assertNull(ig.cache(cacheName1));
+        assertNull(ig.cache(cacheName2));
+        assertNull(ig.cache(cacheName3));
+
+        CommandHandler h = new CommandHandler();
+
+        // Restore single cache group.
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--start", cacheName1));
+        assertContains(log, testOut.toString(),
+            "Snapshot cache group restore operation started [snapshot=" + snpName + ", group(s)=" + cacheName1 + ']');
+
+        waitForCondition(() -> ig.cache(cacheName1) != null, getTestTimeout());
+
+        cache1 = ig.cache(cacheName1);
+
+        assertNotNull(cache1);
+
+        for (int i = 0; i < keysCnt; i++)
+            assertEquals(cacheName1, Integer.valueOf(i), cache1.get(i));
+
+        cache1.destroy();
+
+        awaitPartitionMapExchange();
+
+        assertNull(ig.cache(cacheName1));
+        assertNull(ig.cache(cacheName2));
+        assertNull(ig.cache(cacheName3));
+
+        // Restore two (of three) groups of caches.
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--start", cacheName1 + ',' + cacheName2));
+        assertContains(log, testOut.toString(),
+            "Snapshot cache group restore operation started [snapshot=" + snpName + ", group(s)=");
+
+        waitForCondition(() -> ig.cache(cacheName1) != null, getTestTimeout());
+        waitForCondition(() -> ig.cache(cacheName2) != null, getTestTimeout());
+
+        cache1 = ig.cache(cacheName1);
+        cache2 = ig.cache(cacheName2);
+
+        assertNotNull(cache1);
+        assertNotNull(cache2);
+
+        for (int i = 0; i < keysCnt; i++) {
+            assertEquals(cacheName1, Integer.valueOf(i), cache1.get(i));
+            assertEquals(cacheName2, Integer.valueOf(i), cache2.get(i));
+        }
+
+        cache1.destroy();
+        cache2.destroy();
+
+        awaitPartitionMapExchange();
+
+        assertNull(ig.cache(cacheName1));
+        assertNull(ig.cache(cacheName2));
+        assertNull(ig.cache(cacheName3));
+
+        // Restore all public cache groups.
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--start"));
+        assertContains(log, testOut.toString(),
+            "Snapshot cache group restore operation started [snapshot=" + snpName + ']');
+
+        waitForCondition(() -> ig.cache(cacheName1) != null, getTestTimeout());
+        waitForCondition(() -> ig.cache(cacheName2) != null, getTestTimeout());
+        waitForCondition(() -> ig.cache(cacheName3) != null, getTestTimeout());
+
+        cache1 = ig.cache(cacheName1);
+        cache2 = ig.cache(cacheName2);
+        cache3 = ig.cache(cacheName3);
+
+        assertNotNull(cache1);
+        assertNotNull(cache2);
+        assertNotNull(cache3);
+
+        for (int i = 0; i < keysCnt; i++) {
+            assertEquals(cacheName1, Integer.valueOf(i), cache1.get(i));
+            assertEquals(cacheName2, Integer.valueOf(i), cache2.get(i));
+            assertEquals(cacheName3, Integer.valueOf(i), cache2.get(i));
+        }
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testSnapshotRestoreCancelAndStatus() throws Exception {
+        int keysCnt = 10_000;
+        String snpName = "snapshot_25052021";
+        String missingSnpName = "snapshot_MISSING";
+
+        IgniteEx ig = startGrids(2);
+
+        ig.cluster().state(ACTIVE);
+
+        injectTestSystemOut();
+
+        createCacheAndPreload(ig, keysCnt);
+
+        ig.snapshot().createSnapshot(snpName).get(getTestTimeout());
+
+        IgniteCache<Integer, Integer> cache1 = ig.cache(DEFAULT_CACHE_NAME);
+
+        cache1.destroy();
+
+        CommandHandler h = new CommandHandler();
+
+        TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(1));
+
+        spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage &&
+            ((SingleNodeMessage<?>)msg).type() == RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE.ordinal());
+
+        // Restore single cache group.
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--start", DEFAULT_CACHE_NAME));
+        assertContains(log, testOut.toString(),
+            "Snapshot cache group restore operation started [snapshot=" + snpName + ", group(s)=" + DEFAULT_CACHE_NAME + ']');
+
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--status"));
+        assertContains(log, testOut.toString(),
+            "Snapshot cache group restore operation is running [snapshot=" + snpName + ']');
+
+        // Check wrong snapshot name.
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", missingSnpName, "--status"));
+        assertContains(log, testOut.toString(),
+            "Snapshot cache group restore operation is NOT running [snapshot=" + missingSnpName + ']');
+
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", missingSnpName, "--cancel"));
+        assertContains(log, testOut.toString(),
+            "Snapshot cache group restore operation is not in progress [snapshot=" + missingSnpName + ']');
+
+        GridTestUtils.runAsync(() -> {
+            // Wait for the process to be interrupted.
+            AtomicReference<?> errRef = U.field((Object)U.field((Object)U.field(
+                grid(0).context().cache().context().snapshotMgr(), "restoreCacheGrpProc"), "opCtx"), "err");
+
+            waitForCondition(() -> errRef.get() != null, getTestTimeout());
+
+            spi.stopBlock();
+
+            return null;
+        });
+
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--cancel"));
+        assertContains(log, testOut.toString(),
+            "Snapshot cache group restore operation canceled [snapshot=" + snpName + ']');
+
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--status"));
+        assertContains(log, testOut.toString(),
+            "Snapshot cache group restore operation is NOT running [snapshot=" + snpName + ']');
     }
 
     /**

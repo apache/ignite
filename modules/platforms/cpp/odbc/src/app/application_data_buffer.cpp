@@ -1767,7 +1767,7 @@ namespace ignite
                 {
                     const SqlLen *len = GetResLen();
 
-                    return len ? *len : SQL_DEFAULT_PARAM;
+                    return len ? *len : SQL_NTS;
                 }
 
                 return GetDataAtExecSize();

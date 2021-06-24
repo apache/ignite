@@ -71,8 +71,8 @@ public class TargetEncoderExample {
                 Set<Integer> targetEncodedfeaturesIndexies = new HashSet<>(Arrays.asList(1, 5, 6));
                 Integer targetIndex = 0;
 
-                final Vectorizer<Integer, Object[], Integer, Object> vectorizer = new ObjectArrayVectorizer<Integer>(featuresIndexies.toArray(new Integer[0]))
-                    .labeled(targetIndex);
+                final Vectorizer<Integer, Object[], Integer, Object> vectorizer =
+                    new ObjectArrayVectorizer<Integer>(featuresIndexies.toArray(new Integer[0])).labeled(targetIndex);
 
                 Preprocessor<Integer, Object[]> strEncoderPreprocessor = new EncoderTrainer<Integer, Object[]>()
                     .withEncoderType(EncoderType.STRING_ENCODER)

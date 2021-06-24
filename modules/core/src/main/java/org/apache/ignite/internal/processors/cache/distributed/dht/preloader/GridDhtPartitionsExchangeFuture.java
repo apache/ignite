@@ -178,7 +178,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * See {@link IgniteSystemProperties#IGNITE_SKIP_PARTITION_SIZE_VALIDATION} for details.
      * Default value is {@code false}.
      */
-    private static final boolean SKIP_PARTITION_SIZE_VALIDATION = Boolean.getBoolean(IgniteSystemProperties.IGNITE_SKIP_PARTITION_SIZE_VALIDATION);
+    private static final boolean SKIP_PARTITION_SIZE_VALIDATION =
+        Boolean.getBoolean(IgniteSystemProperties.IGNITE_SKIP_PARTITION_SIZE_VALIDATION);
 
     /** */
     public static final String EXCHANGE_LATCH_ID = "exchange";
@@ -299,7 +300,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private boolean forceAffReassignment;
 
     /** Exception that was thrown during init phase on local node. */
-    private Exception exchangeLocE;
+    private volatile Exception exchangeLocE;
 
     /** Exchange exceptions from all participating nodes. */
     private final Map<UUID, Exception> exchangeGlobalExceptions = new ConcurrentHashMap<>();
@@ -899,7 +900,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     ", crd=" + crdNode +
                     ", evt=" + IgniteUtils.gridEventName(firstDiscoEvt.type()) +
                     ", evtNode=" + firstDiscoEvt.eventNode().id() +
-                    ", customEvt=" + (firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT ? ((DiscoveryCustomEvent)firstDiscoEvt).customMessage() : null) +
+                    ", customEvt=" +
+                    (firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT ? ((DiscoveryCustomEvent)firstDiscoEvt).customMessage() : null) +
                     ", allowMerge=" + exchCtx.mergeExchanges() +
                     ", exchangeFreeSwitch=" + exchCtx.exchangeFreeSwitch() + ']');
             }
@@ -2132,7 +2134,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @return {@code True} if exchange for local node join.
      */
     public boolean localJoinExchange() {
-        return firstDiscoEvt.type() == EVT_NODE_JOINED && firstDiscoEvt.eventNode().isLocal();
+        return firstDiscoEvt != null && firstDiscoEvt.type() == EVT_NODE_JOINED && firstDiscoEvt.eventNode().isLocal();
     }
 
     /**
@@ -2513,8 +2515,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             // Create and destroy caches and cache proxies.
             cctx.cache().onExchangeDone(initialVersion(), exchActions, err);
-
-            cctx.kernalContext().authentication().onActivate();
 
             Map<T2<Integer, Integer>, Long> localReserved = partHistSuppliers.getReservations(cctx.localNodeId());
 
@@ -4668,7 +4668,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                                     }
                                 }
 
-                                AffinityTopologyVersion resVer = msg.resultTopologyVersion() != null ? msg.resultTopologyVersion() : initialVersion();
+                                AffinityTopologyVersion resVer =
+                                    msg.resultTopologyVersion() != null ? msg.resultTopologyVersion() : initialVersion();
 
                                 if (log.isInfoEnabled()) {
                                     log.info("Received full message, will finish exchange [node=" + node.id() +
@@ -4955,8 +4956,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                             updatePartitionFullMap(resTopVer, partsMsg);
 
-                            if (exchActions != null && exchActions.stateChangeRequest() != null && err != null)
-                                cctx.kernalContext().state().onStateChangeError(msg.partitionsMessage().getErrorsMap(), exchActions.stateChangeRequest());
+                            if (exchActions != null && exchActions.stateChangeRequest() != null && err != null) {
+                                cctx.kernalContext().state().onStateChangeError(
+                                    msg.partitionsMessage().getErrorsMap(),
+                                    exchActions.stateChangeRequest()
+                                );
+                            }
                         }
 
                         onDone(resTopVer, err);
@@ -5126,6 +5131,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                             if (crd0 == null)
                                 finishState = new FinishState(null, initialVersion(), null);
+
+                            if (dynamicCacheStartExchange() && exchangeLocE == null &&
+                                exchActions.cacheStartRequiredAliveNodes().contains(node.id())) {
+                                exchangeGlobalExceptions.put(cctx.localNodeId(), exchangeLocE = new ClusterTopologyCheckedException(
+                                    "Required node has left the cluster [nodeId=" + node.id() + ']'));
+                            }
                         }
 
                         if (crd0 == null) {
@@ -5154,7 +5165,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                                             newCrdFut.init(GridDhtPartitionsExchangeFuture.this);
                                         }
                                         catch (Throwable t) {
-                                            U.error(log, "Failed to initialize new coordinator future [topVer=" + initialVersion() + "]", t);
+                                            U.error(
+                                                log,
+                                                "Failed to initialize new coordinator future [topVer=" + initialVersion() + "]",
+                                                t
+                                            );
 
                                             cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, t));
 

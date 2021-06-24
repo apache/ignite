@@ -426,8 +426,8 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         if (uppercaseProps.put(name.toUpperCase(), prop) != null && failOnDuplicate)
             throw new IgniteCheckedException("Property with upper cased name '" + name + "' already exists.");
 
-        if ((prop.notNull() && !prop.key() && !prop.name().equals(VAL_FIELD_NAME)) || prop.precision() != -1 ||
-            coCtx.kernalContext().config().getSqlConfiguration().isValidationEnabled()) {
+        if ((prop.notNull() && !prop.name().equals(KEY_FIELD_NAME) && !prop.name().equals(VAL_FIELD_NAME))
+            || prop.precision() != -1 || coCtx.kernalContext().config().getSqlConfiguration().isValidationEnabled()) {
             if (validateProps == null)
                 validateProps = new ArrayList<>();
 

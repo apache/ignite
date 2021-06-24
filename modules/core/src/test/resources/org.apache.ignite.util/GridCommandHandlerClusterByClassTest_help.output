@@ -155,6 +155,25 @@ This utility can do the following commands:
     Parameters:
       snapshot_name  - Snapshot name.
 
+  Restore snapshot:
+    control.(sh|bat) --snapshot restore --start snapshot_name [group1,...groupN]
+
+    Parameters:
+      snapshot_name     - Snapshot name.
+      group1,...groupN  - Cache group names.
+
+  Snapshot restore operation status:
+    control.(sh|bat) --snapshot restore --status snapshot_name
+
+    Parameters:
+      snapshot_name  - Snapshot name.
+
+  Cancel snapshot restore operation:
+    control.(sh|bat) --snapshot restore --cancel snapshot_name
+
+    Parameters:
+      snapshot_name  - Snapshot name.
+
   Change cluster tag to new value:
     control.(sh|bat) --change-tag newTagValue [--yes]
 

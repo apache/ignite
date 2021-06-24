@@ -930,12 +930,20 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     req.classError(),
                     cctx.deploymentEnabled());
 
-                cctx.io().sendOrderedMessage(
-                    cctx.node(nodeId),
-                    TOPIC_CACHE.topic(QUERY_TOPIC_PREFIX, nodeId, req.id()),
-                    res,
-                    plc,
-                    Long.MAX_VALUE);
+                ClusterNode node = cctx.node(nodeId);
+
+                if (node == null) {
+                    U.error(log, "Failed to send message because node left grid [nodeId=" + nodeId +
+                        ", msg=" + msg + ']');
+                }
+                else {
+                    cctx.io().sendOrderedMessage(
+                        node,
+                        TOPIC_CACHE.topic(QUERY_TOPIC_PREFIX, nodeId, req.id()),
+                        res,
+                        plc,
+                        Long.MAX_VALUE);
+                }
             }
 
             break;
@@ -1546,7 +1554,11 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param topic Topic.
      * @param c Handler.
      */
-    public void addOrderedCacheGroupHandler(GridCacheSharedContext cctx, Object topic, IgniteBiInClosure<UUID, ? extends GridCacheGroupIdMessage> c) {
+    public void addOrderedCacheGroupHandler(
+        GridCacheSharedContext cctx,
+        Object topic,
+        IgniteBiInClosure<UUID, ? extends GridCacheGroupIdMessage> c
+    ) {
         addOrderedHandler(cctx, true, topic, c);
     }
 
@@ -1558,7 +1570,12 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param topic Topic.
      * @param c Handler.
      */
-    private void addOrderedHandler(GridCacheSharedContext cctx, boolean cacheGrp, Object topic, IgniteBiInClosure<UUID, ? extends GridCacheMessage> c) {
+    private void addOrderedHandler(
+        GridCacheSharedContext cctx,
+        boolean cacheGrp,
+        Object topic,
+        IgniteBiInClosure<UUID, ? extends GridCacheMessage> c
+    ) {
         MessageHandlers msgHandlers = cacheGrp ? grpHandlers : cacheHandlers;
 
         IgniteLogger log0 = log;

@@ -45,11 +45,11 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteEvents;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -186,8 +186,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         cleanPersistenceDir();
-
-        System.clearProperty(IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS);
     }
 
     /**
@@ -618,7 +616,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         TestStringContainerToBePrinted val = new TestStringContainerToBePrinted(search2);
 
-        ctrlStringsToSearch.add("v = [ " + val.getClass().getSimpleName() + "{data='" + search2 + "'}]"); //will validate original toString() was called
+        //will validate original toString() was called
+        ctrlStringsToSearch.add("v = [ " + val.getClass().getSimpleName() + "{data='" + search2 + "'}]");
         ctrlStringsForBinaryObjSearch.add(search2);
 
         addlCache.put("SearchValue", val);
@@ -627,7 +626,8 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         TestStringContainerToBePrinted key = new TestStringContainerToBePrinted(search3);
 
-        ctrlStringsToSearch.add("k = " + key.getClass().getSimpleName() + "{data='" + search3 + "'}"); //will validate original toString() was called
+        //will validate original toString() was called
+        ctrlStringsToSearch.add("k = " + key.getClass().getSimpleName() + "{data='" + search3 + "'}");
         ctrlStringsForBinaryObjSearch.add(search3); //validate only string itself
 
         addlCache.put(key, "SearchKey");
@@ -1103,11 +1103,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      */
     @Test
     public void testTxRecordsReadWoBinaryMeta() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS, "true");
-
         Ignite ignite = startGrid("node0");
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         Map<Object, IndexedObject> map = new TreeMap<>();
 
@@ -1116,7 +1114,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         ignite.cache(CACHE_NAME).putAll(map);
 
-        ignite.cluster().active(false);
+        ignite.cluster().state(ClusterState.INACTIVE);
 
         String workDir = U.defaultWorkDirectory();
 

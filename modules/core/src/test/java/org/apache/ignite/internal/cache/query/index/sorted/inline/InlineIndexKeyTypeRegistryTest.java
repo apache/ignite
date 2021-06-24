@@ -60,10 +60,18 @@ public class InlineIndexKeyTypeRegistryTest extends GridCommonAbstractTest {
         InlineIndexKeyType t = InlineIndexKeyTypeRegistry.get(new IntegerIndexKey(3), IndexKeyTypes.JAVA_OBJECT, pojoArrayKeyTypeSettings);
         assertEquals(IndexKeyTypes.INT, t.type());
 
-        t = InlineIndexKeyTypeRegistry.get(new PlainJavaObjectIndexKey(new BinaryObjectImpl(), null), IndexKeyTypes.JAVA_OBJECT, pojoArrayKeyTypeSettings);
+        t = InlineIndexKeyTypeRegistry.get(
+            new PlainJavaObjectIndexKey(new BinaryObjectImpl(), null),
+            IndexKeyTypes.JAVA_OBJECT,
+            pojoArrayKeyTypeSettings
+        );
         assertEquals(IndexKeyTypes.JAVA_OBJECT, t.type());
 
-        t = InlineIndexKeyTypeRegistry.get(new PlainJavaObjectIndexKey(new BinaryObjectImpl(), null), IndexKeyTypes.INT, pojoArrayKeyTypeSettings);
+        t = InlineIndexKeyTypeRegistry.get(
+            new PlainJavaObjectIndexKey(new BinaryObjectImpl(), null),
+            IndexKeyTypes.INT,
+            pojoArrayKeyTypeSettings
+        );
         assertEquals(IndexKeyTypes.JAVA_OBJECT, t.type());
 
         t = InlineIndexKeyTypeRegistry.get(new IntegerIndexKey(3), IndexKeyTypes.JAVA_OBJECT, pojoHashKeyTypeSettings);

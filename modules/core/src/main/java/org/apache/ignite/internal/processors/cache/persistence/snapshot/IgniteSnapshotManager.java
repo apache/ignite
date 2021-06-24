@@ -47,21 +47,23 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSnapshot;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.SnapshotEvent;
@@ -105,7 +107,9 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.reader.Standa
 import org.apache.ignite.internal.processors.cache.tree.DataRow;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
+import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
+import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridBusyLock;
@@ -121,7 +125,6 @@ import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -129,6 +132,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -166,6 +170,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirectories;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor.DB_DEFAULT_FOLDER;
+import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
+import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId.getTypeByPartId;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.T_DATA;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getPageIO;
@@ -188,7 +194,7 @@ import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_SNAPSHO
  * </ul>
  */
 public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
-    implements IgniteSnapshot, PartitionsExchangeAware, MetastorageLifecycleListener {
+    implements IgniteSnapshot, PartitionsExchangeAware, MetastorageLifecycleListener, IgniteChangeGlobalStateSupport {
     /** File with delta pages suffix. */
     public static final String DELTA_SUFFIX = ".delta";
 
@@ -258,6 +264,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Marshaller. */
     private final Marshaller marsh;
 
+    /** Distributed process to restore cache group from the snapshot. */
+    private final SnapshotRestoreProcess restoreCacheGrpProc;
+
     /** Resolved persistent data storage settings. */
     private volatile PdsFolderSettings pdsSettings;
 
@@ -315,6 +324,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             this::processLocalSnapshotEndStageResult);
 
         marsh = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
+
+        restoreCacheGrpProc = new SnapshotRestoreProcess(ctx);
     }
 
     /**
@@ -404,12 +415,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     for (SnapshotFutureTask sctx : locSnpTasks.values()) {
                         if (sctx.sourceNodeId().equals(leftNodeId) ||
                             (snpReq != null &&
-                                snpReq.snpName.equals(sctx.snapshotName()) &&
-                                snpReq.bltNodes.contains(leftNodeId))) {
+                                snpReq.snapshotName().equals(sctx.snapshotName()) &&
+                                snpReq.nodes().contains(leftNodeId))) {
                             sctx.acceptException(new ClusterTopologyCheckedException("Snapshot operation interrupted. " +
                                 "One of baseline nodes left the cluster: " + leftNodeId));
                         }
                     }
+
+                    restoreCacheGrpProc.onNodeLeft(leftNodeId);
                 }
             }
             finally {
@@ -423,6 +436,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         busyLock.block();
 
         try {
+            restoreCacheGrpProc.interrupt(new NodeStoppingException("Node is stopping."));
+
             // Try stop all snapshot processing if not yet.
             for (SnapshotFutureTask sctx : locSnpTasks.values())
                 sctx.acceptException(new NodeStoppingException(SNP_NODE_STOPPING_ERR_MSG));
@@ -450,6 +465,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void onActivate(GridKernalContext kctx) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDeActivate(GridKernalContext kctx) {
+        restoreCacheGrpProc.interrupt(new IgniteCheckedException("The cluster has been deactivated."));
+    }
+
     /**
      * @param snpDir Snapshot dir.
      * @param folderName Local node folder name (see {@link U#maskForFileName} with consistent id).
@@ -458,7 +483,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (!snpDir.exists())
             return;
 
-        assert snpDir.isDirectory() : snpDir;
+        if (!snpDir.isDirectory())
+            return;
 
         try {
             File binDir = binaryWorkDir(snpDir.getAbsolutePath(), folderName);
@@ -547,7 +573,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 "Another snapshot operation in progress [req=" + req + ", curr=" + clusterSnpReq + ']'));
         }
 
-        Set<UUID> leftNodes = new HashSet<>(req.bltNodes);
+        Set<UUID> leftNodes = new HashSet<>(req.nodes());
         leftNodes.removeAll(F.viewReadOnly(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
             F.node2id()));
 
@@ -556,8 +582,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 "prior to snapshot operation start: " + leftNodes));
         }
 
-        Set<Integer> leftGrps = new HashSet<>(req.grpIds);
+        List<Integer> grpIds = new ArrayList<>(F.viewReadOnly(req.groups(), CU::cacheId));
+
+        Set<Integer> leftGrps = new HashSet<>(grpIds);
         leftGrps.removeAll(cctx.cache().cacheGroupDescriptors().keySet());
+        boolean withMetaStorage = leftGrps.remove(METASTORAGE_CACHE_ID);
 
         if (!leftGrps.isEmpty()) {
             return new GridFinishedFuture<>(new IgniteCheckedException("Some of requested cache groups doesn't exist " +
@@ -568,7 +597,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         // Prepare collection of pairs group and appropriate cache partition to be snapshot.
         // Cache group context may be 'null' on some nodes e.g. a node filter is set.
-        for (Integer grpId : req.grpIds) {
+        for (Integer grpId : grpIds) {
             if (cctx.cache().cacheGroup(grpId) == null)
                 continue;
 
@@ -577,13 +606,19 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         IgniteInternalFuture<Set<GroupPartitionId>> task0;
 
-        if (parts.isEmpty())
+        if (parts.isEmpty() && !withMetaStorage)
             task0 = new GridFinishedFuture<>(Collections.emptySet());
         else {
-            task0 = registerSnapshotTask(req.snpName,
-                req.srcNodeId,
+            task0 = registerSnapshotTask(req.snapshotName(),
+                req.operationalNodeId(),
                 parts,
-                locSndrFactory.apply(req.snpName));
+                withMetaStorage,
+                locSndrFactory.apply(req.snapshotName()));
+
+            if (withMetaStorage) {
+                ((DistributedMetaStorageImpl)cctx.kernalContext().distributedMetastorage())
+                    .suspend(((SnapshotFutureTask)task0).started());
+            }
 
             clusterSnpReq = req;
         }
@@ -593,11 +628,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 throw F.wrap(fut.error());
 
             try {
-                Set<String> blts = req.bltNodes.stream()
+                Set<String> blts = req.nodes().stream()
                     .map(n -> cctx.discovery().node(n).consistentId().toString())
                     .collect(Collectors.toSet());
 
-                File smf = new File(snapshotLocalDir(req.snpName), snapshotMetaFileName(cctx.localNode().consistentId().toString()));
+                File smf = new File(snapshotLocalDir(req.snapshotName()), snapshotMetaFileName(cctx.localNode().consistentId().toString()));
 
                 if (smf.exists())
                     throw new GridClosureException(new IgniteException("Snapshot metafile must not exist: " + smf.getAbsolutePath()));
@@ -606,12 +641,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 try (OutputStream out = new BufferedOutputStream(new FileOutputStream(smf))) {
                     U.marshal(marsh,
-                        new SnapshotMetadata(req.rqId,
-                            req.snpName,
+                        new SnapshotMetadata(req.requestId(),
+                            req.snapshotName(),
                             cctx.localNode().consistentId().toString(),
                             pdsSettings.folderName(),
                             cctx.gridConfig().getDataStorageConfiguration().getPageSize(),
-                            req.grpIds,
+                            grpIds,
                             blts,
                             fut.result()),
                         out);
@@ -640,7 +675,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         boolean cancelled = err.values().stream().anyMatch(e -> e instanceof IgniteFutureCancelledCheckedException);
 
-        if (snpReq == null || !snpReq.rqId.equals(id)) {
+        if (snpReq == null || !snpReq.requestId().equals(id)) {
             synchronized (snpOpMux) {
                 if (clusterSnpFut != null && clusterSnpFut.rqId.equals(id)) {
                     if (cancelled) {
@@ -659,18 +694,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         if (isLocalNodeCoordinator(cctx.discovery())) {
-            Set<UUID> missed = new HashSet<>(snpReq.bltNodes);
+            Set<UUID> missed = new HashSet<>(snpReq.nodes());
             missed.removeAll(res.keySet());
             missed.removeAll(err.keySet());
 
             if (cancelled) {
-                snpReq.err = new IgniteFutureCancelledCheckedException("Execution of snapshot tasks " +
-                    "has been cancelled by external process [err=" + err + ", missed=" + missed + ']');
+                snpReq.error(new IgniteFutureCancelledCheckedException("Execution of snapshot tasks " +
+                    "has been cancelled by external process [err=" + err + ", missed=" + missed + ']'));
             }
             else if (!F.isEmpty(err) || !missed.isEmpty()) {
-                snpReq.err = new IgniteCheckedException("Execution of local snapshot tasks fails or them haven't been executed " +
+                snpReq.error(new IgniteCheckedException("Execution of local snapshot tasks fails or them haven't been executed " +
                     "due to some of nodes left the cluster. Uncompleted snapshot will be deleted " +
-                    "[err=" + err + ", missed=" + missed + ']');
+                    "[err=" + err + ", missed=" + missed + ']'));
             }
 
             endSnpProc.start(UUID.randomUUID(), snpReq);
@@ -686,8 +721,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return new GridFinishedFuture<>(new SnapshotOperationResponse());
 
         try {
-            if (req.err != null)
-                deleteSnapshot(snapshotLocalDir(req.snpName), pdsSettings.folderName());
+            if (req.error() != null)
+                deleteSnapshot(snapshotLocalDir(req.snapshotName()), pdsSettings.folderName());
 
             removeLastMetaStorageKey();
         }
@@ -709,26 +744,26 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (snpReq == null)
             return;
 
-        Set<UUID> endFail = new HashSet<>(snpReq.bltNodes);
+        Set<UUID> endFail = new HashSet<>(snpReq.nodes());
         endFail.removeAll(res.keySet());
 
         clusterSnpReq = null;
 
         synchronized (snpOpMux) {
             if (clusterSnpFut != null) {
-                if (endFail.isEmpty() && snpReq.err == null) {
+                if (endFail.isEmpty() && snpReq.error() == null) {
                     clusterSnpFut.onDone();
 
                     if (log.isInfoEnabled())
                         log.info(SNAPSHOT_FINISHED_MSG + snpReq);
                 }
-                else if (snpReq.err == null) {
+                else if (snpReq.error() == null) {
                     clusterSnpFut.onDone(new IgniteCheckedException("Snapshot creation has been finished with an error. " +
                         "Local snapshot tasks may not finished completely or finalizing results fails " +
                         "[fail=" + endFail + ", err=" + err + ']'));
                 }
                 else
-                    clusterSnpFut.onDone(snpReq.err);
+                    clusterSnpFut.onDone(snpReq.error());
 
                 clusterSnpFut = null;
             }
@@ -745,6 +780,60 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         synchronized (snpOpMux) {
             return clusterSnpReq != null || clusterSnpFut != null;
         }
+    }
+
+    /**
+     * Check if snapshot restore process is currently running.
+     *
+     * @return {@code True} if the snapshot restore operation is in progress.
+     */
+    public boolean isRestoring() {
+        return restoreCacheGrpProc.restoringSnapshotName() != null;
+    }
+
+    /**
+     * Check if snapshot restore process is currently running.
+     *
+     * @param snpName Snapshot name.
+     * @return {@code True} if the snapshot restore operation from the specified snapshot is in progress locally.
+     */
+    public boolean isRestoring(String snpName) {
+        return snpName.equals(restoreCacheGrpProc.restoringSnapshotName());
+    }
+
+    /**
+     * Check if the cache or group with the specified name is currently being restored from the snapshot.
+     *
+     * @param cacheName Cache name.
+     * @param grpName Cache group name.
+     * @return {@code True} if the cache or group with the specified name is being restored.
+     */
+    public boolean isRestoring(String cacheName, @Nullable String grpName) {
+        return restoreCacheGrpProc.isRestoring(cacheName, grpName);
+    }
+
+    /**
+     * Status of the restore operation cluster-wide.
+     *
+     * @param snpName Snapshot name.
+     * @return Future that will be completed when the status of the restore operation is received from all the server
+     * nodes. The result of this future will be {@code false} if the restore process with the specified snapshot name is
+     * not running on all nodes.
+     */
+    public IgniteFuture<Boolean> restoreStatus(String snpName) {
+        return executeRestoreManagementTask(SnapshotRestoreStatusTask.class, snpName);
+    }
+
+    /**
+     * @param restoreId Restore process ID.
+     * @return Server nodes on which a successful start of the cache(s) is required, if any of these nodes fails when
+     *         starting the cache(s), the whole procedure is rolled back.
+     */
+    public Set<UUID> cacheStartRequiredAliveNodes(@Nullable IgniteUuid restoreId) {
+        if (restoreId == null)
+            return Collections.emptySet();
+
+        return restoreCacheGrpProc.cacheStartRequiredAliveNodes(restoreId);
     }
 
     /**
@@ -821,6 +910,21 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Boolean> cancelSnapshotRestore(String name) {
+        return executeRestoreManagementTask(SnapshotRestoreCancelTask.class, name);
+    }
+
+    /**
+     * @param name Snapshot name.
+     *
+     * @return Future that will be finished when process the process is complete. The result of this future will be
+     * {@code false} if the restore process with the specified snapshot name is not running at all.
+     */
+    public IgniteFuture<Boolean> cancelLocalRestoreTask(String name) {
+        return restoreCacheGrpProc.cancel(new IgniteCheckedException("Operation has been canceled by the user."), name);
+    }
+
     /**
      * @param name Snapshot name.
      * @return {@code true} if snapshot is OK.
@@ -829,10 +933,36 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
 
-        GridKernalContext kctx0 = cctx.kernalContext();
-        GridFutureAdapter<IdleVerifyResultV2> res = new GridFutureAdapter<>();
+        cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
 
-        kctx0.security().authorize(ADMIN_SNAPSHOT);
+        return checkSnapshot(name, null).chain(f -> {
+            try {
+                return f.get().idleVerifyResult();
+            }
+            catch (Throwable t) {
+                throw new GridClosureException(t);
+            }
+        });
+    }
+
+    /**
+     * The check snapshot procedure performs compute operation over the whole cluster to verify the snapshot
+     * entirety and partitions consistency. The result future will be completed with an exception if this
+     * exception is not related to the check procedure, and will be completed normally with the {@code IdleVerifyResult}.
+     *
+     * @param name Snapshot name.
+     * @param grps Collection of cache group names to check.
+     * @return {@code true} if snapshot is OK.
+     */
+    public IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> checkSnapshot(String name, @Nullable Collection<String> grps) {
+        A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
+        A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
+        A.ensure(grps == null || grps.stream().filter(Objects::isNull).collect(Collectors.toSet()).isEmpty(),
+            "Collection of cache groups names cannot contain null elements.");
+
+        GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> res = new GridFutureAdapter<>();
+
+        GridKernalContext kctx0 = cctx.kernalContext();
 
         Collection<ClusterNode> bltNodes = F.view(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
             (node) -> CU.baselineNode(node, kctx0.state().clusterState()));
@@ -840,31 +970,49 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         kctx0.task().setThreadContext(TC_SKIP_AUTH, true);
         kctx0.task().setThreadContext(TC_SUBGRID, bltNodes);
 
-        kctx0.task().execute(SnapshotMetadataCollectorTask.class, name)
-            .listen(f0 -> {
-                if (f0.error() == null) {
-                    Map<ClusterNode, List<SnapshotMetadata>> metas = f0.result();
+        kctx0.task().execute(SnapshotMetadataCollectorTask.class, name).listen(f0 -> {
+            if (f0.error() == null) {
+                Map<ClusterNode, List<SnapshotMetadata>> metas = f0.result();
 
-                    kctx0.task().setThreadContext(TC_SKIP_AUTH, true);
-                    kctx0.task().setThreadContext(TC_SUBGRID, new ArrayList<>(metas.keySet()));
+                Map<Integer, String> grpIds = grps == null ? Collections.emptyMap() :
+                    grps.stream().collect(Collectors.toMap(CU::cacheId, v -> v));
 
-                    kctx0.task().execute(SnapshotPartitionsVerifyTask.class, metas)
-                        .listen(f1 -> {
-                            if (f1.error() == null)
-                                res.onDone(f1.result());
-                            else if (f1.error() instanceof IgniteSnapshotVerifyException)
-                                res.onDone(new IdleVerifyResultV2(((IgniteSnapshotVerifyException)f1.error()).exceptions()));
-                            else
-                                res.onDone(f1.error());
-                        });
+                for (List<SnapshotMetadata> nodeMetas : metas.values()) {
+                    for (SnapshotMetadata meta : nodeMetas)
+                        grpIds.keySet().removeAll(meta.partitions().keySet());
                 }
-                else {
-                    if (f0.error() instanceof IgniteSnapshotVerifyException)
-                        res.onDone(new IdleVerifyResultV2(((IgniteSnapshotVerifyException)f0.error()).exceptions()));
-                    else
-                        res.onDone(f0.error());
+
+                if (!grpIds.isEmpty()) {
+                    res.onDone(new SnapshotPartitionsVerifyTaskResult(metas,
+                        new IdleVerifyResultV2(Collections.singletonMap(cctx.localNode(),
+                            new IllegalArgumentException("Cache group(s) was not " +
+                                "found in the snapshot [groups=" + grpIds.values() + ", snapshot=" + name + ']')))));
+
+                    return;
                 }
-            });
+
+                kctx0.task().setThreadContext(TC_SKIP_AUTH, true);
+                kctx0.task().setThreadContext(TC_SUBGRID, new ArrayList<>(metas.keySet()));
+
+                kctx0.task().execute(SnapshotPartitionsVerifyTask.class, new SnapshotPartitionsVerifyTaskArg(grps, metas))
+                    .listen(f1 -> {
+                        if (f1.error() == null)
+                            res.onDone(f1.result());
+                        else if (f1.error() instanceof IgniteSnapshotVerifyException)
+                            res.onDone(new SnapshotPartitionsVerifyTaskResult(metas,
+                                new IdleVerifyResultV2(((IgniteSnapshotVerifyException)f1.error()).exceptions())));
+                        else
+                            res.onDone(f1.error());
+                    });
+            }
+            else {
+                if (f0.error() instanceof IgniteSnapshotVerifyException)
+                    res.onDone(new SnapshotPartitionsVerifyTaskResult(null,
+                        new IdleVerifyResultV2(((IgniteSnapshotVerifyException)f0.error()).exceptions())));
+                else
+                    res.onDone(f0.error());
+            }
+        });
 
         return res;
     }
@@ -875,12 +1023,22 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return The list of cache or cache group names in given snapshot on local node.
      */
     public List<File> snapshotCacheDirectories(String snpName, String folderName) {
+        return snapshotCacheDirectories(snpName, folderName, name -> true);
+    }
+
+    /**
+     * @param snpName Snapshot name.
+     * @param folderName Directory name for cache group.
+     * @param names Cache group names to filter.
+     * @return The list of cache or cache group names in given snapshot on local node.
+     */
+    public List<File> snapshotCacheDirectories(String snpName, String folderName, Predicate<String> names) {
         File snpDir = snapshotLocalDir(snpName);
 
         if (!snpDir.exists())
             return Collections.emptyList();
 
-        return cacheDirectories(new File(snpDir, databaseRelativePath(folderName)), name -> true);
+        return cacheDirectories(new File(snpDir, databaseRelativePath(folderName)), names);
     }
 
     /**
@@ -905,8 +1063,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         try (InputStream in = new BufferedInputStream(new FileInputStream(smf))) {
             SnapshotMetadata meta = marsh.unmarshal(in, U.resolveClassLoader(cctx.gridConfig()));
 
-            if (!U.maskForFileName(meta.consistentId()).equals(smfName))
-                throw new IgniteException("Error reading snapshot metadata [smfName=" + smfName + ", consId=" + U.maskForFileName(meta.consistentId()));
+            if (!U.maskForFileName(meta.consistentId()).equals(smfName)) {
+                throw new IgniteException(
+                    "Error reading snapshot metadata [smfName=" + smfName + ", consId=" + U.maskForFileName(meta.consistentId())
+                );
+            }
 
             return meta;
         }
@@ -1003,14 +1164,26 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             ClusterSnapshotFuture snpFut0;
 
             synchronized (snpOpMux) {
-                if (clusterSnpFut != null && !clusterSnpFut.isDone())
-                    throw new IgniteException("Create snapshot request has been rejected. The previous snapshot operation was not completed.");
+                if (clusterSnpFut != null && !clusterSnpFut.isDone()) {
+                    throw new IgniteException(
+                        "Create snapshot request has been rejected. The previous snapshot operation was not completed."
+                    );
+                }
 
                 if (clusterSnpReq != null)
                     throw new IgniteException("Create snapshot request has been rejected. Parallel snapshot processes are not allowed.");
 
-                if (localSnapshotNames().contains(name))
-                    throw new IgniteException("Create snapshot request has been rejected. Snapshot with given name already exists on local node.");
+                if (localSnapshotNames().contains(name)) {
+                    throw new IgniteException(
+                        "Create snapshot request has been rejected. Snapshot with given name already exists on local node."
+                    );
+                }
+
+                if (isRestoring()) {
+                    throw new IgniteException(
+                        "Snapshot operation has been rejected. Cache group restore operation is currently in progress."
+                    );
+                }
 
                 snpFut0 = new ClusterSnapshotFuture(UUID.randomUUID(), name);
 
@@ -1018,11 +1191,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 lastSeenSnpFut = snpFut0;
             }
 
-            List<Integer> grps = cctx.cache().persistentGroups().stream()
+            List<String> grps = cctx.cache().persistentGroups().stream()
                 .filter(g -> cctx.cache().cacheType(g.cacheOrGroupName()) == CacheType.USER)
                 .filter(g -> !g.config().isEncryptionEnabled())
-                .map(CacheGroupDescriptor::groupId)
+                .map(CacheGroupDescriptor::cacheOrGroupName)
                 .collect(Collectors.toList());
+
+            grps.add(METASTORAGE_CACHE_NAME);
 
             List<ClusterNode> srvNodes = cctx.discovery().serverNodes(AffinityTopologyVersion.NONE);
 
@@ -1062,6 +1237,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteFuture<Void> restoreSnapshot(String name, @Nullable Collection<String> grpNames) {
+        A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
+        A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
+        A.ensure(grpNames == null || !grpNames.isEmpty(), "List of cache group names cannot be empty.");
+
+        return restoreCacheGrpProc.start(name, grpNames);
+    }
+
+    /** {@inheritDoc} */
     @Override public void onReadyForReadWrite(ReadWriteMetastorage metaStorage) throws IgniteCheckedException {
         synchronized (snpOpMux) {
             this.metaStorage = metaStorage;
@@ -1075,6 +1259,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** {@inheritDoc} */
     @Override public void onReadyForRead(ReadOnlyMetastorage metaStorage) throws IgniteCheckedException {
+        restoreCacheGrpProc.cleanup();
+
         // Snapshot which has not been completed due to the local node crashed must be deleted.
         String snpName = (String)metaStorage.read(SNP_RUNNING_KEY);
 
@@ -1111,17 +1297,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         SnapshotOperationRequest snpReq = clusterSnpReq;
 
-        SnapshotFutureTask task = locSnpTasks.get(snpReq.snpName);
+        SnapshotFutureTask task = locSnpTasks.get(snpReq.snapshotName());
 
         if (task == null)
             return;
 
         if (task.start()) {
-            cctx.database().forceCheckpoint(String.format("Start snapshot operation: %s", snpReq.snpName));
+            cctx.database().forceCheckpoint(String.format("Start snapshot operation: %s", snpReq.snapshotName()));
 
             // Schedule task on a checkpoint and wait when it starts.
             try {
-                task.awaitStarted();
+                task.started().get();
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Fail to wait while cluster-wide snapshot operation started", e);
@@ -1177,11 +1363,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         List<File> grps = cacheDirectories(nodePath, name -> name.equals(grpName));
 
-        if (F.isEmpty(grps))
-            throw new IgniteCheckedException("The snapshot cache group not found [dir=" + snpDir.getAbsolutePath() + ", grpName=" + grpName + ']');
+        if (F.isEmpty(grps)) {
+            throw new IgniteCheckedException(
+                "The snapshot cache group not found [dir=" + snpDir.getAbsolutePath() + ", grpName=" + grpName + ']'
+            );
+        }
 
-        if (grps.size() > 1)
-            throw new IgniteCheckedException("The snapshot cache group directory cannot be uniquely identified [dir=" + snpDir.getAbsolutePath() + ", grpName=" + grpName + ']');
+        if (grps.size() > 1) {
+            throw new IgniteCheckedException(
+                "The snapshot cache group directory cannot be uniquely identified [dir=" + snpDir.getAbsolutePath() +
+                    ", grpName=" + grpName + ']'
+            );
+        }
 
         File snpPart = getPartitionFile(new File(snapshotLocalDir(snpName), databaseRelativePath(folderName)),
             grps.get(0).getName(), partId);
@@ -1212,6 +1405,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param snpName Unique snapshot name.
      * @param srcNodeId Node id which cause snapshot operation.
      * @param parts Collection of pairs group and appropriate cache partition to be snapshot.
+     * @param withMetaStorage {@code true} if all metastorage data must be also included into snapshot.
      * @param snpSndr Factory which produces snapshot receiver instance.
      * @return Snapshot operation task which should be registered on checkpoint to run.
      */
@@ -1219,10 +1413,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         String snpName,
         UUID srcNodeId,
         Map<Integer, Set<Integer>> parts,
+        boolean withMetaStorage,
         SnapshotSender snpSndr
     ) {
-        if (!busyLock.enterBusy())
-            return new SnapshotFutureTask(new IgniteCheckedException("Snapshot manager is stopping [locNodeId=" + cctx.localNodeId() + ']'));
+        if (!busyLock.enterBusy()) {
+            return new SnapshotFutureTask(
+                new IgniteCheckedException("Snapshot manager is stopping [locNodeId=" + cctx.localNodeId() + ']'));
+        }
 
         try {
             if (locSnpTasks.containsKey(snpName))
@@ -1238,6 +1435,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     ioFactory,
                     snpSndr,
                     parts,
+                    withMetaStorage,
                     locBuff));
 
             if (prev != null)
@@ -1305,7 +1503,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /**
      * @return The executor used to run snapshot tasks.
      */
-    Executor snapshotExecutorService() {
+    ExecutorService snapshotExecutorService() {
         assert snpRunner != null;
 
         return snpRunner;
@@ -1316,6 +1514,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     void ioFactory(FileIOFactory ioFactory) {
         this.ioFactory = ioFactory;
+    }
+
+    /**
+     * @return Factory to create IO interface over a page stores.
+     */
+    FileIOFactory ioFactory() {
+        return ioFactory;
     }
 
     /**
@@ -1364,6 +1569,25 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         catch (IOException e) {
             throw new IgniteException(e);
         }
+    }
+
+    /**
+     * @param taskCls Snapshot restore operation management task class.
+     * @param snpName Snapshot name.
+     */
+    private IgniteFuture<Boolean> executeRestoreManagementTask(
+        Class<? extends ComputeTask<String, Boolean>> taskCls,
+        String snpName
+    ) {
+        cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
+
+        Collection<ClusterNode> bltNodes = F.view(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
+            (node) -> CU.baselineNode(node, cctx.kernalContext().state().clusterState()));
+
+        cctx.kernalContext().task().setThreadContext(TC_SKIP_AUTH, true);
+        cctx.kernalContext().task().setThreadContext(TC_SUBGRID, bltNodes);
+
+        return new IgniteFutureImpl<>(cctx.kernalContext().task().execute(taskCls, snpName));
     }
 
     /**
@@ -1775,49 +1999,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
     }
 
-    /** Snapshot start request for {@link DistributedProcess} initiate message. */
-    private static class SnapshotOperationRequest implements Serializable {
-        /** Serial version uid. */
-        private static final long serialVersionUID = 0L;
-
-        /** Unique snapshot request id. */
-        private final UUID rqId;
-
-        /** Source node id which trigger request. */
-        private final UUID srcNodeId;
-
-        /** Snapshot name. */
-        private final String snpName;
-
-        /** The list of cache groups to include into snapshot. */
-        @GridToStringInclude
-        private final List<Integer> grpIds;
-
-        /** The list of affected by snapshot operation baseline nodes. */
-        @GridToStringInclude
-        private final Set<UUID> bltNodes;
-
-        /** Exception occurred during snapshot operation processing. */
-        private volatile IgniteCheckedException err;
-
-        /**
-         * @param snpName Snapshot name.
-         * @param grpIds Cache groups to include into snapshot.
-         */
-        public SnapshotOperationRequest(UUID rqId, UUID srcNodeId, String snpName, List<Integer> grpIds, Set<UUID> bltNodes) {
-            this.rqId = rqId;
-            this.srcNodeId = srcNodeId;
-            this.snpName = snpName;
-            this.grpIds = grpIds;
-            this.bltNodes = bltNodes;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(SnapshotOperationRequest.class, this);
-        }
-    }
-
     /** */
     private static class SnapshotOperationResponse implements Serializable {
         /** Serial version uid. */
@@ -1858,18 +2039,21 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** */
-    private static class ClusterSnapshotFuture extends GridFutureAdapter<Void> {
+    protected static class ClusterSnapshotFuture extends GridFutureAdapter<Void> {
         /** Unique snapshot request id. */
-        private final UUID rqId;
+        final UUID rqId;
 
         /** Snapshot name. */
-        private final String name;
+        final String name;
 
         /** Snapshot start time. */
-        private final long startTime;
+        final long startTime;
 
         /** Snapshot finish time. */
-        private volatile long endTime;
+        volatile long endTime;
+
+        /** Operation interruption exception. */
+        volatile IgniteCheckedException interruptEx;
 
         /**
          * Default constructor.

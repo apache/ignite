@@ -43,17 +43,24 @@ public class LongAdderMetric extends AbstractMetric implements LongMetric {
      * @param x Value to be added.
      */
     public void add(long x) {
-        val.add(x);
+        add0(x);
     }
 
     /** Adds 1 to the metric. */
     public void increment() {
-        add(1);
+        add0(1);
     }
 
     /** Adds -1 to the metric. */
     public void decrement() {
-        add(-1);
+        add0(-1);
+    }
+
+    /**
+     * Implementation method needed to avoid being overriden.
+     */
+    private void add0(long x) {
+        val.add(x);
     }
 
     /** {@inheritDoc} */
