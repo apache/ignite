@@ -27,6 +27,7 @@ cellular_affinity:
 
 rebalance:
   - ../rebalance/in_memory_test.py
+  - ../rebalance/persistent_test.py
 
 clients:
   - ../client_test.py
