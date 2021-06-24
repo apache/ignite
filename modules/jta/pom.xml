@@ -48,6 +48,12 @@
         </dependency>
 
         <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>org.ow2.jotm</groupId>
             <artifactId>jotm-core</artifactId>
             <version>${jotm.version}</version>
