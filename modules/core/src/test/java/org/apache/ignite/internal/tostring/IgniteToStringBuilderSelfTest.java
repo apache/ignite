@@ -225,14 +225,14 @@ public class IgniteToStringBuilderSelfTest extends IgniteAbstractTest {
         for (int i = 0; i < 100000; i++)
             obj.toStringManual();
 
-        logger().info("Manual toString() took: " + (System.currentTimeMillis() - start) + "ms");
+        logger().info("Manual toString() took: {}ms", System.currentTimeMillis() - start);
 
         start = System.currentTimeMillis();
 
         for (int i = 0; i < 100000; i++)
             obj.toStringAutomatic();
 
-        logger().info("Automatic toString() took: " + (System.currentTimeMillis() - start) + "ms");
+        logger().info("Automatic toString() took: {}ms", System.currentTimeMillis() - start);
     }
 
     /**

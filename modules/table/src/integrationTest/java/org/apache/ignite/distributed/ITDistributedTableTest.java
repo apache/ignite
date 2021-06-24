@@ -274,7 +274,7 @@ public class ITDistributedTableTest {
      * @param keysCnt Count of keys.
      */
     public void partitionedTableView(Table view, int keysCnt) {
-        LOG.info("Test for Table view [keys=" + keysCnt + ']');
+        LOG.info("Test for Table view [keys={}]", keysCnt);
 
         for (int i = 0; i < keysCnt; i++) {
             view.insert(view.tupleBuilder()
@@ -381,7 +381,7 @@ public class ITDistributedTableTest {
      * @param keysCnt Count of keys.
      */
     public void partitionedTableKVBinaryView(KeyValueBinaryView view, int keysCnt) {
-        LOG.info("Tes for Key-Value binary view [keys=" + keysCnt + ']');
+        LOG.info("Tes for Key-Value binary view [keys={}]", keysCnt);
 
         for (int i = 0; i < keysCnt; i++) {
             view.putIfAbsent(

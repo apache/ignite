@@ -70,7 +70,7 @@ class ITSimpleCounterServerTest extends RaftServerAbstractTest {
      */
     @BeforeEach
     void before(TestInfo testInfo) {
-        LOG.info(">>>> Starting test " + testInfo.getTestMethod().orElseThrow().getName());
+        LOG.info(">>>> Starting test {}", testInfo.getTestMethod().orElseThrow().getName());
 
         String id = "localhost:" + PORT;
 

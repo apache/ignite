@@ -80,17 +80,17 @@ class ITNodeRestartsTest {
         int idx0 = 0;
         int idx1 = 2;
 
-        LOG.info("Shutdown " + addresses.get(idx0));
+        LOG.info("Shutdown {}", addresses.get(idx0));
         services.get(idx0).shutdown();
 
-        LOG.info("Shutdown " + addresses.get(idx1));
+        LOG.info("Shutdown {}", addresses.get(idx1));
         services.get(idx1).shutdown();
 
-        LOG.info("Starting " + addresses.get(idx0));
+        LOG.info("Starting {}", addresses.get(idx0));
         ClusterService svc0 = startNetwork(addresses.get(idx0), initPort + idx0, addresses);
         services.set(idx0, svc0);
 
-        LOG.info("Starting " + addresses.get(idx1));
+        LOG.info("Starting {}", addresses.get(idx1));
         ClusterService svc2 = startNetwork(addresses.get(idx1), initPort + idx1, addresses);
         services.set(idx1, svc2);
 

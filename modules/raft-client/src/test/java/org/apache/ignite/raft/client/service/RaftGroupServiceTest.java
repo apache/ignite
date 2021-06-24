@@ -105,7 +105,7 @@ public class RaftGroupServiceTest {
     void before(TestInfo testInfo) {
         when(cluster.messagingService()).thenReturn(messagingService);
 
-        LOG.info(">>>> Starting test " + testInfo.getTestMethod().orElseThrow().getName());
+        LOG.info(">>>> Starting test {}", testInfo.getTestMethod().orElseThrow().getName());
     }
 
     /**
@@ -363,7 +363,7 @@ public class RaftGroupServiceTest {
 
         timer.schedule(new TimerTask() {
             @Override public void run() {
-                LOG.info("Set leader {0}", NODES.get(1));
+                LOG.info("Set leader {}", NODES.get(1));
 
                 RaftGroupServiceTest.this.leader = NODES.get(1);
             }

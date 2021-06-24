@@ -309,6 +309,7 @@ public class IgniteUtils {
      *
      * @param clsName Class name.
      * @param ldr Class loader.
+     * @param clsFilter Predicate to filter class names.
      * @return Class.
      * @throws ClassNotFoundException If class not found.
      */

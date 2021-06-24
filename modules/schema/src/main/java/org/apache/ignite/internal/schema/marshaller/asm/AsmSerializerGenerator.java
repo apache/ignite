@@ -102,12 +102,12 @@ public class AsmSerializerGenerator implements SerializerFactory {
             compilationTime = System.nanoTime() - compilationTime;
 
             if (LOG.isTraceEnabled()) {
-                LOG.trace("ASM serializer created: codeGenStage=" + TimeUnit.NANOSECONDS.toMicros(generation) + "us" +
-                    ", compileStage=" + TimeUnit.NANOSECONDS.toMicros(compilationTime) + "us." + "Code: " + writer.toString());
+                LOG.trace("ASM serializer created: codeGenStage={}us, compileStage={}us. Code: {}",
+                    TimeUnit.NANOSECONDS.toMicros(generation), TimeUnit.NANOSECONDS.toMicros(compilationTime), writer);
             }
             else if (LOG.isDebugEnabled()) {
-                LOG.debug("ASM serializer created: codeGenStage=" + TimeUnit.NANOSECONDS.toMicros(generation) + "us" +
-                    ", compileStage=" + TimeUnit.NANOSECONDS.toMicros(compilationTime) + "us.");
+                LOG.debug("ASM serializer created: codeGenStage={}us, compileStage={}us.",
+                    TimeUnit.NANOSECONDS.toMicros(generation), TimeUnit.NANOSECONDS.toMicros(compilationTime));
             }
 
             // Instantiate serializer.

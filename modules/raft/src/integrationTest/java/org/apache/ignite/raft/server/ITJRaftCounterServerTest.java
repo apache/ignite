@@ -120,7 +120,7 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
     /** */
     @BeforeEach
     void before(TestInfo testInfo) {
-        LOG.info(">>>>>>>>>>>>>>> Start test method: " + testInfo.getTestMethod().orElseThrow().getName());
+        LOG.info(">>>>>>>>>>>>>>> Start test method: {}", testInfo.getTestMethod().orElseThrow().getName());
 
         dataPath = TestUtils.mkTempDir();
     }
@@ -140,7 +140,7 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
 
         assertTrue(Utils.delete(new File(dataPath)), "Failed to delete " + dataPath);
 
-        LOG.info(">>>>>>>>>>>>>>> End test method: " + testInfo.getTestMethod().orElseThrow().getName());
+        LOG.info(">>>>>>>>>>>>>>> End test method: {}", testInfo.getTestMethod().orElseThrow().getName());
     }
 
     /**
@@ -555,7 +555,7 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
         for (int i = start; i <= stop; i++) {
             val = client.<Long>run(new IncrementAndGetCommand(i)).get();
 
-            LOG.info("Val=" + val + ", i=" + i);
+            LOG.info("Val={}, i={}", val, i);
         }
 
         return val;

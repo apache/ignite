@@ -22,6 +22,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import org.apache.ignite.lang.IgniteLogger;
+import org.apache.ignite.lang.LoggerMessageHelper;
 
 /**
  * Utility class provides various method for manipulating with bytes.
@@ -118,7 +119,9 @@ public class ByteUtils {
             }
         }
         catch (Exception e) {
-            LOG.warn("Could not serialize a class [cls=" + obj.getClass().getName() + "]", e);
+            LOG.warn(() ->
+                LoggerMessageHelper.format("Could not serialize a class [cls={}]", obj.getClass().getName()),
+                e);
 
             return null;
         }

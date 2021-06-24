@@ -243,7 +243,7 @@ public class ConnectionManager {
              clientWorkerGroup.shutdownGracefully(0L, 15, TimeUnit.SECONDS).sync();
          }
          catch (Exception e) {
-             LOG.warn("Failed to stop the ConnectionManager: " + e.getMessage());
+             LOG.warn("Failed to stop the ConnectionManager: {}", e.getMessage());
          }
     }
 
