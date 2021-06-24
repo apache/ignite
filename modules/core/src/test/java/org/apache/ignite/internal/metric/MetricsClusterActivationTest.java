@@ -189,7 +189,7 @@ public class MetricsClusterActivationTest extends GridCommonAbstractTest {
         assertFalse(movingPartitionsAllocationMap.isEmpty());
     }
 
-    /** Checks cache groups metrics. */
+    /** Checks cache metrics. */
     private void checkCacheMetrics(IgniteEx ignite, boolean expEntries) {
         MetricRegistry mreg = ignite.context().metric().registry(cacheMetricsRegistryName(DEFAULT_CACHE_NAME, false));
 
