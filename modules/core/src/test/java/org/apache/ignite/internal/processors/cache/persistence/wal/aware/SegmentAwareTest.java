@@ -18,14 +18,17 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.aware;
 
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.logger.NullLogger;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
+import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -50,7 +53,7 @@ public class SegmentAwareTest {
         int iterationCnt = 100_000;
         int segmentToHandle = 1;
 
-        IgniteInternalFuture archiverThread = GridTestUtils.runAsync(() -> {
+        IgniteInternalFuture archiverThread = runAsync(() -> {
             int i = iterationCnt;
 
             while (i-- > 0) {
@@ -63,7 +66,7 @@ public class SegmentAwareTest {
             }
         });
 
-        IgniteInternalFuture lockerThread = GridTestUtils.runAsync(() -> {
+        IgniteInternalFuture lockerThread = runAsync(() -> {
             int i = iterationCnt;
 
             while (i-- > 0) {
@@ -564,23 +567,15 @@ public class SegmentAwareTest {
     }
 
     /**
-     * Should fail when release unreserved segment.
+     * Check that there will be no error if a non-reserved segment is released.
      */
     @Test
-    public void testAssertFail_WhenReleaseUnreservedSegment() {
+    public void testReleaseUnreservedSegment() {
         //given: thread which awaited segment.
         SegmentAware aware = segmentAware(10);
 
         aware.reserve(5);
-        try {
-
-            aware.release(7);
-        }
-        catch (AssertionError e) {
-            return;
-        }
-
-        fail("Should fail with AssertError because this segment have not reserved");
+        aware.release(7);
     }
 
     /**
@@ -776,6 +771,19 @@ public class SegmentAwareTest {
     }
 
     /**
+     * Checking the correct creation {@link SegmentArchiveSizeStorage}.
+     */
+    @Test
+    public void testCreateSegmentArchiveSizeStorage() {
+        assertThrowsOnCreateSegmentArchiveSizeStorage(UNLIMITED_WAL_ARCHIVE, 100);
+        assertThrowsOnCreateSegmentArchiveSizeStorage(200, 100);
+
+        segmentAware(1, false, UNLIMITED_WAL_ARCHIVE, UNLIMITED_WAL_ARCHIVE);
+        segmentAware(1, false, 100, UNLIMITED_WAL_ARCHIVE);
+        segmentAware(1, false, 100, 200);
+    }
+
+    /**
      * Assert that future is still not finished.
      *
      * @param future Future to check.
@@ -799,7 +807,7 @@ public class SegmentAwareTest {
      */
     private IgniteInternalFuture awaitThread(Waiter waiter) throws IgniteCheckedException, InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
-        IgniteInternalFuture<Object> future = GridTestUtils.runAsync(
+        IgniteInternalFuture<Object> future = runAsync(
             () -> {
                 latch.countDown();
                 try {
@@ -848,12 +856,59 @@ public class SegmentAwareTest {
      * @return New instance.
      */
     private SegmentAware segmentAware(int walSegmentsCnt, boolean compactionEnabled) {
+        return segmentAware(walSegmentsCnt, compactionEnabled, UNLIMITED_WAL_ARCHIVE, UNLIMITED_WAL_ARCHIVE);
+    }
+
+    /**
+     * Factory method for the {@link SegmentAware}.
+     *
+     * @param walSegmentsCnt Total WAL segments count.
+     * @param compactionEnabled Is wal compaction enabled.
+     * @param minWalArchiveSize Minimum size of the WAL archive in bytes
+     *      or {@link DataStorageConfiguration#UNLIMITED_WAL_ARCHIVE}.
+     * @param maxWalArchiveSize Maximum size of the WAL archive in bytes
+     *      or {@link DataStorageConfiguration#UNLIMITED_WAL_ARCHIVE}.
+     * @return New instance.
+     */
+    private SegmentAware segmentAware(
+        int walSegmentsCnt,
+        boolean compactionEnabled,
+        long minWalArchiveSize,
+        long maxWalArchiveSize
+    ) {
         return new SegmentAware(
             new NullLogger(),
             walSegmentsCnt,
             compactionEnabled,
-            UNLIMITED_WAL_ARCHIVE,
-            UNLIMITED_WAL_ARCHIVE
+            minWalArchiveSize,
+            maxWalArchiveSize
         );
+    }
+
+    /**
+     * Checking that an exception will be thrown on creation {@link SegmentArchiveSizeStorage}.
+     *
+     * @param minWalArchiveSize Minimum size of the WAL archive in bytes
+     *      or {@link DataStorageConfiguration#UNLIMITED_WAL_ARCHIVE}.
+     * @param maxWalArchiveSize Maximum size of the WAL archive in bytes
+     *      or {@link DataStorageConfiguration#UNLIMITED_WAL_ARCHIVE}.
+     */
+    private void assertThrowsOnCreateSegmentArchiveSizeStorage(long minWalArchiveSize, long maxWalArchiveSize) {
+        assertThrows(
+            null,
+            () -> segmentAware(1, false, minWalArchiveSize, maxWalArchiveSize),
+            AssertionError.class,
+            null
+        );
+    }
+
+    /**
+     * Getting {@code SegmentAware#archiveSizeStorage}.
+     *
+     * @param aware Segment aware.
+     * @return Instance of {@link SegmentArchiveSizeStorage}.
+     */
+    private SegmentArchiveSizeStorage archiveSizeStorage(SegmentAware aware) {
+        return getFieldValue(aware, "archiveSizeStorage");
     }
 }
