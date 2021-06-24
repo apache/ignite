@@ -160,7 +160,7 @@ class RebalanceParams(NamedTuple):
     jvm_opts: list = None
 
     @property
-    def max_size(self):
+    def data_region_max_size(self):
         """
         Max size for DataRegionConfiguration.
         """
@@ -245,15 +245,15 @@ def start_ignite(test_context, ignite_version: str, rebalance_params: RebalanceP
 
     if rebalance_params.persistent:
         data_storage = DataStorageConfiguration(
-            max_wal_archive_size=2 * rebalance_params.max_size,
+            max_wal_archive_size=2 * rebalance_params.data_region_max_size,
             default=DataRegionConfiguration(
                 persistent=True,
-                max_size=rebalance_params.max_size
+                max_size=rebalance_params.data_region_max_size
             )
         )
     else:
         data_storage = DataStorageConfiguration(
-            default=DataRegionConfiguration(max_size=rebalance_params.max_size)
+            default=DataRegionConfiguration(max_size=rebalance_params.data_region_max_size)
         )
 
     node_config = IgniteConfiguration(
