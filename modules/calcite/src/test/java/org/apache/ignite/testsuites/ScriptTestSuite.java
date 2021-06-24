@@ -35,7 +35,7 @@ import org.junit.runner.RunWith;
  * Use other properties of the {@link ScriptRunnerTestsEnvironment} to setup cluster and test environment.
  */
 @RunWith(ScriptTestRunner.class)
-@ScriptRunnerTestsEnvironment(scriptsRoot = "src/test/sql", regex = "generic/test_null_if.test")
+@ScriptRunnerTestsEnvironment(scriptsRoot = "src/test/sql", regex = "numeric/test_unary.test")
 @Ignore
 public class ScriptTestSuite {
 }

@@ -556,11 +556,17 @@ public class SqlScriptRunner {
                 throw new AssertionError(msg);
 
             if (actual instanceof Number) {
-                BigDecimal actDec = new BigDecimal(String.valueOf(actual));
-                BigDecimal expDec = new BigDecimal(expectedStr);
+                if ("NaN".equals(expectedStr) || expectedStr.endsWith("Infinity")) {
+                    if (!expectedStr.equals(String.valueOf(actual)))
+                        throw new AssertionError(msg);
+                }
+                else {
+                    BigDecimal actDec = new BigDecimal(String.valueOf(actual));
+                    BigDecimal expDec = new BigDecimal(expectedStr);
 
-                if (actDec.compareTo(expDec) != 0)
-                    throw new AssertionError(msg);
+                    if (actDec.compareTo(expDec) != 0)
+                        throw new AssertionError(msg);
+                }
             }
             else {
                 if (!String.valueOf(expectedStr).equals(String.valueOf(actual)))

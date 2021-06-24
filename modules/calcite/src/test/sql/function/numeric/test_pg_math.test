@@ -4,9 +4,6 @@
 
 # see https://www.postgresql.org/docs/10/functions-math.html
 
-statement ok
-PRAGMA enable_verification
-
 query R
 select abs(-17.4)
 ----
@@ -28,9 +25,9 @@ select ceiling(-95.3)
 -95.000000
 
 query R
-select exp(1.0)
+select CAST(exp(1.0) AS FLOAT)
 ----
-2.718282
+2.7182817
 
 query R
 select floor(-42.8)
@@ -38,14 +35,9 @@ select floor(-42.8)
 -43.000000
 
 query R
-select ln(2.0)
+select CAST(ln(2.0) AS FLOAT)
 ----
-0.693147
-
-query R
-select log(100.0)
-----
-2.000000
+0.6931472
 
 query R
 select log10(100.0)
@@ -53,27 +45,17 @@ select log10(100.0)
 2.000000
 
 query R
-select log2(4.0)
+select CAST(sqrt(2.0) AS FLOAT)
 ----
-2.000000
+1.4142135
 
 query R
-select pi()
+select CAST(radians(45.0) AS FLOAT)
 ----
-3.141593
+0.7853982
 
 query R
-select sqrt(2.0)
-----
-1.414214
-
-query R
-select radians(45.0)
-----
-0.785398
-
-query R
-select degrees(0.5)
+select CAST(degrees(0.5) AS FLOAT)
 ----
 28.647890
 
