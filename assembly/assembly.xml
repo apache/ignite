@@ -31,7 +31,7 @@
             <outputDirectory/>
         </file>
         <file>
-            <source>assembly/NOTICE</source>
+            <source>NOTICE</source>
             <outputDirectory/>
         </file>
         <file>
