@@ -242,13 +242,6 @@
             <version>${azure.netty.version}</version>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/io.netty/netty-transport-native-kqueue -->
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-transport-native-kqueue</artifactId>
-            <version>${azure.netty.version}</version>
-        </dependency>
-
         <!-- https://mvnrepository.com/artifact/io.netty/netty-transport-native-unix-common -->
         <dependency>
             <groupId>io.netty</groupId>
