@@ -22,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import io.scalecube.cluster.Member;
 import io.scalecube.cluster.membership.MembershipEvent;
+import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.network.AbstractTopologyService;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.TopologyEventHandler;
@@ -31,6 +32,9 @@ import org.apache.ignite.network.TopologyService;
  * Implementation of {@link TopologyService} based on ScaleCube.
  */
 final class ScaleCubeTopologyService extends AbstractTopologyService {
+    /** Logger. */
+    private static final IgniteLogger LOG = IgniteLogger.forClass(ScaleCubeTopologyService.class);
+
     /** Local member node. */
     private ClusterNode localMember;
 
@@ -60,14 +64,26 @@ final class ScaleCubeTopologyService extends AbstractTopologyService {
         if (event.isAdded()) {
             members.put(member.address(), member);
 
+            LOG.info("Node joined: " + member);
+
             fireAppearedEvent(member);
         }
         else if (event.isRemoved()) {
             members.compute(member.address(), // Ignore stale remove event.
                 (k, v) -> v.id().equals(member.id()) ? null : v);
 
+            LOG.info("Node left: " + member);
+
             fireDisappearedEvent(member);
         }
+
+        StringBuilder snapshotMsg = new StringBuilder("Topology snapshot [nodes=").append(members.size()).append("]\n");
+
+        for (ClusterNode node : members.values()) {
+            snapshotMsg.append("  ^-- ").append(node).append('\n');
+        }
+
+        LOG.info(snapshotMsg.toString().trim());
     }
 
     /**

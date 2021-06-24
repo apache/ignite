@@ -18,6 +18,7 @@ package org.apache.ignite.network;
 
 import java.io.Serializable;
 import java.util.Objects;
+import org.apache.ignite.internal.tostring.IgniteToStringExclude;
 import org.apache.ignite.internal.tostring.S;
 
 /**
@@ -37,6 +38,7 @@ public class ClusterNode implements Serializable {
     private final int port;
 
     /** Node address in host:port format (lazily evaluated) */
+    @IgniteToStringExclude
     private String address;
 
     /**
