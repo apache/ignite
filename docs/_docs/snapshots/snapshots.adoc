@@ -200,7 +200,7 @@ tab:CLI[]
 [source,shell]
 ----
 # Restore cache group "snapshot-cache" from the snapshot "snapshot_02092020".
-control.(sh|bat) --snapshot restore --start snapshot_02092020 snapshot-cache
+control.(sh|bat) --snapshot restore snapshot_02092020 --start snapshot-cache
 ----
 --
 
@@ -210,13 +210,13 @@ The `control.sh|bat` script provides the ability to start, stop, and get the sta
 [source,shell]
 ----
 # Start restore all public cache groups from the snapshot "snapshot_09062021".
-control.(sh|bat) --snapshot restore --start snapshot_09062021
+control.(sh|bat) --snapshot restore snapshot_09062021 --start
 
 # Get the status of the restore operation for "snapshot_09062021".
-control.(sh|bat) --snapshot restore --status snapshot_09062021
+control.(sh|bat) --snapshot restore snapshot_09062021 --status
 
 # Cancel the restore operation for "snapshot_09062021".
-control.(sh|bat) --snapshot restore --stop snapshot_09062021
+control.(sh|bat) --snapshot restore snapshot_09062021 --stop
 ----
 
 == Consistency Guarantees
