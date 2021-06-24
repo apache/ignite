@@ -19,6 +19,7 @@ Utils for rebalanced tests.
 import sys
 from datetime import datetime
 from enum import IntEnum
+from itertools import chain, product
 from typing import NamedTuple
 
 # pylint: disable=W0622
@@ -45,103 +46,6 @@ class TriggerEvent(IntEnum):
     NODE_LEFT = 1
 
 
-# pylint: disable=R0914
-def preload_data(context, config, preloaders, backups, cache_count, entry_count, entry_size, timeout=3600):
-    """
-    Puts entry_count of key-value pairs of entry_size bytes to cache_count caches.
-    :param context: Test context.
-    :param config: Ignite configuration.
-    :param preloaders: Preload client nodes count.
-    :param backups: Cache backups count.
-    :param cache_count: Cache count.
-    :param entry_count: Cache entry count.
-    :param entry_size: Entry size in bytes.
-    :param timeout: Timeout in seconds for application finished.
-    :return: Time taken for data preloading.
-    """
-    assert preloaders > 0
-    assert cache_count > 0
-    assert entry_count > 0
-    assert entry_size > 0
-
-    apps = []
-
-    def start_app(_from, _to):
-        app = IgniteApplicationService(
-            context,
-            config=config,
-            java_class_name="org.apache.ignite.internal.ducktest.tests.rebalance.DataGenerationApplication",
-            params={
-                "backups": backups,
-                "cacheCount": cache_count,
-                "entrySize": entry_size,
-                "from": _from,
-                "to": _to
-            },
-            shutdown_timeout_sec=timeout)
-        app.start_async()
-
-        apps.append(app)
-
-    count = int(entry_count / preloaders)
-    end = 0
-
-    for _ in range(preloaders - 1):
-        start = end
-        end += count
-        start_app(start, end)
-
-    start_app(end, entry_count)
-
-    for app in apps:
-        app.await_stopped()
-
-    return (max(map(lambda app: app.get_finish_time(), apps)) -
-            min(map(lambda app: app.get_init_time(), apps))).total_seconds()
-
-
-def await_rebalance_start(service: IgniteService, timeout: int = 30):
-    """
-    Awaits rebalance starting on any test-cache on any node.
-    :param service: IgniteService in which rebalance start will be awaited.
-    :param timeout: Rebalance start await timeout.
-    :return: dictionary of two keypairs with keys "node" and "time",
-    where "node" contains the first node on which rebalance start was detected
-    and "time" contains the time when rebalance was started.
-    """
-    for node in service.alive_nodes:
-        try:
-            rebalance_start_time = service.get_event_time_on_node(
-                node,
-                "Starting rebalance routine",
-                timeout=timeout)
-        except TimeoutError:
-            continue
-        else:
-            return rebalance_start_time
-
-    raise RuntimeError("Rebalance start was not detected on any node")
-
-
-def get_rebalance_metrics(node, cache_group):
-    """
-    Gets rebalance metrics for specified node and cache group.
-    :param node: Ignite node.
-    :param cache_group: Cache group.
-    :return: RebalanceMetrics instance.
-    """
-    mbean = node.jmx_client().find_mbean('.*group=cacheGroups.*name="%s"' % cache_group)
-    start_time = int(next(mbean.RebalancingStartTime))
-    end_time = int(next(mbean.RebalancingEndTime))
-
-    return RebalanceMetrics(
-        received_bytes=int(next(mbean.RebalancingReceivedBytes)),
-        start_time=start_time,
-        end_time=end_time,
-        duration=(end_time - start_time) if start_time != -1 and end_time != -1 else 0,
-        node=node.name)
-
-
 class RebalanceParams(NamedTuple):
     """
     Rebalance parameters
@@ -164,7 +68,15 @@ class RebalanceParams(NamedTuple):
         """
         Max size for DataRegionConfiguration.
         """
-        return max(self.cache_count * self.entry_count * self.entry_size * (self.backups + 1), DEFAULT_DATA_REGION_SZ)
+        return max(self.cache_count * self.entry_count * self.entry_size * (self.backups + 1), DEFAULT_DATA_REGION_SZ)\
+
+
+    @property
+    def entry_count_per_preloader(self):
+        """
+        Entry count per preloader.
+        """
+        return int(self.entry_count / self.preloaders)
 
 
 class RebalanceMetrics(NamedTuple):
@@ -176,59 +88,6 @@ class RebalanceMetrics(NamedTuple):
     end_time: int = 0
     duration: int = 0
     node: str = None
-
-
-# pylint: disable=W0640
-def aggregate_rebalance_stats(nodes, cache_count):
-    """
-    Aggregates rebalance stats for specified nodes and cache count.
-    :param nodes: Nodes list.
-    :param cache_count: Cache count.
-    :return: Aggregated rebalance stats dictionary.
-    """
-    def __stats(cache_idx):
-        cache_name = "test-cache-%d" % (cache_idx + 1)
-
-        stats = {
-            "cache": cache_name,
-            "start_time": {},
-            "end_time": {},
-            "duration_sec": {},
-            "received_bytes": {}
-        }
-
-        metrics = list(map(lambda node: get_rebalance_metrics(node, cache_name), nodes))
-
-        def __key(tup):
-            return tup[1]
-
-        stats["start_time"]["min"] = min(
-            map(lambda item: (item.node, to_time_format(item.start_time)), metrics), key=__key)
-        stats["start_time"]["max"] = max(
-            map(lambda item: (item.node, to_time_format(item.start_time)), metrics), key=__key)
-        stats["end_time"]["min"] = min(map(lambda item: (item.node, to_time_format(item.end_time)), metrics), key=__key)
-        stats["end_time"]["max"] = max(map(lambda item: (item.node, to_time_format(item.end_time)), metrics), key=__key)
-        stats["duration_sec"]["min"] = min(map(lambda item: (item.node, item.duration // 1000), metrics), key=__key)
-        stats["duration_sec"]["max"] = max(map(lambda item: (item.node, item.duration // 1000), metrics), key=__key)
-        stats["duration_sec"]["sum"] = sum(map(lambda item: item.duration // 1000, metrics))
-        stats["received_bytes"]["min"] = min(map(lambda item: (item.node, item.received_bytes), metrics), key=__key)
-        stats["received_bytes"]["max"] = max(map(lambda item: (item.node, item.received_bytes), metrics), key=__key)
-        stats["received_bytes"]["sum"] = sum(map(lambda item: item.received_bytes, metrics))
-
-        return stats
-
-    return list(map(__stats, range(cache_count)))
-
-
-def to_time_format(timestamp: int, fmt: str = '%Y-%m-%d %H:%M:%S'):
-    """
-    Convert timestamp to string using format.
-
-    :param timestamp: Timestamp in ms
-    :param fmt: Format.
-    :return:
-    """
-    return datetime.fromtimestamp(int(timestamp) // 1000).strftime(fmt)
 
 
 # pylint: disable=too-many-arguments, too-many-locals
@@ -271,6 +130,154 @@ def start_ignite(test_context, ignite_version: str, rebalance_params: RebalanceP
     ignites.start()
 
     return ignites
+
+
+# pylint: disable=R0914
+def preload_data(context, config, rebalance_params: RebalanceParams, timeout=3600):
+    """
+    Puts entry_count of key-value pairs of entry_size bytes to cache_count caches.
+    :param context: Test context.
+    :param config: Ignite configuration.
+    :param rebalance_params: Rebalance parameters.
+    :param timeout: Timeout in seconds for application finished.
+    :return: Time taken for data preloading.
+    """
+    assert rebalance_params.preloaders > 0
+    assert rebalance_params.cache_count > 0
+    assert rebalance_params.entry_count > 0
+    assert rebalance_params.entry_size > 0
+
+    apps = []
+
+    def start_app(_from, _to):
+        app = IgniteApplicationService(
+            context,
+            config=config,
+            java_class_name="org.apache.ignite.internal.ducktest.tests.rebalance.DataGenerationApplication",
+            params={
+                "backups": rebalance_params.backups,
+                "cacheCount": rebalance_params.cache_count,
+                "entrySize": rebalance_params.entry_size,
+                "from": _from,
+                "to": _to
+            },
+            shutdown_timeout_sec=timeout)
+        app.start_async()
+
+        apps.append(app)
+
+    count = rebalance_params.entry_count_per_preloader
+    end = 0
+
+    for _ in range(rebalance_params.preloaders - 1):
+        start = end
+        end += count
+        start_app(start, end)
+
+    start_app(end, rebalance_params.entry_count)
+
+    for app in apps:
+        app.await_stopped()
+
+    return (max(map(lambda app: app.get_finish_time(), apps)) -
+            min(map(lambda app: app.get_init_time(), apps))).total_seconds()
+
+
+def await_rebalance_start(service: IgniteService, timeout: int = 30):
+    """
+    Awaits rebalance starting on any test-cache on any node.
+    :param service: IgniteService in which rebalance start will be awaited.
+    :param timeout: Rebalance start await timeout.
+    :return: dictionary of two keypairs with keys "node" and "time",
+    where "node" contains the first node on which rebalance start was detected
+    and "time" contains the time when rebalance was started.
+    """
+    for node in service.alive_nodes:
+        try:
+            rebalance_start_time = service.get_event_time_on_node(
+                node,
+                "Starting rebalance routine",
+                timeout=timeout)
+        except TimeoutError:
+            continue
+        else:
+            return rebalance_start_time
+
+    raise RuntimeError("Rebalance start was not detected on any node")
+
+
+# pylint: disable=W0640
+def aggregate_rebalance_stats(nodes, cache_count):
+    """
+    Aggregates rebalance stats for specified nodes and cache count.
+    :param nodes: Nodes list.
+    :param cache_count: Cache count.
+    :return: Aggregated rebalance stats dictionary.
+    """
+    def __stats(cache_idx):
+        cache_name = "test-cache-%d" % (cache_idx + 1)
+
+        stats = {
+            "cache": cache_name,
+            "start_time": {},
+            "end_time": {},
+            "duration": {},
+            "received_bytes": {}
+        }
+
+        metrics = list(map(lambda node: get_rebalance_metrics(node, cache_name), nodes))
+
+        for prop, func in chain(product(['start_time', 'end_time'], [min, max]),
+                                product(['duration', 'received_bytes'], [min, max, sum])):
+            if func.__name__ == 'sum':
+                val = func(map(lambda item: getattr(item, prop), metrics))
+            else:
+                val = func(map(lambda item: [item.node, getattr(item, prop)], metrics), key=lambda tup: tup[1])
+
+            if prop in ['start_time', 'end_time']:
+                val[1] = to_time_format(val[1])
+
+            if prop == 'duration':
+                if func.__name__ == 'sum':
+                    val = f'{val // 1000} s.'
+                else:
+                    val[1] = f'{val[1] // 1000} s.'
+
+            stats[prop][func.__name__] = val
+
+        return stats
+
+    return list(map(__stats, range(cache_count)))
+
+
+def get_rebalance_metrics(node, cache_group):
+    """
+    Gets rebalance metrics for specified node and cache group.
+    :param node: Ignite node.
+    :param cache_group: Cache group.
+    :return: RebalanceMetrics instance.
+    """
+    mbean = node.jmx_client().find_mbean('.*group=cacheGroups.*name="%s"' % cache_group)
+    start_time = int(next(mbean.RebalancingStartTime))
+    end_time = int(next(mbean.RebalancingEndTime))
+
+    return RebalanceMetrics(
+        received_bytes=int(next(mbean.RebalancingReceivedBytes)),
+        start_time=start_time,
+        end_time=end_time,
+        duration=(end_time - start_time) if start_time != -1 and end_time != -1 else 0,
+        node=node.name)
+
+
+def to_time_format(timestamp: int, fmt: str = '%Y-%m-%d %H:%M:%S'):
+    """
+    Convert timestamp to string using format.
+
+    :param timestamp: Timestamp in ms
+    :param fmt: Format.
+    :return:
+    """
+    return datetime.fromtimestamp(int(timestamp) // 1000).strftime(fmt)
 
 
 # pylint: disable=too-many-arguments, too-many-locals

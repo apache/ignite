@@ -94,7 +94,7 @@ class RebalanceInMemoryTest(IgniteTest):
         preload_time = preload_data(
             self.test_context,
             ignites.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites)),
-            preloaders, backups, cache_count, entry_count, entry_size)
+            rebalance_params=reb_params)
 
         if trigger_event:
             ignites.stop_node(ignites.nodes[-1])

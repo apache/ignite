@@ -60,7 +60,7 @@ class RebalancePersistentTest(IgniteTest):
         preload_time = preload_data(
             self.test_context,
             ignites.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites)),
-            preloaders, backups, cache_count, entry_count, entry_size)
+            rebalance_params=reb_params)
 
         new_node = IgniteService(self.test_context, ignites.config._replace(discovery_spi=from_ignite_cluster(ignites)),
                                  num_nodes=1)
@@ -105,7 +105,7 @@ class RebalancePersistentTest(IgniteTest):
         preload_time = preload_data(
             self.test_context,
             ignites.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites)),
-            preloaders, backups, cache_count, entry_count, entry_size)
+            rebalance_params=reb_params)
 
         self.logger.debug(f'DB size before rebalance: {get_database_size_mb(ignites.nodes, ignites.database_dir)}')
 
@@ -172,7 +172,7 @@ class RebalancePersistentTest(IgniteTest):
         preload_time = preload_data(
             self.test_context,
             ignites.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites)),
-            preloaders, backups, cache_count, entry_count, entry_size)
+            rebalance_params=reb_params)
 
         control_utility.deactivate()
         control_utility.activate()
