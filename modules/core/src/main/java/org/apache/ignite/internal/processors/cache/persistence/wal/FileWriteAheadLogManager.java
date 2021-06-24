@@ -479,7 +479,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 });
             }
 
-            segmentAware = new SegmentAware(dsCfg.getWalSegments(), dsCfg.isWalCompactionEnabled(), log);
+            segmentAware = new SegmentAware(
+                log,
+                dsCfg.getWalSegments(),
+                dsCfg.isWalCompactionEnabled(),
+                minWalArchiveSize,
+                maxWalArchiveSize
+            );
 
             // We have to initialize compressor before archiver in order to setup already compressed segments.
             // Otherwise, FileArchiver initialization will trigger redundant work for FileCompressor.
@@ -546,7 +552,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         segmentAware.reset();
 
         segmentAware.resetWalArchiveSizes();
-        segmentAware.addSizes(totalSize(walArchiveFiles()), 0);
+
+        for (FileDescriptor descriptor : walArchiveFiles())
+            segmentAware.addSize(descriptor.idx, descriptor.file.length(), 0);
 
         if (isArchiverEnabled()) {
             assert archiver != null : "FileArchiver should be initialized.";
@@ -1061,8 +1069,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             else {
                 deleted++;
 
-                segmentSize.remove(desc.idx());
-                segmentAware.addSizes(-len, 0);
+                long idx = desc.idx();
+
+                segmentSize.remove(idx);
+                segmentAware.addSize(idx, -len, 0);
             }
 
             // Bump up the oldest archive segment index.
@@ -1267,11 +1277,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 switchSegmentRecordOffset.set(idx, hnd.getSwitchSegmentRecordOffset());
             }
 
+            long idx = cur.getSegmentId() + 1;
             long currSize = 0;
             long reservedSize = maxWalSegmentSize;
 
             if (archiver == null)
-                segmentAware.addSizes(currSize, reservedSize);
+                segmentAware.addSize(idx, currSize, reservedSize);
 
             FileWriteHandle next;
             try {
@@ -1292,11 +1303,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 }
 
                 currSize = reservedSize;
-                segmentSize.put(next.getSegmentId(), currSize);
+                segmentSize.put(idx, currSize);
             }
             finally {
                 if (archiver == null)
-                    segmentAware.addSizes(currSize, -reservedSize);
+                    segmentAware.addSize(idx, currSize, -reservedSize);
             }
 
             if (next.getSegmentId() - lastCheckpointPtr.index() >= maxSegCountWithoutCheckpoint)
@@ -1985,7 +1996,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             long currSize = 0;
             long reservedSize = offs > 0 && offs < origLen ? offs : origLen;
 
-            segmentAware.addSizes(currSize, reservedSize);
+            segmentAware.addSize(absIdx, currSize, reservedSize);
 
             try {
                 if (offs > 0 && offs < origLen)
@@ -2012,7 +2023,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     ", dstFile=" + dstTmpFile.getAbsolutePath() + ']', e);
             }
             finally {
-                segmentAware.addSizes(currSize, -reservedSize);
+                segmentAware.addSize(absIdx, currSize, -reservedSize);
             }
 
             if (log.isInfoEnabled()) {
@@ -2211,7 +2222,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     long currSize = 0;
                     long reservedSize = raw.length();
 
-                    segmentAware.addSizes(currSize, reservedSize);
+                    segmentAware.addSize(segIdx, currSize, reservedSize);
 
                     try {
                         deleteObsoleteRawSegments();
@@ -2248,7 +2259,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         segmentAware.onSegmentCompressed(segIdx);
                     }
                     finally {
-                        segmentAware.addSizes(currSize, -reservedSize);
+                        segmentAware.addSize(segIdx, currSize, -reservedSize);
                     }
                 }
                 catch (IgniteInterruptedCheckedException ignore) {
@@ -2359,7 +2370,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     return;
 
                 if (desc.idx < lastCheckpointPtr.index() && duplicateIndices.contains(desc.idx))
-                    segmentAware.addSizes(-deleteArchiveFiles(desc.file), 0);
+                    segmentAware.addSize(desc.idx, -deleteArchiveFiles(desc.file), 0);
             }
         }
     }
@@ -2417,7 +2428,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     long currSize = 0;
                     long reservedSize = U.uncompressedSize(zip);
 
-                    segmentAware.addSizes(currSize, reservedSize);
+                    segmentAware.addSize(segmentToDecompress, currSize, reservedSize);
 
                     IgniteCheckedException ex = null;
 
@@ -2450,7 +2461,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         }
                     }
                     finally {
-                        segmentAware.addSizes(currSize, -reservedSize);
+                        segmentAware.addSize(segmentToDecompress, currSize, -reservedSize);
                     }
 
                     updateHeartbeat();

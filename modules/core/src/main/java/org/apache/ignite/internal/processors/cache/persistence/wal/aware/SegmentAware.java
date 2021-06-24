@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.wal.aware;
 
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 
 /**
@@ -48,17 +49,27 @@ public class SegmentAware {
     /**
      * Constructor.
      *
+     * @param log Logger.
      * @param walSegmentsCnt Total WAL segments count.
      * @param compactionEnabled Is wal compaction enabled.
-     * @param log Logger.
+     * @param minWalArchiveSize Minimum size of the WAL archive in bytes
+     *      or {@link DataStorageConfiguration#UNLIMITED_WAL_ARCHIVE}.
+     * @param maxWalArchiveSize Maximum size of the WAL archive in bytes
+     *      or {@link DataStorageConfiguration#UNLIMITED_WAL_ARCHIVE}.
      */
-    public SegmentAware(int walSegmentsCnt, boolean compactionEnabled, IgniteLogger log) {
+    public SegmentAware(
+        IgniteLogger log,
+        int walSegmentsCnt,
+        boolean compactionEnabled,
+        long minWalArchiveSize,
+        long maxWalArchiveSize
+    ) {
         segmentArchivedStorage = new SegmentArchivedStorage(segmentLockStorage);
 
         segmentCurrStateStorage = new SegmentCurrentStateStorage(walSegmentsCnt);
         segmentCompressStorage = new SegmentCompressStorage(log, compactionEnabled);
 
-        archiveSizeStorage = new SegmentArchiveSizeStorage();
+        archiveSizeStorage = new SegmentArchiveSizeStorage(minWalArchiveSize, maxWalArchiveSize, reservationStorage);
         truncateStorage = new SegmentTruncateStorage();
 
         segmentArchivedStorage.addObserver(segmentCurrStateStorage::onSegmentArchived);
@@ -318,15 +329,16 @@ public class SegmentAware {
     }
 
     /**
-     * Adding WAL archive sizes.
+     * Adding the WAL segment size in the archive.
      * Reservation defines a hint to determine if the maximum size is exceeded
      * before the completion of the operation on the segment.
      *
+     * @param idx Absolut segment index.
      * @param curr Current WAL archive size in bytes.
      * @param reserved Reserved WAL archive size in bytes.
      */
-    public void addSizes(long curr, long reserved) {
-        archiveSizeStorage.addSizes(curr, reserved);
+    public void addSize(long idx, long curr, long reserved) {
+        archiveSizeStorage.addSize(idx, curr, reserved);
     }
 
     /**
@@ -338,7 +350,7 @@ public class SegmentAware {
 
     /**
      * Waiting for exceeding the maximum WAL archive size.
-     * To track size of WAL archive, need to use {@link #addSizes}.
+     * To track size of WAL archive, need to use {@link #addSize}.
      *
      * @param max Maximum WAL archive size in bytes.
      * @throws IgniteInterruptedCheckedException If it was interrupted.
