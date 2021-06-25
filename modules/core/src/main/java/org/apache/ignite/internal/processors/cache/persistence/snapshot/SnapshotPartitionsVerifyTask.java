@@ -209,10 +209,6 @@ public class SnapshotPartitionsVerifyTask
                 rqGrps.stream().map(CU::cacheId).collect(Collectors.toSet());
             Set<File> partFiles = new HashSet<>();
 
-            if (IgniteSnapshotManager.snapshotMasterSign(meta) != null && !Arrays.equals(IgniteSnapshotManager.snapshotMasterSign(meta),
-                ignite.context().config().getEncryptionSpi().masterKeyDigest()))
-                throw new IgniteException("Snapshot '" + meta.snapshotName() + "' has different signature of its master key.");
-
             for (File dir : snpMgr.snapshotCacheDirectories(snpName, meta.folderName())) {
                 int grpId = CU.cacheId(cacheGroupName(dir));
 

@@ -146,6 +146,8 @@ public class MasterKeyChangeTest extends AbstractEncryptionTest {
 
         commSpi.waitForBlocked();
 
+        grids.get2().context().cache().context().snapshotMgr().createSnapshot("testSnapshot");
+
         assertThrowsWithCause(() -> {
             grids.get1().getOrCreateCache(new CacheConfiguration<>("newCache").setEncryptionEnabled(true));
         }, IgniteCheckedException.class);

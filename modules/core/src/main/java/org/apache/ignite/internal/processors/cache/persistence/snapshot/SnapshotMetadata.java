@@ -58,9 +58,6 @@ public class SnapshotMetadata implements Serializable {
     @GridToStringInclude
     private final List<Integer> grpIds;
 
-    /** Additional named meta records to store with snapshot meta. */
-    private final Map<String, Serializable> metaRecords = new HashMap<>();
-
     /** The set of affected by snapshot baseline nodes. */
     @GridToStringInclude
     private final Set<String> bltNodes;
@@ -71,6 +68,9 @@ public class SnapshotMetadata implements Serializable {
      */
     @GridToStringInclude
     private final Map<Integer, Set<Integer>> locParts = new HashMap<>();
+
+    /** Additional named meta records to store with snapshot meta. */
+    private final Map<String, Serializable> metaRecords = new HashMap<>();
 
     /**
      * @param rqId Unique snapshot request id.

@@ -684,36 +684,6 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
     }
 
     /**
-     * @param ccfg Cache configuration.
-     * @throws IgniteCheckedException if failed.
-     */
-    private void ensureCacheAbsent(CacheConfiguration<?, ?> ccfg) throws IgniteCheckedException {
-        String cacheName = ccfg.getName();
-
-        for (Ignite ignite : G.allGrids()) {
-            GridKernalContext kctx = ((IgniteEx)ignite).context();
-
-            if (kctx.clientNode())
-                continue;
-
-            CacheGroupDescriptor desc = kctx.cache().cacheGroupDescriptors().get(CU.cacheId(cacheName));
-
-            assertNull("nodeId=" + kctx.localNodeId() + ", cache=" + cacheName, desc);
-
-            GridTestUtils.waitForCondition(
-                () -> !kctx.cache().context().snapshotMgr().isRestoring(),
-                TIMEOUT);
-
-            File dir = ((FilePageStoreManager)kctx.cache().context().pageStore()).cacheWorkDir(ccfg);
-
-            String errMsg = String.format("%s, dir=%s, exists=%b, files=%s",
-                ignite.name(), dir, dir.exists(), Arrays.toString(dir.list()));
-
-            assertTrue(errMsg, !dir.exists() || dir.list().length == 0);
-        }
-    }
-
-    /**
      * @param spi Test communication spi.
      * @param restorePhase The type of distributed process on which communication is blocked.
      * @param grpName Cache group name.

@@ -945,8 +945,19 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     grps.stream().collect(Collectors.toMap(CU::cacheId, v -> v));
 
                 for (List<SnapshotMetadata> nodeMetas : metas.values()) {
-                    for (SnapshotMetadata meta : nodeMetas)
+                    for (SnapshotMetadata meta : nodeMetas) {
+                        if (snapshotMasterSign(meta) != null && !Arrays.equals(snapshotMasterSign(meta),
+                            kctx0.config().getEncryptionSpi().masterKeyDigest())) {
+
+                            res.onDone(new SnapshotPartitionsVerifyTaskResult(metas, new IdleVerifyResultV2(
+                                Collections.singletonMap(cctx.localNode(), new IllegalArgumentException("Snapshot '" + meta.snapshotName() +
+                                    "' has different signature of the master key.")))));
+
+                            return;
+                        }
+
                         grpIds.keySet().removeAll(meta.partitions().keySet());
+                    }
                 }
 
                 if (!grpIds.isEmpty()) {
