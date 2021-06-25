@@ -522,7 +522,7 @@ public class CdcMain implements Runnable {
     private void ackAsciiLogo() {
         String ver = "ver. " + ACK_VER_STR;
 
-        if (!log.isInfoEnabled()) {
+        if (log.isInfoEnabled()) {
             log.info(NL + NL +
                 ">>>    __________  ________________    ________  _____" + NL +
                 ">>>   /  _/ ___/ |/ /  _/_  __/ __/   / ___/ _ \\/ ___/" + NL +
