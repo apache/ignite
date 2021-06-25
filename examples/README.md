@@ -12,10 +12,10 @@ The following examples are included:
 To run an example, do the following:
 1. Import the examples project into you IDE.
 2. (optional) Run one or more standalone nodes using the CLI tool:
-    ```
-    ignite node start --config=$IGNITE_HOME/examples/config/ignite-config.json node-1
-    ignite node start --config=$IGNITE_HOME/examples/config/ignite-config.json node-2
-    ...
-    ignite node start --config=$IGNITE_HOME/examples/config/ignite-config.json node-n
-    ```
+   ```
+   ignite node start --config=$IGNITE_HOME/examples/config/ignite-config.json node-1
+   ignite node start --config=$IGNITE_HOME/examples/config/ignite-config.json node-2
+   ...
+   ignite node start --config=$IGNITE_HOME/examples/config/ignite-config.json node-n
+   ```
 3. Run the preferred example in the IDE.

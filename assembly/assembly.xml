@@ -38,7 +38,7 @@
         </file>
 
         <file>
-            <source>assembly/README</source>
+            <source>assembly/README.md</source>
             <outputDirectory/>
         </file>
 
@@ -66,6 +66,7 @@
             <includes>
                 <include>config/**</include>
                 <include>src/**</include>
+                <include>README.md</include>
             </includes>
         </fileSet>
     </fileSets>

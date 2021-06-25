@@ -106,8 +106,8 @@ public class KeyValueBinaryViewExample {
 
         System.out.println(
             "Retrieved using Key-Value API\n" +
-                "  Account Number: " + key.intValue("accountNumber") + '\n' +
-                "  Owner: " + value.stringValue("firstName") + " " + value.stringValue("lastName") + '\n' +
-                "  Balance: $" + value.doubleValue("balance"));
+            "    Account Number: " + key.intValue("accountNumber") + '\n' +
+            "    Owner: " + value.stringValue("firstName") + " " + value.stringValue("lastName") + '\n' +
+            "    Balance: $" + value.doubleValue("balance"));
     }
 }

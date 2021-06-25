@@ -102,8 +102,8 @@ public class TableExample {
 
         System.out.println(
             "Retrieved using Tuple API\n" +
-                "  Account Number: " + accountTuple.intValue("accountNumber") + '\n' +
-                "  Owner: " + accountTuple.stringValue("firstName") + " " + accountTuple.stringValue("lastName") + '\n' +
-                "  Balance: $" + accountTuple.doubleValue("balance"));
+            "    Account Number: " + accountTuple.intValue("accountNumber") + '\n' +
+            "    Owner: " + accountTuple.stringValue("firstName") + " " + accountTuple.stringValue("lastName") + '\n' +
+            "    Balance: $" + accountTuple.doubleValue("balance"));
     }
 }
