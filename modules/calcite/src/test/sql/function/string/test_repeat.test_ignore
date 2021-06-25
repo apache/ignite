@@ -1,12 +1,13 @@
 # name: test/sql/function/string/test_repeat.test
 # description: REPEAT test
 # group: [string]
+# Ignored: https://issues.apache.org/jira/browse/IGNITE-15002
 
 # test repeat on NULLs
-query T
-select REPEAT('MySQL', NULL)
+query TTT
+select REPEAT(NULL, NULL), REPEAT(NULL, 3), REPEAT('MySQL', NULL)
 ----
-NULL
+NULL	NULL	NULL
 
 # test repeat on scalars
 query TTTT
