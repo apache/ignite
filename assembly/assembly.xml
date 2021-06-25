@@ -25,26 +25,47 @@
     <formats>
         <format>zip</format>
     </formats>
+
     <files>
         <file>
             <source>LICENSE</source>
             <outputDirectory/>
         </file>
+
         <file>
             <source>NOTICE</source>
             <outputDirectory/>
         </file>
+
         <file>
             <source>assembly/README</source>
             <outputDirectory/>
         </file>
+
         <file>
             <source>modules/cli/target/ignite</source>
             <outputDirectory/>
         </file>
+
         <file>
             <source>modules/cli/target/ignite.exe</source>
             <outputDirectory/>
         </file>
+
+        <file>
+            <source>examples/pom-standalone.xml</source>
+            <outputDirectory>/examples</outputDirectory>
+            <destName>pom.xml</destName>
+        </file>
     </files>
+
+    <fileSets>
+        <fileSet>
+            <directory>examples</directory>
+            <outputDirectory>/examples</outputDirectory>
+            <includes>
+                <include>src/**</include>
+            </includes>
+        </fileSet>
+    </fileSets>
 </assembly>

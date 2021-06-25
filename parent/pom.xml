@@ -169,7 +169,7 @@
                 <artifactId>ignite-configuration-api</artifactId>
                 <version>${project.version}</version>
             </dependency>
-            
+
             <dependency>
                 <groupId>org.apache.ignite</groupId>
                 <artifactId>ignite-core</artifactId>
@@ -187,7 +187,7 @@
                 <artifactId>ignite-metastorage-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
-            
+
             <dependency>
                 <groupId>org.apache.ignite</groupId>
                 <artifactId>ignite-metastorage-common</artifactId>
@@ -251,6 +251,12 @@
             <dependency>
                 <groupId>org.apache.ignite</groupId>
                 <artifactId>ignite-vault</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.ignite</groupId>
+                <artifactId>ignite-runner</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -680,7 +686,7 @@
                         </executions>
                     </plugin>
                 </plugins>
-            </build>    
+            </build>
         </profile>
     </profiles>
 

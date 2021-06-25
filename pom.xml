@@ -59,6 +59,7 @@
         <module>modules/schema</module>
         <module>modules/table</module>
         <module>modules/vault</module>
+        <module>examples</module>
     </modules>
 
     <build>
