@@ -74,20 +74,6 @@ DELETE FROM decimals WHERE d <> d::DECIMAL(9,1)
 ----
 2
 
-statement ok
-CREATE TABLE reals(d real);
-
-statement ok
-INSERT INTO reals VALUES ('0.1'), ('0.2');
-
-statement ok
-INSERT INTO reals VALUES ('0.11'), ('0.21');
-
-query I
-DELETE FROM reals WHERE d <> d::DECIMAL(9,1)
-----
-4
-
 #
 # test ABS function
 query III
