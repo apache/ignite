@@ -181,7 +181,7 @@ public class ConverterUtils {
      * @param operand The expression to convert
      * @param targetType Target type
      * @param fromType Field type
-     * @return A new expression with type {@code toType}, which calls IgniteSqlFunctions.toBigDecimal function.
+     * @return An expression with BidDecimal type, which calls IgniteSqlFunctions.toBigDecimal function.
      */
     public static Expression convertToDecimal(Expression operand, Type fromType, RelDataType targetType) {
         final Primitive fromBox = Primitive.ofBox(fromType);
