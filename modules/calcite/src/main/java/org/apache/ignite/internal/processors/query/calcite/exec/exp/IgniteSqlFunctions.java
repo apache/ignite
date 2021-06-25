@@ -39,6 +39,9 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  * Ignite SQL functions.
  */
 public class IgniteSqlFunctions {
+    /** Precision not specified. */
+    private static final Short PRECISION_NOT_SPECIFIED = Short.MAX_VALUE;
+
     /**
      * Default constructor.
      */
@@ -64,19 +67,19 @@ public class IgniteSqlFunctions {
     /** CAST(VARCHAR AS DECIMAL). */
     public static BigDecimal toBigDecimal(String s, int precision, int scale) {
         BigDecimal decimal = new BigDecimal(s.trim());
-        return precision == RelDataType.PRECISION_NOT_SPECIFIED ? decimal : decimal.setScale(scale, RoundingMode.HALF_UP);
+        return precision == PRECISION_NOT_SPECIFIED ? decimal : decimal.setScale(scale, RoundingMode.HALF_UP);
     }
 
     /** CAST(FLOAT AS DECIMAL). */
     public static BigDecimal toBigDecimal(float val, int precision, int scale) {
         BigDecimal decimal = new BigDecimal(String.valueOf(val));
-        return precision == RelDataType.PRECISION_NOT_SPECIFIED ? decimal : decimal.setScale(scale, RoundingMode.HALF_UP);
+        return precision == PRECISION_NOT_SPECIFIED ? decimal : decimal.setScale(scale, RoundingMode.HALF_UP);
     }
 
     /** CAST(DOUBLE AS DECIMAL). */
     public static BigDecimal toBigDecimal(double val, int precision, int scale) {
         BigDecimal decimal = BigDecimal.valueOf(val);
-        return precision == RelDataType.PRECISION_NOT_SPECIFIED ? decimal : decimal.setScale(scale, RoundingMode.HALF_UP);
+        return precision == PRECISION_NOT_SPECIFIED ? decimal : decimal.setScale(scale, RoundingMode.HALF_UP);
     }
 
     /** CAST(REAL AS DECIMAL). */
@@ -87,7 +90,7 @@ public class IgniteSqlFunctions {
             : num instanceof BigInteger ? new BigDecimal((BigInteger)num)
             : num instanceof Long ? new BigDecimal(num.longValue())
             : BigDecimal.valueOf(num.doubleValue());
-        return precision == RelDataType.PRECISION_NOT_SPECIFIED ? decimal : decimal.setScale(scale, RoundingMode.HALF_UP);
+        return precision == PRECISION_NOT_SPECIFIED ? decimal : decimal.setScale(scale, RoundingMode.HALF_UP);
     }
 
     /** Cast object depending on type to DECIMAL. */

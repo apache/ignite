@@ -1,16 +1,9 @@
 # name: test/sql/types/decimal/test_decimal.test
 # description: Test basic decimals
 # group: [decimal]
-# Ignore: https://issues.apache.org/jira/browse/IGNITE-14596
 
 statement ok
 PRAGMA enable_verification
-
-# default decimal type is (18,3)
-query I
-SELECT typeof('0.1'::DECIMAL);
-----
-DECIMAL(18,3)
 
 # test basic string conversions
 query II
