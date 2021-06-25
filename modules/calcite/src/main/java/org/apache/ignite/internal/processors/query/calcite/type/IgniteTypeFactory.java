@@ -213,7 +213,302 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
         if (types.size() == 1 || allEquals(types))
             return F.first(types);
 
-        return super.leastRestrictive(types);
+        RelDataType type0 = types.get(0);
+        if (type0.getSqlTypeName() != null) {
+            RelDataType resultType = leastRestrictiveSqlType(types);
+            if (resultType != null)
+                return resultType;
+            return leastRestrictiveByCast(types);
+        }
+
+        return ((RelDataTypeFactoryImpl)this).leastRestrictive(types);
+    }
+
+    private RelDataType leastRestrictiveByCast(List<RelDataType> types) {
+        RelDataType resultType = types.get(0);
+        boolean anyNullable = resultType.isNullable();
+        for (int i = 1; i < types.size(); i++) {
+            RelDataType type = types.get(i);
+            if (type.getSqlTypeName() == SqlTypeName.NULL) {
+                anyNullable = true;
+                continue;
+            }
+
+            if (type.isNullable())
+                anyNullable = true;
+
+            if (SqlTypeUtil.canCastFrom(type, resultType, false))
+                resultType = type;
+            else {
+                if (!SqlTypeUtil.canCastFrom(resultType, type, false))
+                    return null;
+            }
+        }
+        if (anyNullable)
+            return createTypeWithNullability(resultType, true);
+        else
+            return resultType;
+    }
+
+    private RelDataType leastRestrictiveSqlType(List<RelDataType> types) {
+        RelDataType resType = null;
+        int nullCnt = 0;
+        int nullableCnt = 0;
+        int javaCnt = 0;
+        int anyCnt = 0;
+
+        for (RelDataType type : types) {
+            final SqlTypeName typeName = type.getSqlTypeName();
+            if (typeName == null)
+                return null;
+            if (typeName == SqlTypeName.ANY)
+                anyCnt++;
+            if (type.isNullable())
+                ++nullableCnt;
+            if (typeName == SqlTypeName.NULL)
+                ++nullCnt;
+            if (isJavaType(type))
+                ++javaCnt;
+        }
+
+        //  if any of the inputs are ANY, the output is ANY
+        if (anyCnt > 0) {
+            return createTypeWithNullability(createSqlType(SqlTypeName.ANY),
+                nullCnt > 0 || nullableCnt > 0);
+        }
+
+        for (int i = 0; i < types.size(); ++i) {
+            RelDataType type = types.get(i);
+            RelDataTypeFamily family = type.getFamily();
+
+            final SqlTypeName typeName = type.getSqlTypeName();
+            if (typeName == SqlTypeName.NULL)
+                continue;
+
+            // Convert Java types; for instance, JavaType(int) becomes INTEGER.
+            // Except if all types are either NULL or Java types.
+            if (isJavaType(type) && javaCnt + nullCnt < types.size()) {
+                final RelDataType originalType = type;
+                type = typeName.allowsPrecScale(true, true)
+                    ? createSqlType(typeName, type.getPrecision(), type.getScale())
+                    : typeName.allowsPrecScale(true, false)
+                    ? createSqlType(typeName, type.getPrecision())
+                    : createSqlType(typeName);
+                type = createTypeWithNullability(type, originalType.isNullable());
+            }
+
+            if (resType == null) {
+                resType = type;
+                if (resType.getSqlTypeName() == SqlTypeName.ROW)
+                    return leastRestrictiveStructuredType(types);
+            }
+
+            RelDataTypeFamily resFamily = resType.getFamily();
+            SqlTypeName resTypeName = resType.getSqlTypeName();
+
+            if (resFamily != family)
+                return null;
+            if (SqlTypeUtil.inCharOrBinaryFamilies(type)) {
+                Charset charset1 = type.getCharset();
+                Charset charset2 = resType.getCharset();
+                SqlCollation collation1 = type.getCollation();
+                SqlCollation collation2 = resType.getCollation();
+
+                final int precision =
+                    SqlTypeUtil.maxPrecision(resType.getPrecision(),
+                        type.getPrecision());
+
+                // If either type is LOB, then result is LOB with no precision.
+                // Otherwise, if either is variable width, result is variable
+                // width.  Otherwise, result is fixed width.
+                if (SqlTypeUtil.isLob(resType))
+                    resType = createSqlType(resType.getSqlTypeName());
+                else if (SqlTypeUtil.isLob(type))
+                    resType = createSqlType(type.getSqlTypeName());
+                else if (SqlTypeUtil.isBoundedVariableWidth(resType)) {
+                    resType =
+                        createSqlType(
+                            resType.getSqlTypeName(),
+                            precision);
+                } else {
+                    // this catch-all case covers type variable, and both fixed
+
+                    SqlTypeName newTypeName = type.getSqlTypeName();
+
+                    if (typeSystem.shouldConvertRaggedUnionTypesToVarying()) {
+                        if (resType.getPrecision() != type.getPrecision()) {
+                            if (newTypeName == SqlTypeName.CHAR)
+                                newTypeName = SqlTypeName.VARCHAR;
+                            else if (newTypeName == SqlTypeName.BINARY)
+                                newTypeName = SqlTypeName.VARBINARY;
+                        }
+                    }
+
+                    resType =
+                        createSqlType(
+                            newTypeName,
+                            precision);
+                }
+                Charset charset = null;
+                // TODO:  refine collation combination rules
+                SqlCollation collation0 = collation1 != null && collation2 != null
+                    ? SqlCollation.getCoercibilityDyadicOperator(collation1, collation2)
+                    : null;
+                SqlCollation collation = null;
+                if ((charset1 != null) || (charset2 != null)) {
+                    if (charset1 == null) {
+                        charset = charset2;
+                        collation = collation2;
+                    } else if (charset2 == null) {
+                        charset = charset1;
+                        collation = collation1;
+                    } else if (charset1.equals(charset2)) {
+                        charset = charset1;
+                        collation = collation1;
+                    } else if (charset1.contains(charset2)) {
+                        charset = charset1;
+                        collation = collation1;
+                    } else {
+                        charset = charset2;
+                        collation = collation2;
+                    }
+                }
+                if (charset != null) {
+                    resType =
+                        createTypeWithCharsetAndCollation(
+                            resType,
+                            charset,
+                            collation0 != null ? collation0 : collation);
+                }
+            } else if (SqlTypeUtil.isExactNumeric(type)) {
+                if (SqlTypeUtil.isExactNumeric(resType)) {
+                    // TODO: come up with a cleaner way to support
+                    // interval + datetime = datetime++
+                    if (types.size() > (i + 1)) {
+                        RelDataType type1 = types.get(i + 1);
+                        if (SqlTypeUtil.isDatetime(type1)) {
+                            resType = type1;
+                            return createTypeWithNullability(resType,
+                                nullCnt > 0 || nullableCnt > 0);
+                        }
+                    }
+                    if (!type.equals(resType)) {
+                        if (!typeName.allowsPrec()
+                            && !resTypeName.allowsPrec()) {
+                            // use the bigger primitive
+                            if (type.getPrecision()
+                                > resType.getPrecision())
+                                resType = type;
+                        } else {
+                            // Let the result type have precision (p), scale (s)
+                            // and number of whole digits (d) as follows: d =
+                            // max(p1 - s1, p2 - s2) s <= max(s1, s2) p = s + d
+
+                            int p1 = resType.getPrecision();
+                            int p2 = type.getPrecision();
+                            int s1 = resType.getScale();
+                            int s2 = type.getScale();
+                            final int maxPrecision = typeSystem.getMaxNumericPrecision();
+                            final int maxScale = typeSystem.getMaxNumericScale();
+
+                            int dout = Math.max(p1 - s1, p2 - s2);
+                            dout =
+                                Math.min(
+                                    dout,
+                                    maxPrecision);
+
+                            int scale = Math.max(s1, s2);
+                            scale =
+                                Math.min(
+                                    scale,
+                                    maxPrecision - dout);
+                            scale = Math.min(scale, maxScale);
+
+                            int precision = dout + scale;
+                            assert precision <= maxPrecision;
+                            assert precision > -2
+                                || (resType.getSqlTypeName() == SqlTypeName.DECIMAL
+                                && precision == 0
+                                && scale == 0);
+
+                            resType =
+                                createSqlType(
+                                    SqlTypeName.DECIMAL,
+                                    precision,
+                                    scale);
+                        }
+                    }
+                } else if (SqlTypeUtil.isApproximateNumeric(resType)) {
+                    // already approximate; promote to double just in case
+                    // TODO:  only promote when required
+                    if (SqlTypeUtil.isDecimal(type)) {
+                        // Only promote to double for decimal types
+                        resType = createDoublePrecisionType();
+                    }
+                } else
+                    return null;
+            } else if (SqlTypeUtil.isApproximateNumeric(type)) {
+                if (SqlTypeUtil.isApproximateNumeric(resType)) {
+                    if (type.getPrecision() > resType.getPrecision())
+                        resType = type;
+                } else if (SqlTypeUtil.isExactNumeric(resType)) {
+                    if (SqlTypeUtil.isDecimal(resType))
+                        resType = createDoublePrecisionType();
+                    else
+                        resType = type;
+                } else
+                    return null;
+            } else if (SqlTypeUtil.isInterval(type)) {
+                // TODO: come up with a cleaner way to support
+                // interval + datetime = datetime
+                if (types.size() > (i + 1)) {
+                    RelDataType type1 = types.get(i + 1);
+                    if (SqlTypeUtil.isDatetime(type1)) {
+                        resType = type1;
+                        return createTypeWithNullability(resType,
+                            nullCnt > 0 || nullableCnt > 0);
+                    }
+                }
+
+                if (!type.equals(resType)) {
+                    // TODO jvs 4-June-2005:  This shouldn't be necessary;
+                    // move logic into IntervalSqlType.combine
+                    Object type1 = resType;
+                    resType =
+                        ((IntervalSqlType)resType).combine(
+                            this,
+                            (IntervalSqlType) type);
+                    resType =
+                        ((IntervalSqlType)resType).combine(
+                            this,
+                            (IntervalSqlType) type1);
+                }
+            } else if (SqlTypeUtil.isDatetime(type)) {
+                // TODO: come up with a cleaner way to support
+                // datetime +/- interval (or integer) = datetime
+                if (types.size() > (i + 1)) {
+                    RelDataType type1 = types.get(i + 1);
+                    if (SqlTypeUtil.isInterval(type1)
+                        || SqlTypeUtil.isIntType(type1)) {
+                        resType = type;
+                        return createTypeWithNullability(resType,
+                            nullCnt > 0 || nullableCnt > 0);
+                    }
+                }
+            } else {
+                // TODO:  datetime precision details; for now we let
+                // leastRestrictiveByCast handle it
+                return null;
+            }
+        }
+        if (resType != null && nullableCnt > 0)
+            resType = createTypeWithNullability(resType, true);
+        return resType;
+    }
+
+    /** */
+    private RelDataType createDoublePrecisionType() {
+        return createSqlType(SqlTypeName.DOUBLE);
     }
 
     /** {@inheritDoc} */

@@ -175,6 +175,46 @@ public class ConverterUtils {
         return convert(operand, fromType, toType);
     }
 
+    public static Expression convertDecimal(Expression operand, Type fromType, RelDataType targetType) {
+        final Primitive fromBox = Primitive.ofBox(fromType);
+        final Primitive fromPrimitive = Primitive.of(fromType);
+        if (fromBox != null) {
+            // E.g. from "Integer" to "BigDecimal".
+            // Generate "x == null ? null : new BigDecimal(x.intValue())"
+
+            return Expressions.condition(
+                Expressions.equal(operand, RexImpTable.NULL_EXPR),
+                RexImpTable.NULL_EXPR,
+                Expressions.call(
+                    IgniteSqlFunctions.class,
+                    "toBigDecimal",
+                    Expressions.unbox(operand, fromBox),
+                    Expressions.constant(targetType.getPrecision()),
+                    Expressions.constant(targetType.getScale())));
+        }
+        if (fromPrimitive != null) {
+            // E.g. from "int" to "BigDecimal".
+            // Generate "new BigDecimal(x)"
+            return Expressions.call(
+                IgniteSqlFunctions.class,
+                "toBigDecimal",
+                operand,
+                Expressions.constant(targetType.getPrecision()),
+                Expressions.constant(targetType.getScale()));
+        }
+        // E.g. from "Object" to "BigDecimal".
+        // Generate "x == null ? null : SqlFunctions.toBigDecimal(x)"
+        return Expressions.condition(
+            Expressions.equal(operand, RexImpTable.NULL_EXPR),
+            RexImpTable.NULL_EXPR,
+            Expressions.call(
+                IgniteSqlFunctions.class,
+                "toBigDecimal",
+                operand,
+                Expressions.constant(targetType.getPrecision()),
+                Expressions.constant(targetType.getScale())));
+    }
+
     /**
      * Convert {@code operand} to target type {@code toType}.
      *
@@ -304,32 +344,6 @@ public class ConverterUtils {
             if (operand != originTypedOperand)
               return originTypedOperand;
         }
-        if (toType == BigDecimal.class) {
-            if (fromBox != null) {
-                // E.g. from "Integer" to "BigDecimal".
-                // Generate "x == null ? null : new BigDecimal(x.intValue())"
-                return Expressions.condition(
-                    Expressions.equal(operand, RexImpTable.NULL_EXPR),
-                    RexImpTable.NULL_EXPR,
-                    Expressions.new_(
-                        BigDecimal.class,
-                        Expressions.unbox(operand, fromBox)));
-            }
-            if (fromPrimitive != null) {
-                // E.g. from "int" to "BigDecimal".
-                // Generate "new BigDecimal(x)"
-                return Expressions.new_(BigDecimal.class, operand);
-            }
-            // E.g. from "Object" to "BigDecimal".
-            // Generate "x == null ? null : SqlFunctions.toBigDecimal(x)"
-            return Expressions.condition(
-                Expressions.equal(operand, RexImpTable.NULL_EXPR),
-                RexImpTable.NULL_EXPR,
-                Expressions.call(
-                    SqlFunctions.class,
-                    "toBigDecimal",
-                    operand));
-        }
         else if (toType == String.class) {
             if (fromPrimitive != null) {
                 switch (fromPrimitive) {
@@ -357,7 +371,7 @@ public class ConverterUtils {
                     Expressions.equal(operand, RexImpTable.NULL_EXPR),
                     RexImpTable.NULL_EXPR,
                     Expressions.call(
-                        SqlFunctions.class,
+                        IgniteSqlFunctions.class,
                         "toString",
                         operand));
             }

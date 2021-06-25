@@ -22,6 +22,7 @@ import org.apache.calcite.config.Lex;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.hint.HintStrategyTable;
+import org.apache.calcite.schema.Schemas;
 import org.apache.calcite.sql.fun.SqlLibrary;
 import org.apache.calcite.sql.fun.SqlLibraryOperatorTableFactory;
 import org.apache.calcite.sql.parser.SqlParser;
@@ -55,6 +56,7 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.MappingServi
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCache;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCacheImpl;
+import org.apache.ignite.internal.processors.query.calcite.rex.RexExecutorImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
 import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolderImpl;
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlConformance;
@@ -65,13 +67,11 @@ import org.apache.ignite.internal.processors.query.calcite.util.LifecycleAware;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.calcite.rex.RexUtil.EXECUTOR;
-
 /** */
 public class CalciteQueryProcessor extends GridProcessorAdapter implements QueryEngine {
     /** */
     public static final FrameworkConfig FRAMEWORK_CONFIG = Frameworks.newConfigBuilder()
-        .executor(EXECUTOR)
+        .executor(new RexExecutorImpl(Schemas.createDataContext(null, null)))
         .sqlToRelConverterConfig(SqlToRelConverter.config()
             .withTrimUnusedFields(true)
             // currently SqlToRelConverter creates not optimal plan for both optimization and execution

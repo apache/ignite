@@ -16,6 +16,9 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.math.RoundingMode;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.linq4j.AbstractEnumerable;
@@ -51,6 +54,46 @@ public class IgniteSqlFunctions {
     /** SQL SYSTEM_RANGE(start, end, increment) table function. */
     public static ScannableTable systemRange(Object rangeStart, Object rangeEnd, Object increment) {
         return new RangeTable(rangeStart, rangeEnd, increment);
+    }
+
+    /** CAST(DECIMAL AS VARCHAR). */
+    public static String toString(BigDecimal x) {
+        return x.toPlainString();
+    }
+
+    /** CAST(VARCHAR AS DECIMAL). */
+    public static BigDecimal toBigDecimal(String s, int precision, int scale) {
+        BigDecimal decimal = new BigDecimal(s.trim());
+        return precision == RelDataType.PRECISION_NOT_SPECIFIED ? decimal : decimal.setScale(scale, RoundingMode.HALF_UP);
+    }
+
+    /** CAST(FLOAT AS DECIMAL). */
+    public static BigDecimal toBigDecimal(float val, int precision, int scale) {
+        BigDecimal decimal = new BigDecimal(String.valueOf(val));
+        return precision == RelDataType.PRECISION_NOT_SPECIFIED ? decimal : decimal.setScale(scale, RoundingMode.HALF_UP);
+    }
+
+    /** CAST(DOUBLE AS DECIMAL). */
+    public static BigDecimal toBigDecimal(double val, int precision, int scale) {
+        BigDecimal decimal = BigDecimal.valueOf(val);
+        return precision == RelDataType.PRECISION_NOT_SPECIFIED ? decimal : decimal.setScale(scale, RoundingMode.HALF_UP);
+    }
+
+    /** CAST(REAL AS DECIMAL). */
+    public static BigDecimal toBigDecimal(Number num, int precision, int scale) {
+        // There are some values of "long" that cannot be represented as "double".
+        // Not so "int". If it isn't a long, go straight to double.
+        BigDecimal decimal = num instanceof BigDecimal ? ((BigDecimal)num)
+            : num instanceof BigInteger ? new BigDecimal((BigInteger)num)
+            : num instanceof Long ? new BigDecimal(num.longValue())
+            : BigDecimal.valueOf(num.doubleValue());
+        return precision == RelDataType.PRECISION_NOT_SPECIFIED ? decimal : decimal.setScale(scale, RoundingMode.HALF_UP);
+    }
+
+    /** Cast object depending on type to DECIMAL. */
+    public static BigDecimal toBigDecimal(Object o, int precision, int scale) {
+        return o instanceof Number ? toBigDecimal((Number) o, precision, scale)
+            : toBigDecimal(o.toString(), precision, scale);
     }
 
     /** */
