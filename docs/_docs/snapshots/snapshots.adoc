@@ -174,13 +174,13 @@ the topology and wait while the data gets rebalanced and indexes are rebuilt.
 
 === Automatic snapshot restore procedure
 
-The automatic restore procedure allows the user to restore cache groups from a snapshot on an active cluster using the Java API or link:tools/control-script[`command line script`].
+The automatic restore procedure allows the user to restore cache groups from a snapshot on an active cluster using the Java API or link:tools/control-script[command line script].
 
 Currently, this procedure has a number of limitations:
 
 * Restoring is possible only if all parts of the snapshot are present in the cluster. Each node looks a local data snapshot in the configured snapshot path by the given snapshot name and consistent node ID.
 * The restore procedure can be applied only to cache groups created by the user.
-* Cache groups to be restored from the snapshot must not be present in the cluster. If they are present, they must be link:key-value-api/basic-cache-operations#destroying-caches[`destroyed`] by the user before starting this operation.
+* Cache groups to be restored from the snapshot must not be present in the cluster. If they are present, they must be link:key-value-api/basic-cache-operations#destroying-caches[destroyed] by the user before starting this operation.
 * Concurrent restore operations are not allowed. Thus, if one operation has been started, the other can only be started after the first is completed.
 
 ==== Restoring cache group from the snapshot
