@@ -24,72 +24,86 @@ import org.apache.ignite.app.IgnitionManager;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;
 
+/**
+ * This example demonstrates the usage of the {@link Table} API.
+ * <p>
+ * To run the example, do the following:
+ * <ol>
+ *     <li>Import the examples project into you IDE.</li>
+ *     <li>
+ *         (optional) Run one or more standalone nodes using the CLI tool:<br>
+ *         {@code ignite node start --config=$IGNITE_HOME/examples/config/ignite-config.json node-1}<br>
+ *         {@code ignite node start --config=$IGNITE_HOME/examples/config/ignite-config.json node-2}<br>
+ *         {@code ...}<br>
+*          {@code ignite node start --config=$IGNITE_HOME/examples/config/ignite-config.json node-n}<br>
+ *     </li>
+ *     <li>Run the example in the IDE.</li>
+ * </ol>
+ */
 public class TableExample {
     public static void main(String[] args) throws Exception {
-        String config = Files.readString(Path.of(ClassLoader.getSystemResource("ignite-config.json").toURI()));
+        Ignite ignite = IgnitionManager.start("node-0",
+            Files.readString(Path.of("config/ignite-config.json")));
 
-        try (Ignite ignite = IgnitionManager.start("node0", config)) {
+        //---------------------------------------------------------------------------------
+        //
+        // Creating a table. The API call below is the equivalent of the following DDL:
+        //
+        //     CREATE TABLE accounts (
+        //         accountNumber INT PRIMARY KEY,
+        //         firstName     VARCHAR,
+        //         lastName      VARCHAR,
+        //         balance       DOUBLE
+        //     )
+        //
+        //---------------------------------------------------------------------------------
 
-            //---------------------------------------------------------------------------------
-            //
-            // Creating a table. The API call below is the equivalent of the following DDL:
-            //
-            //     CREATE TABLE accounts (
-            //         accountNumber INT PRIMARY KEY,
-            //         firstName     VARCHAR,
-            //         lastName      VARCHAR,
-            //         balance       DOUBLE
-            //     )
-            //
-            //---------------------------------------------------------------------------------
-
-            Table accounts = ignite.tables().createTable("PUBLIC.accounts", tbl -> tbl
-                .changeName("PUBLIC.accounts")
-                .changeColumns(cols -> cols
-                    .create("0", c -> c.changeName("accountNumber").changeType(t -> t.changeType("int32")).changeNullable(false))
-                    .create("1", c -> c.changeName("firstName").changeType(t -> t.changeType("string")).changeNullable(true))
-                    .create("2", c -> c.changeName("lastName").changeType(t -> t.changeType("string")).changeNullable(true))
-                    .create("3", c -> c.changeName("balance").changeType(t -> t.changeType("double")).changeNullable(true))
+        Table accounts = ignite.tables().createTable("PUBLIC.accounts", tbl -> tbl
+            .changeName("PUBLIC.accounts")
+            .changeColumns(cols -> cols
+                .create("0", c -> c.changeName("accountNumber").changeType(t -> t.changeType("int32")).changeNullable(false))
+                .create("1", c -> c.changeName("firstName").changeType(t -> t.changeType("string")).changeNullable(true))
+                .create("2", c -> c.changeName("lastName").changeType(t -> t.changeType("string")).changeNullable(true))
+                .create("3", c -> c.changeName("balance").changeType(t -> t.changeType("double")).changeNullable(true))
+            )
+            .changeIndices(idxs -> idxs
+                .create("PK", idx -> idx
+                    .changeName("PK")
+                    .changeType("PK")
+                    .changeColumns(cols -> cols.create("0", c -> c.changeName("accountNumber").changeAsc(true)))
                 )
-                .changeIndices(idxs -> idxs
-                    .create("PK", idx -> idx
-                        .changeName("PK")
-                        .changeType("PK")
-                        .changeColumns(cols -> cols.create("0", c -> c.changeName("accountNumber").changeAsc(true)))
-                    )
-                )
-            );
+            )
+        );
 
-            //---------------------------------------------------------------------------------
-            //
-            // Tuple API: insert operation.
-            //
-            //---------------------------------------------------------------------------------
+        //---------------------------------------------------------------------------------
+        //
+        // Tuple API: insert operation.
+        //
+        //---------------------------------------------------------------------------------
 
-            Tuple newAccountTuple = accounts.tupleBuilder()
-                .set("accountNumber", 123456)
-                .set("firstName", "Val")
-                .set("lastName", "Kulichenko")
-                .set("balance", 100.00d)
-                .build();
+        Tuple newAccountTuple = accounts.tupleBuilder()
+            .set("accountNumber", 123456)
+            .set("firstName", "Val")
+            .set("lastName", "Kulichenko")
+            .set("balance", 100.00d)
+            .build();
 
-            accounts.insert(newAccountTuple);
+        accounts.insert(newAccountTuple);
 
-            //---------------------------------------------------------------------------------
-            //
-            // Tuple API: get operation.
-            //
-            //---------------------------------------------------------------------------------
+        //---------------------------------------------------------------------------------
+        //
+        // Tuple API: get operation.
+        //
+        //---------------------------------------------------------------------------------
 
-            Tuple accountNumberTuple = accounts.tupleBuilder().set("accountNumber", 123456).build();
+        Tuple accountNumberTuple = accounts.tupleBuilder().set("accountNumber", 123456).build();
 
-            Tuple accountTuple = accounts.get(accountNumberTuple);
+        Tuple accountTuple = accounts.get(accountNumberTuple);
 
-            System.out.println(
-                "Retrieved using Tuple API\n" +
-                    "  Account Number: " + accountTuple.intValue("accountNumber") + '\n' +
-                    "  Owner: " + accountTuple.stringValue("firstName") + " " + accountTuple.stringValue("lastName") + '\n' +
-                    "  Balance: $" + accountTuple.doubleValue("balance"));
-        }
+        System.out.println(
+            "Retrieved using Tuple API\n" +
+                "  Account Number: " + accountTuple.intValue("accountNumber") + '\n' +
+                "  Owner: " + accountTuple.stringValue("firstName") + " " + accountTuple.stringValue("lastName") + '\n' +
+                "  Balance: $" + accountTuple.doubleValue("balance"));
     }
 }

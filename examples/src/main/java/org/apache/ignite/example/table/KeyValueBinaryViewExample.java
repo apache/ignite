@@ -25,11 +25,26 @@ import org.apache.ignite.table.KeyValueBinaryView;
 import org.apache.ignite.table.Table;
 import org.apache.ignite.table.Tuple;
 
+/**
+ * This example demonstrates the usage of the {@link KeyValueBinaryView} API.
+ * <p>
+ * To run the example, do the following:
+ * <ol>
+ *     <li>Import the examples project into you IDE.</li>
+ *     <li>
+ *         (optional) Run one or more standalone nodes using the CLI tool:<br>
+ *         {@code ignite node start --config=$IGNITE_HOME/examples/config/ignite-config.json node-1}<br>
+ *         {@code ignite node start --config=$IGNITE_HOME/examples/config/ignite-config.json node-2}<br>
+ *         {@code ...}<br>
+*          {@code ignite node start --config=$IGNITE_HOME/examples/config/ignite-config.json node-n}<br>
+ *     </li>
+ *     <li>Run the example in the IDE.</li>
+ * </ol>
+ */
 public class KeyValueBinaryViewExample {
     public static void main(String[] args) throws Exception {
-        String config = Files.readString(Path.of(ClassLoader.getSystemResource("ignite-config.json").toURI()));
-
-        Ignite ignite = IgnitionManager.start("node0", config);
+        Ignite ignite = IgnitionManager.start("node-0",
+            Files.readString(Path.of("config/ignite-config.json")));
 
         //---------------------------------------------------------------------------------
         //
