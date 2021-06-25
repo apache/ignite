@@ -504,7 +504,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
                 }
         }
         if (targetType.getSqlTypeName() == SqlTypeName.DECIMAL)
-            convert = ConverterUtils.convertDecimal(operand, operand.getType(), targetType);
+            convert = ConverterUtils.convertToDecimal(operand, operand.getType(), targetType);
 
         if (convert == null)
             convert = ConverterUtils.convert(operand, typeFactory.getJavaClass(targetType));
