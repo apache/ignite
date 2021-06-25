@@ -37,6 +37,7 @@ import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridLoggerProxy;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
@@ -153,20 +154,20 @@ public class CdcMain implements Runnable {
     private final Set<Path> processedSegments = new HashSet<>();
 
     /**
-     * @param igniteCfg Ignite configuration.
+     * @param cfg Ignite configuration.
      * @param ctx Spring resource context.
      * @param cdcCfg Change Data Capture configuration.
      */
     public CdcMain(
-        IgniteConfiguration igniteCfg,
+        IgniteConfiguration cfg,
         GridSpringResourceContext ctx,
         CdcConfiguration cdcCfg) {
-        this.igniteCfg = new IgniteConfiguration(igniteCfg);
+        igniteCfg = new IgniteConfiguration(cfg);
         this.ctx = ctx;
         this.cdcCfg = cdcCfg;
 
         try {
-            initWorkDir(this.igniteCfg);
+            initWorkDir(igniteCfg);
 
             log = U.initLogger(igniteCfg, "ignite-cdc");
         }
@@ -198,6 +199,8 @@ public class CdcMain implements Runnable {
 
     /** Runs Change Data Capture application with possible exception. */
     public void runX() throws Exception {
+        ackAsciiLogo();
+
         if (!CU.isPersistenceEnabled(igniteCfg)) {
             log.error(ERR_MSG);
 
@@ -235,9 +238,13 @@ public class CdcMain implements Runnable {
 
             marshaller = MarshallerContextImpl.mappingFileStoreWorkDir(igniteCfg.getWorkDirectory());
 
-            injectResources(consumer.consumer());
+            if (log.isInfoEnabled()) {
+                log.info("Change Data Capture [dir=" + cdcDir + ']');
+                log.info("Ignite node Binary meta [dir=" + binaryMeta + ']');
+                log.info("Ignite node Marshaller [dir=" + marshaller + ']');
+            }
 
-            ackAsciiLogo();
+            injectResources(consumer.consumer());
 
             state = new CdcConsumerState(cdcDir.resolve(STATE_DIR));
 
@@ -513,26 +520,51 @@ public class CdcMain implements Runnable {
 
     /** */
     private void ackAsciiLogo() {
-        if (!log.isInfoEnabled())
-            return;
-
         String ver = "ver. " + ACK_VER_STR;
 
-        log.info(NL + NL +
-            ">>>    __________  ________________    ________  _____" + NL +
-            ">>>   /  _/ ___/ |/ /  _/_  __/ __/   / ___/ _ \\/ ___/" + NL +
-            ">>>  _/ // (7 7    // /  / / / _/    / /__/ // / /__  " + NL +
-            ">>> /___/\\___/_/|_/___/ /_/ /___/    \\___/____/\\___/  " + NL +
-            ">>> " + NL +
-            ">>> " + ver + NL +
-            ">>> " + COPYRIGHT + NL +
-            ">>> " + NL +
-            ">>> Ignite documentation: " + "http://" + SITE + NL +
-            ">>> Consumer: " + consumer.consumer().toString() + NL +
-            ">>> ConsistentId: " + igniteCfg.getConsistentId() + NL +
-            ">>> Change Data Capture: " + cdcDir + NL +
-            ">>> Ignite node Binary meta: " + binaryMeta + NL +
-            ">>> Ignite node Marshaller: " + marshaller + NL
-        );
+        if (!log.isInfoEnabled()) {
+            log.info(NL + NL +
+                ">>>    __________  ________________    ________  _____" + NL +
+                ">>>   /  _/ ___/ |/ /  _/_  __/ __/   / ___/ _ \\/ ___/" + NL +
+                ">>>  _/ // (7 7    // /  / / / _/    / /__/ // / /__  " + NL +
+                ">>> /___/\\___/_/|_/___/ /_/ /___/    \\___/____/\\___/  " + NL +
+                ">>> " + NL +
+                ">>> " + ver + NL +
+                ">>> " + COPYRIGHT + NL +
+                ">>> " + NL +
+                ">>> Ignite documentation: " + "http://" + SITE + NL +
+                ">>> Consumer: " + consumer.consumer().toString() + NL +
+                ">>> ConsistentId: " + igniteCfg.getConsistentId() + NL
+            );
+        }
+
+        if (log.isQuiet()) {
+            U.quiet(false,
+                "   __________  ________________    ________  _____",
+                "  /  _/ ___/ |/ /  _/_  __/ __/   / ___/ _ \\/ ___/",
+                " _/ // (7 7    // /  / / / _/    / /__/ // / /__  ",
+                "/___/\\___/_/|_/___/ /_/ /___/    \\___/____/\\___/  ",
+                "",
+                ver,
+                COPYRIGHT,
+                "",
+                "Ignite documentation: " + "http://" + SITE,
+                "Consumer: " + consumer.consumer().toString(),
+                "ConsistentId: " + igniteCfg.getConsistentId(),
+                "",
+                "Quiet mode.");
+
+            String fileName = log.fileName();
+
+            if (fileName != null)
+                U.quiet(false, "  ^-- Logging to file '" + fileName + '\'');
+
+            if (log instanceof GridLoggerProxy)
+                U.quiet(false, "  ^-- Logging by '" + ((GridLoggerProxy)log).getLoggerInfo() + '\'');
+
+            U.quiet(false,
+                "  ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or \"-v\" to ignite-cdc.{sh|bat}",
+                "");
+        }
     }
 }
