@@ -56,6 +56,7 @@ import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesMultipleConne
 import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesTest;
 import org.apache.ignite.internal.managers.communication.GridIoManagerFileTransmissionSelfTest;
 import org.apache.ignite.internal.managers.discovery.IncompleteDeserializationExceptionTest;
+import org.apache.ignite.internal.metric.MetricsClusterActivationTest;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBeanTest;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecordSerializationTest;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecordTest;
@@ -99,7 +100,6 @@ import org.apache.ignite.internal.processors.database.BPlusTreeFakeReuseSelfTest
 import org.apache.ignite.internal.processors.database.BPlusTreeReuseSelfTest;
 import org.apache.ignite.internal.processors.database.BPlusTreeSelfTest;
 import org.apache.ignite.internal.processors.database.CacheFreeListSelfTest;
-import org.apache.ignite.internal.metric.MetricsClusterActivationTest;
 import org.apache.ignite.internal.processors.database.DataRegionMetricsSelfTest;
 import org.apache.ignite.internal.processors.database.IndexStorageSelfTest;
 import org.apache.ignite.internal.processors.database.SwapPathConstructionSelfTest;
