@@ -1,6 +1,7 @@
 # name: test/sql/function/string/test_length.test
 # description: Test length function
 # group: [string]
+# Ignored: https://issues.apache.org/jira/browse/IGNITE-14677
 
 statement ok
 CREATE TABLE strings(s VARCHAR)
@@ -18,7 +19,7 @@ NULL
 
 # length after concat
 query I
-SELECT length(s || ' ' || 'a') FROM strings ORDER BY s
+SELECT length(s || ' ' || '🦆') FROM strings ORDER BY s
 ----
 7
 7

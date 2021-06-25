@@ -1,6 +1,14 @@
 # name: test/sql/function/string/test_caseconvert.test
 # description: UPPER/LOWER test
 # group: [string]
+# Ignored: https://issues.apache.org/jira/browse/IGNITE-15002
+
+# test NULL constant
+query TT
+select UPPER(NULL), LOWER(NULL)
+----
+NULL
+NULL
 
 # unicode
 query TTTT

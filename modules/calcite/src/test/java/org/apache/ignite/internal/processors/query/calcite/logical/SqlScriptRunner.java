@@ -569,8 +569,9 @@ public class SqlScriptRunner {
                 }
             }
             else {
-                if (!String.valueOf(expectedStr).equals(String.valueOf(actual)))
-                    throw new AssertionError(msg);
+                if (!String.valueOf(expectedStr).equals(String.valueOf(actual)) &&
+                    !("(empty)".equals(expectedStr) && String.valueOf(actual).isEmpty()))
+                     throw new AssertionError(msg);
             }
         }
 

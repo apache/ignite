@@ -1,6 +1,7 @@
 # name: test/sql/function/string/regex_search.test
 # description: regex search test
 # group: [string]
+# Ignored: https://issues.apache.org/jira/browse/IGNITE-14991
 
 statement ok
 PRAGMA enable_verification

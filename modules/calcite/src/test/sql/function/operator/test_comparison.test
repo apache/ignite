@@ -2,20 +2,15 @@
 # description: Test basic comparison statements
 # group: [operator]
 
-statement ok
-PRAGMA enable_verification
-
-# = and == are the same
-query TTTTT
-SELECT 1 == 1, 1 = 1, 1 == 0, 1 = 0, 1 == NULL
+query TTT
+SELECT 1 = 1, 1 = 0, 1 = NULL
 ----
-1	1	0	0	NULL
+true	false	NULL
 
-# != and <> are the same
-query TTTTT
-SELECT 1 <> 1, 1 != 1, 1 <> 0, 1 != 0, 1 <> NULL
+query TTT
+SELECT 1 <> 1, 1 <> 0, 1 <> NULL
 ----
-0	0	1	1	NULL
+false	true	NULL
 
 # Test auto casting of comparison statements
 # string <> number comparisons should result in the string being cast to a number
@@ -32,16 +27,16 @@ select 20.0 = 'abc'
 query T
 select '1000' > 20
 ----
-1
+true
 
 # ... but '1000' < '20'!
 query T
 select '1000' > '20'
 ----
-0
+false
 
 query T
 select ('abc' between '20' and 'true');
 ----
-1
+true
 

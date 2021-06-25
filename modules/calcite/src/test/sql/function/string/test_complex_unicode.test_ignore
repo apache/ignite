@@ -1,9 +1,7 @@
 # name: test/sql/function/string/test_complex_unicode.test
 # description: Test correct behavior of various string functions under complex unicode characters
 # group: [string]
-
-statement ok
-PRAGMA enable_verification
+# Ignored: https://issues.apache.org/jira/browse/IGNITE-14677
 
 # length with grapheme clusters
 query I
