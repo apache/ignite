@@ -1,6 +1,7 @@
 # name: test/sql/function/string/test_like_escape.test
 # description: Test LIKE statement with custom ESCAPE
 # group: [string]
+# Ignored: https://issues.apache.org/jira/browse/IGNITE-15004
 
 # scalar like with escape
 query T
@@ -46,6 +47,11 @@ query T
 SELECT ' a ' LIKE '*_ ' ESCAPE '*';
 ----
 false
+
+query T
+SELECT '%_' LIKE '%_' ESCAPE '';
+----
+true
 
 query T
 SELECT '*%' NOT LIKE '*%' ESCAPE '*';
