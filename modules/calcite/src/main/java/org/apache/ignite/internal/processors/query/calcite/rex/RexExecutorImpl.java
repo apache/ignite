@@ -16,6 +16,11 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.rex;
 
+import java.lang.reflect.Modifier;
+import java.lang.reflect.Type;
+import java.util.List;
+
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.enumerable.EnumUtils;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
@@ -40,12 +45,6 @@ import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Util;
-
-import com.google.common.collect.ImmutableList;
-
-import java.lang.reflect.Modifier;
-import java.lang.reflect.Type;
-import java.util.List;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RexToLixTranslator;
 
 /**
@@ -152,8 +151,10 @@ public class RexExecutorImpl implements RexExecutor {
    * <code>{@link org.apache.calcite.DataContext#get}("inputRecord")</code>.
    */
   private static class DataContextInputGetter implements RexToLixTranslator.InputGetter {
+
     /** Type factory. */
     private final RelDataTypeFactory typeFactory;
+
     /** Row type. */
     private final RelDataType rowType;
 

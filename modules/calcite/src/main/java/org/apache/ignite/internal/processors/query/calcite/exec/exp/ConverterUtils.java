@@ -175,7 +175,6 @@ public class ConverterUtils {
         return convert(operand, fromType, toType);
     }
 
-
     /**
      * Convert {@code operand} from {@code targetType} to BigDecimal type.
      *
