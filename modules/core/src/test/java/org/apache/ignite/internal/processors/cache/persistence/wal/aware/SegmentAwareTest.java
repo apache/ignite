@@ -772,19 +772,6 @@ public class SegmentAwareTest {
     }
 
     /**
-     * Checking the correct creation {@link SegmentArchiveSizeStorage}.
-     */
-    @Test
-    public void testCreateSegmentArchiveSizeStorage() {
-        assertThrowsOnCreateSegmentArchiveSizeStorage(UNLIMITED_WAL_ARCHIVE, 100);
-        assertThrowsOnCreateSegmentArchiveSizeStorage(200, 100);
-
-        segmentAware(1, false, UNLIMITED_WAL_ARCHIVE, UNLIMITED_WAL_ARCHIVE);
-        segmentAware(1, false, 100, UNLIMITED_WAL_ARCHIVE);
-        segmentAware(1, false, 100, 200);
-    }
-
-    /**
      * Checking the correct calculation of the WAL archive size for an unlimited WAL archive.
      */
     @Test

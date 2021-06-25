@@ -71,9 +71,6 @@ class SegmentArchiveSizeStorage {
         this.maxWalArchiveSize = maxWalArchiveSize;
 
         if (maxWalArchiveSize != UNLIMITED_WAL_ARCHIVE) {
-            assert minWalArchiveSize != UNLIMITED_WAL_ARCHIVE;
-            assert minWalArchiveSize <= maxWalArchiveSize;
-
             segmentSize = new TreeMap<>();
             this.reservationStorage = reservationStorage;
         }
