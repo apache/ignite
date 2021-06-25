@@ -144,4 +144,13 @@ class SegmentReservationStorage extends SegmentObservable {
         if (minReservedIdx != null)
             notifyObservers(minReservedIdx);
     }
+
+    /**
+     * Getting maximum segment index that can be reserved.
+     *
+     * @return Absolute segment index.
+     */
+    synchronized long minReserveIdx() {
+        return minReserveIdx;
+    }
 }

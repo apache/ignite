@@ -32,6 +32,7 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -686,26 +687,26 @@ public class SegmentAwareTest {
 
         IgniteInternalFuture<?> fut = awaitThread(() -> aware.awaitExceedMaxArchiveSize(10));
 
-        aware.addSize(0, 4, 0);
+        aware.addSize(0, 4);
         assertFutureIsNotFinish(fut);
 
-        aware.addSize(0, 0, 4);
+        aware.addSize(0, 4);
         assertFutureIsNotFinish(fut);
 
-        aware.addSize(0, 4, 0);
+        aware.addSize(0, 4);
         fut.get(20);
 
         aware.resetWalArchiveSizes();
 
         fut = awaitThread(() -> aware.awaitExceedMaxArchiveSize(10));
 
-        aware.addSize(1, 4, 0);
+        aware.addSize(1, 4);
         assertFutureIsNotFinish(fut);
 
-        aware.addSize(1, 0, 4);
+        aware.addSize(1, 4);
         assertFutureIsNotFinish(fut);
 
-        aware.addSize(1, 0, 4);
+        aware.addSize(1, 4);
         fut.get(20);
 
         aware.resetWalArchiveSizes();
@@ -781,6 +782,165 @@ public class SegmentAwareTest {
         segmentAware(1, false, UNLIMITED_WAL_ARCHIVE, UNLIMITED_WAL_ARCHIVE);
         segmentAware(1, false, 100, UNLIMITED_WAL_ARCHIVE);
         segmentAware(1, false, 100, 200);
+    }
+
+    /**
+     * Checking the correct calculation of the WAL archive size for an unlimited WAL archive.
+     */
+    @Test
+    public void testArchiveSizeForUnlimitedWalArchive() {
+        SegmentAware aware = segmentAware(1, false, 0, UNLIMITED_WAL_ARCHIVE);
+        SegmentArchiveSizeStorage sizeStorage = archiveSizeStorage(aware);
+
+        aware.addSize(0, 10);
+
+        assertEquals(10, sizeStorage.currentSize());
+        assertNull(sizeStorage.segmentSize(0));
+
+        aware.addSize(0, 20);
+
+        assertEquals(30, sizeStorage.currentSize());
+        assertNull(sizeStorage.segmentSize(0));
+
+        aware.addSize(1, 10);
+
+        assertEquals(40, sizeStorage.currentSize());
+        assertNull(sizeStorage.segmentSize(0));
+        assertNull(sizeStorage.segmentSize(1));
+
+        aware.addSize(0, -10);
+
+        assertEquals(30, sizeStorage.currentSize());
+        assertNull(sizeStorage.segmentSize(0));
+        assertNull(sizeStorage.segmentSize(1));
+
+        aware.addSize(1, -10);
+
+        assertEquals(20, sizeStorage.currentSize());
+        assertNull(sizeStorage.segmentSize(0));
+        assertNull(sizeStorage.segmentSize(1));
+
+        aware.addSize(0, -20);
+
+        assertEquals(0, sizeStorage.currentSize());
+        assertNull(sizeStorage.segmentSize(0));
+        assertNull(sizeStorage.segmentSize(1));
+    }
+
+    /**
+     * Checking the correct calculation of the WAL archive size for a limited WAL archive.
+     */
+    @Test
+    public void testArchiveSizeForLimitedWalArchive() {
+        SegmentAware aware = segmentAware(1, false, 100, 200);
+        SegmentArchiveSizeStorage sizeStorage = archiveSizeStorage(aware);
+
+        aware.addSize(0, 10);
+
+        assertEquals(10, sizeStorage.currentSize());
+        assertEquals(Long.valueOf(10), sizeStorage.segmentSize(0));
+
+        aware.addSize(0, 20);
+
+        assertEquals(30, sizeStorage.currentSize());
+        assertEquals(Long.valueOf(30), sizeStorage.segmentSize(0));
+
+        aware.addSize(1, 5);
+
+        assertEquals(35, sizeStorage.currentSize());
+        assertEquals(Long.valueOf(30), sizeStorage.segmentSize(0));
+        assertEquals(Long.valueOf(5), sizeStorage.segmentSize(1));
+
+        aware.addSize(0, -5);
+
+        assertEquals(30, sizeStorage.currentSize());
+        assertEquals(Long.valueOf(25), sizeStorage.segmentSize(0));
+        assertEquals(Long.valueOf(5), sizeStorage.segmentSize(1));
+
+        aware.addSize(0, -10);
+
+        assertEquals(20, sizeStorage.currentSize());
+        assertEquals(Long.valueOf(15), sizeStorage.segmentSize(0));
+        assertEquals(Long.valueOf(5), sizeStorage.segmentSize(1));
+
+        aware.addSize(1, -3);
+
+        assertEquals(17, sizeStorage.currentSize());
+        assertEquals(Long.valueOf(15), sizeStorage.segmentSize(0));
+        assertEquals(Long.valueOf(2), sizeStorage.segmentSize(1));
+
+        aware.addSize(0, -15);
+
+        assertEquals(2, sizeStorage.currentSize());
+        assertNull(sizeStorage.segmentSize(0));
+        assertEquals(Long.valueOf(2), sizeStorage.segmentSize(1));
+
+        aware.addSize(1, -2);
+
+        assertEquals(0, sizeStorage.currentSize());
+        assertNull(sizeStorage.segmentSize(0));
+        assertNull(sizeStorage.segmentSize(1));
+    }
+
+    /**
+     * Checking that when the {@code SegmentArchiveSizeStorage#maxWalArchiveSize} is reached,
+     * the segments will be released to the {@code SegmentArchiveSizeStorage#minWalArchiveSize},
+     * and it will also not be possible to reserve them.
+     */
+    @Test
+    public void testReleaseSegmentsOnExceedMaxWalArchiveSize() {
+        SegmentAware aware = segmentAware(1, false, 50, 100);
+        SegmentReservationStorage reservationStorage = reservationStorage(aware);
+
+        for (int i = 0; i < 9; i++)
+            aware.addSize(i, 10);
+
+        assertTrue(aware.reserve(0));
+        assertTrue(aware.reserve(1));
+        assertTrue(aware.reserve(8));
+
+        aware.addSize(9, 10);
+
+        assertFalse(aware.reserved(0));
+        assertFalse(aware.reserved(1));
+        assertTrue(aware.reserved(8));
+
+        assertEquals(5, reservationStorage.minReserveIdx());
+
+        for (int i = 0; i <= 5; i++) {
+            assertFalse(aware.reserve(i));
+            assertFalse(aware.reserved(i));
+
+            assertTrue(aware.minReserveIndex(i));
+        }
+
+        for (int i = 6; i < 10; i++) {
+            assertTrue(aware.reserve(i));
+
+            assertFalse(aware.minReserveIndex(i));
+        }
+    }
+
+    /**
+     * Check that if the size of the segments does not reach the {@code SegmentArchiveSizeStorage#maxWalArchiveSize}
+     * then there will be no release of the segments.
+     */
+    @Test
+    public void testNoReleaseSegmentNearMaxWalArchiveSize() {
+        SegmentAware aware = segmentAware(1, false, 50, 100);
+
+        for (int i = 0; i < 9; i++)
+            aware.addSize(i, 10);
+
+        assertTrue(aware.reserve(0));
+        assertTrue(aware.reserve(1));
+        assertTrue(aware.reserve(8));
+
+        aware.addSize(9, 9);
+
+        assertTrue(aware.reserve(0));
+        assertTrue(aware.reserve(1));
+        assertTrue(aware.reserve(8));
     }
 
     /**
@@ -910,5 +1070,15 @@ public class SegmentAwareTest {
      */
     private SegmentArchiveSizeStorage archiveSizeStorage(SegmentAware aware) {
         return getFieldValue(aware, "archiveSizeStorage");
+    }
+
+    /**
+     * Getting {@code SegmentAware#reservationStorage}.
+     *
+     * @param aware Segment aware.
+     * @return Instance of {@link SegmentReservationStorage}.
+     */
+    private SegmentReservationStorage reservationStorage(SegmentAware aware) {
+        return getFieldValue(aware, "reservationStorage");
     }
 }

@@ -33,9 +33,6 @@ class SegmentArchiveSizeStorage {
     /** Current WAL archive size in bytes. Guarded by {@code this}. */
     private long curr;
 
-    /** Reserved WAL archive size in bytes. Guarded by {@code this}. */
-    private long reserved;
-
     /** Flag of interrupt waiting on this object. Guarded by {@code this}. */
     private boolean interrupted;
 
@@ -60,8 +57,7 @@ class SegmentArchiveSizeStorage {
     /**
      * Constructor.
      *
-     * @param minWalArchiveSize Minimum size of the WAL archive in bytes
-     *      or {@link DataStorageConfiguration#UNLIMITED_WAL_ARCHIVE}.
+     * @param minWalArchiveSize Minimum size of the WAL archive in bytes.
      * @param maxWalArchiveSize Maximum size of the WAL archive in bytes
      *      or {@link DataStorageConfiguration#UNLIMITED_WAL_ARCHIVE}.
      * @param reservationStorage Segment reservations storage.
@@ -89,36 +85,32 @@ class SegmentArchiveSizeStorage {
 
     /**
      * Adding the WAL segment size in the archive.
-     * Reservation defines a hint to determine if the maximum size is exceeded
-     * before the completion of the operation on the segment.
      *
      * @param idx Absolut segment index.
      * @param curr Current WAL archive size in bytes.
-     * @param reserved Reserved WAL archive size in bytes.
      */
-    void addSize(long idx, long curr, long reserved) {
+    void addSize(long idx, long curr) {
         long releaseIdx = -1;
 
         synchronized (this) {
             this.curr += curr;
-            this.reserved += reserved;
 
             if (segmentSize != null) {
                 segmentSize.compute(idx, (i, size) -> {
-                    long res = (size == null ? 0 : size) + curr + reserved;
+                    long res = (size == null ? 0 : size) + curr;
 
                     return res == 0 ? null : res;
                 });
             }
 
-            if (curr > 0 || reserved > 0) {
-                if (segmentSize != null && this.curr + this.reserved >= maxWalArchiveSize) {
+            if (curr > 0) {
+                if (segmentSize != null && this.curr >= maxWalArchiveSize) {
                     long size = 0;
 
                     for (Map.Entry<Long, Long> e : segmentSize.entrySet()) {
                         releaseIdx = e.getKey();
 
-                        if ((this.curr + this.reserved) - (size += e.getValue()) < minWalArchiveSize)
+                        if (this.curr - (size += e.getValue()) < minWalArchiveSize)
                             break;
                     }
                 }
@@ -139,7 +131,6 @@ class SegmentArchiveSizeStorage {
      */
     synchronized void resetSizes() {
         curr = 0;
-        reserved = 0;
 
         if (segmentSize != null)
             segmentSize.clear();
@@ -154,7 +145,7 @@ class SegmentArchiveSizeStorage {
      */
     synchronized void awaitExceedMaxSize(long max) throws IgniteInterruptedCheckedException {
         try {
-            while (max - (curr + reserved) > 0 && !interrupted)
+            while (max - curr > 0 && !interrupted)
                 wait();
         }
         catch (InterruptedException e) {
@@ -179,5 +170,29 @@ class SegmentArchiveSizeStorage {
      */
     synchronized void reset() {
         interrupted = false;
+    }
+
+    /**
+     * Getting current WAL archive size in bytes.
+     *
+     * @return Size in bytes.
+     */
+    synchronized long currentSize() {
+        return curr;
+    }
+
+    /**
+     * Getting the size of the WAL segment of the archive in bytes.
+     *
+     * @return Size in bytes or {@code null} if the segment is absent or the archive is unlimited.
+     */
+    @Nullable Long segmentSize(long idx) {
+        if (segmentSize == null)
+            return null;
+        else {
+            synchronized (this) {
+                return segmentSize.get(idx);
+            }
+        }
     }
 }

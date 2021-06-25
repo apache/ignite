@@ -330,15 +330,12 @@ public class SegmentAware {
 
     /**
      * Adding the WAL segment size in the archive.
-     * Reservation defines a hint to determine if the maximum size is exceeded
-     * before the completion of the operation on the segment.
      *
      * @param idx Absolut segment index.
      * @param curr Current WAL archive size in bytes.
-     * @param reserved Reserved WAL archive size in bytes.
      */
-    public void addSize(long idx, long curr, long reserved) {
-        archiveSizeStorage.addSize(idx, curr, reserved);
+    public void addSize(long idx, long curr) {
+        archiveSizeStorage.addSize(idx, curr);
     }
 
     /**
