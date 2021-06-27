@@ -114,7 +114,7 @@ public class CacheMetricsAddRemoveTest extends GridCommonAbstractTest {
 
         checkMetricsEmpty(cachePrefix);
 
-        createCache("persisted", "other-cache");
+        createCache("persisted", "other-cache", null);
 
         grid("client").cache("other-cache").put(1L, 1L);
 
@@ -137,6 +137,44 @@ public class CacheMetricsAddRemoveTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
+    public void testCacheMetricsConfigurationNotRemovedOnStopTwoCachesPerGroup() throws Exception {
+        String cachePrefix = cacheMetricsRegistryName("other-cache", false);
+        String cachePrefix2 = cacheMetricsRegistryName("other-cache2", false);
+
+        checkMetricsEmpty(cachePrefix);
+        checkMetricsEmpty(cachePrefix2);
+
+        createCache("persisted", "other-cache", "testGroupName");
+        createCache("persisted", "other-cache2", "testGroupName");
+
+        grid("client").cache("other-cache").put(1L, 1L);
+        grid("client").cache("other-cache2").put(1L, 1L);
+
+        checkMetricsNotEmpty(cachePrefix);
+        checkMetricsNotEmpty(cachePrefix2);
+
+        //Cache will be stopped during deactivation.
+        grid("client").cluster().state(ClusterState.INACTIVE);
+
+        checkMetricsEmpty(cachePrefix);
+        checkMetricsEmpty(cachePrefix2);
+
+        grid("client").cluster().state(ClusterState.ACTIVE);
+
+        assertEquals(1L, grid("client").cache("other-cache").get(1L));
+        assertEquals(1L, grid("client").cache("other-cache2").get(1L));
+
+        checkMetricsNotEmpty(cachePrefix);
+        checkMetricsNotEmpty(cachePrefix2);
+
+        destroyCache();
+
+        checkMetricsEmpty(cachePrefix);
+        checkMetricsEmpty(cachePrefix2);
+    }
+
+    /** */
     private void destroyCache() throws InterruptedException {
         IgniteEx client = grid("client");
 
@@ -148,11 +186,12 @@ public class CacheMetricsAddRemoveTest extends GridCommonAbstractTest {
 
     /** */
     private void createCache() throws Exception {
-        createCache(null, null);
+        createCache(null, null, null);
     }
 
     /** */
-    private void createCache(@Nullable String dataRegionName, @Nullable String cacheName) throws Exception {
+    private void createCache(@Nullable String dataRegionName, @Nullable String cacheName,
+        @Nullable String groupName) throws Exception {
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         if (dataRegionName != null)
@@ -160,6 +199,9 @@ public class CacheMetricsAddRemoveTest extends GridCommonAbstractTest {
 
         if (cacheName != null)
             ccfg.setName(cacheName);
+
+        if (groupName != null)
+            ccfg.setGroupName(groupName);
 
         if (nearEnabled)
             ccfg.setNearConfiguration(new NearCacheConfiguration());
@@ -171,6 +213,12 @@ public class CacheMetricsAddRemoveTest extends GridCommonAbstractTest {
         grid("client").context().metric().configureHistogram(
             MetricUtils.metricName(cacheMetricsRegistryName(ccfg.getName(), false), GET_TIME),
             BOUNDS);
+
+        if (nearEnabled) {
+            grid("client").context().metric().configureHistogram(
+                MetricUtils.metricName(cacheMetricsRegistryName(ccfg.getName(), true), GET_TIME),
+                BOUNDS);
+        }
     }
 
     /** */
@@ -191,6 +239,7 @@ public class CacheMetricsAddRemoveTest extends GridCommonAbstractTest {
                 assertNotNull(mreg.findMetric(CACHE_GETS));
                 assertNotNull(mreg.findMetric(CACHE_PUTS));
                 assertNotNull(mreg.findMetric(GET_TIME));
+                assertArrayEquals(BOUNDS, mreg.<HistogramMetric>findMetric(GET_TIME).bounds());
             }
         }
     }
@@ -204,12 +253,14 @@ public class CacheMetricsAddRemoveTest extends GridCommonAbstractTest {
 
             assertNull(mreg.findMetric(metricName(cachePrefix, CACHE_GETS)));
             assertNull(mreg.findMetric(metricName(cachePrefix, CACHE_PUTS)));
+            assertNull(mreg.findMetric(metricName(cachePrefix, GET_TIME)));
 
             if (nearEnabled) {
                 mreg = mmgr.registry(metricName(cachePrefix, "near"));
 
                 assertNull(mreg.findMetric(CACHE_GETS));
                 assertNull(mreg.findMetric(CACHE_PUTS));
+                assertNull(mreg.findMetric(GET_TIME));
             }
         }
     }
