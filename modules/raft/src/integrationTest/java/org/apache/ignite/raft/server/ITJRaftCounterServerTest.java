@@ -24,11 +24,14 @@ import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.ignite.internal.raft.server.RaftServer;
 import org.apache.ignite.internal.raft.server.impl.JRaftServerImpl;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.network.ClusterService;
+import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.raft.client.Peer;
 import org.apache.ignite.raft.client.WriteCommand;
 import org.apache.ignite.raft.client.exception.RaftException;
@@ -92,10 +95,10 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
     /**
      * Initial configuration.
      */
-    private static final List<Peer> INITIAL_CONF = List.of(
-        new Peer(getLocalAddress() + ":" + PORT),
-        new Peer(getLocalAddress() + ":" + (PORT + 1)),
-        new Peer(getLocalAddress() + ":" + (PORT + 2)));
+    private static final List<Peer> INITIAL_CONF = IntStream.rangeClosed(0, 2)
+        .mapToObj(i -> new NetworkAddress(getLocalAddress(), PORT + i))
+        .map(Peer::new)
+        .collect(Collectors.toUnmodifiableList());
 
     /**
      * Listener factory.
@@ -148,8 +151,9 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
      * @return Raft server instance.
      */
     private JRaftServerImpl startServer(int idx, Consumer<RaftServer> clo) {
-        ClusterService service = clusterService("server" + idx, PORT + idx,
-            List.of(getLocalAddress() + ":" + PORT), true);
+        var addr = new NetworkAddress(getLocalAddress(), PORT);
+
+        ClusterService service = clusterService("server" + idx, PORT + idx, List.of(addr), true);
 
         JRaftServerImpl server = new JRaftServerImpl(service, dataPath, FACTORY) {
             @Override public void shutdown() throws Exception {
@@ -173,10 +177,10 @@ class ITJRaftCounterServerTest extends RaftServerAbstractTest {
      * @return The client.
      */
     private RaftGroupService startClient(String groupId) {
-        String addr = getLocalAddress() + ":" + PORT;
+        var addr = new NetworkAddress(getLocalAddress(), PORT);
 
-        ClusterService clientNode = clusterService("client_" + groupId + "_", CLIENT_PORT + clients.size(),
-            List.of(addr), true);
+        ClusterService clientNode = clusterService(
+            "client_" + groupId + "_", CLIENT_PORT + clients.size(), List.of(addr), true);
 
         RaftGroupServiceImpl client = new RaftGroupServiceImpl(groupId, clientNode, FACTORY, 10_000,
             List.of(new Peer(addr)), false, 200) {

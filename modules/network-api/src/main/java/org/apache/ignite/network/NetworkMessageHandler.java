@@ -23,8 +23,8 @@ public interface NetworkMessageHandler {
     /**
      * @param message Message which was received from the cluster.
      * @param senderAddr Sender address. Use
-     * {@link TopologyService#getByAddress(String)} to resolve a cluster node.
+     * {@link TopologyService#getByAddress} to resolve the corresponding {@link ClusterNode}.
      * @param correlationId Correlation id.
      */
-    void onReceived(NetworkMessage message, String senderAddr, String correlationId);
+    void onReceived(NetworkMessage message, NetworkAddress senderAddr, String correlationId);
 }

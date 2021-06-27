@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.raft.jraft.test;
 
+import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.raft.jraft.NodeManager;
 import org.apache.ignite.raft.jraft.rpc.Message;
 import org.apache.ignite.raft.jraft.rpc.RpcContext;
@@ -47,11 +48,11 @@ public class MockAsyncContext implements RpcContext {
         this.responseObject = responseObject;
     }
 
-    @Override public String getRemoteAddress() {
-        return "localhost:12345";
+    @Override public NetworkAddress getRemoteAddress() {
+        return new NetworkAddress("localhost", 12345);
     }
 
-    @Override public String getLocalAddress() {
-        return "localhost:8081";
+    @Override public NetworkAddress getLocalAddress() {
+        return new NetworkAddress("localhost", 8081);
     }
 }

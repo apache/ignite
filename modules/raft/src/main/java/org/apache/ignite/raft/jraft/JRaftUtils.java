@@ -21,6 +21,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
+import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.raft.jraft.conf.Configuration;
 import org.apache.ignite.raft.jraft.core.NodeImpl;
 import org.apache.ignite.raft.jraft.core.Scheduler;
@@ -187,17 +188,13 @@ public final class JRaftUtils {
     }
 
     /**
-     * Create a Endpoint instance from  a string in the form of "host:port", returns null when string is blank.
+     * Creates a {@link NetworkAddress} from an {@link Endpoint}.
+     *
+     * @param endpoint Endpoint.
+     * @return Network address.
      */
-    public static Endpoint getEndPoint(final String s) {
-        if (StringUtils.isBlank(s)) {
-            return null;
-        }
-        final String[] tmps = StringUtils.split(s, ':');
-        if (tmps.length != 2) {
-            throw new IllegalArgumentException("Invalid endpoint string: " + s);
-        }
-        return new Endpoint(tmps[0], Integer.parseInt(tmps[1]));
+    public static NetworkAddress addressFromEndpoint(Endpoint endpoint) {
+        return new NetworkAddress(endpoint.getIp(), endpoint.getPort());
     }
 
     private JRaftUtils() {

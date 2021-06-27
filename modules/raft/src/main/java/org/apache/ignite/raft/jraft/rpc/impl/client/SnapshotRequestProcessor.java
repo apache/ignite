@@ -21,9 +21,7 @@ import org.apache.ignite.raft.client.RaftErrorCode;
 import org.apache.ignite.raft.client.message.RaftClientMessagesFactory;
 import org.apache.ignite.raft.client.message.RaftErrorResponseBuilder;
 import org.apache.ignite.raft.client.message.SnapshotRequest;
-import org.apache.ignite.raft.jraft.Closure;
 import org.apache.ignite.raft.jraft.Node;
-import org.apache.ignite.raft.jraft.Status;
 import org.apache.ignite.raft.jraft.entity.PeerId;
 import org.apache.ignite.raft.jraft.rpc.RpcContext;
 import org.apache.ignite.raft.jraft.rpc.RpcProcessor;
@@ -33,6 +31,7 @@ import org.apache.ignite.raft.jraft.rpc.RpcProcessor;
  */
 public class SnapshotRequestProcessor implements RpcProcessor<SnapshotRequest> {
     private final Executor executor;
+
     private final RaftClientMessagesFactory factory;
 
     public SnapshotRequestProcessor(Executor executor, RaftClientMessagesFactory factory) {
@@ -42,7 +41,7 @@ public class SnapshotRequestProcessor implements RpcProcessor<SnapshotRequest> {
 
     /** {@inheritDoc} */
     @Override public void handleRequest(RpcContext rpcCtx, SnapshotRequest request) {
-        Node node = rpcCtx.getNodeManager().get(request.groupId(), PeerId.parsePeer(rpcCtx.getLocalAddress()));
+        Node node = rpcCtx.getNodeManager().get(request.groupId(), new PeerId(rpcCtx.getLocalAddress()));
 
         if (node == null) {
             rpcCtx.sendResponse(factory.raftErrorResponse().errorCode(RaftErrorCode.ILLEGAL_STATE).build());
@@ -50,16 +49,13 @@ public class SnapshotRequestProcessor implements RpcProcessor<SnapshotRequest> {
             return;
         }
 
-        node.snapshot(new Closure() {
-            @Override public void run(Status status) {
-                RaftErrorResponseBuilder resp = factory.raftErrorResponse();
+        node.snapshot(status -> {
+            RaftErrorResponseBuilder resp = factory.raftErrorResponse();
 
-                if (!status.isOk()) {
-                    resp.errorCode(RaftErrorCode.SNAPSHOT).errorMessage(status.getErrorMsg());
-                }
+            if (!status.isOk())
+                resp.errorCode(RaftErrorCode.SNAPSHOT).errorMessage(status.getErrorMsg());
 
-                rpcCtx.sendResponse(resp.build());
-            }
+            rpcCtx.sendResponse(resp.build());
         });
     }
 

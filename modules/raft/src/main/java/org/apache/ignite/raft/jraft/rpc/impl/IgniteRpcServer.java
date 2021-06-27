@@ -23,6 +23,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;
+import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.TopologyEventHandler;
 import org.apache.ignite.raft.client.message.RaftClientMessagesFactory;
@@ -146,11 +147,11 @@ public class IgniteRpcServer implements RpcServer<Void> {
                         service.messagingService().send(senderAddr, (NetworkMessage) responseObj, corellationId);
                     }
 
-                    @Override public String getRemoteAddress() {
+                    @Override public NetworkAddress getRemoteAddress() {
                         return senderAddr;
                     }
 
-                    @Override public String getLocalAddress() {
+                    @Override public NetworkAddress getLocalAddress() {
                         return service.topologyService().localMember().address();
                     }
                 };

@@ -18,7 +18,6 @@ package org.apache.ignite.network;
 
 import java.io.Serializable;
 import java.util.Objects;
-import org.apache.ignite.internal.tostring.IgniteToStringExclude;
 import org.apache.ignite.internal.tostring.S;
 
 /**
@@ -31,27 +30,18 @@ public class ClusterNode implements Serializable {
     /** Unique name of member in the cluster. Consistent between restarts. */
     private final String name;
 
-    /** Node host. */
-    private final String host;
-
-    /** Node port. */
-    private final int port;
-
-    /** Node address in host:port format (lazily evaluated) */
-    @IgniteToStringExclude
-    private String address;
+    /** Network address of this node. */
+    private final NetworkAddress address;
 
     /**
-     * @param id local id that changes between restarts
-     * @param name unique name of a member in a cluster
-     * @param host node host
-     * @param port node port
+     * @param id Local id that changes between restarts.
+     * @param name Unique name of a member in a cluster.
+     * @param address Node address.
      */
-    public ClusterNode(String id, String name, String host, int port) {
+    public ClusterNode(String id, String name, NetworkAddress address) {
         this.id = id;
         this.name = name;
-        this.host = host;
-        this.port = port;
+        this.address = address;
     }
 
     /**
@@ -69,27 +59,10 @@ public class ClusterNode implements Serializable {
     }
 
     /**
-     * @return Node host name.
+     * @return Network address of this node.
      */
-    public String host() {
-        return host;
-    }
-
-    /**
-     * @return The address.
-     */
-    public String address() {
-        if (address == null)
-            address = host + ":" + port;
-
+    public NetworkAddress address() {
         return address;
-    }
-
-    /**
-     * @return Node port.
-     */
-    public int port() {
-        return port;
     }
 
     /** {@inheritDoc} */
@@ -99,12 +72,12 @@ public class ClusterNode implements Serializable {
         if (o == null || getClass() != o.getClass())
             return false;
         ClusterNode that = (ClusterNode)o;
-        return port == that.port && name.equals(that.name) && host.equals(that.host);
+        return name.equals(that.name) && address.equals(that.address);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return Objects.hash(name, host, port);
+        return Objects.hash(name, address);
     }
 
     /** {@inheritDoc} */

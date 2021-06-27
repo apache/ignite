@@ -17,6 +17,7 @@
 package org.apache.ignite.raft.jraft.rpc.impl.client;
 
 import java.util.concurrent.Executor;
+import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.raft.client.Peer;
 import org.apache.ignite.raft.client.RaftErrorCode;
 import org.apache.ignite.raft.client.message.GetLeaderRequest;
@@ -26,11 +27,14 @@ import org.apache.ignite.raft.jraft.entity.PeerId;
 import org.apache.ignite.raft.jraft.rpc.RpcContext;
 import org.apache.ignite.raft.jraft.rpc.RpcProcessor;
 
+import static org.apache.ignite.raft.jraft.JRaftUtils.addressFromEndpoint;
+
 /**
  * Process get leader request.
  */
 public class GetLeaderRequestProcessor implements RpcProcessor<GetLeaderRequest> {
     private final Executor executor;
+
     private final RaftClientMessagesFactory factory;
 
     public GetLeaderRequestProcessor(Executor executor, RaftClientMessagesFactory factory) {
@@ -40,7 +44,9 @@ public class GetLeaderRequestProcessor implements RpcProcessor<GetLeaderRequest>
 
     /** {@inheritDoc} */
     @Override public void handleRequest(RpcContext rpcCtx, GetLeaderRequest request) {
-        Node node = rpcCtx.getNodeManager().get(request.groupId(), PeerId.parsePeer(rpcCtx.getLocalAddress()));
+        NetworkAddress localAddr = rpcCtx.getLocalAddress();
+
+        Node node = rpcCtx.getNodeManager().get(request.groupId(), new PeerId(localAddr.host(), localAddr.port()));
 
         if (node == null) {
             rpcCtx.sendResponse(factory.raftErrorResponse().errorCode(RaftErrorCode.ILLEGAL_STATE).build());
@@ -57,7 +63,7 @@ public class GetLeaderRequestProcessor implements RpcProcessor<GetLeaderRequest>
         }
 
         // Find by host and port.
-        Peer leader0 = new Peer(leaderId.getEndpoint().toString());
+        Peer leader0 = new Peer(addressFromEndpoint(leaderId.getEndpoint()));
 
         rpcCtx.sendResponse(factory.getLeaderResponse().leader(leader0).build());
     }

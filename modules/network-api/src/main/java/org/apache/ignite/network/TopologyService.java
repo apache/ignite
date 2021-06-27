@@ -49,5 +49,5 @@ public interface TopologyService {
      * @param addr The address.
      * @return The node or {@code null} if the node is not yet discovered or dead.
      */
-    @Nullable ClusterNode getByAddress(String addr);
+    @Nullable ClusterNode getByAddress(NetworkAddress addr);
 }

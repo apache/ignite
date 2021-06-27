@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.MessageSerializationRegistryImpl;
+import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.scalecube.TestScaleCubeClusterServiceFactory;
 import org.apache.ignite.raft.jraft.CliService;
 import org.apache.ignite.raft.jraft.JRaftUtils;
@@ -112,7 +113,10 @@ public class ITCliServiceTest {
         CliOptions opts = new CliOptions();
         opts.setClientExecutor(JRaftUtils.createClientExecutor(opts, "client"));
 
-        List<String> memberAddresses = peers.stream().map(p -> p.getEndpoint().toString()).collect(Collectors.toList());
+        List<NetworkAddress> memberAddresses = peers.stream()
+            .map(PeerId::getEndpoint)
+            .map(JRaftUtils::addressFromEndpoint)
+            .collect(Collectors.toList());
 
         var registry = new MessageSerializationRegistryImpl();
 

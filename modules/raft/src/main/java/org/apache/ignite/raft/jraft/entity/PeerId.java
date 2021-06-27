@@ -17,6 +17,7 @@
 package org.apache.ignite.raft.jraft.entity;
 
 import java.io.Serializable;
+import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.raft.client.Peer;
 import org.apache.ignite.raft.jraft.core.ElectionPriority;
 import org.apache.ignite.raft.jraft.util.AsciiStringUtil;
@@ -104,6 +105,10 @@ public class PeerId implements Copiable<PeerId>, Serializable, Checksum {
         super();
         this.endpoint = endpoint;
         this.idx = idx;
+    }
+
+    public PeerId(NetworkAddress address) {
+        this(address.host(), address.port());
     }
 
     public PeerId(final String ip, final int port) {
@@ -283,6 +288,6 @@ public class PeerId implements Copiable<PeerId>, Serializable, Checksum {
     }
 
     public static PeerId fromPeer(Peer p) {
-        return PeerId.parsePeer(p.address() + ":0:" + p.getPriority());
+        return new PeerId(p.address().host(), p.address().port(), 0, p.getPriority());
     }
 }

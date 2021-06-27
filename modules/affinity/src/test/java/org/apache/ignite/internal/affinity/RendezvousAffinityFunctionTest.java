@@ -24,9 +24,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.ignite.internal.util.ByteUtils;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.network.ClusterNode;
+import org.apache.ignite.network.NetworkAddress;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
@@ -53,7 +56,7 @@ public class RendezvousAffinityFunctionTest {
 
         int replicas = 4;
 
-        ArrayList<ClusterNode> clusterNodes = prepareNetworkTopology(nodes);
+        List<ClusterNode> clusterNodes = prepareNetworkTopology(nodes);
 
         assertTrue(parts > nodes, "Partitions should be more that nodes");
 
@@ -98,12 +101,13 @@ public class RendezvousAffinityFunctionTest {
         }
     }
 
-    @NotNull private ArrayList<ClusterNode> prepareNetworkTopology(int nodes) {
-        ArrayList<ClusterNode> clusterNodes = new ArrayList<>(nodes);
+    @NotNull private List<ClusterNode> prepareNetworkTopology(int nodes) {
+        var addr = new NetworkAddress("127.0.0.1", 121212);
 
-        for (int i = 0; i < nodes; i++)
-            clusterNodes.add(new ClusterNode(UUID.randomUUID().toString(), "Node " + i, "127.0.0.1", 121212));
-        return clusterNodes;
+        return IntStream.range(0, nodes)
+            .mapToObj(i -> "Node " + i)
+            .map(name -> new ClusterNode(UUID.randomUUID().toString(), name, addr))
+            .collect(Collectors.toUnmodifiableList());
     }
 
     @Test
@@ -114,7 +118,7 @@ public class RendezvousAffinityFunctionTest {
 
         int replicas = 4;
 
-        ArrayList<ClusterNode> clusterNodes = prepareNetworkTopology(nodes);
+        List<ClusterNode> clusterNodes = prepareNetworkTopology(nodes);
 
         assertTrue(parts > nodes, "Partitions should be more that nodes");
 

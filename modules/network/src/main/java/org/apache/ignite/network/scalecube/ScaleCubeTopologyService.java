@@ -25,6 +25,7 @@ import io.scalecube.cluster.membership.MembershipEvent;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.network.AbstractTopologyService;
 import org.apache.ignite.network.ClusterNode;
+import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.TopologyEventHandler;
 import org.apache.ignite.network.TopologyService;
 
@@ -39,7 +40,7 @@ final class ScaleCubeTopologyService extends AbstractTopologyService {
     private ClusterNode localMember;
 
     /** Topology members. */
-    private final ConcurrentMap<String, ClusterNode> members = new ConcurrentHashMap<>();
+    private final ConcurrentMap<NetworkAddress, ClusterNode> members = new ConcurrentHashMap<>();
 
     /**
      * Sets the ScaleCube's local {@link Member}.
@@ -119,7 +120,7 @@ final class ScaleCubeTopologyService extends AbstractTopologyService {
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterNode getByAddress(String addr) {
+    @Override public ClusterNode getByAddress(NetworkAddress addr) {
         return members.get(addr);
     }
 
@@ -127,6 +128,8 @@ final class ScaleCubeTopologyService extends AbstractTopologyService {
      * Converts the given {@link Member} to a {@link ClusterNode}.
      */
     private static ClusterNode fromMember(Member member) {
-        return new ClusterNode(member.id(), member.alias(), member.address().host(), member.address().port());
+        var addr = new NetworkAddress(member.address().host(), member.address().port());
+
+        return new ClusterNode(member.id(), member.alias(), addr);
     }
 }

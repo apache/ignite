@@ -23,6 +23,7 @@ import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.ClusterServiceFactory;
 import org.apache.ignite.network.MessageSerializationRegistryImpl;
+import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.scalecube.TestScaleCubeClusterServiceFactory;
 import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 import org.apache.ignite.raft.client.message.RaftClientMessagesFactory;
@@ -54,7 +55,7 @@ abstract class RaftServerAbstractTest {
      * @param servers Server nodes of the cluster.
      * @return The client cluster view.
      */
-    protected ClusterService clusterService(String name, int port, List<String> servers, boolean start) {
+    protected ClusterService clusterService(String name, int port, List<NetworkAddress> servers, boolean start) {
         var context = new ClusterLocalConfiguration(name, port, servers, SERIALIZATION_REGISTRY);
 
         var network = NETWORK_FACTORY.createClusterService(context);

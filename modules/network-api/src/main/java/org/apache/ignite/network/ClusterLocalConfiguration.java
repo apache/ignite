@@ -34,7 +34,7 @@ public class ClusterLocalConfiguration {
     private final int port;
 
     /** Addresses of other nodes. */
-    private final List<String> memberAddresses;
+    private final List<NetworkAddress> memberAddresses;
 
     /** Message mapper providers. */
     private final MessageSerializationRegistry serializationRegistry;
@@ -46,7 +46,7 @@ public class ClusterLocalConfiguration {
      * @param serializationRegistry Message serialization registry.
      */
     public ClusterLocalConfiguration(
-        String name, int port, List<String> memberAddresses, MessageSerializationRegistry serializationRegistry
+        String name, int port, List<NetworkAddress> memberAddresses, MessageSerializationRegistry serializationRegistry
     ) {
         this.name = name;
         this.port = port;
@@ -71,7 +71,7 @@ public class ClusterLocalConfiguration {
     /**
      * @return Addresses of other nodes.
      */
-    public List<String> getMemberAddresses() {
+    public List<NetworkAddress> getMemberAddresses() {
         return memberAddresses;
     }
 

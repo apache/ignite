@@ -20,6 +20,7 @@ import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.Executor;
+import org.apache.ignite.internal.raft.server.impl.JRaftServerImpl;
 import org.apache.ignite.raft.client.Command;
 import org.apache.ignite.raft.client.Peer;
 import org.apache.ignite.raft.client.RaftErrorCode;
@@ -27,6 +28,7 @@ import org.apache.ignite.raft.client.ReadCommand;
 import org.apache.ignite.raft.client.WriteCommand;
 import org.apache.ignite.raft.client.message.ActionRequest;
 import org.apache.ignite.raft.client.message.RaftClientMessagesFactory;
+import org.apache.ignite.raft.client.message.RaftErrorResponse;
 import org.apache.ignite.raft.client.message.RaftErrorResponseBuilder;
 import org.apache.ignite.raft.client.service.CommandClosure;
 import org.apache.ignite.raft.jraft.Closure;
@@ -40,13 +42,15 @@ import org.apache.ignite.raft.jraft.rpc.RpcContext;
 import org.apache.ignite.raft.jraft.rpc.RpcProcessor;
 import org.apache.ignite.raft.jraft.util.BytesUtil;
 import org.apache.ignite.raft.jraft.util.JDKMarshaller;
-import org.apache.ignite.internal.raft.server.impl.JRaftServerImpl;
+
+import static org.apache.ignite.raft.jraft.JRaftUtils.addressFromEndpoint;
 
 /**
  * Process action request.
  */
 public class ActionRequestProcessor implements RpcProcessor<ActionRequest> {
     private final Executor executor;
+
     private final RaftClientMessagesFactory factory;
 
     public ActionRequestProcessor(Executor executor, RaftClientMessagesFactory factory) {
@@ -56,7 +60,7 @@ public class ActionRequestProcessor implements RpcProcessor<ActionRequest> {
 
     /** {@inheritDoc} */
     @Override public void handleRequest(RpcContext rpcCtx, ActionRequest request) {
-        Node node = rpcCtx.getNodeManager().get(request.groupId(), PeerId.parsePeer(rpcCtx.getLocalAddress()));
+        Node node = rpcCtx.getNodeManager().get(request.groupId(), new PeerId(rpcCtx.getLocalAddress()));
 
         if (node == null) {
             rpcCtx.sendResponse(factory.raftErrorResponse().errorCode(RaftErrorCode.ILLEGAL_STATE).build());
@@ -87,9 +91,9 @@ public class ActionRequestProcessor implements RpcProcessor<ActionRequest> {
                                 (JRaftServerImpl.DelegatingStateMachine) node.getOptions().getFsm();
 
                             try {
-                                fsm.getListener().onRead(List.<CommandClosure<ReadCommand>>of(new CommandClosure<ReadCommand>() {
+                                fsm.getListener().onRead(List.<CommandClosure<ReadCommand>>of(new CommandClosure<>() {
                                     @Override public ReadCommand command() {
-                                        return (ReadCommand) request.command();
+                                        return (ReadCommand)request.command();
                                     }
 
                                     @Override public void result(Serializable res) {
@@ -112,9 +116,9 @@ public class ActionRequestProcessor implements RpcProcessor<ActionRequest> {
                     (JRaftServerImpl.DelegatingStateMachine) node.getOptions().getFsm();
 
                 try {
-                    fsm.getListener().onRead(List.<CommandClosure<ReadCommand>>of(new CommandClosure<ReadCommand>() {
+                    fsm.getListener().onRead(List.<CommandClosure<ReadCommand>>of(new CommandClosure<>() {
                         @Override public ReadCommand command() {
-                            return (ReadCommand) request.command();
+                            return (ReadCommand)request.command();
                         }
 
                         @Override public void result(Serializable res) {
@@ -140,15 +144,17 @@ public class ActionRequestProcessor implements RpcProcessor<ActionRequest> {
     }
 
     /**
-     * @param node The node.
-     * @param corellationId Corellation id.
+     * @param ctx Context.
      * @param errorCode Error code.
-     * @param newLeader New leader.
+     * @param msg Message.
      */
     private void sendError(RpcContext ctx, RaftErrorCode errorCode, String msg) {
-        RaftErrorResponseBuilder resp = factory.raftErrorResponse().errorCode(errorCode).errorMessage(msg);
+        RaftErrorResponse resp = factory.raftErrorResponse()
+            .errorCode(errorCode)
+            .errorMessage(msg)
+            .build();
 
-        ctx.sendResponse(((RaftErrorResponseBuilder) resp).build());
+        ctx.sendResponse(resp);
     }
 
     /**
@@ -176,11 +182,10 @@ public class ActionRequestProcessor implements RpcProcessor<ActionRequest> {
         RaftErrorResponseBuilder resp =
             factory.raftErrorResponse().errorCode(raftErrorCode).errorMessage(status.getErrorMsg());
 
-        if (newLeader != null) {
-            resp.newLeader(new Peer(newLeader.getEndpoint().toString()));
-        }
+        if (newLeader != null)
+            resp.newLeader(new Peer(addressFromEndpoint(newLeader.getEndpoint())));
 
-        ctx.sendResponse(((RaftErrorResponseBuilder) resp).build());
+        ctx.sendResponse(resp.build());
     }
 
     /**

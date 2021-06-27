@@ -41,6 +41,7 @@ import java.util.stream.Stream;
 import com.codahale.metrics.ConsoleReporter;
 import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterService;
+import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.TestMessageSerializationRegistryImpl;
 import org.apache.ignite.network.scalecube.TestScaleCubeClusterServiceFactory;
 import org.apache.ignite.raft.jraft.Iterator;
@@ -2815,7 +2816,7 @@ public class ITNodeTest {
 
     @Test
     public void testBootStrapWithSnapshot() throws Exception {
-        Endpoint addr = JRaftUtils.getEndPoint("127.0.0.1:5006");
+        Endpoint addr = new Endpoint("127.0.0.1", 5006);
         MockStateMachine fsm = new MockStateMachine(addr);
 
         for (char ch = 'a'; ch <= 'z'; ch++)
@@ -2857,7 +2858,7 @@ public class ITNodeTest {
 
     @Test
     public void testBootStrapWithoutSnapshot() throws Exception {
-        Endpoint addr = JRaftUtils.getEndPoint("127.0.0.1:5006");
+        Endpoint addr = new Endpoint("127.0.0.1", 5006);
         MockStateMachine fsm = new MockStateMachine(addr);
 
         BootstrapOptions opts = new BootstrapOptions();
@@ -3392,11 +3393,12 @@ public class ITNodeTest {
     private RaftGroupService createService(String groupId, PeerId peerId, NodeOptions nodeOptions) {
         Configuration initialConf = nodeOptions.getInitialConf();
 
-        var servers = List.<String>of();
+        var servers = List.<NetworkAddress>of();
 
         if (initialConf != null) {
             servers = Stream.concat(initialConf.getPeers().stream(), initialConf.getLearners().stream())
-                .map(id -> id.getEndpoint().toString())
+                .map(PeerId::getEndpoint)
+                .map(JRaftUtils::addressFromEndpoint)
                 .collect(Collectors.toList());
         }
 
@@ -3426,7 +3428,7 @@ public class ITNodeTest {
     /**
      * Creates a non-started {@link ClusterService}.
      */
-    private static ClusterService createClusterService(Endpoint endpoint, List<String> members) {
+    private static ClusterService createClusterService(Endpoint endpoint, List<NetworkAddress> members) {
         var registry = new TestMessageSerializationRegistryImpl();
 
         var clusterConfig = new ClusterLocalConfiguration(endpoint.toString(), endpoint.getPort(), members, registry);

@@ -18,7 +18,9 @@
 package org.apache.ignite.raft.client;
 
 import java.io.Serializable;
+import java.util.Objects;
 import org.apache.ignite.internal.tostring.S;
+import org.apache.ignite.network.NetworkAddress;
 
 /**
  * A participant of a replication group.
@@ -27,7 +29,7 @@ public final class Peer implements Serializable {
     /**
      * Network address.
      */
-    private final String addr;
+    private final NetworkAddress addr;
 
     /**
      * Peer's local priority value, if node don't support priority election,
@@ -46,7 +48,7 @@ public final class Peer implements Serializable {
     /**
      * @param addr The address.
      */
-    public Peer(String addr) {
+    public Peer(NetworkAddress addr) {
         this(addr, ElectionPriority.DISABLED);
     }
 
@@ -54,7 +56,7 @@ public final class Peer implements Serializable {
      * @param addr The address.
      * @param priority Election priority.
      */
-    public Peer(String addr, int priority) {
+    public Peer(NetworkAddress addr, int priority) {
         this.addr = addr;
         this.priority = priority;
     }
@@ -62,7 +64,7 @@ public final class Peer implements Serializable {
     /**
      * @return The address.
      */
-    public String address() {
+    public NetworkAddress address() {
         return this.addr;
     }
 
@@ -75,22 +77,17 @@ public final class Peer implements Serializable {
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        Peer peer = (Peer) o;
-
-        if (priority != peer.priority) return false;
-        if (!addr.equals(peer.addr)) return false;
-
-        return true;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        Peer peer = (Peer)o;
+        return priority == peer.priority && addr.equals(peer.addr);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = addr.hashCode();
-        result = 31 * result + priority;
-        return result;
+        return Objects.hash(addr, priority);
     }
 
     /** {@inheritDoc} */

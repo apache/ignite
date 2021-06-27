@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterService;
+import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.TestMessageSerializationRegistryImpl;
 import org.apache.ignite.network.scalecube.TestScaleCubeClusterServiceFactory;
 import org.apache.ignite.raft.jraft.JRaftServiceFactory;
@@ -203,11 +204,15 @@ public class TestCluster {
             final MockStateMachine fsm = new MockStateMachine(listenAddr);
             nodeOptions.setFsm(fsm);
 
-            if (!emptyPeers) {
+            if (!emptyPeers)
                 nodeOptions.setInitialConf(new Configuration(this.peers, this.learners));
-            }
 
-            List<String> servers = emptyPeers ? List.of() : this.peers.stream().map(p -> p.getEndpoint().toString()).collect(Collectors.toList());
+            List<NetworkAddress> servers = emptyPeers ?
+                List.of() :
+                this.peers.stream()
+                    .map(PeerId::getEndpoint)
+                    .map(JRaftUtils::addressFromEndpoint)
+                    .collect(Collectors.toList());
 
             NodeManager nodeManager = new NodeManager();
 
@@ -249,7 +254,7 @@ public class TestCluster {
     /**
      * Creates a non-started {@link ClusterService}.
      */
-    private static ClusterService createClusterService(Endpoint endpoint, List<String> members) {
+    private static ClusterService createClusterService(Endpoint endpoint, List<NetworkAddress> members) {
         var registry = new TestMessageSerializationRegistryImpl();
 
         var clusterConfig = new ClusterLocalConfiguration(endpoint.toString(), endpoint.getPort(), members, registry);

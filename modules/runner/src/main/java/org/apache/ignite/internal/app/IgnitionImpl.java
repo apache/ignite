@@ -17,11 +17,12 @@
 
 package org.apache.ignite.internal.app;
 
-import io.netty.util.internal.StringUtil;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
+import io.netty.util.internal.StringUtil;
 import org.apache.ignite.app.Ignite;
 import org.apache.ignite.app.Ignition;
 import org.apache.ignite.configuration.RootKey;
@@ -48,6 +49,7 @@ import org.apache.ignite.lang.LoggerMessageHelper;
 import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.MessageSerializationRegistryImpl;
+import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.scalecube.ScaleCubeClusterServiceFactory;
 import org.apache.ignite.table.manager.IgniteTables;
 import org.apache.ignite.utils.IgniteProperties;
@@ -124,12 +126,16 @@ public class IgnitionImpl implements Ignition {
 
         var serializationRegistry = new MessageSerializationRegistryImpl();
 
+        List<NetworkAddress> peers = Arrays.stream(netConfigurationView.netClusterNodes())
+            .map(NetworkAddress::from)
+            .collect(Collectors.toUnmodifiableList());
+
         // Network startup.
         ClusterService clusterNetSvc = new ScaleCubeClusterServiceFactory().createClusterService(
             new ClusterLocalConfiguration(
                 nodeName,
                 netConfigurationView.port(),
-                Arrays.asList(netConfigurationView.netClusterNodes()),
+                peers,
                 serializationRegistry
             )
         );

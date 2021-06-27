@@ -25,10 +25,13 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.lang.IgniteLogger;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.MessagingService;
+import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.raft.client.Peer;
 import org.apache.ignite.raft.client.RaftErrorCode;
 import org.apache.ignite.raft.client.WriteCommand;
@@ -45,10 +48,8 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static java.util.List.of;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.CompletableFuture.failedFuture;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -59,7 +60,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.when;
 
@@ -72,11 +72,10 @@ public class RaftGroupServiceTest {
     private static final IgniteLogger LOG = IgniteLogger.forClass(RaftGroupServiceTest.class);
 
     /** */
-    private static final List<Peer> NODES = of(
-        new Peer("localhost:20000"),
-        new Peer("localhost:20001"),
-        new Peer("localhost:20002")
-    );
+    private static final List<Peer> NODES = Stream.of(20000, 20001, 20002)
+        .map(port -> new NetworkAddress("localhost", port))
+        .map(Peer::new)
+        .collect(Collectors.toUnmodifiableList());
 
     /** */
     private static final RaftClientMessagesFactory FACTORY = new RaftClientMessagesFactory();
@@ -420,7 +419,9 @@ public class RaftGroupServiceTest {
         RaftGroupService service =
             new RaftGroupServiceImpl(groupId, cluster, FACTORY, TIMEOUT, NODES, false, DELAY);
 
-        CompletableFuture<Void> fut = service.snapshot(new Peer("localhost:8082"));
+        var addr = new NetworkAddress("localhost", 8082);
+
+        CompletableFuture<Void> fut = service.snapshot(new Peer(addr));
 
         try {
             fut.get();
@@ -444,7 +445,9 @@ public class RaftGroupServiceTest {
         RaftGroupService service =
             new RaftGroupServiceImpl(groupId, cluster, FACTORY, TIMEOUT, NODES, false, DELAY);
 
-        CompletableFuture<Void> fut = service.snapshot(new Peer("localhost:8082"));
+        var addr = new NetworkAddress("localhost", 8082);
+
+        CompletableFuture<Void> fut = service.snapshot(new Peer(addr));
 
         try {
             fut.get();
@@ -461,14 +464,22 @@ public class RaftGroupServiceTest {
      * @param peer Fail the request targeted to given peer.
      */
     private void mockUserInput(boolean delay, @Nullable Peer peer) {
-        Mockito.doAnswer(invocation -> {
-            String target = invocation.getArgument(0);
+        when(messagingService.invoke(
+            any(NetworkAddress.class),
+            argThat(new ArgumentMatcher<ActionRequest>() {
+                @Override public boolean matches(ActionRequest arg) {
+                    return arg.command() instanceof TestCommand;
+                }
+            }),
+            anyLong()
+        )).then(invocation -> {
+            NetworkAddress target = invocation.getArgument(0);
 
             if (peer != null && target.equals(peer.address()))
                 return failedFuture(new IgniteInternalException(new ConnectException()));
 
             if (delay) {
-                return new CompletableFuture<>().completeAsync(() -> {
+                return CompletableFuture.supplyAsync(() -> {
                     try {
                         Thread.sleep(1000);
                     }
@@ -490,68 +501,51 @@ public class RaftGroupServiceTest {
                 resp = FACTORY.actionResponse().result(new TestResponse()).build();
 
             return completedFuture(resp);
-        })
-            .when(messagingService)
-            .invoke(
-                anyString(),
-                argThat(new ArgumentMatcher<ActionRequest>() {
-                    @Override public boolean matches(ActionRequest arg) {
-                        return arg.command() instanceof TestCommand;
-                    }
-                }),
-                anyLong()
-            );
+        });
     }
 
     /**
      * @param delay {@code True} to delay response.
      */
     private void mockLeaderRequest(boolean delay) {
-        Mockito.doAnswer(invocation -> {
-            if (delay) {
-                return new CompletableFuture<>().completeAsync(() -> {
-                    try {
-                        Thread.sleep(1000);
-                    }
-                    catch (InterruptedException e) {
-                        fail();
-                    }
+        when(messagingService.invoke(any(NetworkAddress.class), any(GetLeaderRequest.class), anyLong()))
+            .then(invocation -> {
+                if (delay) {
+                    return CompletableFuture.supplyAsync(() -> {
+                        try {
+                            Thread.sleep(1000);
+                        }
+                        catch (InterruptedException e) {
+                            fail();
+                        }
 
-                    return FACTORY.raftErrorResponse().errorCode(RaftErrorCode.NO_LEADER).build();
-                });
-            }
+                        return FACTORY.raftErrorResponse().errorCode(RaftErrorCode.NO_LEADER).build();
+                    });
+                }
 
-            Object resp;
+                Peer leader0 = leader;
 
-            Peer leader0 = leader;
+                Object resp = leader0 == null ?
+                    FACTORY.raftErrorResponse().errorCode(RaftErrorCode.NO_LEADER).build() :
+                    FACTORY.getLeaderResponse().leader(leader0).build();
 
-            if (leader0 == null) {
-                resp = FACTORY.raftErrorResponse().errorCode(RaftErrorCode.NO_LEADER).build();
-            }
-            else {
-                resp = FACTORY.getLeaderResponse().leader(leader0).build();
-            }
-
-            return completedFuture(resp);
-        })
-            .when(messagingService)
-            .invoke(anyString(), any(GetLeaderRequest.class), anyLong());
+                return completedFuture(resp);
+            });
     }
 
     /**
      * @param mode Mock mode.
      */
     private void mockSnapshotRequest(int mode) {
-        Mockito.doAnswer(invocation -> {
-            if (mode == 0) {
-                return completedFuture(FACTORY.raftErrorResponse().errorCode(RaftErrorCode.SNAPSHOT).
-                    errorMessage("Failed to create a snapshot").build());
-            }
-            else
-                return failedFuture(new IgniteInternalException("Very bad"));
-        })
-            .when(messagingService)
-            .invoke(anyString(), any(SnapshotRequest.class), anyLong());
+        when(messagingService.invoke(any(NetworkAddress.class), any(SnapshotRequest.class), anyLong()))
+            .then(invocation -> {
+                if (mode == 0) {
+                    return completedFuture(FACTORY.raftErrorResponse().errorCode(RaftErrorCode.SNAPSHOT).
+                        errorMessage("Failed to create a snapshot").build());
+                }
+                else
+                    return failedFuture(new IgniteInternalException("Very bad"));
+            });
     }
 
     /** */

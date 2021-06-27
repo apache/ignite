@@ -40,7 +40,7 @@ import org.apache.ignite.network.AbstractClusterService;
 import org.apache.ignite.network.ClusterLocalConfiguration;
 import org.apache.ignite.network.ClusterService;
 import org.apache.ignite.network.ClusterServiceFactory;
-import org.apache.ignite.network.NetworkConfigurationException;
+import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.serialization.MessageSerializationRegistry;
 
 /**
@@ -141,18 +141,14 @@ public class ScaleCubeClusterServiceFactory implements ClusterServiceFactory {
     }
 
     /**
-     * Convert string addresses to ScaleCube's {@link Address}es.
-     * @param addresses "host:port" formatted strings.
-     * @return List of addresses.
+     * Converts the given list of {@link NetworkAddress} into a list of ScaleCube's {@link Address}.
+     *
+     * @param addresses Network address.
+     * @return List of ScaleCube's {@link Address}.
      */
-    private static List<Address> parseAddresses(List<String> addresses) {
-        try {
-            return addresses.stream()
-                .map(Address::from)
-                .collect(Collectors.toList());
-        }
-        catch (IllegalArgumentException e) {
-            throw new NetworkConfigurationException("Failed to parse address", e);
-        }
+    private static List<Address> parseAddresses(List<NetworkAddress> addresses) {
+        return addresses.stream()
+            .map(addr -> Address.create(addr.host(), addr.port()))
+            .collect(Collectors.toList());
     }
 }

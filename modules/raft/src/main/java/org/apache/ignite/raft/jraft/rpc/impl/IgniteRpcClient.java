@@ -23,9 +23,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 import org.apache.ignite.network.ClusterService;
+import org.apache.ignite.network.NetworkAddress;
 import org.apache.ignite.network.NetworkMessage;
 import org.apache.ignite.network.TopologyEventHandler;
 import org.apache.ignite.raft.jraft.error.InvokeTimeoutException;
@@ -38,11 +38,15 @@ import org.apache.ignite.raft.jraft.rpc.RpcClientEx;
 import org.apache.ignite.raft.jraft.util.Endpoint;
 import org.apache.ignite.raft.jraft.util.Utils;
 
+import static org.apache.ignite.raft.jraft.JRaftUtils.addressFromEndpoint;
+
 public class IgniteRpcClient implements RpcClientEx {
     private volatile BiPredicate<Object, String> recordPred;
+
     private BiPredicate<Object, String> blockPred;
 
     private LinkedBlockingQueue<Object[]> blockedMsgs = new LinkedBlockingQueue<>();
+
     private LinkedBlockingQueue<Object[]> recordedMsgs = new LinkedBlockingQueue<>();
 
     private final ClusterService service;
@@ -60,7 +64,9 @@ public class IgniteRpcClient implements RpcClientEx {
 
     /** {@inheritDoc} */
     @Override public boolean checkConnection(Endpoint endpoint) {
-        return service.topologyService().getByAddress(endpoint.toString()) != null;
+        NetworkAddress addr = addressFromEndpoint(endpoint);
+
+        return service.topologyService().getByAddress(addr) != null;
     }
 
     /** {@inheritDoc} */
@@ -75,7 +81,7 @@ public class IgniteRpcClient implements RpcClientEx {
         InvokeContext ctx,
         InvokeCallback callback,
         long timeoutMs
-    ) throws InterruptedException, RemotingException {
+    ) {
         CompletableFuture<Message> fut = new CompletableFuture<>();
 
         fut.orTimeout(timeoutMs, TimeUnit.MILLISECONDS).
@@ -103,11 +109,12 @@ public class IgniteRpcClient implements RpcClientEx {
         synchronized (this) {
             if (blockPred != null && blockPred.test(request, endpoint.toString())) {
                 blockedMsgs.add(new Object[] {
-                    request, endpoint.toString(), fut.hashCode(), System.currentTimeMillis(), new Runnable() {
-                    @Override public void run() {
-                        send(endpoint, request, fut, timeoutMs);
-                    }
-                }});
+                    request,
+                    endpoint.toString(),
+                    fut.hashCode(),
+                    System.currentTimeMillis(),
+                    (Runnable)() -> send(endpoint, request, fut, timeoutMs)
+                });
 
                 return fut;
             }
@@ -119,15 +126,14 @@ public class IgniteRpcClient implements RpcClientEx {
     }
 
     public void send(Endpoint endpoint, Object request, CompletableFuture<Message> fut, long timeout) {
-        CompletableFuture<NetworkMessage> fut0 = service.messagingService().invoke(endpoint.toString(), (NetworkMessage) request, timeout);
+        CompletableFuture<NetworkMessage> fut0 = service.messagingService()
+            .invoke(addressFromEndpoint(endpoint), (NetworkMessage) request, timeout);
 
-        fut0.whenComplete(new BiConsumer<NetworkMessage, Throwable>() {
-            @Override public void accept(NetworkMessage resp, Throwable err) {
-                if (err != null)
-                    fut.completeExceptionally(err);
-                else
-                    fut.complete((Message) resp);
-            }
+        fut0.whenComplete((resp, err) -> {
+            if (err != null)
+                fut.completeExceptionally(err);
+            else
+                fut.complete((Message) resp);
         });
     }
 
