@@ -167,7 +167,7 @@ public class CdcMain implements Runnable {
         this.cdcCfg = cdcCfg;
 
         try {
-            initWorkDir(igniteCfg);
+            U.initWorkDir(igniteCfg);
 
             log = U.initLogger(igniteCfg, "ignite-cdc");
         }
@@ -451,20 +451,6 @@ public class CdcMain implements Runnable {
 
             return null;
         }
-    }
-
-    /** Resolves work directory. */
-    private static void initWorkDir(IgniteConfiguration cfg) throws IgniteCheckedException {
-        String igniteHome = cfg.getIgniteHome();
-
-        // Set Ignite home.
-        if (igniteHome == null)
-            igniteHome = U.getIgniteHome();
-
-        String userProvidedWorkDir = cfg.getWorkDirectory();
-
-        // Correctly resolve work directory and set it back to configuration.
-        cfg.setWorkDirectory(U.workDirectory(userProvidedWorkDir, igniteHome));
     }
 
     /**
