@@ -33,6 +33,7 @@ import org.apache.calcite.linq4j.tree.UnaryExpression;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.runtime.SqlFunctions;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Util;
 
@@ -176,51 +177,20 @@ public class ConverterUtils {
     }
 
     /**
-     * Convert {@code operand} from {@code targetType} to BigDecimal type.
+     * Convert {@code operand} from {@code fromType} to {@code targetType} which is BigDecimal type.
      *
      * @param operand The expression to convert
      * @param targetType Target type
-     * @param fromType Field type
      * @return An expression with BidDecimal type, which calls IgniteSqlFunctions.toBigDecimal function.
      */
-    public static Expression convertToDecimal(Expression operand, Type fromType, RelDataType targetType) {
-        final Primitive fromBox = Primitive.ofBox(fromType);
-        final Primitive fromPrimitive = Primitive.of(fromType);
-        if (fromBox != null) {
-            // E.g. from "Integer" to "BigDecimal".
-            // Generate "x == null ? null : new BigDecimal(x.intValue())"
-
-            return Expressions.condition(
-                Expressions.equal(operand, RexImpTable.NULL_EXPR),
-                RexImpTable.NULL_EXPR,
-                Expressions.call(
-                    IgniteSqlFunctions.class,
-                    "toBigDecimal",
-                    Expressions.unbox(operand, fromBox),
-                    Expressions.constant(targetType.getPrecision()),
-                    Expressions.constant(targetType.getScale())));
-        }
-        if (fromPrimitive != null) {
-            // E.g. from "int" to "BigDecimal".
-            // Generate "new BigDecimal(x)"
-            return Expressions.call(
+    public static Expression convertToDecimal(Expression operand, RelDataType targetType) {
+        assert targetType.getSqlTypeName() == SqlTypeName.DECIMAL;
+        return Expressions.call(
                 IgniteSqlFunctions.class,
                 "toBigDecimal",
                 operand,
                 Expressions.constant(targetType.getPrecision()),
                 Expressions.constant(targetType.getScale()));
-        }
-        // E.g. from "Object" to "BigDecimal".
-        // Generate "x == null ? null : SqlFunctions.toBigDecimal(x)"
-        return Expressions.condition(
-            Expressions.equal(operand, RexImpTable.NULL_EXPR),
-            RexImpTable.NULL_EXPR,
-            Expressions.call(
-                IgniteSqlFunctions.class,
-                "toBigDecimal",
-                operand,
-                Expressions.constant(targetType.getPrecision()),
-                Expressions.constant(targetType.getScale())));
     }
 
     /**
@@ -234,6 +204,10 @@ public class ConverterUtils {
     public static Expression convert(Expression operand, Type fromType, Type toType) {
         if (!Types.needTypeCast(fromType, toType))
           return operand;
+
+        if (toType == BigDecimal.class)
+            throw new AssertionError("For conversion to decimal, ConverterUtils#convertToDecimal method should be used instead.");
+
         // E.g. from "Short" to "int".
         // Generate "x.intValue()".
         final Primitive toPrimitive = Primitive.of(toType);

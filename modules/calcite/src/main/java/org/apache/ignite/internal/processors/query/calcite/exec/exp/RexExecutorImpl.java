@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.query.calcite.rex;
+package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
@@ -22,7 +22,6 @@ import java.util.List;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.DataContext;
-import org.apache.calcite.adapter.enumerable.EnumUtils;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.config.CalciteSystemProperty;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
@@ -45,7 +44,6 @@ import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Util;
-import org.apache.ignite.internal.processors.query.calcite.exec.exp.RexToLixTranslator;
 
 /**
  * Evaluates a {@link RexNode} expression.
@@ -175,7 +173,7 @@ public class RexExecutorImpl implements RexExecutor {
           BuiltInMethod.DATA_CONTEXT_GET.method,
           Expressions.constant("inputRecord"));
       Expression recFromCtxCasted =
-          EnumUtils.convert(recFromCtx, Object[].class);
+          ConverterUtils.convert(recFromCtx, Object[].class);
       IndexExpression recordAccess = Expressions.arrayIndex(recFromCtxCasted,
           Expressions.constant(idx));
       if (storageType == null) {
@@ -183,7 +181,7 @@ public class RexExecutorImpl implements RexExecutor {
             rowType.getFieldList().get(idx).getType();
         storageType = ((JavaTypeFactory) typeFactory).getJavaClass(fieldType);
       }
-      return EnumUtils.convert(recordAccess, storageType);
+      return ConverterUtils.convert(recordAccess, storageType);
     }
   }
 }

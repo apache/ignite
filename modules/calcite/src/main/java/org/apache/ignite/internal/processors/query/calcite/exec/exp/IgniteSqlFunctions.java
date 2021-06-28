@@ -61,12 +61,12 @@ public class IgniteSqlFunctions {
 
     /** CAST(DECIMAL AS VARCHAR). */
     public static String toString(BigDecimal x) {
-        return x.toPlainString();
+        return x == null ? null : x.toPlainString();
     }
 
-    /** CAST(VARCHAR AS DECIMAL). */
-    public static BigDecimal toBigDecimal(String s, int precision, int scale) {
-        BigDecimal decimal = new BigDecimal(s.trim());
+    /** CAST(DOUBLE AS DECIMAL). */
+    public static BigDecimal toBigDecimal(double val, int precision, int scale) {
+        BigDecimal decimal = BigDecimal.valueOf(val);
         return precision == PRECISION_NOT_SPECIFIED ? decimal : decimal.setScale(scale, RoundingMode.HALF_UP);
     }
 
@@ -76,14 +76,47 @@ public class IgniteSqlFunctions {
         return precision == PRECISION_NOT_SPECIFIED ? decimal : decimal.setScale(scale, RoundingMode.HALF_UP);
     }
 
-    /** CAST(DOUBLE AS DECIMAL). */
-    public static BigDecimal toBigDecimal(double val, int precision, int scale) {
+    /** CAST(java long AS DECIMAL). */
+    public static BigDecimal toBigDecimal(long val, int precision, int scale) {
         BigDecimal decimal = BigDecimal.valueOf(val);
+        return precision == PRECISION_NOT_SPECIFIED ? decimal : decimal.setScale(scale, RoundingMode.HALF_UP);
+    }
+
+    /** CAST(INT AS DECIMAL). */
+    public static BigDecimal toBigDecimal(int val, int precision, int scale) {
+        BigDecimal decimal = new BigDecimal(val);
+        return precision == PRECISION_NOT_SPECIFIED ? decimal : decimal.setScale(scale, RoundingMode.HALF_UP);
+    }
+
+    /** CAST(java short AS DECIMAL). */
+    public static BigDecimal toBigDecimal(short val, int precision, int scale) {
+        BigDecimal decimal = new BigDecimal(String.valueOf(val));
+        return precision == PRECISION_NOT_SPECIFIED ? decimal : decimal.setScale(scale, RoundingMode.HALF_UP);
+    }
+
+    /** CAST(java byte AS DECIMAL). */
+    public static BigDecimal toBigDecimal(byte val, int precision, int scale) {
+        BigDecimal decimal = new BigDecimal(String.valueOf(val));
+        return precision == PRECISION_NOT_SPECIFIED ? decimal : decimal.setScale(scale, RoundingMode.HALF_UP);
+    }
+
+    /** CAST(BOOL AS DECIMAL). */
+    public static BigDecimal toBigDecimal(boolean val, int precision, int scale) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** CAST(VARCHAR AS DECIMAL). */
+    public static BigDecimal toBigDecimal(String s, int precision, int scale) {
+        if (s == null)
+            return null;
+        BigDecimal decimal = new BigDecimal(s.trim());
         return precision == PRECISION_NOT_SPECIFIED ? decimal : decimal.setScale(scale, RoundingMode.HALF_UP);
     }
 
     /** CAST(REAL AS DECIMAL). */
     public static BigDecimal toBigDecimal(Number num, int precision, int scale) {
+        if (num == null)
+            return null;
         // There are some values of "long" that cannot be represented as "double".
         // Not so "int". If it isn't a long, go straight to double.
         BigDecimal decimal = num instanceof BigDecimal ? ((BigDecimal)num)
@@ -95,6 +128,12 @@ public class IgniteSqlFunctions {
 
     /** Cast object depending on type to DECIMAL. */
     public static BigDecimal toBigDecimal(Object o, int precision, int scale) {
+        if (o == null)
+            return null;
+
+        if (o instanceof Boolean)
+            throw new UnsupportedOperationException();
+
         return o instanceof Number ? toBigDecimal((Number) o, precision, scale)
             : toBigDecimal(o.toString(), precision, scale);
     }
