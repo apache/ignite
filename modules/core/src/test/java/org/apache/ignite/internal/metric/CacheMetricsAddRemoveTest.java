@@ -253,7 +253,7 @@ public class CacheMetricsAddRemoveTest extends GridCommonAbstractTest {
 
             assertNull(mreg.findMetric(metricName(cachePrefix, CACHE_GETS)));
             assertNull(mreg.findMetric(metricName(cachePrefix, CACHE_PUTS)));
-            assertNull(mreg.findMetric(metricName(cachePrefix, GET_TIME)));
+            assertNull(mreg.findMetric(GET_TIME));
 
             if (nearEnabled) {
                 mreg = mmgr.registry(metricName(cachePrefix, "near"));
