@@ -636,7 +636,7 @@
                         <artifactId>maven-failsafe-plugin</artifactId>
                         <executions>
                             <execution>
-                                <id>default-test</id>
+                                <id>default</id>
                                 <phase>none</phase>
                             </execution>
                         </executions>
