@@ -164,7 +164,7 @@ The detailed procedure looks as follows:
 
 *Restore On Cluster of Different Topology*
 
-Sometimes you might want to create a snapshot of an N-node cluster and use it to restore on an M-node cluster. The table below explains what options are supported:
+You may want to create a snapshot of an N-node cluster and use it to restore on an M-node cluster. The table below explains what options are supported:
 [cols="1,1",opts="header"]
 |===
 |Condition | Description
@@ -174,7 +174,7 @@ the topology and wait while the data gets rebalanced and indexes are rebuilt.
 |N > M | Unsupported.
 |===
 
-=== Automatic snapshot restore procedure
+=== Automatic Snapshot Restore Procedure
 
 The automatic restore procedure allows the user to restore cache groups from a snapshot on an active cluster by using the Java API or link:tools/control-script[command line script].
 
