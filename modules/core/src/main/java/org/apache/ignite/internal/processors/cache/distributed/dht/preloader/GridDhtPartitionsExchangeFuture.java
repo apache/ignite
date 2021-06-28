@@ -321,16 +321,16 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /** */
     @GridToStringExclude
-    private volatile IgniteDhtPartitionHistorySuppliersMap partHistSuppliers = new IgniteDhtPartitionHistorySuppliersMap();
+    private final IgniteDhtPartitionHistorySuppliersMap partHistSuppliers = new IgniteDhtPartitionHistorySuppliersMap();
 
     /** Set of nodes that cannot be used for wal rebalancing due to some reason. */
-    private Set<UUID> exclusionsFromHistoricalRebalance = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private final Set<UUID> exclusionsFromHistoricalRebalance = ConcurrentHashMap.newKeySet();
 
     /**
      * Set of nodes that cannot be used for full rebalancing due missed partitions.
      * Mapping pair of groupId and nodeId to set of partitions.
      */
-    private Map<T2<Integer, UUID>, Set<Integer>> exclusionsFromFullRebalance = new ConcurrentHashMap<>();
+    private final Map<T2<Integer, UUID>, Set<Integer>> exclusionsFromFullRebalance = new ConcurrentHashMap<>();
 
     /** Reserved max available history for calculation of history supplier on coordinator. */
     private volatile Map<Integer /** Group. */, Map<Integer /** Partition */, Long /** Counter. */>> partHistReserved;
@@ -576,11 +576,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param cntrSince Partition update counter since history supplying is requested.
      * @return List of IDs of history supplier nodes or empty list if these doesn't exist.
      */
-    @Nullable public List<UUID> partitionHistorySupplier(int grpId, int partId, long cntrSince) {
+    public List<UUID> partitionHistorySupplier(int grpId, int partId, long cntrSince) {
         List<UUID> histSuppliers = partHistSuppliers.getSupplier(grpId, partId, cntrSince);
 
-        return histSuppliers.stream().filter((supplier) -> !exclusionsFromHistoricalRebalance.contains(supplier))
-            .collect(Collectors.toList());
+        histSuppliers.removeIf(exclusionsFromHistoricalRebalance::contains);
+
+        return histSuppliers;
     }
 
     /**
@@ -601,8 +602,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param p Partition id.
      */
     public void markNodeAsInapplicableForFullRebalance(UUID nodeId, int grpId, int p) {
-        Set<Integer> parts = exclusionsFromFullRebalance.computeIfAbsent(new T2<>(grpId, nodeId), t2 ->
-            Collections.newSetFromMap(new ConcurrentHashMap<>())
+        Set<Integer> parts = exclusionsFromFullRebalance.computeIfAbsent(
+            new T2<>(grpId, nodeId), t2 -> ConcurrentHashMap.newKeySet()
         );
 
         parts.add(p);
@@ -2416,8 +2417,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 ", wasRebalanced=" + wasRebalanced() + ']');
         }
 
-        assert res != null || err != null;
-
         if (res != null) {
             span.addTag(SpanTags.tag(SpanTags.RESULT, SpanTags.TOPOLOGY_VERSION, SpanTags.MAJOR),
                 () -> String.valueOf(res.topologyVersion()));
@@ -2521,9 +2520,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (localReserved != null) {
                 boolean success = cctx.database().reserveHistoryForPreloading(localReserved);
 
-                // TODO: how to handle?
                 if (!success)
-                    err = new IgniteCheckedException("Could not reserve history");
+                    log.warning("Could not reserve history");
             }
 
             cctx.database().releaseHistoryForExchange();

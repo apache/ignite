@@ -1767,14 +1767,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (reservedForExchange == null)
             return;
 
-        assert cctx.wal().reserved(reservedForExchange)
-            : "Earliest checkpoint WAL pointer is not reserved for exchange: " + reservedForExchange;
-
         try {
             cctx.wal().release(reservedForExchange);
         }
-        catch (IgniteCheckedException e) {
-            log.error("Failed to release earliest checkpoint WAL pointer: " + reservedForExchange, e);
+        catch (Throwable e) {
+            log.warning("Failed to release earliest checkpoint WAL pointer: " + reservedForExchange);
         }
 
         reservedForExchange = null;
@@ -1789,8 +1786,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         WALPointer oldestWALPointerToReserve = null;
 
-        for (GroupPartitionId key : entries.keySet()) {
-            WALPointer ptr = entries.get(key).checkpointMark();
+        for (CheckpointEntry cpE : entries.values()) {
+            WALPointer ptr = cpE.checkpointMark();
 
             if (ptr == null)
                 return false;
@@ -1812,19 +1809,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     @Override public void releaseHistoryForPreloading() {
         releaseHistForPreloadingLock.lock();
 
+        WALPointer reserved = reservedForPreloading;
+
         try {
-            if (reservedForPreloading != null) {
-                cctx.wal().release(reservedForPreloading);
-
-                reservedForPreloading = null;
-            }
+            if (reserved != null)
+                cctx.wal().release(reserved);
         }
-        catch (IgniteCheckedException ex) {
-            U.error(log, "Could not release WAL reservation", ex);
-
-            throw new IgniteException(ex);
+        catch (Throwable ex) {
+            log.warning("Could not release WAL reservation: " + reservedForPreloading);
         }
         finally {
+            reservedForPreloading = null;
+
             releaseHistForPreloadingLock.unlock();
         }
     }
