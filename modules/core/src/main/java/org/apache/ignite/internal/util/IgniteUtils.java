@@ -17,13 +17,18 @@
 
 package org.apache.ignite.internal.util;
 
+import java.io.IOException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Predicate;
-
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -352,6 +357,36 @@ public class IgniteUtils {
         }
 
         return cls;
+    }
+
+    /**
+     * Deletes a file or a directory with all sub-directories and files.
+     *
+     * @param path File or directory to delete.
+     * @return {@code true} if and only if the file or directory is successfully deleted,
+     *      {@code false} otherwise
+     */
+    public static boolean delete(Path path) {
+        try {
+            Files.walkFileTree(path, new SimpleFileVisitor<>() {
+                @Override public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                    Files.delete(dir);
+
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    Files.delete(file);
+
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+
+            return true;
+        }
+        catch (IOException e) {
+            return false;
+        }
     }
 
     /**

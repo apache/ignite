@@ -80,7 +80,7 @@
         <reflections.version>0.9.10</reflections.version>
         <javassist.version>3.27.0-GA</javassist.version>
         <esri.geometry.version>2.2.3</esri.geometry.version>
-        <rocksdb.version>5.18.4</rocksdb.version>
+        <rocksdb.version>6.20.3</rocksdb.version>
         <disruptor.version>3.3.7</disruptor.version>
         <metrics.version>4.0.2</metrics.version>
         <jctools.version>3.3.0</jctools.version>
@@ -239,6 +239,18 @@
             <dependency>
                 <groupId>org.apache.ignite</groupId>
                 <artifactId>ignite-schema</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.ignite</groupId>
+                <artifactId>ignite-storage-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.ignite</groupId>
+                <artifactId>ignite-storage-rocksdb</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -416,6 +428,13 @@
             <dependency>
                 <groupId>org.apache.ignite</groupId>
                 <artifactId>ignite-network</artifactId>
+                <version>${project.version}</version>
+                <type>test-jar</type>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.ignite</groupId>
+                <artifactId>ignite-storage-api</artifactId>
                 <version>${project.version}</version>
                 <type>test-jar</type>
             </dependency>
