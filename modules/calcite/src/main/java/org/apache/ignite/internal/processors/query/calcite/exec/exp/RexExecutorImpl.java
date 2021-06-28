@@ -54,7 +54,6 @@ import org.apache.calcite.util.Util;
  * the executor instance is {@link RexExecutorImpl}.
 */
 public class RexExecutorImpl implements RexExecutor {
-
   /** Data context. */
   private final DataContext dataCtx;
 
