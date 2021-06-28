@@ -34,6 +34,7 @@
     <packaging>pom</packaging>
 
     <modules>
+        <module>examples</module>
         <module>modules/affinity</module>
         <module>modules/api</module>
         <module>modules/baseline</module>
@@ -59,7 +60,6 @@
         <module>modules/schema</module>
         <module>modules/table</module>
         <module>modules/vault</module>
-        <module>examples</module>
     </modules>
 
     <build>
