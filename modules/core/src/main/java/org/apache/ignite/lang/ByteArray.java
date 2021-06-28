@@ -19,7 +19,6 @@ package org.apache.ignite.lang;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * A class wraps {@code byte[]} which provides {@link Object#equals}, {@link Object#hashCode} and
@@ -27,7 +26,6 @@ import org.jetbrains.annotations.NotNull;
  */
 public final class ByteArray implements Comparable<ByteArray> {
     /** Wrapped byte array. */
-    @NotNull
     private final byte[] arr;
 
     /**
@@ -37,7 +35,7 @@ public final class ByteArray implements Comparable<ByteArray> {
      *
      * @param arr Byte array. Can't be {@code null}.
      */
-    public ByteArray(@NotNull byte[] arr) {
+    public ByteArray(byte[] arr) {
         this.arr = arr;
     }
 
@@ -46,8 +44,17 @@ public final class ByteArray implements Comparable<ByteArray> {
      *
      * @param s The string key representation. Can't be {@code null}.
      */
-    public ByteArray(@NotNull String s) {
+    public ByteArray(String s) {
         this(s.getBytes(StandardCharsets.UTF_8));
+    }
+
+    /**
+     * Copy constructor, creates a shallow copy of the given {@code ByteArray}.
+     *
+     * @param other byte array to copy from
+     */
+    public ByteArray(ByteArray other) {
+        arr = other.arr;
     }
 
     /**
@@ -57,8 +64,8 @@ public final class ByteArray implements Comparable<ByteArray> {
      * @param s The string {@code ByteArray} representation. Can't be {@code null}.
      * @return {@code ByteArray} instance from the given string.
      */
-    public static ByteArray fromString(@NotNull String s) {
-        return new ByteArray(s.getBytes(StandardCharsets.UTF_8));
+    public static ByteArray fromString(String s) {
+        return new ByteArray(s);
     }
 
     /**
@@ -87,27 +94,8 @@ public final class ByteArray implements Comparable<ByteArray> {
     }
 
     /** {@inheritDoc} */
-    @Override public int compareTo(@NotNull ByteArray other) {
+    @Override public int compareTo(ByteArray other) {
         return Arrays.compare(this.arr, other.arr);
-    }
-
-    /**
-     * Compares two {@code ByteArray} values. The value returned is identical to what would be returned by:
-     * <pre>
-     *    x.compareTo(y)
-     * </pre>
-     * <p>
-     * where x and y are {@code ByteArray}'s
-     *
-     * @param x The first {@code ByteArray} to compare.
-     * @param y The second {@code ByteArray} to compare.
-     * @return the value {@code 0} if the first and second {@code ByteArray} are equal and contain the same elements in
-     * the same order; a value less than {@code 0} if the first {@code ByteArray} is lexicographically less than the
-     * second {@code ByteArray}; and a value greater than {@code 0} if the first {@code ByteArray} is lexicographically
-     * greater than the second {@code ByteArray}
-     */
-    public static int compare(@NotNull ByteArray x, @NotNull ByteArray y) {
-        return Arrays.compare(x.arr, y.arr);
     }
 
     /** {@inheritDoc} */

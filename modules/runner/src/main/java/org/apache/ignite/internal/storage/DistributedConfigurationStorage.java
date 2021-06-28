@@ -41,6 +41,7 @@ import org.apache.ignite.internal.metastorage.client.WatchEvent;
 import org.apache.ignite.internal.metastorage.client.WatchListener;
 import org.apache.ignite.internal.util.ByteUtils;
 import org.apache.ignite.internal.vault.VaultManager;
+import org.apache.ignite.internal.vault.VaultEntry;
 import org.apache.ignite.lang.ByteArray;
 import org.apache.ignite.lang.IgniteLogger;
 import org.jetbrains.annotations.NotNull;
@@ -96,7 +97,7 @@ public class DistributedConfigurationStorage implements ConfigurationStorage {
     @Override public synchronized Data readAll() throws StorageException {
         HashMap<String, Serializable> data = new HashMap<>();
 
-        Iterator<org.apache.ignite.internal.vault.common.Entry> entries = storedDistributedConfigKeys();
+        Iterator<VaultEntry> entries = storedDistributedConfigKeys();
 
         long appliedRevision = 0L;
 
@@ -246,7 +247,7 @@ public class DistributedConfigurationStorage implements ConfigurationStorage {
      *
      * @return Iterator built upon all distributed configuration entries stored in vault.
      */
-    private @NotNull Iterator<org.apache.ignite.internal.vault.common.Entry> storedDistributedConfigKeys() {
+    private @NotNull Iterator<VaultEntry> storedDistributedConfigKeys() {
         // TODO: rangeWithAppliedRevision could throw OperationTimeoutException and CompactedException and we should
         // TODO: properly handle such cases https://issues.apache.org/jira/browse/IGNITE-14604
         return vaultMgr.range(MASTER_KEY, DST_KEYS_END_RANGE);

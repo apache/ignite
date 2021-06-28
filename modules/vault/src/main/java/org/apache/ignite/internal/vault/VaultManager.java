@@ -18,16 +18,10 @@
 package org.apache.ignite.internal.vault;
 
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import org.apache.ignite.internal.util.ByteUtils;
-import org.apache.ignite.internal.vault.common.Entry;
-import org.apache.ignite.internal.vault.service.VaultService;
+import org.apache.ignite.internal.util.Cursor;
 import org.apache.ignite.lang.ByteArray;
-import org.apache.ignite.lang.IgniteInternalCheckedException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -35,15 +29,12 @@ import org.jetbrains.annotations.Nullable;
  * VaultManager is responsible for handling {@link VaultService} lifecycle
  * and providing interface for managing local keys.
  */
-public class VaultManager {
+public class VaultManager implements AutoCloseable {
     /** Special key, which reserved for storing the name of the current node. */
-    private static final ByteArray NODE_NAME = ByteArray.fromString("node_name");
-
-    /** Mutex. */
-    private final Object mux = new Object();
+    private static final ByteArray NODE_NAME = new ByteArray("node_name");
 
     /** Instance of vault */
-    private VaultService vaultSvc;
+    private final VaultService vaultSvc;
 
     /** Default constructor.
      *
@@ -57,52 +48,52 @@ public class VaultManager {
      * @return {@code true} if VaultService beneath given VaultManager was bootstrapped with data
      * either from PDS or from user initial bootstrap configuration.
      *
-     * TODO: implement when IGNITE-14408 will be ready
+     * TODO: https://issues.apache.org/jira/browse/IGNITE-14956
      */
     public boolean bootstrapped() {
         return false;
     }
 
     /**
-     * See {@link VaultService#get(ByteArray)}
+     * See {@link VaultService#get}
      *
      * @param key Key. Couldn't be {@code null}.
      * @return An entry for the given key. Couldn't be {@code null}. If there is no mapping for the provided {@code key},
      * then {@code Entry} with value that equals to {@code null} will be returned.
      */
-    @NotNull public CompletableFuture<Entry> get(@NotNull ByteArray key) {
+    public CompletableFuture<VaultEntry> get(@NotNull ByteArray key) {
         return vaultSvc.get(key);
     }
 
     /**
-     * See {@link VaultService#put(ByteArray, byte[])}
+     * See {@link VaultService#put}
      *
      * @param key Vault key. Couldn't be {@code null}.
      * @param val Value. If value is equal to {@code null}, then previous value with key will be deleted if there was any mapping.
      * @return Future representing pending completion of the operation. Couldn't be {@code null}.
      */
-    @NotNull public CompletableFuture<Void> put(@NotNull ByteArray key, @NotNull byte[] val) {
+    public CompletableFuture<Void> put(@NotNull ByteArray key, byte @Nullable [] val) {
         return vaultSvc.put(key, val);
     }
 
     /**
-     * See {@link VaultService#remove(ByteArray)}
+     * See {@link VaultService#remove}
      *
      * @param key Vault key. Couldn't be {@code null}.
      * @return Future representing pending completion of the operation. Couldn't be {@code null}.
      */
-    @NotNull public CompletableFuture<Void> remove(@NotNull ByteArray key) {
+    public CompletableFuture<Void> remove(@NotNull ByteArray key) {
         return vaultSvc.remove(key);
     }
 
     /**
-     * See {@link VaultService#range(ByteArray, ByteArray)}
+     * See {@link VaultService#range}
      *
      * @param fromKey Start key of range (inclusive). Couldn't be {@code null}.
      * @param toKey End key of range (exclusive). Could be {@code null}.
      * @return Iterator built upon entries corresponding to the given range.
      */
-    @NotNull public Iterator<Entry> range(@NotNull ByteArray fromKey, @NotNull ByteArray toKey) {
+    public Cursor<VaultEntry> range(@NotNull ByteArray fromKey, @NotNull ByteArray toKey) {
         return vaultSvc.range(fromKey, toKey);
     }
 
@@ -113,73 +104,35 @@ public class VaultManager {
      * @param vals The map of keys and corresponding values. Couldn't be {@code null} or empty.
      * @return Future representing pending completion of the operation. Couldn't be {@code null}.
      */
-    @NotNull public CompletableFuture<Void> putAll(@NotNull Map<ByteArray, byte[]> vals) {
-        synchronized (mux) {
-            return vaultSvc.putAll(vals);
-        }
-    }
-
-    /**
-     * Inserts or updates entries with given keys and given values and non-negative revision. If the given value in
-     * {@code vals} is {@code null}, then corresponding value with key will be deleted if there was any mapping.
-     *
-     * @param vals The map of keys and corresponding values. Couldn't be {@code null} or empty.
-     * @param revision Revision for entries. Must be positive.
-     * @return Future representing pending completion of the operation. Couldn't be {@code null}.
-     * @throws IgniteInternalCheckedException If revision is inconsistent with applied revision from vault or if
-     * couldn't get applied revision from vault.
-     */
-    public CompletableFuture<Void> putAll(@NotNull Map<ByteArray, byte[]> vals, ByteArray appliedRevKey, long revision) throws IgniteInternalCheckedException {
-        synchronized (mux) {
-            byte[] appliedRevBytes;
-
-            try {
-                appliedRevBytes = vaultSvc.get(appliedRevKey).get().value();
-            }
-            catch (InterruptedException | ExecutionException e) {
-               throw new IgniteInternalCheckedException("Error occurred when getting applied revision", e);
-            }
-
-            long appliedRevision = appliedRevBytes != null ? ByteUtils.bytesToLong(appliedRevBytes) : 0L;
-
-            if (revision < appliedRevision)
-                throw new IgniteInternalCheckedException("Inconsistency between applied revision from vault and the current revision");
-
-            HashMap<ByteArray, byte[]> mergedMap = new HashMap<>(vals);
-
-            mergedMap.put(appliedRevKey, ByteUtils.longToBytes(revision));
-
-            return vaultSvc.putAll(mergedMap);
-        }
+    public CompletableFuture<Void> putAll(@NotNull Map<ByteArray, byte[]> vals) {
+        return vaultSvc.putAll(vals);
     }
 
     /**
      * Persist node name to the vault.
      *
-     * @param name Node name to persist. Couldn't be null.
-     * @return Future representing pending completion of the operation. Couldn't be {@code null}.
+     * @param name node name to persist. Cannot be null.
+     * @return future representing pending completion of the operation.
      */
-    @NotNull public CompletableFuture<Void> putName(@NotNull String name) {
+    public CompletableFuture<Void> putName(String name) {
+        if (name.isBlank())
+            throw new IllegalArgumentException("Name must not be empty");
+
         return put(NODE_NAME, name.getBytes(StandardCharsets.UTF_8));
     }
 
     /**
-     * @return Node name, if was stored earlier. Could be {@code null}.
-     * @throws IgniteInternalCheckedException If couldn't get node name from the vault.
+     * @return {@code CompletableFuture} which, when complete, returns the node name, if was stored earlier,
+     * or {@code null} otherwise.
      */
-    @Nullable public String name() throws IgniteInternalCheckedException {
-        synchronized (mux) {
-            try {
-                byte[] nodeName = vaultSvc.get(NODE_NAME).get().value();
+    public CompletableFuture<String> name() {
+        return vaultSvc.get(NODE_NAME)
+            .thenApply(VaultEntry::value)
+            .thenApply(name -> name == null ? null : new String(name, StandardCharsets.UTF_8));
+    }
 
-                if (nodeName != null)
-                    return new String(nodeName, StandardCharsets.UTF_8);
-                else
-                    return null;
-            }
-            catch (InterruptedException | ExecutionException e) {
-                throw new IgniteInternalCheckedException("Error occurred when getting node name", e);
-            }
-        }
+    /** {@inheritDoc} */
+    @Override public void close() throws Exception {
+        vaultSvc.close();
     }
 }

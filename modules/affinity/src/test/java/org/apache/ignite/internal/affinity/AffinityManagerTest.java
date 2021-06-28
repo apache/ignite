@@ -40,6 +40,7 @@ import org.apache.ignite.internal.metastorage.client.WatchEvent;
 import org.apache.ignite.internal.metastorage.client.WatchListener;
 import org.apache.ignite.internal.util.ByteUtils;
 import org.apache.ignite.internal.vault.VaultManager;
+import org.apache.ignite.internal.vault.VaultEntry;
 import org.apache.ignite.lang.ByteArray;
 import org.apache.ignite.lang.IgniteLogger;
 import org.jetbrains.annotations.NotNull;
@@ -149,7 +150,7 @@ public class AffinityManagerTest {
 
             assertEquals(INTERNAL_PREFIX + tblId, new String(key.bytes(), StandardCharsets.UTF_8));
 
-            return CompletableFuture.completedFuture(new org.apache.ignite.internal.vault.common.Entry(key, STATIC_TABLE_NAME.getBytes(StandardCharsets.UTF_8)));
+            return CompletableFuture.completedFuture(new VaultEntry(key, STATIC_TABLE_NAME.getBytes(StandardCharsets.UTF_8)));
         });
 
         CompletableFuture<WatchListener> watchFut = new CompletableFuture<>();

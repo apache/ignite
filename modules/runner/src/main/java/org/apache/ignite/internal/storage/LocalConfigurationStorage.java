@@ -30,7 +30,7 @@ import org.apache.ignite.internal.configuration.storage.Data;
 import org.apache.ignite.internal.configuration.storage.StorageException;
 import org.apache.ignite.internal.util.ByteUtils;
 import org.apache.ignite.internal.vault.VaultManager;
-import org.apache.ignite.internal.vault.common.Entry;
+import org.apache.ignite.internal.vault.VaultEntry;
 import org.apache.ignite.lang.ByteArray;
 import org.apache.ignite.lang.IgniteLogger;
 import org.jetbrains.annotations.NotNull;
@@ -71,13 +71,13 @@ public class LocalConfigurationStorage implements ConfigurationStorage {
 
     /** {@inheritDoc} */
     @Override public synchronized Data readAll() throws StorageException {
-        Iterator<Entry> iter =
+        Iterator<VaultEntry> iter =
             vaultMgr.range(LOC_KEYS_START_RANGE, LOC_KEYS_END_RANGE);
 
         HashMap<String, Serializable> data = new HashMap<>();
 
         while (iter.hasNext()) {
-            Entry val = iter.next();
+            VaultEntry val = iter.next();
 
             data.put(val.key().toString().substring(LOC_KEYS_START_RANGE.toString().length()),
                 (Serializable)ByteUtils.fromBytes(val.value()));

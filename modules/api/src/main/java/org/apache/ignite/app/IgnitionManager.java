@@ -26,6 +26,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class IgnitionManager {
     /** Loaded Ignition instance. */
+    @Nullable
     private static Ignition ignition;
 
     /**

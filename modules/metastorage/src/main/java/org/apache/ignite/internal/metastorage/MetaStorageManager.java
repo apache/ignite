@@ -43,18 +43,20 @@ import org.apache.ignite.internal.metastorage.watch.AggregatedWatch;
 import org.apache.ignite.internal.metastorage.watch.KeyCriterion;
 import org.apache.ignite.internal.metastorage.watch.WatchAggregator;
 import org.apache.ignite.internal.raft.Loza;
-import org.apache.ignite.internal.util.ByteUtils;
 import org.apache.ignite.internal.util.Cursor;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.vault.VaultManager;
 import org.apache.ignite.lang.ByteArray;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteInternalCheckedException;
 import org.apache.ignite.lang.IgniteInternalException;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.network.ClusterNode;
 import org.apache.ignite.network.ClusterService;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.util.ByteUtils.bytesToLong;
+import static org.apache.ignite.internal.util.ByteUtils.longToBytes;
 
 /**
  * MetaStorage manager is responsible for:
@@ -74,7 +76,7 @@ public class MetaStorageManager {
     public static final String DISTRIBUTED_PREFIX = "dst-cfg.";
 
     /**
-     * Special key for the vault where the applied revision for {@link MetaStorageManager#storeEntries(Collection, long)}
+     * Special key for the vault where the applied revision for {@link MetaStorageManager#storeEntries}
      * operation is stored. This mechanism is needed for committing processed watches to {@link VaultManager}.
      */
     public static final ByteArray APPLIED_REV = ByteArray.fromString(DISTRIBUTED_PREFIX + "applied_revision");
@@ -89,7 +91,7 @@ public class MetaStorageManager {
     private final Loza raftMgr;
 
     /** Meta storage service. */
-    private CompletableFuture<MetaStorageService> metaStorageSvcFut;
+    private final CompletableFuture<MetaStorageService> metaStorageSvcFut;
 
     /**
      * Aggregator of multiple watches to deploy them as one batch.
@@ -115,6 +117,11 @@ public class MetaStorageManager {
 
     /** Flag indicates if meta storage nodes were set on start */
     private boolean metaStorageNodesOnStart;
+
+    /**
+     * Lock for the read-then-update logic in the {@link #storeEntries} method.
+     */
+    private final Object revisionLock = new Object();
 
     /**
      * The constructor.
@@ -174,27 +181,22 @@ public class MetaStorageManager {
      * Deploy all registered watches.
      */
     public synchronized void deployWatches() {
-        try {
-            var watch = watchAggregator.watch(
-                appliedRevision() + 1,
-                this::storeEntries
-            );
+        var watch = watchAggregator.watch(
+            appliedRevision() + 1,
+            this::storeEntries
+        );
 
-            if (watch.isEmpty())
-                deployFut.complete(Optional.empty());
+        if (watch.isEmpty())
+            deployFut.complete(Optional.empty());
+        else {
+            CompletableFuture<Void> fut =
+                dispatchAppropriateMetaStorageWatch(watch.get()).thenAccept(id -> deployFut.complete(Optional.of(id)));
+
+            if (metaStorageNodesOnStart)
+                fut.join();
             else {
-                CompletableFuture<Void> fut =
-                    dispatchAppropriateMetaStorageWatch(watch.get()).thenAccept(id -> deployFut.complete(Optional.of(id)));
-
-                if (metaStorageNodesOnStart)
-                    fut.join();
-                else {
-                    // TODO: need to wait for this future in init phase https://issues.apache.org/jira/browse/IGNITE-14414
-                }
+                // TODO: need to wait for this future in init phase https://issues.apache.org/jira/browse/IGNITE-14414
             }
-        }
-        catch (IgniteInternalCheckedException e) {
-            throw new IgniteInternalException("Couldn't receive applied revision during deploy watches", e);
         }
 
         deployed = true;
@@ -388,8 +390,8 @@ public class MetaStorageManager {
      */
     public @NotNull Cursor<Entry> range(@NotNull ByteArray keyFrom, @Nullable ByteArray keyTo, long revUpperBound) {
         return new CursorWrapper<>(
-                metaStorageSvcFut,
-                metaStorageSvcFut.thenApply(svc -> svc.range(keyFrom, keyTo, revUpperBound))
+            metaStorageSvcFut,
+            metaStorageSvcFut.thenApply(svc -> svc.range(keyFrom, keyTo, revUpperBound))
         );
     }
 
@@ -409,14 +411,7 @@ public class MetaStorageManager {
     public @NotNull Cursor<Entry> rangeWithAppliedRevision(@NotNull ByteArray keyFrom, @Nullable ByteArray keyTo) {
         return new CursorWrapper<>(
             metaStorageSvcFut,
-            metaStorageSvcFut.thenApply(svc -> {
-                try {
-                    return svc.range(keyFrom, keyTo, appliedRevision());
-                }
-                catch (IgniteInternalCheckedException e) {
-                    throw new IgniteInternalException(e);
-                }
-            })
+            metaStorageSvcFut.thenApply(svc -> svc.range(keyFrom, keyTo, appliedRevision()))
         );
     }
 
@@ -446,16 +441,10 @@ public class MetaStorageManager {
      */
     public @NotNull Cursor<Entry> prefixWithAppliedRevision(@NotNull ByteArray keyPrefix) {
         var rangeCriterion = KeyCriterion.RangeCriterion.fromPrefixKey(keyPrefix);
+
         return new CursorWrapper<>(
             metaStorageSvcFut,
-            metaStorageSvcFut.thenApply(svc -> {
-                try {
-                    return svc.range(rangeCriterion.from(), rangeCriterion.to(), appliedRevision());
-                }
-                catch (IgniteInternalCheckedException e) {
-                    throw new IgniteInternalException(e);
-                }
-            })
+            metaStorageSvcFut.thenApply(svc -> svc.range(rangeCriterion.from(), rangeCriterion.to(), appliedRevision()))
         );
     }
 
@@ -504,20 +493,12 @@ public class MetaStorageManager {
     }
 
     /**
-     * @return Applied revision for {@link VaultManager#putAll(Map, ByteArray, long)} operation.
-     * @throws IgniteInternalCheckedException If couldn't get applied revision from vault.
+     * @return Applied revision for {@link VaultManager#putAll} operation.
      */
-    private long appliedRevision() throws IgniteInternalCheckedException {
-        byte[] appliedRevision;
+    private long appliedRevision() {
+        byte[] appliedRevision = vaultMgr.get(APPLIED_REV).join().value();
 
-        try {
-            appliedRevision = vaultMgr.get(APPLIED_REV).get().value();
-        }
-        catch (InterruptedException | ExecutionException e) {
-            throw new IgniteInternalCheckedException("Error occurred when getting applied revision", e);
-        }
-
-        return appliedRevision == null ? 0L : ByteUtils.bytesToLong(appliedRevision);
+        return appliedRevision == null ? 0L : bytesToLong(appliedRevision);
     }
 
     /**
@@ -526,27 +507,19 @@ public class MetaStorageManager {
      * @return Ignite UUID of new consolidated watch.
      */
     private CompletableFuture<Optional<IgniteUuid>> updateWatches() {
-        long revision;
-        try {
-            revision = appliedRevision() + 1;
-        }
-        catch (IgniteInternalCheckedException e) {
-            throw new IgniteInternalException("Couldn't receive applied revision during watch redeploy", e);
-        }
-
-        final var finalRevision = revision;
+        long revision = appliedRevision() + 1;
 
         deployFut = deployFut
-            .thenCompose(idOpt -> idOpt.map(id -> metaStorageSvcFut.thenCompose(svc -> svc.stopWatch(id))).
-                orElse(CompletableFuture.completedFuture(null))
-            .thenCompose(r -> {
-                var watch = watchAggregator.watch(finalRevision, this::storeEntries);
-
-                if (watch.isEmpty())
-                    return CompletableFuture.completedFuture(Optional.empty());
-                else
-                    return dispatchAppropriateMetaStorageWatch(watch.get()).thenApply(Optional::of);
-            }));
+            .thenCompose(idOpt ->
+                idOpt
+                    .map(id -> metaStorageSvcFut.thenCompose(svc -> svc.stopWatch(id)))
+                    .orElseGet(() -> CompletableFuture.completedFuture(null))
+            )
+            .thenCompose(r ->
+                watchAggregator.watch(revision, this::storeEntries)
+                    .map(watch -> dispatchAppropriateMetaStorageWatch(watch).thenApply(Optional::of))
+                    .orElseGet(() -> CompletableFuture.completedFuture(Optional.empty()))
+            );
 
         return deployFut;
     }
@@ -556,15 +529,27 @@ public class MetaStorageManager {
      *
      * @param entries to store.
      * @param revision associated revision.
-     * @return future, which will be completed when store action finished.
      */
-    private CompletableFuture<Void> storeEntries(Collection<IgniteBiTuple<ByteArray, byte[]>> entries, long revision) {
-        try {
-            return vaultMgr.putAll(entries.stream().collect(
-                Collectors.toMap(IgniteBiTuple::getKey, IgniteBiTuple::getValue)), APPLIED_REV, revision);
-        }
-        catch (IgniteInternalCheckedException e) {
-            throw new IgniteInternalException("Couldn't put entries with considered revision.", e);
+    private void storeEntries(Collection<IgniteBiTuple<ByteArray, byte[]>> entries, long revision) {
+        Map<ByteArray, byte[]> batch = IgniteUtils.newHashMap(entries.size() + 1);
+
+        batch.put(APPLIED_REV, longToBytes(revision));
+
+        entries.forEach(e -> batch.put(e.getKey(), e.getValue()));
+
+        synchronized (revisionLock) {
+            byte[] appliedRevisionBytes = vaultMgr.get(APPLIED_REV).join().value();
+
+            long appliedRevision = appliedRevisionBytes == null ? 0L : bytesToLong(appliedRevisionBytes);
+
+            if (revision <= appliedRevision) {
+                throw new IgniteInternalException(String.format(
+                    "Current revision (%d) must be greater than the revision in the Vault (%d)",
+                    revision, appliedRevision
+                ));
+            }
+
+            vaultMgr.putAll(batch).join();
         }
     }
 
@@ -613,12 +598,7 @@ public class MetaStorageManager {
             .metastorageNodes()
             .value();
 
-        try {
-            return hasMetastorage(vaultMgr.name(), metastorageMembers);
-        }
-        catch (IgniteInternalCheckedException e) {
-            throw new IgniteInternalException(e);
-        }
+        return hasMetastorage(vaultMgr.name().join(), metastorageMembers);
     }
 
     // TODO: IGNITE-14691 Temporally solution that should be removed after implementing reactive watches.
@@ -667,10 +647,12 @@ public class MetaStorageManager {
             return it;
         }
 
+        /** {@inheritDoc} */
         @Override public boolean hasNext() {
             return it.hasNext();
         }
 
+        /** {@inheritDoc} */
         @Override public T next() {
             return it.next();
         }

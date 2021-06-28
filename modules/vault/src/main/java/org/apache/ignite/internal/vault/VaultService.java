@@ -15,20 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.vault.service;
+package org.apache.ignite.internal.vault;
 
-import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import org.apache.ignite.internal.vault.common.Entry;
+import org.apache.ignite.internal.util.Cursor;
 import org.apache.ignite.lang.ByteArray;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Defines interface for accessing to a vault service.
  */
-// TODO: need to generify with MetastorageService https://issues.apache.org/jira/browse/IGNITE-14653
-public interface VaultService {
+public interface VaultService extends AutoCloseable {
     /**
      * Retrieves an entry for the given key.
      *
@@ -36,7 +35,7 @@ public interface VaultService {
      * @return An entry for the given key. Couldn't be {@code null}. If there is no mapping for the provided {@code key},
      * then {@code Entry} with value that equals to null will be returned.
      */
-    @NotNull CompletableFuture<Entry> get(@NotNull ByteArray key);
+    @NotNull CompletableFuture<VaultEntry> get(@NotNull ByteArray key);
 
     /**
      * Write value with key to vault. If value is equal to null, then previous value with key will be deleted if there
@@ -46,7 +45,7 @@ public interface VaultService {
      * @param val Value. If value is equal to null, then previous value with key will be deleted if there was any mapping.
      * @return Future representing pending completion of the operation. Couldn't be {@code null}.
      */
-    @NotNull CompletableFuture<Void> put(@NotNull ByteArray key, byte[] val);
+    @NotNull CompletableFuture<Void> put(@NotNull ByteArray key, byte @Nullable [] val);
 
     /**
      * Remove value with key from vault.
@@ -63,7 +62,7 @@ public interface VaultService {
      * @param toKey End key of range (exclusive). Could be {@code null}.
      * @return Iterator built upon entries corresponding to the given range.
      */
-    @NotNull Iterator<Entry> range(@NotNull ByteArray fromKey, @NotNull ByteArray toKey);
+    @NotNull Cursor<VaultEntry> range(@NotNull ByteArray fromKey, @NotNull ByteArray toKey);
 
     /**
      * Inserts or updates entries with given keys and given values. If the given value in {@code vals} is null,

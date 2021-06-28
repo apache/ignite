@@ -17,36 +17,16 @@
 
 package org.apache.ignite.internal.app;
 
-import org.apache.ignite.app.Ignite;
-import org.apache.ignite.internal.vault.VaultManager;
-import org.apache.ignite.table.manager.IgniteTables;
+import org.apache.ignite.internal.util.IgniteUtils;
 
 /**
- * Ignite internal implementation.
+ * Class for removing data of an Ignite node.
  */
-public class IgniteImpl implements Ignite {
-    /** Distributed table manager. */
-    private final IgniteTables distributedTableManager;
-
-    /** Vault manager */
-    private final VaultManager vaultManager;
-
+public class IgnitionCleaner {
     /**
-     * @param tableManager Table manager.
-     * @param vaultManager Vault manager.
+     * Removes all directories that were created during a node startup.
      */
-    IgniteImpl(IgniteTables tableManager, VaultManager vaultManager) {
-        this.distributedTableManager = tableManager;
-        this.vaultManager = vaultManager;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteTables tables() {
-        return distributedTableManager;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void close() throws Exception {
-        vaultManager.close();
+    public static void removeAllData() {
+        IgniteUtils.delete(IgnitionImpl.VAULT_DB_PATH);
     }
 }
