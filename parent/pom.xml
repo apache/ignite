@@ -966,7 +966,7 @@
                 <groupId>org.apache.rat</groupId>
                 <artifactId>apache-rat-plugin</artifactId>
                 <configuration>
-                    <addDefaultLicenseMatchers>true</addDefaultLicenseMatchers>
+                    <addDefaultLicenseMatchers>false</addDefaultLicenseMatchers>
                     <licenses>
                         <license implementation="org.apache.rat.analysis.license.FullTextMatchingLicense">
                             <licenseFamilyCategory>IAL20</licenseFamilyCategory>
@@ -1000,13 +1000,20 @@
                         <exclude>**/*.md</exclude> <!-- Markdown files -->
                         <exclude>docs/assets/images/**</exclude> <!-- SVG images are XML files, but they cannot have license header -->
                         <exclude>docs/assets/js/anchor.min.js</exclude> <!-- Distributed under the MIT license. The original license header is badly formatted -->
+                        <exclude>docs/assets/css/asciidoc-pygments.css</exclude> <!-- Dan Allen, Paul Rayner, and the Asciidoctor Project -->
+                        <exclude>docs/_plugins/asciidoctor-extensions.rb</exclude> <!-- MIT license -->
+                        <exclude>docs/_sass/rouge-base16-solarized.scss</exclude> <!-- MIT license. -->
                         <exclude>**/*.json</exclude> <!-- Files in JSON format -->
                         <exclude>modules/cli/src/**/resources//builtin_modules.conf</exclude> <!-- CLI configuration files -->
-                        <exclude>modules/configuration-annotation-processor/src/main/resources/META-INF/services/javax.annotation.processing.Processor</exclude> <!-- ? -->
                         <exclude>**/*.iml</exclude> <!-- IntelliJ IDEA project files -->
                         <exclude>modules/bytecode/src/main/java/com/facebook/presto/bytecode/ClassInfo.java</exclude> <!-- MIT license. -->
                         <exclude>modules/bytecode/src/main/java/com/facebook/presto/bytecode/ClassInfoLoader.java</exclude> <!-- MIT license. -->
                         <exclude>**/META-INF/services/**</exclude> <!-- Interface mappings: cannot be changed -->
+                        <exclude>modules/raft/src/main/java/org/apache/ignite/raft/jraft/util/Recyclers.java</exclude> <!-- Netty license. -->
+                        <exclude>modules/raft/src/main/java/org/apache/ignite/raft/jraft/util/NonReentrantLock.java</exclude> <!-- Netty license. -->
+                        <exclude>modules/raft/src/main/java/org/apache/ignite/raft/jraft/util/HeapByteBufUtil.java</exclude> <!-- Netty license. -->
+                        <exclude>modules/raft/src/main/java/org/apache/ignite/raft/jraft/util/timer/TimerTask.java</exclude> <!-- Netty license. -->
+                        <exclude>modules/raft/src/main/java/org/apache/ignite/raft/jraft/util/timer/Timeout.java</exclude> <!-- Netty license. -->
                     </excludes>
                 </configuration>
             </plugin>
