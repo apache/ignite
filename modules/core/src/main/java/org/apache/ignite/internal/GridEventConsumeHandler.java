@@ -417,7 +417,14 @@ class GridEventConsumeHandler implements GridContinuousHandler {
                 if (dep == null)
                     throw new IgniteDeploymentCheckedException("Failed to obtain deployment for class: " + clsName);
 
-                filter = U.unmarshal(ctx, filterBytes, U.resolveClassLoader(dep.classLoader(), ctx.config()));
+                IgnitePredicate<Event> origin = U.unmarshal(
+                    ctx, filterBytes, U.resolveClassLoader(dep.classLoader(), ctx.config())
+                );
+
+                if (ctx.security().enabled())
+                    filter = new SecurityAwarePredicate<>(nodeId, origin);
+                else
+                    filter = origin;
 
                 ((GridFutureAdapter)p2pUnmarshalFut).onDone();
             }
