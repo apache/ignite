@@ -32,6 +32,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.ObjectMetric;
@@ -120,26 +121,28 @@ public class MetricsClusterActivationTest extends GridCommonAbstractTest {
         grid(1).rebalanceEnabled(false);
         stopGrid(2);
 
-        checkMetrics(ignite, true);
+        checkMetrics(true);
 
         for (int i = 0; i < 3; i++) {
             ignite.cluster().state(ClusterState.INACTIVE);
 
-            checkMetrics(ignite, false);
+            checkMetrics(false);
 
             ignite.cluster().state(ClusterState.ACTIVE);
 
-            checkMetrics(ignite, isPersistenceEnabled);
+            checkMetrics(isPersistenceEnabled);
         }
     }
 
     /** Checks metrics. */
-    private void checkMetrics(IgniteEx ignite, boolean expEntries) throws IgniteCheckedException {
-        checkDataRegionMetrics(ignite);
+    private void checkMetrics(boolean expEntries) throws IgniteCheckedException {
+        for (IgniteEx ignite : F.transform(G.allGrids(), ignite -> (IgniteEx)ignite)) {
+            checkDataRegionMetrics(ignite);
 
-        checkCacheGroupsMetrics(ignite);
+            checkCacheGroupsMetrics(ignite);
 
-        checkCacheMetrics(ignite, expEntries);
+            checkCacheMetrics(ignite, expEntries);
+        }
     }
 
     /** Checks data region metrics. */

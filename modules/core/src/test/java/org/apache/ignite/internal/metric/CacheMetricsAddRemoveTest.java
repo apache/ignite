@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.metric;
 
 import java.util.Arrays;
+import com.google.common.collect.Iterators;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -249,18 +250,12 @@ public class CacheMetricsAddRemoveTest extends GridCommonAbstractTest {
         for (int i = 0; i < 3; i++) {
             GridMetricManager mmgr = metricManager(i);
 
-            MetricRegistry mreg = mmgr.registry(cachePrefix);
-
-            assertNull(mreg.findMetric(metricName(cachePrefix, CACHE_GETS)));
-            assertNull(mreg.findMetric(metricName(cachePrefix, CACHE_PUTS)));
-            assertNull(mreg.findMetric(GET_TIME));
+            assertFalse(Iterators.tryFind(mmgr.iterator(), reg -> cachePrefix.equals(reg.name())).isPresent());
 
             if (nearEnabled) {
-                mreg = mmgr.registry(metricName(cachePrefix, "near"));
+                String regName = metricName(cachePrefix, "near");
 
-                assertNull(mreg.findMetric(CACHE_GETS));
-                assertNull(mreg.findMetric(CACHE_PUTS));
-                assertNull(mreg.findMetric(GET_TIME));
+                assertFalse(Iterators.tryFind(mmgr.iterator(), reg -> regName.equals(reg.name())).isPresent());
             }
         }
     }
