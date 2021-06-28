@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.query.stat.view.StatisticsColumnCon
 import org.apache.ignite.internal.processors.query.stat.view.StatisticsColumnLocalDataView;
 import org.apache.ignite.internal.processors.query.stat.view.StatisticsColumnPartitionDataView;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.spi.systemview.view.BaselineNodeAttributeView;
 import org.apache.ignite.spi.systemview.view.BinaryMetadataView;
 import org.apache.ignite.spi.systemview.view.CacheGroupView;
 import org.apache.ignite.spi.systemview.view.CachePagesListView;
@@ -129,6 +130,7 @@ public class SystemViewRowAttributeWalkerGenerator {
         gen.generateAndWrite(CountDownLatchView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(ReentrantLockView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(SemaphoreView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(BaselineNodeAttributeView.class, DFLT_SRC_DIR);
 
         gen.generateAndWrite(SqlSchemaView.class, INDEXING_SRC_DIR);
         gen.generateAndWrite(SqlTableView.class, INDEXING_SRC_DIR);
