@@ -507,11 +507,11 @@ class ClientImpl extends TcpDiscoveryImpl {
     @Override public void sendCustomEvent(DiscoverySpiCustomMessage evt) {
         State state = this.state;
 
+        if (state == SEGMENTED)
+            throw new IgniteException("Failed to send custom message: client is segmented.");
+
         if (state == DISCONNECTED)
             throw new IgniteClientDisconnectedException(null, "Failed to send custom message: client is disconnected.");
-
-        if (state == STOPPED || state == SEGMENTED || state == STARTING)
-            throw new IgniteException("Failed to send custom message: client is " + state.name().toLowerCase() + ".");
 
         try {
             TcpDiscoveryCustomEventMessage msg;
