@@ -312,7 +312,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private final long lockWaitTime;
 
     /** This is the earliest WAL pointer that was reserved during exchange and would release after exchange completed. */
-    private WALPointer reservedForExchange;
+    private volatile WALPointer reservedForExchange;
 
     /** This is the earliest WAL pointer that was reserved during preloading. */
     private volatile WALPointer reservedForPreloading;
@@ -1634,14 +1634,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         checkpointReadLock();
 
+        WALPointer reservedCheckpointMark;
+
         try {
             CheckpointHistoryResult checkpointHistoryResult =
                 checkpointHistory().searchAndReserveCheckpoints(applicableGroupsAndPartitions);
 
             earliestValidCheckpoints = checkpointHistoryResult.earliestValidCheckpoints();
 
-            if (checkpointHistoryResult.reservedCheckoint() != null)
-                reservedForExchange = checkpointHistoryResult.reservedCheckoint().checkpointMark();
+            reservedForExchange = reservedCheckpointMark = checkpointHistoryResult.reservedCheckpointMark();
         }
         finally {
             checkpointReadUnlock();
@@ -1661,8 +1662,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 int partId = e0.getKey();
 
-                assert cctx.wal().reserved(cpEntry.checkpointMark())
-                    : "WAL segment for checkpoint " + cpEntry + " has not reserved";
+                if (reservedCheckpointMark != null && !cctx.wal().reserved(reservedCheckpointMark)) {
+                    log.warning("Reservation failed because the segment was released: " + reservedCheckpointMark);
+
+                    reservedForExchange = null;
+
+                    grpPartsWithCnts.clear();
+                    break;
+                }
 
                 try {
                     Long updCntr = cpEntry.partitionCounter(cctx.wal(), grpId, partId);
