@@ -86,3 +86,13 @@ packages
 **/venv
 **/.pytest_cache
 **/pyignite.egg-info
+
+#Ducktape
+/results
+.ducktape
+*.pyc
+/tests/venv
+modules/ducktests/tests/docker/build/**
+modules/ducktests/tests/.tox
+modules/ducktests/tests/certs/*
+modules/ducktests/tests/ignitetest.egg-info/**

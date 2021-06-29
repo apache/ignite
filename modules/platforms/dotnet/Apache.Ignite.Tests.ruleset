@@ -63,8 +63,14 @@
     <!-- StartsWith locale. -->
     <Rule Id="CA1310" Action="None" />
 
+    <!-- string.Compare locale. -->
+    <Rule Id="CA1307" Action="None" />
+
     <!-- Underscores in names. -->
     <Rule Id="CA1707" Action="None" />
+
+    <!-- Reserved suffixes. -->
+    <Rule Id="CA1710" Action="None" />
 
     <!-- Call Dispose. -->
     <Rule Id="CA2000" Action="None" />
