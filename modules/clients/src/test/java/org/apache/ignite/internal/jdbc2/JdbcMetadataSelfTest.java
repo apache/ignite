@@ -321,6 +321,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     public void testGetAllView() throws Exception {
         Set<String> expViews = new HashSet<>(Arrays.asList(
             "BASELINE_NODES",
+            "BASELINE_NODE_ATTRIBUTES",
             "CACHES",
             "CACHE_GROUPS",
             "INDEXES",
