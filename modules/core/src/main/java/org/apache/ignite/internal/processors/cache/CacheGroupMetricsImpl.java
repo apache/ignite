@@ -493,17 +493,21 @@ public class CacheGroupMetricsImpl {
         return sparseStorageSize == null ? 0 : sparseStorageSize.value();
     }
 
-    /** Removes all metric for cache group. */
-    public void remove() {
+    /**
+     * Removes all metric for cache group.
+     *
+     * @param destroy Group destroy flag.
+     */
+    public void remove(boolean destroy) {
         if (ctx.shared().kernalContext().isStopping())
             return;
 
         if (ctx.config().getNearConfiguration() != null)
-            ctx.shared().kernalContext().metric().remove(cacheMetricsRegistryName(ctx.config().getName(), true));
+            ctx.shared().kernalContext().metric().remove(cacheMetricsRegistryName(ctx.config().getName(), true), destroy);
 
-        ctx.shared().kernalContext().metric().remove(cacheMetricsRegistryName(ctx.config().getName(), false));
+        ctx.shared().kernalContext().metric().remove(cacheMetricsRegistryName(ctx.config().getName(), false), destroy);
 
-        ctx.shared().kernalContext().metric().remove(metricGroupName());
+        ctx.shared().kernalContext().metric().remove(metricGroupName(), destroy);
     }
 
     /**

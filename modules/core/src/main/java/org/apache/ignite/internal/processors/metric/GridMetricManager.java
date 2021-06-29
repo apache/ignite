@@ -410,10 +410,23 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @param regName Metric registry name.
      */
     public void remove(String regName) {
+        remove(regName, true);
+    }
+
+    /**
+     * Removes metric registry.
+     *
+     * @param regName Metric registry name.
+     * @param removeCfg {@code True} if remove metric configurations.
+     */
+    public void remove(String regName, boolean removeCfg) {
         GridCompoundFuture opsFut = new GridCompoundFuture<>();
 
         registries.computeIfPresent(regName, (key, mreg) -> {
             notifyListeners(mreg, metricRegRemoveLsnrs, log);
+
+            if (!removeCfg)
+                return null;
 
             DistributedMetaStorage metastorage0 = metastorage;
 
