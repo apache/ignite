@@ -18,7 +18,6 @@
 package org.apache.ignite.app;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import org.apache.ignite.internal.app.IgnitionImpl;
@@ -54,14 +53,9 @@ public class IgniteCliRunner {
             System.exit(1);
         }
 
-        String jsonCfgStr = null;
-
-        if (parsedArgs.config != null)
-            jsonCfgStr = Files.readString(parsedArgs.config);
-
         var ignition = new IgnitionImpl();
 
-        ignition.start(parsedArgs.nodeName, jsonCfgStr);
+        ignition.start(parsedArgs.nodeName, parsedArgs.config.toAbsolutePath());
     }
 
     /**

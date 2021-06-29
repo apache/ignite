@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.app;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -94,8 +96,42 @@ public class IgnitionImpl implements Ignition {
     private static final String VER_KEY = "version";
 
     /** {@inheritDoc} */
-    @Override public synchronized Ignite start(@NotNull String nodeName, @Nullable String jsonStrBootstrapCfg) {
-        assert nodeName != null && !nodeName.isBlank() : "Node local name is empty";
+    @Override public synchronized Ignite start(@NotNull String nodeName, @Nullable Path cfgPath) {
+        try {
+            return doStart(nodeName, Files.readString(cfgPath));
+        }
+        catch (IOException e) {
+            LOG.warn("Unable to read user specific configuration, default configuration will be used: " + e.getMessage());
+            return start(nodeName);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Ignite start(@NotNull String name, @Nullable InputStream config) {
+        try {
+            return doStart(name, new String(config.readAllBytes(), StandardCharsets.UTF_8));
+        }
+        catch (IOException e) {
+            LOG.warn("Unable to read user specific configuration, default configuration will be used: " + e.getMessage());
+            return start(name);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Ignite start(@NotNull String name) {
+        return doStart(name, null);
+    }
+
+    /**
+     * Starts Ignite node with optional bootstrap configuration in hocon format.
+     *
+     * @param nodeName Name of the node. Couldn't be {@code null}.
+     * @param cfgContent Node configuration in hocon format. Could be {@code null}.
+     * @return Started Ignite node.
+     */
+    private Ignite doStart(@NotNull String nodeName, @Nullable String cfgContent) {
+        if (nodeName.isEmpty())
+            throw new IllegalArgumentException("Node name must not be null or empty.");
 
         ackBanner();
 
@@ -116,15 +152,15 @@ public class IgnitionImpl implements Ignition {
         // Bootstrap local configuration manager.
         ConfigurationManager locConfigurationMgr = new ConfigurationManager(rootKeys, cfgStorages);
 
-        if (!cfgBootstrappedFromPds && jsonStrBootstrapCfg != null)
+        if (!cfgBootstrappedFromPds && cfgContent != null)
             try {
-                locConfigurationMgr.bootstrap(jsonStrBootstrapCfg, ConfigurationType.LOCAL);
+                locConfigurationMgr.bootstrap(cfgContent, ConfigurationType.LOCAL);
             }
             catch (Exception e) {
                 LOG.warn("Unable to parse user-specific configuration, default configuration will be used: {}", e.getMessage());
             }
-        else if (jsonStrBootstrapCfg != null)
-            LOG.warn("User-specific configuration will be ignored, because vault has been bootstrapped with PDS configuration");
+        else if (cfgContent != null)
+            LOG.warn("User specific configuration will be ignored, cause vault was bootstrapped with pds configuration");
         else
             locConfigurationMgr.configurationRegistry().startStorageConfigurations(ConfigurationType.LOCAL);
 

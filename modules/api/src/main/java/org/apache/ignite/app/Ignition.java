@@ -17,6 +17,8 @@
 
 package org.apache.ignite.app;
 
+import java.io.InputStream;
+import java.nio.file.Path;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -26,12 +28,28 @@ import org.jetbrains.annotations.Nullable;
 @SuppressWarnings("UnnecessaryInterfaceModifier")
 public interface Ignition {
     /**
-     * Starts Ignite node with optional bootstrap configuration in json format.
+     * Starts Ignite node with optional bootstrap configuration from hocon file.
      *
      * @param name Name of the node. Couldn't be {@code null}.
-     * @param jsonStrBootstrapCfg Node configuration in json format. Could be {@code null}.
+     * @param configPath Node configuration in hocon format. Could be {@code null}.
      * @return Started Ignite node.
      */
-    // TODO: IGNITE-14599 Add generic way to bootstrap configuration.
-    public Ignite start(@NotNull String name, @Nullable String jsonStrBootstrapCfg);
+    public Ignite start(@NotNull String name, @Nullable Path configPath);
+
+    /**
+     * Starts Ignite node with optional bootstrap configuration from input stream with hocon configs.
+     *
+     * @param name Name of the node. Couldn't be {@code null}.
+     * @param config Input stream from node configuration in hocon format. Could be {@code null}.
+     * @return Started Ignite node.
+     */
+    public Ignite start(@NotNull String name, @Nullable InputStream config);
+
+    /**
+     * Starts Ignite node with default configuration.
+     *
+     * @param name Name of the node. Couldn't be {@code null}.
+     * @return Started Ignite node.
+     */
+    public Ignite start(@NotNull String name);
 }

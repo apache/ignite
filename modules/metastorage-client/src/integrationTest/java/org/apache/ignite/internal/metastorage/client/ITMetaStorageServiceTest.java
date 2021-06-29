@@ -330,7 +330,6 @@ public class ITMetaStorageServiceTest {
                         for (int i = 0; i < expKeys.size(); i++)
                             assertArrayEquals(expKeys.get(i), keys.get(i));
 
-
                         // Assert values equality.
                         assertEquals(EXPECTED_RESULT_MAP.values().size(), values.size());
 
@@ -527,7 +526,6 @@ public class ITMetaStorageServiceTest {
                                     return null;
                                 }
                             };
-
 
                             @Override public void close() throws Exception {
                             }
