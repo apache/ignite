@@ -55,6 +55,11 @@ namespace Apache.Ignite.Core.Client
         public const bool DefaultTcpNoDelay = true;
 
         /// <summary>
+        /// Default value of <see cref="EnablePartitionAwareness" /> property.
+        /// </summary>
+        public const bool DefaultEnablePartitionAwareness = true;
+
+        /// <summary>
         /// Default socket timeout.
         /// </summary>
         public static readonly TimeSpan DefaultSocketTimeout = TimeSpan.FromMilliseconds(5000);
@@ -72,6 +77,7 @@ namespace Apache.Ignite.Core.Client
             TcpNoDelay = DefaultTcpNoDelay;
             SocketTimeout = DefaultSocketTimeout;
             Logger = new ConsoleLogger();
+            EnablePartitionAwareness = DefaultEnablePartitionAwareness;
         }
 
         /// <summary>
@@ -217,11 +223,13 @@ namespace Apache.Ignite.Core.Client
         /// <summary>
         /// Gets or sets a value indicating whether partition awareness should be enabled.
         /// <para />
-        /// Default is false: only one connection is established at a given moment to a random server node.
-        /// When true: for cache operations, Ignite client attempts to send the request directly to
+        /// Default is true: for cache operations, Ignite client attempts to send the request directly to
         /// the primary node for the given cache key.
         /// To do so, connection is established to every known server node at all times.
+        /// <para />
+        /// When false: only one connection is established at a given moment to a random server node.
         /// </summary>
+        [DefaultValue(DefaultEnablePartitionAwareness)]
         public bool EnablePartitionAwareness { get; set; }
 
         /// <summary>
@@ -271,6 +279,8 @@ namespace Apache.Ignite.Core.Client
         /// <returns>Deserialized instance.</returns>
         public static IgniteClientConfiguration FromXml(XmlReader reader)
         {
+            IgniteArgumentCheck.NotNull(reader, "reader");
+
             return IgniteConfigurationXmlSerializer.Deserialize<IgniteClientConfiguration>(reader);
         }
 

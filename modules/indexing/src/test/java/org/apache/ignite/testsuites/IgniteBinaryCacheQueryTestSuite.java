@@ -102,6 +102,7 @@ import org.apache.ignite.internal.processors.cache.IgniteErrorOnRebalanceTest;
 import org.apache.ignite.internal.processors.cache.IncorrectQueryEntityTest;
 import org.apache.ignite.internal.processors.cache.IndexingCachePartitionLossPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.QueryEntityCaseMismatchTest;
+import org.apache.ignite.internal.processors.cache.ReservationsOnDoneAfterTopologyUnlockFailTest;
 import org.apache.ignite.internal.processors.cache.SqlFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.authentication.SqlUserCommandSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheAtomicFieldsQuerySelfTest;
@@ -557,6 +558,7 @@ import org.junit.runners.Suite;
     SqlSystemViewsSelfTest.class,
     ScanQueryConcurrentUpdatesTest.class,
     ScanQueryConcurrentSqlUpdatesTest.class,
+    ReservationsOnDoneAfterTopologyUnlockFailTest.class,
 
     GridIndexRebuildSelfTest.class,
     GridIndexRebuildTest.class,
@@ -662,7 +664,9 @@ import org.junit.runners.Suite;
     SqlFieldTypeValidationTypesTest.class,
     SqlFieldTypeValidationOnKeyValueInsertTest.class,
 
-    InlineIndexKeyTypeRegistryTest.class
+    InlineIndexKeyTypeRegistryTest.class,
+
+    IgniteStatisticsTestSuite.class
 })
 public class IgniteBinaryCacheQueryTestSuite {
 }

@@ -29,7 +29,7 @@
     <parent>
         <groupId>org.apache</groupId>
         <artifactId>apache</artifactId>
-        <version>16</version>
+        <version>23</version>
     </parent>
 
     <properties>
@@ -95,7 +95,7 @@
         <jms.spec.version>1.1.1</jms.spec.version>
         <jna.version>4.5.2</jna.version>
         <jnr.posix.version>3.0.50</jnr.posix.version>
-        <jotm.version>2.2.3</jotm.version>
+        <jotm.version>2.3.1-M1</jotm.version>
         <jsch.bundle.version>0.1.54_1</jsch.bundle.version>
         <jsch.version>0.1.54</jsch.version>
         <jsonlib.bundle.version>2.4_1</jsonlib.bundle.version>
@@ -293,9 +293,6 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-jar-plugin</artifactId>
-                    <configuration>
-                        <useDefaultManifestFile>true</useDefaultManifestFile>
-                    </configuration>
                 </plugin>
 
                 <plugin>

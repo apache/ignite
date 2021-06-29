@@ -15,14 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.timeout;
+package org.apache.ignite.internal.processors.query.stat;
+
+import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * Types of statistics width.
  */
-public class DefaultQueryTimeoutThickJavaLazyTest extends DefaultQueryTimeoutThickJavaTest {
-    /** */
-    public DefaultQueryTimeoutThickJavaLazyTest() {
-        super(false, true);
+public enum StatisticsType {
+    /** Statistics by some particular partition. */
+    PARTITION,
+
+    /** Statistics by some data node. */
+    LOCAL;
+
+    /** Enumerated values. */
+    private static final StatisticsType[] VALUES = values();
+
+    /**
+     * Efficiently gets enumerated value from its ordinal.
+     *
+     * @param ord Ordinal value.
+     * @return Enumerated value or {@code null} if ordinal out of range.
+     */
+    @Nullable public static StatisticsType fromOrdinal(int ord) {
+        return ord >= 0 && ord < VALUES.length ? VALUES[ord] : null;
     }
 }
