@@ -410,6 +410,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             "SCHEMAS",
             "NODE_METRICS",
             "BASELINE_NODES",
+            "BASELINE_NODE_ATTRIBUTES",
             "INDEXES",
             "LOCAL_CACHE_GROUPS_IO",
             "SQL_QUERIES",
