@@ -1707,9 +1707,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             int p = partMap.partitionAt(i);
 
                             if (!doneParts.contains(p)) {
-                                throw new IgniteCheckedException("Some partition entries were missed during " +
-                                    "historical rebalance [grp=" + grp + ", part=" + p + ", missed=" +
-                                    (partMap.updateCounterAt(i) - rebalancedCntrs[i]) + ']');
+                                log.warning("Some partition entries were missed during historical rebalance " +
+                                    "[grp=" + grp + ", part=" + p + ", missed=" + (partMap.updateCounterAt(i) - rebalancedCntrs[i]) + ']');
+
+                                doneParts.add(p);
                             }
                         }
 

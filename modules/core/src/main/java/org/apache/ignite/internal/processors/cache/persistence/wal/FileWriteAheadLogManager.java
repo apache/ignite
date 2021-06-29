@@ -2851,7 +2851,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             // Segment deletion protection.
             if (!segmentAware.reserve(curWalSegmIdx))
-                throw new IgniteCheckedException("Segment does not exist: " + curWalSegmIdx);
+                throw onHasNextEx = new IgniteCheckedException("Segment does not exist: " + curWalSegmIdx);
 
             try {
                 // Protection against transferring a segment to the archive by #archiver.
