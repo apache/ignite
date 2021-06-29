@@ -22,6 +22,7 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.Person;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -37,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.Slowd
 import org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.StopBuildIndexConsumer;
 import org.apache.ignite.internal.processors.query.aware.IndexBuildStatusHolder;
 import org.apache.ignite.internal.processors.query.aware.IndexBuildStatusStorage;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
@@ -294,5 +296,52 @@ public abstract class AbstractRebuildIndexTest extends GridCommonAbstractTest {
      */
     protected ConcurrentMap<String, IndexBuildStatusHolder> statuses(IgniteEx n) {
         return getFieldValue(indexBuildStatusStorage(n), "statuses");
+    }
+
+    /**
+     * Creation of a new index for the cache of {@link Person}.
+     * SQL: CREATE INDEX " + idxName + " ON Person(name)
+     *
+     * @param cache Cache.
+     * @param idxName Index name.
+     * @return Index creation future.
+     */
+    protected List<List<?>> createIdx(IgniteCache<Integer, Person> cache, String idxName) {
+        return cache.query(new SqlFieldsQuery("CREATE INDEX " + idxName + " ON Person(name)")).getAll();
+    }
+
+    /**
+     * Drop of an index for the cache of{@link Person}.
+     * SQL: DROP INDEX " + idxName
+     *
+     * @param cache Cache.
+     * @param idxName Index name.
+     * @return Index creation future.
+     */
+    protected List<List<?>> dropIdx(IgniteCache<Integer, Person> cache, String idxName) {
+        return cache.query(new SqlFieldsQuery("DROP INDEX " + idxName)).getAll();
+    }
+
+    /**
+     * Enable checkpoints.
+     *
+     * @param n Node.
+     * @param reason Reason for checkpoint wakeup if it would be required.
+     * @param enable Enable/disable.
+     * @throws Exception If failed.
+     */
+    protected Void enableCheckpoints(IgniteEx n, String reason, boolean enable) throws Exception {
+        if (enable) {
+            dbMgr(n).enableCheckpoints(true).get(getTestTimeout());
+
+            forceCheckpoint(F.asList(n), reason);
+        }
+        else {
+            forceCheckpoint(F.asList(n), reason);
+
+            dbMgr(n).enableCheckpoints(false).get(getTestTimeout());
+        }
+
+        return null;
     }
 }

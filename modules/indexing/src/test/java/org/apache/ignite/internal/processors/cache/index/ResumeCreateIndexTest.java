@@ -36,7 +36,6 @@ import org.apache.ignite.internal.processors.query.QueryIndexKey;
 import org.apache.ignite.internal.processors.query.aware.IndexBuildStatusHolder;
 import org.apache.ignite.internal.processors.query.aware.IndexBuildStatusHolder.Status;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
@@ -337,11 +336,7 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
      * @return Index creation future.
      */
     private IgniteInternalFuture<List<List<?>>> createIdxAsync(IgniteCache<Integer, Person> cache, String idxName) {
-        return runAsync(() -> {
-            String sql = "CREATE INDEX " + idxName + " ON Person(name)";
-
-            return cache.query(new SqlFieldsQuery(sql)).getAll();
-        });
+        return runAsync(() -> createIdx(cache, idxName));
     }
 
     /**
@@ -354,16 +349,7 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
      */
     private IgniteInternalFuture<Void> enableCheckpointsAsync(IgniteEx n, String reason, boolean enable) {
         return runAsync(() -> {
-            if (enable) {
-                dbMgr(n).enableCheckpoints(true).get(getTestTimeout());
-
-                forceCheckpoint(F.asList(n), reason);
-            }
-            else {
-                forceCheckpoint(F.asList(n), reason);
-
-                dbMgr(n).enableCheckpoints(false).get(getTestTimeout());
-            }
+            enableCheckpoints(n, reason, enable);
 
             return null;
         });
