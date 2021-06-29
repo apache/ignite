@@ -75,7 +75,7 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
     }
 
     /** {@inheritDoc} */
-    @Override public void awaitFirstItem() throws IgniteCheckedException {
+    @Override public void awaitFirstItemAvailable() throws IgniteCheckedException {
         get();
     }
 

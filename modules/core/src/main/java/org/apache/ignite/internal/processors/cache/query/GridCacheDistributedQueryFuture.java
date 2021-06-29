@@ -61,7 +61,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
         clear();
     }
 
-    /** Fail if a node runs this query left cluster. */
+    /** {@inheritDoc} */
     @Override protected void onNodeLeft(UUID nodeId) {
         boolean qryNode = reducer.mapNode(nodeId);
 
@@ -71,7 +71,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
     }
 
     /** {@inheritDoc} */
-    @Override public void awaitFirstItem() throws IgniteCheckedException {
+    @Override public void awaitFirstItemAvailable() throws IgniteCheckedException {
         reducer.awaitInitialization();
 
         if (isDone() && error() != null)

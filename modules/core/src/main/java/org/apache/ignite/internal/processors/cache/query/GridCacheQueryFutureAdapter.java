@@ -172,15 +172,17 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
         }
     }
 
-    /** @return Cache query results reducer. */
+    /**
+     * @return Cache query results reducer.
+     */
     protected abstract CacheQueryReducer<R> reducer();
 
     /**
-     * Waits for the first item to be received from remote node(s), if any.
+     * Waits for the first item is available to return.
      *
      * @throws IgniteCheckedException If query execution failed with an error.
      */
-    public abstract void awaitFirstItem() throws IgniteCheckedException;
+    public abstract void awaitFirstItemAvailable() throws IgniteCheckedException;
 
     /**
      * @throws IgniteCheckedException If future is done with an error.
@@ -194,6 +196,8 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     }
 
     /**
+     * Callback that invoked in case of a node left cluster.
+     *
      * @param evtNodeId Removed or failed node Id.
      */
     protected void onNodeLeft(UUID evtNodeId) {
@@ -226,9 +230,9 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      * @param nodeId Sender node.
      * @param data Page data.
      * @param err Error (if was).
-     * @param finished Whether it is the last page for sender node.
+     * @param lastPage Whether it is the last page for sender node.
      */
-    public void onPage(@Nullable UUID nodeId, @Nullable Collection<?> data, @Nullable Throwable err, boolean finished) {
+    public void onPage(@Nullable UUID nodeId, @Nullable Collection<?> data, @Nullable Throwable err, boolean lastPage) {
         if (isCancelled())
             return;
 
@@ -237,7 +241,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
                 "nodeId", nodeId, false,
                 "data", data, true,
                 "err", err, false,
-                "finished", finished, false));
+                "finished", lastPage, false));
 
         try {
             if (err != null)
@@ -287,7 +291,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
                     data = cctx.unwrapBinariesIfNeeded((Collection<Object>)data, qry.query().keepBinary());
 
                 synchronized (lock) {
-                    boolean lastPageRcvd = reducer().onPage(nodeId, (Collection<R>) data, finished);
+                    boolean lastPageRcvd = reducer().onPage(nodeId, (Collection<R>) data, lastPage);
 
                     if (lastPageRcvd) {
                         onDone(/* data */);

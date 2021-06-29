@@ -25,11 +25,11 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
  */
 public interface DistributedCacheQueryReducer<T> extends CacheQueryReducer<T> {
     /**
-     * Checks whether cache query still runs on specified node. If a query finished (send all pages) on this node, then
-     * this method has to return {@code false}.
+     * Checks whether node with provided {@code nodeId} is a map node for the query.
+     * Note: if all pages were received from this node, then the method will return {@code false}.
      *
      * @param nodeId Node ID.
-     * @return {@code true} if specified node runs this query.
+     * @return {@code true} if node with provided {@code nodeId} is a map node for the query, {@code false} otherwise.
      */
     public boolean mapNode(UUID nodeId);
 

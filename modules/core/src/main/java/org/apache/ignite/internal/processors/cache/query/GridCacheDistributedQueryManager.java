@@ -558,8 +558,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         long reqId = cctx.io().nextIoId();
 
         final GridCacheDistributedQueryFuture fut = fields ?
-            new GridCacheDistributedFieldsQueryFuture(cctx, reqId, qry)
-            : new GridCacheDistributedQueryFuture(cctx, reqId, qry);
+            new GridCacheDistributedFieldsQueryFuture(cctx, reqId, qry) :
+            new GridCacheDistributedQueryFuture(cctx, reqId, qry);
 
         try {
             DistributedCacheQueryReducer reducer = createReducer(fut.qry.query().type(), reqId, fut, nodes);

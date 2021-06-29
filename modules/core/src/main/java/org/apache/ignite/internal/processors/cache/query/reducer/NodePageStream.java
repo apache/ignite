@@ -28,7 +28,7 @@ import org.apache.ignite.internal.util.typedef.F;
 /**
  * Stream over single node.
  */
-public class NodePageStream<R> extends PageStream<R> {
+class NodePageStream<R> extends PageStream<R> {
     /** */
     private final UUID nodeId;
 
@@ -44,15 +44,16 @@ public class NodePageStream<R> extends PageStream<R> {
     }
 
     /**
-     * @return Head of stream, that is last item returned with {@link #next()}.
+     * Peek the stream head for the next item.
+     * Note: requires {@link #hasNext()} to be called at first.
+     *
+     * @return The item will be returned with {@link #next()}.
      */
     public R head() {
         return head;
     }
 
-    /**
-     * @return {@code true} If this stream has next row, {@code false} otherwise.
-     */
+    /** {@inheritDoc} */
     @Override public boolean hasNext() throws IgniteCheckedException {
         if (head != null)
             return true;
@@ -64,9 +65,7 @@ public class NodePageStream<R> extends PageStream<R> {
         }
     }
 
-    /**
-     * @return Next item from this stream.
-     */
+    /** {@inheritDoc} */
     @Override public R next() throws IgniteCheckedException {
         R o = head;
 

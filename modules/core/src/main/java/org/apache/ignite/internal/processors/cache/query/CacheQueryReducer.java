@@ -22,10 +22,8 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 
 /**
- * This class is responsible for reducing results of cache query. Query results are delivered with function
- * {@link #onPage(UUID, Collection, boolean)}. Note that this reducer deeply interacts with corresponding query future
- * {@link GridCacheQueryFutureAdapter}, so they used the same lock object. It guards reducer pages operations
- * and the future status. Custom reduce logic is applied within {@link #next()} and {@link #hasNext()}.
+ * This class is responsible for reducing results of cache query. Query results are delivered via callback
+ * {@link #onPage(UUID, Collection, boolean)}.
  *
  * <T> is a type of cache query result item.
  */
@@ -41,8 +39,7 @@ public interface CacheQueryReducer<T> {
     public boolean hasNext() throws IgniteCheckedException;
 
     /**
-     * Offer query result page for reduce. Note that the data collection may contain extension of type T.
-     * In such cases data item contains additional payload for custom reducer logic.
+     * Callback that invoked on receiving a new page.
      *
      * @param nodeId Node ID that sent this page.
      * @param data Page data rows.
