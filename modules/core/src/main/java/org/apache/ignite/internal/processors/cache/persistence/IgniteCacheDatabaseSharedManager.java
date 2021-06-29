@@ -1496,6 +1496,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 MBEAN_GROUP_NAME,
                 region.metrics().getName()
             );
+
+            region.metrics().remove();
         }
 
         dataRegionMap.clear();

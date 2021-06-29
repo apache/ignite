@@ -650,10 +650,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         lastFut = null;
     }
 
-    /** Remove cache metrics. */
-    public void removeMetrics() {
+    /**
+     * Remove cache metrics.
+     *
+     * @param destroy Group destroy flag.
+     */
+    public void removeMetrics(boolean destroy) {
         if (!ctx.kernalContext().isStopping())
-            ctx.kernalContext().metric().remove(cacheMetricsRegistryName(ctx.name(), isNear()));
+            ctx.kernalContext().metric().remove(cacheMetricsRegistryName(ctx.name(), isNear()), destroy);
     }
 
     /**
