@@ -146,6 +146,8 @@ public class CacheMetricsAddRemoveTest extends GridCommonAbstractTest {
     private void createCache(@Nullable String dataRegionName, @Nullable String cacheName) throws InterruptedException {
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
+        ccfg.setStatisticsEnabled(true);
+
         if (dataRegionName != null)
             ccfg.setDataRegionName(dataRegionName);
 

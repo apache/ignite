@@ -228,18 +228,22 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
     /** */
     @Test
-    public void testUnregisterRemovedRegistry() throws Exception {
-        String n = "cache-for-remove";
+    public void testUnregisterRemovedRegistry() {
+        final String cacheName = "cache-for-remove";
 
-        IgniteCache c = ignite.createCache(n);
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration(cacheName);
 
-        DynamicMBean cacheBean = metricRegistry(ignite.name(), CACHE_METRICS, n);
+        ccfg.setStatisticsEnabled(true);
+
+        IgniteCache c = ignite.createCache(ccfg);
+
+        DynamicMBean cacheBean = metricRegistry(ignite.name(), CACHE_METRICS, cacheName);
 
         assertNotNull(cacheBean);
 
-        ignite.destroyCache(n);
+        ignite.destroyCache(c.getName());
 
-        assertThrowsWithCause(() -> metricRegistry(ignite.name(), CACHE_METRICS, n), IgniteException.class);
+        assertThrowsWithCause(() -> metricRegistry(ignite.name(), CACHE_METRICS, cacheName), IgniteException.class);
     }
 
     /** */
