@@ -1,0 +1,11 @@
+# name: test/sql/types/decimal/test_decimal.test
+# description: Test basic decimals
+# group: [decimal]
+
+statement ok
+PRAGMA enable_verification
+
+query R
+SELECT '100.100'::DECIMAL::VARCHAR
+----
+100.100

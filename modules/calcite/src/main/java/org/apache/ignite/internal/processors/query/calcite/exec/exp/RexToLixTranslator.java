@@ -647,7 +647,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
                 return Expressions.call(
                     IgniteSqlFunctions.class,
                     "toBigDecimal",
-                    Expressions.constant(bd.toString()),
+                    Expressions.constant(bd),
                     Expressions.constant(type.getPrecision()),
                     Expressions.constant(type.getScale()));
             case DATE:
