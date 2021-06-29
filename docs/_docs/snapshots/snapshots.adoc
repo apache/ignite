@@ -221,7 +221,7 @@ control.(sh|bat) --snapshot restore snapshot_09062021 --start cache-group1,cache
 control.(sh|bat) --snapshot restore snapshot_09062021 --status
 
 # Cancel the restore operation for "snapshot_09062021".
-control.(sh|bat) --snapshot restore snapshot_09062021 --stop
+control.(sh|bat) --snapshot restore snapshot_09062021 --cancel
 ----
 
 == Consistency Guarantees
