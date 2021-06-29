@@ -38,7 +38,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLIENT_METRICS;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLIENT_CONNECTOR_METRICS;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_STORE_TYPE;
 
 /**
@@ -52,7 +52,7 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
     public void testClientListenerMetricsAccept() throws Exception {
         try (IgniteEx ignite = startGrid(0))
         {
-            MetricRegistry mreg = ignite.context().metric().registry(CLIENT_METRICS);
+            MetricRegistry mreg = ignite.context().metric().registry(CLIENT_CONNECTOR_METRICS);
 
             checkConnectionsMetrics(mreg, 0, 0);
 
@@ -100,7 +100,7 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
         try (IgniteEx ignite = startGrid(nodeCfg))
         {
             ignite.cluster().state(ClusterState.ACTIVE);
-            MetricRegistry mreg = ignite.context().metric().registry(CLIENT_METRICS);
+            MetricRegistry mreg = ignite.context().metric().registry(CLIENT_CONNECTOR_METRICS);
 
             checkRejectMetrics(mreg, 0, 0, 0);
 
@@ -113,12 +113,10 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
                 .setSslTrustCertificateKeyStoreType(DFLT_STORE_TYPE)
                 .setSslTrustCertificateKeyStorePassword("123456");
 
-            try {
+            GridTestUtils.assertThrows(log, () -> {
                 Ignition.startClient(cfgSsl);
-
-                fail("Should be rejected.");
-            }
-            catch (ClientException ignored) {}
+                return null;
+            }, ClientException.class, null);
 
             checkRejectMetrics(mreg, 1, 0, 1);
 
@@ -126,12 +124,10 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
                 .setUserName("SomeRandomInvalidName")
                 .setUserPassword("42");
 
-            try {
+            GridTestUtils.assertThrows(log, () -> {
                 Ignition.startClient(cfgAuth);
-
-                fail("Should be rejected.");
-            }
-            catch (ClientAuthenticationException ignored) {}
+                return null;
+            }, ClientAuthenticationException.class, null);
 
             checkRejectMetrics(mreg, 1, 1, 2);
         }
@@ -148,16 +144,14 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
 
         try (IgniteEx ignite = startGrid(nodeCfg))
         {
-            MetricRegistry mreg = ignite.context().metric().registry(CLIENT_METRICS);
+            MetricRegistry mreg = ignite.context().metric().registry(CLIENT_CONNECTOR_METRICS);
 
             checkRejectMetrics(mreg, 0, 0, 0);
 
-            try {
+            GridTestUtils.assertThrows(log, () -> {
                 Ignition.startClient(getClientConfiguration());
-            }
-            catch (RuntimeException err) {
-                assert err.getMessage().contains("Thin client connection is not allowed");
-            }
+                return null;
+            }, RuntimeException.class, "Thin client connection is not allowed");
 
             checkRejectMetrics(mreg, 0, 0, 1);
         }
@@ -199,11 +193,11 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
      * @param rejectedTotal Expected number of connection attepmts rejected in total.
      */
     private void checkRejectMetrics(MetricRegistry mreg, int rejectedTimeout, int rejectedAuth, int rejectedTotal) {
-        waitForMetricValue(mreg, "connections.rejectedTotal", rejectedTotal, 10_000);
-        assertEquals(rejectedTimeout, mreg.<IntMetric>findMetric("connections.rejectedByTimeout").value());
-        assertEquals(rejectedAuth, mreg.<IntMetric>findMetric("connections.rejectedAuthentication").value());
-        assertEquals(0, mreg.<IntMetric>findMetric("connections.thin.accepted").value());
-        assertEquals(0, mreg.<IntMetric>findMetric("connections.thin.active").value());
+        waitForMetricValue(mreg, "rejectedTotal", rejectedTotal, 10_000);
+        assertEquals(rejectedTimeout, mreg.<IntMetric>findMetric("rejectedByTimeout").value());
+        assertEquals(rejectedAuth, mreg.<IntMetric>findMetric("rejectedAuthentication").value());
+        assertEquals(0, mreg.<IntMetric>findMetric("thin.accepted").value());
+        assertEquals(0, mreg.<IntMetric>findMetric("thin.active").value());
     }
 
     /**
@@ -213,10 +207,10 @@ public class ClientListenerMetricsTest extends GridCommonAbstractTest {
      * @param active Expected number of active connections.
      */
     private void checkConnectionsMetrics(MetricRegistry mreg, int accepted, int active) {
-        waitForMetricValue(mreg, "connections.thin.active", active, 10_000);
-        assertEquals(accepted, mreg.<IntMetric>findMetric("connections.thin.accepted").value());
-        assertEquals(0, mreg.<IntMetric>findMetric("connections.rejectedByTimeout").value());
-        assertEquals(0, mreg.<IntMetric>findMetric("connections.rejectedAuthentication").value());
-        assertEquals(0, mreg.<IntMetric>findMetric("connections.rejectedTotal").value());
+        waitForMetricValue(mreg, "thin.active", active, 10_000);
+        assertEquals(accepted, mreg.<IntMetric>findMetric("thin.accepted").value());
+        assertEquals(0, mreg.<IntMetric>findMetric("rejectedByTimeout").value());
+        assertEquals(0, mreg.<IntMetric>findMetric("rejectedAuthentication").value());
+        assertEquals(0, mreg.<IntMetric>findMetric("rejectedTotal").value());
     }
 }

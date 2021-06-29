@@ -16,14 +16,12 @@
  */
 package org.apache.ignite.internal.processors.odbc;
 
-import java.util.HashMap;
-import java.util.Map;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 
-import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLIENT_METRICS;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLIENT_CONNECTOR_METRICS;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.JDBC_CLIENT;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.ODBC_CLIENT;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.THIN_CLIENT;
@@ -51,16 +49,16 @@ public class ClientListenerMetrics {
     private final IntMetricImpl rejectedTotal;
 
     /** Connections accepted. */
-    private final Map<Byte, IntMetricImpl> accepted;
+    private final IntMetricImpl[] accepted;
 
     /** Number of active connections. */
-    private final Map<Byte, IntMetricImpl> active;
+    private final IntMetricImpl[] active;
 
     /**
      * @param ctx Kernal context.
      */
     public ClientListenerMetrics(GridKernalContext ctx) {
-        MetricRegistry mreg = ctx.metric().registry(CLIENT_METRICS);
+        MetricRegistry mreg = ctx.metric().registry(CLIENT_CONNECTOR_METRICS);
 
         rejectedTimeout = mreg.intMetric(METRIC_REJECTED_TIMEOUT,
                 "TCP sessions count that were rejected due to handshake timeout.");
@@ -71,8 +69,8 @@ public class ClientListenerMetrics {
         rejectedTotal = mreg.intMetric(METRIC_REJECTED_TOTAL, "Total number of rejected TCP connections.");
 
         final byte[] supportedClients = { ODBC_CLIENT, JDBC_CLIENT, THIN_CLIENT };
-        accepted = new HashMap<>(supportedClients.length);
-        active = new HashMap<>(supportedClients.length);
+        accepted = new IntMetricImpl[supportedClients.length];
+        active = new IntMetricImpl[supportedClients.length];
 
         for (byte clientType : supportedClients) {
             String clientLabel = clientTypeLabel(clientType);
@@ -114,8 +112,8 @@ public class ClientListenerMetrics {
      * @param clientType Client type.
      */
     public void onHandshakeAccept(byte clientType) {
-        accepted.get(clientType).increment();
-        active.get(clientType).increment();
+        accepted[clientType].increment();
+        active[clientType].increment();
     }
 
     /**
@@ -124,7 +122,7 @@ public class ClientListenerMetrics {
      * @param clientType Client type.
      */
     public void onDisconnect(byte clientType) {
-        active.get(clientType).add(-1);
+        active[clientType].add(-1);
     }
 
     /**
