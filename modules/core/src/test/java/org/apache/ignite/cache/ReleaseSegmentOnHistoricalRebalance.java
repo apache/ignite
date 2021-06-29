@@ -25,8 +25,10 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointHistory;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointHistoryResult;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointMarkersStorage;
@@ -45,6 +47,7 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
@@ -85,8 +88,14 @@ public class ReleaseSegmentOnHistoricalRebalance extends GridCommonAbstractTest 
             );
     }
 
+    /**
+     * Checks that if release the segment after {@link CheckpointHistory#searchAndReserveCheckpoints},
+     * there will be no errors and the rebalance will be completed.
+     *
+     * @throws Exception If failed.
+     */
     @Test
-    public void test0() throws Exception {
+    public void testReleaseSegmentAfterSearchAndReserveCheckpoints() throws Exception {
         checkHistoricalRebalance(n -> {
             CheckpointHistory spy = spy(dbMgr(n).checkpointHistory());
 
@@ -105,8 +114,14 @@ public class ReleaseSegmentOnHistoricalRebalance extends GridCommonAbstractTest 
         });
     }
 
+    /**
+     * Checks that if release the segment before {@link GridCacheDatabaseSharedManager#releaseHistoryForExchange},
+     * there will be no errors and the rebalance will be completed.
+     *
+     * @throws Exception If failed.
+     */
     @Test
-    public void test1() throws Exception {
+    public void testReleaseBeforeReleaseHistoryForExchange() throws Exception {
         checkHistoricalRebalance(n -> {
             GridCacheDatabaseSharedManager spy = spy(dbMgr(n));
 
@@ -120,35 +135,36 @@ public class ReleaseSegmentOnHistoricalRebalance extends GridCommonAbstractTest 
         });
     }
 
+    /**
+     * Checks that if there is no segment reservation in {@link GridCacheDatabaseSharedManager#reserveHistoryForPreloading},
+     * there will be no errors and the rebalance will be completed.
+     *
+     * @throws Exception If failed.
+     */
     @Test
-    public void test2() throws Exception {
+    public void testNoReserveHistoryForPreloading() throws Exception {
         checkHistoricalRebalance(n -> {
             GridCacheDatabaseSharedManager spy = spy(dbMgr(n));
 
-            when(spy.reserveHistoryForPreloading(any())).thenAnswer(m -> {
-                WALPointer reserved = dbMgr(n).checkpointHistory().searchCheckpointEntry(m.getArgument(0))
-                    .values().stream().map(CheckpointEntry::checkpointMark).min(WALPointer::compareTo).get();
-
-                assertNotNull(reserved);
-
-                release(n, reserved);
-
-                assertTrue(segmentAware(n).minReserveIndex(reserved.index()));
-
-                return m.callRealMethod();
-            });
+            when(spy.reserveHistoryForPreloading(any())).thenAnswer(m -> false);
 
             dbMgr(n, spy);
         });
     }
 
+    /**
+     * Checks that if release the segment before {@link GridCacheDatabaseSharedManager#releaseHistoryForPreloading},
+     * there will be no errors and the rebalance will be completed.
+     *
+     * @throws Exception If failed.
+     */
     @Test
-    public void test3() throws Exception {
+    public void testReleaseBeforeReleaseHistoryForPreloading() throws Exception {
         checkHistoricalRebalance(n -> {
             GridCacheDatabaseSharedManager spy = spy(dbMgr(n));
 
             doAnswer(m -> {
-                release(n, getFieldValue(spy, "reservedForPreloading"));
+                release(n, spy.latestWalPointerReservedForPreloading());
 
                 return m.callRealMethod();
             }).when(spy).releaseHistoryForPreloading();
@@ -158,15 +174,117 @@ public class ReleaseSegmentOnHistoricalRebalance extends GridCommonAbstractTest 
     }
 
     /**
+     * Checks that if release the segment before {@link IgniteCacheOffheapManagerImpl#rebalanceIterator},
+     * there will be no errors and the rebalance will be completed.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testReleaseBeforeRebalanceIterator() throws Exception {
+        checkHistoricalRebalance(n -> {
+            IgniteInternalCache cachex = n.cachex(DEFAULT_CACHE_NAME);
+
+            GridCacheOffheapManager spy = spy(offheapMgr(cachex));
+
+            doAnswer(m -> {
+                CheckpointHistory cpHist = dbMgr(n).checkpointHistory();
+
+                for (Long cp : cpHist.checkpoints())
+                    release(n, cpHist.entry(cp).checkpointMark());
+
+                return m.callRealMethod();
+            }).when(spy).rebalanceIterator(any(), any());
+
+            offheapMgr(cachex, spy);
+        });
+    }
+
+    /**
+     * Checks that if release the segment during {@link IgniteCacheOffheapManagerImpl#rebalanceIterator},
+     * there will be no errors and the rebalance will be completed.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testReleaseDuringRebalanceIterator() throws Exception {
+        checkHistoricalRebalance(n -> {
+            IgniteInternalCache cachex = n.cachex(DEFAULT_CACHE_NAME);
+
+            GridCacheOffheapManager spy = spy(offheapMgr(cachex));
+
+            doAnswer(m -> {
+                WALPointer reserved = dbMgr(n).latestWalPointerReservedForPreloading();
+
+                assertNotNull(reserved);
+
+                Object o = m.callRealMethod();
+
+                release(n, reserved);
+
+                assertTrue(segmentAware(n).minReserveIndex(Long.MAX_VALUE));
+
+                return o;
+            }).when(spy).rebalanceIterator(any(), any());
+
+            offheapMgr(cachex, spy);
+        });
+    }
+
+    /**
+     * Checks that if the reservation is released immediately,
+     * there will be no errors and the rebalance will be completed.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testImmediateReleaseSegment() throws Exception {
+        checkHistoricalRebalance(n -> {
+            SegmentAware spy = spy(segmentAware(n));
+
+            doAnswer(m -> {
+                Object o = m.callRealMethod();
+
+                spy.release(m.getArgument(0));
+
+                return o;
+            }).when(spy).reserve(anyLong());
+
+            segmentAware(n, spy);
+        });
+    }
+
+    /**
+     * Checks that that if there is no reservation,
+     * there will be no errors and the rebalance will be completed.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testNoReserveSegment() throws Exception {
+        checkHistoricalRebalance(n -> {
+            SegmentAware spy = spy(segmentAware(n));
+
+            when(spy.reserve(anyLong())).thenAnswer(m -> false);
+
+            segmentAware(n, spy);
+        });
+    }
+
+    /**
      * Populate the cache.
      *
      * @param cache Cache.
      * @param cnt Entry count.
      * @param o Key offset.
+     * @throws Exception If failed.
      */
-    private void populate(IgniteCache<? super Object, ? super Object> cache, int cnt, int o) {
-        for (int i = 0; i < cnt; i++)
+    private void populate(IgniteCache<? super Object, ? super Object> cache, int cnt, int o) throws Exception {
+        for (int i = 0; i < cnt; i++) {
+            if (i % 100 == 0)
+                forceCheckpoint();
+
             cache.put(i + o, new byte[64 * 1024]);
+        }
     }
 
     /**
@@ -192,6 +310,26 @@ public class ReleaseSegmentOnHistoricalRebalance extends GridCommonAbstractTest 
     }
 
     /**
+     * Set the spy to {@code CacheGroupContext#offheapMgr}.
+     *
+     * @param cache Cache.
+     * @param spy Spy.
+     */
+    private void offheapMgr(IgniteInternalCache cache, GridCacheOffheapManager spy) {
+        setFieldValue(cache.context().group(), "offheapMgr", spy);
+    }
+
+    /**
+     * Set the spy to {@code FileWriteAheadLogManager#segmentAware}.
+     *
+     * @param n Node.
+     * @param spy Spy.
+     */
+    private void segmentAware(IgniteEx n, SegmentAware spy) {
+        setFieldValue(walMgr(n), "segmentAware", spy);
+    }
+
+    /**
      * Release WAL segment.
      *
      * @param n Node.
@@ -209,6 +347,16 @@ public class ReleaseSegmentOnHistoricalRebalance extends GridCommonAbstractTest 
      */
     private SegmentAware segmentAware(IgniteEx n) {
         return getFieldValue(walMgr(n), "segmentAware");
+    }
+
+    /**
+     * Getting offheap manager.
+     *
+     * @param cache Cache.
+     * @return Offheap manager.
+     */
+    private GridCacheOffheapManager offheapMgr(IgniteInternalCache cache) {
+        return (GridCacheOffheapManager)cache.context().group().offheap();
     }
 
     /**
@@ -231,9 +379,15 @@ public class ReleaseSegmentOnHistoricalRebalance extends GridCommonAbstractTest 
 
         c.accept(n0);
 
-        startGrid(1);
+        IgniteEx n1 = startGrid(1);
         awaitPartitionMapExchange();
 
         assertEquals(2, G.allGrids().size());
+
+        stopGrid(0);
+        awaitPartitionMapExchange();
+
+        for (int i = 0; i < 2_000; i++)
+            assertNotNull(String.valueOf(i), n1.cache(DEFAULT_CACHE_NAME).get(i));
     }
 }

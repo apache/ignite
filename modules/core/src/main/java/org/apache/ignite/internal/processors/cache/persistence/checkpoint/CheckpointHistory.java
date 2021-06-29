@@ -133,7 +133,7 @@ public class CheckpointHistory {
      * @return Initialized entry.
      * @throws IgniteCheckedException If failed to initialize entry.
      */
-    private CheckpointEntry entry(Long cpTs) throws IgniteCheckedException {
+    public CheckpointEntry entry(Long cpTs) throws IgniteCheckedException {
         CheckpointEntry entry = histMap.get(cpTs);
 
         if (entry == null)

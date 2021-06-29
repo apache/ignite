@@ -311,11 +311,17 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Lock wait time. */
     private final long lockWaitTime;
 
-    /** This is the earliest WAL pointer that was reserved during exchange and would release after exchange completed. */
-    private volatile WALPointer reservedForExchange;
+    /**
+     * This is the earliest WAL pointer that was reserved during exchange and would release after exchange completed.
+     * Guarded by {@code this}.
+     */
+    @Nullable private WALPointer reservedForExchange;
 
-    /** This is the earliest WAL pointer that was reserved during preloading. */
-    private volatile WALPointer reservedForPreloading;
+    /**
+     * This is the earliest WAL pointer that was reserved during preloading.
+     * Guarded by {@link #reservedForPreloadingLock}.
+     */
+    @Nullable private WALPointer reservedForPreloading;
 
     /** Snapshot manager. */
     private IgniteCacheSnapshotManager snapshotMgr;
@@ -348,8 +354,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Page list cache limits per data region. */
     private final Map<String, AtomicLong> pageListCacheLimits = new ConcurrentHashMap<>();
 
-    /** Lock for releasing history for preloading. */
-    private final ReentrantLock releaseHistForPreloadingLock = new ReentrantLock();
+    /** Lock for {@link #reservedForPreloading}. */
+    private final ReentrantLock reservedForPreloadingLock = new ReentrantLock();
 
     /** */
     private CachePartitionDefragmentationManager defrgMgr;
@@ -1764,70 +1770,74 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public synchronized void releaseHistoryForExchange() {
-        if (reservedForExchange == null)
-            return;
-
-        try {
+        if (reservedForExchange != null) {
             cctx.wal().release(reservedForExchange);
-        }
-        catch (Throwable e) {
-            log.warning("Failed to release earliest checkpoint WAL pointer: " + reservedForExchange);
-        }
 
-        reservedForExchange = null;
+            reservedForExchange = null;
+        }
     }
 
     /** {@inheritDoc} */
     @Override public boolean reserveHistoryForPreloading(Map<T2<Integer, Integer>, Long> reservationMap) {
-        Map<GroupPartitionId, CheckpointEntry> entries = checkpointHistory().searchCheckpointEntry(reservationMap);
+        reservedForPreloadingLock.lock();
 
-        if (F.isEmpty(entries))
-            return false;
+        try {
+            Map<GroupPartitionId, CheckpointEntry> entries = checkpointHistory().searchCheckpointEntry(reservationMap);
 
-        WALPointer oldestWALPointerToReserve = null;
-
-        for (CheckpointEntry cpE : entries.values()) {
-            WALPointer ptr = cpE.checkpointMark();
-
-            if (ptr == null)
+            if (F.isEmpty(entries))
                 return false;
 
-            if (oldestWALPointerToReserve == null || ptr.compareTo(oldestWALPointerToReserve) < 0)
-                oldestWALPointerToReserve = ptr;
-        }
+            WALPointer oldestWALPointerToReserve = null;
 
-        if (cctx.wal().reserve(oldestWALPointerToReserve)) {
-            reservedForPreloading = oldestWALPointerToReserve;
+            for (CheckpointEntry cpE : entries.values()) {
+                WALPointer ptr = cpE.checkpointMark();
 
-            return true;
+                if (ptr == null)
+                    return false;
+
+                if (oldestWALPointerToReserve == null || ptr.compareTo(oldestWALPointerToReserve) < 0)
+                    oldestWALPointerToReserve = ptr;
+            }
+
+            if (cctx.wal().reserve(oldestWALPointerToReserve)) {
+                reservedForPreloading = oldestWALPointerToReserve;
+
+                return true;
+            }
+            else
+                return false;
         }
-        else
-            return false;
+        finally {
+            reservedForPreloadingLock.unlock();
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void releaseHistoryForPreloading() {
-        releaseHistForPreloadingLock.lock();
-
-        WALPointer reserved = reservedForPreloading;
+        reservedForPreloadingLock.lock();
 
         try {
-            if (reserved != null)
-                cctx.wal().release(reserved);
-        }
-        catch (Throwable ex) {
-            log.warning("Could not release WAL reservation: " + reservedForPreloading);
+            if (reservedForPreloading != null) {
+                cctx.wal().release(reservedForPreloading);
+
+                reservedForPreloading = null;
+            }
         }
         finally {
-            reservedForPreloading = null;
-
-            releaseHistForPreloadingLock.unlock();
+            reservedForPreloadingLock.unlock();
         }
     }
 
     /** {@inheritDoc} */
     @Override public WALPointer latestWalPointerReservedForPreloading() {
-        return reservedForPreloading;
+        reservedForPreloadingLock.lock();
+
+        try {
+            return reservedForPreloading;
+        }
+        finally {
+            reservedForPreloadingLock.unlock();
+        }
     }
 
     /**
