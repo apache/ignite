@@ -60,7 +60,8 @@ For all the commands going forward:
 10. Commit ZIP packages:
    ```
    cd {dist.dev}
-   svn commit -m “{version}-rc{rc}”
+   svn add {version}-rc{rc}
+   svn commit -m “Apache Ignite {version} RC{rc}”
    ```
 11. Put the release on a vote on the developers mailing list.
 
@@ -68,4 +69,19 @@ For all the commands going forward:
 
 Perform the following actions ONLY after the vote is successful and closed.
 
-TBD
+1. Login to the Apache Nexus and release the staging repository: https://repository.apache.org/#stagingRepositories
+2. Create an empty folder under the release distribution directory:
+   ```
+   rm -rf {dist.release}/{version}
+   mkdir {dist.release}/{version}
+   ```
+3. Copy ZIP packages along with checksums and signatures to the release distribution directory:
+   ```
+   cp {dist.dev}/{version}-rc{rc}/* {dist.release}/{version}
+   ```
+4. Commit ZIP packages:
+   ```
+   cd {dist.release}
+   svn add {version}
+   svn commit -m “Apache Ignite {version}”
+   ```
