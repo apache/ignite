@@ -17,7 +17,6 @@
 
 package org.apache.ignite.cache.query;
 
-import java.util.List;
 import java.util.Objects;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -50,7 +49,7 @@ public class IndexQueryLocalTest extends GridCommonAbstractTest {
     public void testServerNodeReplicatedCache() throws Exception {
         Ignite crd = startGrids(4);
 
-        IgniteCache cache = crd.getOrCreateCache(ccfg(CacheMode.REPLICATED));
+        IgniteCache<Long, Person> cache = crd.getOrCreateCache(ccfg(CacheMode.REPLICATED));
 
         insertData(crd, cache);
 
@@ -60,9 +59,9 @@ public class IndexQueryLocalTest extends GridCommonAbstractTest {
         for (int i = 0; i < 4; i++) {
             cache = grid(i).cache(CACHE);
 
-            List result = cache.query(qry.setLocal(true)).getAll();
+            int result = cache.query(qry.setLocal(true)).getAll().size();
 
-            assertEquals(CNT / 2, result.size());
+            assertEquals(CNT / 2, result);
         }
     }
 
@@ -71,20 +70,26 @@ public class IndexQueryLocalTest extends GridCommonAbstractTest {
     public void testServerNodePartitionedCache() throws Exception {
         Ignite crd = startGrids(4);
 
-        IgniteCache cache = crd.getOrCreateCache(ccfg(CacheMode.PARTITIONED));
+        IgniteCache<Long, Person> cache = crd.getOrCreateCache(ccfg(CacheMode.PARTITIONED));
 
         insertData(crd, cache);
 
         IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class)
             .setCriteria(lt("id", CNT / 2));
 
+        int resultSize = 0;
+
         for (int i = 0; i < 4; i++) {
             cache = grid(i).cache(CACHE);
 
-            List result = cache.query(qry.setLocal(true)).getAll();
+            int result = cache.query(qry.setLocal(true)).getAll().size();
 
-            assertTrue(CNT / 2 > result.size());
+            resultSize += result;
+
+            assertTrue(CNT / 2 > result);
         }
+
+        assertEquals(CNT / 2, resultSize);
     }
 
     /** Should fail as no data on nodes. */
@@ -94,7 +99,7 @@ public class IndexQueryLocalTest extends GridCommonAbstractTest {
 
         Ignite cln = startClientGrid(1);
 
-        IgniteCache cache = cln.getOrCreateCache(ccfg(CacheMode.REPLICATED));
+        IgniteCache<Long, Person> cache = cln.getOrCreateCache(ccfg(CacheMode.REPLICATED));
 
         insertData(cln, cache);
 
@@ -118,7 +123,8 @@ public class IndexQueryLocalTest extends GridCommonAbstractTest {
         return new CacheConfiguration<Long, Person>()
             .setName(CACHE)
             .setIndexedTypes(Long.class, Person.class)
-            .setCacheMode(cacheMode);
+            .setCacheMode(cacheMode)
+            .setBackups(2);
     }
 
     /** */

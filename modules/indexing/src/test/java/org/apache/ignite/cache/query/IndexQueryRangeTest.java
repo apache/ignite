@@ -69,7 +69,7 @@ public class IndexQueryRangeTest extends GridCommonAbstractTest {
     private IgniteCache<Long, Person> cache;
 
     /** */
-    @Parameterized.Parameter(0)
+    @Parameterized.Parameter
     public int qryParallelism;
 
     /** */
@@ -309,7 +309,7 @@ public class IndexQueryRangeTest extends GridCommonAbstractTest {
         assertEquals((right - left) * duplicates, all.size());
 
         Set<Long> expKeys = LongStream
-            .range(left * duplicates, right * duplicates).boxed()
+            .range((long) left * duplicates, (long) right * duplicates).boxed()
             .collect(Collectors.toSet());
 
         for (int i = 0; i < all.size(); i++) {
@@ -356,9 +356,9 @@ public class IndexQueryRangeTest extends GridCommonAbstractTest {
         /** */
         Person(int id) {
             this.id = id;
-            this.descId = id;
-            this.nonIdxSqlFld = id;
-            this.nonSqlFld = id;
+            descId = id;
+            nonIdxSqlFld = id;
+            nonSqlFld = id;
         }
 
         /** {@inheritDoc} */

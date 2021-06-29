@@ -534,7 +534,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     public void validate() throws IgniteCheckedException {
         if ((type != SCAN && type != SET && type != SPI && type != INDEX)
             && !QueryUtils.isEnabled(cctx.config()))
-
             throw new IgniteCheckedException("Indexing is disabled for cache: " + cctx.cache().name());
     }
 

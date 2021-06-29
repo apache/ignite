@@ -54,7 +54,7 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
     private static final int CNT = 10_000;
 
     /** */
-    private IgniteCache cache;
+    private IgniteCache<Object, Object> cache;
 
     /** */
     private Ignite crd;
@@ -75,7 +75,7 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration ccfg = new CacheConfiguration<>()
+        CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>()
             .setName(CACHE);
 
         cfg.setCacheConfiguration(ccfg);
@@ -88,7 +88,7 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
     public void testEmptyCache() {
         prepareTable();
 
-        IgniteCache tableCache = crd.cache(CACHE_TABLE);
+        IgniteCache<Object, Object> tableCache = crd.cache(CACHE_TABLE);
 
         IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, DESC_ID_IDX)
             .setCriteria(lt("descId", Integer.MAX_VALUE));
@@ -105,7 +105,7 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
 
         int pivot = new Random().nextInt(CNT);
 
-        IgniteCache tableCache = crd.cache(CACHE_TABLE);
+        IgniteCache<Object, Object> tableCache = crd.cache(CACHE_TABLE);
 
         IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, DESC_ID_IDX)
             .setCriteria(lt("descId", pivot));
@@ -117,20 +117,11 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
             IndexQuery<Long, Person> wrongQry = new IndexQuery<Long, Person>(Person.class, DESC_ID_IDX)
                 .setCriteria(lt("id", Integer.MAX_VALUE));
 
-            return cache.query(wrongQry).getAll();
+            return tableCache.query(wrongQry).getAll();
 
         }, IgniteCheckedException.class, "No index matches index query.");
 
-        // Wrong cache name.
-        GridTestUtils.assertThrowsAnyCause(null, () -> {
-            IndexQuery<Long, Person> wrongQry = new IndexQuery<Long, Person>(Person.class, DESC_ID_IDX)
-                .setCriteria(lt("descId", Integer.MAX_VALUE));
-
-            return cache.query(wrongQry).getAll();
-
-        }, IgniteCheckedException.class, "No index matches index query.");
-
-        // Wrong schema name.
+        // Wrong cache.
         GridTestUtils.assertThrowsAnyCause(null, () -> {
             IndexQuery<Long, Person> wrongQry = new IndexQuery<Long, Person>(Person.class, DESC_ID_IDX)
                 .setCriteria(lt("descId", Integer.MAX_VALUE));
@@ -191,7 +182,7 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
         /** */
         Person(int id) {
             this.id = id;
-            this.descId = id;
+            descId = id;
         }
 
         /** {@inheritDoc} */

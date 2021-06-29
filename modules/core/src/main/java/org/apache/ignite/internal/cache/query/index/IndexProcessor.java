@@ -167,10 +167,12 @@ public class IndexProcessor extends GridProcessorAdapter {
             if (err != null)
                 throw err;
 
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to store row in index", e);
 
-        } finally {
+        }
+        finally {
             ddlLock.readLock().unlock();
         }
     }
@@ -240,7 +242,8 @@ public class IndexProcessor extends GridProcessorAdapter {
 
             return idx;
 
-        } finally {
+        }
+        finally {
             ddlLock.writeLock().unlock();
         }
     }
@@ -269,7 +272,8 @@ public class IndexProcessor extends GridProcessorAdapter {
                 idxDefs.remove(idx.id());
             }
 
-        } finally {
+        }
+        finally {
             ddlLock.writeLock().unlock();
         }
     }
@@ -290,7 +294,8 @@ public class IndexProcessor extends GridProcessorAdapter {
             for (Index idx: indexes.values())
                 err = updateIndex(idx, newRow, prevRow, prevRowAvailable, err);
 
-        } finally {
+        }
+        finally {
             ddlLock.readLock().unlock();
         }
 
@@ -334,7 +339,8 @@ public class IndexProcessor extends GridProcessorAdapter {
                     ((AbstractIndex) idx).markIndexRebuild(val);
             }
 
-        } finally {
+        }
+        finally {
             ddlLock.readLock().unlock();
         }
     }
@@ -372,7 +378,8 @@ public class IndexProcessor extends GridProcessorAdapter {
 
             return idxs.values();
 
-        } finally {
+        }
+        finally {
             ddlLock.readLock().unlock();
         }
     }
@@ -394,7 +401,8 @@ public class IndexProcessor extends GridProcessorAdapter {
 
             return idxs.get(idxName.fullName());
 
-        } finally {
+        }
+        finally {
             ddlLock.readLock().unlock();
         }
     }

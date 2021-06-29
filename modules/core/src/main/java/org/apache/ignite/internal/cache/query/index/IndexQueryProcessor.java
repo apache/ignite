@@ -303,7 +303,7 @@ public class IndexQueryProcessor {
                 if (!findRes.next())
                     return false;
 
-                while (match(get(), lower, 1) || match(get(), upper, -1)) {
+                while (exclude(get(), lower, 1) || exclude(get(), upper, -1)) {
                     if (!findRes.next())
                         return false;
                 }
@@ -324,7 +324,7 @@ public class IndexQueryProcessor {
              * @param boundarySign {@code 1} for lower boundary and {@code -1} for upper boundary.
              * @return {@code true} if specified row has to be excluded from result.
              */
-            private boolean match(IndexRow row, IndexRow boundary, int boundarySign) throws IgniteCheckedException {
+            private boolean exclude(IndexRow row, IndexRow boundary, int boundarySign) throws IgniteCheckedException {
                 // Unbounded search, include all.
                 if (boundary == null)
                     return false;
@@ -409,8 +409,8 @@ public class IndexQueryProcessor {
                             return 1;
 
                         return rowCmp.compareKey(o1.get(), o2.get(), 0);
-
-                    } catch (IgniteCheckedException e) {
+                    }
+                    catch (IgniteCheckedException e) {
                         throw new IgniteException(e);
                     }
                 }
@@ -433,8 +433,8 @@ public class IndexQueryProcessor {
                 Arrays.sort(cursors, cursorComp);
 
                 returnFirst = true;
-
-            } else {
+            }
+            else {
                 if (cursorOff == cursors.length)
                     return false;
 

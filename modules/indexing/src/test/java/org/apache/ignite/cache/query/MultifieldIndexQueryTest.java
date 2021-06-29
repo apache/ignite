@@ -63,14 +63,14 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
     private static final int CNT = 10_000;
 
     /** */
-    @Parameterized.Parameter(0)
+    @Parameterized.Parameter()
     public int nodesCnt;
 
     /** */
     private Ignite ignite;
 
     /** */
-    private IgniteCache cache;
+    private IgniteCache<Object, Object> cache;
 
     /** */
     @Parameterized.Parameters(name = "nodesCnt={0}")
@@ -99,7 +99,7 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
         CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>()
             .setName("TEST_CACHE")
             .setIndexedTypes(Long.class, Person.class)
-            .setQueryParallelism(1);
+            .setQueryParallelism(4);
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -134,6 +134,12 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
             .setCriteria(lt("id", Integer.MAX_VALUE), lt("secId", Integer.MAX_VALUE));
 
         assertTrue(cache.query(qry).getAll().isEmpty());
+
+        // Check query with single column only.
+        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
+            .setCriteria(lt("id", Integer.MAX_VALUE));
+
+        assertTrue(cache.query(qry).getAll().isEmpty());
     }
 
     /** */
@@ -157,6 +163,46 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
 
         assertEquals(new Person(0, 1), result.get(0).getValue());
         assertEquals(new Person(1, 1), result.get(1).getValue());
+    }
+
+    /** */
+    @Test
+    public void testQuerySingleField() {
+        insertData();
+
+        // Should return empty result for ID that less any inserted.
+        IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(lt("id", -1));
+
+        assertTrue(cache.query(qry).getAll().isEmpty());
+
+        // Should return all data for ID that greater any inserted.
+        qry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(lt("id", 1));
+
+        checkPerson(cache.query(qry), 0, CNT);
+
+        // Checks the same with query with specified index name.
+        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
+            .setCriteria(lt("id", -1));
+
+        assertTrue(cache.query(qry).getAll().isEmpty());
+
+        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
+            .setCriteria(lt("id", 1));
+
+        checkPerson(cache.query(qry), 0, CNT);
+
+        // Checks the same with query for DESC_IDX.
+        qry = new IndexQuery<Long, Person>(Person.class, DESC_INDEX)
+            .setCriteria(lt("id", -1));
+
+        assertTrue(cache.query(qry).getAll().isEmpty());
+
+        qry = new IndexQuery<Long, Person>(Person.class, DESC_INDEX)
+            .setCriteria(lt("id", 1));
+
+        checkPerson(cache.query(qry), 0, CNT);
     }
 
     /** */
@@ -191,17 +237,22 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
         checkPerson(cache.query(qry), 0, pivot);
 
         // Checks the same with query with specified index name.
-        qry = new IndexQuery<Long, Person>(Person.class)
+        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
             .setCriteria(lt("id", -1), lt("secId", pivot));
 
         assertTrue(cache.query(qry).getAll().isEmpty());
 
-        qry = new IndexQuery<Long, Person>(Person.class)
+        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
+            .setCriteria(lt("id", 1), lt("secId", CNT));
+
+        checkPerson(cache.query(qry), 0, CNT);
+
+        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
             .setCriteria(lt("id", 0), lt("secId", pivot));
 
         assertTrue(cache.query(qry).getAll().isEmpty());
 
-        qry = new IndexQuery<Long, Person>(Person.class)
+        qry = new IndexQuery<Long, Person>(Person.class, INDEX)
             .setCriteria(lt("id", 1), lt("secId", pivot));
 
         checkPerson(cache.query(qry), 0, pivot);
@@ -565,16 +616,16 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
 
         /** */
         Person(int secId) {
-            this.id = 0;
+            id = 0;
             this.secId = secId;
-            this.descId = secId;
+            descId = secId;
         }
 
         /** */
         Person(int id, int secId) {
             this.id = id;
             this.secId = secId;
-            this.descId = secId;
+            descId = secId;
         }
 
         /** {@inheritDoc} */

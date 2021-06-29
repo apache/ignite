@@ -122,16 +122,6 @@ public class IndexQueryQueryEntityTest extends GridCommonAbstractTest {
 
         assertTrue(cache.query(qry).getAll().isEmpty());
 
-        qry = new IndexQuery<Long, Person>(Person.class)
-            .setCriteria(lt("id", Integer.MAX_VALUE));
-
-        assertTrue(cache.query(qry).getAll().isEmpty());
-
-        qry = new IndexQuery<Long, Person>(Person.class)
-            .setCriteria(lt("descId", Integer.MAX_VALUE));
-
-        assertTrue(cache.query(qry).getAll().isEmpty());
-
         // Wrong fields in query.
         GridTestUtils.assertThrows(null, () -> {
             IndexQuery<Long, Person> wrongQry = new IndexQuery<Long, Person>(Person.class, DESC_ID_IDX)
@@ -278,7 +268,7 @@ public class IndexQueryQueryEntityTest extends GridCommonAbstractTest {
         /** */
         Person(int id) {
             this.id = id;
-            this.descId = id;
+            descId = id;
         }
 
         /** {@inheritDoc} */

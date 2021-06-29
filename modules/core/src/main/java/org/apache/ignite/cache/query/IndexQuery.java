@@ -26,7 +26,7 @@ import org.jetbrains.annotations.Nullable;
  * Index query runs over internal index structure and returns cache entries for index rows that match specified criteria.
  */
 @IgniteExperimental
-public class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
+public final class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** */
     private static final long serialVersionUID = 0L;
 

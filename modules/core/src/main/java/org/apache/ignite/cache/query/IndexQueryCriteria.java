@@ -27,7 +27,7 @@ public interface IndexQueryCriteria extends Serializable {
     /**
      * @return List of fields that this query criteria applies to.
      */
-    public abstract List<String> fields();
+    public List<String> fields();
 
     /**
      * Merges multiple criteria.
@@ -35,5 +35,5 @@ public interface IndexQueryCriteria extends Serializable {
      * @param criteria Criteria to merge.
      * @return New criteria.
      */
-    public abstract IndexQueryCriteria and(IndexQueryCriteria criteria);
+    public IndexQueryCriteria and(IndexQueryCriteria criteria);
 }

@@ -127,6 +127,12 @@ public class IndexQueryAllTypesTest extends GridCommonAbstractTest {
             .setCriteria(gt("intNullId", null));
 
         check(cache.query(qry), CNT / 10, CNT, i -> i, persGen);
+
+        // Should return all items.
+        qry = new IndexQuery<Long, Person>(Person.class)
+            .setCriteria(gte("intNullId", null));
+
+        check(cache.query(qry), 0, CNT, i -> i, persGen);
     }
 
     /** */
