@@ -18,10 +18,9 @@
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
 import java.util.Arrays;
-
 import org.apache.calcite.plan.RelOptUtil;
+import org.apache.calcite.rel.core.Union;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.schema.SchemaPlus;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
@@ -30,17 +29,13 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
-import org.junit.Ignore;
 import org.junit.Test;
-
-import static org.apache.calcite.tools.Frameworks.createRootSchema;
 
 /**
  *
  */
 //@WithSystemProperty(key = "calcite.debug", value = "true")
 @SuppressWarnings({"TooBroadScope", "FieldCanBeLocal", "TypeMayBeWeakened"})
-@Ignore("https://issues.apache.org/jira/browse/IGNITE-14594")
 public class UnionPlannerTest extends AbstractPlannerTest {
     /**
      * @throws Exception If failed.
@@ -121,9 +116,6 @@ public class UnionPlannerTest extends AbstractPlannerTest {
         publicSchema.addTable("TABLE2", tbl2);
         publicSchema.addTable("TABLE3", tbl3);
 
-        SchemaPlus schema = createRootSchema(false)
-            .add("PUBLIC", publicSchema);
-
         String sql = "" +
             "SELECT * FROM table1 " +
             "UNION " +
@@ -139,6 +131,11 @@ public class UnionPlannerTest extends AbstractPlannerTest {
         System.out.println("+++ " + RelOptUtil.toString(phys));
 
         assertNotNull(phys);
+
+        Union union = findFirstNode(phys, byClass(Union.class));
+
+        assertNotNull(union);
+        assertEquals(3, union.getInputs().size());
     }
 
     /**
@@ -220,9 +217,6 @@ public class UnionPlannerTest extends AbstractPlannerTest {
         publicSchema.addTable("TABLE2", tbl2);
         publicSchema.addTable("TABLE3", tbl3);
 
-        SchemaPlus schema = createRootSchema(false)
-            .add("PUBLIC", publicSchema);
-
         String sql = "" +
             "SELECT * FROM table1 " +
             "UNION ALL " +
@@ -238,5 +232,11 @@ public class UnionPlannerTest extends AbstractPlannerTest {
         System.out.println("+++ " + RelOptUtil.toString(phys));
 
         assertNotNull(phys);
+
+        Union union = findFirstNode(phys, byClass(Union.class));
+
+        assertNotNull(union);
+        assertTrue(union.all);
+        assertEquals(3, union.getInputs().size());
     }
 }
