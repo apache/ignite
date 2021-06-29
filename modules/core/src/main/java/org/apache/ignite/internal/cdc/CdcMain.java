@@ -191,7 +191,7 @@ public class CdcMain implements Runnable {
             runX();
         }
         catch (Throwable e) {
-            e.printStackTrace();
+            log.error("Cdc error", e);
 
             throw new IgniteException(e);
         }
