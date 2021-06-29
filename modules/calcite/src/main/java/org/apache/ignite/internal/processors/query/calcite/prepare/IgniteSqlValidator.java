@@ -59,6 +59,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.TableDescripto
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteResource;
 import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.calcite.util.Static.RESOURCE;
 
@@ -251,10 +252,12 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     }
 
     /** {@inheritDoc} */
-    @Override public void validateAggregateParams(SqlCall aggCall, SqlNode filter, SqlNodeList orderList, SqlValidatorScope scope) {
+    @Override public void validateAggregateParams(SqlCall aggCall,
+        @Nullable SqlNode filter, @Nullable SqlNodeList distinctList,
+        @Nullable SqlNodeList orderList, SqlValidatorScope scope) {
         validateAggregateFunction(aggCall, (SqlAggFunction) aggCall.getOperator());
 
-        super.validateAggregateParams(aggCall, filter, orderList, scope);
+        super.validateAggregateParams(aggCall, filter, null, orderList, scope);
     }
 
     /** {@inheritDoc} */
