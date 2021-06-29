@@ -149,7 +149,7 @@ commands.
 A snapshot can be restored either manually on a stopped cluster or automatically on an active cluster. Both procedures are described below.
 
 === Manual Snapshot Restore Procedure
-In a nutshell, you need to stop the cluster, replace persistence data and other files with the data from the snapshot, and restart the nodes.
+Stop the cluster, then replace persistence data and other files with the data from the snapshot, and restart the nodes.
 
 The detailed procedure looks as follows:
 
