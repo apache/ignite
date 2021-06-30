@@ -149,6 +149,19 @@ public class SqlScriptRunner {
         }
 
         /** */
+        String nextLineWithoutTrim() throws IOException {
+            if (r.ready()) {
+                String s = r.readLine();
+
+                lineNum++;
+
+                return s;
+            }
+
+            return null;
+        }
+
+        /** */
         boolean ready() throws IOException {
             return r.ready();
         }
@@ -451,7 +464,7 @@ public class SqlScriptRunner {
             }
 
             // Read expected results
-            String s = script.nextLine();
+            String s = script.nextLineWithoutTrim();
             Matcher m = HASHING_PTRN.matcher(s);
 
             if (m.matches()) {
@@ -501,7 +514,7 @@ public class SqlScriptRunner {
                             + script.positionDescription() + "[row=\"" + s + "\", types=" + resTypes + ']', e);
                     }
 
-                    s = script.nextLine();
+                    s = script.nextLineWithoutTrim();
                 }
             }
         }

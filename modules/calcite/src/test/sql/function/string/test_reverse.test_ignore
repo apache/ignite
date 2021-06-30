@@ -1,12 +1,13 @@
 # name: test/sql/function/string/test_reverse.test
 # description: REVERSE test
 # group: [string]
+# Ignored: https://issues.apache.org/jira/browse/IGNITE-15002
 
 # test reverse on scalars
-query TTT
-select REVERSE(''), REVERSE('Hello'), REVERSE('MotörHead')
+query TTTT
+select REVERSE(''), REVERSE('Hello'), REVERSE('MotörHead'), REVERSE(NULL)
 ----
-(empty)	olleH	daeHrötoM
+(empty)	olleH	daeHrötoM	NULL
 
 # test reverse on tables
 statement ok

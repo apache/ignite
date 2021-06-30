@@ -1,6 +1,7 @@
 # name: test/sql/function/string/test_substring.test
 # description: Substring test
 # group: [string]
+# Ignored: https://issues.apache.org/jira/browse/IGNITE-15002
 
 statement ok
 CREATE TABLE strings(id INTEGER, s VARCHAR, off INTEGER, length INTEGER);
@@ -65,6 +66,63 @@ he
 ell
 h
 el
+
+# test substrings with constant nulls in different places
+query T
+SELECT substring(NULL from off for length) FROM strings
+----
+NULL
+NULL
+NULL
+NULL
+
+query T
+SELECT substring('hello' from NULL for length) FROM strings
+----
+NULL
+NULL
+NULL
+NULL
+
+query T
+SELECT substring('hello' from off for NULL) FROM strings
+----
+NULL
+NULL
+NULL
+NULL
+
+query T
+SELECT substring(NULL from NULL for length) FROM strings
+----
+NULL
+NULL
+NULL
+NULL
+
+query T
+SELECT substring('hello' from NULL for NULL) FROM strings
+----
+NULL
+NULL
+NULL
+NULL
+
+query T
+SELECT substring(NULL from off for NULL) FROM strings
+----
+NULL
+NULL
+NULL
+NULL
+
+query T
+SELECT substring(NULL from NULL for NULL) FROM strings
+----
+NULL
+NULL
+NULL
+NULL
 
 # Negative from
 query T
