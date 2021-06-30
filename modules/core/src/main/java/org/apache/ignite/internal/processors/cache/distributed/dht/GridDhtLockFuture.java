@@ -1151,7 +1151,8 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                                     false,
                                     topVer,
                                     GridDrType.DR_LOAD,
-                                    true);
+                                    true,
+                                    false);
                             }
                             catch (GridCacheEntryRemovedException e) {
                                 assert false : "Should not get removed exception while holding lock on entry " +
@@ -1405,6 +1406,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                                     true,
                                     topVer,
                                     replicate ? DR_PRELOAD : DR_NONE,
+                                    false,
                                     false)) {
                                     if (rec && !entry.isInternal())
                                         cctx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(), null,
