@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistryTest;
+import org.apache.ignite.internal.cdc.SqlCdcTest;
 import org.apache.ignite.internal.metric.SystemViewSelfTest;
 import org.apache.ignite.internal.processors.cache.AffinityKeyNameAndValueFieldNameConflictTest;
 import org.apache.ignite.internal.processors.cache.BigEntryQueryTest;
@@ -666,7 +667,10 @@ import org.junit.runners.Suite;
 
     InlineIndexKeyTypeRegistryTest.class,
 
-    IgniteStatisticsTestSuite.class
+    IgniteStatisticsTestSuite.class,
+
+    // CDC tests.
+    SqlCdcTest.class
 })
 public class IgniteBinaryCacheQueryTestSuite {
 }

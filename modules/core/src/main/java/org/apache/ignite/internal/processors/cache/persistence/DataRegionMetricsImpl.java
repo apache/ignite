@@ -726,6 +726,11 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
             metrics.reset();
     }
 
+    /** Removes all metric for data region. */
+    public void remove() {
+        kernalCtx.metric().remove(metricRegistry().name(), false);
+    }
+
     /** @param time Time to add to {@code totalThrottlingTime} metric in milliseconds. */
     public void addThrottlingTime(long time) {
         if (kernalCtx.performanceStatistics().enabled())

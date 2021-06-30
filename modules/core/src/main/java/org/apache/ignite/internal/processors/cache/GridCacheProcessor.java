@@ -560,11 +560,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        if (destroy) {
-            grp.metrics().remove();
+        grp.metrics().remove(destroy);
 
-            grp.removeIOStatistic();
-        }
+        grp.removeIOStatistic(destroy);
 
         sharedCtx.evict().cleanupRemovedGroup(grp.groupId());
 
@@ -1039,8 +1037,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             cache.stop();
 
-            if (destroy)
-                cache.removeMetrics();
+            cache.removeMetrics(destroy);
 
             GridCacheContextInfo cacheInfo = new GridCacheContextInfo(ctx, false);
 
@@ -1056,8 +1053,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 if (dht != null) {
                     dht.stop();
 
-                    if (destroy)
-                        dht.removeMetrics();
+                    dht.removeMetrics(destroy);
 
                     GridCacheContext<?, ?> dhtCtx = dht.context();
 
