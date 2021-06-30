@@ -519,7 +519,7 @@ public class CdcMain implements Runnable {
                 ">>> " + COPYRIGHT + NL +
                 ">>> " + NL +
                 ">>> Ignite documentation: " + "http://" + SITE + NL +
-                ">>> Consumer: " + consumer.consumer().toString() + NL +
+                ">>> Consumer: " + U.toStringSafe(consumer.consumer()) + NL +
                 ">>> ConsistentId: " + igniteCfg.getConsistentId() + NL
             );
         }
@@ -535,7 +535,7 @@ public class CdcMain implements Runnable {
                 COPYRIGHT,
                 "",
                 "Ignite documentation: " + "http://" + SITE,
-                "Consumer: " + consumer.consumer().toString(),
+                "Consumer: " + U.toStringSafe(consumer.consumer()),
                 "ConsistentId: " + igniteCfg.getConsistentId(),
                 "",
                 "Quiet mode.");
