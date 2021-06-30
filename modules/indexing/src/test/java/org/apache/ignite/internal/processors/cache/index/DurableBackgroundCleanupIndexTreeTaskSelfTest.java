@@ -17,12 +17,20 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
-import java.util.List;
+import java.util.Map;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.client.Person;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTask;
+import org.apache.ignite.internal.processors.localtask.DurableBackgroundTaskState;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
+
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.cluster.ClusterState.INACTIVE;
+import static org.apache.ignite.internal.processors.localtask.DurableBackgroundTaskState.State.COMPLETED;
+import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Class for testing the {@link DurableBackgroundCleanupIndexTreeTask}.
@@ -40,12 +48,39 @@ public class DurableBackgroundCleanupIndexTreeTaskSelfTest extends AbstractRebui
 
         String idxName = "IDX0";
 
-        List<List<?>> createIdx = createIdx(cache, idxName);
+        createIdx(cache, idxName);
 
-        List<List<?>> dropIdx = dropIdx(cache, idxName);
+        dropIdx(cache, idxName);
 
+        n.cluster().baselineAutoAdjustEnabled(false);
         stopGrid(0);
 
-        n = startGrid(0);
+        n = startGrid(0, cfg -> {
+            cfg.setClusterStateOnStart(INACTIVE);
+        });
+
+        DurableBackgroundTaskState state = dropIdxTask(n, idxName);
+        assertNotNull(state);
+
+        n.cluster().state(ACTIVE);
+
+        assertTrue(waitForCondition(() -> state.state() == COMPLETED, getTestTimeout()));
+    }
+
+    /**
+     * Getting the {@link DurableBackgroundCleanupIndexTreeTask} for the index.
+     *
+     * @param n Node.
+     * @param idxName Index name.
+     * @return Status with {@link DurableBackgroundCleanupIndexTreeTask} for the index.
+     */
+    @Nullable private DurableBackgroundTaskState dropIdxTask(IgniteEx n, String idxName) {
+        Map<String, DurableBackgroundTaskState> tasks = getFieldValue(n.context().durableBackgroundTask(), "tasks");
+
+        return tasks.values().stream()
+            .filter(s -> s.task() instanceof DurableBackgroundCleanupIndexTreeTask)
+            .filter(s -> s.task().name().contains(idxName))
+            .findAny()
+            .orElse(null);
     }
 }
