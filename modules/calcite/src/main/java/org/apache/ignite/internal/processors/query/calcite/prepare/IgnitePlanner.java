@@ -334,13 +334,11 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
      * @return Trimmed relational expression
      */
     protected RelRoot trimUnusedFields(RelRoot root) {
-        final SqlToRelConverter.Config config = SqlToRelConverter.configBuilder()
-            .withConfig(sqlToRelConverterCfg)
-            // For now, don't trim if there are more than 3 joins. The projects
-            // near the leaves created by trim migrate past joins and seem to
-            // prevent join-reordering.
-            .withTrimUnusedFields(RelOptUtil.countJoins(root.rel) < 2)
-            .build();
+        // For now, don't trim if there are more than 3 joins. The projects
+        // near the leaves created by trim migrate past joins and seem to
+        // prevent join-reordering.
+        final SqlToRelConverter.Config config = sqlToRelConverterCfg
+            .withTrimUnusedFields(RelOptUtil.countJoins(root.rel) < 2);
         SqlToRelConverter converter = sqlToRelConverter(validator(), catalogReader, config);
         boolean ordered = !root.collation.getFieldCollations().isEmpty();
         boolean dml = SqlKind.DML.contains(root.kind);
